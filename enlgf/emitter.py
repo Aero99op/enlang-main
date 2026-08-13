@@ -4,7 +4,7 @@ Traverses an ENLGF AST and compiles it into 100% valid HTML5 with inline styles 
 """
 
 from typing import List
-from .ast_nodes import DocumentNode, ElementNode, TextNode, ASTNode
+from .ast_nodes import DocumentNode, ElementNode, TextNode, RawHTMLNode, ASTNode
 
 class ENLGFEmitter:
     """Emits HTML5 string from ENLGF AST."""
@@ -45,6 +45,9 @@ class ENLGFEmitter:
         
         if isinstance(node, TextNode):
             return f"{indent}{node.text}"
+
+        if isinstance(node, RawHTMLNode):
+            return f"{indent}{node.content}"
             
         if isinstance(node, ElementNode):
             # Assemble attributes

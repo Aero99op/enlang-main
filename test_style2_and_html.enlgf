@@ -1,0 +1,25 @@
+make document in english:
+    inside head:
+        add title "Style 2 & Traditional HTML Test"
+    finish head
+
+    inside body:
+        add heading 1 "Conversational English Style 2"
+        add paragraph "This uses make, inside, add, finish keywords and raw HTML tags below."
+
+        inside section with class "hero-box":
+            add heading 2 "Mixed with Traditional HTML"
+            <div class="custom-raw-html-badge"><span>HTML Tag Passthrough</span></div>
+            <button onclick="alert('Working!')">Raw HTML Button</button>
+            add button "Conversational Enlang Button" when clicked "alert('Enlang Works!')"
+        finish section
+
+        <hr />
+
+        inside form submitting to "/api/contact":
+            add text input named "user_name" showing hint "Enter Name"
+            <input type="hidden" name="csrf_token" value="xyz123" />
+            add submit button
+        finish form
+    finish body
+make document end

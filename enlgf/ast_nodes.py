@@ -16,6 +16,11 @@ class TextNode(ASTNode):
     text: str
 
 @dataclass
+class RawHTMLNode(ASTNode):
+    """Represents traditional HTML passthrough tags e.g. <div>...</div>."""
+    content: str
+
+@dataclass
 class ElementNode(ASTNode):
     """Represents an HTML tag element."""
     tag: str

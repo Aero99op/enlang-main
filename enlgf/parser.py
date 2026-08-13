@@ -6,7 +6,7 @@ Supports nested indentation blocks, attributes, inline CSS styling, and JS inlin
 
 from typing import List, Tuple, Optional
 from .tokens import Token, TokenType, TAG_MAPPINGS, EVENT_MAPPINGS, ATTR_MAPPINGS
-from .ast_nodes import DocumentNode, ElementNode, TextNode, ASTNode
+from .ast_nodes import DocumentNode, ElementNode, TextNode, RawHTMLNode, ASTNode
 
 class ENLEGFPParser:
     """Parses token stream into an ENLGF AST."""
@@ -40,11 +40,22 @@ class ENLEGFPParser:
 
         t = self._peek()
 
+        # Handle Explicit Block End Tokens (e.g. end body, finish section)
+        if t.type == TokenType.END_BLOCK:
+            return None
+
+        # Handle Traditional Raw HTML Passthrough Tags (<...>)
+        if t.type == TokenType.RAW_HTML:
+            tok = self._advance()
+            return RawHTMLNode(content=tok.value)
+
         # Handle Document Root
-        if t.value in ("document in english", "document"):
+        if t.value in ("document in english", "document", "make document in english", "create document in english", "start document in english", "make document", "create document", "start document"):
             self._advance()
             attrs = {"lang": "en"} if "english" in t.value else {}
             children = self._parse_block()
+            if not self._is_at_end() and self._peek().type == TokenType.END_BLOCK:
+                self._advance()
             return ElementNode(tag="html", attributes=attrs, children=children)
 
         # Handle Tag Elements
@@ -164,21 +175,25 @@ class ENLEGFPParser:
         children = []
         self._skip_newlines()
         
-        if not self._is_at_end() and self._peek().type == TokenType.INDENT:
+        # Support both indented blocks and explicit delimiter blocks
+        has_indent = not self._is_at_end() and self._peek().type == TokenType.INDENT
+        if has_indent:
             self._advance() # Consume INDENT
             
-            while not self._is_at_end() and self._peek().type != TokenType.DEDENT:
-                self._skip_newlines()
-                if self._peek().type == TokenType.DEDENT:
-                    break
-                node = self._parse_statement()
-                if node:
-                    children.append(node)
-                self._skip_newlines()
+        while not self._is_at_end():
+            self._skip_newlines()
+            if self._is_at_end() or self._peek().type in (TokenType.DEDENT, TokenType.END_BLOCK):
+                break
+            node = self._parse_statement()
+            if node:
+                children.append(node)
+            self._skip_newlines()
                 
-            if not self._is_at_end() and self._peek().type == TokenType.DEDENT:
-                self._advance() # Consume DEDENT
-                
+        if not self._is_at_end() and self._peek().type == TokenType.DEDENT:
+            self._advance() # Consume DEDENT
+        elif not self._is_at_end() and self._peek().type == TokenType.END_BLOCK:
+            self._advance() # Consume END_BLOCK
+
         return children
 
     def _skip_newlines(self):

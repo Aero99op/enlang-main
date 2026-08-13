@@ -5,7 +5,7 @@ Handles indentation tracking, quoted string extraction, and multi-word phrase ma
 """
 
 from typing import List
-from .tokens import Token, TokenType, TAG_MAPPINGS, EVENT_MAPPINGS, ATTR_MAPPINGS
+from .tokens import Token, TokenType, TAG_MAPPINGS, EVENT_MAPPINGS, ATTR_MAPPINGS, END_MAPPINGS
 
 def _strip_comment(line: str) -> str:
     in_quote = False
@@ -76,6 +76,18 @@ class ENLGFLexer:
             if line[i] in (' ', '\t'):
                 i += 1
                 continue
+
+            # Handle Traditional Raw HTML tags e.g. <div>...</div> or <hr/> or <img ...>
+            if line[i] == '<':
+                start = i
+                # Read until closing > or end of line
+                while i < length and line[i] != '>':
+                    i += 1
+                if i < length and line[i] == '>':
+                    i += 1
+                html_snippet = line[start:i]
+                self.tokens.append(Token(TokenType.RAW_HTML, html_snippet, self.line_num, start + 1))
+                continue
                 
             # Handle Symbols like ':' or ',' or '='
             if line[i] in (':', ',', '='):
@@ -100,12 +112,25 @@ class ENLGFLexer:
                     i += 1
                 self.tokens.append(Token(TokenType.STRING, val, self.line_num, start + 1))
                 continue
-                
-            # Check multi-word or single-word phrases against TAG_MAPPINGS, EVENT_MAPPINGS
+
+            # Check explicit closure phrases against END_MAPPINGS first (e.g., end body, finish section)
             remainder = line[i:].lower()
+            matched_end = None
+            all_end_phrases = sorted(list(END_MAPPINGS.keys()), key=len, reverse=True)
+            for phrase in all_end_phrases:
+                if remainder.startswith(phrase):
+                    phrase_len = len(phrase)
+                    if phrase_len == len(remainder) or not remainder[phrase_len].isalnum():
+                        matched_end = phrase
+                        self.tokens.append(Token(TokenType.END_BLOCK, END_MAPPINGS[phrase], self.line_num, i + 1))
+                        i += phrase_len
+                        break
+
+            if matched_end:
+                continue
+
+            # Check multi-word or single-word phrases against TAG_MAPPINGS, EVENT_MAPPINGS
             matched_phrase = None
-            
-            # Check longest matching phrase in TAG_MAPPINGS or EVENT_MAPPINGS first
             all_phrases = sorted(
                 list(TAG_MAPPINGS.keys()) + list(EVENT_MAPPINGS.keys()),
                 key=len,
