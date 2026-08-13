@@ -1,0 +1,7 @@
+# Testing Hybrid Assignments in Enlang
+
+set score to 50
+score1 = 30
+
+print score
+print score1

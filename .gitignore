@@ -1,0 +1,20 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environments & IDEs
+.venv/
+env/
+venv/
+.idea/
+.vscode/
+
+# Agent & temporary files
+.agents/
+.gemini/
+*.log
+
+# Generated test images (optional artifacts)
+*.png

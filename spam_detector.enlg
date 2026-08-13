@@ -1,0 +1,26 @@
+import ml
+
+show "=== Spam Email Classifier — enlg ML Pipeline ==="
+
+show "Step 1: Load data from CSV"
+load email_data from "emails.csv"
+
+show "Step 2: Preprocess"
+preprocess email_data
+
+show "Step 3: Split dataset"
+split email_data into train_set and test_set
+
+show "Step 4: Create and train model"
+declare classifier as NaiveBayes
+train classifier with train_set
+
+show "Step 5: Evaluate"
+evaluate classifier using test_set
+
+show "Step 6: Save model"
+save classifier to "spam_model.pkl"
+
+show "Step 7: Predict new emails"
+predict "Win free money cash prize now" using classifier
+predict "Please review the attached meeting agenda" using classifier

@@ -1,0 +1,75 @@
+# Comprehensive Test for Advanced Operators in Enlang
+
+print "--- Testing Advanced Arithmetic Operators ---"
+set mod_sym = 10 % 3
+print mod_sym
+set mod_eng = 10 modulo 3
+print mod_eng
+
+set pow_sym = 2 ** 3
+print pow_sym
+set pow_eng = 2 power 3
+print pow_eng
+
+set floor_sym = 10 // 3
+print floor_sym
+set floor_eng = 10 integer divided 3
+print floor_eng
+
+print "--- Testing Logical Operators ---"
+if true && true:
+    print "&& works"
+if true and true:
+    print "and works"
+if false || true:
+    print "|| works"
+if false or true:
+    print "or works"
+if !false:
+    print "! works"
+if not false:
+    print "not works"
+
+print "--- Testing Bitwise Operators ---"
+set bw_and = 6 & 3
+print bw_and
+set bw_or = 6 | 3
+print bw_or
+set bw_xor = 6 ^ 3
+print bw_xor
+set bw_lshift = 2 << 2
+print bw_lshift
+set bw_rshift = 8 >> 2
+print bw_rshift
+
+set eng_bw_and = 6 bitwise and 3
+print eng_bw_and
+set eng_bw_or = 6 bitwise or 3
+print eng_bw_or
+set eng_bw_xor = 6 bitwise xor 3
+print eng_bw_xor
+set eng_bw_lshift = 2 left shift 2
+print eng_bw_lshift
+set eng_bw_rshift = 8 right shift 2
+print eng_bw_rshift
+
+print "--- Testing Compound Assignments ---"
+set num = 10
+set num += 5
+print num
+set num -= 3
+print num
+set num *= 2
+print num
+set num /= 4
+print num
+
+set val = 100
+increase val by 50
+print val
+decrease val by 30
+print val
+multiply val by 2
+print val
+divide val by 4
+print val

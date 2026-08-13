@@ -1,0 +1,44 @@
+import ml
+
+show "==============================================================="
+show "  Subscription Meal-Kit Service: Customer Churn Predictor   "
+show "=============================================================="
+
+# Step 1: Load historical customer order & behavior dataset
+show "[Step 1] Loading customer subscription data..."
+load churn_data from "meal_kit_churn.csv"
+
+# Step 2: Preprocess dataset (handle missing values, normalize features)
+show "[ Step 2] Preprocessing customer metrics..."
+preprocess churn_data
+
+# Step 3: Split dataset into training and validation sets
+show "[ Step 3] Splitting data into training and validation sets..."
+split churn_data into train_set and test_set
+
+# Step 4: Create and train RandomForest model
+show "[ Step 4] Training Ensemble Classifier (RandomForest)..."
+declare churn_model as RandomForest
+train churn_model with train_set
+
+# Step 5: Evaluate model accuracy and performance metrics
+show "[ Step 5] Evaluating churn prediction performance..."
+evaluate churn_model using test_set
+
+# Step 6: Save trained model blueprint for deployment
+show "[ Step 6] Saving model blueprint to 'churn_model.pkl'..."
+save churn_model to "churn_model.pkl"
+
+# Step 7: Predict Churn Risk for incoming customer profiles
+# Features: [past_orders, delivery_delays, support_tickets, meal_ratings]
+show "[ Step 7] Predicting churn risk for target customer profiles..."
+
+show "  Customer Profile A (Low Engagement, High Complaints): [2 orders, 4 delays, 5 tickets, 1.5 rating]"
+predict [2, 4, 5, 1.5] using churn_model
+
+show "  Customer Profile B (High Engagement, Zero Complaints): [24 orders, 0 delays, 0 tickets, 4.9 rating]"
+predict [24, 0, 0, 4.9] using churn_model
+
+show "==============================================================="
+show "  Churn Prediction Pipeline Completed Successfully!   "
+show "=============================================================="

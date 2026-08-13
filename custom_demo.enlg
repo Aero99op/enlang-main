@@ -1,0 +1,39 @@
+import std
+import ml
+
+display "=== Dot-Free Custom Pipeline ==="
+
+function my_load with path:
+    declare df = call read_csv with path
+    return df
+
+function clean_and_split with raw_data:
+    declare clean = call drop_empty with raw_data
+    
+    declare total = call get_length with clean
+    declare split_point = total - 2
+    
+    declare train = call slice_data with clean, 0, split_point
+    declare test = call slice_data with clean, split_point, total
+    
+    return [train, test]
+
+display "1. Custom Load (using std)"
+declare my_data = call my_load with "emails.csv"
+
+display "2. Custom Clean & Split (using std)"
+declare splits = call clean_and_split with my_data
+declare train_data = call get_item with splits, 0
+declare test_data = call get_item with splits, 1
+
+display "3. Domain ML Training"
+declare my_model = NaiveBayes
+train my_model with train_data
+
+display "4. Domain ML Evaluation"
+evaluate my_model using test_data
+
+display "=== The God Call (No-Dots Python Interop) ==="
+declare py_len = call run_py with "builtins len", "abcde"
+display py_len
+

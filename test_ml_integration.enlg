@@ -1,0 +1,37 @@
+import ml
+import numpy
+import matplotlib.pyplot
+
+show "=============================================================="
+show "   ENLANG MULTI-DOMAIN INTEGRATION TEST (ML + ANALYTICS + PLOT)   "
+show "=============================================================="
+
+# 1. Machine Learning Pipeline
+show "[1] Running ML Pipeline..."
+load data_set from "meal_kit_churn.csv"
+preprocess data_set
+split data_set into train_data and test_data
+
+declare model as DecisionTree
+train model with train_data
+evaluate model using test_data
+
+# 2. Numpy Math and Analytics
+show "[2] Computing Numpy Analytics..."
+declare x_vals = call linspace with 1, 40, 40 from numpy
+declare mean_val = call mean with x_vals from numpy
+show "Mean Feature Value:"
+show mean_val
+
+# 3. Matplotlib Visualization
+show "[3] Generating Performance Plot..."
+call plot with x_vals, x_vals, "r" from matplotlib.pyplot
+call title with "ENLANG ML + Analytics + Plot Integration" from matplotlib.pyplot
+call xlabel with "Sample Index" from matplotlib.pyplot
+call ylabel with "Metric Value" from matplotlib.pyplot
+call grid with true from matplotlib.pyplot
+call savefig with "ml_integration_plot.png" from matplotlib.pyplot
+
+show "=============================================================="
+show "    ENLANG MULTI-DOMAIN TEST PASSED SUCCESSFULLY!    "
+show "==============================================================="

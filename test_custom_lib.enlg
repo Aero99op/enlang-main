@@ -1,0 +1,3 @@
+declare data = 5  
+train data with 10 from mock_ml  
+output data 

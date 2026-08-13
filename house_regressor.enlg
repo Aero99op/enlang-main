@@ -1,0 +1,25 @@
+import ml
+
+show "=== House Price Regression — enlg ML Pipeline ==="
+
+show "Step 1: Load data"
+load house_data from "housing.csv"
+
+show "Step 2: Preprocess"
+preprocess house_data
+
+show "Step 3: Split dataset"
+split house_data into train_set and test_set
+
+show "Step 4: Create and train LinearRegression model"
+declare regressor as LinearRegression
+train regressor with train_set
+
+show "Step 5: Evaluate"
+evaluate regressor using test_set
+
+show "Step 6: Save model"
+save regressor to "house_model.pkl"
+
+show "Step 7: Predict a single new sample"
+predict [1200, 3, 2] using regressor

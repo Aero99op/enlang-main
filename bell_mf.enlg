@@ -1,0 +1,28 @@
+import numpy
+import matplotlib.pyplot
+
+display "--- Generating Generalized Bell Membership Function Plot ---"
+
+declare x = call linspace with -10, 10, 200 from numpy
+
+declare a_val = 2.0
+declare b_val = 4.0
+declare c_val = 0.0
+
+declare diff = x - c_val
+declare ratio = diff / a_val
+declare abs_ratio = call abs with ratio from numpy
+declare power_val = 2 * b_val
+declare denom_term = call power with abs_ratio, power_val from numpy
+declare denom = 1 + denom_term
+declare y = 1 / denom
+
+call plot with x, y, "m" from matplotlib.pyplot
+call title with "Generalized Bell Membership Function" from matplotlib.pyplot
+call xlabel with "x" from matplotlib.pyplot
+call ylabel with "Degree of Membership" from matplotlib.pyplot
+call grid with true from matplotlib.pyplot
+
+call savefig with "bell_mf.png" from matplotlib.pyplot
+
+display "Bell MF plot successfully generated and saved to bell_mf.png!"

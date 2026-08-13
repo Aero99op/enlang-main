@@ -1,0 +1,70 @@
+show "=============================================================="
+show "          ENLANG ATM CARD MANAGEMENT SYSTEM          "
+show "==============================================================="
+
+# 1. Account Credentials & Initial State
+declare balance = 10000
+declare pin = 4321
+declare attempts = 0
+declare card_status = "ACTIVE"
+declare is_authenticated = false
+
+show "[ Step 1] Account Initialized:"
+show "Initial Balance: Rs. 10000"
+show "Card Status: ACTIVE"
+show "-----------------------------------------------------------"
+
+# 2. Simulated PIN Entry Attempts (Attempts counter loop)
+show "[ Step 2] User Inserting ATM Card & Entering PIN..."
+
+while attempts < 3:
+    if is_authenticated is false:
+        set attempts = attempts + 1
+        
+        # Simulating User Inputs across attempts
+        declare current_pin = 1111
+        if attempts is 2:
+            set current_pin = 2222
+        elif attempts is 3:
+            set current_pin = 4321
+        
+        show "Entering PIN..."
+        show current_pin
+        
+        if current_pin is pin:
+            show "SUMES: Correct PIN entered! Access Granted."
+            set is_authenticated = true
+        elif current_pin is not pin:
+            show "ERROR: Incorrect PIN entered!"
+            if attempts is 3:
+                show "SECURITY ALEST: 3 failed attempts reached! Card is BLOCKED."
+                set card_status = "BLOCKED"
+
+show "-----------------------------------------------------------"
+
+# 3. Perform ATM Operationz if Authenticated
+if is_authenticated is true:
+    show "[Step 3] Authenticated User Access - ATM Operations:"
+    
+    # Operation 1: Check Balance
+    show "Current Balance:"
+    show balance
+    
+    # Operation 2: Withdrawal (Rs. 3500)
+    show "Processing Cash Withdrawal of Rs. 3500..."
+    set balance = balance - 3500
+    show "Updated Balance after Withdrawal:"
+    show balance
+    
+    # Operation 3: Cash Deposit (Rs. 2000)
+    show "Processing Cash Deposit of Rs. 2000..."
+    set balance = balance + 2000
+    show "Final Balance after Deposit:"
+    show balance
+
+if card_status is "BLOCKED":
+    show "SECURITY NOTICE: Card is blocked. Please visit your home branch."
+
+show "============================================================="
+show "          ATM CARD SESSION TERMINATED SUCCESSFULLY          "
+show "=============================================================="

@@ -1,0 +1,15 @@
+import dl
+
+show "=== Deep Learning Classifier — enlg DL Pipeline ==="
+
+show "Step 1: Compile neural network"
+declare net as NeuralNet
+compile net with ["Dense 4 16", "ReLU", "Dense 16 3", "Softmax"]
+
+show "Step 2: Fit model (simulate training)"
+fit net with "iris_data"
+
+show "Step 3: Forward pass"
+forward [5.1, 3.5, 1.4, 0.2] using net
+
+show "Deep Learning pipeline complete!"

@@ -1,0 +1,4 @@
+create count as "yes"
+repeat count:
+    show "Using repeat is fully allowed!"
+    change count to ""

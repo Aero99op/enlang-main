@@ -1,0 +1,24 @@
+import ml
+
+display "=== Meal-Kit Customer Churn Prediction System ==="
+
+# 1. Load customer behavior dataset
+load dataset from "meal_churn.csv"
+
+# 2. Split dataset into training and testing sets
+split dataset into train_data and test_data
+
+# 3. Instantiate RandomForest model from ml standard library
+declare model = new RandomForest
+
+# 4. Train the model on user orders, delays, tickets & ratings
+train model with train_data
+
+# 5. Evaluate accuracy on test set
+evaluate model with test_data
+
+# 6. Predict churn for high-risk customer (High delays=5, High tickets=4, Low rating=1.5)
+declare high_risk_user = [10, 5, 4, 1.5]
+
+display "Predicting Churn Risk for High-Risk Customer (1 = Cancel, 0 = Retain):"
+predict high_risk_user using model

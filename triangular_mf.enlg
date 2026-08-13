@@ -1,0 +1,62 @@
+import numpy
+import matplotlib.pyplot
+
+display "--- Evaluating Comfortable Temperature (Triangular MF) ---"
+
+# Parameters for Comfortable: a = 18, b = 23, c = 28
+declare a_val = 18.0
+declare b_val = 23.0
+declare c_val = 28.0
+
+# Define a function that calculates triangular membership
+# Formula: max(min((x - a) / (b - a), (c - x) / (c - b)), 0)
+function calc_comfort with temp:
+    # 1. Left side slope: (x - a) / (b - a)
+    declare diff_left = temp - a_val
+    declare range_left = b_val - a_val
+    declare val_left = diff_left / range_left
+    
+    # 2. Right side slope: (c - x) / (c - b)
+    declare diff_right = c_val - temp
+    declare range_right = c_val - b_val
+    declare val_right = diff_right / range_right
+    
+    # 3. Apply min/max bounds
+    declare min_val = call minimum with val_left, val_right from numpy
+    declare membership = call maximum with min_val, 0.0 from numpy
+    
+    return membership
+
+# Task 1: Membership for 20°C
+declare temp1 = 20.0
+declare mem1 = call calc_comfort with temp1
+display "Degree of membership for 20 C:"
+display mem1
+
+# Task 2: Membership for 25°C
+declare temp2 = 25.0
+declare mem2 = call calc_comfort with temp2
+display "Degree of membership for 25 C:"
+display mem2
+
+# Bonus: Plot the Comfortable MF Curve
+declare x_vals = call linspace with 15, 35, 200 from numpy
+
+# Vectorized array math for plotting (b - a = 5, c - b = 5)
+declare arr_diff_l = x_vals - a_val
+declare arr_val_l = arr_diff_l / 5.0  
+
+declare arr_diff_r = c_val - x_vals
+declare arr_val_r = arr_diff_r / 5.0  
+
+declare arr_min = call minimum with arr_val_l, arr_val_r from numpy
+declare y_vals = call maximum with arr_min, 0.0 from numpy
+
+call plot with x_vals, y_vals, "g" from matplotlib.pyplot
+call title with "Comfortable Temperature (Triangular MF)" from matplotlib.pyplot
+call xlabel with "Temperature (C)" from matplotlib.pyplot
+call ylabel with "Degree of Membership" from matplotlib.pyplot
+call grid with true from matplotlib.pyplot
+
+call savefig with "comfortable_temp.png" from matplotlib.pyplot
+display "Plot saved to comfortable_temp.png!"

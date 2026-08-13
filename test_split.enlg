@@ -1,0 +1,14 @@
+# Test split connectors
+
+load data from "housing.csv"
+
+# Test 1: using 'to'
+split data to train_set1 and test_set1
+
+# Test 2: using 'into'
+split data into train_set2 and test_set2
+
+# Test 3: using no connector
+split data train_set3 and test_set3
+
+print "All split tests executed successfully!"

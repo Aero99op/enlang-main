@@ -1,0 +1,15 @@
+import math
+
+class LinearModel:
+    declare weight = 2.5
+    declare bias = 1.0
+
+show "Machine Learning Engine Pipeline in enlg"
+
+new LinearModel
+create train_dataset as [1, 2, 3, 4, 5]
+
+train LinearModel with train_dataset
+
+create sample_input as [10]
+predict sample_input using LinearModel

@@ -1,0 +1,8 @@
+declare a = 10
+declare b = 10
+if a == b:
+    show 5
+
+declare arr = [1, 2, 3]
+declare val = arr[1]
+show val
