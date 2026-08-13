@@ -50,9 +50,9 @@ class ENLEGFPParser:
             return RawHTMLNode(content=tok.value)
 
         # Handle Document Root
-        if t.value in ("document in english", "document", "make document in english", "create document in english", "start document in english", "make document", "create document", "start document"):
+        if t.value in ("document enlgf", "document in english", "document", "make document in english", "create document in english", "start document in english", "make document", "create document", "start document"):
             self._advance()
-            attrs = {"lang": "en"} if "english" in t.value else {}
+            attrs = {"lang": "en"} if ("english" in t.value or "enlgf" in t.value) else {}
             children = self._parse_block()
             if not self._is_at_end() and self._peek().type == TokenType.END_BLOCK:
                 self._advance()

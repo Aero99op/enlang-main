@@ -28,6 +28,7 @@ class Token:
 
 # English element phrases to HTML tags
 TAG_MAPPINGS = {
+    "document enlgf": ("html", {"lang": "en"}),
     "make document in english": ("html", {"lang": "en"}),
     "create document in english": ("html", {"lang": "en"}),
     "start document in english": ("html", {"lang": "en"}),
