@@ -1,0 +1,39 @@
+document in english:
+    head:
+        title "Enlang Frontend (.enlgf) Demo"
+        charset utf-8
+        viewport responsive
+        description "The Human-First Frontend Language"
+
+    body:
+        header:
+            heading 1 "Welcome to Enlang Frontend (.enlgf)" color "darkblue"
+            navigation:
+                link "Home" to "/"
+                link "Documentation" to "/docs"
+                link "GitHub" to "https://github.com/Aero99op/enlang-main" new tab
+
+        main:
+            section class "hero":
+                heading 2 "Build Websites in Plain English" color "teal"
+                paragraph "No HTML angle brackets required. 1:1 HTML & JS capabilities."
+                button "Click Me!" on click "alert('Hello from Enlang Frontend!')"
+
+            section id "features":
+                heading 2 "Key Features"
+                bullet list:
+                    item "1:1 HTML Compatibility"
+                    item "Natural English Markup"
+                    item "Inline Styling & Event Handlers"
+                    item "Built-in Live Web Server on Any Port"
+
+            section id "contact":
+                heading 2 "Contact Form"
+                form submit to "/submit":
+                    text input name "user_name" hint "Enter Your Name"
+                    email input name "user_email" hint "Enter Your Email"
+                    text area name "user_msg" hint "Your Message Here"
+                    submit button "Send Message"
+
+        footer:
+            paragraph "Powered by Enlang Frontend Engine (.enlgf)"

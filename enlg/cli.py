@@ -78,8 +78,9 @@ def main():
     subparsers = parser.add_subparsers(dest="command")
     
     # Run command
-    run_parser = subparsers.add_parser("run", help="Run an enlg source file")
-    run_parser.add_argument("file", help="Path to .enlg file")
+    run_parser = subparsers.add_parser("run", help="Run an enlg or enlgf source file")
+    run_parser.add_argument("file", help="Path to .enlg or .enlgf file")
+    run_parser.add_argument("--p", "--port", type=int, default=3000, help="Port to serve .enlgf web application (default 3000)")
     
     # REPL command
     subparsers.add_parser("repl", help="Start the interactive REPL shell")
@@ -87,7 +88,11 @@ def main():
     args = parser.parse_args()
     
     if args.command == "run":
-        run_file(args.file)
+        if args.file.endswith(".enlgf"):
+            from enlgf.server import start_server
+            start_server(args.file, port=args.p)
+        else:
+            run_file(args.file)
     elif args.command == "repl":
         start_repl()
     else:
