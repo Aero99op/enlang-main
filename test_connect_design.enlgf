@@ -1,0 +1,8 @@
+document enlgf:
+    head:
+        title "Connect Design Test"
+        connect design external_theme.enlgd
+
+    body:
+        heading 1 "Connected Design with Plain English!" class "hero-title"
+        paragraph "This stylesheet was connected using 'connect design filename.enlgd'!"

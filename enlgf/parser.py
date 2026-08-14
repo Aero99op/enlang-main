@@ -153,6 +153,14 @@ class ENLEGFPParser:
                 self._advance()
                 continue
 
+            # Handle unquoted stylesheet/script filename identifiers on link elements (e.g. connect design filename.enlgd)
+            if tag == "link" and t.type in (TokenType.STRING, TokenType.IDENTIFIER) and "href" not in attributes:
+                val = t.value.strip('"\'')
+                if val.endswith(".enlgd") or val.endswith(".css"):
+                    attributes["href"] = val
+                    self._advance()
+                    continue
+
             # String literal text content or attribute value
             if t.type == TokenType.STRING:
                 val = self._advance().value

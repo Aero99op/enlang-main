@@ -165,10 +165,10 @@ class ENLGFLexer:
                 self.tokens.append(Token(TokenType.NUMBER, line[start:i], self.line_num, start + 1))
                 continue
                 
-            # Handle Identifiers/Words
+            # Handle Identifiers/Words/Filenames
             if line[i].isalpha() or line[i] in ('_', '-'):
                 start = i
-                while i < length and (line[i].isalnum() or line[i] in ('_', '-')):
+                while i < length and (line[i].isalnum() or line[i] in ('_', '-', '.')):
                     i += 1
                 val = line[start:i]
                 self.tokens.append(Token(TokenType.IDENTIFIER, val, self.line_num, start + 1))

@@ -169,6 +169,13 @@ TAG_MAPPINGS = {
     "link style from": ("link", {"rel": "stylesheet"}),
     "include style from": ("link", {"rel": "stylesheet"}),
 
+    "connect design": ("link", {"rel": "stylesheet"}),
+    "connect style": ("link", {"rel": "stylesheet"}),
+    "connect stylesheet": ("link", {"rel": "stylesheet"}),
+    "connect styles": ("link", {"rel": "stylesheet"}),
+    "link design": ("link", {"rel": "stylesheet"}),
+    "link style": ("link", {"rel": "stylesheet"}),
+
     "inside styles": ("style", {}),
     "inside style": ("style", {}),
     "create styles": ("style", {}),
