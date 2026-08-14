@@ -503,8 +503,10 @@ class ENLGSParser:
                 break
             if t.type == TokenType.SYMBOL and t.value == ":":
                 # Check if this colon ends the statement header for a block
-                self._advance()
-                break
+                next_idx = self.pos + 1
+                if next_idx >= len(self.tokens) or self.tokens[next_idx].type in (TokenType.NEWLINE, TokenType.EOF, TokenType.INDENT):
+                    self._advance()
+                    break
             line_tokens.append(self._advance())
         return line_tokens
 
