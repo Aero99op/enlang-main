@@ -80,7 +80,7 @@ def main():
     # Run command
     run_parser = subparsers.add_parser("run", help="Run an enlg or enlgf source file")
     run_parser.add_argument("file", help="Path to .enlg or .enlgf file")
-    run_parser.add_argument("--p", "--port", type=int, default=3000, help="Port to serve .enlgf web application (default 3000)")
+    run_parser.add_argument("-p", "--p", "--port", type=int, default=3000, help="Port to serve .enlgf web application (default 3000)")
     run_parser.add_argument("--style", type=str, default=None, help="Path to .enlgd stylesheet to inject into .enlgf web page")
     run_parser.add_argument("--script", type=str, default=None, help="Path to .enlgs script to inject into .enlgf web page")
     

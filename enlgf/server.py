@@ -106,7 +106,7 @@ def start_server(filepath: str, port: int = 3000, style_path: str = None, script
         sys.exit(1)
 
     class ENLEGFHandler(http.server.BaseHTTPRequestHandler):
-        protocol_version = "HTTP/1.0"
+        protocol_version = "HTTP/1.1"
 
         def address_string(self):
             return self.client_address[0]
@@ -118,12 +118,20 @@ def start_server(filepath: str, port: int = 3000, style_path: str = None, script
             self.end_headers()
 
         def do_GET(self):
+            req_path = self.path.split("?")[0]
+            if req_path == "/favicon.ico":
+                self.send_response(204)
+                self.send_header("Connection", "close")
+                self.end_headers()
+                return
+
             try:
                 html_content = compile_enlgf_file(abs_filepath, style_path=style_path, script_path=script_path)
                 encoded = html_content.encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(encoded)))
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
                 self.send_header("Connection", "close")
                 self.end_headers()
                 self.wfile.write(encoded)
@@ -149,7 +157,7 @@ def start_server(filepath: str, port: int = 3000, style_path: str = None, script
     print("Press Ctrl+C to stop server.\n", flush=True)
 
     http.server.ThreadingHTTPServer.allow_reuse_address = True
-    server_address = ("127.0.0.1", port)
+    server_address = ("0.0.0.0", port)
     with http.server.ThreadingHTTPServer(server_address, ENLEGFHandler) as httpd:
         try:
             httpd.serve_forever()

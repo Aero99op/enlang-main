@@ -7,10 +7,10 @@ sys.path.insert(0, BASE_DIR)
 
 from enlgf.server import compile_enlgf_file
 
-PORT = 5000
-FILEPATH = os.path.join(BASE_DIR, "app.enlgf")
+PORT = 2222
+FILEPATH = os.path.join(BASE_DIR, "portfolio.enlgf")
 
-class FastFullStackHandler(http.server.BaseHTTPRequestHandler):
+class PortfolioHandler(http.server.BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def address_string(self):
@@ -25,7 +25,6 @@ class FastFullStackHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         req_path = self.path.split("?")[0]
         
-        # Handle favicon request quickly
         if req_path == "/favicon.ico":
             self.send_response(204)
             self.send_header("Connection", "close")
@@ -33,7 +32,6 @@ class FastFullStackHandler(http.server.BaseHTTPRequestHandler):
             return
 
         try:
-            # Recompile on every request for live development updates
             html = compile_enlgf_file(FILEPATH)
             data = html.encode("utf-8")
 
@@ -45,9 +43,9 @@ class FastFullStackHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             self.wfile.flush()
-            print(f"[enlang Server] 200 OK -> {self.path} ({len(data)} bytes)", flush=True)
+            print(f"[Portfolio Server] 200 OK -> {self.path} ({len(data)} bytes)", flush=True)
         except Exception as e:
-            print(f"[enlang Server Error] {e}", flush=True)
+            print(f"[Portfolio Server Error] {e}", flush=True)
             self.send_response(500)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Connection", "close")
@@ -60,9 +58,9 @@ class FastFullStackHandler(http.server.BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     http.server.ThreadingHTTPServer.allow_reuse_address = True
-    server = http.server.ThreadingHTTPServer(("0.0.0.0", PORT), FastFullStackHandler)
+    server = http.server.ThreadingHTTPServer(("0.0.0.0", PORT), PortfolioHandler)
     print("=" * 60)
-    print("  ENLANG FULL-STACK SERVER RUNNING")
+    print(f"  PRAYAS 3D PORTFOLIO SERVER LIVE ON PORT {PORT}")
     print(f"  Live URL: http://localhost:{PORT}")
     print(f"  Alt URL:  http://127.0.0.1:{PORT}")
     print("=" * 60, flush=True)
