@@ -1,0 +1,83 @@
+# Enlang Style Sheet (.enlgd) - Full Feature Test
+
+define color "primary" as "#1a1a2e"
+define color "accent" as "#e94560"
+define size "radius" as 12
+
+for "body" apply:
+    margin 0
+    padding 0
+    font-family "Inter, sans-serif" and line-height 1.6
+    background use color "primary"
+    color "white"
+end
+
+for ".container" apply:
+    max-width 1100
+    margin "0 auto"
+    padding "0 24px"
+end
+
+for ".hero" apply:
+    display flex
+    flex-direction column
+    align-items center
+    justify-content center
+    height 100 viewport-height
+    background gradient from "#1a1a2e" to "#16213e" at 135 degrees
+    text-align center
+end
+
+for "h1" apply:
+    font-size 56
+    font-weight 800
+    color use color "accent"
+    letter-spacing -1
+end
+
+for ".card" apply:
+    background "#16213e"
+    corner radius use size "radius"
+    padding 24
+    shadow "0 4px 24px rgba(0,0,0,0.4)"
+    transition "all 0.3s ease"
+end
+
+when ".card" is hovered apply:
+    transform "translateY(-6px)"
+    shadow "0 12px 40px rgba(233,69,96,0.2)"
+end
+
+for ".button" apply:
+    background use color "accent"
+    color "white" with padding "12px 28px"
+    corner radius 6 and border none
+    cursor pointer also font-size 16
+    font-weight 600
+    transition "all 0.2s ease"
+end
+
+when ".button" is hovered apply:
+    background "#c73652"
+    transform "scale(1.04)"
+end
+
+animation "fade-in":
+    at 0 percent:
+        opacity 0
+        transform "translateY(20px)"
+    end
+    at 100 percent:
+        opacity 1
+        transform "translateY(0)"
+    end
+end
+
+when screen is smaller than 768 apply:
+    for "h1" apply:
+        font-size 36
+    end
+    for ".card" apply:
+        width 100 percent
+    end
+end

@@ -81,7 +81,13 @@ def main():
     run_parser = subparsers.add_parser("run", help="Run an enlg or enlgf source file")
     run_parser.add_argument("file", help="Path to .enlg or .enlgf file")
     run_parser.add_argument("--p", "--port", type=int, default=3000, help="Port to serve .enlgf web application (default 3000)")
+    run_parser.add_argument("--style", type=str, default=None, help="Path to .enlgd stylesheet to inject into .enlgf web page")
     
+    # Build command
+    build_parser = subparsers.add_parser("build", help="Build/compile an .enlgd (CSS) or .enlgf (HTML) file")
+    build_parser.add_argument("file", help="Path to .enlgd or .enlgf file")
+    build_parser.add_argument("--out", "-o", type=str, default=None, help="Output destination file path")
+
     # REPL command
     subparsers.add_parser("repl", help="Start the interactive REPL shell")
     
@@ -90,9 +96,23 @@ def main():
     if args.command == "run":
         if args.file.endswith(".enlgf"):
             from enlgf.server import start_server
-            start_server(args.file, port=args.p)
+            start_server(args.file, port=args.p, style_path=args.style)
         else:
             run_file(args.file)
+    elif args.command == "build":
+        if args.file.endswith(".enlgd"):
+            from enlgd.compiler import build_enlgd_file
+            build_enlgd_file(args.file, output_path=args.out)
+        elif args.file.endswith(".enlgf"):
+            from enlgf.server import compile_enlgf_file
+            html = compile_enlgf_file(args.file, style_path=args.style if hasattr(args, 'style') else None)
+            out_file = args.out or f"{os.path.splitext(args.file)[0]}.html"
+            with open(out_file, "w", encoding="utf-8") as f:
+                f.write(html)
+            print(f"[enlgf] Built HTML: {out_file}")
+        else:
+            print(f"Error: Unknown build file type '{args.file}'. Expected .enlgd or .enlgf", file=sys.stderr)
+            sys.exit(1)
     elif args.command == "repl":
         start_repl()
     else:

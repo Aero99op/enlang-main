@@ -27,7 +27,13 @@ class ENLEGFPParser:
                     doc.body_children.extend(node.children)
                 elif isinstance(node, ElementNode) and node.tag == "html":
                     doc.attributes.update(node.attributes)
-                    doc.children.extend(node.children)
+                    for child in node.children:
+                        if isinstance(child, ElementNode) and child.tag == "head":
+                            doc.head_children.extend(child.children)
+                        elif isinstance(child, ElementNode) and child.tag == "body":
+                            doc.body_children.extend(child.children)
+                        else:
+                            doc.children.append(child)
                 else:
                     doc.children.append(node)
                     

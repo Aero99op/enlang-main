@@ -18,14 +18,36 @@ def compile_enlgf_source(source: str) -> str:
     html = ENLGFEmitter(ast).emit()
     return html
 
-def compile_enlgf_file(filepath: str) -> str:
-    """Reads and compiles a .enlgf file into HTML5."""
+def compile_enlgf_file(filepath: str, style_path: str = None) -> str:
+    """Reads and compiles a .enlgf file into HTML5, optionally injecting a .enlgd stylesheet."""
     with open(filepath, "r", encoding="utf-8") as f:
         source = f.read()
-    return compile_enlgf_source(source)
+    html = compile_enlgf_source(source)
+    
+    # Auto-detect matching .enlgd file if not explicitly provided
+    if style_path is None:
+        auto_style = f"{os.path.splitext(filepath)[0]}.enlgd"
+        if os.path.exists(auto_style):
+            style_path = auto_style
 
-def start_server(filepath: str, port: int = 3000):
-    """Starts live HTTP web server serving compiled .enlgf file."""
+    if style_path and os.path.exists(style_path):
+        try:
+            if style_path.endswith(".enlgd"):
+                from enlgd.compiler import compile_enlgd_file
+                css_content = compile_enlgd_file(style_path)
+            else:
+                with open(style_path, "r", encoding="utf-8") as sf:
+                    css_content = sf.read()
+            
+            style_tag = f"    <style>\n{css_content}\n    </style>\n  </head>"
+            html = html.replace("  </head>", style_tag, 1)
+        except Exception as e:
+            print(f"[enlgf Server Warning] Failed to compile stylesheet '{style_path}': {e}", file=sys.stderr)
+
+    return html
+
+def start_server(filepath: str, port: int = 3000, style_path: str = None):
+    """Starts live HTTP web server serving compiled .enlgf file with optional .enlgd styling."""
     if not os.path.exists(filepath):
         print(f"Error: File '{filepath}' not found.", file=sys.stderr)
         sys.exit(1)
@@ -39,7 +61,7 @@ def start_server(filepath: str, port: int = 3000):
         def do_GET(self):
             if self.path in ("/", f"/{os.path.basename(filepath)}"):
                 try:
-                    html_content = compile_enlgf_file(filepath)
+                    html_content = compile_enlgf_file(filepath, style_path=style_path)
                     self.send_response(200)
                     self.send_header("Content-type", "text/html; charset=utf-8")
                     self.end_headers()
