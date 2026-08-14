@@ -1,0 +1,39 @@
+document enlgf:
+    head:
+        title "Inner & Inline Enlang Styles Test"
+        styles:
+            define color "brand-blue" as "#1e3c72"
+            
+            for "body" apply:
+                margin 0
+                background "#0f172a"
+                color white
+                font-family "Inter, sans-serif"
+            end
+
+            for ".custom-card" apply:
+                background "#1e293b"
+                padding 24
+                corner radius 16
+                shadow "0 10px 25px rgba(0,0,0,0.3)"
+            end
+
+            when ".custom-btn" is hovered apply:
+                background "#38bdf8"
+                transform "scale(1.05)"
+            end
+        finish styles
+
+    body:
+        header:
+            heading 1 "Enlang Inner & Inline Styles" with color "#38bdf8" and text-align center
+
+        main:
+            section class "custom-card" with margin "20px auto" and max-width 500:
+                heading 2 "Card Title" with color white and margin-bottom 12
+                paragraph "This paragraph has inline styling with connectors!" with color "#94a3b8" and font-size 16
+                
+                button "Inline Styled Button" class "custom-btn" with background "#0284c7" and color white with padding "10px 20px" and corner radius 8 and border none and cursor pointer
+        
+        footer:
+            paragraph "Powered by Enlang Full-Stack Engine" with text-align center and color "#64748b" and font-size 14

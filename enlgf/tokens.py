@@ -163,6 +163,13 @@ TAG_MAPPINGS = {
     "option": ("option", {}),
     "text area": ("textarea", {}),
     "label": ("label", {}),
+
+    "inside styles": ("style", {}),
+    "inside style": ("style", {}),
+    "create styles": ("style", {}),
+    "create style": ("style", {}),
+    "styles": ("style", {}),
+    "style": ("style", {}),
 }
 
 # Explicit block closure phrases for Style 2
@@ -176,6 +183,11 @@ END_MAPPINGS = {
 
     "finish body": "body",
     "end body": "body",
+
+    "finish styles": "style",
+    "end styles": "style",
+    "finish style": "style",
+    "end style": "style",
 
     "finish section": "div",
     "end section": "div",

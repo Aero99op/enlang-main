@@ -77,10 +77,14 @@ class ENLEGFPParser:
         self._advance()
         return None
 
-    def _parse_element(self) -> ElementNode:
+    def _parse_element(self) -> ASTNode:
         tag_token = self._advance()
         tag, default_attrs = TAG_MAPPINGS[tag_token.value]
         
+        # Handle Embedded Style Block: styles: / style:
+        if tag == "style":
+            return self._parse_style_block()
+
         attributes = dict(default_attrs)
         styles = {}
         events = {}
@@ -91,9 +95,63 @@ class ENLEGFPParser:
         self_closing_tags = {"br", "hr", "img", "input", "meta", "link"}
         is_self_closing = tag in self_closing_tags
         
+        # Inline property mappings for full .enlgd styling compatibility
+        inline_prop_map = {
+            "color": "color",
+            "text color": "color",
+            "background": "background",
+            "background color": "background-color",
+            "bg": "background",
+            "font": "font-family",
+            "font family": "font-family",
+            "font-family": "font-family",
+            "font-size": "font-size",
+            "font size": "font-size",
+            "size": "font-size",
+            "text size": "font-size",
+            "font-weight": "font-weight",
+            "font weight": "font-weight",
+            "weight": "font-weight",
+            "border-radius": "border-radius",
+            "border radius": "border-radius",
+            "corner radius": "border-radius",
+            "radius": "border-radius",
+            "border": "border",
+            "shadow": "box-shadow",
+            "box-shadow": "box-shadow",
+            "box shadow": "box-shadow",
+            "padding": "padding",
+            "margin": "margin",
+            "width": "width",
+            "height": "height",
+            "max-width": "max-width",
+            "max width": "max-width",
+            "min-width": "min-width",
+            "min width": "min-width",
+            "display": "display",
+            "opacity": "opacity",
+            "transform": "transform",
+            "cursor": "cursor",
+            "transition": "transition",
+            "text-align": "text-align",
+            "text align": "text-align",
+            "align text": "text-align",
+            "align": "align-items",
+            "justify": "justify-content",
+            "gap": "gap",
+            "spacing": "gap",
+            "line-height": "line-height",
+            "line height": "line-height",
+        }
+
         # Parse inline tokens on the same line
         while not self._is_at_end() and self._peek().type not in (TokenType.NEWLINE, TokenType.EOF, TokenType.SYMBOL, TokenType.INDENT):
             t = self._peek()
+
+            # Skip connector words (with, and, also, using)
+            if t.value.lower() in ("with", "and", "also", "using"):
+                self._advance()
+                continue
 
             # String literal text content or attribute value
             if t.type == TokenType.STRING:
@@ -136,17 +194,27 @@ class ENLEGFPParser:
                 attributes["target"] = "_blank"
                 continue
 
-            # 3. Inline CSS Style Shortcuts (color "red", size 20, margin 10, padding 5, width 100, height 50)
-            if val_lower in ("color", "background", "margin", "padding", "width", "height", "size"):
-                style_key = "font-size" if val_lower == "size" else val_lower
-                self._advance()
-                if not self._is_at_end() and self._peek().type in (TokenType.STRING, TokenType.NUMBER, TokenType.IDENTIFIER):
-                    style_val = self._advance().value
-                    if style_val.isdigit():
-                        style_val += "px"
-                    styles[style_key] = style_val
+            # 3. Rich Inline CSS Properties (.enlgd compatibility)
+            # Check two-word properties first
+            two_word = f"{val_lower} {self._peek_next().value.lower()}" if self._peek_next() else ""
+            if two_word in inline_prop_map:
+                css_prop = inline_prop_map[two_word]
+                self._advance() # first word
+                self._advance() # second word
+                style_val = self._parse_inline_style_value(css_prop)
+                if style_val:
+                    styles[css_prop] = style_val
                 continue
 
+            if val_lower in inline_prop_map:
+                css_prop = inline_prop_map[val_lower]
+                self._advance()
+                style_val = self._parse_inline_style_value(css_prop)
+                if style_val:
+                    styles[css_prop] = style_val
+                continue
+
+            # Flex/Grid layout shortcuts
             if val_lower == "flex" and self._peek_next() and self._peek_next().value.lower() == "layout":
                 self._advance()
                 self._advance()
@@ -176,6 +244,85 @@ class ENLEGFPParser:
             children=children,
             is_self_closing=is_self_closing
         )
+
+    def _parse_inline_style_value(self, css_prop: str) -> str:
+        """Parses a single or multi-part inline style value."""
+        val_parts = []
+        unitless_props = {"line-height", "opacity", "z-index", "font-weight"}
+
+        while not self._is_at_end() and self._peek().type not in (TokenType.NEWLINE, TokenType.EOF, TokenType.SYMBOL, TokenType.INDENT):
+            t = self._peek()
+            val_lower = t.value.lower()
+            if val_lower in ("with", "and", "also", "using"):
+                break
+            if val_lower in ATTR_MAPPINGS or val_lower in EVENT_MAPPINGS:
+                break
+            # If next is another known property keyword, break
+            if val_lower in ("color", "background", "font", "padding", "margin", "border", "shadow", "radius", "corner", "width", "height", "display", "cursor", "text", "size"):
+                if val_parts: # only break if we already captured at least one value part
+                    break
+
+            tok = self._advance()
+            val = tok.value.strip('"\'') if tok.type == TokenType.STRING else tok.value
+            val_parts.append(val)
+
+        res = " ".join(val_parts).strip()
+        if res.isdigit() and css_prop not in unitless_props:
+            res += "px"
+        return res
+
+    def _parse_style_block(self) -> ASTNode:
+        """Parses an inner/embedded .enlgd style block inside .enlgf."""
+        if not self._is_at_end() and self._peek().type == TokenType.SYMBOL and self._peek().value == ":":
+            self._advance()
+
+        style_tokens = []
+        has_indent = not self._is_at_end() and self._peek().type == TokenType.INDENT
+        if has_indent:
+            self._advance()
+
+        while not self._is_at_end():
+            if self._peek().type == TokenType.DEDENT:
+                break
+            if self._peek().type == TokenType.END_BLOCK and self._peek().value == "style":
+                self._advance()
+                break
+            if self._peek().value in ("end", "finish"):
+                self._advance()
+                if not self._is_at_end() and self._peek().value in ("style", "styles"):
+                    self._advance()
+                break
+            style_tokens.append(self._advance())
+
+        if has_indent and not self._is_at_end() and self._peek().type == TokenType.DEDENT:
+            self._advance()
+
+        # Reconstruct style source and compile via enlgd
+        lines = []
+        cur_line = []
+        for t in style_tokens:
+            if t.type == TokenType.NEWLINE:
+                lines.append(" ".join(cur_line))
+                cur_line = []
+            elif t.type == TokenType.INDENT:
+                cur_line.append("    ")
+            elif t.type == TokenType.DEDENT:
+                pass
+            elif t.type == TokenType.STRING:
+                cur_line.append(f'"{t.value}"')
+            else:
+                cur_line.append(t.value)
+        if cur_line:
+            lines.append(" ".join(cur_line))
+
+        style_src = "\n".join(lines)
+        try:
+            from enlgd.compiler import compile_enlgd_source
+            compiled_css = compile_enlgd_source(style_src)
+        except Exception as e:
+            compiled_css = f"/* Style compilation error: {e} */"
+
+        return RawHTMLNode(content=f"<style>\n{compiled_css}\n</style>")
 
     def _parse_block(self) -> List[ASTNode]:
         children = []
