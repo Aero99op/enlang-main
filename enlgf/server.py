@@ -106,7 +106,7 @@ def start_server(filepath: str, port: int = 3000, style_path: str = None, script
         sys.exit(1)
 
     class ENLEGFHandler(http.server.BaseHTTPRequestHandler):
-        protocol_version = "HTTP/1.1"
+        protocol_version = "HTTP/1.0"
 
         def address_string(self):
             return self.client_address[0]
@@ -116,6 +116,7 @@ def start_server(filepath: str, port: int = 3000, style_path: str = None, script
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Connection", "close")
             self.end_headers()
+            self.close_connection = True
 
         def do_GET(self):
             req_path = self.path.split("?")[0]
@@ -123,6 +124,7 @@ def start_server(filepath: str, port: int = 3000, style_path: str = None, script
                 self.send_response(204)
                 self.send_header("Connection", "close")
                 self.end_headers()
+                self.close_connection = True
                 return
 
             try:
@@ -136,6 +138,7 @@ def start_server(filepath: str, port: int = 3000, style_path: str = None, script
                 self.end_headers()
                 self.wfile.write(encoded)
                 self.wfile.flush()
+                self.close_connection = True
             except Exception as e:
                 self.send_response(500)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -144,6 +147,7 @@ def start_server(filepath: str, port: int = 3000, style_path: str = None, script
                 err_html = f"<html><body><h2>enlgf Compilation Error</h2><pre>{e}</pre></body></html>"
                 self.wfile.write(err_html.encode("utf-8"))
                 self.wfile.flush()
+                self.close_connection = True
 
         def log_message(self, format, *args):
             print(f"[enlgf Server] {args[0]} -> {args[1]}", flush=True)

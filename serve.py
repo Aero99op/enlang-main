@@ -11,7 +11,7 @@ PORT = 2222
 FILEPATH = os.path.join(BASE_DIR, "portfolio.enlgf")
 
 class PortfolioHandler(http.server.BaseHTTPRequestHandler):
-    protocol_version = "HTTP/1.1"
+    protocol_version = "HTTP/1.0"
 
     def address_string(self):
         return self.client_address[0]
@@ -21,6 +21,7 @@ class PortfolioHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Connection", "close")
         self.end_headers()
+        self.close_connection = True
 
     def do_GET(self):
         req_path = self.path.split("?")[0]
@@ -29,6 +30,7 @@ class PortfolioHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(204)
             self.send_header("Connection", "close")
             self.end_headers()
+            self.close_connection = True
             return
 
         try:
@@ -43,6 +45,7 @@ class PortfolioHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             self.wfile.flush()
+            self.close_connection = True
             print(f"[Portfolio Server] 200 OK -> {self.path} ({len(data)} bytes)", flush=True)
         except Exception as e:
             print(f"[Portfolio Server Error] {e}", flush=True)
@@ -52,6 +55,7 @@ class PortfolioHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(f"<h1>500 Server Error</h1><pre>{e}</pre>".encode("utf-8"))
             self.wfile.flush()
+            self.close_connection = True
 
     def log_message(self, format, *args):
         pass
