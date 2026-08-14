@@ -6,7 +6,11 @@ into a flattened, linear Compiler Intermediate Representation (CIR).
 
 from enlg.ast.nodes import (
     ASTNode, BlockNode, VariableDeclNode, AssignmentNode,
-    OutputNode, LiteralNode, IdentifierNode
+    OutputNode, LiteralNode, IdentifierNode, IfNode, WhileNode,
+    FunctionDefNode, FunctionCallNode, ReturnNode, ClassDefNode,
+    InstantiateNode, AttemptNode, RescueNode, RaiseNode, AwaitNode,
+    ImportNode, PythonInteropNode, BinaryOpNode, UnaryOpNode,
+    ListNode, MapNode, DomainOpNode, BooleanNode
 )
 from enlg.compiler.cir import CIROpcode, CIRInstruction, CIRBlock
 

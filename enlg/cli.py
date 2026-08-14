@@ -96,7 +96,7 @@ def main():
     
     if args.command == "run":
         file_lower = args.file.lower()
-        if file_lower.endswith(".enlgf") or file_lower.endswith(".html"):
+        if file_lower.endswith((".enlgf", ".html")):
             from enlgf.server import start_server
             start_server(args.file, port=args.p, style_path=args.style, script_path=args.script)
         elif file_lower.endswith(".enlgs"):

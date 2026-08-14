@@ -108,7 +108,7 @@ class PythonTranspiler:
     def _visit_BooleanNode(self, node: BooleanNode) -> str:
         return "True" if node.value else "False"
 
-    def _visit_NullNode(self, node: NullNode) -> str:
+    def _visit_NullNode(self, _node: NullNode) -> str:
         return "None"
 
     def _visit_IdentifierNode(self, node: IdentifierNode) -> str:
