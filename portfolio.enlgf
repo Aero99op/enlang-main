@@ -1,0 +1,186 @@
+document enlgf:
+    head:
+        title "Prayas Kumar Sahoo — Java Backend Developer Portfolio"
+        connect script "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+        connect design portfolio.enlgd
+        connect script portfolio.enlgs
+
+    body:
+        canvas id "webgl-canvas"
+
+        div class "site-wrapper":
+            # Sticky Navbar
+            nav class "navbar":
+                a "⚡ Prayas.dev" href "#" class "brand-logo"
+                div class "nav-links":
+                    a "Projects" href "#projects" class "nav-link"
+                    a "Skills" href "#skills" class "nav-link"
+                    a "Education" href "#education" class "nav-link"
+                    a "Contact" href "#contact" class "nav-link"
+                    a "GitHub" href "https://github.com/prayaskumarsahoo" target "_blank" class "btn-primary" style "padding: 8px 18px; font-size: 13px;"
+
+            # Hero Section
+            section class "hero-section":
+                div class "container":
+                    div class "hero-content":
+                        div class "status-pill":
+                            span "🟢 Available for Java Backend Roles"
+                        h1 "PRAYAS KUMAR SAHOO" class "hero-name"
+                        div "Java Backend Developer & Spring Boot Specialist" class "hero-subtitle"
+                        p "Specializing in high-performance enterprise architectures, microservices, and database optimization. Experienced with Java, Spring Boot, MySQL, Oracle, and Object-Oriented Design." class "hero-bio"
+
+                        div class "hero-cta-group":
+                            a "🚀 View Projects" href "#projects" class "btn-primary"
+                            a "✉️ Get in Touch" href "#contact" class "btn-secondary"
+                            button "📞 8260350182" id "btn-copy-phone" class "btn-secondary"
+                            button "📋 Copy Email" id "btn-copy-email" class "btn-secondary"
+
+                        div class "social-badges":
+                            a "🔗 LinkedIn Profile" href "https://www.linkedin.com/in/prayas-kumar-sahoo-63126439a/" target "_blank" class "social-badge"
+                            a "🐙 GitHub Profile" href "https://github.com/prayaskumarsahoo" target "_blank" class "social-badge"
+                            span "📍 Karabar, Nayagarh, Odisha" class "social-badge"
+
+            # Interactive Terminal Simulator
+            div class "container":
+                div class "terminal-window":
+                    div class "terminal-bar":
+                        div class "dot-red"
+                        div class "dot-yellow"
+                        div class "dot-green"
+                        span "bash - Java 21 Spring Boot Microservice Simulator" style "color: #94a3b8; font-size: 12px; margin-left: 10px;"
+                        button "▶ Next Log / Code" id "btn-term-next" class "btn-primary" style "margin-left: auto; padding: 4px 12px; font-size: 11px;"
+                    div class "terminal-body":
+                        pre id "terminal-output" style "margin: 0; font-family: monospace; white-space: pre-wrap;":
+                            "// [1] Booting Spring Boot 3.2.0 Microservice...\n@RestController @RequestMapping(\"/api/v1/lms\")\npublic class CourseEnrollmentController {\n    @Autowired private EnrollmentService service;\n    @PostMapping(\"/enroll\")\n    public ResponseEntity<ApiResponse> enrollStudent(@Valid @RequestBody StudentDTO dto) {\n        return ResponseEntity.ok(service.processEnrollment(dto));\n    }\n}"
+
+            # Projects Section
+            section id "projects" style "padding: 80px 0;":
+                div class "container":
+                    div class "section-header":
+                        span "Featured Engineering" class "section-tag"
+                        h2 "Core Backend Projects" class "section-title"
+
+                    div class "grid-2":
+                        div class "card-3d":
+                            span "Enterprise Architecture" class "card-badge"
+                            h3 "Learning Management System (LMS)" class "card-title"
+                            p "A comprehensive backend platform engineered for online education workflows. Features role-based access control (Admin, Instructor, Student), course curriculum orchestration, JWT authentication, and automated progress analytics." class "card-desc"
+                            div class "tech-tags":
+                                span "Java" class "tech-tag"
+                                span "Spring Boot" class "tech-tag"
+                                span "MySQL" class "tech-tag"
+                                span "REST APIs" class "tech-tag"
+                                span "JWT Security" class "tech-tag"
+                                span "OOP" class "tech-tag"
+
+                        div class "card-3d":
+                            span "Financial Automation" class "card-badge"
+                            h3 "Enterprise Payroll Management System" class "card-title"
+                            p "Robust financial engine that automates employee compensation calculations, tax deductions, attendance tracking, and monthly salary disbursement reports with strict ACID transaction guarantees." class "card-desc"
+                            div class "tech-tags":
+                                span "Java" class "tech-tag"
+                                span "Oracle DB" class "tech-tag"
+                                span "Stored Procedures" class "tech-tag"
+                                span "Spring Boot" class "tech-tag"
+                                span "ACID Transactions" class "tech-tag"
+                                span "Microservices" class "tech-tag"
+
+            # Technical Skills Matrix
+            section id "skills" style "padding: 60px 0;":
+                div class "container":
+                    div class "section-header":
+                        span "Technical Arsenal" class "section-tag"
+                        h2 "Skills & Technologies" class "section-title"
+
+                    div class "grid-3":
+                        div class "card-3d":
+                            h3 "☕ Core Backend" class "card-title"
+                            p "Primary language & backend framework stack for scalable systems." class "card-desc"
+                            div class "tech-tags":
+                                span "Java (Core & Advanced)" class "tech-tag"
+                                span "Spring Boot" class "tech-tag"
+                                span "OOP (Object-Oriented)" class "tech-tag"
+                                span "RESTful Web Services" class "tech-tag"
+                                span "Exception Handling" class "tech-tag"
+
+                        div class "card-3d":
+                            h3 "🗄️ Database & Storage" class "card-title"
+                            p "Relational databases, indexing, and enterprise querying." class "card-desc"
+                            div class "tech-tags":
+                                span "MySQL" class "tech-tag"
+                                span "Oracle 19c" class "tech-tag"
+                                span "SQL & Stored Procedures" class "tech-tag"
+                                span "JPA / Hibernate" class "tech-tag"
+                                span "Connection Pooling" class "tech-tag"
+
+                        div class "card-3d":
+                            h3 "🛠️ Architecture & Tools" class "card-title"
+                            p "Design principles, version control, and system patterns." class "card-desc"
+                            div class "tech-tags":
+                                span "Microservices" class "tech-tag"
+                                span "Git & GitHub" class "tech-tag"
+                                span "Maven" class "tech-tag"
+                                span "Design Patterns" class "tech-tag"
+                                span "Clean Architecture" class "tech-tag"
+
+            # Education Journey
+            section id "education" style "padding: 60px 0;":
+                div class "container":
+                    div class "section-header":
+                        span "Academic Background" class "section-tag"
+                        h2 "Education Timeline" class "section-title"
+
+                    div style "max-width: 700px; margin: 0 auto;":
+                        div class "timeline-item":
+                            div class "timeline-marker"
+                            h4 "+2 Science (Higher Secondary)" class "timeline-degree"
+                            div "Inspire Science REC.H.S.SCH" class "timeline-institution"
+                            p "Nayagarh, Odisha" class "timeline-location"
+
+                        div class "timeline-item" style "border-left: none;":
+                            div class "timeline-marker"
+                            h4 "Secondary School Certificate (SSC / 10th)" class "timeline-degree"
+                            div "SSC Vidyamandir" class "timeline-institution"
+                            p "Karabar, Nayagarh, Odisha" class "timeline-location"
+
+            # Contact & Get in Touch
+            section id "contact" style "padding: 80px 0;":
+                div class "container":
+                    div class "section-header":
+                        span "Let's Connect" class "section-tag"
+                        h2 "Get in Touch" class "section-title"
+
+                    div class "grid-2":
+                        div class "card-3d":
+                            h3 "Direct Contact Info" class "card-title"
+                            p "Feel free to reach out for software engineering opportunities, backend consulting, or collaboration." class "card-desc"
+                            
+                            div style "margin-bottom: 16px;":
+                                p "📞 Phone:" style "color: #94a3b8; margin-bottom: 4px; font-size: 13px;"
+                                a "+91 8260350182" href "tel:8260350182" style "color: #00f2fe; font-size: 16px; font-weight: 700; text-decoration: none;"
+
+                            div style "margin-bottom: 16px;":
+                                p "✉️ Email:" style "color: #94a3b8; margin-bottom: 4px; font-size: 13px;"
+                                a "prayaskumarsahoo45@gmail.com" href "mailto:prayaskumarsahoo45@gmail.com" style "color: #00f2fe; font-size: 16px; font-weight: 700; text-decoration: none;"
+
+                            div style "margin-bottom: 16px;":
+                                p "📍 Address:" style "color: #94a3b8; margin-bottom: 4px; font-size: 13px;"
+                                p "AT/PO: Karabar, Bhapur, Dist: Nayagarh, Odisha" style "color: #ffffff; font-weight: 600; margin: 0;"
+
+                        div class "card-3d":
+                            h3 "Send a Message" class "card-title"
+                            form id "contact-form":
+                                input type "text" id "contact-name" placeholder "Your Name..." class "input-field" style "width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #fff; margin-bottom: 12px;"
+                                input type "email" id "contact-email" placeholder "Your Email..." class "input-field" style "width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #fff; margin-bottom: 12px;"
+                                textarea id "contact-message" placeholder "Your message or inquiry..." rows "4" style "width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #fff; margin-bottom: 16px; font-family: inherit;"
+                                button "🚀 Submit Message" type "submit" class "btn-primary" style "width: 100%;"
+                                p id "contact-status" style "color: #00f2fe; margin-top: 12px; font-size: 13px;"
+
+            # Footer
+            footer class "footer":
+                div class "container":
+                    p "© 2026 Prayas Kumar Sahoo • Java Backend Developer"
+                    p "Built 100% in Pure English with the Enlang Stack (.enlgf + .enlgd + .enlgs)" style "color: #64748b; font-size: 12px; margin-top: 6px;"
+                    p id "live-clock" style "color: #00f2fe; font-size: 12px; font-weight: 600;"
+
+        div id "toast-alert"

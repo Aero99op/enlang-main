@@ -1,0 +1,442 @@
+# Enlang Design (.enlgd) - 3D Cyber Noir Portfolio for Prayas Kumar Sahoo
+
+define color "bg-space" as "#060913"
+define color "cyan-glow" as "#00f2fe"
+define color "purple-neon" as "#8a2be2"
+define color "emerald-accent" as "#00e676"
+define color "card-surface" as "rgba(13, 21, 39, 0.65)"
+define color "text-light" as "#f8fafc"
+define color "text-muted" as "#94a3b8"
+define size "radius-card" as 18
+
+for "body" apply:
+    margin 0
+    padding 0
+    background use color "bg-space"
+    color use color "text-light"
+    font-family "Inter, -apple-system, sans-serif"
+    overflow-x hidden
+    line-height 1.6
+end
+
+for "#webgl-canvas" apply:
+    position fixed
+    top 0
+    left 0
+    width 100 percent
+    height 100 viewport-height
+    z-index 0
+    pointer-events none
+end
+
+for ".site-wrapper" apply:
+    position relative
+    z-index 1
+    width 100 percent
+end
+
+for ".container" apply:
+    max-width 1200
+    margin "0 auto"
+    padding "0 24px"
+end
+
+# Navbar
+for ".navbar" apply:
+    display flex
+    justify-content space-between
+    align-items center
+    padding "20px 32px"
+    position sticky
+    top 16
+    z-index 100
+    background "rgba(6, 9, 19, 0.75)"
+    backdrop-filter "blur(20px)"
+    border "1px solid rgba(0, 242, 254, 0.15)"
+    corner radius 16
+    margin "16px auto 0 auto"
+    max-width 1140
+    shadow "0 8px 32px rgba(0, 0, 0, 0.4)"
+end
+
+for ".brand-logo" apply:
+    font-size 22
+    font-weight 800
+    color use color "cyan-glow"
+    letter-spacing 1
+    text-decoration none
+    display flex
+    align-items center
+end
+
+for ".nav-links" apply:
+    display flex
+    gap 28
+    align-items center
+end
+
+for ".nav-link" apply:
+    color use color "text-muted"
+    text-decoration none
+    font-size 14
+    font-weight 500
+    transition "color 0.2s ease"
+end
+
+when ".nav-link" is hovered apply:
+    color use color "cyan-glow"
+end
+
+# Hero Section
+for ".hero-section" apply:
+    min-height 90 viewport-height
+    display flex
+    align-items center
+    padding "60px 0 40px 0"
+end
+
+for ".hero-content" apply:
+    max-width 800
+    margin "0 auto"
+    text-align center
+end
+
+for ".status-pill" apply:
+    display inline-flex
+    align-items center
+    gap 8
+    padding "8px 18px"
+    background "rgba(0, 242, 254, 0.08)"
+    border "1px solid rgba(0, 242, 254, 0.25)"
+    corner radius 30
+    color use color "cyan-glow"
+    font-size 13
+    font-weight 600
+    margin-bottom 24
+    shadow "0 0 20px rgba(0, 242, 254, 0.15)"
+end
+
+for ".hero-name" apply:
+    font-size 54
+    font-weight 900
+    margin "0 0 16px 0"
+    letter-spacing -1
+    line-height 1.15
+    color "#ffffff"
+end
+
+for ".hero-subtitle" apply:
+    font-size 24
+    font-weight 700
+    margin "0 0 20px 0"
+    color use color "cyan-glow"
+end
+
+for ".hero-bio" apply:
+    font-size 17
+    color use color "text-muted"
+    max-width 640
+    margin "0 auto 36px auto"
+    line-height 1.7
+end
+
+for ".hero-cta-group" apply:
+    display flex
+    gap 16
+    justify-content center
+    flex-wrap wrap
+    margin-bottom 40
+end
+
+for ".btn-primary" apply:
+    background "linear-gradient(135deg, #00f2fe, #4facfe)"
+    color "#060913"
+    border none
+    padding "14px 32px"
+    font-size 15
+    font-weight 700
+    corner radius 12
+    cursor pointer
+    text-decoration none
+    shadow "0 4px 20px rgba(0, 242, 254, 0.35)"
+    transition "transform 0.2s ease, shadow 0.2s ease"
+end
+
+when ".btn-primary" is hovered apply:
+    transform "translateY(-3px) scale(1.02)"
+    shadow "0 8px 30px rgba(0, 242, 254, 0.55)"
+end
+
+for ".btn-secondary" apply:
+    background "rgba(255, 255, 255, 0.05)"
+    color use color "text-light"
+    border "1px solid rgba(255, 255, 255, 0.15)"
+    padding "14px 28px"
+    font-size 15
+    font-weight 600
+    corner radius 12
+    cursor pointer
+    text-decoration none
+    backdrop-filter "blur(10px)"
+    transition "all 0.2s ease"
+end
+
+when ".btn-secondary" is hovered apply:
+    border-color use color "cyan-glow"
+    color use color "cyan-glow"
+    transform "translateY(-2px)"
+end
+
+for ".social-badges" apply:
+    display flex
+    gap 14
+    justify-content center
+    flex-wrap wrap
+end
+
+for ".social-badge" apply:
+    display inline-flex
+    align-items center
+    gap 8
+    padding "8px 16px"
+    background use color "card-surface"
+    border "1px solid rgba(255, 255, 255, 0.08)"
+    corner radius 10
+    color use color "text-light"
+    text-decoration none
+    font-size 13
+    font-weight 500
+    transition "all 0.2s ease"
+end
+
+when ".social-badge" is hovered apply:
+    border-color use color "cyan-glow"
+    color use color "cyan-glow"
+    transform "translateY(-2px)"
+end
+
+# Section Headers
+for ".section-header" apply:
+    text-align center
+    margin-bottom 56
+end
+
+for ".section-tag" apply:
+    font-size 12
+    font-weight 700
+    color use color "cyan-glow"
+    text-transform uppercase
+    letter-spacing 2
+    margin-bottom 8
+    display inline-block
+end
+
+for ".section-title" apply:
+    font-size 38
+    font-weight 800
+    margin 0
+    color "#ffffff"
+end
+
+# 3D Cards & Grids
+for ".grid-2" apply:
+    display grid
+    grid-template-columns "repeat(auto-fit, minmax(360px, 1fr))"
+    gap 32
+end
+
+for ".grid-3" apply:
+    display grid
+    grid-template-columns "repeat(auto-fit, minmax(280px, 1fr))"
+    gap 24
+end
+
+for ".card-3d" apply:
+    background use color "card-surface"
+    border "1px solid rgba(0, 242, 254, 0.12)"
+    corner radius use size "radius-card"
+    padding 32
+    backdrop-filter "blur(16px)"
+    transition "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+    position relative
+    overflow hidden
+end
+
+when ".card-3d" is hovered apply:
+    transform "translateY(-8px)"
+    border-color "rgba(0, 242, 254, 0.4)"
+    shadow "0 20px 40px rgba(0, 242, 254, 0.12)"
+end
+
+for ".card-badge" apply:
+    display inline-block
+    padding "4px 12px"
+    background "rgba(138, 43, 226, 0.15)"
+    border "1px solid rgba(138, 43, 226, 0.3)"
+    corner radius 20
+    color "#c084fc"
+    font-size 11
+    font-weight 700
+    margin-bottom 16
+end
+
+for ".card-title" apply:
+    font-size 22
+    font-weight 700
+    color "#ffffff"
+    margin "0 0 12px 0"
+end
+
+for ".card-desc" apply:
+    color use color "text-muted"
+    font-size 14
+    line-height 1.65
+    margin "0 0 20px 0"
+end
+
+for ".tech-tags" apply:
+    display flex
+    flex-wrap wrap
+    gap 8
+    margin-top 16
+end
+
+for ".tech-tag" apply:
+    padding "4px 10px"
+    background "rgba(0, 242, 254, 0.06)"
+    border "1px solid rgba(0, 242, 254, 0.15)"
+    corner radius 6
+    color use color "cyan-glow"
+    font-size 12
+    font-weight 600
+end
+
+# Terminal Widget
+for ".terminal-window" apply:
+    background "#080c16"
+    border "1px solid rgba(0, 242, 254, 0.2)"
+    corner radius 14
+    overflow hidden
+    margin "40px auto"
+    max-width 840
+    shadow "0 20px 50px rgba(0, 0, 0, 0.6)"
+    font-family "Consolas, Monaco, monospace"
+end
+
+for ".terminal-bar" apply:
+    background "#0d1424"
+    padding "12px 18px"
+    display flex
+    align-items center
+    gap 8
+    border-bottom "1px solid rgba(255, 255, 255, 0.06)"
+end
+
+for ".dot-red" apply:
+    width 12
+    height 12
+    corner radius 6
+    background "#ef4444"
+end
+
+for ".dot-yellow" apply:
+    width 12
+    height 12
+    corner radius 6
+    background "#f59e0b"
+end
+
+for ".dot-green" apply:
+    width 12
+    height 12
+    corner radius 6
+    background "#10b981"
+end
+
+for ".terminal-body" apply:
+    padding 24
+    font-size 14
+    color "#a5f3fc"
+    line-height 1.7
+    min-height 180
+end
+
+# Skills Category
+for ".skill-item" apply:
+    background "rgba(255, 255, 255, 0.02)"
+    border "1px solid rgba(255, 255, 255, 0.06)"
+    corner radius 12
+    padding 20
+    transition "all 0.2s ease"
+end
+
+when ".skill-item" is hovered apply:
+    background "rgba(0, 242, 254, 0.04)"
+    border-color "rgba(0, 242, 254, 0.25)"
+end
+
+# Timeline
+for ".timeline-item" apply:
+    position relative
+    padding-left 32
+    padding-bottom 36
+    border-left "2px solid rgba(0, 242, 254, 0.2)"
+end
+
+for ".timeline-marker" apply:
+    position absolute
+    left -7
+    top 0
+    width 12
+    height 12
+    corner radius 6
+    background use color "cyan-glow"
+    shadow "0 0 12px rgba(0, 242, 254, 0.8)"
+end
+
+for ".timeline-degree" apply:
+    font-size 18
+    font-weight 700
+    color "#ffffff"
+    margin "0 0 6px 0"
+end
+
+for ".timeline-institution" apply:
+    font-size 14
+    color use color "cyan-glow"
+    font-weight 600
+    margin "0 0 6px 0"
+end
+
+for ".timeline-location" apply:
+    font-size 13
+    color use color "text-muted"
+    margin 0
+end
+
+# Contact Toast
+for "#toast-alert" apply:
+    position fixed
+    bottom 30
+    right 30
+    background "linear-gradient(135deg, #00f2fe, #4facfe)"
+    color "#060913"
+    padding "14px 24px"
+    corner radius 12
+    font-weight 700
+    font-size 14
+    z-index 999
+    display none
+    shadow "0 8px 30px rgba(0, 242, 254, 0.5)"
+    transition "all 0.3s ease"
+end
+
+# Footer
+for ".footer" apply:
+    text-align center
+    padding "60px 0 40px 0"
+    border-top "1px solid rgba(255, 255, 255, 0.06)"
+    margin-top 80
+    color use color "text-muted"
+    font-size 14
+end
