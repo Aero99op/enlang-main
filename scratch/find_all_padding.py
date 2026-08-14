@@ -1,6 +1,6 @@
 import sys
 def search_in_file(filename, query):
-    with open(filename, "r", encoding="utf-8") as f:
+    with open(filename, "r", encoding="utf-8", errors="ignore") as f:
         for i, line in enumerate(f):
             if query in line:
                 print(f"{filename}:{i+1}: {line.strip()}")

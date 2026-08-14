@@ -441,651 +441,7 @@ body {
   font-size: 14px;
 }
     </style>
-    <script>
-let terminalStep = 0;
-
-console.log("⚡ Initializing Prayas Kumar Sahoo 3D Cyber Portfolio Engine...");
-
-;function init3D() {
-
-;if (typeof THREE === "undefined") {
-
-setTimeout(init3D, 200);
-
-return ;
-
-}
-
-const canvas = document.getElementById ( "webgl-canvas" );
-
-;if (!canvas) return;
-
-const scene = new THREE.Scene ( );
-
-const camera = new THREE.PerspectiveCamera ( 60 , window.innerWidth / window.innerHeight , 0.1 , 1000 );
-
-const renderer = new THREE.WebGLRenderer ( { canvas : canvas , antialias : true , alpha : true } );
-
-renderer.setSize(window.innerWidth, window.innerHeight);
-
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-const particlesCount = 1200;
-
-const positions = new Float32Array ( particlesCount * 3 );
-
-const colors = new Float32Array ( particlesCount * 3 );
-
-;for (let i = 0; i < particlesCount * 3; i += 3) {
-
-positions[i] = (Math.random() - 0.5) * 30;
-
-positions[i + 1] = (Math.random() - 0.5) * 30;
-
-positions[i + 2] = (Math.random() - 0.5) * 30;
-
-colors[i] = 0.0;
-
-colors[i + 1] = 0.95;
-
-colors[i + 2] = 1.0;
-
-}
-
-const particlesGeometry = new THREE.BufferGeometry ( );
-
-particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-const particlesMaterial = new THREE.PointsMaterial ( { size : 0.06 , vertexColors : true , transparent : true , opacity : 0.75 } );
-
-const particlesMesh = new THREE.Points ( particlesGeometry , particlesMaterial );
-
-scene.add(particlesMesh);
-
-const geom1 = new THREE.IcosahedronGeometry ( 2.2 , 1 );
-
-const mat1 = new THREE.MeshBasicMaterial ( { color : "#00f2fe" , wireframe : true , transparent : true , opacity : 0.35 } );
-
-const poly1 = new THREE.Mesh ( geom1 , mat1 );
-
-poly1.position.set(4, 1, -5);
-
-scene.add(poly1);
-
-const geom2 = new THREE.TorusKnotGeometry ( 1.6 , 0.4 , 64 , 8 );
-
-const mat2 = new THREE.MeshBasicMaterial ( { color : "#8a2be2" , wireframe : true , transparent : true , opacity : 0.25 } );
-
-const poly2 = new THREE.Mesh ( geom2 , mat2 );
-
-poly2.position.set(-4.5, -2, -6);
-
-scene.add(poly2);
-
-camera.position.z = 7;
-
-let mouseX = 0;
-
-let mouseY = 0;
-
-let targetX = 0;
-
-let targetY = 0;
-
-window.addEventListener('mousemove', function(event) {
-
-mouseX = ( event.clientX / window.innerWidth - 0.5 ) * 2;
-
-mouseY = ( event.clientY / window.innerHeight - 0.5 ) * 2;
-
-});
-
-window.addEventListener('resize', function() {
-
-camera.aspect = window.innerWidth / window.innerHeight;
-
-camera.updateProjectionMatrix();
-
-renderer.setSize(window.innerWidth, window.innerHeight);
-
-});
-
-;function render3DScene() {
-
-requestAnimationFrame(render3DScene);
-
-targetX += ( mouseX - targetX ) * 0.05;
-
-targetY += ( mouseY - targetY ) * 0.05;
-
-particlesMesh.rotation.y += 0.001;
-
-particlesMesh.rotation.x += 0.0005;
-
-poly1.rotation.x += 0.008;
-
-poly1.rotation.y += 0.012;
-
-poly1.position.x = 4 + targetX * 1.5;
-
-poly1.position.y = 1 - targetY * 1.5;
-
-poly2.rotation.x -= 0.006;
-
-poly2.rotation.y += 0.009;
-
-poly2.position.x = - 4.5 + targetX * 1.2;
-
-poly2.position.y = - 2 - targetY * 1.2;
-
-camera.position.x = targetX * 0.8;
-
-camera.position.y = - targetY * 0.8;
-
-camera.lookAt(scene.position);
-
-renderer.render(scene, camera);
-
-}
-
-render3DScene();
-
-}
-
-init3D();
-
-function showToast(message) {
-  (document.getElementById("toast-alert") || document.querySelector("toast-alert")).textContent = message;
-  (document.getElementById("toast-alert") || document.querySelector("toast-alert")).style.display = "block"
-  setTimeout(function() {
-    (document.getElementById("toast-alert") || document.querySelector("toast-alert")).style.display = "none"
-  }, 3000);
-}
-
-(document.getElementById("btn-copy-phone") || document.querySelector("btn-copy-phone")).addEventListener('click', function(event) {
-  copyToClipboard("8260350182");
-  showToast("📞 Phone number copied: 8260350182");
-});
-
-(document.getElementById("btn-copy-email") || document.querySelector("btn-copy-email")).addEventListener('click', function(event) {
-  copyToClipboard("prayaskumarsahoo45@gmail.com");
-  showToast("✉️ Email copied: prayaskumarsahoo45@gmail.com");
-});
-
-const codeSnippets = [ "// [1] Booting Spring Boot 3.2.0 Microservice..." , "@RestController @RequestMapping(\"/api/v1/lms\")npublic class CourseEnrollmentController {n    @Autowired private EnrollmentService service;n    @PostMapping(\"/enroll\")n    public ResponseEntity<ApiResponse> enrollStudent(@Valid @RequestBody StudentDTO dto) {n        return ResponseEntity.ok(service.processEnrollment(dto));n    }n}" , "// [2] Connecting Oracle & MySQL Production Clusters...n[DB POOL] HikariCP initialized (10 active connections, latency 1.2ms)n[AUTH] Spring Security JWT Filter Chain Active [200 OK]" , "// [3] Running Payroll Calculation Engine...n[PAYROLL ENGINE] Tax brackets calculated. Stored procedure executed successfully.nStatus: ALL SYSTEMS OPERATIONAL (Java 21 Virtual Threads Enabled)" ];
-
-function advanceTerminal() {
-  terminalStep = ( terminalStep + 1 ) % 4;
-  (document.getElementById("terminal-output") || document.querySelector("terminal-output")).textContent = codeSnippets [ terminalStep ];
-  showToast("💻 Loaded Backend Module [" + ( terminalStep + 1 ) + "/4]");
-}
-
-(document.getElementById("btn-term-next") || document.querySelector("btn-term-next")).addEventListener('click', function(event) {
-  advanceTerminal();
-});
-
-(document.getElementById("contact-form") || document.querySelector("contact-form")).addEventListener('submit', function(event) {
-  let senderName = (document.getElementById("contact-name") || document.querySelector("contact-name")).value;
-  let senderEmail = (document.getElementById("contact-email") || document.querySelector("contact-email")).value;
-  let senderMsg = (document.getElementById("contact-message") || document.querySelector("contact-message")).value;
-  if (senderName == "") {
-    alert("Please enter your name");
-    return;
-  }
-  if (senderEmail == "") {
-    alert("Please enter your email");
-    return;
-  }
-  showToast("🚀 Message sent! Thanks " + senderName + ", Prayas will reply soon.");
-  (document.getElementById("contact-status") || document.querySelector("contact-status")).textContent = "✅ Inquiry submitted successfully. Thank you!";
-  (document.getElementById("contact-name") || document.querySelector("contact-name")).value = "";
-  (document.getElementById("contact-email") || document.querySelector("contact-email")).value = "";
-  (document.getElementById("contact-message") || document.querySelector("contact-message")).value = "";
-});
-
-setInterval(function() {
-  (document.getElementById("live-clock") || document.querySelector("live-clock")).textContent = "Engine Active • Asia/Kolkata • " + new Date ( ) .toLocaleTimeString ( );
-}, 1000);
-
-console.log("⚡ 3D Scene, Particle Grid, and Interactive Controls are 100% Active!");
-    </script>
-    <style>
-:root {
-  --bg-space: #060913;
-  --cyan-glow: #00f2fe;
-  --purple-neon: #8a2be2;
-  --emerald-accent: #00e676;
-  --card-surface: rgba(13, 21, 39, 0.65);
-  --text-light: #f8fafc;
-  --text-muted: #94a3b8;
-  --radius-card: 18px;
-}
-
-body {
-  margin: 0px;
-  padding: 0px;
-  background: var(--bg-space);
-  color: var(--text-light);
-  font-family: Inter, -apple-system, sans-serif;
-  overflow-x: hidden;
-  line-height: 1.6;
-}
-
-#webgl-canvas {
-  position: fixed;
-  top: 0px;
-  left: 0px;
-  width: 100%;
-  height: 100vh;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.site-wrapper {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 32px;
-  position: sticky;
-  top: 16px;
-  z-index: 100;
-  background: rgba(6, 9, 19, 0.75);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 242, 254, 0.15);
-  border-radius: 16px;
-  margin: 16px auto 0 auto;
-  max-width: 1140px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-.brand-logo {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--cyan-glow);
-  letter-spacing: 1px;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-}
-
-.nav-links {
-  display: flex;
-  gap: 28px;
-  align-items: center;
-}
-
-.nav-link {
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.nav-link:hover {
-  color: var(--cyan-glow);
-}
-
-.hero-section {
-  min-height: 90vh;
-  display: flex;
-  align-items: center;
-  padding: 60px 0 40px 0;
-}
-
-.hero-content {
-  max-width: 800px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 18px;
-  background: rgba(0, 242, 254, 0.08);
-  border: 1px solid rgba(0, 242, 254, 0.25);
-  border-radius: 30px;
-  color: var(--cyan-glow);
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 24px;
-  box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
-}
-
-.hero-name {
-  font-size: 54px;
-  font-weight: 900;
-  margin: 0 0 16px 0;
-  letter-spacing: -1;
-  line-height: 1.15;
-  color: #ffffff;
-}
-
-.hero-subtitle {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 20px 0;
-  color: var(--cyan-glow);
-}
-
-.hero-bio {
-  font-size: 17px;
-  color: var(--text-muted);
-  max-width: 640px;
-  margin: 0 auto 36px auto;
-  line-height: 1.7;
-}
-
-.hero-cta-group {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 40px;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #00f2fe, #4facfe);
-  color: #060913;
-  border: none;
-  padding: 14px 32px;
-  font-size: 15px;
-  font-weight: 700;
-  border-radius: 12px;
-  cursor: pointer;
-  text-decoration: none;
-  box-shadow: 0 4px 20px rgba(0, 242, 254, 0.35);
-  transition: transform 0.2s ease, shadow 0.2s ease;
-}
-
-.btn-primary:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 8px 30px rgba(0, 242, 254, 0.55);
-}
-
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-light);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 14px 28px;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: 12px;
-  cursor: pointer;
-  text-decoration: none;
-  backdrop-filter: blur(10px);
-  transition: all 0.2s ease;
-}
-
-.btn-secondary:hover {
-  border-color: var(--cyan-glow);
-  color: var(--cyan-glow);
-  transform: translateY(-2px);
-}
-
-.social-badges {
-  display: flex;
-  gap: 14px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.social-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--card-surface);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  color: var(--text-light);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.social-badge:hover {
-  border-color: var(--cyan-glow);
-  color: var(--cyan-glow);
-  transform: translateY(-2px);
-}
-
-.section-header {
-  text-align: center;
-  margin-bottom: 56px;
-}
-
-.section-tag {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--cyan-glow);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-bottom: 8px;
-  display: inline-block;
-}
-
-.section-title {
-  font-size: 38px;
-  font-weight: 800;
-  margin: 0px;
-  color: #ffffff;
-}
-
-.grid-2 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 32px;
-}
-
-.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-}
-
-.card-3d {
-  background: var(--card-surface);
-  border: 1px solid rgba(0, 242, 254, 0.12);
-  border-radius: var(--radius-card);
-  padding: 32px;
-  backdrop-filter: blur(16px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.card-3d:hover {
-  transform: translateY(-8px);
-  border-color: rgba(0, 242, 254, 0.4);
-  box-shadow: 0 20px 40px rgba(0, 242, 254, 0.12);
-}
-
-.card-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: rgba(138, 43, 226, 0.15);
-  border: 1px solid rgba(138, 43, 226, 0.3);
-  border-radius: 20px;
-  color: #c084fc;
-  font-size: 11px;
-  font-weight: 700;
-  margin-bottom: 16px;
-}
-
-.card-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 12px 0;
-}
-
-.card-desc {
-  color: var(--text-muted);
-  font-size: 14px;
-  line-height: 1.65;
-  margin: 0 0 20px 0;
-}
-
-.tech-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.tech-tag {
-  padding: 4px 10px;
-  background: rgba(0, 242, 254, 0.06);
-  border: 1px solid rgba(0, 242, 254, 0.15);
-  border-radius: 6px;
-  color: var(--cyan-glow);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.terminal-window {
-  background: #080c16;
-  border: 1px solid rgba(0, 242, 254, 0.2);
-  border-radius: 14px;
-  overflow: hidden;
-  margin: 40px auto;
-  max-width: 840px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-  font-family: Consolas, Monaco, monospace;
-}
-
-.terminal-bar {
-  background: #0d1424;
-  padding: 12px 18px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.dot-red {
-  width: 12px;
-  height: 12px;
-  border-radius: 6px;
-  background: #ef4444;
-}
-
-.dot-yellow {
-  width: 12px;
-  height: 12px;
-  border-radius: 6px;
-  background: #f59e0b;
-}
-
-.dot-green {
-  width: 12px;
-  height: 12px;
-  border-radius: 6px;
-  background: #10b981;
-}
-
-.terminal-body {
-  padding: 24px;
-  font-size: 14px;
-  color: #a5f3fc;
-  line-height: 1.7;
-  min-height: 180px;
-}
-
-.skill-item {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.2s ease;
-}
-
-.skill-item:hover {
-  background: rgba(0, 242, 254, 0.04);
-  border-color: rgba(0, 242, 254, 0.25);
-}
-
-.timeline-item {
-  position: relative;
-  padding-left: 32px;
-  padding-bottom: 36px;
-  border-left: 2px solid rgba(0, 242, 254, 0.2);
-}
-
-.timeline-marker {
-  position: absolute;
-  left: -7;
-  top: 0px;
-  width: 12px;
-  height: 12px;
-  border-radius: 6px;
-  background: var(--cyan-glow);
-  box-shadow: 0 0 12px rgba(0, 242, 254, 0.8);
-}
-
-.timeline-degree {
-  font-size: 18px;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 6px 0;
-}
-
-.timeline-institution {
-  font-size: 14px;
-  color: var(--cyan-glow);
-  font-weight: 600;
-  margin: 0 0 6px 0;
-}
-
-.timeline-location {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin: 0px;
-}
-
-#toast-alert {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  background: linear-gradient(135deg, #00f2fe, #4facfe);
-  color: #060913;
-  padding: 14px 24px;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 14px;
-  z-index: 999;
-  display: none;
-  box-shadow: 0 8px 30px rgba(0, 242, 254, 0.5);
-  transition: all 0.3s ease;
-}
-
-.footer {
-  text-align: center;
-  padding: 60px 0 40px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  margin-top: 80px;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-    </style>
+    
   </head>
   <body>
     <canvas id="webgl-canvas">
@@ -1299,11 +655,41 @@ let terminalStep = 0;
 
 console.log("⚡ Initializing Prayas Kumar Sahoo 3D Cyber Portfolio Engine...");
 
+;function copyToClipboard(valToCopy) {
+
+;if (navigator.clipboard && window.isSecureContext) {
+
+navigator.clipboard.writeText(valToCopy);
+
+;} else {
+
+const ta = document.createElement ( "textarea" );
+
+ta.value = valToCopy;
+
+ta.style.position = "fixed";
+
+ta.style.left = "-9999px";
+
+document.body.appendChild(ta);
+
+ta.focus();
+
+ta.select();
+
+;try { document.execCommand('copy'); } catch(e){}
+
+ta.remove();
+
+;}
+
+;}
+
 ;function init3D() {
 
 ;if (typeof THREE === "undefined") {
 
-setTimeout(init3D, 200);
+setTimeout(init3D, 150);
 
 return ;
 
@@ -1311,7 +697,13 @@ return ;
 
 const canvas = document.getElementById ( "webgl-canvas" );
 
-;if (!canvas) return;
+;if (!canvas) {
+
+setTimeout(init3D, 150);
+
+return ;
+
+}
 
 const scene = new THREE.Scene ( );
 
@@ -1323,7 +715,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-const particlesCount = 1200;
+const particlesCount = 2000;
 
 const positions = new Float32Array ( particlesCount * 3 );
 
@@ -1331,17 +723,27 @@ const colors = new Float32Array ( particlesCount * 3 );
 
 ;for (let i = 0; i < particlesCount * 3; i += 3) {
 
-positions[i] = (Math.random() - 0.5) * 30;
+positions[i] = (Math.random() - 0.5) * 35;
 
-positions[i + 1] = (Math.random() - 0.5) * 30;
+positions[i + 1] = (Math.random() - 0.5) * 35;
 
-positions[i + 2] = (Math.random() - 0.5) * 30;
+positions[i + 2] = (Math.random() - 0.5) * 35;
 
-colors[i] = 0.0;
+const rChoice = Math.random ( );
 
-colors[i + 1] = 0.95;
+;if (rChoice < 0.4) {
 
-colors[i + 2] = 1.0;
+colors[i] = 0.0; colors[i + 1] = 0.95; colors[i + 2] = 1.0;
+
+;} else if (rChoice < 0.75) {
+
+colors[i] = 0.65; colors[i + 1] = 0.3; colors[i + 2] = 0.98;
+
+;} else {
+
+colors[i] = 0.0; colors[i + 1] = 0.9; colors[i + 2] = 0.46;
+
+;}
 
 }
 
@@ -1351,31 +753,41 @@ particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 
 
 particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-const particlesMaterial = new THREE.PointsMaterial ( { size : 0.06 , vertexColors : true , transparent : true , opacity : 0.75 } );
+const particlesMaterial = new THREE.PointsMaterial ( { size : 0.1 , vertexColors : true , transparent : true , opacity : 0.85 } );
 
 const particlesMesh = new THREE.Points ( particlesGeometry , particlesMaterial );
 
 scene.add(particlesMesh);
 
-const geom1 = new THREE.IcosahedronGeometry ( 2.2 , 1 );
+const geom1 = new THREE.IcosahedronGeometry ( 2.5 , 1 );
 
-const mat1 = new THREE.MeshBasicMaterial ( { color : "#00f2fe" , wireframe : true , transparent : true , opacity : 0.35 } );
+const mat1 = new THREE.MeshBasicMaterial ( { color : "#00f2fe" , wireframe : true , transparent : true , opacity : 0.45 } );
 
 const poly1 = new THREE.Mesh ( geom1 , mat1 );
 
-poly1.position.set(4, 1, -5);
+poly1.position.set(4.5, 1.2, -5);
 
 scene.add(poly1);
 
-const geom2 = new THREE.TorusKnotGeometry ( 1.6 , 0.4 , 64 , 8 );
+const geom2 = new THREE.TorusKnotGeometry ( 1.8 , 0.45 , 64 , 8 );
 
-const mat2 = new THREE.MeshBasicMaterial ( { color : "#8a2be2" , wireframe : true , transparent : true , opacity : 0.25 } );
+const mat2 = new THREE.MeshBasicMaterial ( { color : "#a855f7" , wireframe : true , transparent : true , opacity : 0.35 } );
 
 const poly2 = new THREE.Mesh ( geom2 , mat2 );
 
-poly2.position.set(-4.5, -2, -6);
+poly2.position.set(-5, -2, -6);
 
 scene.add(poly2);
+
+const geom3 = new THREE.OctahedronGeometry ( 1.5 , 0 );
+
+const mat3 = new THREE.MeshBasicMaterial ( { color : "#10b981" , wireframe : true , transparent : true , opacity : 0.4 } );
+
+const poly3 = new THREE.Mesh ( geom3 , mat3 );
+
+poly3.position.set(2, -4, -4);
+
+scene.add(poly3);
 
 camera.position.z = 7;
 
@@ -1413,25 +825,33 @@ targetX += ( mouseX - targetX ) * 0.05;
 
 targetY += ( mouseY - targetY ) * 0.05;
 
-particlesMesh.rotation.y += 0.001;
+particlesMesh.rotation.y += 0.0015;
 
-particlesMesh.rotation.x += 0.0005;
+particlesMesh.rotation.x += 0.0008;
 
-poly1.rotation.x += 0.008;
+poly1.rotation.x += 0.009;
 
-poly1.rotation.y += 0.012;
+poly1.rotation.y += 0.014;
 
-poly1.position.x = 4 + targetX * 1.5;
+poly1.position.x = 4.5 + targetX * 1.5;
 
-poly1.position.y = 1 - targetY * 1.5;
+poly1.position.y = 1.2 - targetY * 1.5;
 
-poly2.rotation.x -= 0.006;
+poly2.rotation.x -= 0.007;
 
-poly2.rotation.y += 0.009;
+poly2.rotation.y += 0.011;
 
-poly2.position.x = - 4.5 + targetX * 1.2;
+poly2.position.x = - 5 + targetX * 1.2;
 
 poly2.position.y = - 2 - targetY * 1.2;
+
+poly3.rotation.y += 0.015;
+
+poly3.rotation.z += 0.01;
+
+poly3.position.x = 2 + targetX * 0.8;
+
+poly3.position.y = - 4 - targetY * 0.8;
 
 camera.position.x = targetX * 0.8;
 

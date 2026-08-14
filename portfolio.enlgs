@@ -4,14 +4,34 @@ in script:
 
     show "⚡ Initializing Prayas Kumar Sahoo 3D Cyber Portfolio Engine..."
 
+    # Clipboard Copy Helper
+    ;function copyToClipboard(valToCopy) {
+    ;if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(valToCopy);
+    ;} else {
+    const ta = document.createElement("textarea");
+    ta.value = valToCopy;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ;try { document.execCommand('copy'); } catch(e){}
+    ta.remove();
+    ;}
+    ;}
+
     # 3D Three.js Background Scene Initialization with Safe Guard
     ;function init3D() {
     ;if (typeof THREE === "undefined") {
-    setTimeout(init3D, 200);
+    setTimeout(init3D, 150);
     return;
     }
     const canvas = document.getElementById("webgl-canvas");
-    ;if (!canvas) return;
+    ;if (!canvas) {
+    setTimeout(init3D, 150);
+    return;
+    }
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -20,40 +40,51 @@ in script:
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     # 3D Particle Starfield
-    const particlesCount = 1200;
+    const particlesCount = 2000;
     const positions = new Float32Array(particlesCount * 3);
     const colors = new Float32Array(particlesCount * 3);
 
     ;for (let i = 0; i < particlesCount * 3; i += 3) {
-    positions[i] = (Math.random() - 0.5) * 30;
-    positions[i + 1] = (Math.random() - 0.5) * 30;
-    positions[i + 2] = (Math.random() - 0.5) * 30;
+    positions[i] = (Math.random() - 0.5) * 35;
+    positions[i + 1] = (Math.random() - 0.5) * 35;
+    positions[i + 2] = (Math.random() - 0.5) * 35;
 
-    colors[i] = 0.0;
-    colors[i + 1] = 0.95;
-    colors[i + 2] = 1.0;
+    const rChoice = Math.random();
+    ;if (rChoice < 0.4) {
+    colors[i] = 0.0; colors[i + 1] = 0.95; colors[i + 2] = 1.0;
+    ;} else if (rChoice < 0.75) {
+    colors[i] = 0.65; colors[i + 1] = 0.3; colors[i + 2] = 0.98;
+    ;} else {
+    colors[i] = 0.0; colors[i + 1] = 0.9; colors[i + 2] = 0.46;
+    ;}
     }
 
     const particlesGeometry = new THREE.BufferGeometry();
     particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-    const particlesMaterial = new THREE.PointsMaterial({ size: 0.06, vertexColors: true, transparent: true, opacity: 0.75 });
+    const particlesMaterial = new THREE.PointsMaterial({ size: 0.1, vertexColors: true, transparent: true, opacity: 0.85 });
     const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
     scene.add(particlesMesh);
 
-    # 3D Geometric Floating Wireframe
-    const geom1 = new THREE.IcosahedronGeometry(2.2, 1);
-    const mat1 = new THREE.MeshBasicMaterial({ color: "#00f2fe", wireframe: true, transparent: true, opacity: 0.35 });
+    # 3D Geometric Floating Wireframes
+    const geom1 = new THREE.IcosahedronGeometry(2.5, 1);
+    const mat1 = new THREE.MeshBasicMaterial({ color: "#00f2fe", wireframe: true, transparent: true, opacity: 0.45 });
     const poly1 = new THREE.Mesh(geom1, mat1);
-    poly1.position.set(4, 1, -5);
+    poly1.position.set(4.5, 1.2, -5);
     scene.add(poly1);
 
-    const geom2 = new THREE.TorusKnotGeometry(1.6, 0.4, 64, 8);
-    const mat2 = new THREE.MeshBasicMaterial({ color: "#8a2be2", wireframe: true, transparent: true, opacity: 0.25 });
+    const geom2 = new THREE.TorusKnotGeometry(1.8, 0.45, 64, 8);
+    const mat2 = new THREE.MeshBasicMaterial({ color: "#a855f7", wireframe: true, transparent: true, opacity: 0.35 });
     const poly2 = new THREE.Mesh(geom2, mat2);
-    poly2.position.set(-4.5, -2, -6);
+    poly2.position.set(-5, -2, -6);
     scene.add(poly2);
+
+    const geom3 = new THREE.OctahedronGeometry(1.5, 0);
+    const mat3 = new THREE.MeshBasicMaterial({ color: "#10b981", wireframe: true, transparent: true, opacity: 0.4 });
+    const poly3 = new THREE.Mesh(geom3, mat3);
+    poly3.position.set(2, -4, -4);
+    scene.add(poly3);
 
     camera.position.z = 7;
 
@@ -79,18 +110,23 @@ in script:
     targetX += (mouseX - targetX) * 0.05;
     targetY += (mouseY - targetY) * 0.05;
 
-    particlesMesh.rotation.y += 0.001;
-    particlesMesh.rotation.x += 0.0005;
+    particlesMesh.rotation.y += 0.0015;
+    particlesMesh.rotation.x += 0.0008;
 
-    poly1.rotation.x += 0.008;
-    poly1.rotation.y += 0.012;
-    poly1.position.x = 4 + targetX * 1.5;
-    poly1.position.y = 1 - targetY * 1.5;
+    poly1.rotation.x += 0.009;
+    poly1.rotation.y += 0.014;
+    poly1.position.x = 4.5 + targetX * 1.5;
+    poly1.position.y = 1.2 - targetY * 1.5;
 
-    poly2.rotation.x -= 0.006;
-    poly2.rotation.y += 0.009;
-    poly2.position.x = -4.5 + targetX * 1.2;
+    poly2.rotation.x -= 0.007;
+    poly2.rotation.y += 0.011;
+    poly2.position.x = -5 + targetX * 1.2;
     poly2.position.y = -2 - targetY * 1.2;
+
+    poly3.rotation.y += 0.015;
+    poly3.rotation.z += 0.01;
+    poly3.position.x = 2 + targetX * 0.8;
+    poly3.position.y = -4 - targetY * 0.8;
 
     camera.position.x = targetX * 0.8;
     camera.position.y = -targetY * 0.8;
