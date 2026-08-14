@@ -78,15 +78,15 @@ def main():
     subparsers = parser.add_subparsers(dest="command")
     
     # Run command
-    run_parser = subparsers.add_parser("run", help="Run an enlg or enlgf source file")
-    run_parser.add_argument("file", help="Path to .enlg or .enlgf file")
-    run_parser.add_argument("-p", "--p", "--port", type=int, default=3000, help="Port to serve .enlgf web application (default 3000)")
+    run_parser = subparsers.add_parser("run", help="Run an enlg, enlgf, html, enlgs, js, or py source file")
+    run_parser.add_argument("file", help="Path to source file (.enlg, .enlgf, .html, .enlgs, .js, .py)")
+    run_parser.add_argument("-p", "--p", "--port", type=int, default=3000, help="Port to serve web application (default 3000)")
     run_parser.add_argument("--style", type=str, default=None, help="Path to .enlgd stylesheet to inject into .enlgf web page")
     run_parser.add_argument("--script", type=str, default=None, help="Path to .enlgs script to inject into .enlgf web page")
     
     # Build command
-    build_parser = subparsers.add_parser("build", help="Build/compile an .enlgd (CSS), .enlgs (JS), or .enlgf (HTML) file")
-    build_parser.add_argument("file", help="Path to .enlgd, .enlgs, or .enlgf file")
+    build_parser = subparsers.add_parser("build", help="Build/translate .enlg (Python), .enlgd (CSS), .enlgs (JS), or .enlgf (HTML) file")
+    build_parser.add_argument("file", help="Path to .enlg, .enlgd, .enlgs, or .enlgf file")
     build_parser.add_argument("--out", "-o", type=str, default=None, help="Output destination file path")
 
     # REPL command
@@ -95,19 +95,39 @@ def main():
     args = parser.parse_args()
     
     if args.command == "run":
-        if args.file.endswith(".enlgf"):
+        file_lower = args.file.lower()
+        if file_lower.endswith(".enlgf") or file_lower.endswith(".html"):
             from enlgf.server import start_server
             start_server(args.file, port=args.p, style_path=args.style, script_path=args.script)
-        else:
+        elif file_lower.endswith(".enlgs"):
+            import subprocess
+            from enlgs.compiler import build_enlgs_file
+            js_file = build_enlgs_file(args.file)
+            subprocess.run(["node", js_file])
+        elif file_lower.endswith(".js"):
+            import subprocess
+            subprocess.run(["node", args.file])
+        elif file_lower.endswith(".py"):
+            import subprocess
+            subprocess.run([sys.executable, args.file])
+        elif file_lower.endswith(".enlg"):
             run_file(args.file)
+        else:
+            # Default to running as enlg file
+            run_file(args.file)
+            
     elif args.command == "build":
-        if args.file.endswith(".enlgd"):
+        file_lower = args.file.lower()
+        if file_lower.endswith(".enlg"):
+            from enlg.compiler.py_transpiler import build_enlg_file
+            build_enlg_file(args.file, output_path=args.out)
+        elif file_lower.endswith(".enlgd"):
             from enlgd.compiler import build_enlgd_file
             build_enlgd_file(args.file, output_path=args.out)
-        elif args.file.endswith(".enlgs"):
+        elif file_lower.endswith(".enlgs"):
             from enlgs.compiler import build_enlgs_file
             build_enlgs_file(args.file, output_path=args.out)
-        elif args.file.endswith(".enlgf"):
+        elif file_lower.endswith(".enlgf"):
             from enlgf.server import compile_enlgf_file
             html = compile_enlgf_file(
                 args.file,
@@ -119,7 +139,7 @@ def main():
                 f.write(html)
             print(f"[enlgf] Built HTML: {out_file}")
         else:
-            print(f"Error: Unknown build file type '{args.file}'. Expected .enlgd, .enlgs, or .enlgf", file=sys.stderr)
+            print(f"Error: Unknown build file type '{args.file}'. Expected .enlg, .enlgd, .enlgs, or .enlgf", file=sys.stderr)
             sys.exit(1)
     elif args.command == "repl":
         start_repl()

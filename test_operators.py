@@ -1,0 +1,32 @@
+print("--- Testing Symbolic Operators ---")
+if (5 < 10):
+    print("5 < 10 works")
+if (10 > 5):
+    print("10 > 5 works")
+if (5 <= 5):
+    print("5 <= 5 works")
+if (10 >= 10):
+    print("10 >= 10 works")
+if (10 == 10):
+    print("10 == 10 works")
+if (5 != 10):
+    print("5 != 10 works")
+print("--- Testing English Operators ---")
+if (5 < 10):
+    print("5 less than 10 works")
+if (10 > 5):
+    print("10 greater than 5 works")
+if (5 <= 5):
+    print("5 less than or equal to 5 works")
+if (10 >= 10):
+    print("10 greater than or equal to 10 works")
+if (10 == 10):
+    print("10 equal to 10 works")
+if (10 == 10):
+    print("10 equals 10 works")
+if (5 != 10):
+    print("5 not equal to 10 works")
+if (10 == 10):
+    print("10 is 10 works")
+if (5 != 10):
+    print("5 is not 10 works")

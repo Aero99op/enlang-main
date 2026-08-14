@@ -237,7 +237,7 @@ class VirtualMachine:
                 elif opcode == CIROpcode.IMPORT_MODULE:
                     mod_name = args[0]
                     # 1. Check enlg stdlib first (ml, dl, data, std, etc.)
-                    _ENLG_STDLIB = {"ml", "dl", "data", "std"}
+                    _ENLG_STDLIB = {"ml", "dl", "data", "std", "cyber", "cloud"}
                     if mod_name in _ENLG_STDLIB:
                         try:
                             module = importlib.import_module(f"enlg.stdlib.{mod_name}")

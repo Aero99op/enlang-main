@@ -269,6 +269,11 @@ class CIRGenerator:
             "AI_RESTORE": ("ml", "restore"),
             "CYBER_ENCRYPT": ("cyber", "encrypt"),
             "CYBER_SCAN": ("cyber", "scan"),
+            "SEC_ENCRYPT": ("cyber", "encrypt"),
+            "SEC_SCAN": ("cyber", "scan"),
+            "CLOUD_DEPLOY": ("cloud", "deploy"),
+            "CLOUD_FETCH": ("cloud", "deploy"),
+            "CLOUD_UPLOAD": ("cloud", "upload"),
         }
         
         default_mod, func_name = DOMAIN_MAP.get(node.op, ("ml", node.op.lower().split("_")[-1]))
