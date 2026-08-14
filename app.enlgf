@@ -1,0 +1,47 @@
+document enlgf:
+    head:
+        title "Enlang Full-Stack Suite — Pure English Web App"
+        connect design app.enlgd
+        connect script app.enlgs
+
+    body class "dark-theme":
+        div class "container":
+            nav class "navbar":
+                div class "logo" "⚡ Enlang FullStack"
+                div:
+                    button "🌙 Dark Mode" id "theme-btn" class "btn-outline"
+
+            header class "hero":
+                span class "badge" id "counter-badge" "Optimal Level ✨"
+                heading 1 "Natural Language Web Engine" class "hero-title"
+                paragraph "Built 100% in English using .enlgf (Structure), .enlgd (Style), and .enlgs (Interactivity)." class "hero-desc"
+
+            main class "grid":
+                section class "card":
+                    heading 3 "⚡ Interactive Counter"
+                    paragraph "Reactive state updates compiled from natural English commands." with color "#94a3b8" and margin-bottom 16
+                    div id "counter-val" class "counter-box" "0"
+                    div with text-align center:
+                        button "− Decrement" id "btn-dec" class "btn-outline" with margin-right 8
+                        button "+ Increment" id "btn-inc" class "btn" with margin-right 8
+                        button "Reset" id "btn-reset" class "btn-outline"
+
+                section class "card":
+                    heading 3 "📝 Quick Task Creator"
+                    paragraph "Dynamic form handling and instant DOM mutation." with color "#94a3b8" and margin-bottom 16
+                    form id "task-form":
+                        text input id "task-input" class "input-field" hint "Enter task name..."
+                        submit button "Add Task" class "btn" with width 100 percent
+                    paragraph id "task-status" "No tasks added yet" with color "#94a3b8" and margin-top 16 and font-size 13
+                    paragraph "Total Tasks: " with font-weight bold and margin-top 8:
+                        span id "task-count" "0" with color "#38bdf8"
+
+                section class "card":
+                    heading 3 "🌐 Cloud API Integration"
+                    paragraph "Asynchronous network requests handled with zero boilerplates." with color "#94a3b8" and margin-bottom 16
+                    button "Fetch Live API Data" id "api-btn" class "btn" with width 100 percent and margin-bottom 16
+                    paragraph id "api-status" "Ready to request..." with color "#94a3b8" and font-size 13
+
+            footer with text-align center and padding "40px 0" and border-top "1px solid rgba(255,255,255,0.08)":
+                paragraph "Enlang Ecosystem — Powered by Pure English Architecture" with color "#64748b" and font-size 14
+                paragraph id "live-clock" "Engine Active" with color "#38bdf8" and font-size 12

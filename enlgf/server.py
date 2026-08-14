@@ -100,46 +100,57 @@ def compile_enlgf_file(filepath: str, style_path: str = None, script_path: str =
 
 def start_server(filepath: str, port: int = 3000, style_path: str = None, script_path: str = None):
     """Starts live HTTP web server serving compiled .enlgf file with optional styling & scripts."""
-    if not os.path.exists(filepath):
+    abs_filepath = os.path.abspath(filepath)
+    if not os.path.exists(abs_filepath):
         print(f"Error: File '{filepath}' not found.", file=sys.stderr)
         sys.exit(1)
 
-    base_dir = os.path.dirname(os.path.abspath(filepath))
+    class ENLEGFHandler(http.server.BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.0"
 
-    class ENLEGFHandler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory=base_dir, **kwargs)
+        def address_string(self):
+            return self.client_address[0]
+
+        def do_HEAD(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Connection", "close")
+            self.end_headers()
 
         def do_GET(self):
-            if self.path in ("/", f"/{os.path.basename(filepath)}"):
-                try:
-                    html_content = compile_enlgf_file(filepath, style_path=style_path, script_path=script_path)
-                    self.send_response(200)
-                    self.send_header("Content-type", "text/html; charset=utf-8")
-                    self.end_headers()
-                    self.wfile.write(html_content.encode("utf-8"))
-                except Exception as e:
-                    self.send_response(500)
-                    self.send_header("Content-type", "text/html; charset=utf-8")
-                    self.end_headers()
-                    err_html = f"<html><body><h2>enlgf Compilation Error</h2><pre>{e}</pre></body></html>"
-                    self.wfile.write(err_html.encode("utf-8"))
-            else:
-                super().do_GET()
+            try:
+                html_content = compile_enlgf_file(abs_filepath, style_path=style_path, script_path=script_path)
+                encoded = html_content.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(encoded)))
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.wfile.write(encoded)
+                self.wfile.flush()
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Connection", "close")
+                self.end_headers()
+                err_html = f"<html><body><h2>enlgf Compilation Error</h2><pre>{e}</pre></body></html>"
+                self.wfile.write(err_html.encode("utf-8"))
+                self.wfile.flush()
 
         def log_message(self, format, *args):
-            # Clean server log format
-            print(f"[enlgf Server] {args[0]} -> {args[1]}")
+            print(f"[enlgf Server] {args[0]} -> {args[1]}", flush=True)
 
     print("=" * 60)
     print(f"  ENLANG FRONTEND WEB SERVER (.enlgf)")
     print(f"  Serving File: {os.path.basename(filepath)}")
     print(f"  Live URL:     http://localhost:{port}")
+    print(f"  Alt URL:      http://127.0.0.1:{port}")
     print("=" * 60)
-    print("Press Ctrl+C to stop server.\n")
+    print("Press Ctrl+C to stop server.\n", flush=True)
 
-    socketserver.ThreadingTCPServer.allow_reuse_address = True
-    with socketserver.ThreadingTCPServer(("", port), ENLEGFHandler) as httpd:
+    http.server.ThreadingHTTPServer.allow_reuse_address = True
+    server_address = ("127.0.0.1", port)
+    with http.server.ThreadingHTTPServer(server_address, ENLEGFHandler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

@@ -1,0 +1,150 @@
+# Enlang Design File for Full-Stack App
+define color "primary-bg" as "#090d16"
+define color "accent" as "#38bdf8"
+define color "card-bg" as "rgba(255, 255, 255, 0.04)"
+define size "radius" as 16
+
+for "body" apply:
+    margin 0
+    padding 0
+    background use color "primary-bg"
+    color "#f8fafc"
+    font-family "Inter, -apple-system, sans-serif"
+    min-height 100 viewport-height
+end
+
+for ".dark-theme" apply:
+    background "#090d16"
+    color "#f8fafc"
+end
+
+for ".light-theme" apply:
+    background "#f8fafc"
+    color "#0f172a"
+end
+
+for ".container" apply:
+    max-width 1100
+    margin "0 auto"
+    padding "0 24px"
+end
+
+for ".navbar" apply:
+    display flex
+    justify-content space-between
+    align-items center
+    padding "24px 0"
+    border-bottom "1px solid rgba(255,255,255,0.08)"
+end
+
+for ".logo" apply:
+    font-size 22
+    font-weight 800
+    color use color "accent"
+    letter-spacing 1
+end
+
+for ".hero" apply:
+    text-align center
+    padding "60px 20px 40px 20px"
+end
+
+for ".hero-title" apply:
+    font-size 44
+    font-weight 800
+    margin "0 0 16px 0"
+    line-height 1.2
+    color use color "accent"
+end
+
+for ".hero-desc" apply:
+    font-size 18
+    color "#94a3b8"
+    max-width 640
+    margin "0 auto 32px auto"
+    line-height 1.6
+end
+
+for ".grid" apply:
+    display grid
+    grid-template-columns "repeat(auto-fit, minmax(300px, 1fr))"
+    gap 24
+    margin-bottom 48
+end
+
+for ".card" apply:
+    background use color "card-bg"
+    border "1px solid rgba(255, 255, 255, 0.08)"
+    corner radius use size "radius"
+    padding 28
+    backdrop-filter "blur(12px)"
+    transition "transform 0.2s ease, border-color 0.2s ease"
+end
+
+when ".card" is hovered apply:
+    transform "translateY(-4px)"
+    border-color use color "accent"
+end
+
+for ".btn" apply:
+    background use color "accent"
+    color "#090d16"
+    border none
+    padding "12px 24px"
+    font-size 15
+    font-weight 600
+    corner radius 10
+    cursor pointer
+    transition "opacity 0.2s ease, transform 0.1s ease"
+end
+
+when ".btn" is hovered apply:
+    opacity 0.9
+    transform "scale(1.02)"
+end
+
+for ".btn-outline" apply:
+    background transparent
+    border "1px solid rgba(255, 255, 255, 0.2)"
+    color "#f8fafc"
+    padding "10px 20px"
+    corner radius 10
+    cursor pointer
+    font-weight 500
+    transition "border-color 0.2s ease"
+end
+
+when ".btn-outline" is hovered apply:
+    border-color use color "accent"
+end
+
+for ".counter-box" apply:
+    font-size 56
+    font-weight 800
+    color use color "accent"
+    text-align center
+    margin "20px 0"
+end
+
+for ".input-field" apply:
+    width 100 percent
+    box-sizing border-box
+    padding "12px 16px"
+    corner radius 8
+    border "1px solid rgba(255, 255, 255, 0.15)"
+    background "rgba(255, 255, 255, 0.05)"
+    color "#f8fafc"
+    font-size 14
+    margin-bottom 12
+end
+
+for ".badge" apply:
+    display inline-block
+    padding "6px 14px"
+    corner radius 20
+    font-size 12
+    font-weight 600
+    background "rgba(56, 189, 248, 0.15)"
+    color use color "accent"
+    margin-bottom 16
+end

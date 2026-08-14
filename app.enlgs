@@ -1,0 +1,73 @@
+in script:
+    # Application State
+    create count as 0
+    create isDarkMode = true
+    create totalTasks as 0
+
+    show "⚡ Enlang Full-Stack Engine initialized successfully"
+
+    # Counter Logic
+    to do updateCounterDisplay:
+        refresh "counter-val" with count
+        if count > 10:
+            set color of "counter-val" to "#f43f5e"
+            set text of "counter-badge" to "High Velocity 🔥"
+        else if count < 0:
+            set color of "counter-val" to "#fbbf24"
+            set text of "counter-badge" to "Negative Range ❄️"
+        else:
+            set color of "counter-val" to "#38bdf8"
+            set text of "counter-badge" to "Optimal Level ✨"
+
+    # Theme Toggle
+    to do toggleTheme:
+        if isDarkMode == true:
+            remove class "dark-theme" from "body"
+            add class "light-theme" to "body"
+            set text of "theme-btn" to "☀️ Light Mode"
+            set isDarkMode = false
+        else:
+            remove class "light-theme" from "body"
+            add class "dark-theme" to "body"
+            set text of "theme-btn" to "🌙 Dark Mode"
+            set isDarkMode = true
+
+    # Event Bindings
+    when "theme-btn" is clicked:
+        call toggleTheme
+
+    when "btn-inc" is clicked:
+        increase count by 1
+        call updateCounterDisplay
+
+    when "btn-dec" is clicked:
+        decrease count by 1
+        call updateCounterDisplay
+
+    when "btn-reset" is clicked:
+        set count as 0
+        call updateCounterDisplay
+
+    when "task-form" is submitted:
+        prevent default
+        create taskName as get value of "task-input"
+        if taskName == "":
+            alert "Please enter a task name!"
+            return
+        increase totalTasks by 1
+        refresh "task-count" with totalTasks
+        set text of "task-status" to "Added: " + taskName
+        set value of "task-input" to ""
+
+    when "api-btn" is clicked:
+        set text of "api-status" to "📡 Fetching live post from API..."
+        fetch data from "https://jsonplaceholder.typicode.com/posts/1":
+            set text of "api-status" to "✅ Received: " + data.title
+            show "API Response Title: " + data.title
+
+    # Live Clock update every 1 second
+    every 1 second:
+        refresh "live-clock" with "Engine Active • " + new Date().toLocaleTimeString()
+
+    # Raw JS passthrough demonstration
+    console.log("Natural English Scripting (.enlgs) is 100% active!");
