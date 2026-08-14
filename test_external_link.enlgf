@@ -1,0 +1,8 @@
+document enlgf:
+    head:
+        title "Connected with External ENLGD"
+        style from "external_theme.enlgd"
+
+    body:
+        heading 1 "Connected External Stylesheet!" class "hero-title"
+        paragraph "This page is styled via an external .enlgd file!"

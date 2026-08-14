@@ -156,7 +156,9 @@ class ENLEGFPParser:
             # String literal text content or attribute value
             if t.type == TokenType.STRING:
                 val = self._advance().value
-                if text_content is None:
+                if tag == "link" and "href" not in attributes:
+                    attributes["href"] = val
+                elif text_content is None:
                     text_content = val
                 continue
 
@@ -234,6 +236,11 @@ class ENLEGFPParser:
         if not self._is_at_end() and self._peek().type == TokenType.SYMBOL and self._peek().value == ":":
             self._advance()
             children = self._parse_block()
+
+        # Normalize <link> attributes: if 'src' was set from "style from ...", convert to 'href'
+        if tag == "link":
+            if "src" in attributes and "href" not in attributes:
+                attributes["href"] = attributes.pop("src")
 
         return ElementNode(
             tag=tag,

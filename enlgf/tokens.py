@@ -164,6 +164,11 @@ TAG_MAPPINGS = {
     "text area": ("textarea", {}),
     "label": ("label", {}),
 
+    "stylesheet from": ("link", {"rel": "stylesheet"}),
+    "style from": ("link", {"rel": "stylesheet"}),
+    "link style from": ("link", {"rel": "stylesheet"}),
+    "include style from": ("link", {"rel": "stylesheet"}),
+
     "inside styles": ("style", {}),
     "inside style": ("style", {}),
     "create styles": ("style", {}),

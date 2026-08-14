@@ -1,0 +1,14 @@
+# external_theme.enlgd
+
+for "body" apply:
+    background "#090d16"
+    color white
+    font-family "Inter, sans-serif"
+end
+
+for ".hero-title" apply:
+    color "#38bdf8"
+    font-size 42
+    text-align center
+    margin-top 40
+end

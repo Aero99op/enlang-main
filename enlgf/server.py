@@ -24,7 +24,7 @@ def compile_enlgf_file(filepath: str, style_path: str = None) -> str:
         source = f.read()
     html = compile_enlgf_source(source)
     
-    # Auto-detect matching .enlgd file if not explicitly provided
+    # 1. Auto-detect matching .enlgd file if not explicitly provided
     if style_path is None:
         auto_style = f"{os.path.splitext(filepath)[0]}.enlgd"
         if os.path.exists(auto_style):
@@ -38,11 +38,25 @@ def compile_enlgf_file(filepath: str, style_path: str = None) -> str:
             else:
                 with open(style_path, "r", encoding="utf-8") as sf:
                     css_content = sf.read()
-            
             style_tag = f"    <style>\n{css_content}\n    </style>\n  </head>"
             html = html.replace("  </head>", style_tag, 1)
         except Exception as e:
             print(f"[enlgf Server Warning] Failed to compile stylesheet '{style_path}': {e}", file=sys.stderr)
+
+    # 2. Auto-detect and compile referenced <link ... href="*.enlgd"> in HTML
+    import re
+    link_matches = re.findall(r'<link[^>]*href=["\']([^"\']+\.enlgd)["\'][^>]*>', html)
+    for enlgd_ref in link_matches:
+        base_dir = os.path.dirname(os.path.abspath(filepath)) if os.path.exists(filepath) else "."
+        full_ref_path = os.path.join(base_dir, enlgd_ref)
+        if os.path.exists(full_ref_path):
+            try:
+                from enlgd.compiler import compile_enlgd_file
+                css_content = compile_enlgd_file(full_ref_path)
+                pattern = re.compile(rf'<link[^>]*href=["\']{re.escape(enlgd_ref)}["\'][^>]*>')
+                html = pattern.sub(f"<style>\n{css_content}\n    </style>", html)
+            except Exception as e:
+                print(f"[enlgf Server Warning] Failed to compile referenced stylesheet '{enlgd_ref}': {e}", file=sys.stderr)
 
     return html
 
