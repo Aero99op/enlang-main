@@ -85,6 +85,10 @@ class ENLEGFPParser:
         if tag == "style":
             return self._parse_style_block()
 
+        # Handle Embedded Script Block: in script: / inside script: / script:
+        if tag == "script" and tag_token.value in ("in script", "inside script", "script", "create script"):
+            return self._parse_script_block()
+
         attributes = dict(default_attrs)
         styles = {}
         events = {}
@@ -153,11 +157,15 @@ class ENLEGFPParser:
                 self._advance()
                 continue
 
-            # Handle unquoted stylesheet/script filename identifiers on link elements (e.g. connect design filename.enlgd)
-            if tag == "link" and t.type in (TokenType.STRING, TokenType.IDENTIFIER) and "href" not in attributes:
+            # Handle unquoted stylesheet/script filename identifiers on link/script elements
+            if tag in ("link", "script") and t.type in (TokenType.STRING, TokenType.IDENTIFIER):
                 val = t.value.strip('"\'')
                 if val.endswith(".enlgd") or val.endswith(".css"):
                     attributes["href"] = val
+                    self._advance()
+                    continue
+                elif val.endswith(".enlgs") or val.endswith(".js"):
+                    attributes["src"] = val
                     self._advance()
                     continue
 
@@ -338,6 +346,59 @@ class ENLEGFPParser:
             compiled_css = f"/* Style compilation error: {e} */"
 
         return RawHTMLNode(content=f"<style>\n{compiled_css}\n</style>")
+
+    def _parse_script_block(self) -> ASTNode:
+        """Parses an inner/embedded .enlgs script block inside .enlgf."""
+        if not self._is_at_end() and self._peek().type == TokenType.SYMBOL and self._peek().value == ":":
+            self._advance()
+
+        script_tokens = []
+        has_indent = not self._is_at_end() and self._peek().type == TokenType.INDENT
+        if has_indent:
+            self._advance()
+
+        while not self._is_at_end():
+            if self._peek().type == TokenType.DEDENT:
+                break
+            if self._peek().type == TokenType.END_BLOCK and self._peek().value == "script":
+                self._advance()
+                break
+            if self._peek().value in ("end", "finish"):
+                self._advance()
+                if not self._is_at_end() and self._peek().value in ("script", "scripts"):
+                    self._advance()
+                break
+            script_tokens.append(self._advance())
+
+        if has_indent and not self._is_at_end() and self._peek().type == TokenType.DEDENT:
+            self._advance()
+
+        # Reconstruct script source and compile via enlgs
+        lines = []
+        cur_line = []
+        for t in script_tokens:
+            if t.type == TokenType.NEWLINE:
+                lines.append(" ".join(cur_line))
+                cur_line = []
+            elif t.type == TokenType.INDENT:
+                cur_line.append("    ")
+            elif t.type == TokenType.DEDENT:
+                pass
+            elif t.type == TokenType.STRING:
+                cur_line.append(f'"{t.value}"')
+            else:
+                cur_line.append(t.value)
+        if cur_line:
+            lines.append(" ".join(cur_line))
+
+        script_src = "\n".join(lines)
+        try:
+            from enlgs.compiler import compile_enlgs_source
+            compiled_js = compile_enlgs_source(script_src)
+        except Exception as e:
+            compiled_js = f"/* Script compilation error: {e} */"
+
+        return RawHTMLNode(content=f"<script>\n{compiled_js}\n</script>")
 
     def _parse_block(self) -> List[ASTNode]:
         children = []

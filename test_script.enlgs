@@ -1,0 +1,61 @@
+in script:
+    # Variables
+    create counter as 0
+    define APP_NAME as "Enlang Full-Stack App"
+    create isDark = false
+
+    # Output
+    show "Initializing " + APP_NAME
+
+    # Functions
+    to do greet with user:
+        show "Welcome, " + user
+        return "Hello " + user
+
+    to do incrementCounter:
+        increase counter by 1
+        refresh "counter-display" with counter
+        if counter > 5:
+            show "Counter reached milestone!"
+            set color of "counter-display" to "#38bdf8"
+        else:
+            set color of "counter-display" to "white"
+
+    # Event Bindings
+    when "inc-btn" is clicked:
+        call incrementCounter
+
+    when "toggle-btn" is clicked:
+        if isDark == false:
+            add class "dark-theme" to "body"
+            set text of "toggle-btn" to "Light Mode"
+            set isDark = true
+        else:
+            remove class "dark-theme" to "body"
+            set text of "toggle-btn" to "Dark Mode"
+            set isDark = false
+
+    when "login-form" is submitted:
+        prevent default
+        create username as get value of "username-input"
+        if username == "":
+            alert "Please enter username"
+            return
+        set text of "status" to "Logging in..."
+        fetch data from "https://jsonplaceholder.typicode.com/todos/1":
+            set text of "status" to "Logged in as " + username
+            store "active_user" as username
+
+    # Timers
+    after 2 seconds:
+        hide element "initial-loader"
+        show element "main-content"
+
+    # Loops
+    repeat 3 times:
+        show "Enlang Script is Active!"
+
+    # Automatic Raw JS Passthrough (Zero wrapper needed)
+    const customMap = new Map();
+    customMap.set("version", "1.0.0");
+    console.log("Raw JS Map entry:", customMap.get("version"));

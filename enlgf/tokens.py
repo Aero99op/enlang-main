@@ -182,6 +182,15 @@ TAG_MAPPINGS = {
     "create style": ("style", {}),
     "styles": ("style", {}),
     "style": ("style", {}),
+
+    "connect script": ("script", {}),
+    "link script": ("script", {}),
+    "script from": ("script", {}),
+    "include script from": ("script", {}),
+    "in script": ("script", {}),
+    "inside script": ("script", {}),
+    "create script": ("script", {}),
+    "script": ("script", {}),
 }
 
 # Explicit block closure phrases for Style 2
@@ -200,6 +209,9 @@ END_MAPPINGS = {
     "end styles": "style",
     "finish style": "style",
     "end style": "style",
+
+    "finish script": "script",
+    "end script": "script",
 
     "finish section": "div",
     "end section": "div",

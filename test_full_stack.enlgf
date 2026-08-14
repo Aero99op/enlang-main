@@ -1,0 +1,33 @@
+document enlgf:
+    head:
+        title "Enlang Full-Stack Demo (HTML + CSS + JS in English)"
+        connect design test_styles.enlgd
+        connect script test_script.enlgs
+
+    body:
+        header:
+            heading 1 "Enlang Full-Stack Engine" with color "#38bdf8" and text-align center
+            paragraph "HTML (.enlgf) + CSS (.enlgd) + JS (.enlgs) — 100% Pure English!" with text-align center
+
+        main:
+            section class "card" id "main-content" with margin "20px auto" and max-width 600:
+                heading 2 "Interactive Counter Component"
+                paragraph "Current Count: " with font-size 18
+                heading 3 "0" id "counter-display" with font-size 32 and color "#38bdf8"
+                
+                button "Increment Count" id "inc-btn" class "button" with margin-right 10
+                button "Toggle Dark Mode" id "toggle-btn" class "button"
+
+            section class "card" with margin "20px auto" and max-width 600:
+                heading 2 "API Login Form"
+                paragraph id "status" "Ready to login" with color "#94a3b8"
+
+                form id "login-form":
+                    text input id "username-input" hint "Enter your username" with margin-bottom 12 and padding 8
+                    submit button "Submit API Login" class "button" with width 100 percent
+
+        # Embedded in script: block inside .enlgf
+        in script:
+            when "counter-display" is clicked:
+                alert "You clicked the counter display!"
+        end script

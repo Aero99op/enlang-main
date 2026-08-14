@@ -18,13 +18,13 @@ def compile_enlgf_source(source: str) -> str:
     html = ENLGFEmitter(ast).emit()
     return html
 
-def compile_enlgf_file(filepath: str, style_path: str = None) -> str:
-    """Reads and compiles a .enlgf file into HTML5, optionally injecting a .enlgd stylesheet."""
+def compile_enlgf_file(filepath: str, style_path: str = None, script_path: str = None) -> str:
+    """Reads and compiles a .enlgf file into HTML5, optionally injecting .enlgd stylesheets and .enlgs scripts."""
     with open(filepath, "r", encoding="utf-8") as f:
         source = f.read()
     html = compile_enlgf_source(source)
     
-    # 1. Auto-detect matching .enlgd file if not explicitly provided
+    # 1. Auto-detect matching .enlgd stylesheet if not explicitly provided
     if style_path is None:
         auto_style = f"{os.path.splitext(filepath)[0]}.enlgd"
         if os.path.exists(auto_style):
@@ -43,7 +43,31 @@ def compile_enlgf_file(filepath: str, style_path: str = None) -> str:
         except Exception as e:
             print(f"[enlgf Server Warning] Failed to compile stylesheet '{style_path}': {e}", file=sys.stderr)
 
-    # 2. Auto-detect and compile referenced <link ... href="*.enlgd"> in HTML
+    # 2. Auto-detect matching .enlgs script if not explicitly provided
+    if script_path is None:
+        auto_script = f"{os.path.splitext(filepath)[0]}.enlgs"
+        if os.path.exists(auto_script):
+            script_path = auto_script
+
+    if script_path and os.path.exists(script_path):
+        try:
+            if script_path.endswith(".enlgs"):
+                from enlgs.compiler import compile_enlgs_file
+                js_content = compile_enlgs_file(script_path)
+            else:
+                with open(script_path, "r", encoding="utf-8") as scf:
+                    js_content = scf.read()
+            script_tag = f"    <script>\n{js_content}\n    </script>\n  </body>"
+            if "  </body>" in html:
+                html = html.replace("  </body>", script_tag, 1)
+            elif "</body>" in html:
+                html = html.replace("</body>", script_tag, 1)
+            else:
+                html += f"\n<script>\n{js_content}\n</script>"
+        except Exception as e:
+            print(f"[enlgf Server Warning] Failed to compile script '{script_path}': {e}", file=sys.stderr)
+
+    # 3. Auto-detect and compile referenced <link ... href="*.enlgd"> in HTML
     import re
     link_matches = re.findall(r'<link[^>]*href=["\']([^"\']+\.enlgd)["\'][^>]*>', html)
     for enlgd_ref in link_matches:
@@ -58,10 +82,24 @@ def compile_enlgf_file(filepath: str, style_path: str = None) -> str:
             except Exception as e:
                 print(f"[enlgf Server Warning] Failed to compile referenced stylesheet '{enlgd_ref}': {e}", file=sys.stderr)
 
+    # 4. Auto-detect and compile referenced <script ... src="*.enlgs"> in HTML
+    script_matches = re.findall(r'<script[^>]*src=["\']([^"\']+\.enlgs)["\'][^>]*>\s*</script>', html)
+    for enlgs_ref in script_matches:
+        base_dir = os.path.dirname(os.path.abspath(filepath)) if os.path.exists(filepath) else "."
+        full_ref_path = os.path.join(base_dir, enlgs_ref)
+        if os.path.exists(full_ref_path):
+            try:
+                from enlgs.compiler import compile_enlgs_file
+                js_content = compile_enlgs_file(full_ref_path)
+                pattern = re.compile(rf'<script[^>]*src=["\']{re.escape(enlgs_ref)}["\'][^>]*>\s*</script>')
+                html = pattern.sub(f"<script>\n{js_content}\n    </script>", html)
+            except Exception as e:
+                print(f"[enlgf Server Warning] Failed to compile referenced script '{enlgs_ref}': {e}", file=sys.stderr)
+
     return html
 
-def start_server(filepath: str, port: int = 3000, style_path: str = None):
-    """Starts live HTTP web server serving compiled .enlgf file with optional .enlgd styling."""
+def start_server(filepath: str, port: int = 3000, style_path: str = None, script_path: str = None):
+    """Starts live HTTP web server serving compiled .enlgf file with optional styling & scripts."""
     if not os.path.exists(filepath):
         print(f"Error: File '{filepath}' not found.", file=sys.stderr)
         sys.exit(1)
@@ -75,7 +113,7 @@ def start_server(filepath: str, port: int = 3000, style_path: str = None):
         def do_GET(self):
             if self.path in ("/", f"/{os.path.basename(filepath)}"):
                 try:
-                    html_content = compile_enlgf_file(filepath, style_path=style_path)
+                    html_content = compile_enlgf_file(filepath, style_path=style_path, script_path=script_path)
                     self.send_response(200)
                     self.send_header("Content-type", "text/html; charset=utf-8")
                     self.end_headers()
