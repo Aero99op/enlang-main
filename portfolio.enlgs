@@ -5,7 +5,7 @@ in script:
     show "⚡ Initializing Prayas Kumar Sahoo 3D Cyber Portfolio Engine..."
 
     # 3D Three.js Background Scene Initialization with Safe Guard
-    function init3D() {
+    ;function init3D() {
     ;if (typeof THREE === "undefined") {
     setTimeout(init3D, 200);
     return;
@@ -73,7 +73,7 @@ in script:
     renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    function render3DScene() {
+    ;function render3DScene() {
     requestAnimationFrame(render3DScene);
 
     targetX += (mouseX - targetX) * 0.05;
