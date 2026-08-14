@@ -79,7 +79,9 @@ def run_server():
     ]
 
     try:
-        subprocess.run(cmd, cwd=serve_dir, check=True)
+        import platform
+        use_shell = platform.system() == "Windows"
+        subprocess.run(cmd, cwd=serve_dir, check=True, shell=use_shell)
     except KeyboardInterrupt:
         print("\nServer stopped.")
     except Exception as e:

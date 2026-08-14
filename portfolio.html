@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayas Kumar Sahoo — Java Backend Developer Portfolio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    </script>
+    <style>
+:root {
+  --bg-space: #060913;
+  --cyan-glow: #00f2fe;
+  --purple-neon: #8a2be2;
+  --emerald-accent: #00e676;
+  --card-surface: rgba(13, 21, 39, 0.65);
+  --text-light: #f8fafc;
+  --text-muted: #94a3b8;
+  --radius-card: 18px;
+}
+
+body {
+  margin: 0px;
+  padding: 0px;
+  background: var(--bg-space);
+  color: var(--text-light);
+  font-family: Inter, -apple-system, sans-serif;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+#webgl-canvas {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.site-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 32px;
+  position: sticky;
+  top: 16px;
+  z-index: 100;
+  background: rgba(6, 9, 19, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 242, 254, 0.15);
+  border-radius: 16px;
+  margin: 16px auto 0 auto;
+  max-width: 1140px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.brand-logo {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--cyan-glow);
+  letter-spacing: 1px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.nav-links {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+
+.nav-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--cyan-glow);
+}
+
+.hero-section {
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  padding: 60px 0 40px 0;
+}
+
+.hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: rgba(0, 242, 254, 0.08);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  border-radius: 30px;
+  color: var(--cyan-glow);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
+}
+
+.hero-name {
+  font-size: 54px;
+  font-weight: 900;
+  margin: 0 0 16px 0;
+  letter-spacing: -1;
+  line-height: 1.15;
+  color: #ffffff;
+}
+
+.hero-subtitle {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  color: var(--cyan-glow);
+}
+
+.hero-bio {
+  font-size: 17px;
+  color: var(--text-muted);
+  max-width: 640px;
+  margin: 0 auto 36px auto;
+  line-height: 1.7;
+}
+
+.hero-cta-group {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  color: #060913;
+  border: none;
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(0, 242, 254, 0.35);
+  transition: transform 0.2s ease, shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(0, 242, 254, 0.55);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-light);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--cyan-glow);
+  color: var(--cyan-glow);
+  transform: translateY(-2px);
+}
+
+.social-badges {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.social-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--card-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: var(--text-light);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.social-badge:hover {
+  border-color: var(--cyan-glow);
+  color: var(--cyan-glow);
+  transform: translateY(-2px);
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.section-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cyan-glow);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+
+.section-title {
+  font-size: 38px;
+  font-weight: 800;
+  margin: 0px;
+  color: #ffffff;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 32px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.card-3d {
+  background: var(--card-surface);
+  border: 1px solid rgba(0, 242, 254, 0.12);
+  border-radius: var(--radius-card);
+  padding: 32px;
+  backdrop-filter: blur(16px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-3d:hover {
+  transform: translateY(-8px);
+  border-color: rgba(0, 242, 254, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 242, 254, 0.12);
+}
+
+.card-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(138, 43, 226, 0.15);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 20px;
+  color: #c084fc;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 12px 0;
+}
+
+.card-desc {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 0 0 20px 0;
+}
+
+.tech-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tech-tag {
+  padding: 4px 10px;
+  background: rgba(0, 242, 254, 0.06);
+  border: 1px solid rgba(0, 242, 254, 0.15);
+  border-radius: 6px;
+  color: var(--cyan-glow);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.terminal-window {
+  background: #080c16;
+  border: 1px solid rgba(0, 242, 254, 0.2);
+  border-radius: 14px;
+  overflow: hidden;
+  margin: 40px auto;
+  max-width: 840px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  font-family: Consolas, Monaco, monospace;
+}
+
+.terminal-bar {
+  background: #0d1424;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dot-red {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: #ef4444;
+}
+
+.dot-yellow {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: #f59e0b;
+}
+
+.dot-green {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: #10b981;
+}
+
+.terminal-body {
+  padding: 24px;
+  font-size: 14px;
+  color: #a5f3fc;
+  line-height: 1.7;
+  min-height: 180px;
+}
+
+.skill-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.skill-item:hover {
+  background: rgba(0, 242, 254, 0.04);
+  border-color: rgba(0, 242, 254, 0.25);
+}
+
+.timeline-item {
+  position: relative;
+  padding-left: 32px;
+  padding-bottom: 36px;
+  border-left: 2px solid rgba(0, 242, 254, 0.2);
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -7;
+  top: 0px;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--cyan-glow);
+  box-shadow: 0 0 12px rgba(0, 242, 254, 0.8);
+}
+
+.timeline-degree {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+}
+
+.timeline-institution {
+  font-size: 14px;
+  color: var(--cyan-glow);
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+
+.timeline-location {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0px;
+}
+
+#toast-alert {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  color: #060913;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  z-index: 999;
+  display: none;
+  box-shadow: 0 8px 30px rgba(0, 242, 254, 0.5);
+  transition: all 0.3s ease;
+}
+
+.footer {
+  text-align: center;
+  padding: 60px 0 40px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 80px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+    </style>
+    <script>
+let terminalStep = 0;
+
+console.log("⚡ Initializing Prayas Kumar Sahoo 3D Cyber Portfolio Engine...");
+
+function init3D() {
+  if (( typeof THREE === "undefined" ) {) {
+    setTimeout(init3D, 200);
+    return ;
+  }
+  }
+  const canvas = document.getElementById ( "webgl-canvas" );
+  if (( ! canvas ) return) {
+    const scene = new THREE.Scene ( );
+    const camera = new THREE.PerspectiveCamera ( 60 , window.innerWidth / window.innerHeight , 0.1 , 1000 );
+    const renderer = new THREE.WebGLRenderer ( { canvas;
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const particlesCount = 1200;
+    const positions = new Float32Array ( particlesCount * 3 );
+    const colors = new Float32Array ( particlesCount * 3 );
+    for (const ( of let i = 0 i < particlesCount * 3 i += 3 ) {) {
+      positions[i] = (Math.random() - 0.5) * 30;
+      positions[i + 1] = (Math.random() - 0.5) * 30;
+      positions[i + 2] = (Math.random() - 0.5) * 30;
+      colors[i] = 0.0;
+      colors[i + 1] = 0.95;
+      colors[i + 2] = 1.0;
+    }
+    }
+    const particlesGeometry = new THREE.BufferGeometry ( );
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const particlesMaterial = new THREE.PointsMaterial ( {;
+    size: 0.06,
+    size: 0.06,
+    vertexColors: true,
+    vertexColors: true,
+    transparent: true,
+    transparent: true,
+    opacity: 0.75
+    opacity: 0.75
+  }
+}
+
+});
+
+const particlesMesh = new THREE.Points ( particlesGeometry , particlesMaterial );
+
+scene.add(particlesMesh);
+
+const geom1 = new THREE.IcosahedronGeometry ( 2.2 , 1 );
+
+const mat1 = new THREE.MeshBasicMaterial ( { color;
+
+const mat1 = new THREE.MeshBasicMaterial({ color: 0x00f2fe, wireframe: true, transparent: true, opacity: 0.35 });
+
+const mat1 = new THREE.MeshBasicMaterial({ color: 0x00f2fe, wireframe: true, transparent: true, opacity: 0.35 });
+
+const mat1 = new THREE.MeshBasicMaterial({ color: 0x00f2fe, wireframe: true, transparent: true, opacity: 0.35 });
+
+const mat1 = new THREE.MeshBasicMaterial({ color: 0x00f2fe, wireframe: true, transparent: true, opacity: 0.35 });
+
+const poly1 = new THREE.Mesh ( geom1 , mat1 );
+
+poly1.position.set(4, 1, -5);
+
+scene.add(poly1);
+
+const geom2 = new THREE.TorusKnotGeometry ( 1.6 , 0.4 , 64 , 8 );
+
+const mat2 = new THREE.MeshBasicMaterial ( { color;
+
+const mat2 = new THREE.MeshBasicMaterial({ color: 0x8a2be2, wireframe: true, transparent: true, opacity: 0.25 });
+
+const mat2 = new THREE.MeshBasicMaterial({ color: 0x8a2be2, wireframe: true, transparent: true, opacity: 0.25 });
+
+const mat2 = new THREE.MeshBasicMaterial({ color: 0x8a2be2, wireframe: true, transparent: true, opacity: 0.25 });
+
+const mat2 = new THREE.MeshBasicMaterial({ color: 0x8a2be2, wireframe: true, transparent: true, opacity: 0.25 });
+
+const poly2 = new THREE.Mesh ( geom2 , mat2 );
+
+poly2.position.set(-4.5, -2, -6);
+
+scene.add(poly2);
+
+camera.position.z = 7;
+
+let mouseX = 0;
+
+let mouseY = 0;
+
+let targetX = 0;
+
+let targetY = 0;
+
+window.addEventListener('mousemove', function(event) {
+
+mouseX = (event.clientX / window.innerWidth - 0.5) * 2;
+
+mouseY = ( event.clientY / window.innerHeight - 0.5 ) * 2;
+    </script>
+    <style>
+:root {
+  --bg-space: #060913;
+  --cyan-glow: #00f2fe;
+  --purple-neon: #8a2be2;
+  --emerald-accent: #00e676;
+  --card-surface: rgba(13, 21, 39, 0.65);
+  --text-light: #f8fafc;
+  --text-muted: #94a3b8;
+  --radius-card: 18px;
+}
+
+body {
+  margin: 0px;
+  padding: 0px;
+  background: var(--bg-space);
+  color: var(--text-light);
+  font-family: Inter, -apple-system, sans-serif;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+#webgl-canvas {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.site-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 32px;
+  position: sticky;
+  top: 16px;
+  z-index: 100;
+  background: rgba(6, 9, 19, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 242, 254, 0.15);
+  border-radius: 16px;
+  margin: 16px auto 0 auto;
+  max-width: 1140px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.brand-logo {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--cyan-glow);
+  letter-spacing: 1px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.nav-links {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+
+.nav-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--cyan-glow);
+}
+
+.hero-section {
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  padding: 60px 0 40px 0;
+}
+
+.hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: rgba(0, 242, 254, 0.08);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  border-radius: 30px;
+  color: var(--cyan-glow);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
+}
+
+.hero-name {
+  font-size: 54px;
+  font-weight: 900;
+  margin: 0 0 16px 0;
+  letter-spacing: -1;
+  line-height: 1.15;
+  color: #ffffff;
+}
+
+.hero-subtitle {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  color: var(--cyan-glow);
+}
+
+.hero-bio {
+  font-size: 17px;
+  color: var(--text-muted);
+  max-width: 640px;
+  margin: 0 auto 36px auto;
+  line-height: 1.7;
+}
+
+.hero-cta-group {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  color: #060913;
+  border: none;
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(0, 242, 254, 0.35);
+  transition: transform 0.2s ease, shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(0, 242, 254, 0.55);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-light);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--cyan-glow);
+  color: var(--cyan-glow);
+  transform: translateY(-2px);
+}
+
+.social-badges {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.social-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--card-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: var(--text-light);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.social-badge:hover {
+  border-color: var(--cyan-glow);
+  color: var(--cyan-glow);
+  transform: translateY(-2px);
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.section-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cyan-glow);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+
+.section-title {
+  font-size: 38px;
+  font-weight: 800;
+  margin: 0px;
+  color: #ffffff;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 32px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.card-3d {
+  background: var(--card-surface);
+  border: 1px solid rgba(0, 242, 254, 0.12);
+  border-radius: var(--radius-card);
+  padding: 32px;
+  backdrop-filter: blur(16px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-3d:hover {
+  transform: translateY(-8px);
+  border-color: rgba(0, 242, 254, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 242, 254, 0.12);
+}
+
+.card-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(138, 43, 226, 0.15);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 20px;
+  color: #c084fc;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 12px 0;
+}
+
+.card-desc {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 0 0 20px 0;
+}
+
+.tech-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tech-tag {
+  padding: 4px 10px;
+  background: rgba(0, 242, 254, 0.06);
+  border: 1px solid rgba(0, 242, 254, 0.15);
+  border-radius: 6px;
+  color: var(--cyan-glow);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.terminal-window {
+  background: #080c16;
+  border: 1px solid rgba(0, 242, 254, 0.2);
+  border-radius: 14px;
+  overflow: hidden;
+  margin: 40px auto;
+  max-width: 840px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  font-family: Consolas, Monaco, monospace;
+}
+
+.terminal-bar {
+  background: #0d1424;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dot-red {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: #ef4444;
+}
+
+.dot-yellow {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: #f59e0b;
+}
+
+.dot-green {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: #10b981;
+}
+
+.terminal-body {
+  padding: 24px;
+  font-size: 14px;
+  color: #a5f3fc;
+  line-height: 1.7;
+  min-height: 180px;
+}
+
+.skill-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.skill-item:hover {
+  background: rgba(0, 242, 254, 0.04);
+  border-color: rgba(0, 242, 254, 0.25);
+}
+
+.timeline-item {
+  position: relative;
+  padding-left: 32px;
+  padding-bottom: 36px;
+  border-left: 2px solid rgba(0, 242, 254, 0.2);
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -7;
+  top: 0px;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--cyan-glow);
+  box-shadow: 0 0 12px rgba(0, 242, 254, 0.8);
+}
+
+.timeline-degree {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+}
+
+.timeline-institution {
+  font-size: 14px;
+  color: var(--cyan-glow);
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+
+.timeline-location {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0px;
+}
+
+#toast-alert {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  color: #060913;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  z-index: 999;
+  display: none;
+  box-shadow: 0 8px 30px rgba(0, 242, 254, 0.5);
+  transition: all 0.3s ease;
+}
+
+.footer {
+  text-align: center;
+  padding: 60px 0 40px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 80px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+    </style>
+  </head>
+  <body>
+    <canvas id="webgl-canvas">
+    </canvas>
+    <div class="site-wrapper">
+      <nav class="navbar">
+        <a href="#" class="brand-logo">⚡ Prayas.dev</a>
+        <div class="nav-links">
+          <a href="#projects" class="nav-link">Projects</a>
+          <a href="#skills" class="nav-link">Skills</a>
+          <a href="#education" class="nav-link">Education</a>
+          <a href="#contact" class="nav-link">Contact</a>
+          <a href="https://github.com/prayaskumarsahoo" target="_blank" class="btn-primary" style="padding: 8px 18px; font-size: 13px;">GitHub</a>
+        </div>
+      </nav>
+      <section class="hero-section">
+        <div class="container">
+          <div class="hero-content">
+            <div class="status-pill">
+              <span>🟢 Available for Java Backend Roles</span>
+            </div>
+            <h1 class="hero-name">PRAYAS KUMAR SAHOO</h1>
+            <div class="hero-subtitle">Java Backend Developer & Spring Boot Specialist</div>
+            <p class="hero-bio">Specializing in high-performance enterprise architectures, microservices, and database optimization. Experienced with Java, Spring Boot, MySQL, Oracle, and Object-Oriented Design.</p>
+            <div class="hero-cta-group">
+              <a href="#projects" class="btn-primary">🚀 View Projects</a>
+              <a href="#contact" class="btn-secondary">✉️ Get in Touch</a>
+              <button id="btn-copy-phone" class="btn-secondary">📞 8260350182</button>
+              <button id="btn-copy-email" class="btn-secondary">📋 Copy Email</button>
+            </div>
+            <div class="social-badges">
+              <a href="https://www.linkedin.com/in/prayas-kumar-sahoo-63126439a/" target="_blank" class="social-badge">🔗 LinkedIn Profile</a>
+              <a href="https://github.com/prayaskumarsahoo" target="_blank" class="social-badge">🐙 GitHub Profile</a>
+              <span class="social-badge">📍 Karabar, Nayagarh, Odisha</span>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="container">
+        <div class="terminal-window">
+          <div class="terminal-bar">
+            <div class="dot-red">
+            </div>
+            <div class="dot-yellow">
+            </div>
+            <div class="dot-green">
+            </div>
+            <span style="color: #94a3b8; font-size: 12px; margin-left: 10px;">bash - Java 21 Spring Boot Microservice Simulator</span>
+            <button id="btn-term-next" class="btn-primary" style="margin-left: auto; padding: 4px 12px; font-size: 11px;">▶ Next Log / Code</button>
+          </div>
+          <div class="terminal-body">
+            <pre id="terminal-output" style="margin: 0; font-family: monospace; white-space: pre-wrap;">
+              // [1] Booting Spring Boot 3.2.0 Microservice...n@RestController @RequestMapping("/api/v1/lms")npublic class CourseEnrollmentController {n    @Autowired private EnrollmentService service;n    @PostMapping("/enroll")n    public ResponseEntity<ApiResponse> enrollStudent(@Valid @RequestBody StudentDTO dto) {n        return ResponseEntity.ok(service.processEnrollment(dto));n    }n}
+            </pre>
+          </div>
+        </div>
+      </div>
+      <section id="projects" style="padding: 80px 0;">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-tag">Featured Engineering</span>
+            <h2 class="section-title">Core Backend Projects</h2>
+          </div>
+          <div class="grid-2">
+            <div class="card-3d">
+              <span class="card-badge">Enterprise Architecture</span>
+              <h3 class="card-title">Learning Management System (LMS)</h3>
+              <p class="card-desc">A comprehensive backend platform engineered for online education workflows. Features role-based access control (Admin, Instructor, Student), course curriculum orchestration, JWT authentication, and automated progress analytics.</p>
+              <div class="tech-tags">
+                <span class="tech-tag">Java</span>
+                <span class="tech-tag">Spring Boot</span>
+                <span class="tech-tag">MySQL</span>
+                <span class="tech-tag">REST APIs</span>
+                <span class="tech-tag">JWT Security</span>
+                <span class="tech-tag">OOP</span>
+              </div>
+            </div>
+            <div class="card-3d">
+              <span class="card-badge">Financial Automation</span>
+              <h3 class="card-title">Enterprise Payroll Management System</h3>
+              <p class="card-desc">Robust financial engine that automates employee compensation calculations, tax deductions, attendance tracking, and monthly salary disbursement reports with strict ACID transaction guarantees.</p>
+              <div class="tech-tags">
+                <span class="tech-tag">Java</span>
+                <span class="tech-tag">Oracle DB</span>
+                <span class="tech-tag">Stored Procedures</span>
+                <span class="tech-tag">Spring Boot</span>
+                <span class="tech-tag">ACID Transactions</span>
+                <span class="tech-tag">Microservices</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="skills" style="padding: 60px 0;">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-tag">Technical Arsenal</span>
+            <h2 class="section-title">Skills & Technologies</h2>
+          </div>
+          <div class="grid-3">
+            <div class="card-3d">
+              <h3 class="card-title">☕ Core Backend</h3>
+              <p class="card-desc">Primary language & backend framework stack for scalable systems.</p>
+              <div class="tech-tags">
+                <span class="tech-tag">Java (Core & Advanced)</span>
+                <span class="tech-tag">Spring Boot</span>
+                <span class="tech-tag">OOP (Object-Oriented)</span>
+                <span class="tech-tag">RESTful Web Services</span>
+                <span class="tech-tag">Exception Handling</span>
+              </div>
+            </div>
+            <div class="card-3d">
+              <h3 class="card-title">🗄️ Database & Storage</h3>
+              <p class="card-desc">Relational databases, indexing, and enterprise querying.</p>
+              <div class="tech-tags">
+                <span class="tech-tag">MySQL</span>
+                <span class="tech-tag">Oracle 19c</span>
+                <span class="tech-tag">SQL & Stored Procedures</span>
+                <span class="tech-tag">JPA / Hibernate</span>
+                <span class="tech-tag">Connection Pooling</span>
+              </div>
+            </div>
+            <div class="card-3d">
+              <h3 class="card-title">🛠️ Architecture & Tools</h3>
+              <p class="card-desc">Design principles, version control, and system patterns.</p>
+              <div class="tech-tags">
+                <span class="tech-tag">Microservices</span>
+                <span class="tech-tag">Git & GitHub</span>
+                <span class="tech-tag">Maven</span>
+                <span class="tech-tag">Design Patterns</span>
+                <span class="tech-tag">Clean Architecture</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="education" style="padding: 60px 0;">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-tag">Academic Background</span>
+            <h2 class="section-title">Education Timeline</h2>
+          </div>
+          <div style="max-width: 700px; margin: 0 auto;">
+            <div class="timeline-item">
+              <div class="timeline-marker">
+              </div>
+              <h4 class="timeline-degree">+2 Science (Higher Secondary)</h4>
+              <div class="timeline-institution">Inspire Science REC.H.S.SCH</div>
+              <p class="timeline-location">Nayagarh, Odisha</p>
+            </div>
+            <div class="timeline-item" style="border-left: none;">
+              <div class="timeline-marker">
+              </div>
+              <h4 class="timeline-degree">Secondary School Certificate (SSC / 10th)</h4>
+              <div class="timeline-institution">SSC Vidyamandir</div>
+              <p class="timeline-location">Karabar, Nayagarh, Odisha</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="contact" style="padding: 80px 0;">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-tag">Let's Connect</span>
+            <h2 class="section-title">Get in Touch</h2>
+          </div>
+          <div class="grid-2">
+            <div class="card-3d">
+              <h3 class="card-title">Direct Contact Info</h3>
+              <p class="card-desc">Feel free to reach out for software engineering opportunities, backend consulting, or collaboration.</p>
+              <div style="margin-bottom: 16px;">
+                <p style="color: #94a3b8; margin-bottom: 4px; font-size: 13px;">📞 Phone:</p>
+                <a href="tel:8260350182" style="color: #00f2fe; font-size: 16px; font-weight: 700; text-decoration: none;">+91 8260350182</a>
+              </div>
+              <div style="margin-bottom: 16px;">
+                <p style="color: #94a3b8; margin-bottom: 4px; font-size: 13px;">✉️ Email:</p>
+                <a href="mailto:prayaskumarsahoo45@gmail.com" style="color: #00f2fe; font-size: 16px; font-weight: 700; text-decoration: none;">prayaskumarsahoo45@gmail.com</a>
+              </div>
+              <div style="margin-bottom: 16px;">
+                <p style="color: #94a3b8; margin-bottom: 4px; font-size: 13px;">📍 Address:</p>
+                <p style="color: #ffffff; font-weight: 600; margin: 0;">AT/PO: Karabar, Bhapur, Dist: Nayagarh, Odisha</p>
+              </div>
+            </div>
+            <div class="card-3d">
+              <h3 class="card-title">Send a Message</h3>
+              <form id="contact-form">
+                <input type="text" id="contact-name" placeholder="Your Name..." class="input-field" style="width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #fff; margin-bottom: 12px;">
+                <input type="email" id="contact-email" placeholder="Your Email..." class="input-field" style="width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #fff; margin-bottom: 12px;">
+                <textarea id="contact-message" placeholder="Your message or inquiry..." style="width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #fff; margin-bottom: 16px; font-family: inherit;">4</textarea>
+                <button type="submit" class="btn-primary" style="width: 100%;">🚀 Submit Message</button>
+                <p id="contact-status" style="color: #00f2fe; margin-top: 12px; font-size: 13px;">
+                </p>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+      <footer class="footer">
+        <div class="container">
+          <p>© 2026 Prayas Kumar Sahoo • Java Backend Developer</p>
+          <p style="color: #64748b; font-size: 12px; margin-top: 6px;">Built 100% in Pure English with the Enlang Stack (.enlgf + .enlgd + .enlgs)</p>
+          <p id="live-clock" style="color: #00f2fe; font-size: 12px; font-weight: 600;">
+          </p>
+        </div>
+      </footer>
+    </div>
+    <div id="toast-alert">
+    </div>
+    <script>
+let terminalStep = 0;
+
+console.log("⚡ Initializing Prayas Kumar Sahoo 3D Cyber Portfolio Engine...");
+
+function init3D() {
+  if (( typeof THREE === "undefined" ) {) {
+    setTimeout(init3D, 200);
+    return ;
+  }
+  }
+  const canvas = document.getElementById ( "webgl-canvas" );
+  if (( ! canvas ) return) {
+    const scene = new THREE.Scene ( );
+    const camera = new THREE.PerspectiveCamera ( 60 , window.innerWidth / window.innerHeight , 0.1 , 1000 );
+    const renderer = new THREE.WebGLRenderer ( { canvas;
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const particlesCount = 1200;
+    const positions = new Float32Array ( particlesCount * 3 );
+    const colors = new Float32Array ( particlesCount * 3 );
+    for (const ( of let i = 0 i < particlesCount * 3 i += 3 ) {) {
+      positions[i] = (Math.random() - 0.5) * 30;
+      positions[i + 1] = (Math.random() - 0.5) * 30;
+      positions[i + 2] = (Math.random() - 0.5) * 30;
+      colors[i] = 0.0;
+      colors[i + 1] = 0.95;
+      colors[i + 2] = 1.0;
+    }
+    }
+    const particlesGeometry = new THREE.BufferGeometry ( );
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const particlesMaterial = new THREE.PointsMaterial ( {;
+    size: 0.06,
+    size: 0.06,
+    vertexColors: true,
+    vertexColors: true,
+    transparent: true,
+    transparent: true,
+    opacity: 0.75
+    opacity: 0.75
+  }
+}
+
+});
+
+const particlesMesh = new THREE.Points ( particlesGeometry , particlesMaterial );
+
+scene.add(particlesMesh);
+
+const geom1 = new THREE.IcosahedronGeometry ( 2.2 , 1 );
+
+const mat1 = new THREE.MeshBasicMaterial ( { color;
+
+const mat1 = new THREE.MeshBasicMaterial({ color: 0x00f2fe, wireframe: true, transparent: true, opacity: 0.35 });
+
+const mat1 = new THREE.MeshBasicMaterial({ color: 0x00f2fe, wireframe: true, transparent: true, opacity: 0.35 });
+
+const mat1 = new THREE.MeshBasicMaterial({ color: 0x00f2fe, wireframe: true, transparent: true, opacity: 0.35 });
+
+const mat1 = new THREE.MeshBasicMaterial({ color: 0x00f2fe, wireframe: true, transparent: true, opacity: 0.35 });
+
+const poly1 = new THREE.Mesh ( geom1 , mat1 );
+
+poly1.position.set(4, 1, -5);
+
+scene.add(poly1);
+
+const geom2 = new THREE.TorusKnotGeometry ( 1.6 , 0.4 , 64 , 8 );
+
+const mat2 = new THREE.MeshBasicMaterial ( { color;
+
+const mat2 = new THREE.MeshBasicMaterial({ color: 0x8a2be2, wireframe: true, transparent: true, opacity: 0.25 });
+
+const mat2 = new THREE.MeshBasicMaterial({ color: 0x8a2be2, wireframe: true, transparent: true, opacity: 0.25 });
+
+const mat2 = new THREE.MeshBasicMaterial({ color: 0x8a2be2, wireframe: true, transparent: true, opacity: 0.25 });
+
+const mat2 = new THREE.MeshBasicMaterial({ color: 0x8a2be2, wireframe: true, transparent: true, opacity: 0.25 });
+
+const poly2 = new THREE.Mesh ( geom2 , mat2 );
+
+poly2.position.set(-4.5, -2, -6);
+
+scene.add(poly2);
+
+camera.position.z = 7;
+
+let mouseX = 0;
+
+let mouseY = 0;
+
+let targetX = 0;
+
+let targetY = 0;
+
+window.addEventListener('mousemove', function(event) {
+
+mouseX = (event.clientX / window.innerWidth - 0.5) * 2;
+
+mouseY = ( event.clientY / window.innerHeight - 0.5 ) * 2;
+    </script>
+  </body>
+</html>

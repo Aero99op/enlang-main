@@ -183,7 +183,9 @@ def start_server(filepath: str, port: int = 3000, style_path: str = None, script
     
     try:
         # Run live-server in the foreground, letting it handle stdout/stderr
-        subprocess.run(cmd, cwd=serve_dir, check=True)
+        import platform
+        use_shell = platform.system() == "Windows"
+        subprocess.run(cmd, cwd=serve_dir, check=True, shell=use_shell)
     except KeyboardInterrupt:
         print("\n[enlgf Server] Server stopped gracefully.")
         sys.exit(0)
