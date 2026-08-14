@@ -41,13 +41,18 @@ class ENLEGFPParser:
 
     def _parse_statement(self) -> Optional[ASTNode]:
         self._skip_newlines()
-        if self._is_at_end() or self._peek().type in (TokenType.EOF, TokenType.DEDENT):
+        if self._is_at_end() or self._peek().type == TokenType.EOF:
+            return None
+            
+        if self._peek().type == TokenType.DEDENT:
+            self._advance()
             return None
 
         t = self._peek()
 
         # Handle Explicit Block End Tokens (e.g. end body, finish section)
         if t.type == TokenType.END_BLOCK:
+            self._advance()
             return None
 
         # Handle Traditional Raw HTML Passthrough Tags (<...>)
