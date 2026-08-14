@@ -99,9 +99,10 @@ def compile_enlgf_file(filepath: str, style_path: str = None, script_path: str =
     return html
 
 def start_server(filepath: str, port: int = 3000, style_path: str = None, script_path: str = None):
-    """Starts live HTTP web server serving compiled .enlgf file, and static assets."""
-    import http.server
-    import socketserver
+    """Starts a live server by wrapping Node.js 'live-server' with a background .enlgf watcher."""
+    import subprocess
+    import threading
+    import time
     
     abs_filepath = os.path.abspath(filepath)
     if not os.path.exists(abs_filepath):
@@ -111,61 +112,81 @@ def start_server(filepath: str, port: int = 3000, style_path: str = None, script
     serve_dir = os.path.dirname(abs_filepath)
     if not serve_dir:
         serve_dir = "."
+        
+    # The output HTML file that live-server will watch and serve
+    html_out = os.path.splitext(abs_filepath)[0] + ".html"
+    filename_html = os.path.basename(html_out)
 
-    class ENLGFSimpleHandler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory=serve_dir, **kwargs)
+    def do_compile():
+        try:
+            html = compile_enlgf_file(abs_filepath, style_path=style_path, script_path=script_path)
+            with open(html_out, "w", encoding="utf-8") as f:
+                f.write(html)
+            return True
+        except Exception as e:
+            print(f"\n[enlgf Compile Error] {e}", file=sys.stderr)
+            return False
 
-        def do_GET(self):
-            req_path = self.path.split("?")[0]
-            
-            # Serve the compiled .enlgf file on root or exact filename match
-            if req_path == "/" or req_path == f"/{os.path.basename(abs_filepath)}":
-                try:
-                    html_content = compile_enlgf_file(abs_filepath, style_path=style_path, script_path=script_path)
-                    encoded = html_content.encode("utf-8")
-                    self.send_response(200)
-                    self.send_header("Content-Type", "text/html; charset=utf-8")
-                    self.send_header("Content-Length", str(len(encoded)))
-                    self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-                    self.end_headers()
-                    self.wfile.write(encoded)
-                except Exception as e:
-                    self.send_response(500)
-                    self.send_header("Content-Type", "text/html; charset=utf-8")
-                    self.end_headers()
-                    err_html = f"<html><body><h2>enlgf Compilation Error</h2><pre>{e}</pre></body></html>"
-                    self.wfile.write(err_html.encode("utf-8"))
-                return
-                
-            # For all other files (images, css, js), use standard HTML/static serving
-            super().do_GET()
-
-        def log_message(self, format, *args):
-            # Suppress excessive logging to keep terminal clean
-            pass
+    # Initial compile
+    if not do_compile():
+        sys.exit(1)
 
     print("=" * 60)
     print(f"  ENLANG FRONTEND WEB SERVER (.enlgf)")
-    print(f"  Serving File: {os.path.basename(abs_filepath)}")
-    print(f"  Serving Dir:  {os.path.abspath(serve_dir)}")
-    print(f"  Live URL:     http://localhost:{port}")
-    print(f"  Alt URL:      http://127.0.0.1:{port}")
+    print(f"  Powered by:   HTML Live Server (npx live-server)")
+    print(f"  Watching:     {os.path.basename(abs_filepath)}")
+    print(f"  Live URL:     http://localhost:{port}/{filename_html}")
     print("=" * 60)
     print("Press Ctrl+C to stop server.\n", flush=True)
 
-    socketserver.TCPServer.allow_reuse_address = True
-    
-    # ThreadingMixIn makes it handle multiple requests concurrently like a real server
-    class ThreadedHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-        daemon_threads = True
+    # Watcher thread to auto-compile when .enlgf / .enlgd / .enlgs changes
+    def watch_files():
+        # Get related files
+        base_name = os.path.splitext(abs_filepath)[0]
+        files_to_watch = [abs_filepath]
+        if style_path and os.path.exists(style_path):
+            files_to_watch.append(style_path)
+        elif os.path.exists(f"{base_name}.enlgd"):
+            files_to_watch.append(f"{base_name}.enlgd")
+            
+        if script_path and os.path.exists(script_path):
+            files_to_watch.append(script_path)
+        elif os.path.exists(f"{base_name}.enlgs"):
+            files_to_watch.append(f"{base_name}.enlgs")
 
+        last_mtimes = {f: os.stat(f).st_mtime for f in files_to_watch if os.path.exists(f)}
+        
+        while True:
+            time.sleep(0.5)
+            changed = False
+            for f in files_to_watch:
+                if os.path.exists(f):
+                    current_mtime = os.stat(f).st_mtime
+                    if current_mtime > last_mtimes.get(f, 0):
+                        last_mtimes[f] = current_mtime
+                        changed = True
+            
+            if changed:
+                print(f"[enlgf Watcher] Change detected. Recompiling -> {filename_html}")
+                do_compile()
+
+    watcher_t = threading.Thread(target=watch_files, daemon=True)
+    watcher_t.start()
+
+    # Spawn standard node live-server
+    cmd = [
+        "npx", "live-server",
+        f"--port={port}",
+        f"--open={filename_html}",
+        "--cors"
+    ]
+    
     try:
-        with ThreadedHTTPServer(("0.0.0.0", port), ENLGFSimpleHandler) as httpd:
-            httpd.serve_forever()
+        # Run live-server in the foreground, letting it handle stdout/stderr
+        subprocess.run(cmd, cwd=serve_dir, check=True)
     except KeyboardInterrupt:
         print("\n[enlgf Server] Server stopped gracefully.")
         sys.exit(0)
     except Exception as e:
-        print(f"\n[enlgf Server Error] {e}", file=sys.stderr)
+        print(f"\n[enlgf Server Error] Failed to start npx live-server. Is Node.js/npx installed? {e}", file=sys.stderr)
         sys.exit(1)

@@ -12,64 +12,78 @@ PORT = 2222
 FILEPATH = os.path.join(BASE_DIR, "portfolio.enlgf")
 
 def run_server():
-    import http.server
-    import socketserver
+    import subprocess
+    import threading
+    import time
     
     serve_dir = os.path.dirname(FILEPATH)
     if not serve_dir:
         serve_dir = "."
 
-    class PortfolioHandler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory=serve_dir, **kwargs)
+    html_out = os.path.splitext(FILEPATH)[0] + ".html"
+    filename_html = os.path.basename(html_out)
 
-        def do_GET(self):
-            req_path = self.path.split("?")[0]
-            
-            # Serve the compiled .enlgf file on root or exact filename match
-            if req_path == "/" or req_path == f"/{os.path.basename(FILEPATH)}":
-                try:
-                    html = compile_enlgf_file(FILEPATH)
-                    encoded = html.encode("utf-8")
-                    self.send_response(200)
-                    self.send_header("Content-Type", "text/html; charset=utf-8")
-                    self.send_header("Content-Length", str(len(encoded)))
-                    self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-                    self.end_headers()
-                    self.wfile.write(encoded)
-                except Exception as e:
-                    self.send_response(500)
-                    self.send_header("Content-Type", "text/html; charset=utf-8")
-                    self.end_headers()
-                    err_html = f"<html><body><h2>enlgf Compilation Error</h2><pre>{e}</pre></body></html>"
-                    self.wfile.write(err_html.encode("utf-8"))
-                return
-                
-            # Fall back to standard serving for assets like images, js, etc.
-            super().do_GET()
+    def do_compile():
+        try:
+            html = compile_enlgf_file(FILEPATH)
+            with open(html_out, "w", encoding="utf-8") as f:
+                f.write(html)
+            return True
+        except Exception as e:
+            print(f"\n[enlgf Compile Error] {e}", file=sys.stderr)
+            return False
 
-        def log_message(self, format, *args):
-            pass
+    if not do_compile():
+        sys.exit(1)
 
     print("=" * 60)
     print(f"  PRAYAS 3D PORTFOLIO SERVER LIVE ON PORT {PORT}")
-    print(f"  Serving Dir: {os.path.abspath(serve_dir)}")
-    print(f"  Live URL: http://localhost:{PORT}")
-    print(f"  Alt URL:  http://127.0.0.1:{PORT}")
+    print(f"  Powered by: HTML Live Server (npx live-server)")
+    print(f"  Watching:   {os.path.basename(FILEPATH)}")
+    print(f"  Live URL:   http://localhost:{PORT}/{filename_html}")
     print("=" * 60, flush=True)
 
-    socketserver.TCPServer.allow_reuse_address = True
+    def watch_files():
+        base_name = os.path.splitext(FILEPATH)[0]
+        files_to_watch = [FILEPATH]
+        
+        if os.path.exists(f"{base_name}.enlgd"):
+            files_to_watch.append(f"{base_name}.enlgd")
+        if os.path.exists(f"{base_name}.enlgs"):
+            files_to_watch.append(f"{base_name}.enlgs")
+
+        last_mtimes = {f: os.stat(f).st_mtime for f in files_to_watch if os.path.exists(f)}
+        
+        while True:
+            time.sleep(0.5)
+            changed = False
+            for f in files_to_watch:
+                if os.path.exists(f):
+                    current_mtime = os.stat(f).st_mtime
+                    if current_mtime > last_mtimes.get(f, 0):
+                        last_mtimes[f] = current_mtime
+                        changed = True
+            
+            if changed:
+                print(f"[enlgf Watcher] Change detected. Recompiling -> {filename_html}")
+                do_compile()
+
+    watcher_t = threading.Thread(target=watch_files, daemon=True)
+    watcher_t.start()
     
-    class ThreadedHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-        daemon_threads = True
+    cmd = [
+        "npx", "live-server",
+        f"--port={PORT}",
+        f"--open={filename_html}",
+        "--cors"
+    ]
 
     try:
-        with ThreadedHTTPServer(("0.0.0.0", PORT), PortfolioHandler) as httpd:
-            httpd.serve_forever()
+        subprocess.run(cmd, cwd=serve_dir, check=True)
     except KeyboardInterrupt:
         print("\nServer stopped.")
     except Exception as e:
-        print(f"\n[Server Error] {e}", file=sys.stderr)
+        print(f"\n[Server Error] Failed to start npx live-server: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":
