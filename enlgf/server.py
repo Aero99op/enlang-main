@@ -99,92 +99,73 @@ def compile_enlgf_file(filepath: str, style_path: str = None, script_path: str =
     return html
 
 def start_server(filepath: str, port: int = 3000, style_path: str = None, script_path: str = None):
-    """Starts live high-performance HTTP web server serving compiled .enlgf file with instant response."""
-    import socket
-    import threading
-
+    """Starts live HTTP web server serving compiled .enlgf file, and static assets."""
+    import http.server
+    import socketserver
+    
     abs_filepath = os.path.abspath(filepath)
     if not os.path.exists(abs_filepath):
         print(f"Error: File '{filepath}' not found.", file=sys.stderr)
         sys.exit(1)
+        
+    serve_dir = os.path.dirname(abs_filepath)
+    if not serve_dir:
+        serve_dir = "."
 
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    
-    try:
-        server_socket.bind(("0.0.0.0", port))
-    except Exception as e:
-        print(f"Error binding to port {port}: {e}", file=sys.stderr)
-        sys.exit(1)
+    class ENLGFSimpleHandler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=serve_dir, **kwargs)
 
-    server_socket.listen(128)
+        def do_GET(self):
+            req_path = self.path.split("?")[0]
+            
+            # Serve the compiled .enlgf file on root or exact filename match
+            if req_path == "/" or req_path == f"/{os.path.basename(abs_filepath)}":
+                try:
+                    html_content = compile_enlgf_file(abs_filepath, style_path=style_path, script_path=script_path)
+                    encoded = html_content.encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(encoded)))
+                    self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                    self.end_headers()
+                    self.wfile.write(encoded)
+                except Exception as e:
+                    self.send_response(500)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.end_headers()
+                    err_html = f"<html><body><h2>enlgf Compilation Error</h2><pre>{e}</pre></body></html>"
+                    self.wfile.write(err_html.encode("utf-8"))
+                return
+                
+            # For all other files (images, css, js), use standard HTML/static serving
+            super().do_GET()
+
+        def log_message(self, format, *args):
+            # Suppress excessive logging to keep terminal clean
+            pass
 
     print("=" * 60)
     print(f"  ENLANG FRONTEND WEB SERVER (.enlgf)")
     print(f"  Serving File: {os.path.basename(abs_filepath)}")
+    print(f"  Serving Dir:  {os.path.abspath(serve_dir)}")
     print(f"  Live URL:     http://localhost:{port}")
     print(f"  Alt URL:      http://127.0.0.1:{port}")
     print("=" * 60)
     print("Press Ctrl+C to stop server.\n", flush=True)
 
-    def handle_client(sock, client_addr):
-        try:
-            sock.settimeout(3.0)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            request_data = sock.recv(4096).decode("utf-8", errors="ignore")
-            if not request_data:
-                sock.close()
-                return
-
-            req_line = request_data.split("\r\n")[0]
-            parts = req_line.split(" ")
-            method = parts[0] if len(parts) > 0 else "GET"
-            path = parts[1] if len(parts) > 1 else "/"
-
-            if path.startswith("/favicon.ico"):
-                res = b"HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n"
-                sock.sendall(res)
-                sock.close()
-                return
-
-            # Recompile on every request for live developer updates
-            try:
-                html_content = compile_enlgf_file(abs_filepath, style_path=style_path, script_path=script_path)
-                body = html_content.encode("utf-8")
-                header = (
-                    f"HTTP/1.1 200 OK\r\n"
-                    f"Content-Type: text/html; charset=utf-8\r\n"
-                    f"Content-Length: {len(body)}\r\n"
-                    f"Cache-Control: no-cache, no-store, must-revalidate\r\n"
-                    f"Connection: close\r\n\r\n"
-                ).encode("utf-8")
-                sock.sendall(header + body)
-                print(f"[enlgf Server] 200 OK -> {path} ({len(body)} bytes)", flush=True)
-            except Exception as comp_err:
-                err_html = f"<html><body><h2>enlgf Compilation Error</h2><pre>{comp_err}</pre></body></html>".encode("utf-8")
-                header = (
-                    f"HTTP/1.1 500 Internal Server Error\r\n"
-                    f"Content-Type: text/html; charset=utf-8\r\n"
-                    f"Content-Length: {len(err_html)}\r\n"
-                    f"Connection: close\r\n\r\n"
-                ).encode("utf-8")
-                sock.sendall(header + err_html)
-                print(f"[enlgf Server Error] {comp_err}", flush=True)
-        except Exception:
-            pass
-        finally:
-            try:
-                sock.shutdown(socket.SHUT_RDWR)
-            except Exception:
-                pass
-            sock.close()
+    socketserver.TCPServer.allow_reuse_address = True
+    
+    # ThreadingMixIn makes it handle multiple requests concurrently like a real server
+    class ThreadedHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        daemon_threads = True
 
     try:
-        while True:
-            client_sock, client_addr = server_socket.accept()
-            t = threading.Thread(target=handle_client, args=(client_sock, client_addr), daemon=True)
-            t.start()
+        with ThreadedHTTPServer(("0.0.0.0", port), ENLGFSimpleHandler) as httpd:
+            httpd.serve_forever()
     except KeyboardInterrupt:
         print("\n[enlgf Server] Server stopped gracefully.")
-        server_socket.close()
         sys.exit(0)
+    except Exception as e:
+        print(f"\n[enlgf Server Error] {e}", file=sys.stderr)
+        sys.exit(1)

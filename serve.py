@@ -12,70 +12,65 @@ PORT = 2222
 FILEPATH = os.path.join(BASE_DIR, "portfolio.enlgf")
 
 def run_server():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    import http.server
+    import socketserver
     
-    try:
-        server_socket.bind(("0.0.0.0", PORT))
-    except Exception as e:
-        print(f"Error binding to port {PORT}: {e}", file=sys.stderr)
-        sys.exit(1)
+    serve_dir = os.path.dirname(FILEPATH)
+    if not serve_dir:
+        serve_dir = "."
 
-    server_socket.listen(128)
+    class PortfolioHandler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=serve_dir, **kwargs)
+
+        def do_GET(self):
+            req_path = self.path.split("?")[0]
+            
+            # Serve the compiled .enlgf file on root or exact filename match
+            if req_path == "/" or req_path == f"/{os.path.basename(FILEPATH)}":
+                try:
+                    html = compile_enlgf_file(FILEPATH)
+                    encoded = html.encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(encoded)))
+                    self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                    self.end_headers()
+                    self.wfile.write(encoded)
+                except Exception as e:
+                    self.send_response(500)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.end_headers()
+                    err_html = f"<html><body><h2>enlgf Compilation Error</h2><pre>{e}</pre></body></html>"
+                    self.wfile.write(err_html.encode("utf-8"))
+                return
+                
+            # Fall back to standard serving for assets like images, js, etc.
+            super().do_GET()
+
+        def log_message(self, format, *args):
+            pass
 
     print("=" * 60)
     print(f"  PRAYAS 3D PORTFOLIO SERVER LIVE ON PORT {PORT}")
+    print(f"  Serving Dir: {os.path.abspath(serve_dir)}")
     print(f"  Live URL: http://localhost:{PORT}")
     print(f"  Alt URL:  http://127.0.0.1:{PORT}")
     print("=" * 60, flush=True)
 
-    def handle_client(sock, addr):
-        try:
-            sock.settimeout(3.0)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            request_data = sock.recv(4096).decode("utf-8", errors="ignore")
-            if not request_data:
-                sock.close()
-                return
-
-            req_line = request_data.split("\r\n")[0]
-            parts = req_line.split(" ")
-            path = parts[1] if len(parts) > 1 else "/"
-
-            if path.startswith("/favicon.ico"):
-                sock.sendall(b"HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n")
-                sock.close()
-                return
-
-            html = compile_enlgf_file(FILEPATH)
-            body = html.encode("utf-8")
-            header = (
-                f"HTTP/1.1 200 OK\r\n"
-                f"Content-Type: text/html; charset=utf-8\r\n"
-                f"Content-Length: {len(body)}\r\n"
-                f"Cache-Control: no-cache, no-store, must-revalidate\r\n"
-                f"Connection: close\r\n\r\n"
-            ).encode("utf-8")
-
-            sock.sendall(header + body)
-            print(f"[Portfolio Server] 200 OK -> {path} ({len(body)} bytes)", flush=True)
-        except Exception as e:
-            pass
-        finally:
-            try:
-                sock.shutdown(socket.SHUT_RDWR)
-            except:
-                pass
-            sock.close()
+    socketserver.TCPServer.allow_reuse_address = True
+    
+    class ThreadedHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        daemon_threads = True
 
     try:
-        while True:
-            client_sock, client_addr = server_socket.accept()
-            t = threading.Thread(target=handle_client, args=(client_sock, client_addr), daemon=True)
-            t.start()
+        with ThreadedHTTPServer(("0.0.0.0", PORT), PortfolioHandler) as httpd:
+            httpd.serve_forever()
     except KeyboardInterrupt:
         print("\nServer stopped.")
-        server_socket.close()
+    except Exception as e:
+        print(f"\n[Server Error] {e}", file=sys.stderr)
+
 
 if __name__ == "__main__":
     run_server()
