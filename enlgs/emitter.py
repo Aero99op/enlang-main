@@ -1,7 +1,8 @@
 """enlgs JavaScript Emitter.
 
 Compiles an ENLGS AST (ScriptNode) into standard, clean, modern JavaScript.
-Handles automatic async/await for network requests, DOM bindings, and event wrappers.
+Handles OOP classes, async/await, generators, DOM tree construction, component rendering,
+functional array pipelines, WebSockets, Three.js 3D helpers, and full Node.js HTTP servers.
 """
 
 from typing import List
@@ -10,7 +11,13 @@ from .ast_nodes import (
     FunctionDefNode, FunctionCallNode, ReturnNode, IfNode,
     LoopRepeatNode, LoopForNode, LoopWhileNode, DOMSetNode, DOMRefreshNode,
     DOMClassNode, DOMVisibilityNode, EventNode, FetchNode, TimerNode,
-    BrowserActionNode, StorageNode, TryCatchNode, ClassDefNode, PreventDefaultNode
+    BrowserActionNode, StorageNode, TryCatchNode, ClassDefNode, ClassInitNode,
+    ClassSuperNode, ShapeDefNode, ComponentDefNode, DOMMakeElementNode,
+    DOMAddElementNode, DOMAppendToNode, AnimateTargetNode, FunctionalPipelineNode,
+    HttpServerNode, HttpRouteNode, HttpReturnJsonNode, StoreDefNode, StoreStateNode,
+    World3DNode, AnimationFrameLoopNode, RotateByNode, TranslateByNode,
+    ExtractDestructureNode, WebSocketConnectNode, WebSocketReceiveNode,
+    GeneratorDefNode, GeneratorYieldNode, PreventDefaultNode
 )
 
 def _dom_el(target: str) -> str:
@@ -52,6 +59,10 @@ class ENLGSEmitter:
         elif isinstance(node, VarAssignNode):
             return f"{pad}{node.name} {node.op} {node.value};"
 
+        elif isinstance(node, ExtractDestructureNode):
+            vars_str = ", ".join(node.variables)
+            return f"{pad}const {{ {vars_str} }} = {node.source_expr};"
+
         # ── Output ──
         elif isinstance(node, OutputNode):
             args_str = ", ".join(node.args)
@@ -67,7 +78,7 @@ class ENLGSEmitter:
         elif isinstance(node, PreventDefaultNode):
             return f"{pad}if (typeof event !== 'undefined' && event.preventDefault) event.preventDefault();"
 
-        # ── Functions ──
+        # ── Functions & Async ──
         elif isinstance(node, FunctionDefNode):
             async_prefix = "async " if node.is_async else ""
             params_str = ", ".join(node.params)
@@ -76,8 +87,22 @@ class ENLGSEmitter:
                 c = self._emit_node(child, indent + 1)
                 if c:
                     lines.append(c)
-            lines.append(f"{pad}}}")
+            lines.append(pad + "}")
             return "\n".join(lines)
+
+        elif isinstance(node, GeneratorDefNode):
+            params_str = ", ".join(node.params)
+            lines = [f"{pad}function* {node.name}({params_str}) {{"]
+            for child in node.body:
+                c = self._emit_node(child, indent + 1)
+                if c:
+                    lines.append(c)
+            lines.append(pad + "}")
+            return "\n".join(lines)
+
+        elif isinstance(node, GeneratorYieldNode):
+            val_str = f" {node.value}" if node.value is not None else ""
+            return f"{pad}yield{val_str};"
 
         elif isinstance(node, FunctionCallNode):
             args_str = ", ".join(node.args)
@@ -87,6 +112,9 @@ class ENLGSEmitter:
             val_str = f" {node.value}" if node.value is not None else ""
             return f"{pad}return{val_str};"
 
+        elif isinstance(node, HttpReturnJsonNode):
+            return pad + "res.writeHead(200, { 'Content-Type': 'application/json' });\n" + pad + f"res.end(JSON.stringify({node.data_expr}));"
+
         # ── Conditionals ──
         elif isinstance(node, IfNode):
             lines = [f"{pad}if ({node.condition}) {{"]
@@ -94,7 +122,7 @@ class ENLGSEmitter:
                 c = self._emit_node(child, indent + 1)
                 if c:
                     lines.append(c)
-            lines.append(f"{pad}}}")
+            lines.append(pad + "}")
 
             for elif_cond, elif_body in node.elif_branches:
                 lines.append(f"{pad}else if ({elif_cond}) {{")
@@ -102,15 +130,15 @@ class ENLGSEmitter:
                     c = self._emit_node(child, indent + 1)
                     if c:
                         lines.append(c)
-                lines.append(f"{pad}}}")
+                lines.append(pad + "}")
 
-            if node.else_body is not None:
-                lines.append(f"{pad}else {{")
+            if node.else_body:
+                lines.append(pad + "else {")
                 for child in node.else_body:
                     c = self._emit_node(child, indent + 1)
                     if c:
                         lines.append(c)
-                lines.append(f"{pad}}}")
+                lines.append(pad + "}")
 
             return "\n".join(lines)
 
@@ -123,7 +151,7 @@ class ENLGSEmitter:
                 c = self._emit_node(child, indent + 1)
                 if c:
                     lines.append(c)
-            lines.append(f"{pad}}}")
+            lines.append(pad + "}")
             return "\n".join(lines)
 
         elif isinstance(node, LoopForNode):
@@ -132,7 +160,7 @@ class ENLGSEmitter:
                 c = self._emit_node(child, indent + 1)
                 if c:
                     lines.append(c)
-            lines.append(f"{pad}}}")
+            lines.append(pad + "}")
             return "\n".join(lines)
 
         elif isinstance(node, LoopWhileNode):
@@ -141,7 +169,7 @@ class ENLGSEmitter:
                 c = self._emit_node(child, indent + 1)
                 if c:
                     lines.append(c)
-            lines.append(f"{pad}}}")
+            lines.append(pad + "}")
             return "\n".join(lines)
 
         # ── DOM Setters ──
@@ -180,9 +208,75 @@ class ENLGSEmitter:
             display_val = "''" if node.action == "show" else "'none'"
             return f"{pad}{el}.style.display = {display_val};"
 
+        # ── Declarative UI Elements ──
+        elif isinstance(node, DOMMakeElementNode):
+            lines = [pad + "(function() {", f"{pad}  const el = document.createElement('{node.tag}');"]
+            for k, v in node.attrs.items():
+                if k == "class":
+                    lines.append(f"{pad}  el.className = '{v}';")
+                elif k == "id":
+                    lines.append(f"{pad}  el.id = '{v}';")
+                elif k == "style":
+                    lines.append(f"{pad}  el.setAttribute('style', '{v}');")
+                else:
+                    lines.append(f"{pad}  el.setAttribute('{k}', '{v}');")
+            for child in node.body:
+                c = self._emit_node(child, indent + 1)
+                if c:
+                    lines.append(c)
+            lines.append(pad + "  return el;")
+            lines.append(pad + "})();")
+            return "\n".join(lines)
+
+        elif isinstance(node, DOMAddElementNode):
+            lines = [pad + "(function(parentEl) {", f"{pad}  const child = document.createElement('{node.tag}');"]
+            if node.text:
+                lines.append(f"{pad}  child.textContent = {node.text};")
+            for k, v in node.attrs.items():
+                if k == "class":
+                    lines.append(f"{pad}  child.className = '{v}';")
+                else:
+                    lines.append(f"{pad}  child.setAttribute('{k}', '{v}');")
+            lines.append(pad + "  (parentEl || document.body).appendChild(child);")
+            lines.append(pad + "})(typeof el !== 'undefined' ? el : null);")
+            return "\n".join(lines)
+
+        elif isinstance(node, DOMAppendToNode):
+            parent_el = _dom_el(node.parent)
+            method = "prepend" if node.is_prepend else "appendChild"
+            return f"{pad}{parent_el}.{method}({node.child});"
+
+        elif isinstance(node, AnimateTargetNode):
+            el = _dom_el(node.target)
+            return pad + f"{el}.animate({node.properties}, {{ duration: {node.duration_ms}, fill: 'forwards' }});"
+
+        # ── TypeScript Shapes ──
+        elif isinstance(node, ShapeDefNode):
+            lines = [pad + "/**", pad + f" * @typedef {{Object}} {node.name}"]
+            for fname, ftype in node.fields:
+                lines.append(pad + f" * @property {{{ftype}}} {fname}")
+            lines.append(pad + " */")
+            return "\n".join(lines)
+
+        # ── Declarative UI Components ──
+        elif isinstance(node, ComponentDefNode):
+            props_str = ", ".join(node.props)
+            lines = [
+                pad + "function " + node.name + "({ " + props_str + " } = {}) {",
+                f"{pad}  const componentRoot = document.createElement('div');",
+                f"{pad}  componentRoot.className = '{node.name.lower()}-component';"
+            ]
+            for child in node.body:
+                c = self._emit_node(child, indent + 1)
+                if c:
+                    lines.append(c)
+            lines.append(pad + "  return componentRoot;")
+            lines.append(pad + "}")
+            return "\n".join(lines)
+
         # ── Events ──
         elif isinstance(node, EventNode):
-            el = _dom_el(node.target)
+            el = node.target if node.is_variable else _dom_el(node.target)
             ev_name = node.event_type
             if ev_name == "load" and node.target == "window":
                 el = "window"
@@ -195,27 +289,127 @@ class ENLGSEmitter:
                 c = self._emit_node(child, indent + 1)
                 if c:
                     lines.append(c)
-            lines.append(f"{pad}}});")
+            lines.append(pad + "});")
             return "\n".join(lines)
 
         # ── Fetch / Network ──
         elif isinstance(node, FetchNode):
-            lines = [f"{pad}(async function() {{", f"{pad}  try {{"]
+            lines = [pad + "(async function() {", pad + "  try {"]
             if node.method == "POST":
                 body_opt = f", body: JSON.stringify({node.body_expr})" if node.body_expr else ""
-                lines.append(f"{pad}    const response = await fetch('{node.url}', {{ method: 'POST', headers: {{ 'Content-Type': 'application/json' }}{body_opt} }});")
+                lines.append(pad + f"    const response = await fetch('{node.url}', {{ method: 'POST', headers: {{ 'Content-Type': 'application/json' }}{body_opt} }});")
             else:
-                lines.append(f"{pad}    const response = await fetch('{node.url}');")
+                lines.append(pad + f"    const response = await fetch('{node.url}');")
 
-            lines.append(f"{pad}    const {node.response_var} = await response.json();")
+            lines.append(pad + f"    const {node.response_var} = await response.json();")
             for child in node.body:
                 c = self._emit_node(child, indent + 2)
                 if c:
                     lines.append(c)
-            lines.append(f"{pad}  }} catch (err) {{")
-            lines.append(f"{pad}    console.error('Fetch error:', err);")
-            lines.append(f"{pad}  }}")
-            lines.append(f"{pad}}})();")
+            lines.append(pad + "  } catch (err) {")
+            lines.append(pad + "    console.error('Fetch error:', err);")
+            lines.append(pad + "  }")
+            lines.append(pad + "})();")
+            return "\n".join(lines)
+
+        # ── Full-Stack Server ──
+        elif isinstance(node, HttpServerNode):
+            lines = [
+                pad + "const http = require('http');",
+                pad + "const server = http.createServer((req, res) => {",
+                pad + "  const url = req.url.split('?')[0];",
+                pad + "  const method = req.method;"
+            ]
+            for r in node.routes:
+                lines.append(self._emit_node(r, indent + 1))
+            lines.append(pad + "  res.writeHead(404, { 'Content-Type': 'text/plain' });")
+            lines.append(pad + "  res.end('Not Found');")
+            lines.append(pad + "});")
+            lines.append(pad + f"server.listen({node.port}, () => console.log('Enlang HTTP Server running on port {node.port}'));")
+            return "\n".join(lines)
+
+        elif isinstance(node, HttpRouteNode):
+            cond = f"method === '{node.method}' && url === '{node.path}'" if node.method != "ANY" else f"url === '{node.path}'"
+            lines = [f"{pad}if ({cond}) {{"]
+            for child in node.body:
+                lines.append(self._emit_node(child, indent + 1))
+            lines.append(pad + "  return;")
+            lines.append(pad + "}")
+            return "\n".join(lines)
+
+        # ── Centralized State Store ──
+        elif isinstance(node, StoreDefNode):
+            lines = [
+                pad + f"const {node.name} = (function() {{",
+                pad + "  let state = {"
+            ]
+            for sname, sval in node.states:
+                lines.append(f"{pad}    {sname}: {sval},")
+            lines.append(pad + "  };")
+            lines.append(pad + "  const listeners = [];")
+            lines.append(pad + "  return {")
+            lines.append(pad + "    getState: () => ({ ...state }),")
+            lines.append(pad + "    subscribe: (fn) => listeners.push(fn),")
+            for act in node.actions:
+                params_str = ", ".join(act.params)
+                lines.append(f"{pad}    {act.name}: function({params_str}) {{")
+                for child in act.body:
+                    lines.append(self._emit_node(child, indent + 3))
+                lines.append(pad + "      listeners.forEach(fn => fn(state));")
+                lines.append(pad + "    },")
+            lines.append(pad + "  };")
+            lines.append(pad + "})();")
+            return "\n".join(lines)
+
+        # ── 3D World & Canvas ──
+        elif isinstance(node, World3DNode):
+            lines = [
+                pad + "(function() {",
+                pad + "  if (typeof THREE === 'undefined') return;",
+                pad + f"  const canvas = document.getElementById('{node.canvas_target}') || document.querySelector('{node.canvas_target}');",
+                pad + "  if (!canvas) return;"
+            ]
+            for child in node.body:
+                lines.append(self._emit_node(child, indent + 1))
+            lines.append(pad + "})();")
+            return "\n".join(lines)
+
+        elif isinstance(node, AnimationFrameLoopNode):
+            lines = [
+                pad + "function _enlgs_animLoop() {",
+                pad + "  requestAnimationFrame(_enlgs_animLoop);"
+            ]
+            for child in node.body:
+                lines.append(self._emit_node(child, indent + 1))
+            lines.append(pad + "}")
+            lines.append(pad + "_enlgs_animLoop();")
+            return "\n".join(lines)
+
+        elif isinstance(node, RotateByNode):
+            stmts = []
+            for axis, val in node.rotations.items():
+                stmts.append(f"{node.target}.rotation.{axis} += {val};")
+            return f"{pad}" + f"\n{pad}".join(stmts)
+
+        elif isinstance(node, TranslateByNode):
+            stmts = []
+            for axis, val in node.translations.items():
+                stmts.append(f"{node.target}.position.{axis} += {val};")
+            return f"{pad}" + f"\n{pad}".join(stmts)
+
+        # ── WebSockets ──
+        elif isinstance(node, WebSocketConnectNode):
+            return f"{pad}const {node.socket_var} = new WebSocket('{node.url}');"
+
+        elif isinstance(node, WebSocketReceiveNode):
+            lines = [
+                f"{pad}{node.socket_var}.addEventListener('message', function(event) {{",
+                f"{pad}  let {node.data_var} = event.data;",
+                pad + "  try { " + node.data_var + " = JSON.parse(event.data); } catch(e) {}"
+            ]
+            for child in node.body:
+                lines.append(self._emit_node(child, indent + 1))
+            lines.append(pad + "});")
             return "\n".join(lines)
 
         # ── Timers ──
@@ -241,7 +435,7 @@ class ENLGSEmitter:
                 return f"{pad}window.history.forward();"
             elif node.action == "scroll":
                 target_el = _dom_el(node.arg) if node.arg else "window"
-                return f"{pad}{target_el}.scrollIntoView({{ behavior: 'smooth' }});"
+                return pad + f"{target_el}.scrollIntoView({{ behavior: 'smooth' }});"
             elif node.action == "copy":
                 return f"{pad}navigator.clipboard.writeText({node.arg});"
             elif node.action == "open":
@@ -262,27 +456,42 @@ class ENLGSEmitter:
 
         # ── Error Handling ──
         elif isinstance(node, TryCatchNode):
-            lines = [f"{pad}try {{"]
+            lines = [pad + "try {"]
             for child in node.try_body:
                 c = self._emit_node(child, indent + 1)
                 if c:
                     lines.append(c)
-            lines.append(f"{pad}}} catch ({node.error_var}) {{")
+            lines.append(pad + f"}} catch ({node.error_var}) {{")
             for child in node.catch_body:
                 c = self._emit_node(child, indent + 1)
                 if c:
                     lines.append(c)
-            lines.append(f"{pad}}}")
+            lines.append(pad + "}")
             return "\n".join(lines)
 
-        # ── Classes ──
+        # ── OOP / Classes / Blueprints ──
         elif isinstance(node, ClassDefNode):
-            lines = [f"{pad}class {node.name} {{"]
+            heritage = f" extends {node.parent}" if node.parent else ""
+            lines = [f"{pad}class {node.name}{heritage} {{"]
             for child in node.body:
                 c = self._emit_node(child, indent + 1)
                 if c:
                     lines.append(c)
-            lines.append(f"{pad}}}")
+            lines.append(pad + "}")
             return "\n".join(lines)
+
+        elif isinstance(node, ClassInitNode):
+            params_str = ", ".join(node.params)
+            lines = [f"{pad}constructor({params_str}) {{"]
+            for child in node.body:
+                c = self._emit_node(child, indent + 1)
+                if c:
+                    lines.append(c)
+            lines.append(pad + "}")
+            return "\n".join(lines)
+
+        elif isinstance(node, ClassSuperNode):
+            args_str = ", ".join(node.args)
+            return f"{pad}super({args_str});"
 
         return ""

@@ -94,34 +94,115 @@ HINT_REGISTRY: Dict[str, str] = {
     "on": "EVENT_BIND",
     "prevent default": "PREVENT_DEFAULT",
 
-    # ── Functions ──
+    # ── Functions, Async & Generators ──
+    "async to do": "ASYNC_FUNC_DEF",
+    "async function": "ASYNC_FUNC_DEF",
+    "async action": "ASYNC_FUNC_DEF",
+    "generator to do": "GENERATOR_DEF",
+    "generator function": "GENERATOR_DEF",
+    "generator": "GENERATOR_DEF",
+    "yield": "GENERATOR_YIELD",
+    "give back yield": "GENERATOR_YIELD",
     "to do": "FUNC_DEF",
     "function": "FUNC_DEF",
     "action": "FUNC_DEF",
     "routine": "FUNC_DEF",
+    "return json": "HTTP_RETURN_JSON",
     "return": "FUNC_RETURN",
     "give back": "FUNC_RETURN",
     "call": "FUNC_CALL",
     "run": "FUNC_CALL",
     "invoke": "FUNC_CALL",
     "execute": "FUNC_CALL",
+    "await": "AWAIT_EXPR",
 
-    # ── Conditionals ──
+    # ── Conditionals & Pattern Matching ──
     "if": "COND_IF",
     "else if": "COND_ELIF",
     "elif": "COND_ELIF",
     "else": "COND_ELSE",
+    "match": "PATTERN_MATCH",
+    "case": "PATTERN_CASE",
 
-    # ── Loops ──
+    # ── Loops & Iterations ──
     "repeat": "LOOP_REPEAT",
     "for each": "LOOP_FOR_EACH",
+    "for every": "LOOP_FOR_EACH",
     "for": "LOOP_FOR",
     "while": "LOOP_WHILE",
 
+    # ── Functional Array Pipelines ──
+    "filter": "ARRAY_FILTER",
+    "map": "ARRAY_MAP",
+    "reduce": "ARRAY_REDUCE",
+    "find in": "ARRAY_FIND",
+    "find": "ARRAY_FIND",
+    "sort": "ARRAY_SORT",
+
+    # ── TypeScript Shapes & Type Contracts ──
+    "shape": "SHAPE_DEF",
+    "type": "SHAPE_DEF",
+    "interface": "SHAPE_DEF",
+
+    # ── Declarative UI Components (React/Vue in Enlgs) ──
+    "component": "COMPONENT_DEF",
+    "widget": "COMPONENT_DEF",
+    "make element": "DOM_MAKE_ELEMENT",
+    "create element": "DOM_MAKE_ELEMENT",
+    "add element": "DOM_ADD_ELEMENT",
+    "append to": "DOM_APPEND_TO",
+    "append": "DOM_APPEND_TO",
+    "prepend to": "DOM_PREPEND_TO",
+    "prepend": "DOM_PREPEND_TO",
+    "animate": "ANIMATE_TARGET",
+
+    # ── Full-Stack Servers & Web APIs ──
+    "serve http on port": "SERVER_HTTP",
+    "serve http": "SERVER_HTTP",
+    "serve web on port": "SERVER_HTTP",
+    "serve web": "SERVER_HTTP",
+    "route get": "ROUTE_GET",
+    "route post": "ROUTE_POST",
+    "route put": "ROUTE_PUT",
+    "route delete": "ROUTE_DELETE",
+    "route": "ROUTE_ANY",
+
+    # ── Centralized State Stores (Redux/Zustand style) ──
+    "store": "STORE_DEF",
+    "state": "STORE_STATE",
+    "dispatch": "STORE_DISPATCH",
+
+    # ── 3D World & Canvas DSL (Three.js / WebGL) ──
+    "world 3d on": "WORLD_3D",
+    "world 3d": "WORLD_3D",
+    "3d scene on": "WORLD_3D",
+    "3d scene": "WORLD_3D",
+    "on every animation frame": "ANIM_FRAME_LOOP",
+    "every frame": "ANIM_FRAME_LOOP",
+    "animate frame": "ANIM_FRAME_LOOP",
+    "rotate by": "ROTATE_BY",
+    "rotate": "ROTATE_BY",
+    "translate by": "TRANSLATE_BY",
+    "translate": "TRANSLATE_BY",
+
+    # ── Destructuring & Spread ──
+    "extract": "EXTRACT_FROM",
+    "unpack": "EXTRACT_FROM",
+    "spread": "SPREAD_EXPR",
+
+    # ── WebSockets & Realtime ──
+    "connect websocket to": "WEBSOCKET_CONNECT",
+    "connect websocket": "WEBSOCKET_CONNECT",
+    "connect socket to": "WEBSOCKET_CONNECT",
+    "connect socket": "WEBSOCKET_CONNECT",
+    "when socket receives": "WEBSOCKET_RECEIVE",
+
     # ── Fetch / Network APIs ──
     "fetch data": "FETCH_GET",
+    "fetch json": "FETCH_GET",
     "fetch": "FETCH_GET",
     "send data": "FETCH_POST",
+    "send json": "FETCH_POST",
     "send": "FETCH_POST",
     "post": "FETCH_POST",
 
@@ -141,6 +222,7 @@ HINT_REGISTRY: Dict[str, str] = {
     "open": "WINDOW_OPEN",
 
     # ── Local Storage ──
+    "store in local": "STORAGE_SET",
     "store": "STORAGE_SET",
     "retrieve": "STORAGE_GET",
     "remove stored": "STORAGE_REMOVE",
@@ -154,9 +236,18 @@ HINT_REGISTRY: Dict[str, str] = {
     "throw": "THROW_ERROR",
     "raise": "THROW_ERROR",
 
-    # ── OOP / Classes ──
+    # ── OOP / Classes / Blueprints ──
+    "blueprint": "BLUEPRINT_DEF",
     "class": "CLASS_DEF",
-    "blueprint": "CLASS_DEF",
+    "to initialize with": "CLASS_INIT",
+    "to initialize": "CLASS_INIT",
+    "initialize with": "CLASS_INIT",
+    "initialize": "CLASS_INIT",
+    "super with": "CLASS_SUPER",
+    "super": "CLASS_SUPER",
+    "getter": "CLASS_GETTER",
+    "setter": "CLASS_SETTER",
+    "extends": "CLASS_EXTENDS",
     "new": "CLASS_NEW",
 
     # ── JSON ──

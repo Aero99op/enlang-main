@@ -112,8 +112,9 @@ class DOMVisibilityNode(ASTNode):
 class EventNode(ASTNode):
     """Represents an event listener binding (when 'btn' clicked: ...)."""
     target: str
-    event_type: str  # "click", "submit", "change", "load", "keydown", "mouseenter", "mouseleave"
+    event_type: str  # "click", "submit", "change", "load", "keydown", "mouseenter", "mouseleave", "message"
     key_filter: Optional[str] = None
+    is_variable: bool = False
     body: List[ASTNode] = field(default_factory=list)
 
 @dataclass
@@ -156,7 +157,157 @@ class TryCatchNode(ASTNode):
 class ClassDefNode(ASTNode):
     """Represents a JavaScript ES6 class definition."""
     name: str
+    parent: Optional[str] = None
     body: List[ASTNode] = field(default_factory=list)
+
+@dataclass
+class ClassInitNode(ASTNode):
+    """Represents a class constructor (to initialize with params: ...)."""
+    params: List[str] = field(default_factory=list)
+    body: List[ASTNode] = field(default_factory=list)
+
+@dataclass
+class ClassSuperNode(ASTNode):
+    """Represents super() call in constructor."""
+    args: List[str] = field(default_factory=list)
+
+@dataclass
+class ShapeDefNode(ASTNode):
+    """Represents TypeScript-style interface/shape contract in Enlgs."""
+    name: str
+    fields: List[Tuple[str, str]] = field(default_factory=list)  # (field_name, field_type)
+
+@dataclass
+class ComponentDefNode(ASTNode):
+    """Represents a declarative UI Component (React/Vue style in Enlgs)."""
+    name: str
+    props: List[str] = field(default_factory=list)
+    body: List[ASTNode] = field(default_factory=list)
+
+@dataclass
+class DOMMakeElementNode(ASTNode):
+    """Represents declarative element creation: make element 'div' with class 'card': ..."""
+    tag: str
+    attrs: Dict[str, str] = field(default_factory=dict)
+    target_var: Optional[str] = None
+    body: List[ASTNode] = field(default_factory=list)
+
+@dataclass
+class DOMAddElementNode(ASTNode):
+    """Represents adding a child element inside a make element block."""
+    tag: str
+    attrs: Dict[str, str] = field(default_factory=dict)
+    text: Optional[str] = None
+
+@dataclass
+class DOMAppendToNode(ASTNode):
+    """Represents appending or prepending an element to a container."""
+    child: str
+    parent: str
+    is_prepend: bool = False
+
+@dataclass
+class AnimateTargetNode(ASTNode):
+    """Represents Web Animation API / CSS transition animation: animate 'box' over 500 ms with {...}."""
+    target: str
+    duration_ms: str
+    properties: str
+
+@dataclass
+class FunctionalPipelineNode(ASTNode):
+    """Represents functional array transformation (filter, map, reduce, find, sort)."""
+    op: str  # "filter", "map", "reduce", "find", "sort"
+    source_expr: str
+    target_var: Optional[str] = None
+    item_name: str = "item"
+    acc_name: Optional[str] = None
+    body_expr: str = ""
+    initial_expr: Optional[str] = None
+
+@dataclass
+class HttpServerNode(ASTNode):
+    """Represents a Node.js / Express-style HTTP server in Enlgs."""
+    port: str
+    routes: List[ASTNode] = field(default_factory=list)
+
+@dataclass
+class HttpRouteNode(ASTNode):
+    """Represents an HTTP endpoint route (route get '/api': ...)."""
+    method: str  # "GET", "POST", "PUT", "DELETE", "ANY"
+    path: str
+    body: List[ASTNode] = field(default_factory=list)
+
+@dataclass
+class HttpReturnJsonNode(ASTNode):
+    """Represents returning JSON from an HTTP route."""
+    data_expr: str
+
+@dataclass
+class StoreStateNode(ASTNode):
+    """Represents a state property definition inside a store."""
+    name: str
+    value_expr: str
+
+@dataclass
+class StoreDefNode(ASTNode):
+    """Represents a centralized reactive state store (Redux/Zustand style)."""
+    name: str
+    states: List[Tuple[str, str]] = field(default_factory=list)  # (state_name, initial_value)
+    actions: List[FunctionDefNode] = field(default_factory=list)
+
+@dataclass
+class World3DNode(ASTNode):
+    """Represents a Three.js / WebGL 3D canvas world declaration."""
+    canvas_target: str
+    body: List[ASTNode] = field(default_factory=list)
+
+@dataclass
+class AnimationFrameLoopNode(ASTNode):
+    """Represents a 60FPS requestAnimationFrame loop block."""
+    body: List[ASTNode] = field(default_factory=list)
+
+@dataclass
+class RotateByNode(ASTNode):
+    """Represents 3D object rotation: rotate obj by x 0.01, y 0.02."""
+    target: str
+    rotations: Dict[str, str] = field(default_factory=dict)
+
+@dataclass
+class TranslateByNode(ASTNode):
+    """Represents 3D object translation: translate obj by x 1, y 2, z 3."""
+    target: str
+    translations: Dict[str, str] = field(default_factory=dict)
+
+@dataclass
+class ExtractDestructureNode(ASTNode):
+    """Represents destructuring assignment: extract name, age from user."""
+    variables: List[str] = field(default_factory=list)
+    source_expr: str = ""
+
+@dataclass
+class WebSocketConnectNode(ASTNode):
+    """Represents WebSocket connection."""
+    url: str
+    socket_var: str = "socket"
+
+@dataclass
+class WebSocketReceiveNode(ASTNode):
+    """Represents WebSocket onmessage event."""
+    socket_var: str = "socket"
+    data_var: str = "data"
+    body: List[ASTNode] = field(default_factory=list)
+
+@dataclass
+class GeneratorDefNode(ASTNode):
+    """Represents a JavaScript generator function (function*)."""
+    name: str
+    params: List[str] = field(default_factory=list)
+    body: List[ASTNode] = field(default_factory=list)
+
+@dataclass
+class GeneratorYieldNode(ASTNode):
+    """Represents yield value in a generator."""
+    value: Optional[str] = None
 
 @dataclass
 class PreventDefaultNode(ASTNode):
