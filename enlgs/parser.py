@@ -321,6 +321,12 @@ class ENLGSParser:
                     event_type = "change"
                 elif "load" in ev_phrase:
                     event_type = "load"
+                elif "mousemove" in ev_phrase or "mouse moved" in ev_phrase or "moved" in ev_phrase:
+                    event_type = "mousemove"
+                elif "resize" in ev_phrase or "resized" in ev_phrase:
+                    event_type = "resize"
+                elif "scroll" in ev_phrase:
+                    event_type = "scroll"
                 elif "mouse-enter" in ev_phrase or "mouseenter" in ev_phrase:
                     event_type = "mouseenter"
                 elif "mouse-left" in ev_phrase or "mouseleave" in ev_phrase:
