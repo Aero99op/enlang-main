@@ -66,8 +66,8 @@ def _tokens_to_expr(tokens: List[Token]) -> str:
                 parts.append(f"{source_expr}.filter(item => {predicate_expr})")
                 break
 
-        # Check for map X using item: Y
-        if t_val == "map" and i + 2 < length:
+        # Check for map X using item: Y (must have 'using' connector to avoid clashing with object keys like { map: texture })
+        if t_val == "map" and i + 2 < length and not (i + 1 < length and tokens[i+1].value == ":"):
             using_idx = -1
             for u in range(i + 1, length):
                 if tokens[u].value.lower() == "using":
@@ -76,19 +76,15 @@ def _tokens_to_expr(tokens: List[Token]) -> str:
             if using_idx != -1:
                 source_tokens = tokens[i+1:using_idx]
                 transform_tokens = tokens[using_idx+1:]
-            else:
-                source_tokens = [tokens[i+1]]
-                transform_tokens = tokens[i+2:]
-
-            source_expr = _tokens_to_expr(source_tokens)
-            param = "item"
-            expr_toks = transform_tokens
-            if len(transform_tokens) >= 2 and transform_tokens[0].type == TokenType.IDENTIFIER and transform_tokens[1].value == ":":
-                param = transform_tokens[0].value
-                expr_toks = transform_tokens[2:]
-            transform_expr = _tokens_to_expr(expr_toks)
-            parts.append(f"{source_expr}.map({param} => {transform_expr})")
-            break
+                source_expr = _tokens_to_expr(source_tokens)
+                param = "item"
+                expr_toks = transform_tokens
+                if len(transform_tokens) >= 2 and transform_tokens[0].type == TokenType.IDENTIFIER and transform_tokens[1].value == ":":
+                    param = transform_tokens[0].value
+                    expr_toks = transform_tokens[2:]
+                transform_expr = _tokens_to_expr(expr_toks)
+                parts.append(f"{source_expr}.map({param} => {transform_expr})")
+                break
 
         # Check for find in X where Y
         if (t_val == "find in" or t_val == "find") and i + 2 < length:

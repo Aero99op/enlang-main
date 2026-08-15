@@ -275,9 +275,9 @@ in script:
     # Toast Notification Helper in Pure Enlgs
     to do showToast with message:
         set text of "toast-alert" to message
-        (document.getElementById("toast-alert") || document.querySelector("toast-alert")).style.display = "block"
+        show element "toast-alert"
         after 3 seconds:
-            (document.getElementById("toast-alert") || document.querySelector("toast-alert")).style.display = "none"
+            hide element "toast-alert"
 
     # Button Event Handlers in Pure Enlgs
     when "btn-copy-phone" is clicked:
