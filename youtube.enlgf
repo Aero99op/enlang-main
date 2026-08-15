@@ -10,7 +10,7 @@ document enlgf:
             header class "yt-header":
                 div class "yt-header-left":
                     button "☰" id "btn-sidebar-toggle" class "yt-icon-btn"
-                    div class "yt-logo":
+                    div class "yt-logo" id "btn-logo":
                         span "▶" class "yt-logo-icon"
                         span "YouTube" class "yt-logo-text"
                         span "IN" class "yt-country"
@@ -41,26 +41,26 @@ document enlgf:
 
                     div class "sidebar-section":
                         p "YOU" class "sidebar-heading"
-                        button "📁 Library" class "sidebar-item"
-                        button "🕒 History" class "sidebar-item"
-                        button "🎬 Your Videos" class "sidebar-item"
-                        button "⏱️ Watch Later" class "sidebar-item"
-                        button "👍 Liked Videos" class "sidebar-item"
+                        button "📁 Library" id "nav-library" class "sidebar-item"
+                        button "🕒 History" id "nav-history" class "sidebar-item"
+                        button "🎬 Your Videos" id "nav-your-videos" class "sidebar-item"
+                        button "⏱️ Watch Later" id "nav-watch-later" class "sidebar-item"
+                        button "👍 Liked Videos" id "nav-liked" class "sidebar-item"
 
                     div class "sidebar-divider"
 
                     div class "sidebar-section":
                         p "SUBSCRIPTIONS" class "sidebar-heading"
-                        div class "sub-channel":
+                        div class "sub-channel" id "sub-1":
                             span "☕" class "channel-icon"
                             span "Java & Spring Master" class "channel-name"
-                        div class "sub-channel":
+                        div class "sub-channel" id "sub-2":
                             span "🚀" class "channel-icon"
                             span "Enlang Official" class "channel-name"
-                        div class "sub-channel":
+                        div class "sub-channel" id "sub-3":
                             span "⚛️" class "channel-icon"
                             span "Next.js & React Pro" class "channel-name"
-                        div class "sub-channel":
+                        div class "sub-channel" id "sub-4":
                             span "🪐" class "channel-icon"
                             span "Three.js Creative 3D" class "channel-name"
 
@@ -70,21 +70,21 @@ document enlgf:
                     div id "view-feed" class "view-panel active":
                         # Category Filter Chips Bar
                         div class "category-bar" id "category-container":
-                            button "All" class "chip active"
-                            button "Coding & AI" class "chip"
-                            button "Java Backend" class "chip"
-                            button "Spring Boot" class "chip"
-                            button "Enlang Stack" class "chip"
-                            button "System Design" class "chip"
-                            button "Next.js" class "chip"
-                            button "Cloudflare Edge" class "chip"
-                            button "Lo-Fi Music" class "chip"
-                            button "Gaming" class "chip"
+                            button "All" id "chip-all" class "chip active"
+                            button "Coding & AI" id "chip-coding" class "chip"
+                            button "Java Backend" id "chip-java" class "chip"
+                            button "Spring Boot" id "chip-spring" class "chip"
+                            button "Enlang Stack" id "chip-enlang" class "chip"
+                            button "System Design" id "chip-sysdesign" class "chip"
+                            button "Next.js" id "chip-next" class "chip"
+                            button "Cloudflare Edge" id "chip-edge" class "chip"
+                            button "Lo-Fi Music" id "chip-music" class "chip"
+                            button "Gaming" id "chip-gaming" class "chip"
 
                         # Video Cards Grid
                         div class "video-grid" id "video-grid-container":
                             # Video Card 1
-                            div class "video-card" data-video "1":
+                            div class "video-card" id "card-video-1":
                                 div class "thumbnail-wrapper":
                                     div class "thumbnail-bg" style "background: linear-gradient(135deg, #1e3a8a, #3b82f6);":
                                         span "☕ Java 21 & Spring Boot 3.2 Full Masterclass" class "thumb-text"
@@ -97,7 +97,7 @@ document enlgf:
                                         p "245K views • 2 days ago" class "video-stats"
 
                             # Video Card 2
-                            div class "video-card" data-video "2":
+                            div class "video-card" id "card-video-2":
                                 div class "thumbnail-wrapper":
                                     div class "thumbnail-bg" style "background: linear-gradient(135deg, #065f46, #10b981);":
                                         span "🪐 Enlang Compiler Architecture: Pure English Code" class "thumb-text"
@@ -110,7 +110,7 @@ document enlgf:
                                         p "512K views • 1 week ago" class "video-stats"
 
                             # Video Card 3
-                            div class "video-card" data-video "3":
+                            div class "video-card" id "card-video-3":
                                 div class "thumbnail-wrapper":
                                     div class "thumbnail-bg" style "background: linear-gradient(135deg, #701a75, #ec4899);":
                                         span "🌐 Cloudflare Pages + Next.js Zero 500 Errors" class "thumb-text"
@@ -123,7 +123,7 @@ document enlgf:
                                         p "189K views • 3 days ago" class "video-stats"
 
                             # Video Card 4
-                            div class "video-card" data-video "4":
+                            div class "video-card" id "card-video-4":
                                 div class "thumbnail-wrapper":
                                     div class "thumbnail-bg" style "background: linear-gradient(135deg, #7c2d12, #f97316);":
                                         span "🗄️ MySQL vs Oracle 19c: Query Optimization Masterclass" class "thumb-text"
@@ -136,7 +136,7 @@ document enlgf:
                                         p "98K views • 4 days ago" class "video-stats"
 
                             # Video Card 5
-                            div class "video-card" data-video "5":
+                            div class "video-card" id "card-video-5":
                                 div class "thumbnail-wrapper":
                                     div class "thumbnail-bg" style "background: linear-gradient(135deg, #1e1b4b, #6366f1);":
                                         span "🎨 3D Solar & Lunar Shaders in WebGL & Three.js" class "thumb-text"
@@ -149,7 +149,7 @@ document enlgf:
                                         p "340K views • 5 days ago" class "video-stats"
 
                             # Video Card 6
-                            div class "video-card" data-video "6":
+                            div class "video-card" id "card-video-6":
                                 div class "thumbnail-wrapper":
                                     div class "thumbnail-bg" style "background: linear-gradient(135deg, #134e4a, #14b8a6);":
                                         span "📱 Enlang Mobile (.enlgm): 1:1 Flutter Compilation" class "thumb-text"
@@ -170,29 +170,29 @@ document enlgf:
                                 div class "video-player-container":
                                     div class "player-screen" id "player-canvas":
                                         div class "player-placeholder-content":
-                                            span "▶" class "play-huge-icon"
-                                            h2 id "active-player-title": "Building High-Throughput Microservices with Java & Spring Boot"
+                                            span "▶" class "play-huge-icon" id "play-overlay-icon"
+                                            h2 "Building High-Throughput Microservices with Java & Spring Boot" id "active-player-title"
                                             p "Streaming in 1080p60 HD • Pure Enlang Runtime" class "player-badge-sub"
 
                                     div class "player-controls":
                                         button "▶" id "btn-player-play" class "ctrl-btn"
-                                        span id "player-time-display" class "ctrl-time": "04:15 / 18:45"
-                                        div class "scrubber-bar":
+                                        span "04:15 / 18:45" id "player-time-display" class "ctrl-time"
+                                        div class "scrubber-bar" id "scrubber-track":
                                             div id "scrubber-progress" class "scrubber-fill" style "width: 25%;"
                                         button "🔊" id "btn-player-mute" class "ctrl-btn"
-                                        button "⚙️ 1080p" class "ctrl-btn"
-                                        button "⛶" id "btn-player-fullscreen" class="ctrl-btn"
+                                        button "⚙️ 1080p" id "btn-player-quality" class "ctrl-btn"
+                                        button "⛶" id "btn-player-fullscreen" class "ctrl-btn"
 
                                 # Video Title & Actions Bar
                                 div class "watch-header":
-                                    h1 id "watch-video-title" class "watch-title": "Building High-Throughput Microservices with Java & Spring Boot"
+                                    h1 "Building High-Throughput Microservices with Java & Spring Boot" id "watch-video-title" class "watch-title"
                                     
                                     div class "watch-actions-row":
                                         div class "channel-info-box":
                                             div class "channel-avatar-lg": "P"
                                             div:
-                                                h4 id "watch-channel-name" class "channel-title": "Prayas Kumar Sahoo"
-                                                p id "watch-sub-count" class "channel-subs": "128K subscribers"
+                                                h4 "Prayas Kumar Sahoo" id "watch-channel-name" class "channel-title"
+                                                p "128K subscribers" id "watch-sub-count" class "channel-subs"
                                             button "Subscribe" id "btn-subscribe" class "btn-subscribe"
 
                                         div class "action-buttons-group":
@@ -202,17 +202,17 @@ document enlgf:
                                                 button "👎" id "btn-dislike" class "btn-dislike"
                                             button "↗ Share" id "btn-share" class "btn-action"
                                             button "⬇ Download" id "btn-download" class "btn-action"
-                                            button "⋯" class "btn-action"
+                                            button "⋯ More" id "btn-more" class "btn-action"
 
                                 # Description Box
                                 div class "watch-description-box" id "desc-box":
-                                    p "245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices" class "desc-stats"
-                                    p id "watch-desc-text" class "desc-content": "In this deep dive tutorial, Prayas Kumar Sahoo walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management."
+                                    p "245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices" id "desc-stats" class "desc-stats"
+                                    p "In this deep dive tutorial, Prayas Kumar Sahoo walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." id "watch-desc-text" class "desc-content"
 
                                 # Comments Section
                                 div class "comments-container":
                                     div class "comments-header":
-                                        h3 id "comments-count-header": "328 Comments"
+                                        h3 "328 Comments" id "comments-count-header"
                                         span "Sort by: Top Comments" class "sort-tag"
 
                                     # Add Comment Box
@@ -254,7 +254,7 @@ document enlgf:
                             div class "watch-secondary":
                                 h3 "Up Next" class "rec-header"
                                 div class "rec-list":
-                                    div class "rec-card" data-video "2":
+                                    div class "rec-card" id "card-rec-2":
                                         div class "rec-thumb" style "background: linear-gradient(135deg, #065f46, #10b981);":
                                             span "24:10" class "duration-badge"
                                         div class "rec-details":
@@ -262,7 +262,7 @@ document enlgf:
                                             p "Enlang Official" class "rec-channel"
                                             p "512K views" class "rec-stats"
 
-                                    div class "rec-card" data-video "3":
+                                    div class "rec-card" id "card-rec-3":
                                         div class "rec-thumb" style "background: linear-gradient(135deg, #701a75, #ec4899);":
                                             span "14:20" class "duration-badge"
                                         div class "rec-details":
@@ -270,7 +270,7 @@ document enlgf:
                                             p "Edge Architects" class "rec-channel"
                                             p "189K views" class "rec-stats"
 
-                                    div class "rec-card" data-video "5":
+                                    div class "rec-card" id "card-rec-5":
                                         div class "rec-thumb" style "background: linear-gradient(135deg, #1e1b4b, #6366f1);":
                                             span "21:15" class "duration-badge"
                                         div class "rec-details":

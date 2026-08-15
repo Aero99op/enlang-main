@@ -64,24 +64,75 @@ in script:
         window.scrollTo(0, 0)
         call showToast with "🏠 Back to YouTube Home"
 
-    # Hook Click Events on Video Cards
-    create cards as document.querySelectorAll(".video-card, .rec-card")
-    for card in cards:
-        card.addEventListener("click", function(event) {
-            create vId as this.getAttribute("data-video")
-            if vId != null:
-                call openWatchPage with vId
-        })
+    # Video Card Click Handlers in Pure Enlgs
+    when "card-video-1" is clicked:
+        call openWatchPage with "1"
+
+    when "card-video-2" is clicked:
+        call openWatchPage with "2"
+
+    when "card-video-3" is clicked:
+        call openWatchPage with "3"
+
+    when "card-video-4" is clicked:
+        call openWatchPage with "4"
+
+    when "card-video-5" is clicked:
+        call openWatchPage with "5"
+
+    when "card-video-6" is clicked:
+        call openWatchPage with "6"
+
+    # Recommendation Cards Click Handlers
+    when "card-rec-2" is clicked:
+        call openWatchPage with "2"
+
+    when "card-rec-3" is clicked:
+        call openWatchPage with "3"
+
+    when "card-rec-5" is clicked:
+        call openWatchPage with "5"
 
     # Header & Logo Navigation
     when "nav-home" is clicked:
         call openHomeFeed
 
-    create logoBtn as document.querySelector(".yt-logo")
-    if logoBtn != null:
-        logoBtn.addEventListener("click", function() {
-            call openHomeFeed
-        })
+    when "btn-logo" is clicked:
+        call openHomeFeed
+
+    # Sidebar Navigation Actions
+    when "nav-shorts" is clicked:
+        call showToast with "⚡ Shorts feed coming soon!"
+
+    when "nav-subs" is clicked:
+        call showToast with "📺 Subscriptions feed refreshed"
+
+    when "nav-library" is clicked:
+        call showToast with "📁 Library loaded"
+
+    when "nav-history" is clicked:
+        call showToast with "🕒 Watch history loaded"
+
+    when "nav-your-videos" is clicked:
+        call showToast with "🎬 Your uploaded videos"
+
+    when "nav-watch-later" is clicked:
+        call showToast with "⏱️ Watch Later list (14 videos)"
+
+    when "nav-liked" is clicked:
+        call showToast with "👍 Liked videos list (86 videos)"
+
+    when "sub-1" is clicked:
+        call openWatchPage with "1"
+
+    when "sub-2" is clicked:
+        call openWatchPage with "2"
+
+    when "sub-3" is clicked:
+        call openWatchPage with "3"
+
+    when "sub-4" is clicked:
+        call openWatchPage with "5"
 
     # Sidebar Collapse Toggle
     when "btn-sidebar-toggle" is clicked:
@@ -92,6 +143,19 @@ in script:
             else:
                 sb.style.display = "none"
 
+    # Top Header Actions
+    when "btn-create" is clicked:
+        call showToast with "＋ Upload video or Go Live"
+
+    when "btn-notif" is clicked:
+        call showToast with "🔔 3 new notifications from Prayas & Enlang"
+
+    when "btn-voice" is clicked:
+        call showToast with "🎙️ Listening... Say something to search"
+
+    when "user-profile" is clicked:
+        call showToast with "👤 Signed in as Prayas Kumar Sahoo"
+
     # Search Bar Filtering
     when "btn-search" is clicked:
         create q as get value of "search-input"
@@ -101,16 +165,35 @@ in script:
         call showToast with "🔍 Showing results for: " + q
 
     # Category Chips Filter
-    create chips as document.querySelectorAll(".chip")
-    for ch in chips:
-        ch.addEventListener("click", function() {
-            create allChips as document.querySelectorAll(".chip")
-            for c in allChips:
-                c.classList.remove("active")
-            this.classList.add("active")
-            create tagText as this.innerText
-            call showToast with "Category filter: " + tagText
-        })
+    when "chip-all" is clicked:
+        call showToast with "Showing All categories"
+
+    when "chip-coding" is clicked:
+        call showToast with "Category: Coding & AI"
+
+    when "chip-java" is clicked:
+        call showToast with "Category: Java Backend"
+
+    when "chip-spring" is clicked:
+        call showToast with "Category: Spring Boot"
+
+    when "chip-enlang" is clicked:
+        call showToast with "Category: Enlang Stack"
+
+    when "chip-sysdesign" is clicked:
+        call showToast with "Category: System Design"
+
+    when "chip-next" is clicked:
+        call showToast with "Category: Next.js"
+
+    when "chip-edge" is clicked:
+        call showToast with "Category: Cloudflare Edge"
+
+    when "chip-music" is clicked:
+        call showToast with "Category: Lo-Fi Music"
+
+    when "chip-gaming" is clicked:
+        call showToast with "Category: Gaming"
 
     # Video Player Play / Pause Controls
     when "btn-player-play" is clicked:
@@ -123,13 +206,10 @@ in script:
             set text of "btn-player-play" to "⏸"
             call showToast with "▶ Video playing"
 
-    create playerScreen as document.getElementById("player-canvas")
-    if playerScreen != null:
-        playerScreen.addEventListener("click", function() {
-            create playBtn as document.getElementById("btn-player-play")
-            if playBtn != null:
-                playBtn.click()
-        })
+    when "player-canvas" is clicked:
+        create playBtn as document.getElementById("btn-player-play")
+        if playBtn != null:
+            playBtn.click()
 
     # Player Mute Toggle
     when "btn-player-mute" is clicked:
@@ -142,6 +222,9 @@ in script:
             set isMuted = true
             set text of "btn-player-mute" to "🔇"
             call showToast with "Audio muted"
+
+    when "btn-player-quality" is clicked:
+        call showToast with "⚙️ Stream Quality: 1080p60 Full HD"
 
     # Player Fullscreen Toggle
     when "btn-player-fullscreen" is clicked:
@@ -196,6 +279,9 @@ in script:
             lBtn.style.color = "#3ea6ff"
             call showToast with "Added to Liked Videos"
 
+    when "btn-dislike" is clicked:
+        call showToast with "Disliked video"
+
     # Share Button
     when "btn-share" is clicked:
         call showToast with "🔗 Video link copied to clipboard!"
@@ -203,6 +289,9 @@ in script:
     # Download Button
     when "btn-download" is clicked:
         call showToast with "⬇ Downloading 1080p offline stream..."
+
+    when "btn-more" is clicked:
+        call showToast with "⋯ More options: Clip, Save to Playlist, Report"
 
     # Real-Time Comment Submission in Pure Enlgs
     to do postComment:

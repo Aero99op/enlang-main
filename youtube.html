@@ -916,7 +916,7 @@ body {
       <header class="yt-header">
         <div class="yt-header-left">
           <button id="btn-sidebar-toggle" class="yt-icon-btn">☰</button>
-          <div class="yt-logo">
+          <div class="yt-logo" id="btn-logo">
             <span class="yt-logo-icon">▶</span>
             <span class="yt-logo-text">YouTube</span>
             <span class="yt-country">IN</span>
@@ -952,29 +952,29 @@ body {
           </div>
           <div class="sidebar-section">
             <p class="sidebar-heading">YOU</p>
-            <button class="sidebar-item">📁 Library</button>
-            <button class="sidebar-item">🕒 History</button>
-            <button class="sidebar-item">🎬 Your Videos</button>
-            <button class="sidebar-item">⏱️ Watch Later</button>
-            <button class="sidebar-item">👍 Liked Videos</button>
+            <button id="nav-library" class="sidebar-item">📁 Library</button>
+            <button id="nav-history" class="sidebar-item">🕒 History</button>
+            <button id="nav-your-videos" class="sidebar-item">🎬 Your Videos</button>
+            <button id="nav-watch-later" class="sidebar-item">⏱️ Watch Later</button>
+            <button id="nav-liked" class="sidebar-item">👍 Liked Videos</button>
           </div>
           <div class="sidebar-divider">
           </div>
           <div class="sidebar-section">
             <p class="sidebar-heading">SUBSCRIPTIONS</p>
-            <div class="sub-channel">
+            <div class="sub-channel" id="sub-1">
               <span class="channel-icon">☕</span>
               <span class="channel-name">Java & Spring Master</span>
             </div>
-            <div class="sub-channel">
+            <div class="sub-channel" id="sub-2">
               <span class="channel-icon">🚀</span>
               <span class="channel-name">Enlang Official</span>
             </div>
-            <div class="sub-channel">
+            <div class="sub-channel" id="sub-3">
               <span class="channel-icon">⚛️</span>
               <span class="channel-name">Next.js & React Pro</span>
             </div>
-            <div class="sub-channel">
+            <div class="sub-channel" id="sub-4">
               <span class="channel-icon">🪐</span>
               <span class="channel-name">Three.js Creative 3D</span>
             </div>
@@ -983,20 +983,19 @@ body {
         <main class="yt-content">
           <div id="view-feed" class="view-panel active">
             <div class="category-bar" id="category-container">
-              <button class="chip active">All</button>
-              <button class="chip">Coding & AI</button>
-              <button class="chip">Java Backend</button>
-              <button class="chip">Spring Boot</button>
-              <button class="chip">Enlang Stack</button>
-              <button class="chip">System Design</button>
-              <button class="chip">Next.js</button>
-              <button class="chip">Cloudflare Edge</button>
-              <button class="chip">Lo-Fi Music</button>
-              <button class="chip">Gaming</button>
+              <button id="chip-all" class="chip active">All</button>
+              <button id="chip-coding" class="chip">Coding & AI</button>
+              <button id="chip-java" class="chip">Java Backend</button>
+              <button id="chip-spring" class="chip">Spring Boot</button>
+              <button id="chip-enlang" class="chip">Enlang Stack</button>
+              <button id="chip-sysdesign" class="chip">System Design</button>
+              <button id="chip-next" class="chip">Next.js</button>
+              <button id="chip-edge" class="chip">Cloudflare Edge</button>
+              <button id="chip-music" class="chip">Lo-Fi Music</button>
+              <button id="chip-gaming" class="chip">Gaming</button>
             </div>
             <div class="video-grid" id="video-grid-container">
-              <div class="video-card">
-                1
+              <div class="video-card" id="card-video-1">
                 <div class="thumbnail-wrapper">
                   <div class="thumbnail-bg" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
                     <span class="thumb-text">☕ Java 21 & Spring Boot 3.2 Full Masterclass</span>
@@ -1013,8 +1012,7 @@ body {
                     </div>
                   </div>
                 </div>
-                <div class="video-card">
-                  2
+                <div class="video-card" id="card-video-2">
                   <div class="thumbnail-wrapper">
                     <div class="thumbnail-bg" style="background: linear-gradient(135deg, #065f46, #10b981);">
                       <span class="thumb-text">🪐 Enlang Compiler Architecture: Pure English Code</span>
@@ -1031,8 +1029,7 @@ body {
                       </div>
                     </div>
                   </div>
-                  <div class="video-card">
-                    3
+                  <div class="video-card" id="card-video-3">
                     <div class="thumbnail-wrapper">
                       <div class="thumbnail-bg" style="background: linear-gradient(135deg, #701a75, #ec4899);">
                         <span class="thumb-text">🌐 Cloudflare Pages + Next.js Zero 500 Errors</span>
@@ -1049,8 +1046,7 @@ body {
                         </div>
                       </div>
                     </div>
-                    <div class="video-card">
-                      4
+                    <div class="video-card" id="card-video-4">
                       <div class="thumbnail-wrapper">
                         <div class="thumbnail-bg" style="background: linear-gradient(135deg, #7c2d12, #f97316);">
                           <span class="thumb-text">🗄️ MySQL vs Oracle 19c: Query Optimization Masterclass</span>
@@ -1067,8 +1063,7 @@ body {
                           </div>
                         </div>
                       </div>
-                      <div class="video-card">
-                        5
+                      <div class="video-card" id="card-video-5">
                         <div class="thumbnail-wrapper">
                           <div class="thumbnail-bg" style="background: linear-gradient(135deg, #1e1b4b, #6366f1);">
                             <span class="thumb-text">🎨 3D Solar & Lunar Shaders in WebGL & Three.js</span>
@@ -1085,8 +1080,7 @@ body {
                             </div>
                           </div>
                         </div>
-                        <div class="video-card">
-                          6
+                        <div class="video-card" id="card-video-6">
                           <div class="thumbnail-wrapper">
                             <div class="thumbnail-bg" style="background: linear-gradient(135deg, #134e4a, #14b8a6);">
                               <span class="thumb-text">📱 Enlang Mobile (.enlgm): 1:1 Flutter Compilation</span>
@@ -1111,163 +1105,145 @@ body {
                             <div class="video-player-container">
                               <div class="player-screen" id="player-canvas">
                                 <div class="player-placeholder-content">
-                                  <span class="play-huge-icon">▶</span>
-                                  <h2 id="active-player-title">
-                                    Building High-Throughput Microservices with Java & Spring Boot
-                                    <p class="player-badge-sub">Streaming in 1080p60 HD • Pure Enlang Runtime</p>
-                                  </h2>
+                                  <span class="play-huge-icon" id="play-overlay-icon">▶</span>
+                                  <h2 id="active-player-title">Building High-Throughput Microservices with Java & Spring Boot</h2>
+                                  <p class="player-badge-sub">Streaming in 1080p60 HD • Pure Enlang Runtime</p>
                                 </div>
-                                <div class="player-controls">
-                                  <button id="btn-player-play" class="ctrl-btn">▶</button>
-                                  <span id="player-time-display" class="ctrl-time">
-                                    04:15 / 18:45
-                                    <div class="scrubber-bar">
-                                      <div id="scrubber-progress" class="scrubber-fill" style="width: 25%;">
+                              </div>
+                              <div class="player-controls">
+                                <button id="btn-player-play" class="ctrl-btn">▶</button>
+                                <span id="player-time-display" class="ctrl-time">04:15 / 18:45</span>
+                                <div class="scrubber-bar" id="scrubber-track">
+                                  <div id="scrubber-progress" class="scrubber-fill" style="width: 25%;">
+                                  </div>
+                                </div>
+                                <button id="btn-player-mute" class="ctrl-btn">🔊</button>
+                                <button id="btn-player-quality" class="ctrl-btn">⚙️ 1080p</button>
+                                <button id="btn-player-fullscreen" class="ctrl-btn">⛶</button>
+                              </div>
+                            </div>
+                            <div class="watch-header">
+                              <h1 id="watch-video-title" class="watch-title">Building High-Throughput Microservices with Java & Spring Boot</h1>
+                              <div class="watch-actions-row">
+                                <div class="channel-info-box">
+                                  <div class="channel-avatar-lg">
+                                    P
+                                    <div>
+                                      <h4 id="watch-channel-name" class="channel-title">Prayas Kumar Sahoo</h4>
+                                      <p id="watch-sub-count" class="channel-subs">128K subscribers</p>
+                                    </div>
+                                    <button id="btn-subscribe" class="btn-subscribe">Subscribe</button>
+                                  </div>
+                                  <div class="action-buttons-group">
+                                    <div class="like-dislike-pill">
+                                      <button id="btn-like" class="btn-like">👍 142K</button>
+                                      <div class="pill-sep">
+                                      </div>
+                                      <button id="btn-dislike" class="btn-dislike">👎</button>
+                                    </div>
+                                    <button id="btn-share" class="btn-action">↗ Share</button>
+                                    <button id="btn-download" class="btn-action">⬇ Download</button>
+                                    <button id="btn-more" class="btn-action">⋯ More</button>
+                                  </div>
+                                </div>
+                              </div>
+                              <div class="watch-description-box" id="desc-box">
+                                <p id="desc-stats" class="desc-stats">245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices</p>
+                                <p id="watch-desc-text" class="desc-content">In this deep dive tutorial, Prayas Kumar Sahoo walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.</p>
+                              </div>
+                              <div class="comments-container">
+                                <div class="comments-header">
+                                  <h3 id="comments-count-header">328 Comments</h3>
+                                  <span class="sort-tag">Sort by: Top Comments</span>
+                                </div>
+                                <div class="add-comment-row">
+                                  <div class="user-avatar-sm">
+                                    U
+                                    <div class="comment-input-wrap">
+                                      <input type="text" id="new-comment-input" placeholder="Add a public comment..." class="comment-input">
+                                      <div class="comment-btn-bar">
+                                        <button id="btn-cancel-comment" class="btn-ghost">Cancel</button>
+                                        <button id="btn-submit-comment" class="btn-primary">Comment</button>
                                       </div>
                                     </div>
-                                    <button id="btn-player-mute" class="ctrl-btn">🔊</button>
-                                    <button class="ctrl-btn">⚙️ 1080p</button>
-                                    <button id="btn-player-fullscreen">⛶</button>
-                                    ctrl-btn
-                                  </span>
-                                </div>
-                                <div class="watch-header">
-                                  <h1 id="watch-video-title" class="watch-title">
-                                    Building High-Throughput Microservices with Java & Spring Boot
-                                    <div class="watch-actions-row">
-                                      <div class="channel-info-box">
-                                        <div class="channel-avatar-lg">
-                                          P
-                                          <div>
-                                            <h4 id="watch-channel-name" class="channel-title">
-                                              Prayas Kumar Sahoo
-                                              <p id="watch-sub-count" class="channel-subs">
-                                                128K subscribers
-                                              </p>
-                                              <button id="btn-subscribe" class="btn-subscribe">Subscribe</button>
-                                            </h4>
-                                            <div class="action-buttons-group">
-                                              <div class="like-dislike-pill">
-                                                <button id="btn-like" class="btn-like">👍 142K</button>
-                                                <div class="pill-sep">
-                                                </div>
-                                                <button id="btn-dislike" class="btn-dislike">👎</button>
-                                              </div>
-                                              <button id="btn-share" class="btn-action">↗ Share</button>
-                                              <button id="btn-download" class="btn-action">⬇ Download</button>
-                                              <button class="btn-action">⋯</button>
-                                            </div>
+                                  </div>
+                                  <div class="comment-list" id="comment-list-container">
+                                    <div class="comment-card">
+                                      <div class="user-avatar-sm" style="background: #3b82f6;">
+                                        A
+                                        <div class="comment-body">
+                                          <div class="comment-author-row">
+                                            <span class="comment-author">@AlexDeveloper</span>
+                                            <span class="comment-time">2 hours ago</span>
+                                          </div>
+                                          <p class="comment-msg">The explanation of connection pooling and transaction propagation was crystal clear! Best Java video on YouTube.</p>
+                                          <div class="comment-reactions">
+                                            <button class="btn-react">👍 48</button>
+                                            <button class="btn-react">👎</button>
+                                            <button class="btn-react">Reply</button>
                                           </div>
                                         </div>
-                                        <div class="watch-description-box" id="desc-box">
-                                          <p class="desc-stats">245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices</p>
-                                          <p id="watch-desc-text" class="desc-content">
-                                            In this deep dive tutorial, Prayas Kumar Sahoo walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.
-                                          </p>
-                                          <div class="comments-container">
-                                            <div class="comments-header">
-                                              <h3 id="comments-count-header">
-                                                328 Comments
-                                                <span class="sort-tag">Sort by: Top Comments</span>
-                                              </h3>
-                                              <div class="add-comment-row">
-                                                <div class="user-avatar-sm">
-                                                  U
-                                                  <div class="comment-input-wrap">
-                                                    <input type="text" id="new-comment-input" placeholder="Add a public comment..." class="comment-input">
-                                                    <div class="comment-btn-bar">
-                                                      <button id="btn-cancel-comment" class="btn-ghost">Cancel</button>
-                                                      <button id="btn-submit-comment" class="btn-primary">Comment</button>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                                <div class="comment-list" id="comment-list-container">
-                                                  <div class="comment-card">
-                                                    <div class="user-avatar-sm" style="background: #3b82f6;">
-                                                      A
-                                                      <div class="comment-body">
-                                                        <div class="comment-author-row">
-                                                          <span class="comment-author">@AlexDeveloper</span>
-                                                          <span class="comment-time">2 hours ago</span>
-                                                        </div>
-                                                        <p class="comment-msg">The explanation of connection pooling and transaction propagation was crystal clear! Best Java video on YouTube.</p>
-                                                        <div class="comment-reactions">
-                                                          <button class="btn-react">👍 48</button>
-                                                          <button class="btn-react">👎</button>
-                                                          <button class="btn-react">Reply</button>
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                    <div class="comment-card">
-                                                      <div class="user-avatar-sm" style="background: #10b981;">
-                                                        S
-                                                        <div class="comment-body">
-                                                          <div class="comment-author-row">
-                                                            <span class="comment-author">@SarahCode</span>
-                                                            <span class="comment-time">5 hours ago</span>
-                                                          </div>
-                                                          <p class="comment-msg">Enlang compiling directly to Python, JS and Flutter is blowing my mind. Keep shipping!</p>
-                                                          <div class="comment-reactions">
-                                                            <button class="btn-react">👍 124</button>
-                                                            <button class="btn-react">👎</button>
-                                                            <button class="btn-react">Reply</button>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                                <div class="watch-secondary">
-                                                  <h3 class="rec-header">Up Next</h3>
-                                                  <div class="rec-list">
-                                                    <div class="rec-card">
-                                                      2
-                                                      <div class="rec-thumb" style="background: linear-gradient(135deg, #065f46, #10b981);">
-                                                        <span class="duration-badge">24:10</span>
-                                                      </div>
-                                                      <div class="rec-details">
-                                                        <h4 class="rec-title">How We Built Enlang Compiler</h4>
-                                                        <p class="rec-channel">Enlang Official</p>
-                                                        <p class="rec-stats">512K views</p>
-                                                      </div>
-                                                    </div>
-                                                    <div class="rec-card">
-                                                      3
-                                                      <div class="rec-thumb" style="background: linear-gradient(135deg, #701a75, #ec4899);">
-                                                        <span class="duration-badge">14:20</span>
-                                                      </div>
-                                                      <div class="rec-details">
-                                                        <h4 class="rec-title">Deploying Edge Apps on Cloudflare</h4>
-                                                        <p class="rec-channel">Edge Architects</p>
-                                                        <p class="rec-stats">189K views</p>
-                                                      </div>
-                                                    </div>
-                                                    <div class="rec-card">
-                                                      5
-                                                      <div class="rec-thumb" style="background: linear-gradient(135deg, #1e1b4b, #6366f1);">
-                                                        <span class="duration-badge">21:15</span>
-                                                      </div>
-                                                      <div class="rec-details">
-                                                        <h4 class="rec-title">3D Solar & Lunar WebGL Shaders</h4>
-                                                        <p class="rec-channel">Creative Coding 3D</p>
-                                                        <p class="rec-stats">340K views</p>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              </div>
+                                      </div>
+                                      <div class="comment-card">
+                                        <div class="user-avatar-sm" style="background: #10b981;">
+                                          S
+                                          <div class="comment-body">
+                                            <div class="comment-author-row">
+                                              <span class="comment-author">@SarahCode</span>
+                                              <span class="comment-time">5 hours ago</span>
+                                            </div>
+                                            <p class="comment-msg">Enlang compiling directly to Python, JS and Flutter is blowing my mind. Keep shipping!</p>
+                                            <div class="comment-reactions">
+                                              <button class="btn-react">👍 124</button>
+                                              <button class="btn-react">👎</button>
+                                              <button class="btn-react">Reply</button>
                                             </div>
                                           </div>
                                         </div>
                                       </div>
-                                      <div id="yt-toast" class="yt-toast">
+                                    </div>
+                                  </div>
+                                  <div class="watch-secondary">
+                                    <h3 class="rec-header">Up Next</h3>
+                                    <div class="rec-list">
+                                      <div class="rec-card" id="card-rec-2">
+                                        <div class="rec-thumb" style="background: linear-gradient(135deg, #065f46, #10b981);">
+                                          <span class="duration-badge">24:10</span>
+                                        </div>
+                                        <div class="rec-details">
+                                          <h4 class="rec-title">How We Built Enlang Compiler</h4>
+                                          <p class="rec-channel">Enlang Official</p>
+                                          <p class="rec-stats">512K views</p>
+                                        </div>
+                                      </div>
+                                      <div class="rec-card" id="card-rec-3">
+                                        <div class="rec-thumb" style="background: linear-gradient(135deg, #701a75, #ec4899);">
+                                          <span class="duration-badge">14:20</span>
+                                        </div>
+                                        <div class="rec-details">
+                                          <h4 class="rec-title">Deploying Edge Apps on Cloudflare</h4>
+                                          <p class="rec-channel">Edge Architects</p>
+                                          <p class="rec-stats">189K views</p>
+                                        </div>
+                                      </div>
+                                      <div class="rec-card" id="card-rec-5">
+                                        <div class="rec-thumb" style="background: linear-gradient(135deg, #1e1b4b, #6366f1);">
+                                          <span class="duration-badge">21:15</span>
+                                        </div>
+                                        <div class="rec-details">
+                                          <h4 class="rec-title">3D Solar & Lunar WebGL Shaders</h4>
+                                          <p class="rec-channel">Creative Coding 3D</p>
+                                          <p class="rec-stats">340K views</p>
+                                        </div>
                                       </div>
                                     </div>
-                                  </h1>
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
+                        </div>
+                        <div id="yt-toast" class="yt-toast">
                         </div>
                       </div>
                     </div>
@@ -1346,17 +1322,331 @@ function openHomeFeed() {
   showToast("🏠 Back to YouTube Home");
 }
 
-let cards = document.querySelectorAll ( ".video-card, .rec-card" );
+(document.getElementById("card-video-1") || document.querySelector("card-video-1")).addEventListener('click', function(event) {
+  openWatchPage("1");
+});
 
-for (const card of cards) {
-  card.addEventListener ( "click" , function ( event ) {;
-  create vId as this.getAttribute("data-video")
-  if (vId != null) {
-    openWatchPage(vId);
+(document.getElementById("card-video-2") || document.querySelector("card-video-2")).addEventListener('click', function(event) {
+  openWatchPage("2");
+});
+
+(document.getElementById("card-video-3") || document.querySelector("card-video-3")).addEventListener('click', function(event) {
+  openWatchPage("3");
+});
+
+(document.getElementById("card-video-4") || document.querySelector("card-video-4")).addEventListener('click', function(event) {
+  openWatchPage("4");
+});
+
+(document.getElementById("card-video-5") || document.querySelector("card-video-5")).addEventListener('click', function(event) {
+  openWatchPage("5");
+});
+
+(document.getElementById("card-video-6") || document.querySelector("card-video-6")).addEventListener('click', function(event) {
+  openWatchPage("6");
+});
+
+(document.getElementById("card-rec-2") || document.querySelector("card-rec-2")).addEventListener('click', function(event) {
+  openWatchPage("2");
+});
+
+(document.getElementById("card-rec-3") || document.querySelector("card-rec-3")).addEventListener('click', function(event) {
+  openWatchPage("3");
+});
+
+(document.getElementById("card-rec-5") || document.querySelector("card-rec-5")).addEventListener('click', function(event) {
+  openWatchPage("5");
+});
+
+(document.getElementById("nav-home") || document.querySelector("nav-home")).addEventListener('click', function(event) {
+  openHomeFeed();
+});
+
+(document.getElementById("btn-logo") || document.querySelector("btn-logo")).addEventListener('click', function(event) {
+  openHomeFeed();
+});
+
+(document.getElementById("nav-shorts") || document.querySelector("nav-shorts")).addEventListener('click', function(event) {
+  showToast("⚡ Shorts feed coming soon!");
+});
+
+(document.getElementById("nav-subs") || document.querySelector("nav-subs")).addEventListener('click', function(event) {
+  showToast("📺 Subscriptions feed refreshed");
+});
+
+(document.getElementById("nav-library") || document.querySelector("nav-library")).addEventListener('click', function(event) {
+  showToast("📁 Library loaded");
+});
+
+(document.getElementById("nav-history") || document.querySelector("nav-history")).addEventListener('click', function(event) {
+  showToast("🕒 Watch history loaded");
+});
+
+(document.getElementById("nav-your-videos") || document.querySelector("nav-your-videos")).addEventListener('click', function(event) {
+  showToast("🎬 Your uploaded videos");
+});
+
+(document.getElementById("nav-watch-later") || document.querySelector("nav-watch-later")).addEventListener('click', function(event) {
+  showToast("⏱️ Watch Later list (14 videos)");
+});
+
+(document.getElementById("nav-liked") || document.querySelector("nav-liked")).addEventListener('click', function(event) {
+  showToast("👍 Liked videos list (86 videos)");
+});
+
+(document.getElementById("sub-1") || document.querySelector("sub-1")).addEventListener('click', function(event) {
+  openWatchPage("1");
+});
+
+(document.getElementById("sub-2") || document.querySelector("sub-2")).addEventListener('click', function(event) {
+  openWatchPage("2");
+});
+
+(document.getElementById("sub-3") || document.querySelector("sub-3")).addEventListener('click', function(event) {
+  openWatchPage("3");
+});
+
+(document.getElementById("sub-4") || document.querySelector("sub-4")).addEventListener('click', function(event) {
+  openWatchPage("5");
+});
+
+(document.getElementById("btn-sidebar-toggle") || document.querySelector("btn-sidebar-toggle")).addEventListener('click', function(event) {
+  let sb = document.getElementById ( "yt-sidebar" );
+  if (sb != null) {
+    if (sb.style.display == "none") {
+      sb.style.display = "flex";
+    }
+    else {
+      sb.style.display = "none";
+    }
+  }
+});
+
+(document.getElementById("btn-create") || document.querySelector("btn-create")).addEventListener('click', function(event) {
+  showToast("＋ Upload video or Go Live");
+});
+
+(document.getElementById("btn-notif") || document.querySelector("btn-notif")).addEventListener('click', function(event) {
+  showToast("🔔 3 new notifications from Prayas & Enlang");
+});
+
+(document.getElementById("btn-voice") || document.querySelector("btn-voice")).addEventListener('click', function(event) {
+  showToast("🎙️ Listening... Say something to search");
+});
+
+(document.getElementById("user-profile") || document.querySelector("user-profile")).addEventListener('click', function(event) {
+  showToast("👤 Signed in as Prayas Kumar Sahoo");
+});
+
+(document.getElementById("btn-search") || document.querySelector("btn-search")).addEventListener('click', function(event) {
+  let q = (document.getElementById("search-input") || document.querySelector("search-input")).value;
+  if (q == "") {
+    showToast("Please type a search query");
+    return;
+  }
+  showToast("🔍 Showing results for: " + q);
+});
+
+(document.getElementById("chip-all") || document.querySelector("chip-all")).addEventListener('click', function(event) {
+  showToast("Showing All categories");
+});
+
+(document.getElementById("chip-coding") || document.querySelector("chip-coding")).addEventListener('click', function(event) {
+  showToast("Category: Coding & AI");
+});
+
+(document.getElementById("chip-java") || document.querySelector("chip-java")).addEventListener('click', function(event) {
+  showToast("Category: Java Backend");
+});
+
+(document.getElementById("chip-spring") || document.querySelector("chip-spring")).addEventListener('click', function(event) {
+  showToast("Category: Spring Boot");
+});
+
+(document.getElementById("chip-enlang") || document.querySelector("chip-enlang")).addEventListener('click', function(event) {
+  showToast("Category: Enlang Stack");
+});
+
+(document.getElementById("chip-sysdesign") || document.querySelector("chip-sysdesign")).addEventListener('click', function(event) {
+  showToast("Category: System Design");
+});
+
+(document.getElementById("chip-next") || document.querySelector("chip-next")).addEventListener('click', function(event) {
+  showToast("Category: Next.js");
+});
+
+(document.getElementById("chip-edge") || document.querySelector("chip-edge")).addEventListener('click', function(event) {
+  showToast("Category: Cloudflare Edge");
+});
+
+(document.getElementById("chip-music") || document.querySelector("chip-music")).addEventListener('click', function(event) {
+  showToast("Category: Lo-Fi Music");
+});
+
+(document.getElementById("chip-gaming") || document.querySelector("chip-gaming")).addEventListener('click', function(event) {
+  showToast("Category: Gaming");
+});
+
+(document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).addEventListener('click', function(event) {
+  if (isPlaying == true) {
+    isPlaying = false;
+    (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "▶";
+    showToast("⏸ Video paused");
+  }
+  else {
+    isPlaying = true;
+    (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "⏸";
+    showToast("▶ Video playing");
+  }
+});
+
+(document.getElementById("player-canvas") || document.querySelector("player-canvas")).addEventListener('click', function(event) {
+  let playBtn = document.getElementById ( "btn-player-play" );
+  if (playBtn != null) {
+    playBtn.click ( );
+  }
+});
+
+(document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).addEventListener('click', function(event) {
+  let mBtn = document.getElementById ( "btn-player-mute" );
+  if (isMuted == true) {
+    isMuted = false;
+    (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).textContent = "🔊";
+    showToast("Audio unmuted (100%)");
+  }
+  else {
+    isMuted = true;
+    (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).textContent = "🔇";
+    showToast("Audio muted");
+  }
+});
+
+(document.getElementById("btn-player-quality") || document.querySelector("btn-player-quality")).addEventListener('click', function(event) {
+  showToast("⚙️ Stream Quality: 1080p60 Full HD");
+});
+
+(document.getElementById("btn-player-fullscreen") || document.querySelector("btn-player-fullscreen")).addEventListener('click', function(event) {
+  let pCont = document.querySelector ( ".video-player-container" );
+  if (document.fullscreenElement == null) {
+    if (pCont != null) {
+      pCont.requestFullscreen ( );
+      showToast("Entered Fullscreen Player");
+    }
+  }
+  else {
+    document.exitFullscreen ( );
+    showToast("Exited Fullscreen Player");
+  }
+});
+
+setInterval(function() {
+  if (isPlaying == true) {
+    if (playSeconds < totalVideoSeconds) {
+      playSeconds = playSeconds + 1;
+      let curStr = call formatDuration playSeconds;
+      let totStr = call formatDuration totalVideoSeconds;
+      (document.getElementById("player-time-display") || document.querySelector("player-time-display")).textContent = curStr + " / " + totStr;
+      let pct = ( playSeconds / totalVideoSeconds ) * 100;
+      let fillBar = document.getElementById ( "scrubber-progress" );
+      if (fillBar != null) {
+        fillBar.style.width = pct + "%";
+      }
+    }
+  }
+}, 1000);
+
+(document.getElementById("btn-subscribe") || document.querySelector("btn-subscribe")).addEventListener('click', function(event) {
+  let sBtn = document.getElementById ( "btn-subscribe" );
+  if (isSubscribed == true) {
+    isSubscribed = false;
+    sBtn.innerText = "Subscribe";
+    sBtn.style.background = "#ffffff";
+    sBtn.style.color = "#0f0f0f";
+    showToast("Unsubscribed from channel");
+  }
+  else {
+    isSubscribed = true;
+    sBtn.innerText = "Subscribed ✓";
+    sBtn.style.background = "#272727";
+    sBtn.style.color = "#aaaaaa";
+    showToast("🔔 Subscribed! Notifications turned on.");
+  }
+});
+
+(document.getElementById("btn-like") || document.querySelector("btn-like")).addEventListener('click', function(event) {
+  let lBtn = document.getElementById ( "btn-like" );
+  if (isLiked == true) {
+    isLiked = false;
+    lBtn.innerText = "👍 142K";
+    lBtn.style.color = "#f1f1f1";
+  }
+  else {
+    isLiked = true;
+    lBtn.innerText = "👍 142.1K";
+    lBtn.style.color = "#3ea6ff";
+    showToast("Added to Liked Videos");
+  }
+});
+
+(document.getElementById("btn-dislike") || document.querySelector("btn-dislike")).addEventListener('click', function(event) {
+  showToast("Disliked video");
+});
+
+(document.getElementById("btn-share") || document.querySelector("btn-share")).addEventListener('click', function(event) {
+  showToast("🔗 Video link copied to clipboard!");
+});
+
+(document.getElementById("btn-download") || document.querySelector("btn-download")).addEventListener('click', function(event) {
+  showToast("⬇ Downloading 1080p offline stream...");
+});
+
+(document.getElementById("btn-more") || document.querySelector("btn-more")).addEventListener('click', function(event) {
+  showToast("⋯ More options: Clip, Save to Playlist, Report");
+});
+
+function postComment() {
+  let cText = (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value;
+  if (cText == "") {
+    showToast("Please type a comment before posting");
+    return;
+  }
+  let cContainer = document.getElementById ( "comment-list-container" );
+  if (cContainer != null) {
+    let cCard = document.createElement ( "div" );
+    cCard.className = "comment-card";
+    cCard.innerHTML = "<div class='user-avatar-sm' style='background: #8b5cf6;'>P</div><div class='comment-body'><div class='comment-author-row'><span class='comment-author'>@PrayasKumar (You)</span><span class='comment-time'>Just now</span></div><p class='comment-msg'>" + cText + "</p><div class='comment-reactions'><button class='btn-react'>👍 1</button><button class='btn-react'>👎</button><button class='btn-react'>Reply</button></div></div>";
+    cContainer.prepend ( cCard );
+    (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value = "";
+    totalComments = totalComments + 1;
+    (document.getElementById("comments-count-header") || document.querySelector("comments-count-header")).textContent = totalComments + " Comments";
+    showToast("💬 Comment posted publicly!");
   }
 }
 
-})
+(document.getElementById("btn-submit-comment") || document.querySelector("btn-submit-comment")).addEventListener('click', function(event) {
+  postComment();
+});
+
+(document.getElementById("btn-cancel-comment") || document.querySelector("btn-cancel-comment")).addEventListener('click', function(event) {
+  (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value = "";
+});
+
+(document.getElementById("btn-theme") || document.querySelector("btn-theme")).addEventListener('click', function(event) {
+  let b = document.body;
+  let tBtn = document.getElementById ( "btn-theme" );
+  if (tBtn.innerText == "☾") {
+    tBtn.innerText = "☼";
+    b.style.background = "#ffffff";
+    b.style.color = "#0f0f0f";
+    showToast("Switched to YouTube Light Mode");
+  }
+  else {
+    tBtn.innerText = "☾";
+    b.style.background = "#0f0f0f";
+    b.style.color = "#f1f1f1";
+    showToast("Switched to YouTube Dark Mode");
+  }
+});
     </script>
   </body>
 </html>
