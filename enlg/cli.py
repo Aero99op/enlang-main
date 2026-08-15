@@ -104,6 +104,12 @@ def main():
             from enlgs.compiler import build_enlgs_file
             js_file = build_enlgs_file(args.file)
             subprocess.run(["node", js_file])
+        elif file_lower.endswith(".enlgm"):
+            import subprocess
+            from enlgm.compiler import build_enlgm_file
+            dart_file = build_enlgm_file(args.file)
+            print(f"[enlgm] Running Flutter application...")
+            subprocess.run(["flutter", "run"])
         elif file_lower.endswith(".js"):
             import subprocess
             subprocess.run(["node", args.file])
@@ -127,6 +133,9 @@ def main():
         elif file_lower.endswith(".enlgs"):
             from enlgs.compiler import build_enlgs_file
             build_enlgs_file(args.file, output_path=args.out)
+        elif file_lower.endswith(".enlgm"):
+            from enlgm.compiler import build_enlgm_file
+            build_enlgm_file(args.file, output_path=args.out)
         elif file_lower.endswith(".enlgf"):
             from enlgf.server import compile_enlgf_file
             html = compile_enlgf_file(
@@ -139,7 +148,7 @@ def main():
                 f.write(html)
             print(f"[enlgf] Built HTML: {out_file}")
         else:
-            print(f"Error: Unknown build file type '{args.file}'. Expected .enlg, .enlgd, .enlgs, or .enlgf", file=sys.stderr)
+            print(f"Error: Unknown build file type '{args.file}'. Expected .enlg, .enlgd, .enlgs, .enlgm, or .enlgf", file=sys.stderr)
             sys.exit(1)
     elif args.command == "repl":
         start_repl()

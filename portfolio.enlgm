@@ -1,0 +1,102 @@
+# Enlang Mobile (.enlgm) - Mobile App for Prayas Kumar Sahoo
+# Compiles 1:1 to Flutter / Dart (lib/main.dart)
+
+in mobile:
+    use flutter "material"
+    use package "google_fonts"
+
+    app "PrayasPortfolio":
+        theme dark
+        accent color "#00f2fe"
+        home screen HomeScreen
+
+    screen HomeScreen:
+        app bar:
+            title "Prayas Kumar Sahoo"
+            actions:
+                icon button "share":
+                    when tapped:
+                        show toast "Link copied to clipboard!"
+
+        body:
+            scroll:
+                column centered:
+                    avatar from "https://avatars.githubusercontent.com/u/100000000?v=4" size 110
+                    spacer height 16
+                    text "PRAYAS KUMAR SAHOO" size 26, bold, color "#ffffff", align center
+                    text "Java Backend Developer & Spring Boot Specialist" size 14, color "#00f2fe", align center
+                    spacer height 10
+                    text "Specializing in microservices, enterprise architecture, MySQL, and Oracle DB." size 13, color "#94a3b8", align center
+                    spacer height 24
+
+                    row centered:
+                        button "📞 Contact Me":
+                            when tapped:
+                                go to ContactScreen
+                        spacer width 16
+                        button "🐙 GitHub":
+                            when tapped:
+                                show toast "Opening GitHub Profile..."
+
+                    spacer height 32
+
+                    card elevation 4, radius 16:
+                        padding 20:
+                            column:
+                                text "Core Backend Arsenal" size 18, bold, color "#00f2fe"
+                                spacer height 14
+                                row spaced:
+                                    chip "Java 21"
+                                    chip "Spring Boot"
+                                    chip "MySQL"
+                                    chip "Oracle DB"
+                                spacer height 10
+                                row spaced:
+                                    chip "REST APIs"
+                                    chip "Microservices"
+                                    chip "JWT Security"
+                                    chip "Hibernate"
+
+                    spacer height 24
+
+                    card elevation 4, radius 16:
+                        padding 20:
+                            column:
+                                text "Featured Projects" size 18, bold, color "#00f2fe"
+                                spacer height 12
+                                text "1. Learning Management System (LMS)" bold, size 15
+                                text "Role-based access control, JWT auth, and automated course analytics." size 12, color "#94a3b8"
+                                spacer height 10
+                                text "2. Enterprise Payroll System" bold, size 15
+                                text "Financial engine automating tax deductions with strict ACID guarantees." size 12, color "#94a3b8"
+
+        floating button "email":
+            when tapped:
+                go to ContactScreen
+
+    stateful screen ContactScreen:
+        create isSent as false
+
+        app bar:
+            title "Get in Touch"
+
+        body:
+            scroll:
+                column centered:
+                    text "Send a Direct Message" size 22, bold, color "#ffffff"
+                    spacer height 6
+                    text "Prayas will receive your inquiry directly." size 13, color "#94a3b8"
+                    spacer height 24
+
+                    input "nameField" placeholder "Your Name"
+                    spacer height 14
+                    input "emailField" placeholder "Your Email" type email
+                    spacer height 14
+                    input "msgField" placeholder "Your Message / Project inquiry..." lines 4
+                    spacer height 24
+
+                    button "🚀 Submit Inquiry":
+                        when tapped:
+                            set isSent to true
+                            show snackbar "Message sent successfully! Prayas will respond soon."
+                            go back
