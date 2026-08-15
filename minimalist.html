@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA — Minimalist Focus Studio</title>
+    <style>
+:root {
+  --bg-carbon: #09090b;
+  --card-surface: rgba(24, 24, 27, 0.7);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --text-bright: #fafafa;
+  --text-muted: #a1a1aa;
+  --accent-sky: #38bdf8;
+  --accent-emerald: #34d399;
+}
+
+body {
+  margin: 0px;
+  padding: 0px;
+  background: var(--bg-carbon);
+  color: var(--text-bright);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+.app-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--card-surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+
+.brand-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-icon {
+  color: var(--accent-sky);
+  font-size: 20px;
+}
+
+.brand-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--text-bright);
+}
+
+.badge-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  color: var(--text-muted);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.time-badge {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-sky);
+  background: rgba(56, 189, 248, 0.08);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  color: var(--text-bright);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-primary {
+  background: var(--text-bright);
+  color: #09090b;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
+}
+
+.btn-outline {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-bright);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.card {
+  background: var(--card-surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 28px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.panel-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5;
+  color: var(--text-muted);
+}
+
+.mode-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-sky);
+  background: rgba(56, 189, 248, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.timer-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 0;
+}
+
+.pulse-ring {
+  width: 220px;
+  height: 220px;
+  border-radius: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.06) 0%, rgba(9, 9, 11, 0.4) 70%);
+  border: 2px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 0 40px rgba(56, 189, 248, 0.08);
+  transition: all 0.4s ease;
+}
+
+.timer-display {
+  text-align: center;
+}
+
+#timer-clock {
+  font-size: 54px;
+  font-weight: 800;
+  margin: 0px;
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-bright);
+}
+
+.sub-text {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.timer-controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.preset-pills {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pill:hover {
+  color: var(--text-bright);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.text-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text-bright);
+  font-size: 13px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.task-bullet {
+  color: var(--accent-sky);
+  margin-right: 8px;
+  font-size: 11px;
+}
+
+.task-text {
+  flex: 1;
+  color: var(--text-bright);
+}
+
+.btn-delete-task {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.textarea-input {
+  width: 100%;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px;
+  color: var(--text-bright);
+  font-family: inherit;
+  font-size: 12px;
+  box-sizing: border-box;
+  resize: none;
+  outline: none;
+}
+
+.ambient-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.sound-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.sound-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sound-emoji {
+  font-size: 20px;
+}
+
+.sound-name {
+  margin: 0px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.sound-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.btn-pill {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-bright);
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.footer-quote {
+  text-align: center;
+  padding: 16px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.quote-content {
+  margin: 0px;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--text-bright);
+  color: #09090b;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: none;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+    </style>
+    
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="nav-header">
+        <div class="brand-container">
+          <span class="brand-icon">✦</span>
+          <span class="brand-title">AURA</span>
+          <span class="badge-pill">v2.0</span>
+        </div>
+        <div class="nav-actions">
+          <span id="live-time" class="time-badge">
+            00:00:00
+            <button id="btn-theme" class="btn-ghost">☾ Dark</button>
+            <button id="btn-fullscreen" class="btn-ghost">Full Screen</button>
+          </span>
+        </div>
+        <main class="content-grid">
+          <section class="card glass focus-panel">
+            <div class="panel-header">
+              <span class="panel-tag">DEEP WORK ENGINE</span>
+              <span id="timer-mode-tag" class="mode-tag">
+                FOCUS MODE
+              </span>
+              <div class="timer-center">
+                <div class="pulse-ring" id="pulse-orb">
+                  <div class="timer-display">
+                    <h1 id="timer-clock">
+                      25:00
+                      <p id="timer-status" class="sub-text">
+                        Ready to immerse
+                      </p>
+                    </h1>
+                  </div>
+                  <div class="timer-controls">
+                    <button id="btn-timer-start" class="btn-primary">▶ START</button>
+                    <button id="btn-timer-pause" class="btn-outline">⏸ PAUSE</button>
+                    <button id="btn-timer-reset" class="btn-outline">↺ RESET</button>
+                  </div>
+                  <div class="preset-pills">
+                    <button id="btn-preset-25" class="pill active">25m Focus</button>
+                    <button id="btn-preset-5" class="pill">5m Breath</button>
+                    <button id="btn-preset-50" class="pill">50m Flow</button>
+                  </div>
+                </div>
+                <section class="card glass task-panel">
+                  <div class="panel-header">
+                    <span class="panel-tag">MINIMALIST CAPTURE</span>
+                    <span id="task-count-tag" class="mode-tag">
+                      3 Active
+                    </span>
+                    <div class="input-group">
+                      <input type="text" id="new-task-input" placeholder="Type a single intention and press enter..." class="text-input">
+                      <button id="btn-add-task" class="btn-primary" style="padding: 10px 18px;">Add</button>
+                    </div>
+                    <div class="task-list" id="task-container">
+                      <div class="task-item">
+                        <span class="task-bullet">✦</span>
+                        <span class="task-text">Complete backend API integration</span>
+                        <button class="btn-delete-task">✕</button>
+                      </div>
+                      <div class="task-item">
+                        <span class="task-bullet">✦</span>
+                        <span class="task-text">Review Enlang compiler grammar tokens</span>
+                        <button class="btn-delete-task">✕</button>
+                      </div>
+                      <div class="task-item">
+                        <span class="task-bullet">✦</span>
+                        <span class="task-text">Hydrate and take 5 min posture stretch</span>
+                        <button class="btn-delete-task">✕</button>
+                      </div>
+                    </div>
+                    <div class="notes-section">
+                      <div class="panel-header" style="margin-top: 24px;">
+                        <span class="panel-tag">QUICK SCRATCHPAD</span>
+                        <span id="note-saved-status" style="font-size: 11px; color: #888;">
+                          Auto-saved
+                        </span>
+                        <textarea id="scratchpad" placeholder="Draft spontaneous thoughts, snippets, or reflections..." class="textarea-input">
+                        </textarea>
+                      </div>
+                    </div>
+                  </div>
+                  <section class="card glass ambient-section">
+                    <div class="panel-header">
+                      <span class="panel-tag">AMBIENT SOUND GENERATOR</span>
+                      <span id="audio-status-tag" class="mode-tag">
+                        Ready
+                      </span>
+                      <div class="ambient-grid">
+                        <div class="sound-card">
+                        </div>
+                        sound-rain
+                        <div class="sound-info">
+                          <span class="sound-emoji">🌧️</span>
+                          <div>
+                            <p class="sound-name">Gentle Rain</p>
+                            <span class="sound-sub">432Hz Binaural</span>
+                          </div>
+                        </div>
+                        <button id="btn-sound-1" class="btn-pill">Play</button>
+                      </div>
+                      <div class="sound-card">
+                      </div>
+                      sound-space
+                      <div class="sound-info">
+                        <span class="sound-emoji">🪐</span>
+                        <div>
+                          <p class="sound-name">Deep Space</p>
+                          <span class="sound-sub">Cosmic Drone</span>
+                        </div>
+                      </div>
+                      <button id="btn-sound-2" class="btn-pill">Play</button>
+                    </div>
+                    <div class="sound-card">
+                    </div>
+                    sound-cafe
+                    <div class="sound-info">
+                      <span class="sound-emoji">☕</span>
+                      <div>
+                        <p class="sound-name">Kyoto Cafe</p>
+                        <span class="sound-sub">Subtle Murmur</span>
+                      </div>
+                    </div>
+                    <button id="btn-sound-3" class="btn-pill">Play</button>
+                  </section>
+                  <div class="sound-card">
+                  </div>
+                  sound-waves
+                  <div class="sound-info">
+                    <span class="sound-emoji">🌊</span>
+                    <div>
+                      <p class="sound-name">Ocean Waves</p>
+                      <span class="sound-sub">Delta Flow</span>
+                    </div>
+                  </div>
+                  <button id="btn-sound-4" class="btn-pill">Play</button>
+                </section>
+              </div>
+            </div>
+            <footer class="footer-quote">
+              <p id="quote-text" class="quote-content">
+                "Simplicity is the prerequisite for reliability." — Edsger W. Dijkstra
+                <button id="btn-next-quote" class="btn-ghost" style="margin-top: 8px;">✦ Next Thought</button>
+              </p>
+            </footer>
+            <div id="toast-banner" class="toast">
+            </div>
+          </section>
+        </main>
+      </header>
+    </div>
+    <script>
+let timerTotalSeconds = 1500;
+
+let timerRemaining = 1500;
+
+let isTimerActive = false;
+
+let currentMode = "FOCUS MODE";
+
+let activeAudioCount = 0;
+
+let quoteIndex = 0;
+
+console.log("✦ Initializing AURA Minimalist Focus Studio in Pure Enlang (.enlgs)...");
+
+const quotes = [ "\"Simplicity is the prerequisite for reliability.\" — Edsger W. Dijkstra" , "\"Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away.\" — Antoine de Saint-Exupéry" , "\"Make it simple, but significant.\" — Don Draper" , "\"Simplicity is the ultimate sophistication.\" — Leonardo da Vinci" , "\"Focus is saying no to 1,000 good ideas.\" — Steve Jobs" ];
+
+function showToast(message) {
+  (document.getElementById("toast-banner") || document.querySelector("toast-banner")).textContent = message;
+  (document.getElementById("toast-banner") || document.querySelector("toast-banner")).style.display = '';
+  setTimeout(function() {
+    (document.getElementById("toast-banner") || document.querySelector("toast-banner")).style.display = 'none';
+  }, 3000);
+}
+
+function formatTimer(totalSecs) {
+  let mins = Math.floor ( totalSecs / 60 );
+  let secs = totalSecs % 60;
+  let minStr = mins < 10 ? "0" + mins : "" + mins;
+  let secStr = secs < 10 ? "0" + secs : "" + secs;
+  return minStr + ":" + secStr;
+}
+
+function renderTimer() {
+  let formatted = call formatTimer timerRemaining;
+  (document.getElementById("timer-clock") || document.querySelector("timer-clock")).textContent = formatted;
+}
+
+setInterval(function() {
+  let now = new Date ( );
+  (document.getElementById("live-time") || document.querySelector("live-time")).textContent = now.toTimeString ( ) .split ( " " ) [ 0 ];
+  if (isTimerActive == true) {
+    if (timerRemaining > 0) {
+      timerRemaining = timerRemaining - 1;
+      renderTimer();
+    }
+    else {
+      isTimerActive = false;
+      showToast("🔔 Focus session complete! Time to breathe.");
+      (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "Session complete • Breathe";
+    }
+  }
+}, 1000);
+
+(document.getElementById("btn-timer-start") || document.querySelector("btn-timer-start")).addEventListener('click', function(event) {
+  isTimerActive = true;
+  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "✦ Deep focus immersion in progress";
+  showToast("▶ Focus timer started: " + currentMode);
+});
+
+(document.getElementById("btn-timer-pause") || document.querySelector("btn-timer-pause")).addEventListener('click', function(event) {
+  isTimerActive = false;
+  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "⏸ Paused • Take a deep breath";
+  showToast("⏸ Focus session paused");
+});
+
+(document.getElementById("btn-timer-reset") || document.querySelector("btn-timer-reset")).addEventListener('click', function(event) {
+  isTimerActive = false;
+  timerRemaining = timerTotalSeconds;
+  renderTimer();
+  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "Ready to immerse";
+  showToast("↺ Timer reset to " + ( timerTotalSeconds / 60 ) + "m");
+});
+
+(document.getElementById("btn-preset-25") || document.querySelector("btn-preset-25")).addEventListener('click', function(event) {
+  isTimerActive = false;
+  timerTotalSeconds = 1500;
+  timerRemaining = 1500;
+  currentMode = "FOCUS MODE";
+  (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "FOCUS (25m)";
+  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "Ready for 25m focus";
+  renderTimer();
+  showToast("Switched to 25m Focus preset");
+});
+
+(document.getElementById("btn-preset-5") || document.querySelector("btn-preset-5")).addEventListener('click', function(event) {
+  isTimerActive = false;
+  timerTotalSeconds = 300;
+  timerRemaining = 300;
+  currentMode = "ZEN BREATH";
+  (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "BREATH (5m)";
+  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "5m Mindful breathing";
+  renderTimer();
+  showToast("Switched to 5m Zen Breath preset");
+});
+
+(document.getElementById("btn-preset-50") || document.querySelector("btn-preset-50")).addEventListener('click', function(event) {
+  isTimerActive = false;
+  timerTotalSeconds = 3000;
+  timerRemaining = 3000;
+  currentMode = "FLOW STATE";
+  (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "FLOW (50m)";
+  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "50m Uninterrupted flow";
+  renderTimer();
+  showToast("Switched to 50m Flow State preset");
+});
+
+function addNewTask() {
+  let taskText = (document.getElementById("new-task-input") || document.querySelector("new-task-input")).value;
+  if (taskText == "") {
+    showToast("Please type a task intention first");
+    return;
+  }
+  let container = document.getElementById ( "task-container" );
+  if (container != null) {
+    let itemDiv = document.createElement ( "div" );
+    itemDiv.className = "task-item";
+    itemDiv.innerHTML = "<span class='task-bullet'>✦</span><span class='task-text'>" + taskText + "</span><button class='btn-delete-task' onclick='this.parentElement.remove()'>✕</button>";
+    container.appendChild ( itemDiv );
+    (document.getElementById("new-task-input") || document.querySelector("new-task-input")).value = "";
+    showToast("✦ Added: " + taskText);
+  }
+}
+
+(document.getElementById("btn-add-task") || document.querySelector("btn-add-task")).addEventListener('click', function(event) {
+  addNewTask();
+});
+
+(document.getElementById("scratchpad") || document.querySelector("scratchpad")).addEventListener('click', function(event) {
+  let noteText = (document.getElementById("scratchpad") || document.querySelector("scratchpad")).value;
+  stored = "aura_scratchpad" noteText;
+  (document.getElementById("note-saved-status") || document.querySelector("note-saved-status")).textContent = "Saved (" + noteText.length + " chars)";
+});
+
+let savedNote = (document.getElementById("stored") || document.querySelector("stored")) "aura_scratchpad";
+
+if (savedNote != null) {
+  (document.getElementById("scratchpad") || document.querySelector("scratchpad")).value = savedNote;
+}
+
+(document.getElementById("btn-next-quote") || document.querySelector("btn-next-quote")).addEventListener('click', function(event) {
+  quoteIndex = ( quoteIndex + 1 ) % quotes.length;
+  (document.getElementById("quote-text") || document.querySelector("quote-text")).textContent = quotes [ quoteIndex ];
+  showToast("✦ New Wisdom Reflection");
+});
+
+(document.getElementById("btn-sound-1") || document.querySelector("btn-sound-1")).addEventListener('click', function(event) {
+  let btn = document.getElementById ( "btn-sound-1" );
+  if (btn.innerText == "Play") {
+    btn.innerText = "Playing";
+    btn.style.background = "#38bdf8";
+    btn.style.color = "#09090b";
+    showToast("🌧️ Gentle Rain ambient audio active");
+  }
+  else {
+    btn.innerText = "Play";
+    btn.style.background = "rgba(255, 255, 255, 0.06)";
+    btn.style.color = "#fafafa";
+  }
+});
+
+(document.getElementById("btn-sound-2") || document.querySelector("btn-sound-2")).addEventListener('click', function(event) {
+  let btn = document.getElementById ( "btn-sound-2" );
+  if (btn.innerText == "Play") {
+    btn.innerText = "Playing";
+    btn.style.background = "#38bdf8";
+    btn.style.color = "#09090b";
+    showToast("🪐 Deep Space drone active");
+  }
+  else {
+    btn.innerText = "Play";
+    btn.style.background = "rgba(255, 255, 255, 0.06)";
+    btn.style.color = "#fafafa";
+  }
+});
+
+(document.getElementById("btn-sound-3") || document.querySelector("btn-sound-3")).addEventListener('click', function(event) {
+  let btn = document.getElementById ( "btn-sound-3" );
+  if (btn.innerText == "Play") {
+    btn.innerText = "Playing";
+    btn.style.background = "#38bdf8";
+    btn.style.color = "#09090b";
+    showToast("☕ Kyoto Cafe background active");
+  }
+  else {
+    btn.innerText = "Play";
+    btn.style.background = "rgba(255, 255, 255, 0.06)";
+    btn.style.color = "#fafafa";
+  }
+});
+
+(document.getElementById("btn-sound-4") || document.querySelector("btn-sound-4")).addEventListener('click', function(event) {
+  let btn = document.getElementById ( "btn-sound-4" );
+  if (btn.innerText == "Play") {
+    btn.innerText = "Playing";
+    btn.style.background = "#38bdf8";
+    btn.style.color = "#09090b";
+    showToast("🌊 Ocean Waves ambient active");
+  }
+  else {
+    btn.innerText = "Play";
+    btn.style.background = "rgba(255, 255, 255, 0.06)";
+    btn.style.color = "#fafafa";
+  }
+});
+
+(document.getElementById("btn-theme") || document.querySelector("btn-theme")).addEventListener('click', function(event) {
+  let bodyEl = document.body;
+  let btnTheme = document.getElementById ( "btn-theme" );
+  if (btnTheme.innerText == "☾ Dark") {
+    btnTheme.innerText = "☼ Light";
+    bodyEl.style.background = "#fafafa";
+    bodyEl.style.color = "#09090b";
+    showToast("Switched to Paper White theme");
+  }
+  else {
+    btnTheme.innerText = "☾ Dark";
+    bodyEl.style.background = "#09090b";
+    bodyEl.style.color = "#fafafa";
+    showToast("Switched to OLED Dark theme");
+  }
+});
+
+(document.getElementById("btn-fullscreen") || document.querySelector("btn-fullscreen")).addEventListener('click', function(event) {
+  if (document.fullscreenElement == null) {
+    document.documentElement.requestFullscreen ( );
+    showToast("Entered Fullscreen Focus Mode");
+  }
+  else {
+    document.exitFullscreen ( );
+    showToast("Exited Fullscreen");
+  }
+});
+    </script>
+  </body>
+</html>

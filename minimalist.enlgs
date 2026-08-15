@@ -1,0 +1,208 @@
+# Enlang Script (.enlgs) - Minimalist Focus Studio Engine
+
+in script:
+    # State Declarations
+    create timerTotalSeconds as 1500
+    create timerRemaining as 1500
+    create isTimerActive as false
+    create currentMode as "FOCUS MODE"
+    create activeAudioCount as 0
+    create quoteIndex as 0
+
+    show "✦ Initializing AURA Minimalist Focus Studio in Pure Enlang (.enlgs)..."
+
+    # Minimalist Quotes Archive
+    define quotes as [ "\"Simplicity is the prerequisite for reliability.\" — Edsger W. Dijkstra", "\"Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away.\" — Antoine de Saint-Exupéry", "\"Make it simple, but significant.\" — Don Draper", "\"Simplicity is the ultimate sophistication.\" — Leonardo da Vinci", "\"Focus is saying no to 1,000 good ideas.\" — Steve Jobs" ]
+
+    # Toast Notification Helper in Pure Enlgs
+    to do showToast with message:
+        set text of "toast-banner" to message
+        show element "toast-banner"
+        after 3 seconds:
+            hide element "toast-banner"
+
+    # Helper to Format Time (MM:SS)
+    to do formatTimer with totalSecs:
+        create mins as Math.floor(totalSecs / 60)
+        create secs as totalSecs % 60
+        create minStr as mins < 10 ? "0" + mins : "" + mins
+        create secStr as secs < 10 ? "0" + secs : "" + secs
+        return minStr + ":" + secStr
+
+    # Update Timer Display
+    to do renderTimer:
+        create formatted as call formatTimer with timerRemaining
+        set text of "timer-clock" to formatted
+
+    # Live Clock in Header
+    every 1 second:
+        create now as new Date()
+        set text of "live-time" to now.toTimeString().split(" ")[0]
+
+        # Tick Focus Timer if running
+        if isTimerActive == true:
+            if timerRemaining > 0:
+                set timerRemaining = timerRemaining - 1
+                call renderTimer
+            else:
+                set isTimerActive = false
+                call showToast with "🔔 Focus session complete! Time to breathe."
+                set text of "timer-status" to "Session complete • Breathe"
+
+    # Timer Controls
+    when "btn-timer-start" is clicked:
+        set isTimerActive = true
+        set text of "timer-status" to "✦ Deep focus immersion in progress"
+        call showToast with "▶ Focus timer started: " + currentMode
+
+    when "btn-timer-pause" is clicked:
+        set isTimerActive = false
+        set text of "timer-status" to "⏸ Paused • Take a deep breath"
+        call showToast with "⏸ Focus session paused"
+
+    when "btn-timer-reset" is clicked:
+        set isTimerActive = false
+        set timerRemaining = timerTotalSeconds
+        call renderTimer
+        set text of "timer-status" to "Ready to immerse"
+        call showToast with "↺ Timer reset to " + (timerTotalSeconds / 60) + "m"
+
+    # Timer Presets
+    when "btn-preset-25" is clicked:
+        set isTimerActive = false
+        set timerTotalSeconds = 1500
+        set timerRemaining = 1500
+        set currentMode = "FOCUS MODE"
+        set text of "timer-mode-tag" to "FOCUS (25m)"
+        set text of "timer-status" to "Ready for 25m focus"
+        call renderTimer
+        call showToast with "Switched to 25m Focus preset"
+
+    when "btn-preset-5" is clicked:
+        set isTimerActive = false
+        set timerTotalSeconds = 300
+        set timerRemaining = 300
+        set currentMode = "ZEN BREATH"
+        set text of "timer-mode-tag" to "BREATH (5m)"
+        set text of "timer-status" to "5m Mindful breathing"
+        call renderTimer
+        call showToast with "Switched to 5m Zen Breath preset"
+
+    when "btn-preset-50" is clicked:
+        set isTimerActive = false
+        set timerTotalSeconds = 3000
+        set timerRemaining = 3000
+        set currentMode = "FLOW STATE"
+        set text of "timer-mode-tag" to "FLOW (50m)"
+        set text of "timer-status" to "50m Uninterrupted flow"
+        call renderTimer
+        call showToast with "Switched to 50m Flow State preset"
+
+    # Task Addition
+    to do addNewTask:
+        create taskText as get value of "new-task-input"
+        if taskText == "":
+            call showToast with "Please type a task intention first"
+            return
+
+        create container as document.getElementById("task-container")
+        if container != null:
+            create itemDiv as document.createElement("div")
+            itemDiv.className = "task-item"
+            itemDiv.innerHTML = "<span class='task-bullet'>✦</span><span class='task-text'>" + taskText + "</span><button class='btn-delete-task' onclick='this.parentElement.remove()'>✕</button>"
+            container.appendChild(itemDiv)
+            set value of "new-task-input" to ""
+            call showToast with "✦ Added: " + taskText
+
+    when "btn-add-task" is clicked:
+        call addNewTask
+
+    # Scratchpad Auto-Save
+    when "scratchpad" is input:
+        create noteText as get value of "scratchpad"
+        set stored "aura_scratchpad" as noteText
+        set text of "note-saved-status" to "Saved (" + noteText.length + " chars)"
+
+    # Restore Scratchpad from Storage
+    create savedNote as get stored "aura_scratchpad"
+    if savedNote != null:
+        set value of "scratchpad" to savedNote
+
+    # Quote Switcher
+    when "btn-next-quote" is clicked:
+        set quoteIndex = (quoteIndex + 1) % quotes.length
+        set text of "quote-text" to quotes[quoteIndex]
+        call showToast with "✦ New Wisdom Reflection"
+
+    # Ambient Sound Toggles (Simulation)
+    when "btn-sound-1" is clicked:
+        create btn as document.getElementById("btn-sound-1")
+        if btn.innerText == "Play":
+            btn.innerText = "Playing"
+            btn.style.background = "#38bdf8"
+            btn.style.color = "#09090b"
+            call showToast with "🌧️ Gentle Rain ambient audio active"
+        else:
+            btn.innerText = "Play"
+            btn.style.background = "rgba(255, 255, 255, 0.06)"
+            btn.style.color = "#fafafa"
+
+    when "btn-sound-2" is clicked:
+        create btn as document.getElementById("btn-sound-2")
+        if btn.innerText == "Play":
+            btn.innerText = "Playing"
+            btn.style.background = "#38bdf8"
+            btn.style.color = "#09090b"
+            call showToast with "🪐 Deep Space drone active"
+        else:
+            btn.innerText = "Play"
+            btn.style.background = "rgba(255, 255, 255, 0.06)"
+            btn.style.color = "#fafafa"
+
+    when "btn-sound-3" is clicked:
+        create btn as document.getElementById("btn-sound-3")
+        if btn.innerText == "Play":
+            btn.innerText = "Playing"
+            btn.style.background = "#38bdf8"
+            btn.style.color = "#09090b"
+            call showToast with "☕ Kyoto Cafe background active"
+        else:
+            btn.innerText = "Play"
+            btn.style.background = "rgba(255, 255, 255, 0.06)"
+            btn.style.color = "#fafafa"
+
+    when "btn-sound-4" is clicked:
+        create btn as document.getElementById("btn-sound-4")
+        if btn.innerText == "Play":
+            btn.innerText = "Playing"
+            btn.style.background = "#38bdf8"
+            btn.style.color = "#09090b"
+            call showToast with "🌊 Ocean Waves ambient active"
+        else:
+            btn.innerText = "Play"
+            btn.style.background = "rgba(255, 255, 255, 0.06)"
+            btn.style.color = "#fafafa"
+
+    # Theme Toggle
+    when "btn-theme" is clicked:
+        create bodyEl as document.body
+        create btnTheme as document.getElementById("btn-theme")
+        if btnTheme.innerText == "☾ Dark":
+            btnTheme.innerText = "☼ Light"
+            bodyEl.style.background = "#fafafa"
+            bodyEl.style.color = "#09090b"
+            call showToast with "Switched to Paper White theme"
+        else:
+            btnTheme.innerText = "☾ Dark"
+            bodyEl.style.background = "#09090b"
+            bodyEl.style.color = "#fafafa"
+            call showToast with "Switched to OLED Dark theme"
+
+    # Fullscreen Toggle
+    when "btn-fullscreen" is clicked:
+        if document.fullscreenElement == null:
+            document.documentElement.requestFullscreen()
+            call showToast with "Entered Fullscreen Focus Mode"
+        else:
+            document.exitFullscreen()
+            call showToast with "Exited Fullscreen"
