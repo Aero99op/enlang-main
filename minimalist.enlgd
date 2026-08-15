@@ -1,28 +1,27 @@
-# Enlang Design (.enlgd) - Minimalist Zen Theme
+# Enlang Design (.enlgd) - Ultra-Clean Minimalist Theme
 
-define color "bg-carbon" as "#09090b"
-define color "card-surface" as "rgba(24, 24, 27, 0.7)"
-define color "border-subtle" as "rgba(255, 255, 255, 0.08)"
-define color "text-bright" as "#fafafa"
+define color "bg-canvas" as "#09090b"
+define color "card-surface" as "rgba(18, 18, 22, 0.75)"
+define color "text-pure" as "#ffffff"
 define color "text-muted" as "#a1a1aa"
-define color "accent-sky" as "#38bdf8"
-define color "accent-emerald" as "#34d399"
+define color "accent-cyan" as "#38bdf8"
+define color "accent-glow" as "rgba(56, 189, 248, 0.15)"
 
 for "body" apply:
     margin 0
     padding 0
-    background use color "bg-carbon"
-    color use color "text-bright"
+    background use color "bg-canvas"
+    color use color "text-pure"
     font-family "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     min-height 100 viewport-height
-    line-height 1.5
+    line-height 1.6
     overflow-x hidden
 end
 
 for ".app-shell" apply:
-    max-width 1100
+    max-width 1040
     margin "0 auto"
-    padding "32px 24px"
+    padding "40px 24px 60px 24px"
     display flex
     flex-direction column
     gap 24
@@ -33,37 +32,40 @@ for ".nav-header" apply:
     display flex
     justify-content space-between
     align-items center
-    padding "16px 24px"
+    padding "16px 28px"
     background use color "card-surface"
-    backdrop-filter "blur(20px)"
+    backdrop-filter "blur(24px)"
     border "1px solid rgba(255, 255, 255, 0.08)"
-    corner radius 16
+    corner radius 18
+    shadow "0 8px 32px rgba(0, 0, 0, 0.4)"
 end
 
 for ".brand-container" apply:
     display flex
     align-items center
-    gap 10
+    gap 12
 end
 
 for ".brand-icon" apply:
-    color use color "accent-sky"
-    font-size 20
+    color use color "accent-cyan"
+    font-size 22
+    text-shadow "0 0 12px rgba(56, 189, 248, 0.6)"
 end
 
 for ".brand-title" apply:
     font-size 18
-    font-weight 800
+    font-weight 900
     letter-spacing 3
-    color use color "text-bright"
+    color use color "text-pure"
 end
 
 for ".badge-pill" apply:
     font-size 10
-    font-weight 600
-    padding "2px 8px"
+    font-weight 700
+    letter-spacing 1
+    padding "3px 8px"
     background "rgba(255, 255, 255, 0.06)"
-    border "1px solid rgba(255, 255, 255, 0.1)"
+    border "1px solid rgba(255, 255, 255, 0.12)"
     corner radius 20
     color use color "text-muted"
 end
@@ -77,41 +79,42 @@ end
 for ".time-badge" apply:
     font-family "monospace"
     font-size 13
-    font-weight 600
-    color use color "accent-sky"
+    font-weight 700
+    color use color "accent-cyan"
     background "rgba(56, 189, 248, 0.08)"
-    padding "6px 12px"
-    corner radius 8
-    border "1px solid rgba(56, 189, 248, 0.2)"
+    padding "6px 14px"
+    corner radius 10
+    border "1px solid rgba(56, 189, 248, 0.25)"
+    letter-spacing 1
 end
 
 # Buttons
 for ".btn-ghost" apply:
-    background transparent
-    border "1px solid rgba(255, 255, 255, 0.12)"
+    background "rgba(255, 255, 255, 0.03)"
+    border "1px solid rgba(255, 255, 255, 0.1)"
     color use color "text-muted"
-    padding "6px 14px"
-    corner radius 8
+    padding "7px 16px"
+    corner radius 10
     font-size 12
-    font-weight 500
+    font-weight 600
     cursor pointer
     transition "all 0.2s ease"
 end
 
 when ".btn-ghost" is hovered apply:
-    color use color "text-bright"
+    color use color "text-pure"
     border "1px solid rgba(255, 255, 255, 0.3)"
-    background "rgba(255, 255, 255, 0.05)"
+    background "rgba(255, 255, 255, 0.08)"
 end
 
 for ".btn-primary" apply:
-    background use color "text-bright"
+    background use color "text-pure"
     color "#09090b"
     border none
     padding "10px 24px"
-    corner radius 10
+    corner radius 12
     font-size 13
-    font-weight 700
+    font-weight 800
     letter-spacing 0.5
     cursor pointer
     transition "all 0.2s ease"
@@ -119,17 +122,17 @@ end
 
 when ".btn-primary" is hovered apply:
     transform "translateY(-1px)"
-    shadow "0 4px 16px rgba(255, 255, 255, 0.2)"
+    shadow "0 6px 20px rgba(255, 255, 255, 0.25)"
 end
 
 for ".btn-outline" apply:
     background "rgba(255, 255, 255, 0.04)"
-    color use color "text-bright"
+    color use color "text-pure"
     border "1px solid rgba(255, 255, 255, 0.12)"
     padding "10px 20px"
-    corner radius 10
+    corner radius 12
     font-size 13
-    font-weight 600
+    font-weight 700
     cursor pointer
     transition "all 0.2s ease"
 end
@@ -139,7 +142,7 @@ when ".btn-outline" is hovered apply:
     border "1px solid rgba(255, 255, 255, 0.25)"
 end
 
-# Grid Structure
+# Content Grid
 for ".content-grid" apply:
     display grid
     grid-template-columns "1fr 1fr"
@@ -149,12 +152,13 @@ end
 # Cards
 for ".card" apply:
     background use color "card-surface"
-    backdrop-filter "blur(20px)"
+    backdrop-filter "blur(24px)"
     border "1px solid rgba(255, 255, 255, 0.08)"
     corner radius 20
     padding 28
     position relative
     box-sizing border-box
+    shadow "0 10px 30px rgba(0, 0, 0, 0.3)"
 end
 
 for ".panel-header" apply:
@@ -166,18 +170,19 @@ end
 
 for ".panel-tag" apply:
     font-size 11
-    font-weight 700
+    font-weight 800
     letter-spacing 1.5
     color use color "text-muted"
 end
 
 for ".mode-tag" apply:
     font-size 11
-    font-weight 600
-    color use color "accent-sky"
+    font-weight 700
+    color use color "accent-cyan"
     background "rgba(56, 189, 248, 0.1)"
-    padding "2px 8px"
-    corner radius 6
+    padding "3px 10px"
+    corner radius 8
+    border "1px solid rgba(56, 189, 248, 0.2)"
 end
 
 # Zen Timer Center
@@ -189,15 +194,15 @@ for ".timer-center" apply:
 end
 
 for ".pulse-ring" apply:
-    width 220
-    height 220
-    corner radius 110
+    width 210
+    height 210
+    corner radius 105
     display flex
     align-items center
     justify-content center
-    background "radial-gradient(circle, rgba(56, 189, 248, 0.06) 0%, rgba(9, 9, 11, 0.4) 70%)"
-    border "2px solid rgba(56, 189, 248, 0.25)"
-    shadow "0 0 40px rgba(56, 189, 248, 0.08)"
+    background "radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, rgba(18, 18, 22, 0.6) 70%)"
+    border "2px solid rgba(56, 189, 248, 0.3)"
+    shadow "0 0 50px rgba(56, 189, 248, 0.12)"
     transition "all 0.4s ease"
 end
 
@@ -205,18 +210,20 @@ for ".timer-display" apply:
     text-align center
 end
 
-for "#timer-clock" apply:
-    font-size 54
-    font-weight 800
+for ".timer-num" apply:
+    font-size 52
+    font-weight 900
     margin 0
     letter-spacing 2
     font-variant-numeric "tabular-nums"
-    color use color "text-bright"
+    color use color "text-pure"
+    text-shadow "0 0 24px rgba(255, 255, 255, 0.3)"
 end
 
 for ".sub-text" apply:
     margin "6px 0 0 0"
     font-size 12
+    font-weight 500
     color use color "text-muted"
 end
 
@@ -241,13 +248,15 @@ for ".pill" apply:
     padding "6px 14px"
     corner radius 20
     font-size 12
+    font-weight 600
     cursor pointer
     transition "all 0.2s ease"
 end
 
 when ".pill" is hovered apply:
-    color use color "text-bright"
-    border "1px solid rgba(255, 255, 255, 0.2)"
+    color use color "text-pure"
+    border "1px solid rgba(255, 255, 255, 0.25)"
+    background "rgba(255, 255, 255, 0.08)"
 end
 
 # Task Input & List
@@ -260,20 +269,21 @@ end
 for ".text-input" apply:
     flex 1
     background "rgba(255, 255, 255, 0.04)"
-    border "1px solid rgba(255, 255, 255, 0.1)"
-    corner radius 10
+    border "1px solid rgba(255, 255, 255, 0.12)"
+    corner radius 12
     padding "10px 14px"
-    color use color "text-bright"
+    color use color "text-pure"
     font-size 13
     box-sizing border-box
     outline none
+    transition "border-color 0.2s ease"
 end
 
 for ".task-list" apply:
     display flex
     flex-direction column
     gap 8
-    max-height 160
+    max-height 170
     overflow-y auto
 end
 
@@ -290,14 +300,14 @@ for ".task-item" apply:
 end
 
 for ".task-bullet" apply:
-    color use color "accent-sky"
+    color use color "accent-cyan"
     margin-right 8
     font-size 11
 end
 
 for ".task-text" apply:
     flex 1
-    color use color "text-bright"
+    color use color "text-pure"
 end
 
 for ".btn-delete-task" apply:
@@ -308,21 +318,28 @@ for ".btn-delete-task" apply:
     font-size 14
     padding "2px 6px"
     corner radius 4
+    transition "color 0.2s ease"
+end
+
+when ".btn-delete-task" is hovered apply:
+    color "#f87171"
 end
 
 for ".textarea-input" apply:
     width 100 percent
-    height 80
+    height 85
     background "rgba(255, 255, 255, 0.03)"
     border "1px solid rgba(255, 255, 255, 0.08)"
-    corner radius 10
-    padding 12
-    color use color "text-bright"
+    corner radius 12
+    padding 14
+    color use color "text-pure"
     font-family inherit
     font-size 12
+    line-height 1.5
     box-sizing border-box
     resize none
     outline none
+    transition "border-color 0.2s ease"
 end
 
 # Ambient Audio Section
@@ -339,7 +356,7 @@ for ".sound-card" apply:
     padding "14px 16px"
     background "rgba(255, 255, 255, 0.02)"
     border "1px solid rgba(255, 255, 255, 0.06)"
-    corner radius 12
+    corner radius 14
     transition "all 0.2s ease"
 end
 
@@ -350,30 +367,36 @@ for ".sound-info" apply:
 end
 
 for ".sound-emoji" apply:
-    font-size 20
+    font-size 22
 end
 
 for ".sound-name" apply:
     margin 0
     font-size 13
-    font-weight 600
-    color use color "text-bright"
+    font-weight 700
+    color use color "text-pure"
 end
 
 for ".sound-sub" apply:
-    font-size 10
+    font-size 11
     color use color "text-muted"
 end
 
 for ".btn-pill" apply:
     background "rgba(255, 255, 255, 0.06)"
-    border "1px solid rgba(255, 255, 255, 0.1)"
-    color use color "text-bright"
-    padding "4px 12px"
+    border "1px solid rgba(255, 255, 255, 0.12)"
+    color use color "text-pure"
+    padding "5px 14px"
     corner radius 16
     font-size 11
+    font-weight 600
     cursor pointer
     transition "all 0.2s ease"
+end
+
+when ".btn-pill" is hovered apply:
+    background use color "accent-cyan"
+    color "#09090b"
 end
 
 # Footer Quote
@@ -393,15 +416,15 @@ end
 # Toast
 for ".toast" apply:
     position fixed
-    bottom 24
-    right 24
-    background use color "text-bright"
+    bottom 28
+    right 28
+    background use color "text-pure"
     color "#09090b"
-    padding "12px 20px"
-    corner radius 10
+    padding "12px 22px"
+    corner radius 12
     font-size 13
-    font-weight 700
-    shadow "0 10px 30px rgba(0, 0, 0, 0.5)"
+    font-weight 800
+    shadow "0 12px 36px rgba(0, 0, 0, 0.6)"
     display none
     z-index 1000
     transition "all 0.3s ease"

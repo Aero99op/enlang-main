@@ -11,12 +11,12 @@ document enlgf:
                 div class "brand-container":
                     span "✦" class "brand-icon"
                     span "AURA" class "brand-title"
-                    span "v2.0" class "badge-pill"
+                    span "STUDIO" class "badge-pill"
 
                 div class "nav-actions":
-                    span id "live-time" class "time-badge": "00:00:00"
+                    span "00:00:00" id "live-time" class "time-badge"
                     button "☾ Dark" id "btn-theme" class "btn-ghost"
-                    button "Full Screen" id "btn-fullscreen" class "btn-ghost"
+                    button "⛶ Fullscreen" id "btn-fullscreen" class "btn-ghost"
 
             # Main Grid
             main class "content-grid":
@@ -24,13 +24,13 @@ document enlgf:
                 section class "card glass focus-panel":
                     div class "panel-header":
                         span "DEEP WORK ENGINE" class "panel-tag"
-                        span id "timer-mode-tag" class "mode-tag": "FOCUS MODE"
+                        span "FOCUS MODE" id "timer-mode-tag" class "mode-tag"
 
                     div class "timer-center":
                         div class "pulse-ring" id "pulse-orb":
                             div class "timer-display":
-                                h1 id "timer-clock": "25:00"
-                                p id "timer-status" class "sub-text": "Ready to immerse"
+                                h1 "25:00" id "timer-clock" class "timer-num"
+                                p "Ready to immerse" id "timer-status" class "sub-text"
 
                     div class "timer-controls":
                         button "▶ START" id "btn-timer-start" class "btn-primary"
@@ -38,48 +38,48 @@ document enlgf:
                         button "↺ RESET" id "btn-timer-reset" class "btn-outline"
 
                     div class "preset-pills":
-                        button "25m Focus" id "btn-preset-25" class "pill active"
+                        button "25m Focus" id "btn-preset-25" class "pill"
                         button "5m Breath" id "btn-preset-5" class "pill"
                         button "50m Flow" id "btn-preset-50" class "pill"
 
                 # Right Column: Minimalist Tasks & Note Studio
                 section class "card glass task-panel":
                     div class "panel-header":
-                        span "MINIMALIST CAPTURE" class "panel-tag"
-                        span id "task-count-tag" class "mode-tag": "3 Active"
+                        span "MINIMALIST INTENTIONS" class "panel-tag"
+                        span "3 Focus Goals" id "task-count-tag" class "mode-tag"
 
                     div class "input-group":
-                        input type "text" id "new-task-input" placeholder "Type a single intention and press enter..." class "text-input"
-                        button "Add" id "btn-add-task" class "btn-primary" style "padding: 10px 18px;"
+                        input type "text" id "new-task-input" placeholder "Type a single intention..." class "text-input"
+                        button "✦ Add" id "btn-add-task" class "btn-primary" style "padding: 10px 18px;"
 
                     div class "task-list" id "task-container":
                         div class "task-item":
                             span "✦" class "task-bullet"
-                            span "Complete backend API integration" class "task-text"
+                            span "Build clean minimalist UI with Enlang" class "task-text"
                             button "✕" class "btn-delete-task"
                         div class "task-item":
                             span "✦" class "task-bullet"
-                            span "Review Enlang compiler grammar tokens" class "task-text"
+                            span "Review grammar tokens & compiler pipelines" class "task-text"
                             button "✕" class "btn-delete-task"
                         div class "task-item":
                             span "✦" class "task-bullet"
-                            span "Hydrate and take 5 min posture stretch" class "task-text"
+                            span "Hydrate and practice 5m posture stretch" class "task-text"
                             button "✕" class "btn-delete-task"
 
                     div class "notes-section":
-                        div class "panel-header" style "margin-top: 24px;":
+                        div class "panel-header" style "margin-top: 24px; margin-bottom: 12px;":
                             span "QUICK SCRATCHPAD" class "panel-tag"
-                            span id "note-saved-status" style "font-size: 11px; color: #888;": "Auto-saved"
-                        textarea id "scratchpad" placeholder "Draft spontaneous thoughts, snippets, or reflections..." class "textarea-input"
+                            span "Auto-saved" id "note-saved-status" style "font-size: 11px; color: #888;"
+                        textarea id "scratchpad" placeholder "Draft spontaneous thoughts, architecture ideas, or reflections..." class "textarea-input"
 
             # Ambient Audio Engine Section
             section class "card glass ambient-section":
                 div class "panel-header":
                     span "AMBIENT SOUND GENERATOR" class "panel-tag"
-                    span id "audio-status-tag" class "mode-tag": "Ready"
+                    span "Ready" id "audio-status-tag" class "mode-tag"
 
                 div class "ambient-grid":
-                    div class "sound-card" id="sound-rain":
+                    div class "sound-card":
                         div class "sound-info":
                             span "🌧️" class "sound-emoji"
                             div:
@@ -87,7 +87,7 @@ document enlgf:
                                 span "432Hz Binaural" class "sound-sub"
                         button "Play" id "btn-sound-1" class "btn-pill"
 
-                    div class "sound-card" id="sound-space":
+                    div class "sound-card":
                         div class "sound-info":
                             span "🪐" class "sound-emoji"
                             div:
@@ -95,7 +95,7 @@ document enlgf:
                                 span "Cosmic Drone" class "sound-sub"
                         button "Play" id "btn-sound-2" class "btn-pill"
 
-                    div class "sound-card" id="sound-cafe":
+                    div class "sound-card":
                         div class "sound-info":
                             span "☕" class "sound-emoji"
                             div:
@@ -103,7 +103,7 @@ document enlgf:
                                 span "Subtle Murmur" class "sound-sub"
                         button "Play" id "btn-sound-3" class "btn-pill"
 
-                    div class "sound-card" id="sound-waves":
+                    div class "sound-card":
                         div class "sound-info":
                             span "🌊" class "sound-emoji"
                             div:
@@ -113,7 +113,7 @@ document enlgf:
 
             # Minimalist Wisdom Footer
             footer class "footer-quote":
-                p id "quote-text" class "quote-content": "\"Simplicity is the prerequisite for reliability.\" — Edsger W. Dijkstra"
-                button "✦ Next Thought" id "btn-next-quote" class "btn-ghost" style "margin-top: 8px;"
+                p "\"Simplicity is the prerequisite for reliability.\" — Edsger W. Dijkstra" id "quote-text" class "quote-content"
+                button "✦ Next Thought" id "btn-next-quote" class "btn-ghost" style "margin-top: 10px;"
 
         div id "toast-banner" class "toast"

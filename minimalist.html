@@ -6,30 +6,29 @@
     <title>AURA — Minimalist Focus Studio</title>
     <style>
 :root {
-  --bg-carbon: #09090b;
-  --card-surface: rgba(24, 24, 27, 0.7);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --text-bright: #fafafa;
+  --bg-canvas: #09090b;
+  --card-surface: rgba(18, 18, 22, 0.75);
+  --text-pure: #ffffff;
   --text-muted: #a1a1aa;
-  --accent-sky: #38bdf8;
-  --accent-emerald: #34d399;
+  --accent-cyan: #38bdf8;
+  --accent-glow: rgba(56, 189, 248, 0.15);
 }
 
 body {
   margin: 0px;
   padding: 0px;
-  background: var(--bg-carbon);
-  color: var(--text-bright);
+  background: var(--bg-canvas);
+  color: var(--text-pure);
   font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   min-height: 100vh;
-  line-height: 1.5;
+  line-height: 1.6;
   overflow-x: hidden;
 }
 
 .app-shell {
-  max-width: 1100px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 40px 24px 60px 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -39,37 +38,40 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
+  padding: 16px 28px;
   background: var(--card-surface);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .brand-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .brand-icon {
-  color: var(--accent-sky);
-  font-size: 20px;
+  color: var(--accent-cyan);
+  font-size: 22px;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
 }
 
 .brand-title {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 3px;
-  color: var(--text-bright);
+  color: var(--text-pure);
 }
 
 .badge-pill {
   font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 3px 8px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px;
   color: var(--text-muted);
 }
@@ -83,40 +85,41 @@ body {
 .time-badge {
   font-family: monospace;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--accent-sky);
+  font-weight: 700;
+  color: var(--accent-cyan);
   background: rgba(56, 189, 248, 0.08);
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  letter-spacing: 1px;
 }
 
 .btn-ghost {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-muted);
-  padding: 6px 14px;
-  border-radius: 8px;
+  padding: 7px 16px;
+  border-radius: 10px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .btn-ghost:hover {
-  color: var(--text-bright);
+  color: var(--text-pure);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .btn-primary {
-  background: var(--text-bright);
+  background: var(--text-pure);
   color: #09090b;
   border: none;
   padding: 10px 24px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.5;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -124,17 +127,17 @@ body {
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
 }
 
 .btn-outline {
   background: rgba(255, 255, 255, 0.04);
-  color: var(--text-bright);
+  color: var(--text-pure);
   border: 1px solid rgba(255, 255, 255, 0.12);
   padding: 10px 20px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -152,12 +155,13 @@ body {
 
 .card {
   background: var(--card-surface);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   padding: 28px;
   position: relative;
   box-sizing: border-box;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .panel-header {
@@ -169,18 +173,19 @@ body {
 
 .panel-tag {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 1.5;
   color: var(--text-muted);
 }
 
 .mode-tag {
   font-size: 11px;
-  font-weight: 600;
-  color: var(--accent-sky);
+  font-weight: 700;
+  color: var(--accent-cyan);
   background: rgba(56, 189, 248, 0.1);
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.2);
 }
 
 .timer-center {
@@ -191,15 +196,15 @@ body {
 }
 
 .pulse-ring {
-  width: 220px;
-  height: 220px;
-  border-radius: 110px;
+  width: 210px;
+  height: 210px;
+  border-radius: 105px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.06) 0%, rgba(9, 9, 11, 0.4) 70%);
-  border: 2px solid rgba(56, 189, 248, 0.25);
-  box-shadow: 0 0 40px rgba(56, 189, 248, 0.08);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, rgba(18, 18, 22, 0.6) 70%);
+  border: 2px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 0 50px rgba(56, 189, 248, 0.12);
   transition: all 0.4s ease;
 }
 
@@ -207,18 +212,20 @@ body {
   text-align: center;
 }
 
-#timer-clock {
-  font-size: 54px;
-  font-weight: 800;
+.timer-num {
+  font-size: 52px;
+  font-weight: 900;
   margin: 0px;
   letter-spacing: 2px;
   font-variant-numeric: tabular-nums;
-  color: var(--text-bright);
+  color: var(--text-pure);
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.3);
 }
 
 .sub-text {
   margin: 6px 0 0 0;
   font-size: 12px;
+  font-weight: 500;
   color: var(--text-muted);
 }
 
@@ -243,13 +250,15 @@ body {
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .pill:hover {
-  color: var(--text-bright);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-pure);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .input-group {
@@ -261,20 +270,21 @@ body {
 .text-input {
   flex: 1;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
   padding: 10px 14px;
-  color: var(--text-bright);
+  color: var(--text-pure);
   font-size: 13px;
   box-sizing: border-box;
   outline: none;
+  transition: border-color 0.2s ease;
 }
 
 .task-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 160px;
+  max-height: 170px;
   overflow-y: auto;
 }
 
@@ -291,14 +301,14 @@ body {
 }
 
 .task-bullet {
-  color: var(--accent-sky);
+  color: var(--accent-cyan);
   margin-right: 8px;
   font-size: 11px;
 }
 
 .task-text {
   flex: 1;
-  color: var(--text-bright);
+  color: var(--text-pure);
 }
 
 .btn-delete-task {
@@ -309,21 +319,28 @@ body {
   font-size: 14px;
   padding: 2px 6px;
   border-radius: 4px;
+  transition: color 0.2s ease;
+}
+
+.btn-delete-task:hover {
+  color: #f87171;
 }
 
 .textarea-input {
   width: 100%;
-  height: 80px;
+  height: 85px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 12px;
-  color: var(--text-bright);
+  border-radius: 12px;
+  padding: 14px;
+  color: var(--text-pure);
   font-family: inherit;
   font-size: 12px;
+  line-height: 1.5;
   box-sizing: border-box;
   resize: none;
   outline: none;
+  transition: border-color 0.2s ease;
 }
 
 .ambient-grid {
@@ -339,7 +356,7 @@ body {
   padding: 14px 16px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
+  border-radius: 14px;
   transition: all 0.2s ease;
 }
 
@@ -350,30 +367,36 @@ body {
 }
 
 .sound-emoji {
-  font-size: 20px;
+  font-size: 22px;
 }
 
 .sound-name {
   margin: 0px;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--text-bright);
+  font-weight: 700;
+  color: var(--text-pure);
 }
 
 .sound-sub {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
 .btn-pill {
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-bright);
-  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-pure);
+  padding: 5px 14px;
   border-radius: 16px;
   font-size: 11px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.btn-pill:hover {
+  background: var(--accent-cyan);
+  color: #09090b;
 }
 
 .footer-quote {
@@ -391,15 +414,15 @@ body {
 
 .toast {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--text-bright);
+  bottom: 28px;
+  right: 28px;
+  background: var(--text-pure);
   color: #09090b;
-  padding: 12px 20px;
-  border-radius: 10px;
+  padding: 12px 22px;
+  border-radius: 12px;
   font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-weight: 800;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
   display: none;
   z-index: 1000;
   transition: all 0.3s ease;
@@ -413,149 +436,129 @@ body {
         <div class="brand-container">
           <span class="brand-icon">✦</span>
           <span class="brand-title">AURA</span>
-          <span class="badge-pill">v2.0</span>
+          <span class="badge-pill">STUDIO</span>
         </div>
         <div class="nav-actions">
-          <span id="live-time" class="time-badge">
-            00:00:00
-            <button id="btn-theme" class="btn-ghost">☾ Dark</button>
-            <button id="btn-fullscreen" class="btn-ghost">Full Screen</button>
-          </span>
+          <span id="live-time" class="time-badge">00:00:00</span>
+          <button id="btn-theme" class="btn-ghost">☾ Dark</button>
+          <button id="btn-fullscreen" class="btn-ghost">⛶ Fullscreen</button>
         </div>
-        <main class="content-grid">
-          <section class="card glass focus-panel">
-            <div class="panel-header">
-              <span class="panel-tag">DEEP WORK ENGINE</span>
-              <span id="timer-mode-tag" class="mode-tag">
-                FOCUS MODE
-              </span>
-              <div class="timer-center">
-                <div class="pulse-ring" id="pulse-orb">
-                  <div class="timer-display">
-                    <h1 id="timer-clock">
-                      25:00
-                      <p id="timer-status" class="sub-text">
-                        Ready to immerse
-                      </p>
-                    </h1>
-                  </div>
-                  <div class="timer-controls">
-                    <button id="btn-timer-start" class="btn-primary">▶ START</button>
-                    <button id="btn-timer-pause" class="btn-outline">⏸ PAUSE</button>
-                    <button id="btn-timer-reset" class="btn-outline">↺ RESET</button>
-                  </div>
-                  <div class="preset-pills">
-                    <button id="btn-preset-25" class="pill active">25m Focus</button>
-                    <button id="btn-preset-5" class="pill">5m Breath</button>
-                    <button id="btn-preset-50" class="pill">50m Flow</button>
-                  </div>
-                </div>
-                <section class="card glass task-panel">
-                  <div class="panel-header">
-                    <span class="panel-tag">MINIMALIST CAPTURE</span>
-                    <span id="task-count-tag" class="mode-tag">
-                      3 Active
-                    </span>
-                    <div class="input-group">
-                      <input type="text" id="new-task-input" placeholder="Type a single intention and press enter..." class="text-input">
-                      <button id="btn-add-task" class="btn-primary" style="padding: 10px 18px;">Add</button>
-                    </div>
-                    <div class="task-list" id="task-container">
-                      <div class="task-item">
-                        <span class="task-bullet">✦</span>
-                        <span class="task-text">Complete backend API integration</span>
-                        <button class="btn-delete-task">✕</button>
-                      </div>
-                      <div class="task-item">
-                        <span class="task-bullet">✦</span>
-                        <span class="task-text">Review Enlang compiler grammar tokens</span>
-                        <button class="btn-delete-task">✕</button>
-                      </div>
-                      <div class="task-item">
-                        <span class="task-bullet">✦</span>
-                        <span class="task-text">Hydrate and take 5 min posture stretch</span>
-                        <button class="btn-delete-task">✕</button>
-                      </div>
-                    </div>
-                    <div class="notes-section">
-                      <div class="panel-header" style="margin-top: 24px;">
-                        <span class="panel-tag">QUICK SCRATCHPAD</span>
-                        <span id="note-saved-status" style="font-size: 11px; color: #888;">
-                          Auto-saved
-                        </span>
-                        <textarea id="scratchpad" placeholder="Draft spontaneous thoughts, snippets, or reflections..." class="textarea-input">
-                        </textarea>
-                      </div>
-                    </div>
-                  </div>
-                  <section class="card glass ambient-section">
-                    <div class="panel-header">
-                      <span class="panel-tag">AMBIENT SOUND GENERATOR</span>
-                      <span id="audio-status-tag" class="mode-tag">
-                        Ready
-                      </span>
-                      <div class="ambient-grid">
-                        <div class="sound-card">
-                        </div>
-                        sound-rain
-                        <div class="sound-info">
-                          <span class="sound-emoji">🌧️</span>
-                          <div>
-                            <p class="sound-name">Gentle Rain</p>
-                            <span class="sound-sub">432Hz Binaural</span>
-                          </div>
-                        </div>
-                        <button id="btn-sound-1" class="btn-pill">Play</button>
-                      </div>
-                      <div class="sound-card">
-                      </div>
-                      sound-space
-                      <div class="sound-info">
-                        <span class="sound-emoji">🪐</span>
-                        <div>
-                          <p class="sound-name">Deep Space</p>
-                          <span class="sound-sub">Cosmic Drone</span>
-                        </div>
-                      </div>
-                      <button id="btn-sound-2" class="btn-pill">Play</button>
-                    </div>
-                    <div class="sound-card">
-                    </div>
-                    sound-cafe
-                    <div class="sound-info">
-                      <span class="sound-emoji">☕</span>
-                      <div>
-                        <p class="sound-name">Kyoto Cafe</p>
-                        <span class="sound-sub">Subtle Murmur</span>
-                      </div>
-                    </div>
-                    <button id="btn-sound-3" class="btn-pill">Play</button>
-                  </section>
-                  <div class="sound-card">
-                  </div>
-                  sound-waves
-                  <div class="sound-info">
-                    <span class="sound-emoji">🌊</span>
-                    <div>
-                      <p class="sound-name">Ocean Waves</p>
-                      <span class="sound-sub">Delta Flow</span>
-                    </div>
-                  </div>
-                  <button id="btn-sound-4" class="btn-pill">Play</button>
-                </section>
+      </header>
+      <main class="content-grid">
+        <section class="card glass focus-panel">
+          <div class="panel-header">
+            <span class="panel-tag">DEEP WORK ENGINE</span>
+            <span id="timer-mode-tag" class="mode-tag">FOCUS MODE</span>
+          </div>
+          <div class="timer-center">
+            <div class="pulse-ring" id="pulse-orb">
+              <div class="timer-display">
+                <h1 id="timer-clock" class="timer-num">25:00</h1>
+                <p id="timer-status" class="sub-text">Ready to immerse</p>
               </div>
             </div>
-            <footer class="footer-quote">
-              <p id="quote-text" class="quote-content">
-                "Simplicity is the prerequisite for reliability." — Edsger W. Dijkstra
-                <button id="btn-next-quote" class="btn-ghost" style="margin-top: 8px;">✦ Next Thought</button>
-              </p>
-            </footer>
-            <div id="toast-banner" class="toast">
+          </div>
+          <div class="timer-controls">
+            <button id="btn-timer-start" class="btn-primary">▶ START</button>
+            <button id="btn-timer-pause" class="btn-outline">⏸ PAUSE</button>
+            <button id="btn-timer-reset" class="btn-outline">↺ RESET</button>
+          </div>
+          <div class="preset-pills">
+            <button id="btn-preset-25" class="pill">25m Focus</button>
+            <button id="btn-preset-5" class="pill">5m Breath</button>
+            <button id="btn-preset-50" class="pill">50m Flow</button>
+          </div>
+        </section>
+        <section class="card glass task-panel">
+          <div class="panel-header">
+            <span class="panel-tag">MINIMALIST INTENTIONS</span>
+            <span id="task-count-tag" class="mode-tag">3 Focus Goals</span>
+          </div>
+          <div class="input-group">
+            <input type="text" id="new-task-input" placeholder="Type a single intention..." class="text-input">
+            <button id="btn-add-task" class="btn-primary" style="padding: 10px 18px;">✦ Add</button>
+          </div>
+          <div class="task-list" id="task-container">
+            <div class="task-item">
+              <span class="task-bullet">✦</span>
+              <span class="task-text">Build clean minimalist UI with Enlang</span>
+              <button class="btn-delete-task">✕</button>
             </div>
-          </section>
-        </main>
-      </header>
+            <div class="task-item">
+              <span class="task-bullet">✦</span>
+              <span class="task-text">Review grammar tokens & compiler pipelines</span>
+              <button class="btn-delete-task">✕</button>
+            </div>
+            <div class="task-item">
+              <span class="task-bullet">✦</span>
+              <span class="task-text">Hydrate and practice 5m posture stretch</span>
+              <button class="btn-delete-task">✕</button>
+            </div>
+          </div>
+          <div class="notes-section">
+            <div class="panel-header" style="margin-top: 24px; margin-bottom: 12px;">
+              <span class="panel-tag">QUICK SCRATCHPAD</span>
+              <span id="note-saved-status" style="font-size: 11px; color: #888;">Auto-saved</span>
+            </div>
+            <textarea id="scratchpad" placeholder="Draft spontaneous thoughts, architecture ideas, or reflections..." class="textarea-input">
+            </textarea>
+          </div>
+        </section>
+      </main>
+      <section class="card glass ambient-section">
+        <div class="panel-header">
+          <span class="panel-tag">AMBIENT SOUND GENERATOR</span>
+          <span id="audio-status-tag" class="mode-tag">Ready</span>
+        </div>
+        <div class="ambient-grid">
+          <div class="sound-card">
+            <div class="sound-info">
+              <span class="sound-emoji">🌧️</span>
+              <div>
+                <p class="sound-name">Gentle Rain</p>
+                <span class="sound-sub">432Hz Binaural</span>
+              </div>
+            </div>
+            <button id="btn-sound-1" class="btn-pill">Play</button>
+          </div>
+          <div class="sound-card">
+            <div class="sound-info">
+              <span class="sound-emoji">🪐</span>
+              <div>
+                <p class="sound-name">Deep Space</p>
+                <span class="sound-sub">Cosmic Drone</span>
+              </div>
+            </div>
+            <button id="btn-sound-2" class="btn-pill">Play</button>
+          </div>
+          <div class="sound-card">
+            <div class="sound-info">
+              <span class="sound-emoji">☕</span>
+              <div>
+                <p class="sound-name">Kyoto Cafe</p>
+                <span class="sound-sub">Subtle Murmur</span>
+              </div>
+            </div>
+            <button id="btn-sound-3" class="btn-pill">Play</button>
+          </div>
+          <div class="sound-card">
+            <div class="sound-info">
+              <span class="sound-emoji">🌊</span>
+              <div>
+                <p class="sound-name">Ocean Waves</p>
+                <span class="sound-sub">Delta Flow</span>
+              </div>
+            </div>
+            <button id="btn-sound-4" class="btn-pill">Play</button>
+          </div>
+        </div>
+      </section>
+      <footer class="footer-quote">
+        <p id="quote-text" class="quote-content">"Simplicity is the prerequisite for reliability." — Edsger W. Dijkstra</p>
+        <button id="btn-next-quote" class="btn-ghost" style="margin-top: 10px;">✦ Next Thought</button>
+      </footer>
+    </div>
+    <div id="toast-banner" class="toast">
     </div>
     <script>
 let timerTotalSeconds = 1500;
@@ -565,8 +568,6 @@ let timerRemaining = 1500;
 let isTimerActive = false;
 
 let currentMode = "FOCUS MODE";
-
-let activeAudioCount = 0;
 
 let quoteIndex = 0;
 
@@ -582,17 +583,12 @@ function showToast(message) {
   }, 3000);
 }
 
-function formatTimer(totalSecs) {
-  let mins = Math.floor ( totalSecs / 60 );
-  let secs = totalSecs % 60;
+function updateTimerDisplay() {
+  let mins = Math.floor ( timerRemaining / 60 );
+  let secs = timerRemaining % 60;
   let minStr = mins < 10 ? "0" + mins : "" + mins;
   let secStr = secs < 10 ? "0" + secs : "" + secs;
-  return minStr + ":" + secStr;
-}
-
-function renderTimer() {
-  let formatted = call formatTimer timerRemaining;
-  (document.getElementById("timer-clock") || document.querySelector("timer-clock")).textContent = formatted;
+  (document.getElementById("timer-clock") || document.querySelector("timer-clock")).textContent = minStr + ":" + secStr;
 }
 
 setInterval(function() {
@@ -601,12 +597,12 @@ setInterval(function() {
   if (isTimerActive == true) {
     if (timerRemaining > 0) {
       timerRemaining = timerRemaining - 1;
-      renderTimer();
+      updateTimerDisplay();
     }
     else {
       isTimerActive = false;
       showToast("🔔 Focus session complete! Time to breathe.");
-      (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "Session complete • Breathe";
+      (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "Session complete • Take a deep breath";
     }
   }
 }, 1000);
@@ -626,7 +622,7 @@ setInterval(function() {
 (document.getElementById("btn-timer-reset") || document.querySelector("btn-timer-reset")).addEventListener('click', function(event) {
   isTimerActive = false;
   timerRemaining = timerTotalSeconds;
-  renderTimer();
+  updateTimerDisplay();
   (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "Ready to immerse";
   showToast("↺ Timer reset to " + ( timerTotalSeconds / 60 ) + "m");
 });
@@ -638,7 +634,7 @@ setInterval(function() {
   currentMode = "FOCUS MODE";
   (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "FOCUS (25m)";
   (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "Ready for 25m focus";
-  renderTimer();
+  updateTimerDisplay();
   showToast("Switched to 25m Focus preset");
 });
 
@@ -649,7 +645,7 @@ setInterval(function() {
   currentMode = "ZEN BREATH";
   (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "BREATH (5m)";
   (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "5m Mindful breathing";
-  renderTimer();
+  updateTimerDisplay();
   showToast("Switched to 5m Zen Breath preset");
 });
 
@@ -660,7 +656,7 @@ setInterval(function() {
   currentMode = "FLOW STATE";
   (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "FLOW (50m)";
   (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "50m Uninterrupted flow";
-  renderTimer();
+  updateTimerDisplay();
   showToast("Switched to 50m Flow State preset");
 });
 
@@ -687,11 +683,11 @@ function addNewTask() {
 
 (document.getElementById("scratchpad") || document.querySelector("scratchpad")).addEventListener('click', function(event) {
   let noteText = (document.getElementById("scratchpad") || document.querySelector("scratchpad")).value;
-  stored = "aura_scratchpad" noteText;
+  localStorage.setItem ( "aura_scratchpad" , noteText );
   (document.getElementById("note-saved-status") || document.querySelector("note-saved-status")).textContent = "Saved (" + noteText.length + " chars)";
 });
 
-let savedNote = (document.getElementById("stored") || document.querySelector("stored")) "aura_scratchpad";
+let savedNote = localStorage.getItem ( "aura_scratchpad" );
 
 if (savedNote != null) {
   (document.getElementById("scratchpad") || document.querySelector("scratchpad")).value = savedNote;
@@ -714,7 +710,7 @@ if (savedNote != null) {
   else {
     btn.innerText = "Play";
     btn.style.background = "rgba(255, 255, 255, 0.06)";
-    btn.style.color = "#fafafa";
+    btn.style.color = "#ffffff";
   }
 });
 
@@ -729,7 +725,7 @@ if (savedNote != null) {
   else {
     btn.innerText = "Play";
     btn.style.background = "rgba(255, 255, 255, 0.06)";
-    btn.style.color = "#fafafa";
+    btn.style.color = "#ffffff";
   }
 });
 
@@ -744,7 +740,7 @@ if (savedNote != null) {
   else {
     btn.innerText = "Play";
     btn.style.background = "rgba(255, 255, 255, 0.06)";
-    btn.style.color = "#fafafa";
+    btn.style.color = "#ffffff";
   }
 });
 
@@ -759,7 +755,7 @@ if (savedNote != null) {
   else {
     btn.innerText = "Play";
     btn.style.background = "rgba(255, 255, 255, 0.06)";
-    btn.style.color = "#fafafa";
+    btn.style.color = "#ffffff";
   }
 });
 
@@ -768,14 +764,14 @@ if (savedNote != null) {
   let btnTheme = document.getElementById ( "btn-theme" );
   if (btnTheme.innerText == "☾ Dark") {
     btnTheme.innerText = "☼ Light";
-    bodyEl.style.background = "#fafafa";
+    bodyEl.style.background = "#f4f4f5";
     bodyEl.style.color = "#09090b";
-    showToast("Switched to Paper White theme");
+    showToast("Switched to Light Paper theme");
   }
   else {
     btnTheme.innerText = "☾ Dark";
     bodyEl.style.background = "#09090b";
-    bodyEl.style.color = "#fafafa";
+    bodyEl.style.color = "#ffffff";
     showToast("Switched to OLED Dark theme");
   }
 });

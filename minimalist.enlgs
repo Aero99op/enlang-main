@@ -6,7 +6,6 @@ in script:
     create timerRemaining as 1500
     create isTimerActive as false
     create currentMode as "FOCUS MODE"
-    create activeAudioCount as 0
     create quoteIndex as 0
 
     show "✦ Initializing AURA Minimalist Focus Studio in Pure Enlang (.enlgs)..."
@@ -21,20 +20,15 @@ in script:
         after 3 seconds:
             hide element "toast-banner"
 
-    # Helper to Format Time (MM:SS)
-    to do formatTimer with totalSecs:
-        create mins as Math.floor(totalSecs / 60)
-        create secs as totalSecs % 60
+    # Update Timer Display
+    to do updateTimerDisplay:
+        create mins as Math.floor(timerRemaining / 60)
+        create secs as timerRemaining % 60
         create minStr as mins < 10 ? "0" + mins : "" + mins
         create secStr as secs < 10 ? "0" + secs : "" + secs
-        return minStr + ":" + secStr
+        set text of "timer-clock" to minStr + ":" + secStr
 
-    # Update Timer Display
-    to do renderTimer:
-        create formatted as call formatTimer with timerRemaining
-        set text of "timer-clock" to formatted
-
-    # Live Clock in Header
+    # Live Clock & Timer Tick in Header
     every 1 second:
         create now as new Date()
         set text of "live-time" to now.toTimeString().split(" ")[0]
@@ -43,11 +37,11 @@ in script:
         if isTimerActive == true:
             if timerRemaining > 0:
                 set timerRemaining = timerRemaining - 1
-                call renderTimer
+                call updateTimerDisplay
             else:
                 set isTimerActive = false
                 call showToast with "🔔 Focus session complete! Time to breathe."
-                set text of "timer-status" to "Session complete • Breathe"
+                set text of "timer-status" to "Session complete • Take a deep breath"
 
     # Timer Controls
     when "btn-timer-start" is clicked:
@@ -63,7 +57,7 @@ in script:
     when "btn-timer-reset" is clicked:
         set isTimerActive = false
         set timerRemaining = timerTotalSeconds
-        call renderTimer
+        call updateTimerDisplay
         set text of "timer-status" to "Ready to immerse"
         call showToast with "↺ Timer reset to " + (timerTotalSeconds / 60) + "m"
 
@@ -75,7 +69,7 @@ in script:
         set currentMode = "FOCUS MODE"
         set text of "timer-mode-tag" to "FOCUS (25m)"
         set text of "timer-status" to "Ready for 25m focus"
-        call renderTimer
+        call updateTimerDisplay
         call showToast with "Switched to 25m Focus preset"
 
     when "btn-preset-5" is clicked:
@@ -85,7 +79,7 @@ in script:
         set currentMode = "ZEN BREATH"
         set text of "timer-mode-tag" to "BREATH (5m)"
         set text of "timer-status" to "5m Mindful breathing"
-        call renderTimer
+        call updateTimerDisplay
         call showToast with "Switched to 5m Zen Breath preset"
 
     when "btn-preset-50" is clicked:
@@ -95,7 +89,7 @@ in script:
         set currentMode = "FLOW STATE"
         set text of "timer-mode-tag" to "FLOW (50m)"
         set text of "timer-status" to "50m Uninterrupted flow"
-        call renderTimer
+        call updateTimerDisplay
         call showToast with "Switched to 50m Flow State preset"
 
     # Task Addition
@@ -120,11 +114,11 @@ in script:
     # Scratchpad Auto-Save
     when "scratchpad" is input:
         create noteText as get value of "scratchpad"
-        set stored "aura_scratchpad" as noteText
+        localStorage.setItem("aura_scratchpad", noteText)
         set text of "note-saved-status" to "Saved (" + noteText.length + " chars)"
 
     # Restore Scratchpad from Storage
-    create savedNote as get stored "aura_scratchpad"
+    create savedNote as localStorage.getItem("aura_scratchpad")
     if savedNote != null:
         set value of "scratchpad" to savedNote
 
@@ -145,7 +139,7 @@ in script:
         else:
             btn.innerText = "Play"
             btn.style.background = "rgba(255, 255, 255, 0.06)"
-            btn.style.color = "#fafafa"
+            btn.style.color = "#ffffff"
 
     when "btn-sound-2" is clicked:
         create btn as document.getElementById("btn-sound-2")
@@ -157,7 +151,7 @@ in script:
         else:
             btn.innerText = "Play"
             btn.style.background = "rgba(255, 255, 255, 0.06)"
-            btn.style.color = "#fafafa"
+            btn.style.color = "#ffffff"
 
     when "btn-sound-3" is clicked:
         create btn as document.getElementById("btn-sound-3")
@@ -169,7 +163,7 @@ in script:
         else:
             btn.innerText = "Play"
             btn.style.background = "rgba(255, 255, 255, 0.06)"
-            btn.style.color = "#fafafa"
+            btn.style.color = "#ffffff"
 
     when "btn-sound-4" is clicked:
         create btn as document.getElementById("btn-sound-4")
@@ -181,7 +175,7 @@ in script:
         else:
             btn.innerText = "Play"
             btn.style.background = "rgba(255, 255, 255, 0.06)"
-            btn.style.color = "#fafafa"
+            btn.style.color = "#ffffff"
 
     # Theme Toggle
     when "btn-theme" is clicked:
@@ -189,13 +183,13 @@ in script:
         create btnTheme as document.getElementById("btn-theme")
         if btnTheme.innerText == "☾ Dark":
             btnTheme.innerText = "☼ Light"
-            bodyEl.style.background = "#fafafa"
+            bodyEl.style.background = "#f4f4f5"
             bodyEl.style.color = "#09090b"
-            call showToast with "Switched to Paper White theme"
+            call showToast with "Switched to Light Paper theme"
         else:
             btnTheme.innerText = "☾ Dark"
             bodyEl.style.background = "#09090b"
-            bodyEl.style.color = "#fafafa"
+            bodyEl.style.color = "#ffffff"
             call showToast with "Switched to OLED Dark theme"
 
     # Fullscreen Toggle
