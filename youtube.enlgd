@@ -427,8 +427,12 @@ for ".video-stats" apply:
     color use color "yt-muted"
 end
 
-# Watch Page View
-for ".view-panel" apply:
+# Views switching rules
+for "#view-feed" apply:
+    display block
+end
+
+for "#view-watch" apply:
     display none
 end
 

@@ -426,7 +426,11 @@ body {
   color: var(--yt-muted);
 }
 
-.view-panel {
+#view-feed {
+  display: block;
+}
+
+#view-watch {
   display: none;
 }
 
@@ -1264,8 +1268,6 @@ let isSubscribed = false;
 
 let isLiked = false;
 
-let likeCount = 142000;
-
 let currentVideoId = "1";
 
 let totalComments = 328;
@@ -1279,11 +1281,17 @@ console.log("▶ Initializing YouTube 1:1 Video Engine in Pure Enlang (.enlgs)..
 const videoCatalog = [ { id : "1" , title : "Building High-Throughput Microservices with Java & Spring Boot" , channel : "Prayas Kumar Sahoo" , subs : "128K subscribers" , views : "245,189 views • Premiered on Aug 15, 2026" , desc : "In this deep dive tutorial, Prayas Kumar Sahoo walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." } , { id : "2" , title : "How We Built Enlang: Compiling English to Python, JS & Flutter" , channel : "Enlang Official" , subs : "512K subscribers" , views : "512,840 views • 1 week ago" , desc : "Behind the scenes of building the Enlang compiler ecosystem (.enlg, .enlgf, .enlgd, .enlgs, .enlgm) from scratch with zero boilerplate." } , { id : "3" , title : "Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages" , channel : "Edge Architects" , subs : "189K subscribers" , views : "189,420 views • 3 days ago" , desc : "Complete masterclass on building Cloudflare Workers and Pages with Zero 500 error architectures." } , { id : "4" , title : "Database Indexing, Stored Procedures & Connection Pooling" , channel : "Database Wizardry" , subs : "98K subscribers" , views : "98,120 views • 4 days ago" , desc : "MySQL and Oracle optimization guide for enterprise database architects." } , { id : "5" , title : "Procedural Corona Glows & Raymarched Moon Craters in WebGL" , channel : "Creative Coding 3D" , subs : "340K subscribers" , views : "340,900 views • 5 days ago" , desc : "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL." } , { id : "6" , title : "Build Android & iOS Flutter Apps with Pure English Sentences" , channel : "Mobile Mastery" , subs : "420K subscribers" , views : "420,150 views • 6 days ago" , desc : "Building native Flutter apps using Enlang Mobile (.enlgm) with 1:1 Dart compilation." } ];
 
 function showToast(message) {
-  (document.getElementById("yt-toast") || document.querySelector("yt-toast")).textContent = message;
-  (document.getElementById("yt-toast") || document.querySelector("yt-toast")).style.display = '';
-  setTimeout(function() {
-    (document.getElementById("yt-toast") || document.querySelector("yt-toast")).style.display = 'none';
-  }, 3000);
+  let toastEl = document.getElementById ( "yt-toast" );
+  if (toastEl != null) {
+    toastEl.textContent = message;
+    toastEl.style.display = "block";
+    setTimeout(function() {
+      let t2 = document.getElementById ( "yt-toast" );
+      if (t2 != null) {
+        t2.style.display = "none";
+      }
+    }, 3000);
+  }
 }
 
 function formatDuration(secs) {
@@ -1306,8 +1314,14 @@ function openWatchPage(vidId) {
   (document.getElementById("watch-sub-count") || document.querySelector("watch-sub-count")).textContent = v.subs;
   (document.getElementById("watch-desc-text") || document.querySelector("watch-desc-text")).textContent = v.desc;
   (document.getElementById("desc-stats") || document.querySelector("desc-stats")).textContent = v.views;
-  (document.getElementById("view-feed") || document.querySelector("view-feed")).style.display = 'none';
-  (document.getElementById("view-watch") || document.querySelector("view-watch")).style.display = '';
+  let fPanel = document.getElementById ( "view-feed" );
+  let wPanel = document.getElementById ( "view-watch" );
+  if (fPanel != null) {
+    fPanel.style.display = "none";
+  }
+  if (wPanel != null) {
+    wPanel.style.display = "block";
+  }
   window.scrollTo ( 0 , 0 );
   isPlaying = true;
   (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "⏸";
@@ -1316,8 +1330,14 @@ function openWatchPage(vidId) {
 }
 
 function openHomeFeed() {
-  (document.getElementById("view-watch") || document.querySelector("view-watch")).style.display = 'none';
-  (document.getElementById("view-feed") || document.querySelector("view-feed")).style.display = '';
+  let fPanel = document.getElementById ( "view-feed" );
+  let wPanel = document.getElementById ( "view-watch" );
+  if (fPanel != null) {
+    fPanel.style.display = "block";
+  }
+  if (wPanel != null) {
+    wPanel.style.display = "none";
+  }
   window.scrollTo ( 0 , 0 );
   showToast("🏠 Back to YouTube Home");
 }
@@ -1367,7 +1387,7 @@ function openHomeFeed() {
 });
 
 (document.getElementById("nav-shorts") || document.querySelector("nav-shorts")).addEventListener('click', function(event) {
-  showToast("⚡ Shorts feed coming soon!");
+  showToast("⚡ Shorts feed loaded");
 });
 
 (document.getElementById("nav-subs") || document.querySelector("nav-subs")).addEventListener('click', function(event) {
@@ -1423,7 +1443,7 @@ function openHomeFeed() {
 });
 
 (document.getElementById("btn-create") || document.querySelector("btn-create")).addEventListener('click', function(event) {
-  showToast("＋ Upload video or Go Live");
+  showToast("＋ Upload video dialog opened");
 });
 
 (document.getElementById("btn-notif") || document.querySelector("btn-notif")).addEventListener('click', function(event) {
@@ -1448,7 +1468,7 @@ function openHomeFeed() {
 });
 
 (document.getElementById("chip-all") || document.querySelector("chip-all")).addEventListener('click', function(event) {
-  showToast("Showing All categories");
+  showToast("Category: All videos");
 });
 
 (document.getElementById("chip-coding") || document.querySelector("chip-coding")).addEventListener('click', function(event) {
