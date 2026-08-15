@@ -17,6 +17,7 @@ from .ast_nodes import (
     DOMAddElementNode, DOMAppendToNode, AnimateTargetNode, FunctionalPipelineNode,
     HttpServerNode, HttpRouteNode, HttpReturnJsonNode, StoreDefNode, StoreStateNode,
     World3DNode, AnimationFrameLoopNode, RotateByNode, TranslateByNode,
+    RenderSceneNode, MoveTargetNode,
     ExtractDestructureNode, WebSocketConnectNode, WebSocketReceiveNode,
     GeneratorDefNode, GeneratorYieldNode, PreventDefaultNode
 )
@@ -254,6 +255,22 @@ class ENLGSParser:
         elif intent == "ASSIGN_VAR":
             if not tokens:
                 return RawJSNode(code=line_tokens[0].raw_text)
+
+            # Check for: set <prop> of <target> to <val> (e.g. set fov of camera to 60)
+            of_idx = -1
+            to_idx = -1
+            for idx, t in enumerate(tokens):
+                if t.value.lower() == "of" and of_idx == -1:
+                    of_idx = idx
+                elif t.value.lower() == "to" and of_idx != -1 and to_idx == -1:
+                    to_idx = idx
+
+            if of_idx != -1 and to_idx != -1:
+                prop_name = _tokens_to_expr(tokens[:of_idx])
+                target_obj = _tokens_to_expr(tokens[of_idx+1:to_idx])
+                val_expr = _tokens_to_expr(tokens[to_idx+1:])
+                return VarAssignNode(name=f"{target_obj}.{prop_name}", op="=", value=val_expr)
+
             name = tokens[0].value
             val_tokens = tokens[1:]
             if val_tokens and val_tokens[0].value.lower() in ("as", "="):
@@ -262,12 +279,40 @@ class ENLGSParser:
             return VarAssignNode(name=name, op="=", value=val)
 
         elif intent == "COMPOUND_ADD":
+            # Check for: increase <prop> of <target> by <val>
+            of_idx = -1
+            by_idx = -1
+            for idx, t in enumerate(tokens):
+                if t.value.lower() == "of" and of_idx == -1:
+                    of_idx = idx
+                elif t.value.lower() == "by" and of_idx != -1 and by_idx == -1:
+                    by_idx = idx
+            if of_idx != -1 and by_idx != -1:
+                prop_name = _tokens_to_expr(tokens[:of_idx])
+                target_obj = _tokens_to_expr(tokens[of_idx+1:by_idx])
+                val_expr = _tokens_to_expr(tokens[by_idx+1:])
+                return VarAssignNode(name=f"{target_obj}.{prop_name}", op="+=", value=val_expr)
+
             tokens_no_conn = [t for t in tokens if t.type != TokenType.CONNECTOR]
             name = tokens_no_conn[0].value if tokens_no_conn else "x"
             val = _tokens_to_expr(tokens_no_conn[1:]) if len(tokens_no_conn) > 1 else "1"
             return VarAssignNode(name=name, op="+=", value=val)
 
         elif intent == "COMPOUND_SUB":
+            # Check for: decrease <prop> of <target> by <val>
+            of_idx = -1
+            by_idx = -1
+            for idx, t in enumerate(tokens):
+                if t.value.lower() == "of" and of_idx == -1:
+                    of_idx = idx
+                elif t.value.lower() == "by" and of_idx != -1 and by_idx == -1:
+                    by_idx = idx
+            if of_idx != -1 and by_idx != -1:
+                prop_name = _tokens_to_expr(tokens[:of_idx])
+                target_obj = _tokens_to_expr(tokens[of_idx+1:by_idx])
+                val_expr = _tokens_to_expr(tokens[by_idx+1:])
+                return VarAssignNode(name=f"{target_obj}.{prop_name}", op="-=", value=val_expr)
+
             tokens_no_conn = [t for t in tokens if t.type != TokenType.CONNECTOR]
             name = tokens_no_conn[0].value if tokens_no_conn else "x"
             val = _tokens_to_expr(tokens_no_conn[1:]) if len(tokens_no_conn) > 1 else "1"
@@ -604,6 +649,23 @@ class ENLGSParser:
                 if t.value.lower() in ("x", "y", "z") and idx + 1 < len(tokens):
                     rot_map[t.value.lower()] = tokens[idx + 1].value
             return RotateByNode(target=target, rotations=rot_map)
+
+        elif intent == "RENDER_SCENE":
+            scene = "scene"
+            camera = "camera"
+            clean_tokens = [t for t in tokens if t.value.lower() not in ("scene", "with", "the", "a", "an")]
+            if len(clean_tokens) >= 2:
+                scene = clean_tokens[0].value
+                camera = clean_tokens[1].value
+            elif len(clean_tokens) == 1:
+                camera = clean_tokens[0].value
+            return RenderSceneNode(scene=scene, camera=camera)
+
+        elif intent == "MOVE_TARGET":
+            clean_tokens = [t for t in tokens if t.value.lower() not in ("to", "by", "the", "a", "an", "(", ")")]
+            target = clean_tokens[0].value if clean_tokens else "obj"
+            coords = [t.value for t in clean_tokens[1:] if t.value != ","]
+            return MoveTargetNode(target=target, coordinates=coords)
 
         elif intent == "TRANSLATE_BY":
             target = tokens[0].value if tokens else "obj"

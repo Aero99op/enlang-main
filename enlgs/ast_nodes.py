@@ -267,6 +267,18 @@ class AnimationFrameLoopNode(ASTNode):
     body: List[ASTNode] = field(default_factory=list)
 
 @dataclass
+class RenderSceneNode(ASTNode):
+    """Represents rendering a 3D scene: render scene with camera."""
+    scene: str = "scene"
+    camera: str = "camera"
+
+@dataclass
+class MoveTargetNode(ASTNode):
+    """Represents setting 3D object position: move obj to (x, y, z)."""
+    target: str
+    coordinates: List[str] = field(default_factory=list)
+
+@dataclass
 class RotateByNode(ASTNode):
     """Represents 3D object rotation: rotate obj by x 0.01, y 0.02."""
     target: str

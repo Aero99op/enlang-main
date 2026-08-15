@@ -144,16 +144,33 @@ in script:
         self.assertIn("sunMesh.rotation.x += 0.002;", js)
         self.assertIn("function _enlgs_animLoop() {", js)
 
-    def test_websockets(self):
+    def test_natural_property_mutations(self):
         source = """
 in script:
-    connect websocket to "wss://api.example.com" myWs
-    when myWs receives:
-        show "Received:", data
+    create camera as new THREE.PerspectiveCamera()
+    set fov of camera to 60
+    increase score of player by 10
+    decrease health of boss by 25
 """
         js = compile_enlgs_source(source)
-        self.assertIn("new WebSocket('wss://api.example.com')", js)
-        self.assertIn("myWs.addEventListener('message'", js)
+        self.assertIn("camera.fov = 60;", js)
+        self.assertIn("player.score += 10;", js)
+        self.assertIn("boss.health -= 25;", js)
+
+    def test_natural_3d_render_and_move(self):
+        source = """
+in script:
+    world 3d on "webgl-canvas":
+        create scene as new THREE.Scene()
+        create camera as new THREE.PerspectiveCamera()
+        move camera to 0, 0, 7
+        on every animation frame:
+            rotate sunMesh by y 0.005
+            render scene with camera
+"""
+        js = compile_enlgs_source(source)
+        self.assertIn("camera.position.set(0, 0, 7);", js)
+        self.assertIn("renderer.render(scene, camera);", js)
 
 if __name__ == "__main__":
     unittest.main()

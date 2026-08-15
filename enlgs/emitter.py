@@ -16,6 +16,7 @@ from .ast_nodes import (
     DOMAddElementNode, DOMAppendToNode, AnimateTargetNode, FunctionalPipelineNode,
     HttpServerNode, HttpRouteNode, HttpReturnJsonNode, StoreDefNode, StoreStateNode,
     World3DNode, AnimationFrameLoopNode, RotateByNode, TranslateByNode,
+    RenderSceneNode, MoveTargetNode,
     ExtractDestructureNode, WebSocketConnectNode, WebSocketReceiveNode,
     GeneratorDefNode, GeneratorYieldNode, PreventDefaultNode
 )
@@ -384,6 +385,13 @@ class ENLGSEmitter:
             lines.append(pad + "}")
             lines.append(pad + "_enlgs_animLoop();")
             return "\n".join(lines)
+
+        elif isinstance(node, RenderSceneNode):
+            return pad + f"if (typeof renderer !== 'undefined' && renderer.render) renderer.render({node.scene}, {node.camera});"
+
+        elif isinstance(node, MoveTargetNode):
+            coords_str = ", ".join(node.coordinates)
+            return pad + f"{node.target}.position.set({coords_str});"
 
         elif isinstance(node, RotateByNode):
             stmts = []

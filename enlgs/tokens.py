@@ -180,10 +180,16 @@ HINT_REGISTRY: Dict[str, str] = {
     "on every animation frame": "ANIM_FRAME_LOOP",
     "every frame": "ANIM_FRAME_LOOP",
     "animate frame": "ANIM_FRAME_LOOP",
+    "render scene with": "RENDER_SCENE",
+    "render scene": "RENDER_SCENE",
+    "render": "RENDER_SCENE",
     "rotate by": "ROTATE_BY",
     "rotate": "ROTATE_BY",
     "translate by": "TRANSLATE_BY",
     "translate": "TRANSLATE_BY",
+    "move to": "MOVE_TARGET",
+    "move by": "MOVE_TARGET",
+    "move": "MOVE_TARGET",
 
     # ── Destructuring & Spread ──
     "extract": "EXTRACT_FROM",
