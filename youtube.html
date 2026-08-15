@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube — Watch, Stream and Share</title>
+    <style>
+:root {
+  --yt-bg: #0f0f0f;
+  --yt-header-bg: #0f0f0f;
+  --yt-surface: #272727;
+  --yt-hover: rgba(255, 255, 255, 0.1);
+  --yt-text: #f1f1f1;
+  --yt-muted: #aaaaaa;
+  --yt-red: #ff0000;
+  --yt-blue: #3ea6ff;
+}
+
+body {
+  margin: 0px;
+  padding: 0px;
+  background: var(--yt-bg);
+  color: var(--yt-text);
+  font-family: Roboto, Arial, sans-serif;
+  min-height: 100vh;
+  line-height: 1.4;
+  overflow-x: hidden;
+}
+
+.yt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  height: 56px;
+  position: sticky;
+  top: 0px;
+  z-index: 1000;
+  background: var(--yt-header-bg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.yt-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.yt-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--yt-text);
+  font-size: 18px;
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+  position: relative;
+}
+
+.yt-icon-btn:hover {
+  background: var(--yt-hover);
+}
+
+.yt-logo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.yt-logo-icon {
+  color: var(--yt-red);
+  font-size: 22px;
+}
+
+.yt-logo-text {
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.5;
+  color: var(--yt-text);
+}
+
+.yt-country {
+  font-size: 10px;
+  color: var(--yt-muted);
+  align-self: flex-start;
+  margin-top: -4;
+}
+
+.yt-header-center {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  max-width: 700px;
+  margin: 0 32px;
+}
+
+.yt-search-box {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  height: 40px;
+  background: #121212;
+  border: 1px solid #303030;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.yt-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0 16px;
+  color: var(--yt-text);
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.yt-search-btn {
+  background: #222222;
+  border: none;
+  border-left: 1px solid #303030;
+  color: var(--yt-text);
+  width: 64px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: background 0.2s ease;
+}
+
+.yt-search-btn:hover {
+  background: #2a2a2a;
+}
+
+.voice-btn {
+  background: #222222;
+  border-radius: 20px;
+}
+
+.yt-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.yt-btn-create {
+  background: var(--yt-surface);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--yt-text);
+  padding: 8px 16px;
+  border-radius: 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s ease;
+}
+
+.yt-btn-create:hover {
+  background: var(--yt-hover);
+}
+
+.notif-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--yt-red);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yt-user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 17px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: #ffffff;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.yt-main-layout {
+  display: flex;
+  min-height: calc(100vh - 56px);
+}
+
+.yt-sidebar {
+  width: 240px;
+  padding: 12px 12px 24px 12px;
+  background: var(--yt-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 56px;
+  height: calc(100vh - 56px);
+  box-sizing: border-box;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: var(--yt-text);
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background 0.15s ease;
+}
+
+.sidebar-item:hover {
+  background: var(--yt-hover);
+}
+
+.sidebar-heading {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--yt-muted);
+  padding: 12px 14px 4px 14px;
+  margin: 0px;
+  letter-spacing: 0.5;
+}
+
+.sub-channel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sub-channel:hover {
+  background: var(--yt-hover);
+}
+
+.channel-name {
+  font-size: 13px;
+  color: var(--yt-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 8px 0;
+}
+
+.yt-content {
+  flex: 1;
+  padding: 16px 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.category-bar {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+  margin-bottom: 8px;
+}
+
+.chip {
+  background: var(--yt-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--yt-text);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip:hover {
+  background: var(--yt-hover);
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+.video-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: transform 0.2s ease;
+}
+
+.video-card:hover {
+  transform: scale(1.02);
+}
+
+.thumbnail-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+.thumbnail-bg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.thumb-text {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.7);
+}
+
+.duration-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+.video-meta {
+  display: flex;
+  gap: 12px;
+}
+
+.channel-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  color: #ffffff;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.video-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.video-title {
+  margin: 0px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--yt-text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2px;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.video-channel {
+  margin: 0px;
+  font-size: 13px;
+  color: var(--yt-muted);
+}
+
+.video-stats {
+  margin: 0px;
+  font-size: 12px;
+  color: var(--yt-muted);
+}
+
+.view-panel {
+  display: none;
+}
+
+.watch-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+}
+
+.watch-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.video-player-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000000;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8);
+}
+
+.player-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #1a202c 0%, #000000 80%);
+  padding: 24px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.play-huge-icon {
+  font-size: 64px;
+  color: var(--yt-red);
+  text-shadow: 0 0 30px rgba(255, 0, 0, 0.6);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.play-huge-icon:hover {
+  transform: scale(1.15);
+}
+
+#active-player-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 16px 0 6px 0;
+  color: #ffffff;
+}
+
+.player-badge-sub {
+  margin: 0px;
+  font-size: 12px;
+  color: var(--yt-muted);
+}
+
+.player-controls {
+  height: 48px;
+  background: rgba(15, 15, 15, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.ctrl-btn {
+  background: transparent;
+  border: none;
+  color: var(--yt-text);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.ctrl-time {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--yt-muted);
+}
+
+.scrubber-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+}
+
+.scrubber-fill {
+  height: 100%;
+  background: var(--yt-red);
+  border-radius: 2px;
+}
+
+.watch-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0px;
+  line-height: 1.3;
+}
+
+.watch-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.channel-info-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.channel-avatar-lg {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.channel-title {
+  margin: 0px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.channel-subs {
+  margin: 0px;
+  font-size: 12px;
+  color: var(--yt-muted);
+}
+
+.btn-subscribe {
+  background: #ffffff;
+  color: #0f0f0f;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 12px;
+  transition: all 0.2s ease;
+}
+
+.btn-subscribe:hover {
+  background: #e5e5e5;
+}
+
+.action-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.like-dislike-pill {
+  display: flex;
+  align-items: center;
+  background: var(--yt-surface);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.btn-like {
+  background: transparent;
+  border: none;
+  color: var(--yt-text);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.pill-sep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-dislike {
+  background: transparent;
+  border: none;
+  color: var(--yt-text);
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-action {
+  background: var(--yt-surface);
+  border: none;
+  color: var(--yt-text);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.watch-description-box {
+  background: var(--yt-surface);
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.desc-stats {
+  margin: 0px;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.desc-content {
+  margin: 0px;
+  color: #d1d5db;
+}
+
+.comments-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.comments-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+#comments-count-header {
+  margin: 0px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.sort-tag {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--yt-muted);
+  cursor: pointer;
+}
+
+.add-comment-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.user-avatar-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #10b981, #065f46);
+  color: #ffffff;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.comment-input-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 0;
+  color: var(--yt-text);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.comment-btn-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: none;
+  color: var(--yt-text);
+  padding: 8px 16px;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--yt-blue);
+  color: #0f0f0f;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.comment-card {
+  display: flex;
+  gap: 14px;
+}
+
+.comment-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comment-author-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.comment-author {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--yt-text);
+}
+
+.comment-time {
+  font-size: 12px;
+  color: var(--yt-muted);
+}
+
+.comment-msg {
+  margin: 0px;
+  font-size: 14px;
+  color: #e5e7eb;
+  line-height: 1.4;
+}
+
+.comment-reactions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.btn-react {
+  background: transparent;
+  border: none;
+  color: var(--yt-muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.watch-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rec-header {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.rec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rec-card {
+  display: flex;
+  gap: 10px;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 4px;
+  transition: background 0.15s ease;
+}
+
+.rec-card:hover {
+  background: var(--yt-hover);
+}
+
+.rec-thumb {
+  width: 160px;
+  height: 90px;
+  border-radius: 8px;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.rec-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rec-title {
+  margin: 0px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--yt-text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2px;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rec-channel {
+  margin: 0px;
+  font-size: 12px;
+  color: var(--yt-muted);
+}
+
+.rec-stats {
+  margin: 0px;
+  font-size: 12px;
+  color: var(--yt-muted);
+}
+
+.yt-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  background: #ffffff;
+  color: #0f0f0f;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+  display: none;
+  z-index: 2000;
+  transition: all 0.3s ease;
+}
+    </style>
+    
+  </head>
+  <body>
+    <div class="yt-app">
+      <header class="yt-header">
+        <div class="yt-header-left">
+          <button id="btn-sidebar-toggle" class="yt-icon-btn">☰</button>
+          <div class="yt-logo">
+            <span class="yt-logo-icon">▶</span>
+            <span class="yt-logo-text">YouTube</span>
+            <span class="yt-country">IN</span>
+          </div>
+        </div>
+        <div class="yt-header-center">
+          <div class="yt-search-box">
+            <input type="text" id="search-input" placeholder="Search videos, creators, tech tutorials..." class="yt-search-input">
+            <button id="btn-search" class="yt-search-btn">🔍</button>
+          </div>
+          <button id="btn-voice" class="yt-icon-btn voice-btn">🎙️</button>
+        </div>
+        <div class="yt-header-right">
+          <button id="btn-create" class="yt-btn-create">＋ Create</button>
+          <button id="btn-notif" class="yt-icon-btn notif-btn">
+            🔔
+            <span class="notif-badge">3</span>
+          </button>
+          <button id="btn-theme" class="yt-icon-btn">☾</button>
+          <div class="yt-user-avatar" id="user-profile">
+            <span>P</span>
+          </div>
+        </div>
+      </header>
+      <div class="yt-main-layout">
+        <aside class="yt-sidebar" id="yt-sidebar">
+          <div class="sidebar-section">
+            <button id="nav-home" class="sidebar-item active">🏠 Home</button>
+            <button id="nav-shorts" class="sidebar-item">⚡ Shorts</button>
+            <button id="nav-subs" class="sidebar-item">📺 Subscriptions</button>
+          </div>
+          <div class="sidebar-divider">
+          </div>
+          <div class="sidebar-section">
+            <p class="sidebar-heading">YOU</p>
+            <button class="sidebar-item">📁 Library</button>
+            <button class="sidebar-item">🕒 History</button>
+            <button class="sidebar-item">🎬 Your Videos</button>
+            <button class="sidebar-item">⏱️ Watch Later</button>
+            <button class="sidebar-item">👍 Liked Videos</button>
+          </div>
+          <div class="sidebar-divider">
+          </div>
+          <div class="sidebar-section">
+            <p class="sidebar-heading">SUBSCRIPTIONS</p>
+            <div class="sub-channel">
+              <span class="channel-icon">☕</span>
+              <span class="channel-name">Java & Spring Master</span>
+            </div>
+            <div class="sub-channel">
+              <span class="channel-icon">🚀</span>
+              <span class="channel-name">Enlang Official</span>
+            </div>
+            <div class="sub-channel">
+              <span class="channel-icon">⚛️</span>
+              <span class="channel-name">Next.js & React Pro</span>
+            </div>
+            <div class="sub-channel">
+              <span class="channel-icon">🪐</span>
+              <span class="channel-name">Three.js Creative 3D</span>
+            </div>
+          </div>
+        </aside>
+        <main class="yt-content">
+          <div id="view-feed" class="view-panel active">
+            <div class="category-bar" id="category-container">
+              <button class="chip active">All</button>
+              <button class="chip">Coding & AI</button>
+              <button class="chip">Java Backend</button>
+              <button class="chip">Spring Boot</button>
+              <button class="chip">Enlang Stack</button>
+              <button class="chip">System Design</button>
+              <button class="chip">Next.js</button>
+              <button class="chip">Cloudflare Edge</button>
+              <button class="chip">Lo-Fi Music</button>
+              <button class="chip">Gaming</button>
+            </div>
+            <div class="video-grid" id="video-grid-container">
+              <div class="video-card">
+                1
+                <div class="thumbnail-wrapper">
+                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
+                    <span class="thumb-text">☕ Java 21 & Spring Boot 3.2 Full Masterclass</span>
+                  </div>
+                  <span class="duration-badge">18:45</span>
+                </div>
+                <div class="video-meta">
+                  <div class="channel-avatar">
+                    P
+                    <div class="video-details">
+                      <h3 class="video-title">Building High-Throughput Microservices with Java & Spring Boot</h3>
+                      <p class="video-channel">Prayas Kumar Sahoo • Java Backend</p>
+                      <p class="video-stats">245K views • 2 days ago</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="video-card">
+                  2
+                  <div class="thumbnail-wrapper">
+                    <div class="thumbnail-bg" style="background: linear-gradient(135deg, #065f46, #10b981);">
+                      <span class="thumb-text">🪐 Enlang Compiler Architecture: Pure English Code</span>
+                    </div>
+                    <span class="duration-badge">24:10</span>
+                  </div>
+                  <div class="video-meta">
+                    <div class="channel-avatar">
+                      E
+                      <div class="video-details">
+                        <h3 class="video-title">How We Built Enlang: Compiling English to Python, JS & Flutter</h3>
+                        <p class="video-channel">Enlang Official • Compiler Engineering</p>
+                        <p class="video-stats">512K views • 1 week ago</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="video-card">
+                    3
+                    <div class="thumbnail-wrapper">
+                      <div class="thumbnail-bg" style="background: linear-gradient(135deg, #701a75, #ec4899);">
+                        <span class="thumb-text">🌐 Cloudflare Pages + Next.js Zero 500 Errors</span>
+                      </div>
+                      <span class="duration-badge">14:20</span>
+                    </div>
+                    <div class="video-meta">
+                      <div class="channel-avatar">
+                        C
+                        <div class="video-details">
+                          <h3 class="video-title">Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages</h3>
+                          <p class="video-channel">Edge Architects • Cloud Dev</p>
+                          <p class="video-stats">189K views • 3 days ago</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="video-card">
+                      4
+                      <div class="thumbnail-wrapper">
+                        <div class="thumbnail-bg" style="background: linear-gradient(135deg, #7c2d12, #f97316);">
+                          <span class="thumb-text">🗄️ MySQL vs Oracle 19c: Query Optimization Masterclass</span>
+                        </div>
+                        <span class="duration-badge">32:00</span>
+                      </div>
+                      <div class="video-meta">
+                        <div class="channel-avatar">
+                          D
+                          <div class="video-details">
+                            <h3 class="video-title">Database Indexing, Stored Procedures & Connection Pooling</h3>
+                            <p class="video-channel">Database Wizardry • Performance</p>
+                            <p class="video-stats">98K views • 4 days ago</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="video-card">
+                        5
+                        <div class="thumbnail-wrapper">
+                          <div class="thumbnail-bg" style="background: linear-gradient(135deg, #1e1b4b, #6366f1);">
+                            <span class="thumb-text">🎨 3D Solar & Lunar Shaders in WebGL & Three.js</span>
+                          </div>
+                          <span class="duration-badge">21:15</span>
+                        </div>
+                        <div class="video-meta">
+                          <div class="channel-avatar">
+                            T
+                            <div class="video-details">
+                              <h3 class="video-title">Procedural Corona Glows & Raymarched Moon Craters in WebGL</h3>
+                              <p class="video-channel">Creative Coding 3D • Shader Art</p>
+                              <p class="video-stats">340K views • 5 days ago</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="video-card">
+                          6
+                          <div class="thumbnail-wrapper">
+                            <div class="thumbnail-bg" style="background: linear-gradient(135deg, #134e4a, #14b8a6);">
+                              <span class="thumb-text">📱 Enlang Mobile (.enlgm): 1:1 Flutter Compilation</span>
+                            </div>
+                            <span class="duration-badge">16:40</span>
+                          </div>
+                          <div class="video-meta">
+                            <div class="channel-avatar">
+                              M
+                              <div class="video-details">
+                                <h3 class="video-title">Build Android & iOS Flutter Apps with Pure English Sentences</h3>
+                                <p class="video-channel">Mobile Mastery • Cross-Platform</p>
+                                <p class="video-stats">420K views • 6 days ago</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="view-watch" class="view-panel">
+                        <div class="watch-layout">
+                          <div class="watch-primary">
+                            <div class="video-player-container">
+                              <div class="player-screen" id="player-canvas">
+                                <div class="player-placeholder-content">
+                                  <span class="play-huge-icon">▶</span>
+                                  <h2 id="active-player-title">
+                                    Building High-Throughput Microservices with Java & Spring Boot
+                                    <p class="player-badge-sub">Streaming in 1080p60 HD • Pure Enlang Runtime</p>
+                                  </h2>
+                                </div>
+                                <div class="player-controls">
+                                  <button id="btn-player-play" class="ctrl-btn">▶</button>
+                                  <span id="player-time-display" class="ctrl-time">
+                                    04:15 / 18:45
+                                    <div class="scrubber-bar">
+                                      <div id="scrubber-progress" class="scrubber-fill" style="width: 25%;">
+                                      </div>
+                                    </div>
+                                    <button id="btn-player-mute" class="ctrl-btn">🔊</button>
+                                    <button class="ctrl-btn">⚙️ 1080p</button>
+                                    <button id="btn-player-fullscreen">⛶</button>
+                                    ctrl-btn
+                                  </span>
+                                </div>
+                                <div class="watch-header">
+                                  <h1 id="watch-video-title" class="watch-title">
+                                    Building High-Throughput Microservices with Java & Spring Boot
+                                    <div class="watch-actions-row">
+                                      <div class="channel-info-box">
+                                        <div class="channel-avatar-lg">
+                                          P
+                                          <div>
+                                            <h4 id="watch-channel-name" class="channel-title">
+                                              Prayas Kumar Sahoo
+                                              <p id="watch-sub-count" class="channel-subs">
+                                                128K subscribers
+                                              </p>
+                                              <button id="btn-subscribe" class="btn-subscribe">Subscribe</button>
+                                            </h4>
+                                            <div class="action-buttons-group">
+                                              <div class="like-dislike-pill">
+                                                <button id="btn-like" class="btn-like">👍 142K</button>
+                                                <div class="pill-sep">
+                                                </div>
+                                                <button id="btn-dislike" class="btn-dislike">👎</button>
+                                              </div>
+                                              <button id="btn-share" class="btn-action">↗ Share</button>
+                                              <button id="btn-download" class="btn-action">⬇ Download</button>
+                                              <button class="btn-action">⋯</button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div class="watch-description-box" id="desc-box">
+                                          <p class="desc-stats">245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices</p>
+                                          <p id="watch-desc-text" class="desc-content">
+                                            In this deep dive tutorial, Prayas Kumar Sahoo walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.
+                                          </p>
+                                          <div class="comments-container">
+                                            <div class="comments-header">
+                                              <h3 id="comments-count-header">
+                                                328 Comments
+                                                <span class="sort-tag">Sort by: Top Comments</span>
+                                              </h3>
+                                              <div class="add-comment-row">
+                                                <div class="user-avatar-sm">
+                                                  U
+                                                  <div class="comment-input-wrap">
+                                                    <input type="text" id="new-comment-input" placeholder="Add a public comment..." class="comment-input">
+                                                    <div class="comment-btn-bar">
+                                                      <button id="btn-cancel-comment" class="btn-ghost">Cancel</button>
+                                                      <button id="btn-submit-comment" class="btn-primary">Comment</button>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                <div class="comment-list" id="comment-list-container">
+                                                  <div class="comment-card">
+                                                    <div class="user-avatar-sm" style="background: #3b82f6;">
+                                                      A
+                                                      <div class="comment-body">
+                                                        <div class="comment-author-row">
+                                                          <span class="comment-author">@AlexDeveloper</span>
+                                                          <span class="comment-time">2 hours ago</span>
+                                                        </div>
+                                                        <p class="comment-msg">The explanation of connection pooling and transaction propagation was crystal clear! Best Java video on YouTube.</p>
+                                                        <div class="comment-reactions">
+                                                          <button class="btn-react">👍 48</button>
+                                                          <button class="btn-react">👎</button>
+                                                          <button class="btn-react">Reply</button>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                    <div class="comment-card">
+                                                      <div class="user-avatar-sm" style="background: #10b981;">
+                                                        S
+                                                        <div class="comment-body">
+                                                          <div class="comment-author-row">
+                                                            <span class="comment-author">@SarahCode</span>
+                                                            <span class="comment-time">5 hours ago</span>
+                                                          </div>
+                                                          <p class="comment-msg">Enlang compiling directly to Python, JS and Flutter is blowing my mind. Keep shipping!</p>
+                                                          <div class="comment-reactions">
+                                                            <button class="btn-react">👍 124</button>
+                                                            <button class="btn-react">👎</button>
+                                                            <button class="btn-react">Reply</button>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                <div class="watch-secondary">
+                                                  <h3 class="rec-header">Up Next</h3>
+                                                  <div class="rec-list">
+                                                    <div class="rec-card">
+                                                      2
+                                                      <div class="rec-thumb" style="background: linear-gradient(135deg, #065f46, #10b981);">
+                                                        <span class="duration-badge">24:10</span>
+                                                      </div>
+                                                      <div class="rec-details">
+                                                        <h4 class="rec-title">How We Built Enlang Compiler</h4>
+                                                        <p class="rec-channel">Enlang Official</p>
+                                                        <p class="rec-stats">512K views</p>
+                                                      </div>
+                                                    </div>
+                                                    <div class="rec-card">
+                                                      3
+                                                      <div class="rec-thumb" style="background: linear-gradient(135deg, #701a75, #ec4899);">
+                                                        <span class="duration-badge">14:20</span>
+                                                      </div>
+                                                      <div class="rec-details">
+                                                        <h4 class="rec-title">Deploying Edge Apps on Cloudflare</h4>
+                                                        <p class="rec-channel">Edge Architects</p>
+                                                        <p class="rec-stats">189K views</p>
+                                                      </div>
+                                                    </div>
+                                                    <div class="rec-card">
+                                                      5
+                                                      <div class="rec-thumb" style="background: linear-gradient(135deg, #1e1b4b, #6366f1);">
+                                                        <span class="duration-badge">21:15</span>
+                                                      </div>
+                                                      <div class="rec-details">
+                                                        <h4 class="rec-title">3D Solar & Lunar WebGL Shaders</h4>
+                                                        <p class="rec-channel">Creative Coding 3D</p>
+                                                        <p class="rec-stats">340K views</p>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div id="yt-toast" class="yt-toast">
+                                      </div>
+                                    </div>
+                                  </h1>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script>
+let isPlaying = false;
+
+let isMuted = false;
+
+let isSubscribed = false;
+
+let isLiked = false;
+
+let likeCount = 142000;
+
+let currentVideoId = "1";
+
+let totalComments = 328;
+
+let playSeconds = 255;
+
+let totalVideoSeconds = 1125;
+
+console.log("▶ Initializing YouTube 1:1 Video Engine in Pure Enlang (.enlgs)...");
+
+const videoCatalog = [ { id : "1" , title : "Building High-Throughput Microservices with Java & Spring Boot" , channel : "Prayas Kumar Sahoo" , subs : "128K subscribers" , views : "245,189 views • Premiered on Aug 15, 2026" , desc : "In this deep dive tutorial, Prayas Kumar Sahoo walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." } , { id : "2" , title : "How We Built Enlang: Compiling English to Python, JS & Flutter" , channel : "Enlang Official" , subs : "512K subscribers" , views : "512,840 views • 1 week ago" , desc : "Behind the scenes of building the Enlang compiler ecosystem (.enlg, .enlgf, .enlgd, .enlgs, .enlgm) from scratch with zero boilerplate." } , { id : "3" , title : "Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages" , channel : "Edge Architects" , subs : "189K subscribers" , views : "189,420 views • 3 days ago" , desc : "Complete masterclass on building Cloudflare Workers and Pages with Zero 500 error architectures." } , { id : "4" , title : "Database Indexing, Stored Procedures & Connection Pooling" , channel : "Database Wizardry" , subs : "98K subscribers" , views : "98,120 views • 4 days ago" , desc : "MySQL and Oracle optimization guide for enterprise database architects." } , { id : "5" , title : "Procedural Corona Glows & Raymarched Moon Craters in WebGL" , channel : "Creative Coding 3D" , subs : "340K subscribers" , views : "340,900 views • 5 days ago" , desc : "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL." } , { id : "6" , title : "Build Android & iOS Flutter Apps with Pure English Sentences" , channel : "Mobile Mastery" , subs : "420K subscribers" , views : "420,150 views • 6 days ago" , desc : "Building native Flutter apps using Enlang Mobile (.enlgm) with 1:1 Dart compilation." } ];
+
+function showToast(message) {
+  (document.getElementById("yt-toast") || document.querySelector("yt-toast")).textContent = message;
+  (document.getElementById("yt-toast") || document.querySelector("yt-toast")).style.display = '';
+  setTimeout(function() {
+    (document.getElementById("yt-toast") || document.querySelector("yt-toast")).style.display = 'none';
+  }, 3000);
+}
+
+function formatDuration(secs) {
+  let m = Math.floor ( secs / 60 );
+  let s = secs % 60;
+  let mStr = m < 10 ? "0" + m : "" + m;
+  let sStr = s < 10 ? "0" + s : "" + s;
+  return mStr + ":" + sStr;
+}
+
+function openWatchPage(vidId) {
+  currentVideoId = vidId;
+  let v = videoCatalog.find ( function ( item ) { return item.id == vidId } );
+  if (v == null) {
+    v = videoCatalog [ 0 ];
+  }
+  (document.getElementById("watch-video-title") || document.querySelector("watch-video-title")).textContent = v.title;
+  (document.getElementById("active-player-title") || document.querySelector("active-player-title")).textContent = v.title;
+  (document.getElementById("watch-channel-name") || document.querySelector("watch-channel-name")).textContent = v.channel;
+  (document.getElementById("watch-sub-count") || document.querySelector("watch-sub-count")).textContent = v.subs;
+  (document.getElementById("watch-desc-text") || document.querySelector("watch-desc-text")).textContent = v.desc;
+  (document.getElementById("desc-stats") || document.querySelector("desc-stats")).textContent = v.views;
+  (document.getElementById("view-feed") || document.querySelector("view-feed")).style.display = 'none';
+  (document.getElementById("view-watch") || document.querySelector("view-watch")).style.display = '';
+  window.scrollTo ( 0 , 0 );
+  isPlaying = true;
+  (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "⏸";
+  playSeconds = 0;
+  showToast("▶ Now Playing: " + v.title);
+}
+
+function openHomeFeed() {
+  (document.getElementById("view-watch") || document.querySelector("view-watch")).style.display = 'none';
+  (document.getElementById("view-feed") || document.querySelector("view-feed")).style.display = '';
+  window.scrollTo ( 0 , 0 );
+  showToast("🏠 Back to YouTube Home");
+}
+
+let cards = document.querySelectorAll ( ".video-card, .rec-card" );
+
+for (const card of cards) {
+  card.addEventListener ( "click" , function ( event ) {;
+  create vId as this.getAttribute("data-video")
+  if (vId != null) {
+    openWatchPage(vId);
+  }
+}
+
+})
+    </script>
+  </body>
+</html>

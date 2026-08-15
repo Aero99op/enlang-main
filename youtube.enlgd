@@ -1,0 +1,919 @@
+# Enlang Design (.enlgd) - YouTube 1:1 Dark Theme
+
+define color "yt-bg" as "#0f0f0f"
+define color "yt-header-bg" as "#0f0f0f"
+define color "yt-surface" as "#272727"
+define color "yt-hover" as "rgba(255, 255, 255, 0.1)"
+define color "yt-text" as "#f1f1f1"
+define color "yt-muted" as "#aaaaaa"
+define color "yt-red" as "#ff0000"
+define color "yt-blue" as "#3ea6ff"
+
+for "body" apply:
+    margin 0
+    padding 0
+    background use color "yt-bg"
+    color use color "yt-text"
+    font-family "Roboto, Arial, sans-serif"
+    min-height 100 viewport-height
+    line-height 1.4
+    overflow-x hidden
+end
+
+# Header
+for ".yt-header" apply:
+    display flex
+    justify-content space-between
+    align-items center
+    padding "0 16px"
+    height 56
+    position sticky
+    top 0
+    z-index 1000
+    background use color "yt-header-bg"
+    border-bottom "1px solid rgba(255, 255, 255, 0.08)"
+end
+
+for ".yt-header-left" apply:
+    display flex
+    align-items center
+    gap 16
+end
+
+for ".yt-icon-btn" apply:
+    background transparent
+    border none
+    color use color "yt-text"
+    font-size 18
+    width 40
+    height 40
+    corner radius 20
+    cursor pointer
+    display flex
+    align-items center
+    justify-content center
+    transition "background 0.2s ease"
+    position relative
+end
+
+when ".yt-icon-btn" is hovered apply:
+    background use color "yt-hover"
+end
+
+for ".yt-logo" apply:
+    display flex
+    align-items center
+    gap 4
+    cursor pointer
+    user-select none
+end
+
+for ".yt-logo-icon" apply:
+    color use color "yt-red"
+    font-size 22
+end
+
+for ".yt-logo-text" apply:
+    font-weight 800
+    font-size 18
+    letter-spacing -0.5
+    color use color "yt-text"
+end
+
+for ".yt-country" apply:
+    font-size 10
+    color use color "yt-muted"
+    align-self flex-start
+    margin-top -4
+end
+
+# Header Center: Search Bar
+for ".yt-header-center" apply:
+    display flex
+    align-items center
+    gap 12
+    flex 1
+    max-width 700
+    margin "0 32px"
+end
+
+for ".yt-search-box" apply:
+    display flex
+    align-items center
+    flex 1
+    height 40
+    background "#121212"
+    border "1px solid #303030"
+    corner radius 20
+    overflow hidden
+    transition "border-color 0.2s ease"
+end
+
+for ".yt-search-input" apply:
+    flex 1
+    background transparent
+    border none
+    padding "0 16px"
+    color use color "yt-text"
+    font-size 15
+    outline none
+    box-sizing border-box
+end
+
+for ".yt-search-btn" apply:
+    background "#222222"
+    border "none"
+    border-left "1px solid #303030"
+    color use color "yt-text"
+    width 64
+    height 40
+    cursor pointer
+    display flex
+    align-items center
+    justify-content center
+    font-size 15
+    transition "background 0.2s ease"
+end
+
+when ".yt-search-btn" is hovered apply:
+    background "#2a2a2a"
+end
+
+for ".voice-btn" apply:
+    background "#222222"
+    corner radius 20
+end
+
+# Header Right
+for ".yt-header-right" apply:
+    display flex
+    align-items center
+    gap 12
+end
+
+for ".yt-btn-create" apply:
+    background use color "yt-surface"
+    border "1px solid rgba(255, 255, 255, 0.1)"
+    color use color "yt-text"
+    padding "8px 16px"
+    corner radius 18
+    font-size 14
+    font-weight 600
+    cursor pointer
+    display flex
+    align-items center
+    gap 6
+    transition "background 0.2s ease"
+end
+
+when ".yt-btn-create" is hovered apply:
+    background use color "yt-hover"
+end
+
+for ".notif-badge" apply:
+    position absolute
+    top 4
+    right 4
+    background use color "yt-red"
+    color "#ffffff"
+    font-size 10
+    font-weight 800
+    width 16
+    height 16
+    corner radius 8
+    display flex
+    align-items center
+    justify-content center
+end
+
+for ".yt-user-avatar" apply:
+    width 34
+    height 34
+    corner radius 17
+    background "linear-gradient(135deg, #3b82f6, #8b5cf6)"
+    color "#ffffff"
+    font-weight 700
+    display flex
+    align-items center
+    justify-content center
+    cursor pointer
+end
+
+# Main Layout: Sidebar + Content
+for ".yt-main-layout" apply:
+    display flex
+    min-height "calc(100vh - 56px)"
+end
+
+# Sidebar
+for ".yt-sidebar" apply:
+    width 240
+    padding "12px 12px 24px 12px"
+    background use color "yt-bg"
+    display flex
+    flex-direction column
+    gap 4
+    position sticky
+    top 56
+    height "calc(100vh - 56px)"
+    box-sizing border-box
+    overflow-y auto
+    transition "all 0.3s ease"
+end
+
+for ".sidebar-section" apply:
+    display flex
+    flex-direction column
+    gap 2
+end
+
+for ".sidebar-item" apply:
+    display flex
+    align-items center
+    gap 16
+    padding "10px 14px"
+    corner radius 10
+    color use color "yt-text"
+    background transparent
+    border none
+    font-size 14
+    font-weight 500
+    cursor pointer
+    text-align left
+    width 100 percent
+    box-sizing border-box
+    transition "background 0.15s ease"
+end
+
+when ".sidebar-item" is hovered apply:
+    background use color "yt-hover"
+end
+
+for ".sidebar-heading" apply:
+    font-size 12
+    font-weight 700
+    color use color "yt-muted"
+    padding "12px 14px 4px 14px"
+    margin 0
+    letter-spacing 0.5
+end
+
+for ".sub-channel" apply:
+    display flex
+    align-items center
+    gap 12
+    padding "8px 14px"
+    corner radius 10
+    cursor pointer
+    transition "background 0.15s ease"
+end
+
+when ".sub-channel" is hovered apply:
+    background use color "yt-hover"
+end
+
+for ".channel-name" apply:
+    font-size 13
+    color use color "yt-text"
+    white-space nowrap
+    overflow hidden
+    text-overflow ellipsis
+end
+
+for ".sidebar-divider" apply:
+    height 1
+    background "rgba(255, 255, 255, 0.1)"
+    margin "8px 0"
+end
+
+# Content Area
+for ".yt-content" apply:
+    flex 1
+    padding "16px 24px"
+    box-sizing border-box
+    overflow-y auto
+end
+
+# Category Chips Bar
+for ".category-bar" apply:
+    display flex
+    gap 10
+    overflow-x auto
+    padding-bottom 16
+    margin-bottom 8
+end
+
+for ".chip" apply:
+    background use color "yt-surface"
+    border "1px solid rgba(255, 255, 255, 0.08)"
+    color use color "yt-text"
+    padding "8px 14px"
+    corner radius 8
+    font-size 14
+    font-weight 500
+    white-space nowrap
+    cursor pointer
+    transition "all 0.15s ease"
+end
+
+when ".chip" is hovered apply:
+    background use color "yt-hover"
+end
+
+# Video Grid
+for ".video-grid" apply:
+    display grid
+    grid-template-columns "1fr 1fr 1fr"
+    gap 20
+end
+
+for ".video-card" apply:
+    display flex
+    flex-direction column
+    gap 12
+    cursor pointer
+    corner radius 12
+    transition "transform 0.2s ease"
+end
+
+when ".video-card" is hovered apply:
+    transform "scale(1.02)"
+end
+
+for ".thumbnail-wrapper" apply:
+    position relative
+    width 100 percent
+    aspect-ratio "16 / 9"
+    corner radius 12
+    overflow hidden
+    background "#1e1e1e"
+end
+
+for ".thumbnail-bg" apply:
+    width 100 percent
+    height 100 percent
+    display flex
+    align-items center
+    justify-content center
+    padding 16
+    box-sizing border-box
+    text-align center
+end
+
+for ".thumb-text" apply:
+    font-size 15
+    font-weight 800
+    color "#ffffff"
+    text-shadow "0 2px 10px rgba(0,0,0,0.7)"
+end
+
+for ".duration-badge" apply:
+    position absolute
+    bottom 8
+    right 8
+    background "rgba(0, 0, 0, 0.8)"
+    color "#ffffff"
+    font-size 12
+    font-weight 700
+    padding "3px 6px"
+    corner radius 4
+end
+
+for ".video-meta" apply:
+    display flex
+    gap 12
+end
+
+for ".channel-avatar" apply:
+    width 36
+    height 36
+    corner radius 18
+    background "linear-gradient(135deg, #6366f1, #3b82f6)"
+    color "#ffffff"
+    font-weight 800
+    display flex
+    align-items center
+    justify-content center
+    flex-shrink 0
+end
+
+for ".video-details" apply:
+    display flex
+    flex-direction column
+    gap 4
+end
+
+for ".video-title" apply:
+    margin 0
+    font-size 15
+    font-weight 600
+    color use color "yt-text"
+    line-height 1.3
+    display "-webkit-box"
+    -webkit-line-clamp 2
+    -webkit-box-orient "vertical"
+    overflow hidden
+end
+
+for ".video-channel" apply:
+    margin 0
+    font-size 13
+    color use color "yt-muted"
+end
+
+for ".video-stats" apply:
+    margin 0
+    font-size 12
+    color use color "yt-muted"
+end
+
+# Watch Page View
+for ".view-panel" apply:
+    display none
+end
+
+# Watch Layout
+for ".watch-layout" apply:
+    display grid
+    grid-template-columns "1fr 380px"
+    gap 24
+end
+
+for ".watch-primary" apply:
+    display flex
+    flex-direction column
+    gap 16
+end
+
+# Video Player Container
+for ".video-player-container" apply:
+    width 100 percent
+    aspect-ratio "16 / 9"
+    background "#000000"
+    corner radius 16
+    overflow hidden
+    position relative
+    display flex
+    flex-direction column
+    justify-content space-between
+    border "1px solid rgba(255, 255, 255, 0.1)"
+    shadow "0 12px 40px rgba(0, 0, 0, 0.8)"
+end
+
+for ".player-screen" apply:
+    flex 1
+    display flex
+    align-items center
+    justify-content center
+    background "radial-gradient(circle, #1a202c 0%, #000000 80%)"
+    padding 24
+    box-sizing border-box
+    text-align center
+end
+
+for ".play-huge-icon" apply:
+    font-size 64
+    color use color "yt-red"
+    text-shadow "0 0 30px rgba(255, 0, 0, 0.6)"
+    cursor pointer
+    transition "transform 0.2s ease"
+end
+
+when ".play-huge-icon" is hovered apply:
+    transform "scale(1.15)"
+end
+
+for "#active-player-title" apply:
+    font-size 20
+    font-weight 800
+    margin "16px 0 6px 0"
+    color "#ffffff"
+end
+
+for ".player-badge-sub" apply:
+    margin 0
+    font-size 12
+    color use color "yt-muted"
+end
+
+for ".player-controls" apply:
+    height 48
+    background "rgba(15, 15, 15, 0.9)"
+    display flex
+    align-items center
+    gap 14
+    padding "0 16px"
+    box-sizing border-box
+end
+
+for ".ctrl-btn" apply:
+    background transparent
+    border none
+    color use color "yt-text"
+    font-size 16
+    cursor pointer
+    padding 4
+end
+
+for ".ctrl-time" apply:
+    font-family "monospace"
+    font-size 12
+    color use color "yt-muted"
+end
+
+for ".scrubber-bar" apply:
+    flex 1
+    height 4
+    background "rgba(255, 255, 255, 0.2)"
+    corner radius 2
+    cursor pointer
+    position relative
+end
+
+for ".scrubber-fill" apply:
+    height 100 percent
+    background use color "yt-red"
+    corner radius 2
+end
+
+# Watch Header & Actions
+for ".watch-title" apply:
+    font-size 20
+    font-weight 700
+    margin 0
+    line-height 1.3
+end
+
+for ".watch-actions-row" apply:
+    display flex
+    justify-content space-between
+    align-items center
+    flex-wrap wrap
+    gap 16
+    margin-top 12
+end
+
+for ".channel-info-box" apply:
+    display flex
+    align-items center
+    gap 12
+end
+
+for ".channel-avatar-lg" apply:
+    width 44
+    height 44
+    corner radius 22
+    background "linear-gradient(135deg, #3b82f6, #8b5cf6)"
+    color "#ffffff"
+    font-size 18
+    font-weight 800
+    display flex
+    align-items center
+    justify-content center
+end
+
+for ".channel-title" apply:
+    margin 0
+    font-size 15
+    font-weight 700
+end
+
+for ".channel-subs" apply:
+    margin 0
+    font-size 12
+    color use color "yt-muted"
+end
+
+for ".btn-subscribe" apply:
+    background "#ffffff"
+    color "#0f0f0f"
+    border none
+    padding "10px 18px"
+    corner radius 20
+    font-size 14
+    font-weight 700
+    cursor pointer
+    margin-left 12
+    transition "all 0.2s ease"
+end
+
+when ".btn-subscribe" is hovered apply:
+    background "#e5e5e5"
+end
+
+for ".action-buttons-group" apply:
+    display flex
+    align-items center
+    gap 8
+end
+
+for ".like-dislike-pill" apply:
+    display flex
+    align-items center
+    background use color "yt-surface"
+    corner radius 20
+    overflow hidden
+end
+
+for ".btn-like" apply:
+    background transparent
+    border none
+    color use color "yt-text"
+    padding "8px 14px"
+    font-size 13
+    font-weight 600
+    cursor pointer
+    transition "background 0.2s ease"
+end
+
+for ".pill-sep" apply:
+    width 1
+    height 18
+    background "rgba(255, 255, 255, 0.15)"
+end
+
+for ".btn-dislike" apply:
+    background transparent
+    border none
+    color use color "yt-text"
+    padding "8px 12px"
+    font-size 13
+    cursor pointer
+end
+
+for ".btn-action" apply:
+    background use color "yt-surface"
+    border none
+    color use color "yt-text"
+    padding "8px 16px"
+    corner radius 20
+    font-size 13
+    font-weight 600
+    cursor pointer
+    transition "background 0.2s ease"
+end
+
+# Description Box
+for ".watch-description-box" apply:
+    background use color "yt-surface"
+    padding 16
+    corner radius 12
+    font-size 14
+    line-height 1.5
+end
+
+for ".desc-stats" apply:
+    margin 0
+    font-weight 700
+    font-size 14
+    margin-bottom 8
+end
+
+for ".desc-content" apply:
+    margin 0
+    color "#d1d5db"
+end
+
+# Comments Section
+for ".comments-container" apply:
+    display flex
+    flex-direction column
+    gap 20
+    margin-top 12
+end
+
+for ".comments-header" apply:
+    display flex
+    align-items center
+    gap 24
+end
+
+for "#comments-count-header" apply:
+    margin 0
+    font-size 18
+    font-weight 700
+end
+
+for ".sort-tag" apply:
+    font-size 14
+    font-weight 600
+    color use color "yt-muted"
+    cursor pointer
+end
+
+for ".add-comment-row" apply:
+    display flex
+    gap 14
+    align-items flex-start
+end
+
+for ".user-avatar-sm" apply:
+    width 36
+    height 36
+    corner radius 18
+    background "linear-gradient(135deg, #10b981, #065f46)"
+    color "#ffffff"
+    font-weight 700
+    display flex
+    align-items center
+    justify-content center
+    flex-shrink 0
+end
+
+for ".comment-input-wrap" apply:
+    flex 1
+    display flex
+    flex-direction column
+    gap 8
+end
+
+for ".comment-input" apply:
+    width 100 percent
+    background transparent
+    border none
+    border-bottom "1px solid rgba(255, 255, 255, 0.2)"
+    padding "8px 0"
+    color use color "yt-text"
+    font-size 14
+    outline none
+    box-sizing border-box
+    transition "border-color 0.2s ease"
+end
+
+for ".comment-btn-bar" apply:
+    display flex
+    justify-content flex-end
+    gap 8
+end
+
+for ".btn-ghost" apply:
+    background transparent
+    border none
+    color use color "yt-text"
+    padding "8px 16px"
+    corner radius 18
+    font-size 13
+    font-weight 600
+    cursor pointer
+end
+
+for ".btn-primary" apply:
+    background use color "yt-blue"
+    color "#0f0f0f"
+    border none
+    padding "8px 16px"
+    corner radius 18
+    font-size 13
+    font-weight 700
+    cursor pointer
+end
+
+for ".comment-list" apply:
+    display flex
+    flex-direction column
+    gap 18
+end
+
+for ".comment-card" apply:
+    display flex
+    gap 14
+end
+
+for ".comment-body" apply:
+    flex 1
+    display flex
+    flex-direction column
+    gap 4
+end
+
+for ".comment-author-row" apply:
+    display flex
+    gap 8
+    align-items center
+end
+
+for ".comment-author" apply:
+    font-size 13
+    font-weight 700
+    color use color "yt-text"
+end
+
+for ".comment-time" apply:
+    font-size 12
+    color use color "yt-muted"
+end
+
+for ".comment-msg" apply:
+    margin 0
+    font-size 14
+    color "#e5e7eb"
+    line-height 1.4
+end
+
+for ".comment-reactions" apply:
+    display flex
+    gap 12
+    align-items center
+    margin-top 4
+end
+
+for ".btn-react" apply:
+    background transparent
+    border none
+    color use color "yt-muted"
+    font-size 12
+    cursor pointer
+    padding 2
+end
+
+# Secondary Recommendations List
+for ".watch-secondary" apply:
+    display flex
+    flex-direction column
+    gap 12
+end
+
+for ".rec-header" apply:
+    margin "0 0 4px 0"
+    font-size 16
+    font-weight 700
+end
+
+for ".rec-list" apply:
+    display flex
+    flex-direction column
+    gap 12
+end
+
+for ".rec-card" apply:
+    display flex
+    gap 10
+    cursor pointer
+    corner radius 8
+    padding 4
+    transition "background 0.15s ease"
+end
+
+when ".rec-card" is hovered apply:
+    background use color "yt-hover"
+end
+
+for ".rec-thumb" apply:
+    width 160
+    height 90
+    corner radius 8
+    position relative
+    flex-shrink 0
+    display flex
+    align-items flex-end
+    justify-content flex-end
+    padding 4
+    box-sizing border-box
+end
+
+for ".rec-details" apply:
+    display flex
+    flex-direction column
+    gap 3
+end
+
+for ".rec-title" apply:
+    margin 0
+    font-size 14
+    font-weight 600
+    color use color "yt-text"
+    line-height 1.3
+    display "-webkit-box"
+    -webkit-line-clamp 2
+    -webkit-box-orient "vertical"
+    overflow hidden
+end
+
+for ".rec-channel" apply:
+    margin 0
+    font-size 12
+    color use color "yt-muted"
+end
+
+for ".rec-stats" apply:
+    margin 0
+    font-size 12
+    color use color "yt-muted"
+end
+
+# Toast
+for ".yt-toast" apply:
+    position fixed
+    bottom 24
+    left 24
+    background "#ffffff"
+    color "#0f0f0f"
+    padding "12px 20px"
+    corner radius 8
+    font-size 14
+    font-weight 700
+    shadow "0 8px 30px rgba(0, 0, 0, 0.7)"
+    display none
+    z-index 2000
+    transition "all 0.3s ease"
+end

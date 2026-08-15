@@ -1,0 +1,244 @@
+# Enlang Script (.enlgs) - YouTube 1:1 Engine
+
+in script:
+    # State Declarations
+    create isPlaying as false
+    create isMuted as false
+    create isSubscribed as false
+    create isLiked as false
+    create likeCount as 142000
+    create currentVideoId as "1"
+    create totalComments as 328
+    create playSeconds as 255
+    create totalVideoSeconds as 1125
+
+    show "▶ Initializing YouTube 1:1 Video Engine in Pure Enlang (.enlgs)..."
+
+    # Video Database in Pure Enlgs
+    define videoCatalog as [ { id: "1", title: "Building High-Throughput Microservices with Java & Spring Boot", channel: "Prayas Kumar Sahoo", subs: "128K subscribers", views: "245,189 views • Premiered on Aug 15, 2026", desc: "In this deep dive tutorial, Prayas Kumar Sahoo walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." }, { id: "2", title: "How We Built Enlang: Compiling English to Python, JS & Flutter", channel: "Enlang Official", subs: "512K subscribers", views: "512,840 views • 1 week ago", desc: "Behind the scenes of building the Enlang compiler ecosystem (.enlg, .enlgf, .enlgd, .enlgs, .enlgm) from scratch with zero boilerplate." }, { id: "3", title: "Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages", channel: "Edge Architects", subs: "189K subscribers", views: "189,420 views • 3 days ago", desc: "Complete masterclass on building Cloudflare Workers and Pages with Zero 500 error architectures." }, { id: "4", title: "Database Indexing, Stored Procedures & Connection Pooling", channel: "Database Wizardry", subs: "98K subscribers", views: "98,120 views • 4 days ago", desc: "MySQL and Oracle optimization guide for enterprise database architects." }, { id: "5", title: "Procedural Corona Glows & Raymarched Moon Craters in WebGL", channel: "Creative Coding 3D", subs: "340K subscribers", views: "340,900 views • 5 days ago", desc: "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL." }, { id: "6", title: "Build Android & iOS Flutter Apps with Pure English Sentences", channel: "Mobile Mastery", subs: "420K subscribers", views: "420,150 views • 6 days ago", desc: "Building native Flutter apps using Enlang Mobile (.enlgm) with 1:1 Dart compilation." } ]
+
+    # Toast Notification Helper in Pure Enlgs
+    to do showToast with message:
+        set text of "yt-toast" to message
+        show element "yt-toast"
+        after 3 seconds:
+            hide element "yt-toast"
+
+    # Helper to Format Seconds into MM:SS
+    to do formatDuration with secs:
+        create m as Math.floor(secs / 60)
+        create s as secs % 60
+        create mStr as m < 10 ? "0" + m : "" + m
+        create sStr as s < 10 ? "0" + s : "" + s
+        return mStr + ":" + sStr
+
+    # Load and Play Video by ID
+    to do openWatchPage with vidId:
+        set currentVideoId = vidId
+        create v as videoCatalog.find(function(item) { return item.id == vidId; })
+        if v == null:
+            set v = videoCatalog[0]
+
+        set text of "watch-video-title" to v.title
+        set text of "active-player-title" to v.title
+        set text of "watch-channel-name" to v.channel
+        set text of "watch-sub-count" to v.subs
+        set text of "watch-desc-text" to v.desc
+        set text of "desc-stats" to v.views
+
+        # Switch View Panels
+        hide element "view-feed"
+        show element "view-watch"
+        window.scrollTo(0, 0)
+        
+        # Reset Video Play State
+        set isPlaying = true
+        set text of "btn-player-play" to "⏸"
+        set playSeconds = 0
+        call showToast with "▶ Now Playing: " + v.title
+
+    # Return to Home / Feed View
+    to do openHomeFeed:
+        hide element "view-watch"
+        show element "view-feed"
+        window.scrollTo(0, 0)
+        call showToast with "🏠 Back to YouTube Home"
+
+    # Hook Click Events on Video Cards
+    create cards as document.querySelectorAll(".video-card, .rec-card")
+    for card in cards:
+        card.addEventListener("click", function(event) {
+            create vId as this.getAttribute("data-video")
+            if vId != null:
+                call openWatchPage with vId
+        })
+
+    # Header & Logo Navigation
+    when "nav-home" is clicked:
+        call openHomeFeed
+
+    create logoBtn as document.querySelector(".yt-logo")
+    if logoBtn != null:
+        logoBtn.addEventListener("click", function() {
+            call openHomeFeed
+        })
+
+    # Sidebar Collapse Toggle
+    when "btn-sidebar-toggle" is clicked:
+        create sb as document.getElementById("yt-sidebar")
+        if sb != null:
+            if sb.style.display == "none":
+                sb.style.display = "flex"
+            else:
+                sb.style.display = "none"
+
+    # Search Bar Filtering
+    when "btn-search" is clicked:
+        create q as get value of "search-input"
+        if q == "":
+            call showToast with "Please type a search query"
+            return
+        call showToast with "🔍 Showing results for: " + q
+
+    # Category Chips Filter
+    create chips as document.querySelectorAll(".chip")
+    for ch in chips:
+        ch.addEventListener("click", function() {
+            create allChips as document.querySelectorAll(".chip")
+            for c in allChips:
+                c.classList.remove("active")
+            this.classList.add("active")
+            create tagText as this.innerText
+            call showToast with "Category filter: " + tagText
+        })
+
+    # Video Player Play / Pause Controls
+    when "btn-player-play" is clicked:
+        if isPlaying == true:
+            set isPlaying = false
+            set text of "btn-player-play" to "▶"
+            call showToast with "⏸ Video paused"
+        else:
+            set isPlaying = true
+            set text of "btn-player-play" to "⏸"
+            call showToast with "▶ Video playing"
+
+    create playerScreen as document.getElementById("player-canvas")
+    if playerScreen != null:
+        playerScreen.addEventListener("click", function() {
+            create playBtn as document.getElementById("btn-player-play")
+            if playBtn != null:
+                playBtn.click()
+        })
+
+    # Player Mute Toggle
+    when "btn-player-mute" is clicked:
+        create mBtn as document.getElementById("btn-player-mute")
+        if isMuted == true:
+            set isMuted = false
+            set text of "btn-player-mute" to "🔊"
+            call showToast with "Audio unmuted (100%)"
+        else:
+            set isMuted = true
+            set text of "btn-player-mute" to "🔇"
+            call showToast with "Audio muted"
+
+    # Player Fullscreen Toggle
+    when "btn-player-fullscreen" is clicked:
+        create pCont as document.querySelector(".video-player-container")
+        if document.fullscreenElement == null:
+            if pCont != null:
+                pCont.requestFullscreen()
+                call showToast with "Entered Fullscreen Player"
+        else:
+            document.exitFullscreen()
+            call showToast with "Exited Fullscreen Player"
+
+    # Video Timeline Scrubber Loop
+    every 1 second:
+        if isPlaying == true:
+            if playSeconds < totalVideoSeconds:
+                set playSeconds = playSeconds + 1
+                create curStr as call formatDuration with playSeconds
+                create totStr as call formatDuration with totalVideoSeconds
+                set text of "player-time-display" to curStr + " / " + totStr
+                create pct as (playSeconds / totalVideoSeconds) * 100
+                create fillBar as document.getElementById("scrubber-progress")
+                if fillBar != null:
+                    fillBar.style.width = pct + "%"
+
+    # Subscribe Button Toggle
+    when "btn-subscribe" is clicked:
+        create sBtn as document.getElementById("btn-subscribe")
+        if isSubscribed == true:
+            set isSubscribed = false
+            sBtn.innerText = "Subscribe"
+            sBtn.style.background = "#ffffff"
+            sBtn.style.color = "#0f0f0f"
+            call showToast with "Unsubscribed from channel"
+        else:
+            set isSubscribed = true
+            sBtn.innerText = "Subscribed ✓"
+            sBtn.style.background = "#272727"
+            sBtn.style.color = "#aaaaaa"
+            call showToast with "🔔 Subscribed! Notifications turned on."
+
+    # Like Button Toggle
+    when "btn-like" is clicked:
+        create lBtn as document.getElementById("btn-like")
+        if isLiked == true:
+            set isLiked = false
+            lBtn.innerText = "👍 142K"
+            lBtn.style.color = "#f1f1f1"
+        else:
+            set isLiked = true
+            lBtn.innerText = "👍 142.1K"
+            lBtn.style.color = "#3ea6ff"
+            call showToast with "Added to Liked Videos"
+
+    # Share Button
+    when "btn-share" is clicked:
+        call showToast with "🔗 Video link copied to clipboard!"
+
+    # Download Button
+    when "btn-download" is clicked:
+        call showToast with "⬇ Downloading 1080p offline stream..."
+
+    # Real-Time Comment Submission in Pure Enlgs
+    to do postComment:
+        create cText as get value of "new-comment-input"
+        if cText == "":
+            call showToast with "Please type a comment before posting"
+            return
+
+        create cContainer as document.getElementById("comment-list-container")
+        if cContainer != null:
+            create cCard as document.createElement("div")
+            cCard.className = "comment-card"
+            cCard.innerHTML = "<div class='user-avatar-sm' style='background: #8b5cf6;'>P</div><div class='comment-body'><div class='comment-author-row'><span class='comment-author'>@PrayasKumar (You)</span><span class='comment-time'>Just now</span></div><p class='comment-msg'>" + cText + "</p><div class='comment-reactions'><button class='btn-react'>👍 1</button><button class='btn-react'>👎</button><button class='btn-react'>Reply</button></div></div>"
+            cContainer.prepend(cCard)
+            set value of "new-comment-input" to ""
+            set totalComments = totalComments + 1
+            set text of "comments-count-header" to totalComments + " Comments"
+            call showToast with "💬 Comment posted publicly!"
+
+    when "btn-submit-comment" is clicked:
+        call postComment
+
+    when "btn-cancel-comment" is clicked:
+        set value of "new-comment-input" to ""
+
+    # Theme Toggle
+    when "btn-theme" is clicked:
+        create b as document.body
+        create tBtn as document.getElementById("btn-theme")
+        if tBtn.innerText == "☾":
+            tBtn.innerText = "☼"
+            b.style.background = "#ffffff"
+            b.style.color = "#0f0f0f"
+            call showToast with "Switched to YouTube Light Mode"
+        else:
+            tBtn.innerText = "☾"
+            b.style.background = "#0f0f0f"
+            b.style.color = "#f1f1f1"
+            call showToast with "Switched to YouTube Dark Mode"
