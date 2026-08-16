@@ -302,7 +302,7 @@ body {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding-bottom: 16px;
+  padding-bottom: 12px;
   margin-bottom: 8px;
 }
 
@@ -321,6 +321,34 @@ body {
 
 .chip:hover {
   background: var(--yt-surface-hover);
+}
+
+.chip.active {
+  background: #ffffff;
+  color: #0f0f0f;
+  font-weight: 700;
+}
+
+.feed-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(255, 0, 0, 0.08);
+  border: 1px solid rgba(255, 0, 0, 0.2);
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.live-indicator {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--yt-red);
+}
+
+.live-subtext {
+  font-size: 12px;
+  color: var(--yt-muted);
 }
 
 .video-grid {
@@ -351,15 +379,11 @@ body {
   background: #1e1e1e;
 }
 
-.thumbnail-bg {
+.thumb-real-img {
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  box-sizing: border-box;
-  text-align: center;
+  object-fit: cover;
+  display: block;
 }
 
 .thumb-text {
@@ -741,13 +765,18 @@ body {
 
 .player-screen {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle, #1a202c 0%, #000000 80%);
-  padding: 24px;
-  box-sizing: border-box;
-  text-align: center;
+  width: 100%;
+  height: 100%;
+  background: #000000;
+  position: relative;
+  overflow: hidden;
+}
+
+.yt-embed-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
 }
 
 .play-huge-icon {
@@ -1251,6 +1280,8 @@ body {
   justify-content: flex-end;
   padding: 4px;
   box-sizing: border-box;
+  overflow: hidden;
+  background: #1e1e1e;
 }
 
 .rec-details {
@@ -1341,6 +1372,8 @@ body {
   justify-content: flex-end;
   padding: 6px;
   box-sizing: border-box;
+  overflow: hidden;
+  background: #1e1e1e;
 }
 
 .history-details {
@@ -1693,29 +1726,31 @@ body {
               <button id="chip-gaming" class="chip">Gaming</button>
               <button id="chip-podcasts" class="chip">Podcasts</button>
             </div>
+            <div id="feed-status-bar" class="feed-status-bar">
+              <span class="live-indicator">🔴 Live YouTube Feed</span>
+              <span class="live-subtext">Powered by YouTube Innertube API • Free & Unlimited</span>
+            </div>
             <div class="video-grid" id="video-grid-container">
               <div class="video-card" id="card-video-1">
+                gJrjgg1KVL4
                 <div class="thumbnail-wrapper">
-                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
-                    <span class="thumb-text">☕ Java 21 & Spring Boot 3.2 Full Masterclass</span>
-                  </div>
-                  <span class="duration-badge">18:45</span>
+                  <img src="https://i.ytimg.com/vi/gJrjgg1KVL4/hqdefault.jpg" class="thumb-real-img">
+                  <span class="duration-badge">1:11:22</span>
                 </div>
                 <div class="video-meta">
                   <div class="channel-avatar">S</div>
                   <div class="video-details">
-                    <h3 class="video-title">Building High-Throughput Microservices with Java & Spring Boot</h3>
+                    <h3 class="video-title">Spring Boot 3 Full Course 2025 - Beginner to Pro</h3>
                     <p class="video-channel">Spandan Prayas Patra • Java Backend ✓</p>
-                    <p class="video-stats">245K views • 2 days ago</p>
+                    <p class="video-stats">1.04M views • 2 days ago</p>
                   </div>
                 </div>
               </div>
               <div class="video-card" id="card-video-2">
+                dQw4w9WgXcQ
                 <div class="thumbnail-wrapper">
-                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #065f46, #10b981);">
-                    <span class="thumb-text">🪐 Enlang Compiler Architecture: Pure English Code</span>
-                  </div>
-                  <span class="duration-badge">24:10</span>
+                  <img src="https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class="thumb-real-img">
+                  <span class="duration-badge">03:33</span>
                 </div>
                 <div class="video-meta">
                   <div class="channel-avatar">E</div>
@@ -1727,10 +1762,9 @@ body {
                 </div>
               </div>
               <div class="video-card" id="card-video-3">
+                8aGhZQkoFbQ
                 <div class="thumbnail-wrapper">
-                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #701a75, #ec4899);">
-                    <span class="thumb-text">🌐 Cloudflare Pages + Next.js Zero 500 Errors</span>
-                  </div>
+                  <img src="https://i.ytimg.com/vi/8aGhZQkoFbQ/hqdefault.jpg" class="thumb-real-img">
                   <span class="duration-badge">14:20</span>
                 </div>
                 <div class="video-meta">
@@ -1743,10 +1777,9 @@ body {
                 </div>
               </div>
               <div class="video-card" id="card-video-4">
+                HXV3zeRR3h4
                 <div class="thumbnail-wrapper">
-                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #7c2d12, #f97316);">
-                    <span class="thumb-text">🗄️ MySQL vs Oracle 19c: Query Optimization Masterclass</span>
-                  </div>
+                  <img src="https://i.ytimg.com/vi/HXV3zeRR3h4/hqdefault.jpg" class="thumb-real-img">
                   <span class="duration-badge">32:00</span>
                 </div>
                 <div class="video-meta">
@@ -1759,10 +1792,9 @@ body {
                 </div>
               </div>
               <div class="video-card" id="card-video-5">
+                Q7AOvWpIVHU
                 <div class="thumbnail-wrapper">
-                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #1e1b4b, #6366f1);">
-                    <span class="thumb-text">🎨 3D Solar & Lunar Shaders in WebGL & Three.js</span>
-                  </div>
+                  <img src="https://i.ytimg.com/vi/Q7AOvWpIVHU/hqdefault.jpg" class="thumb-real-img">
                   <span class="duration-badge">21:15</span>
                 </div>
                 <div class="video-meta">
@@ -1775,10 +1807,9 @@ body {
                 </div>
               </div>
               <div class="video-card" id="card-video-6">
+                pTJJsmejUOQ
                 <div class="thumbnail-wrapper">
-                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #134e4a, #14b8a6);">
-                    <span class="thumb-text">📱 Enlang Mobile (.enlgm): 1:1 Flutter Compilation</span>
-                  </div>
+                  <img src="https://i.ytimg.com/vi/pTJJsmejUOQ/hqdefault.jpg" class="thumb-real-img">
                   <span class="duration-badge">16:40</span>
                 </div>
                 <div class="video-meta">
@@ -1886,11 +1917,7 @@ body {
                   </div>
                   <div class="video-player-container">
                     <div class="player-screen" id="player-canvas">
-                      <div class="player-placeholder-content">
-                        <span class="play-huge-icon" id="play-overlay-icon">▶</span>
-                        <h2 id="active-player-title">Building High-Throughput Microservices with Java & Spring Boot</h2>
-                        <p class="player-badge-sub">Streaming in 1080p60 HD • Pure Enlang Runtime</p>
-                      </div>
+                      <iframe id="player-iframe" src="https://www.youtube-nocookie.com/embed/gJrjgg1KVL4?autoplay=1&enablejsapi=1" class="yt-embed-frame">0</iframe>
                     </div>
                     <div class="player-controls">
                       <button id="btn-player-play" class="ctrl-btn">▶</button>
@@ -1912,7 +1939,7 @@ body {
                   </div>
                 </div>
                 <div class="watch-header">
-                  <h1 id="watch-video-title" class="watch-title">Building High-Throughput Microservices with Java & Spring Boot</h1>
+                  <h1 id="watch-video-title" class="watch-title">Spring Boot 3 Full Course 2025 - Beginner to Pro</h1>
                   <div class="watch-actions-row">
                     <div class="channel-info-box">
                       <div class="channel-avatar-lg">S</div>
@@ -2029,10 +2056,12 @@ body {
                     <input type="checkbox" id="autoplay-check" class="autoplay-switch">
                   </div>
                 </div>
-                <div class="rec-list">
+                <div class="rec-list" id="rec-list-container">
                   <div class="rec-card" id="card-rec-2">
-                    <div class="rec-thumb" style="background: linear-gradient(135deg, #065f46, #10b981);">
-                      <span class="duration-badge">24:10</span>
+                    dQw4w9WgXcQ
+                    <div class="rec-thumb">
+                      <img src="https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class="thumb-real-img">
+                      <span class="duration-badge">03:33</span>
                     </div>
                     <div class="rec-details">
                       <h4 class="rec-title">How We Built Enlang Compiler</h4>
@@ -2041,7 +2070,9 @@ body {
                     </div>
                   </div>
                   <div class="rec-card" id="card-rec-3">
-                    <div class="rec-thumb" style="background: linear-gradient(135deg, #701a75, #ec4899);">
+                    8aGhZQkoFbQ
+                    <div class="rec-thumb">
+                      <img src="https://i.ytimg.com/vi/8aGhZQkoFbQ/hqdefault.jpg" class="thumb-real-img">
                       <span class="duration-badge">14:20</span>
                     </div>
                     <div class="rec-details">
@@ -2051,7 +2082,9 @@ body {
                     </div>
                   </div>
                   <div class="rec-card" id="card-rec-5">
-                    <div class="rec-thumb" style="background: linear-gradient(135deg, #1e1b4b, #6366f1);">
+                    Q7AOvWpIVHU
+                    <div class="rec-thumb">
+                      <img src="https://i.ytimg.com/vi/Q7AOvWpIVHU/hqdefault.jpg" class="thumb-real-img">
                       <span class="duration-badge">21:15</span>
                     </div>
                     <div class="rec-details">
@@ -2071,27 +2104,25 @@ body {
             </div>
             <div class="video-grid" id="subs-grid-container">
               <div class="video-card" id="subs-card-1">
+                gJrjgg1KVL4
                 <div class="thumbnail-wrapper">
-                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
-                    <span class="thumb-text">☕ Java 21 & Spring Boot 3.2 Full Masterclass</span>
-                  </div>
-                  <span class="duration-badge">18:45</span>
+                  <img src="https://i.ytimg.com/vi/gJrjgg1KVL4/hqdefault.jpg" class="thumb-real-img">
+                  <span class="duration-badge">1:11:22</span>
                 </div>
                 <div class="video-meta">
                   <div class="channel-avatar">S</div>
                   <div class="video-details">
-                    <h3 class="video-title">Building High-Throughput Microservices with Java & Spring Boot</h3>
+                    <h3 class="video-title">Spring Boot 3 Full Course 2025 - Beginner to Pro</h3>
                     <p class="video-channel">Spandan Prayas Patra</p>
-                    <p class="video-stats">245K views • 2 days ago</p>
+                    <p class="video-stats">1.04M views • 2 days ago</p>
                   </div>
                 </div>
               </div>
               <div class="video-card" id="subs-card-2">
+                dQw4w9WgXcQ
                 <div class="thumbnail-wrapper">
-                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #065f46, #10b981);">
-                    <span class="thumb-text">🪐 Enlang Compiler Architecture: Pure English Code</span>
-                  </div>
-                  <span class="duration-badge">24:10</span>
+                  <img src="https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class="thumb-real-img">
+                  <span class="duration-badge">03:33</span>
                 </div>
                 <div class="video-meta">
                   <div class="channel-avatar">E</div>
@@ -2111,18 +2142,20 @@ body {
             </div>
             <div class="history-list" id="history-list-container">
               <div class="history-card">
-                <div class="history-thumb" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
-                  <span class="duration-badge">18:45</span>
+                <div class="history-thumb">
+                  <img src="https://i.ytimg.com/vi/gJrjgg1KVL4/hqdefault.jpg" class="thumb-real-img">
+                  <span class="duration-badge">1:11:22</span>
                 </div>
                 <div class="history-details">
-                  <h3 class="history-title">Building High-Throughput Microservices with Java & Spring Boot</h3>
-                  <p class="history-sub">Spandan Prayas Patra • 245K views</p>
+                  <h3 class="history-title">Spring Boot 3 Full Course 2025 - Beginner to Pro</h3>
+                  <p class="history-sub">Spandan Prayas Patra • 1.04M views</p>
                   <p class="history-time">Watched today</p>
                 </div>
               </div>
               <div class="history-card">
-                <div class="history-thumb" style="background: linear-gradient(135deg, #065f46, #10b981);">
-                  <span class="duration-badge">24:10</span>
+                <div class="history-thumb">
+                  <img src="https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class="thumb-real-img">
+                  <span class="duration-badge">03:33</span>
                 </div>
                 <div class="history-details">
                   <h3 class="history-title">How We Built Enlang: Compiling English to Python, JS & Flutter</h3>
@@ -2212,7 +2245,7 @@ body {
     <div id="yt-toast" class="yt-toast">
     </div>
     <script>
-let isPlaying = false;
+let isPlaying = true;
 
 let isMuted = false;
 
@@ -2220,7 +2253,7 @@ let isSubscribed = false;
 
 let isLiked = false;
 
-let currentVideoId = "1";
+let currentVideoId = "gJrjgg1KVL4";
 
 let currentShortIndex = 0;
 
@@ -2228,17 +2261,17 @@ let totalComments = 328;
 
 let playSeconds = 255;
 
-let totalVideoSeconds = 1125;
+let totalVideoSeconds = 4282;
 
 let playbackSpeed = "1x";
 
 let isShortsLiked = false;
 
-console.log("▶ Initializing YouTube 1:1 Complete Platform in Pure Enlang (.enlgs)...");
+console.log("▶ Initializing YouTube 1:1 Live Engine with Innertube API in Pure Enlang (.enlgs)...");
 
-const videoCatalog = [ { id : "1" , title : "Building High-Throughput Microservices with Java & Spring Boot" , channel : "Spandan Prayas Patra" , subs : "128K subscribers" , views : "245,189 views • Premiered on Aug 15, 2026" , desc : "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." , ambient : "rgba(59, 130, 246, 0.3)" } , { id : "2" , title : "How We Built Enlang: Compiling English to Python, JS & Flutter" , channel : "Enlang Official" , subs : "512K subscribers" , views : "512,840 views • 1 week ago" , desc : "Behind the scenes of building the Enlang compiler ecosystem (.enlg, .enlgf, .enlgd, .enlgs, .enlgm) from scratch with zero boilerplate." , ambient : "rgba(16, 185, 129, 0.3)" } , { id : "3" , title : "Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages" , channel : "Edge Architects" , subs : "189K subscribers" , views : "189,420 views • 3 days ago" , desc : "Complete masterclass on building Cloudflare Workers and Pages with Zero 500 error architectures." , ambient : "rgba(236, 72, 153, 0.3)" } , { id : "4" , title : "Database Indexing, Stored Procedures & Connection Pooling" , channel : "Database Wizardry" , subs : "98K subscribers" , views : "98,120 views • 4 days ago" , desc : "MySQL and Oracle optimization guide for enterprise database architects." , ambient : "rgba(249, 115, 22, 0.3)" } , { id : "5" , title : "Procedural Corona Glows & Raymarched Moon Craters in WebGL" , channel : "Creative Coding 3D" , subs : "340K subscribers" , views : "340,900 views • 5 days ago" , desc : "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL." , ambient : "rgba(99, 102, 241, 0.3)" } , { id : "6" , title : "Build Android & iOS Flutter Apps with Pure English Sentences" , channel : "Mobile Mastery" , subs : "420K subscribers" , views : "420,150 views • 6 days ago" , desc : "Building native Flutter apps using Enlang Mobile (.enlgm) with 1:1 Dart compilation." , ambient : "rgba(20, 184, 166, 0.3)" } ];
+const liveVideoCatalog = [ { id : "gJrjgg1KVL4" , title : "Spring Boot 3 Full Course 2025 - Beginner to Pro" , channel : "Spandan Prayas Patra" , subs : "128K subscribers" , views : "1,039,987 views • Premiered on Aug 15, 2026" , desc : "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." , ambient : "rgba(59, 130, 246, 0.3)" , duration : "1:11:22" } , { id : "dQw4w9WgXcQ" , title : "Rick Astley - Never Gonna Give You Up (Official Music Video 4K)" , channel : "Rick Astley" , subs : "3.4M subscribers" , views : "1,520,840,112 views • 14 years ago" , desc : "The official video for 'Never Gonna Give You Up' by Rick Astley. 4K Remastered." , ambient : "rgba(236, 72, 153, 0.3)" , duration : "03:33" } , { id : "8aGhZQkoFbQ" , title : "Next.js 15 & React 19 Full Stack Masterclass" , channel : "JavaScript Mastery" , subs : "1.1M subscribers" , views : "489,420 views • 3 weeks ago" , desc : "Master full-stack Next.js with Server Actions, Edge Middleware, and Cloudflare Deployments." , ambient : "rgba(16, 185, 129, 0.3)" , duration : "2:45:10" } , { id : "HXV3zeRR3h4" , title : "System Design for High Scale - 100 Million Users" , channel : "ByteByteGo" , subs : "1.9M subscribers" , views : "980,120 views • 1 month ago" , desc : "An insider look into database sharding, distributed caches, and load balancers at massive scale." , ambient : "rgba(249, 115, 22, 0.3)" , duration : "18:24" } , { id : "Q7AOvWpIVHU" , title : "Three.js 3D Web Graphics & WebGL Shaders Tutorial" , channel : "Creative Coding 3D" , subs : "340K subscribers" , views : "340,900 views • 5 days ago" , desc : "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL." , ambient : "rgba(99, 102, 241, 0.3)" , duration : "21:15" } , { id : "pTJJsmejUOQ" , title : "Flutter 3.24 & Dart Full Course for Mobile Apps" , channel : "FreeCodeCamp" , subs : "9.8M subscribers" , views : "1,420,150 views • 2 months ago" , desc : "Build cross-platform iOS & Android mobile applications with clean architecture." , ambient : "rgba(20, 184, 166, 0.3)" , duration : "4:32:00" } ];
 
-const shortsList = [ { title : "🔥 3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev" , author : "@SpandanPrayas" , audio : "🎵 Spandan Original Audio • High Performance Remix" , views : "3.2M" , bg : "linear-gradient(180deg, #1e3a8a, #0f172a)" } , { title : "🚀 Write Clean Code in English with Enlang! Zero boilerplate #Enlang #Compilers" , author : "@EnlangOfficial" , audio : "🎵 Enlang Sound Studio • Compiler Waves" , views : "1.8M" , bg : "linear-gradient(180deg, #047857, #064e3b)" } , { title : "🌐 Cloudflare Workers under 1ms Latency around the world #Edge #Cloudflare" , author : "@EdgeArchitects" , audio : "🎵 Ultra Edge Lo-Fi Beat" , views : "950K" , bg : "linear-gradient(180deg, #6d28d9, #2e1065)" } , { title : "✨ Raymarched Black Hole in 30 Lines of WebGL Shader #Threejs #GLSL" , author : "@CreativeCoding3D" , audio : "🎵 Cosmic Raymarch Audio" , views : "2.4M" , bg : "linear-gradient(180deg, #b45309, #451a03)" } ];
+const shortsList = [ { title : "🔥 3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev" , author : "@SpandanPrayas" , audio : "🎵 Spandan Original Audio • High Performance Remix" , views : "3.2M" , bg : "linear-gradient(180deg, #1e3a8a, #0f172a)" , vid : "gJrjgg1KVL4" } , { title : "🚀 Write Clean Code in English with Enlang! Zero boilerplate #Enlang #Compilers" , author : "@EnlangOfficial" , audio : "🎵 Enlang Sound Studio • Compiler Waves" , views : "1.8M" , bg : "linear-gradient(180deg, #047857, #064e3b)" , vid : "dQw4w9WgXcQ" } , { title : "🌐 Cloudflare Workers under 1ms Latency around the world #Edge #Cloudflare" , author : "@EdgeArchitects" , audio : "🎵 Ultra Edge Lo-Fi Beat" , views : "950K" , bg : "linear-gradient(180deg, #6d28d9, #2e1065)" , vid : "8aGhZQkoFbQ" } , { title : "✨ Raymarched Black Hole in 30 Lines of WebGL Shader #Threejs #GLSL" , author : "@CreativeCoding3D" , audio : "🎵 Cosmic Raymarch Audio" , views : "2.4M" , bg : "linear-gradient(180deg, #b45309, #451a03)" , vid : "Q7AOvWpIVHU" } ];
 
 function showToast(message) {
   let toastEl = document.getElementById ( "yt-toast" );
@@ -2344,19 +2377,23 @@ function renderActiveShort(idx) {
 
 function openWatchPage(vidId) {
   currentVideoId = vidId;
-  let v = videoCatalog.find ( function ( item ) { return item.id == vidId } );
+  let v = liveVideoCatalog.find ( function ( item ) { return item.id == vidId } );
   if (v == null) {
-    v = videoCatalog [ 0 ];
+    let customV = { id : vidId , title : "YouTube Stream #" + vidId , channel : "YouTube Creator" , subs : "100K subscribers" , views : "Real-time YouTube Stream" , desc : "Streaming live from YouTube Innertube Engine." , ambient : "rgba(59, 130, 246, 0.3)" };
+    v = customV;
   }
   (document.getElementById("watch-video-title") || document.querySelector("watch-video-title")).textContent = v.title;
-  (document.getElementById("active-player-title") || document.querySelector("active-player-title")).textContent = v.title;
   (document.getElementById("watch-channel-name") || document.querySelector("watch-channel-name")).textContent = v.channel;
   (document.getElementById("watch-sub-count") || document.querySelector("watch-sub-count")).textContent = v.subs;
   (document.getElementById("watch-desc-text") || document.querySelector("watch-desc-text")).textContent = v.desc;
   (document.getElementById("desc-stats") || document.querySelector("desc-stats")).textContent = v.views;
+  let pIframe = document.getElementById ( "player-iframe" );
+  if (pIframe != null) {
+    pIframe.src = "https://www.youtube-nocookie.com/embed/" + vidId + "?autoplay=1&enablejsapi=1";
+  }
   let ambientEl = document.getElementById ( "player-ambient-light" );
   if (ambientEl != null) {
-    ambientEl.style.background = "radial-gradient(circle, " + v.ambient + " 0%, rgba(15, 15, 15, 0) 75%)";
+    ambientEl.style.background = "radial-gradient(circle, " + ( v.ambient || "rgba(59,130,246,0.3)" ) + " 0%, rgba(15, 15, 15, 0) 75%)";
   }
   hideAllViews();
   let pWatch = document.getElementById ( "view-watch" );
@@ -2364,565 +2401,41 @@ function openWatchPage(vidId) {
     pWatch.style.display = "block";
   }
   window.scrollTo ( 0 , 0 );
-  isPlaying = true;
-  (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "⏸";
-  playSeconds = 0;
-  showToast("▶ Now Playing: " + v.title);
+  showToast("▶ Now Streaming: " + v.title);
 }
 
-(document.getElementById("card-video-1") || document.querySelector("card-video-1")).addEventListener('click', function(event) {
-  openWatchPage("1");
-});
-
-(document.getElementById("card-video-2") || document.querySelector("card-video-2")).addEventListener('click', function(event) {
-  openWatchPage("2");
-});
-
-(document.getElementById("card-video-3") || document.querySelector("card-video-3")).addEventListener('click', function(event) {
-  openWatchPage("3");
-});
-
-(document.getElementById("card-video-4") || document.querySelector("card-video-4")).addEventListener('click', function(event) {
-  openWatchPage("4");
-});
-
-(document.getElementById("card-video-5") || document.querySelector("card-video-5")).addEventListener('click', function(event) {
-  openWatchPage("5");
-});
-
-(document.getElementById("card-video-6") || document.querySelector("card-video-6")).addEventListener('click', function(event) {
-  openWatchPage("6");
-});
-
-(document.getElementById("card-rec-2") || document.querySelector("card-rec-2")).addEventListener('click', function(event) {
-  openWatchPage("2");
-});
-
-(document.getElementById("card-rec-3") || document.querySelector("card-rec-3")).addEventListener('click', function(event) {
-  openWatchPage("3");
-});
-
-(document.getElementById("card-rec-5") || document.querySelector("card-rec-5")).addEventListener('click', function(event) {
-  openWatchPage("5");
-});
-
-(document.getElementById("subs-card-1") || document.querySelector("subs-card-1")).addEventListener('click', function(event) {
-  openWatchPage("1");
-});
-
-(document.getElementById("subs-card-2") || document.querySelector("subs-card-2")).addEventListener('click', function(event) {
-  openWatchPage("2");
-});
-
-(document.getElementById("short-1") || document.querySelector("short-1")).addEventListener('click', function(event) {
-  openShortsReel();
-});
-
-(document.getElementById("short-2") || document.querySelector("short-2")).addEventListener('click', function(event) {
-  openShortsReel();
-});
-
-(document.getElementById("short-3") || document.querySelector("short-3")).addEventListener('click', function(event) {
-  openShortsReel();
-});
-
-(document.getElementById("short-4") || document.querySelector("short-4")).addEventListener('click', function(event) {
-  openShortsReel();
-});
-
-(document.getElementById("nav-home") || document.querySelector("nav-home")).addEventListener('click', function(event) {
-  openHomeFeed();
-});
-
-(document.getElementById("btn-logo") || document.querySelector("btn-logo")).addEventListener('click', function(event) {
-  openHomeFeed();
-});
-
-(document.getElementById("nav-shorts") || document.querySelector("nav-shorts")).addEventListener('click', function(event) {
-  openShortsReel();
-});
-
-(document.getElementById("nav-subs") || document.querySelector("nav-subs")).addEventListener('click', function(event) {
-  openSubsFeed();
-});
-
-(document.getElementById("nav-library") || document.querySelector("nav-library")).addEventListener('click', function(event) {
-  openLibrary();
-});
-
-(document.getElementById("nav-history") || document.querySelector("nav-history")).addEventListener('click', function(event) {
-  openLibrary();
-});
-
-(document.getElementById("nav-your-videos") || document.querySelector("nav-your-videos")).addEventListener('click', function(event) {
-  showToast("🎬 Your uploaded videos list");
-});
-
-(document.getElementById("nav-watch-later") || document.querySelector("nav-watch-later")).addEventListener('click', function(event) {
-  showToast("⏱️ Watch Later list (14 videos)");
-});
-
-(document.getElementById("nav-liked") || document.querySelector("nav-liked")).addEventListener('click', function(event) {
-  showToast("👍 Liked videos playlist (86 videos)");
-});
-
-(document.getElementById("sub-1") || document.querySelector("sub-1")).addEventListener('click', function(event) {
-  openWatchPage("1");
-});
-
-(document.getElementById("sub-2") || document.querySelector("sub-2")).addEventListener('click', function(event) {
-  openWatchPage("2");
-});
-
-(document.getElementById("sub-3") || document.querySelector("sub-3")).addEventListener('click', function(event) {
-  openWatchPage("3");
-});
-
-(document.getElementById("sub-4") || document.querySelector("sub-4")).addEventListener('click', function(event) {
-  openWatchPage("5");
-});
-
-(document.getElementById("nav-trending") || document.querySelector("nav-trending")).addEventListener('click', function(event) {
-  showToast("🔥 Trending videos in India");
-});
-
-(document.getElementById("nav-music") || document.querySelector("nav-music")).addEventListener('click', function(event) {
-  showToast("🎵 YouTube Music feed");
-});
-
-(document.getElementById("nav-gaming") || document.querySelector("nav-gaming")).addEventListener('click', function(event) {
-  showToast("🎮 Top Gaming streams & clips");
-});
-
-(document.getElementById("nav-news") || document.querySelector("nav-news")).addEventListener('click', function(event) {
-  showToast("📰 Global Tech & World News");
-});
-
-(document.getElementById("nav-sports") || document.querySelector("nav-sports")).addEventListener('click', function(event) {
-  showToast("🏆 Live Sports & Highlights");
-});
-
-(document.getElementById("btn-sidebar-toggle") || document.querySelector("btn-sidebar-toggle")).addEventListener('click', function(event) {
-  let sb = document.getElementById ( "yt-sidebar" );
-  if (sb != null) {
-    if (sb.style.display == "none") {
-      sb.style.display = "flex";
-    }
-    else {
-      sb.style.display = "none";
-    }
+function searchLiveYouTube(query) {
+  showToast("🔍 Fetching live YouTube feed for: " + query);
+  let statusSub = document.querySelector ( ".live-subtext" );
+  if (statusSub != null) {
+    statusSub.textContent = "Fetching live videos for: " + query + "...";
   }
-});
+  let payload = JSON.stringify ( { context : { client : { clientName : "WEB" , clientVersion : "2.20240101.01.00" , gl : "IN" , hl : "en" } } , query : query } );
+  fetch("https://www.youtube.com/youtubei/v1/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).then(function(res) {
+  return res.json()
+}
 
-(document.getElementById("btn-create") || document.querySelector("btn-create")).addEventListener('click', function(event) {
-  let mCreate = document.getElementById ( "modal-create" );
-  if (mCreate != null) {
-    mCreate.style.display = "flex";
+}).then(function(data) {
+
+create primary as data.contents && data.contents.twoColumnSearchResultsRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents
+
+if (( primary && primary.length > 0 ) {) {
+  let items = [ ];
+  let sectionContents = primary [ 0 ] .itemSectionRenderer && primary [ 0 ] .itemSectionRenderer.contents;
+  if (( sectionContents ) {) {
+    sectionContents.forEach ( function ( c ) {;
+    if (c.videoRenderer && c.videoRenderer.videoId) {
+    create vr as c.videoRenderer
+    let title = vr.title && vr.title.runs && vr.title.runs [ 0 ] ? vr.title.runs [ 0 ] .text : "YouTube Video";
+    let ch = vr.ownerText && vr.ownerText.runs && vr.ownerText.runs [ 0 ] ? vr.ownerText.runs [ 0 ] .text : "Creator";
+    let views = vr.viewCountText ? vr.viewCountText.simpleText : "100K views";
+    let dur = vr.lengthText ? vr.lengthText.simpleText : "10:00";
+    items.push ( { id : vr.videoId , title : title , channel : ch , views : views , duration : dur , thumb : "https://i.ytimg.com/vi/" + vr.videoId + "/hqdefault.jpg" } );
   }
-});
-
-(document.getElementById("btn-close-create") || document.querySelector("btn-close-create")).addEventListener('click', function(event) {
-  let mCreate = document.getElementById ( "modal-create" );
-  if (mCreate != null) {
-    mCreate.style.display = "none";
-  }
-});
-
-(document.getElementById("btn-cancel-upload") || document.querySelector("btn-cancel-upload")).addEventListener('click', function(event) {
-  let mCreate = document.getElementById ( "modal-create" );
-  if (mCreate != null) {
-    mCreate.style.display = "none";
-  }
-});
-
-(document.getElementById("btn-publish-video") || document.querySelector("btn-publish-video")).addEventListener('click', function(event) {
-  let uTitle = (document.getElementById("upload-title-input") || document.querySelector("upload-title-input")).value;
-  if (uTitle == "") {
-    uTitle = "New Enlang Video by Spandan Prayas Patra";
-  }
-  let mCreate = document.getElementById ( "modal-create" );
-  if (mCreate != null) {
-    mCreate.style.display = "none";
-  }
-  showToast("🚀 Video Published: " + uTitle);
-});
-
-(document.getElementById("btn-notif") || document.querySelector("btn-notif")).addEventListener('click', function(event) {
-  let dNotif = document.getElementById ( "dropdown-notif" );
-  if (dNotif != null) {
-    if (dNotif.style.display == "flex") {
-      dNotif.style.display = "none";
-    }
-    else {
-      dNotif.style.display = "flex";
-    }
-  }
-});
-
-(document.getElementById("btn-voice") || document.querySelector("btn-voice")).addEventListener('click', function(event) {
-  showToast("🎙️ Listening... Speak to search YouTube");
-});
-
-(document.getElementById("user-profile") || document.querySelector("user-profile")).addEventListener('click', function(event) {
-  showToast("👤 Signed in as Spandan Prayas Patra (Creator)");
-});
-
-(document.getElementById("btn-search") || document.querySelector("btn-search")).addEventListener('click', function(event) {
-  let q = (document.getElementById("search-input") || document.querySelector("search-input")).value;
-  if (q == "") {
-    showToast("Please type a search query");
-    return;
-  }
-  showToast("🔍 Showing results for: " + q);
-});
-
-(document.getElementById("chip-all") || document.querySelector("chip-all")).addEventListener('click', function(event) {
-  showToast("Showing All categories");
-});
-
-(document.getElementById("chip-coding") || document.querySelector("chip-coding")).addEventListener('click', function(event) {
-  showToast("Category: Coding & AI");
-});
-
-(document.getElementById("chip-java") || document.querySelector("chip-java")).addEventListener('click', function(event) {
-  showToast("Category: Java Backend");
-});
-
-(document.getElementById("chip-spring") || document.querySelector("chip-spring")).addEventListener('click', function(event) {
-  showToast("Category: Spring Boot");
-});
-
-(document.getElementById("chip-enlang") || document.querySelector("chip-enlang")).addEventListener('click', function(event) {
-  showToast("Category: Enlang Stack");
-});
-
-(document.getElementById("chip-sysdesign") || document.querySelector("chip-sysdesign")).addEventListener('click', function(event) {
-  showToast("Category: System Design");
-});
-
-(document.getElementById("chip-next") || document.querySelector("chip-next")).addEventListener('click', function(event) {
-  showToast("Category: Next.js");
-});
-
-(document.getElementById("chip-edge") || document.querySelector("chip-edge")).addEventListener('click', function(event) {
-  showToast("Category: Cloudflare Edge");
-});
-
-(document.getElementById("chip-music") || document.querySelector("chip-music")).addEventListener('click', function(event) {
-  showToast("Category: Lo-Fi Music");
-});
-
-(document.getElementById("chip-gaming") || document.querySelector("chip-gaming")).addEventListener('click', function(event) {
-  showToast("Category: Gaming");
-});
-
-(document.getElementById("chip-podcasts") || document.querySelector("chip-podcasts")).addEventListener('click', function(event) {
-  showToast("Category: Podcasts");
-});
-
-(document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).addEventListener('click', function(event) {
-  if (isPlaying == true) {
-    isPlaying = false;
-    (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "▶";
-    showToast("⏸ Video paused");
-  }
-  else {
-    isPlaying = true;
-    (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "⏸";
-    showToast("▶ Video playing");
-  }
-});
-
-(document.getElementById("btn-player-next") || document.querySelector("btn-player-next")).addEventListener('click', function(event) {
-  openWatchPage("2");
-});
-
-(document.getElementById("player-canvas") || document.querySelector("player-canvas")).addEventListener('click', function(event) {
-  let playBtn = document.getElementById ( "btn-player-play" );
-  if (playBtn != null) {
-    playBtn.click ( );
-  }
-});
-
-(document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).addEventListener('click', function(event) {
-  let mBtn = document.getElementById ( "btn-player-mute" );
-  if (isMuted == true) {
-    isMuted = false;
-    (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).textContent = "🔊";
-    showToast("Audio unmuted (100%)");
-  }
-  else {
-    isMuted = true;
-    (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).textContent = "🔇";
-    showToast("Audio muted");
-  }
-});
-
-(document.getElementById("btn-player-speed") || document.querySelector("btn-player-speed")).addEventListener('click', function(event) {
-  let sBtn = document.getElementById ( "btn-player-speed" );
-  if (playbackSpeed == "1x") {
-    playbackSpeed = "1.5x";
-  }
-  else {
-    if (playbackSpeed == "1.5x") {
-      playbackSpeed = "2x";
-    }
-    else {
-      playbackSpeed = "1x";
-    }
-  }
-  if (sBtn != null) {
-    sBtn.innerText = playbackSpeed;
-  }
-  showToast("⚡ Playback Speed: " + playbackSpeed);
-});
-
-(document.getElementById("btn-player-cc") || document.querySelector("btn-player-cc")).addEventListener('click', function(event) {
-  showToast("📝 Closed Captions: English (Auto-generated)");
-});
-
-(document.getElementById("btn-player-quality") || document.querySelector("btn-player-quality")).addEventListener('click', function(event) {
-  showToast("⚙️ Stream Quality: 1080p60 Full HD");
-});
-
-(document.getElementById("btn-player-fullscreen") || document.querySelector("btn-player-fullscreen")).addEventListener('click', function(event) {
-  let pCont = document.querySelector ( ".video-player-container" );
-  if (document.fullscreenElement == null) {
-    if (pCont != null) {
-      pCont.requestFullscreen ( );
-      showToast("Entered Fullscreen Player");
-    }
-  }
-  else {
-    document.exitFullscreen ( );
-    showToast("Exited Fullscreen Player");
-  }
-});
-
-setInterval(function() {
-  if (isPlaying == true) {
-    if (playSeconds < totalVideoSeconds) {
-      playSeconds = playSeconds + 1;
-      let curStr = formatDuration ( playSeconds );
-      let totStr = formatDuration ( totalVideoSeconds );
-      (document.getElementById("player-time-display") || document.querySelector("player-time-display")).textContent = curStr + " / " + totStr;
-      let pct = ( playSeconds / totalVideoSeconds ) * 100;
-      let fillBar = document.getElementById ( "scrubber-progress" );
-      if (fillBar != null) {
-        fillBar.style.width = pct + "%";
-      }
-    }
-  }
-}, 1000);
-
-(document.getElementById("ch-1") || document.querySelector("ch-1")).addEventListener('click', function(event) {
-  playSeconds = 0;
-  showToast("📍 Chapter: 00:00 • Introduction");
-});
-
-(document.getElementById("ch-2") || document.querySelector("ch-2")).addEventListener('click', function(event) {
-  playSeconds = 255;
-  showToast("📍 Chapter: 04:15 • HikariCP & Oracle Setup");
-});
-
-(document.getElementById("ch-3") || document.querySelector("ch-3")).addEventListener('click', function(event) {
-  playSeconds = 570;
-  showToast("📍 Chapter: 09:30 • ACID Transactions");
-});
-
-(document.getElementById("ch-4") || document.querySelector("ch-4")).addEventListener('click', function(event) {
-  playSeconds = 840;
-  showToast("📍 Chapter: 14:00 • High-Throughput Benchmarks");
-});
-
-(document.getElementById("btn-join") || document.querySelector("btn-join")).addEventListener('click', function(event) {
-  showToast("⭐ Welcome! Channel Membership perks unlocked.");
-});
-
-(document.getElementById("btn-subscribe") || document.querySelector("btn-subscribe")).addEventListener('click', function(event) {
-  let sBtn = document.getElementById ( "btn-subscribe" );
-  if (isSubscribed == true) {
-    isSubscribed = false;
-    sBtn.innerText = "Subscribe";
-    sBtn.style.background = "#ffffff";
-    sBtn.style.color = "#0f0f0f";
-    showToast("Unsubscribed from Spandan Prayas Patra");
-  }
-  else {
-    isSubscribed = true;
-    sBtn.innerText = "Subscribed ✓";
-    sBtn.style.background = "#272727";
-    sBtn.style.color = "#aaaaaa";
-    showToast("🔔 Subscribed to Spandan Prayas Patra!");
-  }
-});
-
-(document.getElementById("btn-like") || document.querySelector("btn-like")).addEventListener('click', function(event) {
-  let lBtn = document.getElementById ( "btn-like" );
-  if (isLiked == true) {
-    isLiked = false;
-    lBtn.innerText = "👍 142K";
-    lBtn.style.color = "#f1f1f1";
-  }
-  else {
-    isLiked = true;
-    lBtn.innerText = "👍 142.1K";
-    lBtn.style.color = "#3ea6ff";
-    showToast("Added to Liked Videos");
-  }
-});
-
-(document.getElementById("btn-dislike") || document.querySelector("btn-dislike")).addEventListener('click', function(event) {
-  showToast("Disliked video");
-});
-
-(document.getElementById("btn-share") || document.querySelector("btn-share")).addEventListener('click', function(event) {
-  let mShare = document.getElementById ( "modal-share" );
-  if (mShare != null) {
-    mShare.style.display = "flex";
-  }
-});
-
-(document.getElementById("btn-close-share") || document.querySelector("btn-close-share")).addEventListener('click', function(event) {
-  let mShare = document.getElementById ( "modal-share" );
-  if (mShare != null) {
-    mShare.style.display = "none";
-  }
-});
-
-(document.getElementById("btn-copy-share") || document.querySelector("btn-copy-share")).addEventListener('click', function(event) {
-  let mShare = document.getElementById ( "modal-share" );
-  if (mShare != null) {
-    mShare.style.display = "none";
-  }
-  showToast("🔗 Link copied to clipboard!");
-});
-
-(document.getElementById("btn-download") || document.querySelector("btn-download")).addEventListener('click', function(event) {
-  showToast("⬇ Downloading 1080p stream for offline playback...");
-});
-
-(document.getElementById("btn-clip") || document.querySelector("btn-clip")).addEventListener('click', function(event) {
-  showToast("✂ Create Clip dialog opened");
-});
-
-(document.getElementById("btn-more") || document.querySelector("btn-more")).addEventListener('click', function(event) {
-  showToast("⋯ Options: Save to Playlist, Report, Transcript");
-});
-
-(document.getElementById("btn-shorts-next") || document.querySelector("btn-shorts-next")).addEventListener('click', function(event) {
-  let nextIdx = ( currentShortIndex + 1 ) % shortsList.length;
-  renderActiveShort(nextIdx);
-  showToast("Next Short loaded");
-});
-
-(document.getElementById("btn-shorts-prev") || document.querySelector("btn-shorts-prev")).addEventListener('click', function(event) {
-  let prevIdx = ( currentShortIndex - 1 + shortsList.length ) % shortsList.length;
-  renderActiveShort(prevIdx);
-  showToast("Previous Short loaded");
-});
-
-(document.getElementById("btn-shorts-like") || document.querySelector("btn-shorts-like")).addEventListener('click', function(event) {
-  let sLike = document.getElementById ( "shorts-like-count" );
-  if (isShortsLiked == true) {
-    isShortsLiked = false;
-    if (sLike != null) {
-      sLike.textContent = "245K";
-    }
-  }
-  else {
-    isShortsLiked = true;
-    if (sLike != null) {
-      sLike.textContent = "245.1K";
-    }
-    showToast("Liked Short!");
-  }
-});
-
-(document.getElementById("btn-shorts-dislike") || document.querySelector("btn-shorts-dislike")).addEventListener('click', function(event) {
-  showToast("Disliked Short");
-});
-
-(document.getElementById("btn-shorts-comment") || document.querySelector("btn-shorts-comment")).addEventListener('click', function(event) {
-  showToast("💬 Opening Shorts Comments (4.2K)");
-});
-
-(document.getElementById("btn-shorts-share") || document.querySelector("btn-shorts-share")).addEventListener('click', function(event) {
-  showToast("🔗 Shorts link copied!");
-});
-
-(document.getElementById("btn-shorts-sub") || document.querySelector("btn-shorts-sub")).addEventListener('click', function(event) {
-  let sBtn = document.getElementById ( "btn-shorts-sub" );
-  if (sBtn != null) {
-    if (sBtn.innerText == "Subscribe") {
-      sBtn.innerText = "Subscribed ✓";
-      sBtn.style.background = "#272727";
-      sBtn.style.color = "#aaaaaa";
-      showToast("Subscribed to Creator!");
-    }
-    else {
-      sBtn.innerText = "Subscribe";
-      sBtn.style.background = "#ffffff";
-      sBtn.style.color = "#0f0f0f";
-    }
-  }
-});
-
-(document.getElementById("btn-shorts-mute") || document.querySelector("btn-shorts-mute")).addEventListener('click', function(event) {
-  showToast("Shorts audio toggled");
-});
-
-function postComment() {
-  let cText = (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value;
-  if (cText == "") {
-    showToast("Please type a comment before posting");
-    return;
-  }
-  let cContainer = document.getElementById ( "comment-list-container" );
-  if (cContainer != null) {
-    let cCard = document.createElement ( "div" );
-    cCard.className = "comment-card";
-    cCard.innerHTML = "<div class='user-avatar-sm' style='background: #8b5cf6;'>S</div><div class='comment-body'><div class='comment-author-row'><span class='comment-author'>@SpandanPrayas (You)</span><span class='comment-time'>Just now</span></div><p class='comment-msg'>" + cText + "</p><div class='comment-reactions'><button class='btn-react'>👍 1</button><button class='btn-react'>👎</button><button class='btn-react'>Reply</button></div></div>";
-    cContainer.prepend ( cCard );
-    (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value = "";
-    totalComments = totalComments + 1;
-    (document.getElementById("comments-count-header") || document.querySelector("comments-count-header")).textContent = totalComments + " Comments";
-    showToast("💬 Comment posted publicly!");
   }
 }
 
-(document.getElementById("btn-submit-comment") || document.querySelector("btn-submit-comment")).addEventListener('click', function(event) {
-  postComment();
-});
-
-(document.getElementById("btn-cancel-comment") || document.querySelector("btn-cancel-comment")).addEventListener('click', function(event) {
-  (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value = "";
-});
-
-(document.getElementById("btn-clear-history") || document.querySelector("btn-clear-history")).addEventListener('click', function(event) {
-  let hContainer = document.getElementById ( "history-list-container" );
-  if (hContainer != null) {
-    hContainer.innerHTML = "<p style='color: #888; padding: 20px;'>Watch history is empty.</p>";
-  }
-  showToast("🗑️ Watch History Cleared");
-});
-
-(document.getElementById("btn-theme") || document.querySelector("btn-theme")).addEventListener('click', function(event) {
-  let b = document.body;
-  let tBtn = document.getElementById ( "btn-theme" );
-  if (tBtn.innerText == "☾") {
-    tBtn.innerText = "☼";
-    b.style.background = "#ffffff";
-    b.style.color = "#0f0f0f";
-    showToast("Switched to YouTube Light Mode");
-  }
-  else {
-    tBtn.innerText = "☾";
-    b.style.background = "#0f0f0f";
-    b.style.color = "#f1f1f1";
-    showToast("Switched to YouTube Dark Mode");
-  }
-});
+})
     </script>
   </body>
 </html>

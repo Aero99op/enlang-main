@@ -302,7 +302,7 @@ for ".category-bar" apply:
     display flex
     gap 10
     overflow-x auto
-    padding-bottom 16
+    padding-bottom 12
     margin-bottom 8
 end
 
@@ -321,6 +321,35 @@ end
 
 when ".chip" is hovered apply:
     background use color "yt-surface-hover"
+end
+
+for ".chip.active" apply:
+    background "#ffffff"
+    color "#0f0f0f"
+    font-weight 700
+end
+
+# Feed Status Bar
+for ".feed-status-bar" apply:
+    display flex
+    justify-content space-between
+    align-items center
+    padding "8px 16px"
+    background "rgba(255, 0, 0, 0.08)"
+    border "1px solid rgba(255, 0, 0, 0.2)"
+    corner radius 10
+    margin-bottom 20
+end
+
+for ".live-indicator" apply:
+    font-size 13
+    font-weight 800
+    color use color "yt-red"
+end
+
+for ".live-subtext" apply:
+    font-size 12
+    color use color "yt-muted"
 end
 
 # Video Grid
@@ -352,15 +381,11 @@ for ".thumbnail-wrapper" apply:
     background "#1e1e1e"
 end
 
-for ".thumbnail-bg" apply:
+for ".thumb-real-img" apply:
     width 100 percent
     height 100 percent
-    display flex
-    align-items center
-    justify-content center
-    padding 16
-    box-sizing border-box
-    text-align center
+    object-fit "cover"
+    display block
 end
 
 for ".thumb-text" apply:
@@ -749,13 +774,18 @@ end
 
 for ".player-screen" apply:
     flex 1
-    display flex
-    align-items center
-    justify-content center
-    background "radial-gradient(circle, #1a202c 0%, #000000 80%)"
-    padding 24
-    box-sizing border-box
-    text-align center
+    width 100 percent
+    height 100 percent
+    background "#000000"
+    position relative
+    overflow hidden
+end
+
+for ".yt-embed-frame" apply:
+    width 100 percent
+    height 100 percent
+    border none
+    display block
 end
 
 for ".play-huge-icon" apply:
@@ -1264,6 +1294,8 @@ for ".rec-thumb" apply:
     justify-content flex-end
     padding 4
     box-sizing border-box
+    overflow hidden
+    background "#1e1e1e"
 end
 
 for ".rec-details" apply:
@@ -1355,6 +1387,8 @@ for ".history-thumb" apply:
     justify-content flex-end
     padding 6
     box-sizing border-box
+    overflow hidden
+    background "#1e1e1e"
 end
 
 for ".history-details" apply:

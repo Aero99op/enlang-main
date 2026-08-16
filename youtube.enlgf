@@ -92,27 +92,30 @@ document enlgf:
                             button "Gaming" id "chip-gaming" class "chip"
                             button "Podcasts" id "chip-podcasts" class "chip"
 
+                        # Feed Status Banner
+                        div id "feed-status-bar" class "feed-status-bar":
+                            span "🔴 Live YouTube Feed" class "live-indicator"
+                            span "Powered by YouTube Innertube API • Free & Unlimited" class "live-subtext"
+
                         # Primary Video Cards Grid
                         div class "video-grid" id "video-grid-container":
                             # Video Card 1
-                            div class "video-card" id "card-video-1":
+                            div class "video-card" id "card-video-1" data-vid "gJrjgg1KVL4":
                                 div class "thumbnail-wrapper":
-                                    div class "thumbnail-bg" style "background: linear-gradient(135deg, #1e3a8a, #3b82f6);":
-                                        span "☕ Java 21 & Spring Boot 3.2 Full Masterclass" class "thumb-text"
-                                    span "18:45" class "duration-badge"
+                                    img src "https://i.ytimg.com/vi/gJrjgg1KVL4/hqdefault.jpg" class "thumb-real-img"
+                                    span "1:11:22" class "duration-badge"
                                 div class "video-meta":
                                     div "S" class "channel-avatar"
                                     div class "video-details":
-                                        h3 "Building High-Throughput Microservices with Java & Spring Boot" class "video-title"
+                                        h3 "Spring Boot 3 Full Course 2025 - Beginner to Pro" class "video-title"
                                         p "Spandan Prayas Patra • Java Backend ✓" class "video-channel"
-                                        p "245K views • 2 days ago" class "video-stats"
+                                        p "1.04M views • 2 days ago" class "video-stats"
 
                             # Video Card 2
-                            div class "video-card" id "card-video-2":
+                            div class "video-card" id "card-video-2" data-vid "dQw4w9WgXcQ":
                                 div class "thumbnail-wrapper":
-                                    div class "thumbnail-bg" style "background: linear-gradient(135deg, #065f46, #10b981);":
-                                        span "🪐 Enlang Compiler Architecture: Pure English Code" class "thumb-text"
-                                    span "24:10" class "duration-badge"
+                                    img src "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class "thumb-real-img"
+                                    span "03:33" class "duration-badge"
                                 div class "video-meta":
                                     div "E" class "channel-avatar"
                                     div class "video-details":
@@ -121,10 +124,9 @@ document enlgf:
                                         p "512K views • 1 week ago" class "video-stats"
 
                             # Video Card 3
-                            div class "video-card" id "card-video-3":
+                            div class "video-card" id "card-video-3" data-vid "8aGhZQkoFbQ":
                                 div class "thumbnail-wrapper":
-                                    div class "thumbnail-bg" style "background: linear-gradient(135deg, #701a75, #ec4899);":
-                                        span "🌐 Cloudflare Pages + Next.js Zero 500 Errors" class "thumb-text"
+                                    img src "https://i.ytimg.com/vi/8aGhZQkoFbQ/hqdefault.jpg" class "thumb-real-img"
                                     span "14:20" class "duration-badge"
                                 div class "video-meta":
                                     div "C" class "channel-avatar"
@@ -134,10 +136,9 @@ document enlgf:
                                         p "189K views • 3 days ago" class "video-stats"
 
                             # Video Card 4
-                            div class "video-card" id "card-video-4":
+                            div class "video-card" id "card-video-4" data-vid "HXV3zeRR3h4":
                                 div class "thumbnail-wrapper":
-                                    div class "thumbnail-bg" style "background: linear-gradient(135deg, #7c2d12, #f97316);":
-                                        span "🗄️ MySQL vs Oracle 19c: Query Optimization Masterclass" class "thumb-text"
+                                    img src "https://i.ytimg.com/vi/HXV3zeRR3h4/hqdefault.jpg" class "thumb-real-img"
                                     span "32:00" class "duration-badge"
                                 div class "video-meta":
                                     div "D" class "channel-avatar"
@@ -147,10 +148,9 @@ document enlgf:
                                         p "98K views • 4 days ago" class "video-stats"
 
                             # Video Card 5
-                            div class "video-card" id "card-video-5":
+                            div class "video-card" id "card-video-5" data-vid "Q7AOvWpIVHU":
                                 div class "thumbnail-wrapper":
-                                    div class "thumbnail-bg" style "background: linear-gradient(135deg, #1e1b4b, #6366f1);":
-                                        span "🎨 3D Solar & Lunar Shaders in WebGL & Three.js" class "thumb-text"
+                                    img src "https://i.ytimg.com/vi/Q7AOvWpIVHU/hqdefault.jpg" class "thumb-real-img"
                                     span "21:15" class "duration-badge"
                                 div class "video-meta":
                                     div "T" class "channel-avatar"
@@ -160,10 +160,9 @@ document enlgf:
                                         p "340K views • 5 days ago" class "video-stats"
 
                             # Video Card 6
-                            div class "video-card" id "card-video-6":
+                            div class "video-card" id "card-video-6" data-vid "pTJJsmejUOQ":
                                 div class "thumbnail-wrapper":
-                                    div class "thumbnail-bg" style "background: linear-gradient(135deg, #134e4a, #14b8a6);":
-                                        span "📱 Enlang Mobile (.enlgm): 1:1 Flutter Compilation" class "thumb-text"
+                                    img src "https://i.ytimg.com/vi/pTJJsmejUOQ/hqdefault.jpg" class "thumb-real-img"
                                     span "16:40" class "duration-badge"
                                 div class "video-meta":
                                     div "M" class "channel-avatar"
@@ -231,20 +230,17 @@ document enlgf:
                                 button "▲" id "btn-shorts-prev" class "shorts-arrow-btn"
                                 button "▼" id "btn-shorts-next" class "shorts-arrow-btn"
 
-                    # ── VIEW 3: WATCH PAGE (PLAYER + COMMENTS + RECOMMENDATIONS) ──
+                    # ── VIEW 3: WATCH PAGE (LIVE STREAMING PLAYER + COMMENTS) ──
                     div id "view-watch" class "view-panel":
                         div class "watch-layout":
                             # Primary Watch Column
                             div class "watch-primary":
-                                # Video Player Canvas with Ambient Glow
+                                # Video Player Canvas with Ambient Glow & Real Stream Embed
                                 div class "ambient-glow-wrapper":
                                     div class "ambient-backlight" id "player-ambient-light"
                                     div class "video-player-container":
                                         div class "player-screen" id "player-canvas":
-                                            div class "player-placeholder-content":
-                                                span "▶" class "play-huge-icon" id "play-overlay-icon"
-                                                h2 "Building High-Throughput Microservices with Java & Spring Boot" id "active-player-title"
-                                                p "Streaming in 1080p60 HD • Pure Enlang Runtime" class "player-badge-sub"
+                                            iframe id "player-iframe" src "https://www.youtube-nocookie.com/embed/gJrjgg1KVL4?autoplay=1&enablejsapi=1" frameborder "0" allow "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" class "yt-embed-frame"
 
                                         div class "player-controls":
                                             button "▶" id "btn-player-play" class "ctrl-btn"
@@ -262,7 +258,7 @@ document enlgf:
 
                                 # Video Title & Actions Bar
                                 div class "watch-header":
-                                    h1 "Building High-Throughput Microservices with Java & Spring Boot" id "watch-video-title" class "watch-title"
+                                    h1 "Spring Boot 3 Full Course 2025 - Beginner to Pro" id "watch-video-title" class "watch-title"
                                     
                                     div class "watch-actions-row":
                                         div class "channel-info-box":
@@ -363,25 +359,28 @@ document enlgf:
                                         span "Autoplay" class "autoplay-label"
                                         input type "checkbox" id "autoplay-check" checked "true" class "autoplay-switch"
 
-                                div class "rec-list":
-                                    div class "rec-card" id "card-rec-2":
-                                        div class "rec-thumb" style "background: linear-gradient(135deg, #065f46, #10b981);":
-                                            span "24:10" class "duration-badge"
+                                div class "rec-list" id "rec-list-container":
+                                    div class "rec-card" id "card-rec-2" data-vid "dQw4w9WgXcQ":
+                                        div class "rec-thumb":
+                                            img src "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class "thumb-real-img"
+                                            span "03:33" class "duration-badge"
                                         div class "rec-details":
                                             h4 "How We Built Enlang Compiler" class "rec-title"
                                             p "Enlang Official" class "rec-channel"
                                             p "512K views" class "rec-stats"
 
-                                    div class "rec-card" id "card-rec-3":
-                                        div class "rec-thumb" style "background: linear-gradient(135deg, #701a75, #ec4899);":
+                                    div class "rec-card" id "card-rec-3" data-vid "8aGhZQkoFbQ":
+                                        div class "rec-thumb":
+                                            img src "https://i.ytimg.com/vi/8aGhZQkoFbQ/hqdefault.jpg" class "thumb-real-img"
                                             span "14:20" class "duration-badge"
                                         div class "rec-details":
                                             h4 "Deploying Edge Apps on Cloudflare" class "rec-title"
                                             p "Edge Architects" class "rec-channel"
                                             p "189K views" class "rec-stats"
 
-                                    div class "rec-card" id "card-rec-5":
-                                        div class "rec-thumb" style "background: linear-gradient(135deg, #1e1b4b, #6366f1);":
+                                    div class "rec-card" id "card-rec-5" data-vid "Q7AOvWpIVHU":
+                                        div class "rec-thumb":
+                                            img src "https://i.ytimg.com/vi/Q7AOvWpIVHU/hqdefault.jpg" class "thumb-real-img"
                                             span "21:15" class "duration-badge"
                                         div class "rec-details":
                                             h4 "3D Solar & Lunar WebGL Shaders" class "rec-title"
@@ -394,23 +393,21 @@ document enlgf:
                             h2 "Latest from Your Subscriptions" class "subs-heading"
                             span "Manage" class "subs-manage-link"
                         div class "video-grid" id "subs-grid-container":
-                            div class "video-card" id "subs-card-1":
+                            div class "video-card" id "subs-card-1" data-vid "gJrjgg1KVL4":
                                 div class "thumbnail-wrapper":
-                                    div class "thumbnail-bg" style "background: linear-gradient(135deg, #1e3a8a, #3b82f6);":
-                                        span "☕ Java 21 & Spring Boot 3.2 Full Masterclass" class "thumb-text"
-                                    span "18:45" class "duration-badge"
+                                    img src "https://i.ytimg.com/vi/gJrjgg1KVL4/hqdefault.jpg" class "thumb-real-img"
+                                    span "1:11:22" class "duration-badge"
                                 div class "video-meta":
                                     div "S" class "channel-avatar"
                                     div class "video-details":
-                                        h3 "Building High-Throughput Microservices with Java & Spring Boot" class "video-title"
+                                        h3 "Spring Boot 3 Full Course 2025 - Beginner to Pro" class "video-title"
                                         p "Spandan Prayas Patra" class "video-channel"
-                                        p "245K views • 2 days ago" class "video-stats"
+                                        p "1.04M views • 2 days ago" class "video-stats"
 
-                            div class "video-card" id "subs-card-2":
+                            div class "video-card" id "subs-card-2" data-vid "dQw4w9WgXcQ":
                                 div class "thumbnail-wrapper":
-                                    div class "thumbnail-bg" style "background: linear-gradient(135deg, #065f46, #10b981);":
-                                        span "🪐 Enlang Compiler Architecture: Pure English Code" class "thumb-text"
-                                    span "24:10" class "duration-badge"
+                                    img src "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class "thumb-real-img"
+                                    span "03:33" class "duration-badge"
                                 div class "video-meta":
                                     div "E" class "channel-avatar"
                                     div class "video-details":
@@ -425,16 +422,18 @@ document enlgf:
                             button "Clear History" id "btn-clear-history" class "btn-ghost"
                         div class "history-list" id "history-list-container":
                             div class "history-card":
-                                div class "history-thumb" style "background: linear-gradient(135deg, #1e3a8a, #3b82f6);":
-                                    span "18:45" class "duration-badge"
+                                div class "history-thumb":
+                                    img src "https://i.ytimg.com/vi/gJrjgg1KVL4/hqdefault.jpg" class "thumb-real-img"
+                                    span "1:11:22" class "duration-badge"
                                 div class "history-details":
-                                    h3 "Building High-Throughput Microservices with Java & Spring Boot" class "history-title"
-                                    p "Spandan Prayas Patra • 245K views" class "history-sub"
+                                    h3 "Spring Boot 3 Full Course 2025 - Beginner to Pro" class "history-title"
+                                    p "Spandan Prayas Patra • 1.04M views" class "history-sub"
                                     p "Watched today" class "history-time"
 
                             div class "history-card":
-                                div class "history-thumb" style "background: linear-gradient(135deg, #065f46, #10b981);":
-                                    span "24:10" class "duration-badge"
+                                div class "history-thumb":
+                                    img src "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class "thumb-real-img"
+                                    span "03:33" class "duration-badge"
                                 div class "history-details":
                                     h3 "How We Built Enlang: Compiling English to Python, JS & Flutter" class "history-title"
                                     p "Enlang Official • 512K views" class "history-sub"
