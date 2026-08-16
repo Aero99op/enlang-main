@@ -1,4 +1,4 @@
-# Enlang Script (.enlgs) - YouTube 1:1 Engine
+# Enlang Script (.enlgs) - YouTube 1:1 Complete Platform Engine
 
 in script:
     # State Declarations
@@ -7,16 +7,22 @@ in script:
     create isSubscribed as false
     create isLiked as false
     create currentVideoId as "1"
+    create currentShortIndex as 0
     create totalComments as 328
     create playSeconds as 255
     create totalVideoSeconds as 1125
+    create playbackSpeed as "1x"
+    create isShortsLiked as false
 
-    show "▶ Initializing YouTube 1:1 Video Engine in Pure Enlang (.enlgs)..."
+    show "▶ Initializing YouTube 1:1 Complete Platform in Pure Enlang (.enlgs)..."
 
-    # Video Database in Pure Enlgs
-    define videoCatalog as [ { id: "1", title: "Building High-Throughput Microservices with Java & Spring Boot", channel: "Spandan Prayas Patra", subs: "128K subscribers", views: "245,189 views • Premiered on Aug 15, 2026", desc: "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." }, { id: "2", title: "How We Built Enlang: Compiling English to Python, JS & Flutter", channel: "Enlang Official", subs: "512K subscribers", views: "512,840 views • 1 week ago", desc: "Behind the scenes of building the Enlang compiler ecosystem (.enlg, .enlgf, .enlgd, .enlgs, .enlgm) from scratch with zero boilerplate." }, { id: "3", title: "Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages", channel: "Edge Architects", subs: "189K subscribers", views: "189,420 views • 3 days ago", desc: "Complete masterclass on building Cloudflare Workers and Pages with Zero 500 error architectures." }, { id: "4", title: "Database Indexing, Stored Procedures & Connection Pooling", channel: "Database Wizardry", subs: "98K subscribers", views: "98,120 views • 4 days ago", desc: "MySQL and Oracle optimization guide for enterprise database architects." }, { id: "5", title: "Procedural Corona Glows & Raymarched Moon Craters in WebGL", channel: "Creative Coding 3D", subs: "340K subscribers", views: "340,900 views • 5 days ago", desc: "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL." }, { id: "6", title: "Build Android & iOS Flutter Apps with Pure English Sentences", channel: "Mobile Mastery", subs: "420K subscribers", views: "420,150 views • 6 days ago", desc: "Building native Flutter apps using Enlang Mobile (.enlgm) with 1:1 Dart compilation." } ]
+    # Video Database with Ambient Colors & Chapters
+    define videoCatalog as [ { id: "1", title: "Building High-Throughput Microservices with Java & Spring Boot", channel: "Spandan Prayas Patra", subs: "128K subscribers", views: "245,189 views • Premiered on Aug 15, 2026", desc: "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.", ambient: "rgba(59, 130, 246, 0.3)" }, { id: "2", title: "How We Built Enlang: Compiling English to Python, JS & Flutter", channel: "Enlang Official", subs: "512K subscribers", views: "512,840 views • 1 week ago", desc: "Behind the scenes of building the Enlang compiler ecosystem (.enlg, .enlgf, .enlgd, .enlgs, .enlgm) from scratch with zero boilerplate.", ambient: "rgba(16, 185, 129, 0.3)" }, { id: "3", title: "Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages", channel: "Edge Architects", subs: "189K subscribers", views: "189,420 views • 3 days ago", desc: "Complete masterclass on building Cloudflare Workers and Pages with Zero 500 error architectures.", ambient: "rgba(236, 72, 153, 0.3)" }, { id: "4", title: "Database Indexing, Stored Procedures & Connection Pooling", channel: "Database Wizardry", subs: "98K subscribers", views: "98,120 views • 4 days ago", desc: "MySQL and Oracle optimization guide for enterprise database architects.", ambient: "rgba(249, 115, 22, 0.3)" }, { id: "5", title: "Procedural Corona Glows & Raymarched Moon Craters in WebGL", channel: "Creative Coding 3D", subs: "340K subscribers", views: "340,900 views • 5 days ago", desc: "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL.", ambient: "rgba(99, 102, 241, 0.3)" }, { id: "6", title: "Build Android & iOS Flutter Apps with Pure English Sentences", channel: "Mobile Mastery", subs: "420K subscribers", views: "420,150 views • 6 days ago", desc: "Building native Flutter apps using Enlang Mobile (.enlgm) with 1:1 Dart compilation.", ambient: "rgba(20, 184, 166, 0.3)" } ]
 
-    # Toast Notification Helper in Pure Enlgs
+    # Shorts Database
+    define shortsList as [ { title: "🔥 3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev", author: "@SpandanPrayas", audio: "🎵 Spandan Original Audio • High Performance Remix", views: "3.2M", bg: "linear-gradient(180deg, #1e3a8a, #0f172a)" }, { title: "🚀 Write Clean Code in English with Enlang! Zero boilerplate #Enlang #Compilers", author: "@EnlangOfficial", audio: "🎵 Enlang Sound Studio • Compiler Waves", views: "1.8M", bg: "linear-gradient(180deg, #047857, #064e3b)" }, { title: "🌐 Cloudflare Workers under 1ms Latency around the world #Edge #Cloudflare", author: "@EdgeArchitects", audio: "🎵 Ultra Edge Lo-Fi Beat", views: "950K", bg: "linear-gradient(180deg, #6d28d9, #2e1065)" }, { title: "✨ Raymarched Black Hole in 30 Lines of WebGL Shader #Threejs #GLSL", author: "@CreativeCoding3D", audio: "🎵 Cosmic Raymarch Audio", views: "2.4M", bg: "linear-gradient(180deg, #b45309, #451a03)" } ]
+
+    # Toast Notification Helper
     to do showToast with message:
         create toastEl as document.getElementById("yt-toast")
         if toastEl != null:
@@ -27,13 +33,81 @@ in script:
                 if t2 != null:
                     t2.style.display = "none"
 
-    # Helper to Format Seconds into MM:SS
+    # Time Formatter Helper
     to do formatDuration with secs:
         create m as Math.floor(secs / 60)
         create s as secs % 60
         create mStr as m < 10 ? "0" + m : "" + m
         create sStr as s < 10 ? "0" + s : "" + s
         return mStr + ":" + sStr
+
+    # Hide all views helper
+    to do hideAllViews:
+        create pFeed as document.getElementById("view-feed")
+        create pShorts as document.getElementById("view-shorts")
+        create pWatch as document.getElementById("view-watch")
+        create pSubs as document.getElementById("view-subs")
+        create pLib as document.getElementById("view-library")
+        if pFeed != null:
+            pFeed.style.display = "none"
+        if pShorts != null:
+            pShorts.style.display = "none"
+        if pWatch != null:
+            pWatch.style.display = "none"
+        if pSubs != null:
+            pSubs.style.display = "none"
+        if pLib != null:
+            pLib.style.display = "none"
+
+    # Open Home Feed
+    to do openHomeFeed:
+        call hideAllViews
+        create pFeed as document.getElementById("view-feed")
+        if pFeed != null:
+            pFeed.style.display = "block"
+        window.scrollTo(0, 0)
+        call showToast with "🏠 YouTube Home Feed"
+
+    # Open Shorts Reel View
+    to do openShortsReel:
+        call hideAllViews
+        create pShorts as document.getElementById("view-shorts")
+        if pShorts != null:
+            pShorts.style.display = "block"
+        window.scrollTo(0, 0)
+        call renderActiveShort with 0
+        call showToast with "⚡ YouTube Shorts Reel active"
+
+    # Open Subscriptions Feed
+    to do openSubsFeed:
+        call hideAllViews
+        create pSubs as document.getElementById("view-subs")
+        if pSubs != null:
+            pSubs.style.display = "block"
+        window.scrollTo(0, 0)
+        call showToast with "📺 Subscriptions Feed"
+
+    # Open Library / History View
+    to do openLibrary:
+        call hideAllViews
+        create pLib as document.getElementById("view-library")
+        if pLib != null:
+            pLib.style.display = "block"
+        window.scrollTo(0, 0)
+        call showToast with "📁 Library & Watch History"
+
+    # Render Active Short in Reel
+    to do renderActiveShort with idx:
+        set currentShortIndex = idx
+        create s as shortsList[idx]
+        if s == null:
+            return
+        create sBox as document.getElementById("shorts-active-box")
+        if sBox != null:
+            sBox.style.background = s.bg
+        create sDesc as document.getElementById("shorts-title-text")
+        if sDesc != null:
+            sDesc.textContent = s.title
 
     # Load and Play Video by ID
     to do openWatchPage with vidId:
@@ -49,35 +123,22 @@ in script:
         set text of "watch-desc-text" to v.desc
         set text of "desc-stats" to v.views
 
-        # Switch View Panels
-        create fPanel as document.getElementById("view-feed")
-        create wPanel as document.getElementById("view-watch")
-        if fPanel != null:
-            fPanel.style.display = "none"
-        if wPanel != null:
-            wPanel.style.display = "block"
+        create ambientEl as document.getElementById("player-ambient-light")
+        if ambientEl != null:
+            ambientEl.style.background = "radial-gradient(circle, " + v.ambient + " 0%, rgba(15, 15, 15, 0) 75%)"
+
+        call hideAllViews
+        create pWatch as document.getElementById("view-watch")
+        if pWatch != null:
+            pWatch.style.display = "block"
 
         window.scrollTo(0, 0)
-        
-        # Reset Video Play State
         set isPlaying = true
         set text of "btn-player-play" to "⏸"
         set playSeconds = 0
         call showToast with "▶ Now Playing: " + v.title
 
-    # Return to Home / Feed View
-    to do openHomeFeed:
-        create fPanel as document.getElementById("view-feed")
-        create wPanel as document.getElementById("view-watch")
-        if fPanel != null:
-            fPanel.style.display = "block"
-        if wPanel != null:
-            wPanel.style.display = "none"
-
-        window.scrollTo(0, 0)
-        call showToast with "🏠 Back to YouTube Home"
-
-    # Video Card Click Handlers in Pure Enlgs
+    # ── VIDEO CARDS CLICK HANDLERS ──
     when "card-video-1" is clicked:
         call openWatchPage with "1"
 
@@ -96,7 +157,7 @@ in script:
     when "card-video-6" is clicked:
         call openWatchPage with "6"
 
-    # Recommendation Cards Click Handlers
+    # Up Next Recommendation Cards
     when "card-rec-2" is clicked:
         call openWatchPage with "2"
 
@@ -106,34 +167,52 @@ in script:
     when "card-rec-5" is clicked:
         call openWatchPage with "5"
 
-    # Header & Logo Navigation
+    when "subs-card-1" is clicked:
+        call openWatchPage with "1"
+
+    when "subs-card-2" is clicked:
+        call openWatchPage with "2"
+
+    # Shorts Shelf Cards on Home Feed
+    when "short-1" is clicked:
+        call openShortsReel
+
+    when "short-2" is clicked:
+        call openShortsReel
+
+    when "short-3" is clicked:
+        call openShortsReel
+
+    when "short-4" is clicked:
+        call openShortsReel
+
+    # ── SIDEBAR NAVIGATION ──
     when "nav-home" is clicked:
         call openHomeFeed
 
     when "btn-logo" is clicked:
         call openHomeFeed
 
-    # Sidebar Navigation Actions
     when "nav-shorts" is clicked:
-        call showToast with "⚡ Shorts feed loaded"
+        call openShortsReel
 
     when "nav-subs" is clicked:
-        call showToast with "📺 Subscriptions feed refreshed"
+        call openSubsFeed
 
     when "nav-library" is clicked:
-        call showToast with "📁 Library loaded"
+        call openLibrary
 
     when "nav-history" is clicked:
-        call showToast with "🕒 Watch history loaded"
+        call openLibrary
 
     when "nav-your-videos" is clicked:
-        call showToast with "🎬 Your uploaded videos"
+        call showToast with "🎬 Your uploaded videos list"
 
     when "nav-watch-later" is clicked:
         call showToast with "⏱️ Watch Later list (14 videos)"
 
     when "nav-liked" is clicked:
-        call showToast with "👍 Liked videos list (86 videos)"
+        call showToast with "👍 Liked videos playlist (86 videos)"
 
     when "sub-1" is clicked:
         call openWatchPage with "1"
@@ -147,6 +226,21 @@ in script:
     when "sub-4" is clicked:
         call openWatchPage with "5"
 
+    when "nav-trending" is clicked:
+        call showToast with "🔥 Trending videos in India"
+
+    when "nav-music" is clicked:
+        call showToast with "🎵 YouTube Music feed"
+
+    when "nav-gaming" is clicked:
+        call showToast with "🎮 Top Gaming streams & clips"
+
+    when "nav-news" is clicked:
+        call showToast with "📰 Global Tech & World News"
+
+    when "nav-sports" is clicked:
+        call showToast with "🏆 Live Sports & Highlights"
+
     # Sidebar Collapse Toggle
     when "btn-sidebar-toggle" is clicked:
         create sb as document.getElementById("yt-sidebar")
@@ -156,18 +250,44 @@ in script:
             else:
                 sb.style.display = "none"
 
-    # Top Header Actions
+    # ── TOP BAR ACTIONS & MODALS ──
     when "btn-create" is clicked:
-        call showToast with "＋ Upload video dialog opened"
+        create mCreate as document.getElementById("modal-create")
+        if mCreate != null:
+            mCreate.style.display = "flex"
+
+    when "btn-close-create" is clicked:
+        create mCreate as document.getElementById("modal-create")
+        if mCreate != null:
+            mCreate.style.display = "none"
+
+    when "btn-cancel-upload" is clicked:
+        create mCreate as document.getElementById("modal-create")
+        if mCreate != null:
+            mCreate.style.display = "none"
+
+    when "btn-publish-video" is clicked:
+        create uTitle as get value of "upload-title-input"
+        if uTitle == "":
+            set uTitle = "New Enlang Video by Spandan Prayas Patra"
+        create mCreate as document.getElementById("modal-create")
+        if mCreate != null:
+            mCreate.style.display = "none"
+        call showToast with "🚀 Video Published: " + uTitle
 
     when "btn-notif" is clicked:
-        call showToast with "🔔 3 new notifications from Spandan & Enlang"
+        create dNotif as document.getElementById("dropdown-notif")
+        if dNotif != null:
+            if dNotif.style.display == "flex":
+                dNotif.style.display = "none"
+            else:
+                dNotif.style.display = "flex"
 
     when "btn-voice" is clicked:
-        call showToast with "🎙️ Listening... Say something to search"
+        call showToast with "🎙️ Listening... Speak to search YouTube"
 
     when "user-profile" is clicked:
-        call showToast with "👤 Signed in as Spandan Prayas Patra"
+        call showToast with "👤 Signed in as Spandan Prayas Patra (Creator)"
 
     # Search Bar Filtering
     when "btn-search" is clicked:
@@ -177,9 +297,9 @@ in script:
             return
         call showToast with "🔍 Showing results for: " + q
 
-    # Category Chips Filter
+    # ── CATEGORY FILTER CHIPS ──
     when "chip-all" is clicked:
-        call showToast with "Category: All videos"
+        call showToast with "Showing All categories"
 
     when "chip-coding" is clicked:
         call showToast with "Category: Coding & AI"
@@ -208,7 +328,10 @@ in script:
     when "chip-gaming" is clicked:
         call showToast with "Category: Gaming"
 
-    # Video Player Play / Pause Controls
+    when "chip-podcasts" is clicked:
+        call showToast with "Category: Podcasts"
+
+    # ── VIDEO PLAYER CONTROLS ──
     when "btn-player-play" is clicked:
         if isPlaying == true:
             set isPlaying = false
@@ -219,12 +342,14 @@ in script:
             set text of "btn-player-play" to "⏸"
             call showToast with "▶ Video playing"
 
+    when "btn-player-next" is clicked:
+        call openWatchPage with "2"
+
     when "player-canvas" is clicked:
         create playBtn as document.getElementById("btn-player-play")
         if playBtn != null:
             playBtn.click()
 
-    # Player Mute Toggle
     when "btn-player-mute" is clicked:
         create mBtn as document.getElementById("btn-player-mute")
         if isMuted == true:
@@ -236,10 +361,25 @@ in script:
             set text of "btn-player-mute" to "🔇"
             call showToast with "Audio muted"
 
+    when "btn-player-speed" is clicked:
+        create sBtn as document.getElementById("btn-player-speed")
+        if playbackSpeed == "1x":
+            set playbackSpeed = "1.5x"
+        else:
+            if playbackSpeed == "1.5x":
+                set playbackSpeed = "2x"
+            else:
+                set playbackSpeed = "1x"
+        if sBtn != null:
+            sBtn.innerText = playbackSpeed
+        call showToast with "⚡ Playback Speed: " + playbackSpeed
+
+    when "btn-player-cc" is clicked:
+        call showToast with "📝 Closed Captions: English (Auto-generated)"
+
     when "btn-player-quality" is clicked:
         call showToast with "⚙️ Stream Quality: 1080p60 Full HD"
 
-    # Player Fullscreen Toggle
     when "btn-player-fullscreen" is clicked:
         create pCont as document.querySelector(".video-player-container")
         if document.fullscreenElement == null:
@@ -250,7 +390,7 @@ in script:
             document.exitFullscreen()
             call showToast with "Exited Fullscreen Player"
 
-    # Video Timeline Scrubber Loop
+    # ── TIMELINE SCRUBBER & CHAPTERS ──
     every 1 second:
         if isPlaying == true:
             if playSeconds < totalVideoSeconds:
@@ -263,7 +403,26 @@ in script:
                 if fillBar != null:
                     fillBar.style.width = pct + "%"
 
-    # Subscribe Button Toggle
+    when "ch-1" is clicked:
+        set playSeconds = 0
+        call showToast with "📍 Chapter: 00:00 • Introduction"
+
+    when "ch-2" is clicked:
+        set playSeconds = 255
+        call showToast with "📍 Chapter: 04:15 • HikariCP & Oracle Setup"
+
+    when "ch-3" is clicked:
+        set playSeconds = 570
+        call showToast with "📍 Chapter: 09:30 • ACID Transactions"
+
+    when "ch-4" is clicked:
+        set playSeconds = 840
+        call showToast with "📍 Chapter: 14:00 • High-Throughput Benchmarks"
+
+    # ── SOCIAL ACTIONS (LIKE, SUBSCRIBE, JOIN, SHARE, CLIP) ──
+    when "btn-join" is clicked:
+        call showToast with "⭐ Welcome! Channel Membership perks unlocked."
+
     when "btn-subscribe" is clicked:
         create sBtn as document.getElementById("btn-subscribe")
         if isSubscribed == true:
@@ -271,15 +430,14 @@ in script:
             sBtn.innerText = "Subscribe"
             sBtn.style.background = "#ffffff"
             sBtn.style.color = "#0f0f0f"
-            call showToast with "Unsubscribed from channel"
+            call showToast with "Unsubscribed from Spandan Prayas Patra"
         else:
             set isSubscribed = true
             sBtn.innerText = "Subscribed ✓"
             sBtn.style.background = "#272727"
             sBtn.style.color = "#aaaaaa"
-            call showToast with "🔔 Subscribed! Notifications turned on."
+            call showToast with "🔔 Subscribed to Spandan Prayas Patra!"
 
-    # Like Button Toggle
     when "btn-like" is clicked:
         create lBtn as document.getElementById("btn-like")
         if isLiked == true:
@@ -295,18 +453,80 @@ in script:
     when "btn-dislike" is clicked:
         call showToast with "Disliked video"
 
-    # Share Button
     when "btn-share" is clicked:
-        call showToast with "🔗 Video link copied to clipboard!"
+        create mShare as document.getElementById("modal-share")
+        if mShare != null:
+            mShare.style.display = "flex"
 
-    # Download Button
+    when "btn-close-share" is clicked:
+        create mShare as document.getElementById("modal-share")
+        if mShare != null:
+            mShare.style.display = "none"
+
+    when "btn-copy-share" is clicked:
+        create mShare as document.getElementById("modal-share")
+        if mShare != null:
+            mShare.style.display = "none"
+        call showToast with "🔗 Link copied to clipboard!"
+
     when "btn-download" is clicked:
-        call showToast with "⬇ Downloading 1080p offline stream..."
+        call showToast with "⬇ Downloading 1080p stream for offline playback..."
+
+    when "btn-clip" is clicked:
+        call showToast with "✂ Create Clip dialog opened"
 
     when "btn-more" is clicked:
-        call showToast with "⋯ More options: Clip, Save to Playlist, Report"
+        call showToast with "⋯ Options: Save to Playlist, Report, Transcript"
 
-    # Real-Time Comment Submission in Pure Enlgs
+    # ── SHORTS REEL CONTROLS ──
+    when "btn-shorts-next" is clicked:
+        create nextIdx as (currentShortIndex + 1) % shortsList.length
+        call renderActiveShort with nextIdx
+        call showToast with "Next Short loaded"
+
+    when "btn-shorts-prev" is clicked:
+        create prevIdx as (currentShortIndex - 1 + shortsList.length) % shortsList.length
+        call renderActiveShort with prevIdx
+        call showToast with "Previous Short loaded"
+
+    when "btn-shorts-like" is clicked:
+        create sLike as document.getElementById("shorts-like-count")
+        if isShortsLiked == true:
+            set isShortsLiked = false
+            if sLike != null:
+                sLike.textContent = "245K"
+        else:
+            set isShortsLiked = true
+            if sLike != null:
+                sLike.textContent = "245.1K"
+            call showToast with "Liked Short!"
+
+    when "btn-shorts-dislike" is clicked:
+        call showToast with "Disliked Short"
+
+    when "btn-shorts-comment" is clicked:
+        call showToast with "💬 Opening Shorts Comments (4.2K)"
+
+    when "btn-shorts-share" is clicked:
+        call showToast with "🔗 Shorts link copied!"
+
+    when "btn-shorts-sub" is clicked:
+        create sBtn as document.getElementById("btn-shorts-sub")
+        if sBtn != null:
+            if sBtn.innerText == "Subscribe":
+                sBtn.innerText = "Subscribed ✓"
+                sBtn.style.background = "#272727"
+                sBtn.style.color = "#aaaaaa"
+                call showToast with "Subscribed to Creator!"
+            else:
+                sBtn.innerText = "Subscribe"
+                sBtn.style.background = "#ffffff"
+                sBtn.style.color = "#0f0f0f"
+
+    when "btn-shorts-mute" is clicked:
+        call showToast with "Shorts audio toggled"
+
+    # ── REAL-TIME COMMENTS IN PURE ENLGS ──
     to do postComment:
         create cText as get value of "new-comment-input"
         if cText == "":
@@ -329,6 +549,13 @@ in script:
 
     when "btn-cancel-comment" is clicked:
         set value of "new-comment-input" to ""
+
+    # Clear History
+    when "btn-clear-history" is clicked:
+        create hContainer as document.getElementById("history-list-container")
+        if hContainer != null:
+            hContainer.innerHTML = "<p style='color: #888; padding: 20px;'>Watch history is empty.</p>"
+        call showToast with "🗑️ Watch History Cleared"
 
     # Theme Toggle
     when "btn-theme" is clicked:

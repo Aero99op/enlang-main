@@ -9,11 +9,13 @@
   --yt-bg: #0f0f0f;
   --yt-header-bg: #0f0f0f;
   --yt-surface: #272727;
+  --yt-surface-hover: #383838;
   --yt-hover: rgba(255, 255, 255, 0.1);
   --yt-text: #f1f1f1;
   --yt-muted: #aaaaaa;
   --yt-red: #ff0000;
   --yt-blue: #3ea6ff;
+  --yt-border: rgba(255, 255, 255, 0.1);
 }
 
 body {
@@ -21,7 +23,7 @@ body {
   padding: 0px;
   background: var(--yt-bg);
   color: var(--yt-text);
-  font-family: Roboto, Arial, sans-serif;
+  font-family: YouTube Sans, Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
   min-height: 100vh;
   line-height: 1.4;
   overflow-x: hidden;
@@ -81,7 +83,7 @@ body {
 
 .yt-logo-text {
   font-weight: 800;
-  font-size: 18px;
+  font-size: 19px;
   letter-spacing: -0.5;
   color: var(--yt-text);
 }
@@ -171,7 +173,7 @@ body {
 }
 
 .yt-btn-create:hover {
-  background: var(--yt-hover);
+  background: var(--yt-surface-hover);
 }
 
 .notif-badge {
@@ -196,11 +198,12 @@ body {
   border-radius: 17px;
   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
   color: #ffffff;
-  font-weight: 700;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .yt-main-layout {
@@ -290,7 +293,7 @@ body {
 
 .yt-content {
   flex: 1;
-  padding: 16px 24px;
+  padding: 16px 24px 60px 24px;
   box-sizing: border-box;
   overflow-y: auto;
 }
@@ -317,7 +320,7 @@ body {
 }
 
 .chip:hover {
-  background: var(--yt-hover);
+  background: var(--yt-surface-hover);
 }
 
 .video-grid {
@@ -370,7 +373,7 @@ body {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
@@ -426,12 +429,270 @@ body {
   color: var(--yt-muted);
 }
 
+.shorts-shelf {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.shorts-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.shorts-icon {
+  font-size: 22px;
+  color: var(--yt-red);
+}
+
+.shorts-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0px;
+}
+
+.shorts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.short-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.short-card:hover {
+  transform: scale(1.03);
+}
+
+.short-thumb {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  border-radius: 14px;
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.short-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.short-views {
+  margin: 0px;
+  font-size: 12px;
+  color: var(--yt-muted);
+}
+
 #view-feed {
   display: block;
 }
 
+#view-shorts {
+  display: none;
+}
+
 #view-watch {
   display: none;
+}
+
+#view-subs {
+  display: none;
+}
+
+#view-library {
+  display: none;
+}
+
+.shorts-reel-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+  min-height: 80vh;
+  padding: 20px 0;
+}
+
+.shorts-reel-viewport {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.shorts-video-box {
+  width: 380px;
+  height: 660px;
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  box-sizing: border-box;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.shorts-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.shorts-brand-tag {
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.shorts-ctrl-icon {
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  color: #ffffff;
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  cursor: pointer;
+}
+
+.shorts-center-play {
+  align-self: center;
+  cursor: pointer;
+}
+
+.shorts-play-pulse {
+  font-size: 54px;
+  color: #ffffff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+}
+
+.shorts-bottom-overlay {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shorts-creator-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shorts-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: #ffffff;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shorts-username {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.btn-shorts-sub {
+  background: #ffffff;
+  color: #0f0f0f;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shorts-desc {
+  margin: 0px;
+  font-size: 13px;
+  color: #f1f1f1;
+  line-height: 1.4;
+}
+
+.shorts-music-title {
+  font-size: 12px;
+  color: #e5e7eb;
+}
+
+.shorts-action-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.shorts-rail-btn {
+  background: var(--yt-surface);
+  border: none;
+  color: var(--yt-text);
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: background 0.2s ease;
+}
+
+.shorts-rail-btn:hover {
+  background: var(--yt-surface-hover);
+}
+
+.rail-count {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.shorts-sound-disc {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background: radial-gradient(circle, #3b82f6 30%, #1e1b4b 70%);
+  border: 2px solid #ffffff;
+  cursor: pointer;
+}
+
+.shorts-nav-arrows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shorts-arrow-btn {
+  background: var(--yt-surface);
+  border: none;
+  color: var(--yt-text);
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .watch-layout {
@@ -446,13 +707,31 @@ body {
   gap: 16px;
 }
 
+.ambient-glow-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.ambient-backlight {
+  position: absolute;
+  top: -20;
+  left: -20;
+  right: -20;
+  bottom: -20;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(15, 15, 15, 0) 75%);
+  filter: blur(40px);
+  z-index: 0;
+  pointer-events: none;
+}
+
 .video-player-container {
+  position: relative;
+  z-index: 1;
   width: 100%;
   aspect-ratio: 16 / 9;
   background: #000000;
   border-radius: 16px;
   overflow: hidden;
-  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -498,10 +777,10 @@ body {
 
 .player-controls {
   height: 48px;
-  background: rgba(15, 15, 15, 0.9);
+  background: rgba(15, 15, 15, 0.95);
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 0 16px;
   box-sizing: border-box;
 }
@@ -510,15 +789,28 @@ body {
   background: transparent;
   border: none;
   color: var(--yt-text);
-  font-size: 16px;
+  font-size: 15px;
   cursor: pointer;
   padding: 4px;
+  font-weight: 600;
+}
+
+.volume-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vol-slider {
+  width: 60px;
+  cursor: pointer;
 }
 
 .ctrl-time {
   font-family: monospace;
   font-size: 12px;
   color: var(--yt-muted);
+  white-space: nowrap;
 }
 
 .scrubber-bar {
@@ -583,6 +875,18 @@ body {
   color: var(--yt-muted);
 }
 
+.btn-join {
+  background: var(--yt-surface);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--yt-text);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 12px;
+}
+
 .btn-subscribe {
   background: #ffffff;
   color: #0f0f0f;
@@ -592,7 +896,7 @@ body {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  margin-left: 12px;
+  margin-left: 8px;
   transition: all 0.2s ease;
 }
 
@@ -652,6 +956,10 @@ body {
   transition: background 0.2s ease;
 }
 
+.btn-action:hover {
+  background: var(--yt-surface-hover);
+}
+
 .watch-description-box {
   background: var(--yt-surface);
   padding: 16px;
@@ -670,6 +978,42 @@ body {
 .desc-content {
   margin: 0px;
   color: #d1d5db;
+}
+
+.chapters-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chapters-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--yt-muted);
+  margin: 0 0 8px 0;
+  letter-spacing: 0.5;
+}
+
+.chapter-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chapter-btn {
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--yt-blue);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.chapter-btn:hover {
+  background: #2a2a2a;
 }
 
 .comments-container {
@@ -776,6 +1120,20 @@ body {
   gap: 14px;
 }
 
+.pinned {
+  background: rgba(59, 130, 246, 0.08);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.pinned-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--yt-blue);
+  margin-bottom: 4px;
+}
+
 .comment-body {
   flex: 1;
   display: flex;
@@ -793,6 +1151,15 @@ body {
   font-size: 13px;
   font-weight: 700;
   color: var(--yt-text);
+}
+
+.creator-pill {
+  background: var(--yt-surface);
+  color: var(--yt-text);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .comment-time {
@@ -823,16 +1190,35 @@ body {
   padding: 2px;
 }
 
+.creator-heart {
+  font-size: 11px;
+  color: #ec4899;
+  font-weight: 700;
+}
+
 .watch-secondary {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+.rec-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
 .rec-header {
-  margin: 0 0 4px 0;
+  margin: 0px;
   font-size: 16px;
   font-weight: 700;
+}
+
+.autoplay-label {
+  font-size: 12px;
+  color: var(--yt-muted);
+  margin-right: 6px;
 }
 
 .rec-list {
@@ -897,6 +1283,306 @@ body {
   color: var(--yt-muted);
 }
 
+.subs-feed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.subs-heading {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0px;
+}
+
+.subs-manage-link {
+  color: var(--yt-blue);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.library-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.library-heading {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-card {
+  display: flex;
+  gap: 16px;
+  padding: 12px;
+  background: var(--yt-surface);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.history-thumb {
+  width: 200px;
+  height: 112px;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.history-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-title {
+  margin: 0px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.history-sub {
+  margin: 0px;
+  font-size: 13px;
+  color: var(--yt-muted);
+}
+
+.history-time {
+  margin: 0px;
+  font-size: 12px;
+  color: var(--yt-muted);
+}
+
+.yt-modal {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+
+.modal-box {
+  width: 520px;
+  background: #212121;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-title {
+  margin: 0px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--yt-text);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.upload-drop-zone {
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.upload-icon-huge {
+  font-size: 48px;
+}
+
+.upload-hint {
+  margin: 0px;
+  color: var(--yt-muted);
+  font-size: 14px;
+}
+
+.modal-input {
+  width: 100%;
+  background: #121212;
+  border: 1px solid #383838;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--yt-text);
+  font-size: 14px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.modal-textarea {
+  width: 100%;
+  height: 80px;
+  background: #121212;
+  border: 1px solid #383838;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--yt-text);
+  font-size: 14px;
+  box-sizing: border-box;
+  outline: none;
+  resize: none;
+}
+
+.modal-footer {
+  padding: 12px 24px;
+  background: #181818;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.share-social-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.social-btn {
+  background: var(--yt-surface);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--yt-text);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.share-link-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.share-link-box {
+  flex: 1;
+  background: #121212;
+  border: 1px solid #383838;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--yt-text);
+  font-size: 13px;
+  outline: none;
+}
+
+.notif-dropdown {
+  position: fixed;
+  top: 56px;
+  right: 48px;
+  width: 380px;
+  background: #212121;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+  display: none;
+  flex-direction: column;
+  z-index: 2500;
+  overflow: hidden;
+}
+
+.notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notif-title {
+  margin: 0px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.notif-opt-btn {
+  background: transparent;
+  border: none;
+  color: var(--yt-muted);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.notif-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+}
+
+.unread {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.notif-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notif-msg {
+  margin: 0px;
+  font-size: 13px;
+  color: var(--yt-text);
+}
+
+.notif-time {
+  font-size: 11px;
+  color: var(--yt-blue);
+}
+
 .yt-toast {
   position: fixed;
   bottom: 24px;
@@ -909,7 +1595,7 @@ body {
   font-weight: 700;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
   display: none;
-  z-index: 2000;
+  z-index: 4000;
   transition: all 0.3s ease;
 }
     </style>
@@ -981,6 +1667,16 @@ body {
               <span class="channel-name">Three.js Creative 3D</span>
             </div>
           </div>
+          <div class="sidebar-divider">
+          </div>
+          <div class="sidebar-section">
+            <p class="sidebar-heading">EXPLORE</p>
+            <button id="nav-trending" class="sidebar-item">🔥 Trending</button>
+            <button id="nav-music" class="sidebar-item">🎵 Music</button>
+            <button id="nav-gaming" class="sidebar-item">🎮 Gaming</button>
+            <button id="nav-news" class="sidebar-item">📰 News</button>
+            <button id="nav-sports" class="sidebar-item">🏆 Sports</button>
+          </div>
         </aside>
         <main class="yt-content">
           <div id="view-feed" class="view-panel active">
@@ -995,6 +1691,7 @@ body {
               <button id="chip-edge" class="chip">Cloudflare Edge</button>
               <button id="chip-music" class="chip">Lo-Fi Music</button>
               <button id="chip-gaming" class="chip">Gaming</button>
+              <button id="chip-podcasts" class="chip">Podcasts</button>
             </div>
             <div class="video-grid" id="video-grid-container">
               <div class="video-card" id="card-video-1">
@@ -1008,7 +1705,7 @@ body {
                   <div class="channel-avatar">S</div>
                   <div class="video-details">
                     <h3 class="video-title">Building High-Throughput Microservices with Java & Spring Boot</h3>
-                    <p class="video-channel">Spandan Prayas Patra • Java Backend</p>
+                    <p class="video-channel">Spandan Prayas Patra • Java Backend ✓</p>
                     <p class="video-stats">245K views • 2 days ago</p>
                   </div>
                 </div>
@@ -1024,7 +1721,7 @@ body {
                   <div class="channel-avatar">E</div>
                   <div class="video-details">
                     <h3 class="video-title">How We Built Enlang: Compiling English to Python, JS & Flutter</h3>
-                    <p class="video-channel">Enlang Official • Compiler Engineering</p>
+                    <p class="video-channel">Enlang Official • Compiler Engineering ✓</p>
                     <p class="video-stats">512K views • 1 week ago</p>
                   </div>
                 </div>
@@ -1094,28 +1791,124 @@ body {
                 </div>
               </div>
             </div>
+            <div class="shorts-shelf">
+              <div class="shorts-header">
+                <span class="shorts-icon">⚡</span>
+                <h2 class="shorts-title">Shorts</h2>
+              </div>
+              <div class="shorts-grid">
+                <div class="short-card" id="short-1">
+                  <div class="short-thumb" style="background: linear-gradient(180deg, #be185d, #4c0519);">
+                    <span class="short-text">🔥 3 Insane Java 21 Performance Hacks</span>
+                  </div>
+                  <p class="short-views">3.2M views</p>
+                </div>
+                <div class="short-card" id="short-2">
+                  <div class="short-thumb" style="background: linear-gradient(180deg, #047857, #064e3b);">
+                    <span class="short-text">🚀 Write Clean Code in English with Enlang</span>
+                  </div>
+                  <p class="short-views">1.8M views</p>
+                </div>
+                <div class="short-card" id="short-3">
+                  <div class="short-thumb" style="background: linear-gradient(180deg, #6d28d9, #2e1065);">
+                    <span class="short-text">🌐 Cloudflare Workers under 1ms Latency</span>
+                  </div>
+                  <p class="short-views">950K views</p>
+                </div>
+                <div class="short-card" id="short-4">
+                  <div class="short-thumb" style="background: linear-gradient(180deg, #b45309, #451a03);">
+                    <span class="short-text">✨ Raymarched Black Hole in 30 Lines</span>
+                  </div>
+                  <p class="short-views">2.4M views</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="view-shorts" class="view-panel">
+            <div class="shorts-reel-container">
+              <div class="shorts-reel-viewport">
+                <div class="shorts-video-box" id="shorts-active-box" style="background: linear-gradient(180deg, #1e3a8a, #0f172a);">
+                  <div class="shorts-top-bar">
+                    <span class="shorts-brand-tag">⚡ YouTube Shorts</span>
+                    <button id="btn-shorts-mute" class="shorts-ctrl-icon">🔊</button>
+                  </div>
+                  <div class="shorts-center-play">
+                    <span class="shorts-play-pulse">▶</span>
+                  </div>
+                  <div class="shorts-bottom-overlay">
+                    <div class="shorts-creator-row">
+                      <div class="shorts-avatar">S</div>
+                      <span class="shorts-username">@SpandanPrayas</span>
+                      <button id="btn-shorts-sub" class="btn-shorts-sub">Subscribe</button>
+                    </div>
+                    <p id="shorts-title-text" class="shorts-desc">3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev</p>
+                    <div class="shorts-music-row">
+                      <span class="shorts-music-title">🎵 Spandan Original Audio • High Performance Remix</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="shorts-action-rail">
+                  <button id="btn-shorts-like" class="shorts-rail-btn">
+                    👍
+                    <span id="shorts-like-count" class="rail-count">245K</span>
+                  </button>
+                  <button id="btn-shorts-dislike" class="shorts-rail-btn">
+                    👎
+                    <span class="rail-count">Dislike</span>
+                  </button>
+                  <button id="btn-shorts-comment" class="shorts-rail-btn">
+                    💬
+                    <span class="rail-count">4.2K</span>
+                  </button>
+                  <button id="btn-shorts-share" class="shorts-rail-btn">
+                    ↗
+                    <span class="rail-count">Share</span>
+                  </button>
+                  <button id="btn-shorts-more" class="shorts-rail-btn">
+                    ⋯
+                    <span class="rail-count">More</span>
+                  </button>
+                  <div class="shorts-sound-disc" id="shorts-disc">
+                  </div>
+                </div>
+              </div>
+              <div class="shorts-nav-arrows">
+                <button id="btn-shorts-prev" class="shorts-arrow-btn">▲</button>
+                <button id="btn-shorts-next" class="shorts-arrow-btn">▼</button>
+              </div>
+            </div>
           </div>
           <div id="view-watch" class="view-panel">
             <div class="watch-layout">
               <div class="watch-primary">
-                <div class="video-player-container">
-                  <div class="player-screen" id="player-canvas">
-                    <div class="player-placeholder-content">
-                      <span class="play-huge-icon" id="play-overlay-icon">▶</span>
-                      <h2 id="active-player-title">Building High-Throughput Microservices with Java & Spring Boot</h2>
-                      <p class="player-badge-sub">Streaming in 1080p60 HD • Pure Enlang Runtime</p>
-                    </div>
+                <div class="ambient-glow-wrapper">
+                  <div class="ambient-backlight" id="player-ambient-light">
                   </div>
-                  <div class="player-controls">
-                    <button id="btn-player-play" class="ctrl-btn">▶</button>
-                    <span id="player-time-display" class="ctrl-time">04:15 / 18:45</span>
-                    <div class="scrubber-bar" id="scrubber-track">
-                      <div id="scrubber-progress" class="scrubber-fill" style="width: 25%;">
+                  <div class="video-player-container">
+                    <div class="player-screen" id="player-canvas">
+                      <div class="player-placeholder-content">
+                        <span class="play-huge-icon" id="play-overlay-icon">▶</span>
+                        <h2 id="active-player-title">Building High-Throughput Microservices with Java & Spring Boot</h2>
+                        <p class="player-badge-sub">Streaming in 1080p60 HD • Pure Enlang Runtime</p>
                       </div>
                     </div>
-                    <button id="btn-player-mute" class="ctrl-btn">🔊</button>
-                    <button id="btn-player-quality" class="ctrl-btn">⚙️ 1080p</button>
-                    <button id="btn-player-fullscreen" class="ctrl-btn">⛶</button>
+                    <div class="player-controls">
+                      <button id="btn-player-play" class="ctrl-btn">▶</button>
+                      <button id="btn-player-next" class="ctrl-btn">⏭</button>
+                      <div class="volume-group">
+                        <button id="btn-player-mute" class="ctrl-btn">🔊</button>
+                        <input type="range" id="volume-slider" min="0" max="100" value="80" class="vol-slider">
+                      </div>
+                      <span id="player-time-display" class="ctrl-time">04:15 / 18:45</span>
+                      <div class="scrubber-bar" id="scrubber-track">
+                        <div id="scrubber-progress" class="scrubber-fill" style="width: 25%;">
+                        </div>
+                      </div>
+                      <button id="btn-player-cc" class="ctrl-btn">CC</button>
+                      <button id="btn-player-speed" class="ctrl-btn">1x</button>
+                      <button id="btn-player-quality" class="ctrl-btn">⚙️ 1080p</button>
+                      <button id="btn-player-fullscreen" class="ctrl-btn">⛶</button>
+                    </div>
                   </div>
                 </div>
                 <div class="watch-header">
@@ -1127,6 +1920,7 @@ body {
                         <h4 id="watch-channel-name" class="channel-title">Spandan Prayas Patra</h4>
                         <p id="watch-sub-count" class="channel-subs">128K subscribers</p>
                       </div>
+                      <button id="btn-join" class="btn-join">Join</button>
                       <button id="btn-subscribe" class="btn-subscribe">Subscribe</button>
                     </div>
                     <div class="action-buttons-group">
@@ -1138,18 +1932,30 @@ body {
                       </div>
                       <button id="btn-share" class="btn-action">↗ Share</button>
                       <button id="btn-download" class="btn-action">⬇ Download</button>
+                      <button id="btn-clip" class="btn-action">✂ Clip</button>
                       <button id="btn-more" class="btn-action">⋯ More</button>
                     </div>
                   </div>
                 </div>
                 <div class="watch-description-box" id="desc-box">
-                  <p id="desc-stats" class="desc-stats">245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices</p>
+                  <p id="desc-stats" class="desc-stats">245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices #Enlang</p>
                   <p id="watch-desc-text" class="desc-content">In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.</p>
+                  <div class="chapters-section">
+                    <p class="chapters-title">TIMESTAMPS & CHAPTERS:</p>
+                    <div class="chapter-pill-list">
+                      <button id="ch-1" class="chapter-btn">00:00 • Introduction</button>
+                      <button id="ch-2" class="chapter-btn">04:15 • HikariCP & Oracle Setup</button>
+                      <button id="ch-3" class="chapter-btn">09:30 • ACID Transactions</button>
+                      <button id="ch-4" class="chapter-btn">14:00 • High-Throughput Benchmarks</button>
+                    </div>
+                  </div>
                 </div>
                 <div class="comments-container">
                   <div class="comments-header">
                     <h3 id="comments-count-header">328 Comments</h3>
-                    <span class="sort-tag">Sort by: Top Comments</span>
+                    <div class="sort-dropdown-wrap">
+                      <span id="btn-sort-comments" class="sort-tag">☰ Sort by: Top Comments</span>
+                    </div>
                   </div>
                   <div class="add-comment-row">
                     <div class="user-avatar-sm">S</div>
@@ -1162,6 +1968,26 @@ body {
                     </div>
                   </div>
                   <div class="comment-list" id="comment-list-container">
+                    <div class="comment-card pinned">
+                      <div class="user-avatar-sm" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6);">S</div>
+                      <div class="comment-body">
+                        <div class="comment-author-row">
+                          <span class="pinned-tag">📌 Pinned by Spandan Prayas Patra</span>
+                        </div>
+                        <div class="comment-author-row">
+                          <span class="comment-author-badge">@SpandanPrayas</span>
+                          <span class="creator-pill">Author ✓</span>
+                          <span class="comment-time">1 day ago</span>
+                        </div>
+                        <p class="comment-msg">Source code repository & benchmarks are live on GitHub! Drop your questions below and I will answer every single one.</p>
+                        <div class="comment-reactions">
+                          <button class="btn-react">👍 342</button>
+                          <button class="btn-react">👎</button>
+                          <span class="creator-heart">❤️ by Spandan Prayas Patra</span>
+                          <button class="btn-react">Reply</button>
+                        </div>
+                      </div>
+                    </div>
                     <div class="comment-card">
                       <div class="user-avatar-sm" style="background: #3b82f6;">A</div>
                       <div class="comment-body">
@@ -1196,7 +2022,13 @@ body {
                 </div>
               </div>
               <div class="watch-secondary">
-                <h3 class="rec-header">Up Next</h3>
+                <div class="rec-header-row">
+                  <h3 class="rec-header">Up Next</h3>
+                  <div class="autoplay-toggle-wrap">
+                    <span class="autoplay-label">Autoplay</span>
+                    <input type="checkbox" id="autoplay-check" class="autoplay-switch">
+                  </div>
+                </div>
                 <div class="rec-list">
                   <div class="rec-card" id="card-rec-2">
                     <div class="rec-thumb" style="background: linear-gradient(135deg, #065f46, #10b981);">
@@ -1232,7 +2064,149 @@ body {
               </div>
             </div>
           </div>
+          <div id="view-subs" class="view-panel">
+            <div class="subs-feed-header">
+              <h2 class="subs-heading">Latest from Your Subscriptions</h2>
+              <span class="subs-manage-link">Manage</span>
+            </div>
+            <div class="video-grid" id="subs-grid-container">
+              <div class="video-card" id="subs-card-1">
+                <div class="thumbnail-wrapper">
+                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
+                    <span class="thumb-text">☕ Java 21 & Spring Boot 3.2 Full Masterclass</span>
+                  </div>
+                  <span class="duration-badge">18:45</span>
+                </div>
+                <div class="video-meta">
+                  <div class="channel-avatar">S</div>
+                  <div class="video-details">
+                    <h3 class="video-title">Building High-Throughput Microservices with Java & Spring Boot</h3>
+                    <p class="video-channel">Spandan Prayas Patra</p>
+                    <p class="video-stats">245K views • 2 days ago</p>
+                  </div>
+                </div>
+              </div>
+              <div class="video-card" id="subs-card-2">
+                <div class="thumbnail-wrapper">
+                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #065f46, #10b981);">
+                    <span class="thumb-text">🪐 Enlang Compiler Architecture: Pure English Code</span>
+                  </div>
+                  <span class="duration-badge">24:10</span>
+                </div>
+                <div class="video-meta">
+                  <div class="channel-avatar">E</div>
+                  <div class="video-details">
+                    <h3 class="video-title">How We Built Enlang: Compiling English to Python, JS & Flutter</h3>
+                    <p class="video-channel">Enlang Official</p>
+                    <p class="video-stats">512K views • 1 week ago</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="view-library" class="view-panel">
+            <div class="library-header">
+              <h2 class="library-heading">Library & Watch History</h2>
+              <button id="btn-clear-history" class="btn-ghost">Clear History</button>
+            </div>
+            <div class="history-list" id="history-list-container">
+              <div class="history-card">
+                <div class="history-thumb" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
+                  <span class="duration-badge">18:45</span>
+                </div>
+                <div class="history-details">
+                  <h3 class="history-title">Building High-Throughput Microservices with Java & Spring Boot</h3>
+                  <p class="history-sub">Spandan Prayas Patra • 245K views</p>
+                  <p class="history-time">Watched today</p>
+                </div>
+              </div>
+              <div class="history-card">
+                <div class="history-thumb" style="background: linear-gradient(135deg, #065f46, #10b981);">
+                  <span class="duration-badge">24:10</span>
+                </div>
+                <div class="history-details">
+                  <h3 class="history-title">How We Built Enlang: Compiling English to Python, JS & Flutter</h3>
+                  <p class="history-sub">Enlang Official • 512K views</p>
+                  <p class="history-time">Watched yesterday</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </main>
+      </div>
+    </div>
+    <div id="modal-create" class="yt-modal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3 class="modal-title">Upload Video</h3>
+          <button id="btn-close-create" class="modal-close-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="upload-drop-zone">
+            <span class="upload-icon-huge">📁</span>
+            <p class="upload-hint">Drag and drop video files to upload</p>
+            <button id="btn-select-file" class="btn-primary">Select Files</button>
+          </div>
+          <div class="upload-form">
+            <input type="text" id="upload-title-input" placeholder="Title (e.g. Building Next.js Apps in Enlang)" class="modal-input">
+            <textarea id="upload-desc-input" placeholder="Tell viewers about your video..." class="modal-textarea">
+            </textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-cancel-upload" class="btn-ghost">Cancel</button>
+          <button id="btn-publish-video" class="btn-primary">Publish Video</button>
+        </div>
+      </div>
+    </div>
+    <div id="dropdown-notif" class="notif-dropdown">
+      <div class="notif-header">
+        <h4 class="notif-title">Notifications</h4>
+        <button class="notif-opt-btn">⚙️</button>
+      </div>
+      <div class="notif-list">
+        <div class="notif-item unread">
+          <div class="user-avatar-sm">S</div>
+          <div class="notif-content">
+            <p class="notif-msg">Spandan Prayas Patra uploaded: High-Throughput Microservices</p>
+            <span class="notif-time">2 hours ago</span>
+          </div>
+        </div>
+        <div class="notif-item unread">
+          <div class="user-avatar-sm">E</div>
+          <div class="notif-content">
+            <p class="notif-msg">Enlang Official posted: Enlang Mobile (.enlgm) is now live!</p>
+            <span class="notif-time">5 hours ago</span>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="user-avatar-sm">C</div>
+          <div class="notif-content">
+            <p class="notif-msg">Edge Architects replied to your comment</p>
+            <span class="notif-time">1 day ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="modal-share" class="yt-modal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3 class="modal-title">Share Video</h3>
+          <button id="btn-close-share" class="modal-close-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="share-social-grid">
+            <button class="social-btn">💬 WhatsApp</button>
+            <button class="social-btn">🐦 Twitter / X</button>
+            <button class="social-btn">📱 Reddit</button>
+            <button class="social-btn">💼 LinkedIn</button>
+            <button class="social-btn">✉️ Email</button>
+          </div>
+          <div class="share-link-row">
+            <input type="text" id="share-link-input" value="https://youtu.be/enlang-java-21" class="share-link-box" readonly="true">
+            <button id="btn-copy-share" class="btn-primary">Copy</button>
+          </div>
+        </div>
       </div>
     </div>
     <div id="yt-toast" class="yt-toast">
@@ -1248,15 +2222,23 @@ let isLiked = false;
 
 let currentVideoId = "1";
 
+let currentShortIndex = 0;
+
 let totalComments = 328;
 
 let playSeconds = 255;
 
 let totalVideoSeconds = 1125;
 
-console.log("▶ Initializing YouTube 1:1 Video Engine in Pure Enlang (.enlgs)...");
+let playbackSpeed = "1x";
 
-const videoCatalog = [ { id : "1" , title : "Building High-Throughput Microservices with Java & Spring Boot" , channel : "Spandan Prayas Patra" , subs : "128K subscribers" , views : "245,189 views • Premiered on Aug 15, 2026" , desc : "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." } , { id : "2" , title : "How We Built Enlang: Compiling English to Python, JS & Flutter" , channel : "Enlang Official" , subs : "512K subscribers" , views : "512,840 views • 1 week ago" , desc : "Behind the scenes of building the Enlang compiler ecosystem (.enlg, .enlgf, .enlgd, .enlgs, .enlgm) from scratch with zero boilerplate." } , { id : "3" , title : "Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages" , channel : "Edge Architects" , subs : "189K subscribers" , views : "189,420 views • 3 days ago" , desc : "Complete masterclass on building Cloudflare Workers and Pages with Zero 500 error architectures." } , { id : "4" , title : "Database Indexing, Stored Procedures & Connection Pooling" , channel : "Database Wizardry" , subs : "98K subscribers" , views : "98,120 views • 4 days ago" , desc : "MySQL and Oracle optimization guide for enterprise database architects." } , { id : "5" , title : "Procedural Corona Glows & Raymarched Moon Craters in WebGL" , channel : "Creative Coding 3D" , subs : "340K subscribers" , views : "340,900 views • 5 days ago" , desc : "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL." } , { id : "6" , title : "Build Android & iOS Flutter Apps with Pure English Sentences" , channel : "Mobile Mastery" , subs : "420K subscribers" , views : "420,150 views • 6 days ago" , desc : "Building native Flutter apps using Enlang Mobile (.enlgm) with 1:1 Dart compilation." } ];
+let isShortsLiked = false;
+
+console.log("▶ Initializing YouTube 1:1 Complete Platform in Pure Enlang (.enlgs)...");
+
+const videoCatalog = [ { id : "1" , title : "Building High-Throughput Microservices with Java & Spring Boot" , channel : "Spandan Prayas Patra" , subs : "128K subscribers" , views : "245,189 views • Premiered on Aug 15, 2026" , desc : "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." , ambient : "rgba(59, 130, 246, 0.3)" } , { id : "2" , title : "How We Built Enlang: Compiling English to Python, JS & Flutter" , channel : "Enlang Official" , subs : "512K subscribers" , views : "512,840 views • 1 week ago" , desc : "Behind the scenes of building the Enlang compiler ecosystem (.enlg, .enlgf, .enlgd, .enlgs, .enlgm) from scratch with zero boilerplate." , ambient : "rgba(16, 185, 129, 0.3)" } , { id : "3" , title : "Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages" , channel : "Edge Architects" , subs : "189K subscribers" , views : "189,420 views • 3 days ago" , desc : "Complete masterclass on building Cloudflare Workers and Pages with Zero 500 error architectures." , ambient : "rgba(236, 72, 153, 0.3)" } , { id : "4" , title : "Database Indexing, Stored Procedures & Connection Pooling" , channel : "Database Wizardry" , subs : "98K subscribers" , views : "98,120 views • 4 days ago" , desc : "MySQL and Oracle optimization guide for enterprise database architects." , ambient : "rgba(249, 115, 22, 0.3)" } , { id : "5" , title : "Procedural Corona Glows & Raymarched Moon Craters in WebGL" , channel : "Creative Coding 3D" , subs : "340K subscribers" , views : "340,900 views • 5 days ago" , desc : "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL." , ambient : "rgba(99, 102, 241, 0.3)" } , { id : "6" , title : "Build Android & iOS Flutter Apps with Pure English Sentences" , channel : "Mobile Mastery" , subs : "420K subscribers" , views : "420,150 views • 6 days ago" , desc : "Building native Flutter apps using Enlang Mobile (.enlgm) with 1:1 Dart compilation." , ambient : "rgba(20, 184, 166, 0.3)" } ];
+
+const shortsList = [ { title : "🔥 3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev" , author : "@SpandanPrayas" , audio : "🎵 Spandan Original Audio • High Performance Remix" , views : "3.2M" , bg : "linear-gradient(180deg, #1e3a8a, #0f172a)" } , { title : "🚀 Write Clean Code in English with Enlang! Zero boilerplate #Enlang #Compilers" , author : "@EnlangOfficial" , audio : "🎵 Enlang Sound Studio • Compiler Waves" , views : "1.8M" , bg : "linear-gradient(180deg, #047857, #064e3b)" } , { title : "🌐 Cloudflare Workers under 1ms Latency around the world #Edge #Cloudflare" , author : "@EdgeArchitects" , audio : "🎵 Ultra Edge Lo-Fi Beat" , views : "950K" , bg : "linear-gradient(180deg, #6d28d9, #2e1065)" } , { title : "✨ Raymarched Black Hole in 30 Lines of WebGL Shader #Threejs #GLSL" , author : "@CreativeCoding3D" , audio : "🎵 Cosmic Raymarch Audio" , views : "2.4M" , bg : "linear-gradient(180deg, #b45309, #451a03)" } ];
 
 function showToast(message) {
   let toastEl = document.getElementById ( "yt-toast" );
@@ -1280,6 +2262,86 @@ function formatDuration(secs) {
   return mStr + ":" + sStr;
 }
 
+function hideAllViews() {
+  let pFeed = document.getElementById ( "view-feed" );
+  let pShorts = document.getElementById ( "view-shorts" );
+  let pWatch = document.getElementById ( "view-watch" );
+  let pSubs = document.getElementById ( "view-subs" );
+  let pLib = document.getElementById ( "view-library" );
+  if (pFeed != null) {
+    pFeed.style.display = "none";
+  }
+  if (pShorts != null) {
+    pShorts.style.display = "none";
+  }
+  if (pWatch != null) {
+    pWatch.style.display = "none";
+  }
+  if (pSubs != null) {
+    pSubs.style.display = "none";
+  }
+  if (pLib != null) {
+    pLib.style.display = "none";
+  }
+}
+
+function openHomeFeed() {
+  hideAllViews();
+  let pFeed = document.getElementById ( "view-feed" );
+  if (pFeed != null) {
+    pFeed.style.display = "block";
+  }
+  window.scrollTo ( 0 , 0 );
+  showToast("🏠 YouTube Home Feed");
+}
+
+function openShortsReel() {
+  hideAllViews();
+  let pShorts = document.getElementById ( "view-shorts" );
+  if (pShorts != null) {
+    pShorts.style.display = "block";
+  }
+  window.scrollTo ( 0 , 0 );
+  renderActiveShort(0);
+  showToast("⚡ YouTube Shorts Reel active");
+}
+
+function openSubsFeed() {
+  hideAllViews();
+  let pSubs = document.getElementById ( "view-subs" );
+  if (pSubs != null) {
+    pSubs.style.display = "block";
+  }
+  window.scrollTo ( 0 , 0 );
+  showToast("📺 Subscriptions Feed");
+}
+
+function openLibrary() {
+  hideAllViews();
+  let pLib = document.getElementById ( "view-library" );
+  if (pLib != null) {
+    pLib.style.display = "block";
+  }
+  window.scrollTo ( 0 , 0 );
+  showToast("📁 Library & Watch History");
+}
+
+function renderActiveShort(idx) {
+  currentShortIndex = idx;
+  let s = shortsList [ idx ];
+  if (s == null) {
+    return;
+  }
+  let sBox = document.getElementById ( "shorts-active-box" );
+  if (sBox != null) {
+    sBox.style.background = s.bg;
+  }
+  let sDesc = document.getElementById ( "shorts-title-text" );
+  if (sDesc != null) {
+    sDesc.textContent = s.title;
+  }
+}
+
 function openWatchPage(vidId) {
   currentVideoId = vidId;
   let v = videoCatalog.find ( function ( item ) { return item.id == vidId } );
@@ -1292,32 +2354,20 @@ function openWatchPage(vidId) {
   (document.getElementById("watch-sub-count") || document.querySelector("watch-sub-count")).textContent = v.subs;
   (document.getElementById("watch-desc-text") || document.querySelector("watch-desc-text")).textContent = v.desc;
   (document.getElementById("desc-stats") || document.querySelector("desc-stats")).textContent = v.views;
-  let fPanel = document.getElementById ( "view-feed" );
-  let wPanel = document.getElementById ( "view-watch" );
-  if (fPanel != null) {
-    fPanel.style.display = "none";
+  let ambientEl = document.getElementById ( "player-ambient-light" );
+  if (ambientEl != null) {
+    ambientEl.style.background = "radial-gradient(circle, " + v.ambient + " 0%, rgba(15, 15, 15, 0) 75%)";
   }
-  if (wPanel != null) {
-    wPanel.style.display = "block";
+  hideAllViews();
+  let pWatch = document.getElementById ( "view-watch" );
+  if (pWatch != null) {
+    pWatch.style.display = "block";
   }
   window.scrollTo ( 0 , 0 );
   isPlaying = true;
   (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "⏸";
   playSeconds = 0;
   showToast("▶ Now Playing: " + v.title);
-}
-
-function openHomeFeed() {
-  let fPanel = document.getElementById ( "view-feed" );
-  let wPanel = document.getElementById ( "view-watch" );
-  if (fPanel != null) {
-    fPanel.style.display = "block";
-  }
-  if (wPanel != null) {
-    wPanel.style.display = "none";
-  }
-  window.scrollTo ( 0 , 0 );
-  showToast("🏠 Back to YouTube Home");
 }
 
 (document.getElementById("card-video-1") || document.querySelector("card-video-1")).addEventListener('click', function(event) {
@@ -1356,6 +2406,30 @@ function openHomeFeed() {
   openWatchPage("5");
 });
 
+(document.getElementById("subs-card-1") || document.querySelector("subs-card-1")).addEventListener('click', function(event) {
+  openWatchPage("1");
+});
+
+(document.getElementById("subs-card-2") || document.querySelector("subs-card-2")).addEventListener('click', function(event) {
+  openWatchPage("2");
+});
+
+(document.getElementById("short-1") || document.querySelector("short-1")).addEventListener('click', function(event) {
+  openShortsReel();
+});
+
+(document.getElementById("short-2") || document.querySelector("short-2")).addEventListener('click', function(event) {
+  openShortsReel();
+});
+
+(document.getElementById("short-3") || document.querySelector("short-3")).addEventListener('click', function(event) {
+  openShortsReel();
+});
+
+(document.getElementById("short-4") || document.querySelector("short-4")).addEventListener('click', function(event) {
+  openShortsReel();
+});
+
 (document.getElementById("nav-home") || document.querySelector("nav-home")).addEventListener('click', function(event) {
   openHomeFeed();
 });
@@ -1365,23 +2439,23 @@ function openHomeFeed() {
 });
 
 (document.getElementById("nav-shorts") || document.querySelector("nav-shorts")).addEventListener('click', function(event) {
-  showToast("⚡ Shorts feed loaded");
+  openShortsReel();
 });
 
 (document.getElementById("nav-subs") || document.querySelector("nav-subs")).addEventListener('click', function(event) {
-  showToast("📺 Subscriptions feed refreshed");
+  openSubsFeed();
 });
 
 (document.getElementById("nav-library") || document.querySelector("nav-library")).addEventListener('click', function(event) {
-  showToast("📁 Library loaded");
+  openLibrary();
 });
 
 (document.getElementById("nav-history") || document.querySelector("nav-history")).addEventListener('click', function(event) {
-  showToast("🕒 Watch history loaded");
+  openLibrary();
 });
 
 (document.getElementById("nav-your-videos") || document.querySelector("nav-your-videos")).addEventListener('click', function(event) {
-  showToast("🎬 Your uploaded videos");
+  showToast("🎬 Your uploaded videos list");
 });
 
 (document.getElementById("nav-watch-later") || document.querySelector("nav-watch-later")).addEventListener('click', function(event) {
@@ -1389,7 +2463,7 @@ function openHomeFeed() {
 });
 
 (document.getElementById("nav-liked") || document.querySelector("nav-liked")).addEventListener('click', function(event) {
-  showToast("👍 Liked videos list (86 videos)");
+  showToast("👍 Liked videos playlist (86 videos)");
 });
 
 (document.getElementById("sub-1") || document.querySelector("sub-1")).addEventListener('click', function(event) {
@@ -1408,6 +2482,26 @@ function openHomeFeed() {
   openWatchPage("5");
 });
 
+(document.getElementById("nav-trending") || document.querySelector("nav-trending")).addEventListener('click', function(event) {
+  showToast("🔥 Trending videos in India");
+});
+
+(document.getElementById("nav-music") || document.querySelector("nav-music")).addEventListener('click', function(event) {
+  showToast("🎵 YouTube Music feed");
+});
+
+(document.getElementById("nav-gaming") || document.querySelector("nav-gaming")).addEventListener('click', function(event) {
+  showToast("🎮 Top Gaming streams & clips");
+});
+
+(document.getElementById("nav-news") || document.querySelector("nav-news")).addEventListener('click', function(event) {
+  showToast("📰 Global Tech & World News");
+});
+
+(document.getElementById("nav-sports") || document.querySelector("nav-sports")).addEventListener('click', function(event) {
+  showToast("🏆 Live Sports & Highlights");
+});
+
 (document.getElementById("btn-sidebar-toggle") || document.querySelector("btn-sidebar-toggle")).addEventListener('click', function(event) {
   let sb = document.getElementById ( "yt-sidebar" );
   if (sb != null) {
@@ -1421,19 +2515,56 @@ function openHomeFeed() {
 });
 
 (document.getElementById("btn-create") || document.querySelector("btn-create")).addEventListener('click', function(event) {
-  showToast("＋ Upload video dialog opened");
+  let mCreate = document.getElementById ( "modal-create" );
+  if (mCreate != null) {
+    mCreate.style.display = "flex";
+  }
+});
+
+(document.getElementById("btn-close-create") || document.querySelector("btn-close-create")).addEventListener('click', function(event) {
+  let mCreate = document.getElementById ( "modal-create" );
+  if (mCreate != null) {
+    mCreate.style.display = "none";
+  }
+});
+
+(document.getElementById("btn-cancel-upload") || document.querySelector("btn-cancel-upload")).addEventListener('click', function(event) {
+  let mCreate = document.getElementById ( "modal-create" );
+  if (mCreate != null) {
+    mCreate.style.display = "none";
+  }
+});
+
+(document.getElementById("btn-publish-video") || document.querySelector("btn-publish-video")).addEventListener('click', function(event) {
+  let uTitle = (document.getElementById("upload-title-input") || document.querySelector("upload-title-input")).value;
+  if (uTitle == "") {
+    uTitle = "New Enlang Video by Spandan Prayas Patra";
+  }
+  let mCreate = document.getElementById ( "modal-create" );
+  if (mCreate != null) {
+    mCreate.style.display = "none";
+  }
+  showToast("🚀 Video Published: " + uTitle);
 });
 
 (document.getElementById("btn-notif") || document.querySelector("btn-notif")).addEventListener('click', function(event) {
-  showToast("🔔 3 new notifications from Spandan & Enlang");
+  let dNotif = document.getElementById ( "dropdown-notif" );
+  if (dNotif != null) {
+    if (dNotif.style.display == "flex") {
+      dNotif.style.display = "none";
+    }
+    else {
+      dNotif.style.display = "flex";
+    }
+  }
 });
 
 (document.getElementById("btn-voice") || document.querySelector("btn-voice")).addEventListener('click', function(event) {
-  showToast("🎙️ Listening... Say something to search");
+  showToast("🎙️ Listening... Speak to search YouTube");
 });
 
 (document.getElementById("user-profile") || document.querySelector("user-profile")).addEventListener('click', function(event) {
-  showToast("👤 Signed in as Spandan Prayas Patra");
+  showToast("👤 Signed in as Spandan Prayas Patra (Creator)");
 });
 
 (document.getElementById("btn-search") || document.querySelector("btn-search")).addEventListener('click', function(event) {
@@ -1446,7 +2577,7 @@ function openHomeFeed() {
 });
 
 (document.getElementById("chip-all") || document.querySelector("chip-all")).addEventListener('click', function(event) {
-  showToast("Category: All videos");
+  showToast("Showing All categories");
 });
 
 (document.getElementById("chip-coding") || document.querySelector("chip-coding")).addEventListener('click', function(event) {
@@ -1485,6 +2616,10 @@ function openHomeFeed() {
   showToast("Category: Gaming");
 });
 
+(document.getElementById("chip-podcasts") || document.querySelector("chip-podcasts")).addEventListener('click', function(event) {
+  showToast("Category: Podcasts");
+});
+
 (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).addEventListener('click', function(event) {
   if (isPlaying == true) {
     isPlaying = false;
@@ -1496,6 +2631,10 @@ function openHomeFeed() {
     (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "⏸";
     showToast("▶ Video playing");
   }
+});
+
+(document.getElementById("btn-player-next") || document.querySelector("btn-player-next")).addEventListener('click', function(event) {
+  openWatchPage("2");
 });
 
 (document.getElementById("player-canvas") || document.querySelector("player-canvas")).addEventListener('click', function(event) {
@@ -1517,6 +2656,29 @@ function openHomeFeed() {
     (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).textContent = "🔇";
     showToast("Audio muted");
   }
+});
+
+(document.getElementById("btn-player-speed") || document.querySelector("btn-player-speed")).addEventListener('click', function(event) {
+  let sBtn = document.getElementById ( "btn-player-speed" );
+  if (playbackSpeed == "1x") {
+    playbackSpeed = "1.5x";
+  }
+  else {
+    if (playbackSpeed == "1.5x") {
+      playbackSpeed = "2x";
+    }
+    else {
+      playbackSpeed = "1x";
+    }
+  }
+  if (sBtn != null) {
+    sBtn.innerText = playbackSpeed;
+  }
+  showToast("⚡ Playback Speed: " + playbackSpeed);
+});
+
+(document.getElementById("btn-player-cc") || document.querySelector("btn-player-cc")).addEventListener('click', function(event) {
+  showToast("📝 Closed Captions: English (Auto-generated)");
 });
 
 (document.getElementById("btn-player-quality") || document.querySelector("btn-player-quality")).addEventListener('click', function(event) {
@@ -1553,6 +2715,30 @@ setInterval(function() {
   }
 }, 1000);
 
+(document.getElementById("ch-1") || document.querySelector("ch-1")).addEventListener('click', function(event) {
+  playSeconds = 0;
+  showToast("📍 Chapter: 00:00 • Introduction");
+});
+
+(document.getElementById("ch-2") || document.querySelector("ch-2")).addEventListener('click', function(event) {
+  playSeconds = 255;
+  showToast("📍 Chapter: 04:15 • HikariCP & Oracle Setup");
+});
+
+(document.getElementById("ch-3") || document.querySelector("ch-3")).addEventListener('click', function(event) {
+  playSeconds = 570;
+  showToast("📍 Chapter: 09:30 • ACID Transactions");
+});
+
+(document.getElementById("ch-4") || document.querySelector("ch-4")).addEventListener('click', function(event) {
+  playSeconds = 840;
+  showToast("📍 Chapter: 14:00 • High-Throughput Benchmarks");
+});
+
+(document.getElementById("btn-join") || document.querySelector("btn-join")).addEventListener('click', function(event) {
+  showToast("⭐ Welcome! Channel Membership perks unlocked.");
+});
+
 (document.getElementById("btn-subscribe") || document.querySelector("btn-subscribe")).addEventListener('click', function(event) {
   let sBtn = document.getElementById ( "btn-subscribe" );
   if (isSubscribed == true) {
@@ -1560,14 +2746,14 @@ setInterval(function() {
     sBtn.innerText = "Subscribe";
     sBtn.style.background = "#ffffff";
     sBtn.style.color = "#0f0f0f";
-    showToast("Unsubscribed from channel");
+    showToast("Unsubscribed from Spandan Prayas Patra");
   }
   else {
     isSubscribed = true;
     sBtn.innerText = "Subscribed ✓";
     sBtn.style.background = "#272727";
     sBtn.style.color = "#aaaaaa";
-    showToast("🔔 Subscribed! Notifications turned on.");
+    showToast("🔔 Subscribed to Spandan Prayas Patra!");
   }
 });
 
@@ -1591,15 +2777,99 @@ setInterval(function() {
 });
 
 (document.getElementById("btn-share") || document.querySelector("btn-share")).addEventListener('click', function(event) {
-  showToast("🔗 Video link copied to clipboard!");
+  let mShare = document.getElementById ( "modal-share" );
+  if (mShare != null) {
+    mShare.style.display = "flex";
+  }
+});
+
+(document.getElementById("btn-close-share") || document.querySelector("btn-close-share")).addEventListener('click', function(event) {
+  let mShare = document.getElementById ( "modal-share" );
+  if (mShare != null) {
+    mShare.style.display = "none";
+  }
+});
+
+(document.getElementById("btn-copy-share") || document.querySelector("btn-copy-share")).addEventListener('click', function(event) {
+  let mShare = document.getElementById ( "modal-share" );
+  if (mShare != null) {
+    mShare.style.display = "none";
+  }
+  showToast("🔗 Link copied to clipboard!");
 });
 
 (document.getElementById("btn-download") || document.querySelector("btn-download")).addEventListener('click', function(event) {
-  showToast("⬇ Downloading 1080p offline stream...");
+  showToast("⬇ Downloading 1080p stream for offline playback...");
+});
+
+(document.getElementById("btn-clip") || document.querySelector("btn-clip")).addEventListener('click', function(event) {
+  showToast("✂ Create Clip dialog opened");
 });
 
 (document.getElementById("btn-more") || document.querySelector("btn-more")).addEventListener('click', function(event) {
-  showToast("⋯ More options: Clip, Save to Playlist, Report");
+  showToast("⋯ Options: Save to Playlist, Report, Transcript");
+});
+
+(document.getElementById("btn-shorts-next") || document.querySelector("btn-shorts-next")).addEventListener('click', function(event) {
+  let nextIdx = ( currentShortIndex + 1 ) % shortsList.length;
+  renderActiveShort(nextIdx);
+  showToast("Next Short loaded");
+});
+
+(document.getElementById("btn-shorts-prev") || document.querySelector("btn-shorts-prev")).addEventListener('click', function(event) {
+  let prevIdx = ( currentShortIndex - 1 + shortsList.length ) % shortsList.length;
+  renderActiveShort(prevIdx);
+  showToast("Previous Short loaded");
+});
+
+(document.getElementById("btn-shorts-like") || document.querySelector("btn-shorts-like")).addEventListener('click', function(event) {
+  let sLike = document.getElementById ( "shorts-like-count" );
+  if (isShortsLiked == true) {
+    isShortsLiked = false;
+    if (sLike != null) {
+      sLike.textContent = "245K";
+    }
+  }
+  else {
+    isShortsLiked = true;
+    if (sLike != null) {
+      sLike.textContent = "245.1K";
+    }
+    showToast("Liked Short!");
+  }
+});
+
+(document.getElementById("btn-shorts-dislike") || document.querySelector("btn-shorts-dislike")).addEventListener('click', function(event) {
+  showToast("Disliked Short");
+});
+
+(document.getElementById("btn-shorts-comment") || document.querySelector("btn-shorts-comment")).addEventListener('click', function(event) {
+  showToast("💬 Opening Shorts Comments (4.2K)");
+});
+
+(document.getElementById("btn-shorts-share") || document.querySelector("btn-shorts-share")).addEventListener('click', function(event) {
+  showToast("🔗 Shorts link copied!");
+});
+
+(document.getElementById("btn-shorts-sub") || document.querySelector("btn-shorts-sub")).addEventListener('click', function(event) {
+  let sBtn = document.getElementById ( "btn-shorts-sub" );
+  if (sBtn != null) {
+    if (sBtn.innerText == "Subscribe") {
+      sBtn.innerText = "Subscribed ✓";
+      sBtn.style.background = "#272727";
+      sBtn.style.color = "#aaaaaa";
+      showToast("Subscribed to Creator!");
+    }
+    else {
+      sBtn.innerText = "Subscribe";
+      sBtn.style.background = "#ffffff";
+      sBtn.style.color = "#0f0f0f";
+    }
+  }
+});
+
+(document.getElementById("btn-shorts-mute") || document.querySelector("btn-shorts-mute")).addEventListener('click', function(event) {
+  showToast("Shorts audio toggled");
 });
 
 function postComment() {
@@ -1627,6 +2897,14 @@ function postComment() {
 
 (document.getElementById("btn-cancel-comment") || document.querySelector("btn-cancel-comment")).addEventListener('click', function(event) {
   (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value = "";
+});
+
+(document.getElementById("btn-clear-history") || document.querySelector("btn-clear-history")).addEventListener('click', function(event) {
+  let hContainer = document.getElementById ( "history-list-container" );
+  if (hContainer != null) {
+    hContainer.innerHTML = "<p style='color: #888; padding: 20px;'>Watch history is empty.</p>";
+  }
+  showToast("🗑️ Watch History Cleared");
 });
 
 (document.getElementById("btn-theme") || document.querySelector("btn-theme")).addEventListener('click', function(event) {
