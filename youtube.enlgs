@@ -79,7 +79,7 @@ in script:
         if pFeed != null:
             pFeed.style.display = "block"
         window.scrollTo(0, 0)
-        call renderGrid with masterCatalog
+        renderGrid(masterCatalog)
         call showToast with "🏠 YouTube Home Feed"
 
     # Open Shorts Reel View
@@ -89,7 +89,7 @@ in script:
         if pShorts != null:
             pShorts.style.display = "block"
         window.scrollTo(0, 0)
-        call renderActiveShort with 0
+        renderActiveShort(0)
         call showToast with "⚡ YouTube Shorts Reel active"
 
     # Open Subscriptions Feed
@@ -99,7 +99,7 @@ in script:
         if pSubs != null:
             pSubs.style.display = "block"
         window.scrollTo(0, 0)
-        call renderSubsGrid
+        renderSubsGrid()
         call showToast with "📺 Subscriptions Feed"
 
     # Open Library / History View
@@ -109,7 +109,7 @@ in script:
         if pLib != null:
             pLib.style.display = "block"
         window.scrollTo(0, 0)
-        call renderHistoryList
+        renderHistoryList()
         call showToast with "📁 Library & Watch History"
 
     # Render Active Short in Reel
@@ -174,7 +174,7 @@ in script:
             pWatch.style.display = "block"
 
         window.scrollTo(0, 0)
-        call renderRecommendations with vidId
+        renderRecommendations(vidId)
         call showToast with "▶ Playing: " + targetTitle
 
     # Render Recommendations in Watch View
@@ -187,9 +187,7 @@ in script:
                 create card as document.createElement("div")
                 card.className = "rec-card"
                 card.innerHTML = "<div class='rec-thumb'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='rec-details'><h4 class='rec-title'>" + item.title + "</h4><p class='rec-channel'>" + item.channel + " ✓</p><p class='rec-stats'>" + item.views + "</p></div>"
-                card.onclick = function() {
-                    openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar);
-                }
+                card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
                 recList.appendChild(card)
 
     # Render Subscriptions Feed
@@ -201,9 +199,7 @@ in script:
                 create card as document.createElement("div")
                 card.className = "video-card"
                 card.innerHTML = "<div class='thumbnail-wrapper'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='video-meta'><div class='channel-avatar'>" + item.avatar + "</div><div class='video-details'><h3 class='video-title'>" + item.title + "</h3><p class='video-channel'>" + item.channel + " ✓</p><p class='video-stats'>" + item.views + "</p></div></div>"
-                card.onclick = function() {
-                    openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar);
-                }
+                card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
                 sGrid.appendChild(card)
 
     # Render History List
@@ -216,9 +212,7 @@ in script:
                 create card as document.createElement("div")
                 card.className = "history-card"
                 card.innerHTML = "<div class='history-thumb'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='history-details'><h3 class='history-title'>" + item.title + "</h3><p class='history-sub'>" + item.channel + " • " + item.views + "</p><p class='history-time'>Watched recently</p></div>"
-                card.onclick = function() {
-                    openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar);
-                }
+                card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
                 hContainer.appendChild(card)
 
     # Render Dynamic Video Cards to Main Grid
@@ -231,9 +225,7 @@ in script:
                 card.className = "video-card"
                 card.id = "card-" + item.id
                 card.innerHTML = "<div class='thumbnail-wrapper'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='video-meta'><div class='channel-avatar'>" + (item.avatar || item.channel.charAt(0)) + "</div><div class='video-details'><h3 class='video-title'>" + item.title + "</h3><p class='video-channel'>" + item.channel + " ✓</p><p class='video-stats'>" + item.views + "</p></div></div>"
-                card.onclick = function() {
-                    openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar);
-                }
+                card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
                 grid.appendChild(card)
 
     # Category Filter Logic
@@ -245,9 +237,9 @@ in script:
         create statusDesc as document.getElementById("live-status-desc")
 
         if categoryName == "All":
-            create cAll as document.getElementById("chip-all")
-            if cAll != null:
-                cAll.classList.add("active")
+            create allChipElement as document.getElementById("chip-all")
+            if allChipElement != null:
+                allChipElement.classList.add("active")
             renderGrid(masterCatalog)
             if statusTitle != null:
                 statusTitle.textContent = "🔴 All YouTube Feed"
@@ -278,7 +270,7 @@ in script:
         fetch("https://www.youtube.com/youtubei/v1/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).then(function(res) { return res.json(); }).then(function(data) { var primary = data.contents && data.contents.twoColumnSearchResultsRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents; if (primary && primary.length > 0) { var items = []; var sectionContents = primary[0].itemSectionRenderer && primary[0].itemSectionRenderer.contents; if (sectionContents) { sectionContents.forEach(function(c) { if (c.videoRenderer && c.videoRenderer.videoId) { var vr = c.videoRenderer; var title = vr.title && vr.title.runs && vr.title.runs[0] ? vr.title.runs[0].text : "YouTube Video"; var ch = vr.ownerText && vr.ownerText.runs && vr.ownerText.runs[0] ? vr.ownerText.runs[0].text : "Creator"; var views = vr.viewCountText ? vr.viewCountText.simpleText : "100K views"; var dur = vr.lengthText ? vr.lengthText.simpleText : "10:00"; var snippet = vr.detailedMetadataSnippets && vr.detailedMetadataSnippets[0] && vr.detailedMetadataSnippets[0].snippetText && vr.detailedMetadataSnippets[0].snippetText.runs ? vr.detailedMetadataSnippets[0].snippetText.runs.map(function(r){ return r.text; }).join('') : title; items.push({ id: vr.videoId, title: title, channel: ch, views: views, duration: dur, desc: snippet, avatar: ch.charAt(0) }); } }); } if (items.length > 0) { renderGrid(items); if (statusTitle != null) { statusTitle.textContent = "🔍 Search Results: " + query; } if (statusDesc != null) { statusDesc.textContent = "Found " + items.length + " live YouTube videos from Innertube API"; } showToast("✨ Found " + items.length + " live YouTube videos!"); return; } } var localMatches = masterCatalog.filter(function(v) { return v.title.toLowerCase().includes(query.toLowerCase()) || v.channel.toLowerCase().includes(query.toLowerCase()) || v.desc.toLowerCase().includes(query.toLowerCase()); }); if (localMatches.length > 0) { renderGrid(localMatches); } else { renderGrid(masterCatalog); } }).catch(function(err) { var localMatches = masterCatalog.filter(function(v) { return v.title.toLowerCase().includes(query.toLowerCase()) || v.channel.toLowerCase().includes(query.toLowerCase()) || v.desc.toLowerCase().includes(query.toLowerCase()); }); renderGrid(localMatches.length > 0 ? localMatches : masterCatalog); });
 
     # Initial App Load: Render All Feed Cards
-    call renderGrid with masterCatalog
+    renderGrid(masterCatalog)
 
     # ── SIDEBAR NAVIGATION ──
     when "nav-home" is clicked:
@@ -606,12 +598,12 @@ in script:
     # ── SHORTS REEL CONTROLS ──
     when "btn-shorts-next" is clicked:
         create nextIdx as (currentShortIndex + 1) % shortsList.length
-        call renderActiveShort with nextIdx
+        renderActiveShort(nextIdx)
         call showToast with "Next Short loaded"
 
     when "btn-shorts-prev" is clicked:
         create prevIdx as (currentShortIndex - 1 + shortsList.length) % shortsList.length
-        call renderActiveShort with prevIdx
+        renderActiveShort(prevIdx)
         call showToast with "Previous Short loaded"
 
     when "btn-shorts-like" is clicked:
