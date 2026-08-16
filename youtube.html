@@ -2404,6 +2404,31 @@ function openWatchPage(vidId) {
   showToast("▶ Now Streaming: " + v.title);
 }
 
+function renderDynamicGrid(items) {
+  let grid = document.getElementById ( "video-grid-container" );
+  if (grid != null) {
+    grid.innerHTML = "";
+    for (const item of items) {
+      let card = document.createElement ( "div" );
+      card.className = "video-card";
+      card.id = "card-live-" + item.id;
+      card.innerHTML = "<div class='thumbnail-wrapper'><img src='" + item.thumb + "' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='video-meta'><div class='channel-avatar'>" + item.channel.charAt ( 0 ) + "</div><div class='video-details'><h3 class='video-title'>" + item.title + "</h3><p class='video-channel'>" + item.channel + " ✓</p><p class='video-stats'>" + item.views + "</p></div></div>";
+      card.onclick = function ( ) { openWatchPage ( item.id ) };
+      grid.appendChild ( card );
+    }
+  }
+}
+
+function renderCategoryFilter(categoryName) {
+  let filtered = liveVideoCatalog;
+  let mapped = filtered.map ( function ( v ) { return { id : v.id , title : v.title , channel : v.channel , views : v.views , duration : v.duration , thumb : "https://i.ytimg.com/vi/" + v.id + "/hqdefault.jpg" } } );
+  renderDynamicGrid ( mapped );
+  let statusSub = document.querySelector ( ".live-subtext" );
+  if (statusSub != null) {
+    statusSub.textContent = "Displaying YouTube feed for category: " + categoryName;
+  }
+}
+
 function searchLiveYouTube(query) {
   showToast("🔍 Fetching live YouTube feed for: " + query);
   let statusSub = document.querySelector ( ".live-subtext" );
@@ -2411,34 +2436,555 @@ function searchLiveYouTube(query) {
     statusSub.textContent = "Fetching live videos for: " + query + "...";
   }
   let payload = JSON.stringify ( { context : { client : { clientName : "WEB" , clientVersion : "2.20240101.01.00" , gl : "IN" , hl : "en" } } , query : query } );
-  fetch "https://www.youtube.com/youtubei/v1/search" with method "POST" and headers { "Content-Type": "application/json" } and body payload as json:
-  create primary as it.contents && it.contents.twoColumnSearchResultsRenderer && it.contents.twoColumnSearchResultsRenderer.primaryContents && it.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && it.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents
-  if (primary && primary.length > 0) {
-    let items = [ ];
-    let sectionContents = primary [ 0 ] .itemSectionRenderer && primary [ 0 ] .itemSectionRenderer.contents;
-    if (sectionContents) {
-      for (const c of sectionContents) {
-        if (c.videoRenderer && c.videoRenderer.videoId) {
-          let vr = c.videoRenderer;
-          let title = vr.title && vr.title.runs && vr.title.runs [ 0 ] ? vr.title.runs [ 0 ] .text : "YouTube Video";
-          let ch = vr.ownerText && vr.ownerText.runs && vr.ownerText.runs [ 0 ] ? vr.ownerText.runs [ 0 ] .text : "Creator";
-          let views = vr.viewCountText ? vr.viewCountText.simpleText : "100K views";
-          let dur = vr.lengthText ? vr.lengthText.simpleText : "10:00";
-          items.push ( { id : vr.videoId , title : title , channel : ch , views : views , duration : dur , thumb : "https://i.ytimg.com/vi/" + vr.videoId + "/hqdefault.jpg" } );
-        }
-      }
+  fetch("https://www.youtube.com/youtubei/v1/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).then(function(res) { return res.json(); }).then(function(data) { var primary = data.contents && data.contents.twoColumnSearchResultsRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents; if (primary && primary.length > 0) { var items = []; var sectionContents = primary[0].itemSectionRenderer && primary[0].itemSectionRenderer.contents; if (sectionContents) { sectionContents.forEach(function(c) { if (c.videoRenderer && c.videoRenderer.videoId) { var vr = c.videoRenderer; var title = vr.title && vr.title.runs && vr.title.runs[0] ? vr.title.runs[0].text : "YouTube Video"; var ch = vr.ownerText && vr.ownerText.runs && vr.ownerText.runs[0] ? vr.ownerText.runs[0].text : "Creator"; var views = vr.viewCountText ? vr.viewCountText.simpleText : "100K views"; var dur = vr.lengthText ? vr.lengthText.simpleText : "10:00"; items.push({ id: vr.videoId, title: title, channel: ch, views: views, duration: dur, thumb: "https://i.ytimg.com/vi/" + vr.videoId + "/hqdefault.jpg" }); } }); } if (items.length > 0) { renderDynamicGrid(items); if (statusSub != null) { statusSub.textContent = "Loaded " + items.length + " live YouTube videos for: " + query; } showToast("✨ Loaded " + items.length + " live YouTube videos!"); return; } } renderCategoryFilter(query); }).catch(function(err) { renderCategoryFilter(query); });
+}
+
+(document.getElementById("card-video-1") || document.querySelector("card-video-1")).addEventListener('click', function(event) {
+  openWatchPage("gJrjgg1KVL4");
+});
+
+(document.getElementById("card-video-2") || document.querySelector("card-video-2")).addEventListener('click', function(event) {
+  openWatchPage("dQw4w9WgXcQ");
+});
+
+(document.getElementById("card-video-3") || document.querySelector("card-video-3")).addEventListener('click', function(event) {
+  openWatchPage("8aGhZQkoFbQ");
+});
+
+(document.getElementById("card-video-4") || document.querySelector("card-video-4")).addEventListener('click', function(event) {
+  openWatchPage("HXV3zeRR3h4");
+});
+
+(document.getElementById("card-video-5") || document.querySelector("card-video-5")).addEventListener('click', function(event) {
+  openWatchPage("Q7AOvWpIVHU");
+});
+
+(document.getElementById("card-video-6") || document.querySelector("card-video-6")).addEventListener('click', function(event) {
+  openWatchPage("pTJJsmejUOQ");
+});
+
+(document.getElementById("card-rec-2") || document.querySelector("card-rec-2")).addEventListener('click', function(event) {
+  openWatchPage("dQw4w9WgXcQ");
+});
+
+(document.getElementById("card-rec-3") || document.querySelector("card-rec-3")).addEventListener('click', function(event) {
+  openWatchPage("8aGhZQkoFbQ");
+});
+
+(document.getElementById("card-rec-5") || document.querySelector("card-rec-5")).addEventListener('click', function(event) {
+  openWatchPage("Q7AOvWpIVHU");
+});
+
+(document.getElementById("subs-card-1") || document.querySelector("subs-card-1")).addEventListener('click', function(event) {
+  openWatchPage("gJrjgg1KVL4");
+});
+
+(document.getElementById("subs-card-2") || document.querySelector("subs-card-2")).addEventListener('click', function(event) {
+  openWatchPage("dQw4w9WgXcQ");
+});
+
+(document.getElementById("short-1") || document.querySelector("short-1")).addEventListener('click', function(event) {
+  openShortsReel();
+});
+
+(document.getElementById("short-2") || document.querySelector("short-2")).addEventListener('click', function(event) {
+  openShortsReel();
+});
+
+(document.getElementById("short-3") || document.querySelector("short-3")).addEventListener('click', function(event) {
+  openShortsReel();
+});
+
+(document.getElementById("short-4") || document.querySelector("short-4")).addEventListener('click', function(event) {
+  openShortsReel();
+});
+
+(document.getElementById("nav-home") || document.querySelector("nav-home")).addEventListener('click', function(event) {
+  openHomeFeed();
+});
+
+(document.getElementById("btn-logo") || document.querySelector("btn-logo")).addEventListener('click', function(event) {
+  openHomeFeed();
+});
+
+(document.getElementById("nav-shorts") || document.querySelector("nav-shorts")).addEventListener('click', function(event) {
+  openShortsReel();
+});
+
+(document.getElementById("nav-subs") || document.querySelector("nav-subs")).addEventListener('click', function(event) {
+  openSubsFeed();
+});
+
+(document.getElementById("nav-library") || document.querySelector("nav-library")).addEventListener('click', function(event) {
+  openLibrary();
+});
+
+(document.getElementById("nav-history") || document.querySelector("nav-history")).addEventListener('click', function(event) {
+  openLibrary();
+});
+
+(document.getElementById("nav-your-videos") || document.querySelector("nav-your-videos")).addEventListener('click', function(event) {
+  showToast("🎬 Your uploaded videos list");
+});
+
+(document.getElementById("nav-watch-later") || document.querySelector("nav-watch-later")).addEventListener('click', function(event) {
+  showToast("⏱️ Watch Later list (14 videos)");
+});
+
+(document.getElementById("nav-liked") || document.querySelector("nav-liked")).addEventListener('click', function(event) {
+  showToast("👍 Liked videos playlist (86 videos)");
+});
+
+(document.getElementById("sub-1") || document.querySelector("sub-1")).addEventListener('click', function(event) {
+  searchLiveYouTube("Java 21 Spring Boot");
+});
+
+(document.getElementById("sub-2") || document.querySelector("sub-2")).addEventListener('click', function(event) {
+  searchLiveYouTube("Enlang Compiler Architecture");
+});
+
+(document.getElementById("sub-3") || document.querySelector("sub-3")).addEventListener('click', function(event) {
+  searchLiveYouTube("Next.js 15 React 19");
+});
+
+(document.getElementById("sub-4") || document.querySelector("sub-4")).addEventListener('click', function(event) {
+  searchLiveYouTube("Three.js WebGL Shaders");
+});
+
+(document.getElementById("nav-trending") || document.querySelector("nav-trending")).addEventListener('click', function(event) {
+  searchLiveYouTube("Trending in India");
+});
+
+(document.getElementById("nav-music") || document.querySelector("nav-music")).addEventListener('click', function(event) {
+  searchLiveYouTube("Top Music Songs");
+});
+
+(document.getElementById("nav-gaming") || document.querySelector("nav-gaming")).addEventListener('click', function(event) {
+  searchLiveYouTube("Trending Gaming Gameplay");
+});
+
+(document.getElementById("nav-news") || document.querySelector("nav-news")).addEventListener('click', function(event) {
+  searchLiveYouTube("World Tech News");
+});
+
+(document.getElementById("nav-sports") || document.querySelector("nav-sports")).addEventListener('click', function(event) {
+  searchLiveYouTube("Cricket Highlights");
+});
+
+(document.getElementById("btn-sidebar-toggle") || document.querySelector("btn-sidebar-toggle")).addEventListener('click', function(event) {
+  let sb = document.getElementById ( "yt-sidebar" );
+  if (sb != null) {
+    if (sb.style.display == "none") {
+      sb.style.display = "flex";
     }
-    if (items.length > 0) {
-      renderDynamicGrid(items);
-      if (statusSub != null) {
-        statusSub.textContent = "Loaded " + items.length + " live YouTube videos for: " + query;
-      }
-      showToast("✨ Loaded " + items.length + " live YouTube videos!");
-      return;
+    else {
+      sb.style.display = "none";
     }
   }
-  renderCategoryFilter(query);
+});
+
+(document.getElementById("btn-create") || document.querySelector("btn-create")).addEventListener('click', function(event) {
+  let mCreate = document.getElementById ( "modal-create" );
+  if (mCreate != null) {
+    mCreate.style.display = "flex";
+  }
+});
+
+(document.getElementById("btn-close-create") || document.querySelector("btn-close-create")).addEventListener('click', function(event) {
+  let mCreate = document.getElementById ( "modal-create" );
+  if (mCreate != null) {
+    mCreate.style.display = "none";
+  }
+});
+
+(document.getElementById("btn-cancel-upload") || document.querySelector("btn-cancel-upload")).addEventListener('click', function(event) {
+  let mCreate = document.getElementById ( "modal-create" );
+  if (mCreate != null) {
+    mCreate.style.display = "none";
+  }
+});
+
+(document.getElementById("btn-publish-video") || document.querySelector("btn-publish-video")).addEventListener('click', function(event) {
+  let uTitle = (document.getElementById("upload-title-input") || document.querySelector("upload-title-input")).value;
+  if (uTitle == "") {
+    uTitle = "New Enlang Video by Spandan Prayas Patra";
+  }
+  let mCreate = document.getElementById ( "modal-create" );
+  if (mCreate != null) {
+    mCreate.style.display = "none";
+  }
+  showToast("🚀 Video Published: " + uTitle);
+});
+
+(document.getElementById("btn-notif") || document.querySelector("btn-notif")).addEventListener('click', function(event) {
+  let dNotif = document.getElementById ( "dropdown-notif" );
+  if (dNotif != null) {
+    if (dNotif.style.display == "flex") {
+      dNotif.style.display = "none";
+    }
+    else {
+      dNotif.style.display = "flex";
+    }
+  }
+});
+
+(document.getElementById("btn-voice") || document.querySelector("btn-voice")).addEventListener('click', function(event) {
+  showToast("🎙️ Listening... Speak to search YouTube");
+});
+
+(document.getElementById("user-profile") || document.querySelector("user-profile")).addEventListener('click', function(event) {
+  showToast("👤 Signed in as Spandan Prayas Patra (Creator)");
+});
+
+(document.getElementById("btn-search") || document.querySelector("btn-search")).addEventListener('click', function(event) {
+  let q = (document.getElementById("search-input") || document.querySelector("search-input")).value;
+  if (q == "") {
+    showToast("Please type a search query");
+    return;
+  }
+  searchLiveYouTube(q);
+});
+
+(document.getElementById("chip-all") || document.querySelector("chip-all")).addEventListener('click', function(event) {
+  searchLiveYouTube("Trending");
+});
+
+(document.getElementById("chip-coding") || document.querySelector("chip-coding")).addEventListener('click', function(event) {
+  searchLiveYouTube("Coding and AI Tutorials");
+});
+
+(document.getElementById("chip-java") || document.querySelector("chip-java")).addEventListener('click', function(event) {
+  searchLiveYouTube("Java 21 Spring Boot");
+});
+
+(document.getElementById("chip-spring") || document.querySelector("chip-spring")).addEventListener('click', function(event) {
+  searchLiveYouTube("Spring Boot Microservices");
+});
+
+(document.getElementById("chip-enlang") || document.querySelector("chip-enlang")).addEventListener('click', function(event) {
+  searchLiveYouTube("Compiler Engineering Enlang");
+});
+
+(document.getElementById("chip-sysdesign") || document.querySelector("chip-sysdesign")).addEventListener('click', function(event) {
+  searchLiveYouTube("System Design High Scale");
+});
+
+(document.getElementById("chip-next") || document.querySelector("chip-next")).addEventListener('click', function(event) {
+  searchLiveYouTube("Next.js Full Stack Tutorial");
+});
+
+(document.getElementById("chip-edge") || document.querySelector("chip-edge")).addEventListener('click', function(event) {
+  searchLiveYouTube("Cloudflare Pages and Workers");
+});
+
+(document.getElementById("chip-music") || document.querySelector("chip-music")).addEventListener('click', function(event) {
+  searchLiveYouTube("Lo-Fi Beats to Relax");
+});
+
+(document.getElementById("chip-gaming") || document.querySelector("chip-gaming")).addEventListener('click', function(event) {
+  searchLiveYouTube("Gaming Gameplay 2026");
+});
+
+(document.getElementById("chip-podcasts") || document.querySelector("chip-podcasts")).addEventListener('click', function(event) {
+  searchLiveYouTube("Tech Podcasts");
+});
+
+(document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).addEventListener('click', function(event) {
+  if (isPlaying == true) {
+    isPlaying = false;
+    (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "▶";
+    showToast("⏸ Stream paused");
+  }
+  else {
+    isPlaying = true;
+    (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "⏸";
+    showToast("▶ Stream playing");
+  }
+});
+
+(document.getElementById("btn-player-next") || document.querySelector("btn-player-next")).addEventListener('click', function(event) {
+  openWatchPage("dQw4w9WgXcQ");
+});
+
+(document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).addEventListener('click', function(event) {
+  let mBtn = document.getElementById ( "btn-player-mute" );
+  if (isMuted == true) {
+    isMuted = false;
+    (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).textContent = "🔊";
+    showToast("Audio unmuted (100%)");
+  }
+  else {
+    isMuted = true;
+    (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).textContent = "🔇";
+    showToast("Audio muted");
+  }
+});
+
+(document.getElementById("btn-player-speed") || document.querySelector("btn-player-speed")).addEventListener('click', function(event) {
+  let sBtn = document.getElementById ( "btn-player-speed" );
+  if (playbackSpeed == "1x") {
+    playbackSpeed = "1.5x";
+  }
+  else {
+    if (playbackSpeed == "1.5x") {
+      playbackSpeed = "2x";
+    }
+    else {
+      playbackSpeed = "1x";
+    }
+  }
+  if (sBtn != null) {
+    sBtn.innerText = playbackSpeed;
+  }
+  showToast("⚡ Playback Speed: " + playbackSpeed);
+});
+
+(document.getElementById("btn-player-cc") || document.querySelector("btn-player-cc")).addEventListener('click', function(event) {
+  showToast("📝 Closed Captions: English (Auto-generated)");
+});
+
+(document.getElementById("btn-player-quality") || document.querySelector("btn-player-quality")).addEventListener('click', function(event) {
+  showToast("⚙️ Stream Quality: 1080p60 Full HD");
+});
+
+(document.getElementById("btn-player-fullscreen") || document.querySelector("btn-player-fullscreen")).addEventListener('click', function(event) {
+  let pCont = document.querySelector ( ".video-player-container" );
+  if (document.fullscreenElement == null) {
+    if (pCont != null) {
+      pCont.requestFullscreen ( );
+      showToast("Entered Fullscreen Player");
+    }
+  }
+  else {
+    document.exitFullscreen ( );
+    showToast("Exited Fullscreen Player");
+  }
+});
+
+setInterval(function() {
+  if (isPlaying == true) {
+    if (playSeconds < totalVideoSeconds) {
+      playSeconds = playSeconds + 1;
+      let curStr = formatDuration ( playSeconds );
+      let totStr = formatDuration ( totalVideoSeconds );
+      (document.getElementById("player-time-display") || document.querySelector("player-time-display")).textContent = curStr + " / " + totStr;
+      let pct = ( playSeconds / totalVideoSeconds ) * 100;
+      let fillBar = document.getElementById ( "scrubber-progress" );
+      if (fillBar != null) {
+        fillBar.style.width = pct + "%";
+      }
+    }
+  }
+}, 1000);
+
+(document.getElementById("ch-1") || document.querySelector("ch-1")).addEventListener('click', function(event) {
+  playSeconds = 0;
+  showToast("📍 Chapter: 00:00 • Introduction");
+});
+
+(document.getElementById("ch-2") || document.querySelector("ch-2")).addEventListener('click', function(event) {
+  playSeconds = 255;
+  showToast("📍 Chapter: 04:15 • HikariCP & Oracle Setup");
+});
+
+(document.getElementById("ch-3") || document.querySelector("ch-3")).addEventListener('click', function(event) {
+  playSeconds = 570;
+  showToast("📍 Chapter: 09:30 • ACID Transactions");
+});
+
+(document.getElementById("ch-4") || document.querySelector("ch-4")).addEventListener('click', function(event) {
+  playSeconds = 840;
+  showToast("📍 Chapter: 14:00 • High-Throughput Benchmarks");
+});
+
+(document.getElementById("btn-join") || document.querySelector("btn-join")).addEventListener('click', function(event) {
+  showToast("⭐ Welcome! Channel Membership perks unlocked.");
+});
+
+(document.getElementById("btn-subscribe") || document.querySelector("btn-subscribe")).addEventListener('click', function(event) {
+  let sBtn = document.getElementById ( "btn-subscribe" );
+  if (isSubscribed == true) {
+    isSubscribed = false;
+    sBtn.innerText = "Subscribe";
+    sBtn.style.background = "#ffffff";
+    sBtn.style.color = "#0f0f0f";
+    showToast("Unsubscribed from Creator");
+  }
+  else {
+    isSubscribed = true;
+    sBtn.innerText = "Subscribed ✓";
+    sBtn.style.background = "#272727";
+    sBtn.style.color = "#aaaaaa";
+    showToast("🔔 Subscribed to Creator!");
+  }
+});
+
+(document.getElementById("btn-like") || document.querySelector("btn-like")).addEventListener('click', function(event) {
+  let lBtn = document.getElementById ( "btn-like" );
+  if (isLiked == true) {
+    isLiked = false;
+    lBtn.innerText = "👍 142K";
+    lBtn.style.color = "#f1f1f1";
+  }
+  else {
+    isLiked = true;
+    lBtn.innerText = "👍 142.1K";
+    lBtn.style.color = "#3ea6ff";
+    showToast("Added to Liked Videos");
+  }
+});
+
+(document.getElementById("btn-dislike") || document.querySelector("btn-dislike")).addEventListener('click', function(event) {
+  showToast("Disliked video");
+});
+
+(document.getElementById("btn-share") || document.querySelector("btn-share")).addEventListener('click', function(event) {
+  let mShare = document.getElementById ( "modal-share" );
+  if (mShare != null) {
+    mShare.style.display = "flex";
+  }
+});
+
+(document.getElementById("btn-close-share") || document.querySelector("btn-close-share")).addEventListener('click', function(event) {
+  let mShare = document.getElementById ( "modal-share" );
+  if (mShare != null) {
+    mShare.style.display = "none";
+  }
+});
+
+(document.getElementById("btn-copy-share") || document.querySelector("btn-copy-share")).addEventListener('click', function(event) {
+  let mShare = document.getElementById ( "modal-share" );
+  if (mShare != null) {
+    mShare.style.display = "none";
+  }
+  showToast("🔗 Link copied to clipboard!");
+});
+
+(document.getElementById("btn-download") || document.querySelector("btn-download")).addEventListener('click', function(event) {
+  showToast("⬇ Downloading 1080p stream for offline playback...");
+});
+
+(document.getElementById("btn-clip") || document.querySelector("btn-clip")).addEventListener('click', function(event) {
+  showToast("✂ Create Clip dialog opened");
+});
+
+(document.getElementById("btn-more") || document.querySelector("btn-more")).addEventListener('click', function(event) {
+  showToast("⋯ Options: Save to Playlist, Report, Transcript");
+});
+
+(document.getElementById("btn-shorts-next") || document.querySelector("btn-shorts-next")).addEventListener('click', function(event) {
+  let nextIdx = ( currentShortIndex + 1 ) % shortsList.length;
+  renderActiveShort(nextIdx);
+  showToast("Next Short loaded");
+});
+
+(document.getElementById("btn-shorts-prev") || document.querySelector("btn-shorts-prev")).addEventListener('click', function(event) {
+  let prevIdx = ( currentShortIndex - 1 + shortsList.length ) % shortsList.length;
+  renderActiveShort(prevIdx);
+  showToast("Previous Short loaded");
+});
+
+(document.getElementById("btn-shorts-like") || document.querySelector("btn-shorts-like")).addEventListener('click', function(event) {
+  let sLike = document.getElementById ( "shorts-like-count" );
+  if (isShortsLiked == true) {
+    isShortsLiked = false;
+    if (sLike != null) {
+      sLike.textContent = "245K";
+    }
+  }
+  else {
+    isShortsLiked = true;
+    if (sLike != null) {
+      sLike.textContent = "245.1K";
+    }
+    showToast("Liked Short!");
+  }
+});
+
+(document.getElementById("btn-shorts-dislike") || document.querySelector("btn-shorts-dislike")).addEventListener('click', function(event) {
+  showToast("Disliked Short");
+});
+
+(document.getElementById("btn-shorts-comment") || document.querySelector("btn-shorts-comment")).addEventListener('click', function(event) {
+  showToast("💬 Opening Shorts Comments (4.2K)");
+});
+
+(document.getElementById("btn-shorts-share") || document.querySelector("btn-shorts-share")).addEventListener('click', function(event) {
+  showToast("🔗 Shorts link copied!");
+});
+
+(document.getElementById("btn-shorts-sub") || document.querySelector("btn-shorts-sub")).addEventListener('click', function(event) {
+  let sBtn = document.getElementById ( "btn-shorts-sub" );
+  if (sBtn != null) {
+    if (sBtn.innerText == "Subscribe") {
+      sBtn.innerText = "Subscribed ✓";
+      sBtn.style.background = "#272727";
+      sBtn.style.color = "#aaaaaa";
+      showToast("Subscribed to Creator!");
+    }
+    else {
+      sBtn.innerText = "Subscribe";
+      sBtn.style.background = "#ffffff";
+      sBtn.style.color = "#0f0f0f";
+    }
+  }
+});
+
+(document.getElementById("btn-shorts-mute") || document.querySelector("btn-shorts-mute")).addEventListener('click', function(event) {
+  showToast("Shorts audio toggled");
+});
+
+function postComment() {
+  let cText = (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value;
+  if (cText == "") {
+    showToast("Please type a comment before posting");
+    return;
+  }
+  let cContainer = document.getElementById ( "comment-list-container" );
+  if (cContainer != null) {
+    let cCard = document.createElement ( "div" );
+    cCard.className = "comment-card";
+    cCard.innerHTML = "<div class='user-avatar-sm' style='background: #8b5cf6;'>S</div><div class='comment-body'><div class='comment-author-row'><span class='comment-author'>@SpandanPrayas (You)</span><span class='comment-time'>Just now</span></div><p class='comment-msg'>" + cText + "</p><div class='comment-reactions'><button class='btn-react'>👍 1</button><button class='btn-react'>👎</button><button class='btn-react'>Reply</button></div></div>";
+    cContainer.prepend ( cCard );
+    (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value = "";
+    totalComments = totalComments + 1;
+    (document.getElementById("comments-count-header") || document.querySelector("comments-count-header")).textContent = totalComments + " Comments";
+    showToast("💬 Comment posted publicly!");
+  }
 }
+
+(document.getElementById("btn-submit-comment") || document.querySelector("btn-submit-comment")).addEventListener('click', function(event) {
+  postComment();
+});
+
+(document.getElementById("btn-cancel-comment") || document.querySelector("btn-cancel-comment")).addEventListener('click', function(event) {
+  (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value = "";
+});
+
+(document.getElementById("btn-clear-history") || document.querySelector("btn-clear-history")).addEventListener('click', function(event) {
+  let hContainer = document.getElementById ( "history-list-container" );
+  if (hContainer != null) {
+    hContainer.innerHTML = "<p style='color: #888; padding: 20px;'>Watch history is empty.</p>";
+  }
+  showToast("🗑️ Watch History Cleared");
+});
+
+(document.getElementById("btn-theme") || document.querySelector("btn-theme")).addEventListener('click', function(event) {
+  let b = document.body;
+  let tBtn = document.getElementById ( "btn-theme" );
+  if (tBtn.innerText == "☾") {
+    tBtn.innerText = "☼";
+    b.style.background = "#ffffff";
+    b.style.color = "#0f0f0f";
+    showToast("Switched to YouTube Light Mode");
+  }
+  else {
+    tBtn.innerText = "☾";
+    b.style.background = "#0f0f0f";
+    b.style.color = "#f1f1f1";
+    showToast("Switched to YouTube Dark Mode");
+  }
+});
     </script>
   </body>
 </html>

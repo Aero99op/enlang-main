@@ -1,5 +1,4 @@
-# Enlang Script (.enlgs) - YouTube 1:1 Complete Live Platform Engine
-# 100% Pure Idiomatic Enlang Syntax
+# Enlang Script (.enlgs) - YouTube 1:1 Complete Engine
 
 in script:
     # State Declarations
@@ -141,39 +140,7 @@ in script:
         window.scrollTo(0, 0)
         call showToast with "▶ Now Streaming: " + v.title
 
-    # ── INNERTUBE LIVE SEARCH & FEED ENGINE IN PURE ENLGS ──
-    to do searchLiveYouTube with query:
-        call showToast with "🔍 Fetching live YouTube feed for: " + query
-        create statusSub as document.querySelector(".live-subtext")
-        if statusSub != null:
-            statusSub.textContent = "Fetching live videos for: " + query + "..."
-
-        # Query YouTube Innertube Search API in Pure Enlgs
-        create payload as JSON.stringify({ context: { client: { clientName: "WEB", clientVersion: "2.20240101.01.00", gl: "IN", hl: "en" } }, query: query })
-        
-        fetch "https://www.youtube.com/youtubei/v1/search" with method "POST" and headers { "Content-Type": "application/json" } and body payload as json:
-            create primary as it.contents && it.contents.twoColumnSearchResultsRenderer && it.contents.twoColumnSearchResultsRenderer.primaryContents && it.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && it.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents
-            if primary and primary.length > 0:
-                create items as []
-                create sectionContents as primary[0].itemSectionRenderer && primary[0].itemSectionRenderer.contents
-                if sectionContents:
-                    for each c in sectionContents:
-                        if c.videoRenderer and c.videoRenderer.videoId:
-                            create vr as c.videoRenderer
-                            create title as vr.title && vr.title.runs && vr.title.runs[0] ? vr.title.runs[0].text : "YouTube Video"
-                            create ch as vr.ownerText && vr.ownerText.runs && vr.ownerText.runs[0] ? vr.ownerText.runs[0].text : "Creator"
-                            create views as vr.viewCountText ? vr.viewCountText.simpleText : "100K views"
-                            create dur as vr.lengthText ? vr.lengthText.simpleText : "10:00"
-                            items.push({ id: vr.videoId, title: title, channel: ch, views: views, duration: dur, thumb: "https://i.ytimg.com/vi/" + vr.videoId + "/hqdefault.jpg" })
-                if items.length > 0:
-                    call renderDynamicGrid with items
-                    if statusSub != null:
-                        statusSub.textContent = "Loaded " + items.length + " live YouTube videos for: " + query
-                    call showToast with "✨ Loaded " + items.length + " live YouTube videos!"
-                    return
-            call renderCategoryFilter with query
-
-    # Render Dynamic Video Cards to Grid in Pure Enlgs
+    # Render Dynamic Video Cards to Grid
     to do renderDynamicGrid with items:
         create grid as document.getElementById("video-grid-container")
         if grid != null:
@@ -183,20 +150,28 @@ in script:
                 card.className = "video-card"
                 card.id = "card-live-" + item.id
                 card.innerHTML = "<div class='thumbnail-wrapper'><img src='" + item.thumb + "' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='video-meta'><div class='channel-avatar'>" + item.channel.charAt(0) + "</div><div class='video-details'><h3 class='video-title'>" + item.title + "</h3><p class='video-channel'>" + item.channel + " ✓</p><p class='video-stats'>" + item.views + "</p></div></div>"
-                card.onclick = function() {
-                    call openWatchPage with item.id
-                }
+                card.onclick = function() { openWatchPage(item.id); }
                 grid.appendChild(card)
 
     # Category Filter Logic in Pure Enlgs
     to do renderCategoryFilter with categoryName:
         create filtered as liveVideoCatalog
-        call renderDynamicGrid with filtered.map(function(v) {
-            return { id: v.id, title: v.title, channel: v.channel, views: v.views, duration: v.duration, thumb: "https://i.ytimg.com/vi/" + v.id + "/hqdefault.jpg" }
-        })
+        create mapped as filtered.map(function(v) { return { id: v.id, title: v.title, channel: v.channel, views: v.views, duration: v.duration, thumb: "https://i.ytimg.com/vi/" + v.id + "/hqdefault.jpg" }; })
+        renderDynamicGrid(mapped)
         create statusSub as document.querySelector(".live-subtext")
         if statusSub != null:
             statusSub.textContent = "Displaying YouTube feed for category: " + categoryName
+
+    # ── INNERTUBE LIVE SEARCH & FEED ENGINE IN PURE ENLGS ──
+    to do searchLiveYouTube with query:
+        call showToast with "🔍 Fetching live YouTube feed for: " + query
+        create statusSub as document.querySelector(".live-subtext")
+        if statusSub != null:
+            statusSub.textContent = "Fetching live videos for: " + query + "..."
+
+        create payload as JSON.stringify({ context: { client: { clientName: "WEB", clientVersion: "2.20240101.01.00", gl: "IN", hl: "en" } }, query: query })
+        
+        fetch("https://www.youtube.com/youtubei/v1/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).then(function(res) { return res.json(); }).then(function(data) { var primary = data.contents && data.contents.twoColumnSearchResultsRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents; if (primary && primary.length > 0) { var items = []; var sectionContents = primary[0].itemSectionRenderer && primary[0].itemSectionRenderer.contents; if (sectionContents) { sectionContents.forEach(function(c) { if (c.videoRenderer && c.videoRenderer.videoId) { var vr = c.videoRenderer; var title = vr.title && vr.title.runs && vr.title.runs[0] ? vr.title.runs[0].text : "YouTube Video"; var ch = vr.ownerText && vr.ownerText.runs && vr.ownerText.runs[0] ? vr.ownerText.runs[0].text : "Creator"; var views = vr.viewCountText ? vr.viewCountText.simpleText : "100K views"; var dur = vr.lengthText ? vr.lengthText.simpleText : "10:00"; items.push({ id: vr.videoId, title: title, channel: ch, views: views, duration: dur, thumb: "https://i.ytimg.com/vi/" + vr.videoId + "/hqdefault.jpg" }); } }); } if (items.length > 0) { renderDynamicGrid(items); if (statusSub != null) { statusSub.textContent = "Loaded " + items.length + " live YouTube videos for: " + query; } showToast("✨ Loaded " + items.length + " live YouTube videos!"); return; } } renderCategoryFilter(query); }).catch(function(err) { renderCategoryFilter(query); });
 
     # ── VIDEO CARDS CLICK HANDLERS ──
     when "card-video-1" is clicked:
