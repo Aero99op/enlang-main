@@ -9,24 +9,24 @@ document enlgf:
             # ── Top Navigation Bar ──
             header class "yt-header":
                 div class "yt-header-left":
-                    button "☰" id "btn-sidebar-toggle" class "yt-icon-btn"
-                    div class "yt-logo" id "btn-logo":
+                    button "☰" id "btn-sidebar-toggle" class "yt-icon-btn" title "Guide"
+                    div class "yt-logo" id "btn-logo" title "YouTube Home":
                         span "▶" class "yt-logo-icon"
                         span "YouTube" class "yt-logo-text"
                         span "IN" class "yt-country"
 
                 div class "yt-header-center":
                     div class "yt-search-box":
-                        input type "text" id "search-input" placeholder "Search videos, creators, tech tutorials..." class "yt-search-input"
-                        button "🔍" id "btn-search" class "yt-search-btn"
-                    button "🎙️" id "btn-voice" class "yt-icon-btn voice-btn"
+                        input type "text" id "search-input" placeholder "Search across all of YouTube..." class "yt-search-input"
+                        button "🔍" id "btn-search" class "yt-search-btn" title "Search"
+                    button "🎙️" id "btn-voice" class "yt-icon-btn voice-btn" title "Search with your voice"
 
                 div class "yt-header-right":
-                    button "＋ Create" id "btn-create" class "yt-btn-create"
-                    button "🔔" id "btn-notif" class "yt-icon-btn notif-btn":
+                    button "＋ Create" id "btn-create" class "yt-btn-create" title "Create or upload video"
+                    button "🔔" id "btn-notif" class "yt-icon-btn notif-btn" title "Notifications":
                         span "3" class "notif-badge"
-                    button "☾" id "btn-theme" class "yt-icon-btn"
-                    div "S" class "yt-user-avatar" id "user-profile"
+                    button "☾" id "btn-theme" class "yt-icon-btn" title "Appearance: Dark / Light"
+                    div "S" class "yt-user-avatar" id "user-profile" title "Spandan Prayas Patra"
 
             # ── Main Layout: Sidebar + Multi-View Content ──
             div class "yt-main-layout":
@@ -94,82 +94,11 @@ document enlgf:
 
                         # Feed Status Banner
                         div id "feed-status-bar" class "feed-status-bar":
-                            span "🔴 Live YouTube Feed" class "live-indicator"
-                            span "Powered by YouTube Innertube API • Free & Unlimited" class "live-subtext"
+                            span "🔴 Live YouTube Feed" id "live-status-title" class "live-indicator"
+                            span "Entire YouTube Global & India Feed • Real-time Streaming" id "live-status-desc" class "live-subtext"
 
                         # Primary Video Cards Grid
-                        div class "video-grid" id "video-grid-container":
-                            # Video Card 1
-                            div class "video-card" id "card-video-1" data-vid "gJrjgg1KVL4":
-                                div class "thumbnail-wrapper":
-                                    img src "https://i.ytimg.com/vi/gJrjgg1KVL4/hqdefault.jpg" class "thumb-real-img"
-                                    span "1:11:22" class "duration-badge"
-                                div class "video-meta":
-                                    div "S" class "channel-avatar"
-                                    div class "video-details":
-                                        h3 "Spring Boot 3 Full Course 2025 - Beginner to Pro" class "video-title"
-                                        p "Spandan Prayas Patra • Java Backend ✓" class "video-channel"
-                                        p "1.04M views • 2 days ago" class "video-stats"
-
-                            # Video Card 2
-                            div class "video-card" id "card-video-2" data-vid "dQw4w9WgXcQ":
-                                div class "thumbnail-wrapper":
-                                    img src "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class "thumb-real-img"
-                                    span "03:33" class "duration-badge"
-                                div class "video-meta":
-                                    div "E" class "channel-avatar"
-                                    div class "video-details":
-                                        h3 "How We Built Enlang: Compiling English to Python, JS & Flutter" class "video-title"
-                                        p "Enlang Official • Compiler Engineering ✓" class "video-channel"
-                                        p "512K views • 1 week ago" class "video-stats"
-
-                            # Video Card 3
-                            div class "video-card" id "card-video-3" data-vid "8aGhZQkoFbQ":
-                                div class "thumbnail-wrapper":
-                                    img src "https://i.ytimg.com/vi/8aGhZQkoFbQ/hqdefault.jpg" class "thumb-real-img"
-                                    span "14:20" class "duration-badge"
-                                div class "video-meta":
-                                    div "C" class "channel-avatar"
-                                    div class "video-details":
-                                        h3 "Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages" class "video-title"
-                                        p "Edge Architects • Cloud Dev" class "video-channel"
-                                        p "189K views • 3 days ago" class "video-stats"
-
-                            # Video Card 4
-                            div class "video-card" id "card-video-4" data-vid "HXV3zeRR3h4":
-                                div class "thumbnail-wrapper":
-                                    img src "https://i.ytimg.com/vi/HXV3zeRR3h4/hqdefault.jpg" class "thumb-real-img"
-                                    span "32:00" class "duration-badge"
-                                div class "video-meta":
-                                    div "D" class "channel-avatar"
-                                    div class "video-details":
-                                        h3 "Database Indexing, Stored Procedures & Connection Pooling" class "video-title"
-                                        p "Database Wizardry • Performance" class "video-channel"
-                                        p "98K views • 4 days ago" class "video-stats"
-
-                            # Video Card 5
-                            div class "video-card" id "card-video-5" data-vid "Q7AOvWpIVHU":
-                                div class "thumbnail-wrapper":
-                                    img src "https://i.ytimg.com/vi/Q7AOvWpIVHU/hqdefault.jpg" class "thumb-real-img"
-                                    span "21:15" class "duration-badge"
-                                div class "video-meta":
-                                    div "T" class "channel-avatar"
-                                    div class "video-details":
-                                        h3 "Procedural Corona Glows & Raymarched Moon Craters in WebGL" class "video-title"
-                                        p "Creative Coding 3D • Shader Art" class "video-channel"
-                                        p "340K views • 5 days ago" class "video-stats"
-
-                            # Video Card 6
-                            div class "video-card" id "card-video-6" data-vid "pTJJsmejUOQ":
-                                div class "thumbnail-wrapper":
-                                    img src "https://i.ytimg.com/vi/pTJJsmejUOQ/hqdefault.jpg" class "thumb-real-img"
-                                    span "16:40" class "duration-badge"
-                                div class "video-meta":
-                                    div "M" class "channel-avatar"
-                                    div class "video-details":
-                                        h3 "Build Android & iOS Flutter Apps with Pure English Sentences" class "video-title"
-                                        p "Mobile Mastery • Cross-Platform" class "video-channel"
-                                        p "420K views • 6 days ago" class "video-stats"
+                        div class "video-grid" id "video-grid-container"
 
                         # ── YouTube Shorts Shelf on Home Feed ──
                         div class "shorts-shelf":
@@ -177,19 +106,19 @@ document enlgf:
                                 span "⚡" class "shorts-icon"
                                 h2 "Shorts" class "shorts-title"
                             div class "shorts-grid":
-                                div class "short-card" id "short-1":
+                                div class "short-card" id "short-shelf-1":
                                     div class "short-thumb" style "background: linear-gradient(180deg, #be185d, #4c0519);":
                                         span "🔥 3 Insane Java 21 Performance Hacks" class "short-text"
                                     p "3.2M views" class "short-views"
-                                div class "short-card" id "short-2":
+                                div class "short-card" id "short-shelf-2":
                                     div class "short-thumb" style "background: linear-gradient(180deg, #047857, #064e3b);":
                                         span "🚀 Write Clean Code in English with Enlang" class "short-text"
                                     p "1.8M views" class "short-views"
-                                div class "short-card" id "short-3":
+                                div class "short-card" id "short-shelf-3":
                                     div class "short-thumb" style "background: linear-gradient(180deg, #6d28d9, #2e1065);":
                                         span "🌐 Cloudflare Workers under 1ms Latency" class "short-text"
                                     p "950K views" class "short-views"
-                                div class "short-card" id "short-4":
+                                div class "short-card" id "short-shelf-4":
                                     div class "short-thumb" style "background: linear-gradient(180deg, #b45309, #451a03);":
                                         span "✨ Raymarched Black Hole in 30 Lines" class "short-text"
                                     p "2.4M views" class "short-views"
@@ -199,19 +128,18 @@ document enlgf:
                         div class "shorts-reel-container":
                             div class "shorts-reel-viewport":
                                 div class "shorts-video-box" id "shorts-active-box" style "background: linear-gradient(180deg, #1e3a8a, #0f172a);":
+                                    iframe id "shorts-iframe" src "https://www.youtube-nocookie.com/embed/gJrjgg1KVL4?autoplay=1&enablejsapi=1&controls=0&loop=1" frameborder "0" allow "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" class="shorts-embed-frame"
                                     div class "shorts-top-bar":
                                         span "⚡ YouTube Shorts" class "shorts-brand-tag"
                                         button "🔊" id "btn-shorts-mute" class "shorts-ctrl-icon"
-                                    div class "shorts-center-play":
-                                        span "▶" class "shorts-play-pulse"
                                     div class "shorts-bottom-overlay":
                                         div class "shorts-creator-row":
                                             div "S" class "shorts-avatar"
-                                            span "@SpandanPrayas" class "shorts-username"
+                                            span "@SpandanPrayas" id "shorts-author-name" class "shorts-username"
                                             button "Subscribe" id "btn-shorts-sub" class "btn-shorts-sub"
                                         p "3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev" id "shorts-title-text" class "shorts-desc"
                                         div class "shorts-music-row":
-                                            span "🎵 Spandan Original Audio • High Performance Remix" class "shorts-music-title"
+                                            span "🎵 Spandan Original Audio • High Performance Remix" id "shorts-audio-text" class "shorts-music-title"
 
                                 div class "shorts-action-rail":
                                     button "👍" id "btn-shorts-like" class "shorts-rail-btn":
@@ -227,8 +155,8 @@ document enlgf:
                                     div class "shorts-sound-disc" id "shorts-disc"
 
                             div class "shorts-nav-arrows":
-                                button "▲" id "btn-shorts-prev" class "shorts-arrow-btn"
-                                button "▼" id "btn-shorts-next" class "shorts-arrow-btn"
+                                button "▲" id "btn-shorts-prev" class "shorts-arrow-btn" title "Previous Short"
+                                button "▼" id "btn-shorts-next" class "shorts-arrow-btn" title "Next Short"
 
                     # ── VIEW 3: WATCH PAGE (LIVE STREAMING PLAYER + COMMENTS) ──
                     div id "view-watch" class "view-panel":
@@ -243,18 +171,18 @@ document enlgf:
                                             iframe id "player-iframe" src "https://www.youtube-nocookie.com/embed/gJrjgg1KVL4?autoplay=1&enablejsapi=1" frameborder "0" allow "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" class "yt-embed-frame"
 
                                         div class "player-controls":
-                                            button "▶" id "btn-player-play" class "ctrl-btn"
-                                            button "⏭" id "btn-player-next" class "ctrl-btn"
+                                            button "⏸" id "btn-player-play" class "ctrl-btn" title "Play/Pause (k / Space)"
+                                            button "⏭" id "btn-player-next" class "ctrl-btn" title "Next video (Shift+N)"
                                             div class "volume-group":
-                                                button "🔊" id "btn-player-mute" class "ctrl-btn"
-                                                input type "range" id "volume-slider" min "0" max "100" value "80" class "vol-slider"
+                                                button "🔊" id "btn-player-mute" class "ctrl-btn" title "Mute (m)"
+                                                input type "range" id "volume-slider" min "0" max "100" value "80" class "vol-slider" title "Volume"
                                             span "04:15 / 18:45" id "player-time-display" class "ctrl-time"
-                                            div class "scrubber-bar" id "scrubber-track":
+                                            div class "scrubber-bar" id "scrubber-track" title "Seek":
                                                 div id "scrubber-progress" class "scrubber-fill" style "width: 25%;"
-                                            button "CC" id "btn-player-cc" class "ctrl-btn"
-                                            button "1x" id "btn-player-speed" class "ctrl-btn"
-                                            button "⚙️ 1080p" id "btn-player-quality" class "ctrl-btn"
-                                            button "⛶" id "btn-player-fullscreen" class "ctrl-btn"
+                                            button "CC" id "btn-player-cc" class "ctrl-btn" title "Subtitles/CC (c)"
+                                            button "1x" id "btn-player-speed" class "ctrl-btn" title "Playback speed"
+                                            button "⚙️ 1080p" id "btn-player-quality" class "ctrl-btn" title "Settings"
+                                            button "⛶" id "btn-player-fullscreen" class "ctrl-btn" title "Fullscreen (f)"
 
                                 # Video Title & Actions Bar
                                 div class "watch-header":
@@ -262,7 +190,7 @@ document enlgf:
                                     
                                     div class "watch-actions-row":
                                         div class "channel-info-box":
-                                            div "S" class "channel-avatar-lg"
+                                            div "S" id "watch-channel-avatar" class "channel-avatar-lg"
                                             div:
                                                 h4 "Spandan Prayas Patra" id "watch-channel-name" class "channel-title"
                                                 p "128K subscribers" id "watch-sub-count" class "channel-subs"
@@ -285,7 +213,7 @@ document enlgf:
                                     p "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." id "watch-desc-text" class "desc-content"
                                     
                                     div class "chapters-section":
-                                        p "TIMESTAMPS & CHAPTERS:" class "chapters-title"
+                                        p "TIMESTAMPS & CHAPTERS (Click to jump):" class "chapters-title"
                                         div class "chapter-pill-list":
                                             button "00:00 • Introduction" id "ch-1" class "chapter-btn"
                                             button "04:15 • HikariCP & Oracle Setup" id "ch-2" class "chapter-btn"
@@ -359,85 +287,21 @@ document enlgf:
                                         span "Autoplay" class "autoplay-label"
                                         input type "checkbox" id "autoplay-check" checked "true" class "autoplay-switch"
 
-                                div class "rec-list" id "rec-list-container":
-                                    div class "rec-card" id "card-rec-2" data-vid "dQw4w9WgXcQ":
-                                        div class "rec-thumb":
-                                            img src "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class "thumb-real-img"
-                                            span "03:33" class "duration-badge"
-                                        div class "rec-details":
-                                            h4 "How We Built Enlang Compiler" class "rec-title"
-                                            p "Enlang Official" class "rec-channel"
-                                            p "512K views" class "rec-stats"
-
-                                    div class "rec-card" id "card-rec-3" data-vid "8aGhZQkoFbQ":
-                                        div class "rec-thumb":
-                                            img src "https://i.ytimg.com/vi/8aGhZQkoFbQ/hqdefault.jpg" class "thumb-real-img"
-                                            span "14:20" class "duration-badge"
-                                        div class "rec-details":
-                                            h4 "Deploying Edge Apps on Cloudflare" class "rec-title"
-                                            p "Edge Architects" class "rec-channel"
-                                            p "189K views" class "rec-stats"
-
-                                    div class "rec-card" id "card-rec-5" data-vid "Q7AOvWpIVHU":
-                                        div class "rec-thumb":
-                                            img src "https://i.ytimg.com/vi/Q7AOvWpIVHU/hqdefault.jpg" class "thumb-real-img"
-                                            span "21:15" class "duration-badge"
-                                        div class "rec-details":
-                                            h4 "3D Solar & Lunar WebGL Shaders" class "rec-title"
-                                            p "Creative Coding 3D" class "rec-channel"
-                                            p "340K views" class "rec-stats"
+                                div class "rec-list" id "rec-list-container"
 
                     # ── VIEW 4: SUBSCRIPTIONS FEED ──
                     div id "view-subs" class "view-panel":
                         div class "subs-feed-header":
                             h2 "Latest from Your Subscriptions" class "subs-heading"
                             span "Manage" class "subs-manage-link"
-                        div class "video-grid" id "subs-grid-container":
-                            div class "video-card" id "subs-card-1" data-vid "gJrjgg1KVL4":
-                                div class "thumbnail-wrapper":
-                                    img src "https://i.ytimg.com/vi/gJrjgg1KVL4/hqdefault.jpg" class "thumb-real-img"
-                                    span "1:11:22" class "duration-badge"
-                                div class "video-meta":
-                                    div "S" class "channel-avatar"
-                                    div class "video-details":
-                                        h3 "Spring Boot 3 Full Course 2025 - Beginner to Pro" class "video-title"
-                                        p "Spandan Prayas Patra" class "video-channel"
-                                        p "1.04M views • 2 days ago" class "video-stats"
-
-                            div class "video-card" id "subs-card-2" data-vid "dQw4w9WgXcQ":
-                                div class "thumbnail-wrapper":
-                                    img src "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class "thumb-real-img"
-                                    span "03:33" class "duration-badge"
-                                div class "video-meta":
-                                    div "E" class "channel-avatar"
-                                    div class "video-details":
-                                        h3 "How We Built Enlang: Compiling English to Python, JS & Flutter" class "video-title"
-                                        p "Enlang Official" class "video-channel"
-                                        p "512K views • 1 week ago" class "video-stats"
+                        div class "video-grid" id "subs-grid-container"
 
                     # ── VIEW 5: LIBRARY & WATCH HISTORY ──
                     div id "view-library" class "view-panel":
                         div class "library-header":
                             h2 "Library & Watch History" class "library-heading"
                             button "Clear History" id "btn-clear-history" class "btn-ghost"
-                        div class "history-list" id "history-list-container":
-                            div class "history-card":
-                                div class "history-thumb":
-                                    img src "https://i.ytimg.com/vi/gJrjgg1KVL4/hqdefault.jpg" class "thumb-real-img"
-                                    span "1:11:22" class "duration-badge"
-                                div class "history-details":
-                                    h3 "Spring Boot 3 Full Course 2025 - Beginner to Pro" class "history-title"
-                                    p "Spandan Prayas Patra • 1.04M views" class "history-sub"
-                                    p "Watched today" class "history-time"
-
-                            div class "history-card":
-                                div class "history-thumb":
-                                    img src "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class "thumb-real-img"
-                                    span "03:33" class "duration-badge"
-                                div class "history-details":
-                                    h3 "How We Built Enlang: Compiling English to Python, JS & Flutter" class "history-title"
-                                    p "Enlang Official • 512K views" class "history-sub"
-                                    p "Watched yesterday" class "history-time"
+                        div class "history-list" id "history-list-container"
 
         # ── UPLOAD / CREATE VIDEO MODAL ──
         div id "modal-create" class "yt-modal":
@@ -493,7 +357,7 @@ document enlgf:
                         button "💼 LinkedIn" class "social-btn"
                         button "✉️ Email" class "social-btn"
                     div class "share-link-row":
-                        input type "text" id "share-link-input" value "https://youtu.be/enlang-java-21" class "share-link-box" readonly "true"
+                        input type "text" id "share-link-input" value "https://youtu.be/gJrjgg1KVL4" class "share-link-box" readonly "true"
                         button "Copy" id "btn-copy-share" class "btn-primary"
 
         # ── Toast Alert Banner ──

@@ -22,6 +22,132 @@ for "body" apply:
     overflow-x hidden
 end
 
+# Light Mode Theme Overrides
+for "body.light-theme" apply:
+    background "#ffffff"
+    color "#0f0f0f"
+end
+
+for "body.light-theme .yt-header" apply:
+    background "#ffffff"
+    border-bottom "1px solid #e5e5e5"
+end
+
+for "body.light-theme .yt-logo-text" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .yt-icon-btn" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .yt-search-box" apply:
+    background "#ffffff"
+    border "1px solid #cccccc"
+end
+
+for "body.light-theme .yt-search-input" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .yt-search-btn" apply:
+    background "#f8f8f8"
+    border-left "1px solid #cccccc"
+    color "#0f0f0f"
+end
+
+for "body.light-theme .sidebar-item" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .chip" apply:
+    background "#f2f2f2"
+    color "#0f0f0f"
+    border "1px solid #e5e5e5"
+end
+
+for "body.light-theme .chip.active" apply:
+    background "#0f0f0f"
+    color "#ffffff"
+end
+
+for "body.light-theme .video-title" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .video-channel" apply:
+    color "#606060"
+end
+
+for "body.light-theme .video-stats" apply:
+    color "#606060"
+end
+
+for "body.light-theme .watch-title" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .channel-title" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .watch-description-box" apply:
+    background "#f2f2f2"
+    color "#0f0f0f"
+end
+
+for "body.light-theme .desc-content" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .btn-action" apply:
+    background "#f2f2f2"
+    color "#0f0f0f"
+end
+
+for "body.light-theme .like-dislike-pill" apply:
+    background "#f2f2f2"
+    color "#0f0f0f"
+end
+
+for "body.light-theme .btn-like" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .btn-dislike" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .comment-msg" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .comment-author" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .rec-title" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .modal-box" apply:
+    background "#ffffff"
+    color "#0f0f0f"
+    border "1px solid #e5e5e5"
+end
+
+for "body.light-theme .modal-input" apply:
+    background "#f9f9f9"
+    border "1px solid #cccccc"
+    color "#0f0f0f"
+end
+
+for "body.light-theme .modal-textarea" apply:
+    background "#f9f9f9"
+    border "1px solid #cccccc"
+    color "#0f0f0f"
+end
+
 # Top Header
 for ".yt-header" apply:
     display flex
@@ -252,6 +378,11 @@ when ".sidebar-item" is hovered apply:
     background use color "yt-hover"
 end
 
+for ".sidebar-item.active" apply:
+    background use color "yt-surface"
+    font-weight 700
+end
+
 for ".sidebar-heading" apply:
     font-size 12
     font-weight 700
@@ -386,13 +517,6 @@ for ".thumb-real-img" apply:
     height 100 percent
     object-fit "cover"
     display block
-end
-
-for ".thumb-text" apply:
-    font-size 15
-    font-weight 800
-    color "#ffffff"
-    text-shadow "0 2px 10px rgba(0,0,0,0.7)"
 end
 
 for ".duration-badge" apply:
@@ -572,12 +696,25 @@ for ".shorts-video-box" apply:
     box-sizing border-box
     shadow "0 16px 48px rgba(0, 0, 0, 0.8)"
     border "1px solid rgba(255, 255, 255, 0.15)"
+    background "#000000"
+end
+
+for ".shorts-embed-frame" apply:
+    position absolute
+    top 0
+    left 0
+    width 100 percent
+    height 100 percent
+    border none
+    z-index 1
 end
 
 for ".shorts-top-bar" apply:
     display flex
     justify-content space-between
     align-items center
+    position relative
+    z-index 2
 end
 
 for ".shorts-brand-tag" apply:
@@ -598,21 +735,15 @@ for ".shorts-ctrl-icon" apply:
     cursor pointer
 end
 
-for ".shorts-center-play" apply:
-    align-self center
-    cursor pointer
-end
-
-for ".shorts-play-pulse" apply:
-    font-size 54
-    color "#ffffff"
-    text-shadow "0 0 20px rgba(255, 255, 255, 0.8)"
-end
-
 for ".shorts-bottom-overlay" apply:
     display flex
     flex-direction column
     gap 10
+    position relative
+    z-index 2
+    background "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)"
+    padding 12
+    corner radius 12
 end
 
 for ".shorts-creator-row" apply:
@@ -786,31 +917,6 @@ for ".yt-embed-frame" apply:
     height 100 percent
     border none
     display block
-end
-
-for ".play-huge-icon" apply:
-    font-size 64
-    color use color "yt-red"
-    text-shadow "0 0 30px rgba(255, 0, 0, 0.6)"
-    cursor pointer
-    transition "transform 0.2s ease"
-end
-
-when ".play-huge-icon" is hovered apply:
-    transform "scale(1.15)"
-end
-
-for "#active-player-title" apply:
-    font-size 20
-    font-weight 800
-    margin "16px 0 6px 0"
-    color "#ffffff"
-end
-
-for ".player-badge-sub" apply:
-    margin 0
-    font-size 12
-    color use color "yt-muted"
 end
 
 # Video Controls Bar

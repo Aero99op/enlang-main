@@ -1,4 +1,4 @@
-# Enlang Script (.enlgs) - YouTube 1:1 Complete Engine
+# Enlang Script (.enlgs) - YouTube 1:1 Complete Platform Engine
 
 in script:
     # State Declarations
@@ -14,15 +14,15 @@ in script:
     create playbackSpeed as "1x"
     create isShortsLiked as false
 
-    show "▶ Initializing YouTube 1:1 Live Engine in Pure Enlang (.enlgs)..."
+    show "▶ Initializing 1:1 YouTube Engine in Pure Enlang (.enlgs)..."
 
-    # Default Curated Live Video Database (Real YouTube IDs & HD Thumbnails)
-    define liveVideoCatalog as [ { id: "gJrjgg1KVL4", title: "Spring Boot 3 Full Course 2025 - Beginner to Pro", channel: "Spandan Prayas Patra", subs: "128K subscribers", views: "1,039,987 views • Premiered on Aug 15, 2026", desc: "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.", ambient: "rgba(59, 130, 246, 0.3)", duration: "1:11:22" }, { id: "dQw4w9WgXcQ", title: "Rick Astley - Never Gonna Give You Up (Official Music Video 4K)", channel: "Rick Astley", subs: "3.4M subscribers", views: "1,520,840,112 views • 14 years ago", desc: "The official video for 'Never Gonna Give You Up' by Rick Astley. 4K Remastered.", ambient: "rgba(236, 72, 153, 0.3)", duration: "03:33" }, { id: "8aGhZQkoFbQ", title: "Next.js 15 & React 19 Full Stack Masterclass", channel: "JavaScript Mastery", subs: "1.1M subscribers", views: "489,420 views • 3 weeks ago", desc: "Master full-stack Next.js with Server Actions, Edge Middleware, and Cloudflare Deployments.", ambient: "rgba(16, 185, 129, 0.3)", duration: "2:45:10" }, { id: "HXV3zeRR3h4", title: "System Design for High Scale - 100 Million Users", channel: "ByteByteGo", subs: "1.9M subscribers", views: "980,120 views • 1 month ago", desc: "An insider look into database sharding, distributed caches, and load balancers at massive scale.", ambient: "rgba(249, 115, 22, 0.3)", duration: "18:24" }, { id: "Q7AOvWpIVHU", title: "Three.js 3D Web Graphics & WebGL Shaders Tutorial", channel: "Creative Coding 3D", subs: "340K subscribers", views: "340,900 views • 5 days ago", desc: "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL.", ambient: "rgba(99, 102, 241, 0.3)", duration: "21:15" }, { id: "pTJJsmejUOQ", title: "Flutter 3.24 & Dart Full Course for Mobile Apps", channel: "FreeCodeCamp", subs: "9.8M subscribers", views: "1,420,150 views • 2 months ago", desc: "Build cross-platform iOS & Android mobile applications with clean architecture.", ambient: "rgba(20, 184, 166, 0.3)", duration: "4:32:00" } ]
+    # Master Video Catalog (Full Real YouTube Videos across Coding, Tech, Gaming, Music, System Design)
+    define masterCatalog as [ { id: "gJrjgg1KVL4", title: "Spring Boot 3 Full Course 2025 - Beginner to Pro", channel: "Spandan Prayas Patra", subs: "128K subscribers", views: "1,039,987 views • Premiered on Aug 15, 2026", desc: "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.", category: "Java Backend", ambient: "rgba(59, 130, 246, 0.35)", duration: "1:11:22", avatar: "S" }, { id: "dQw4w9WgXcQ", title: "Rick Astley - Never Gonna Give You Up (Official Music Video 4K Remaster)", channel: "Rick Astley", subs: "3.4M subscribers", views: "1,520,840,112 views • 14 years ago", desc: "The official video for 'Never Gonna Give You Up' by Rick Astley. 4K Remastered with studio high definition audio.", category: "Lo-Fi Music", ambient: "rgba(236, 72, 153, 0.35)", duration: "03:33", avatar: "R" }, { id: "8aGhZQkoFbQ", title: "Next.js 15 & React 19 Full Stack Masterclass (App Router, Server Actions)", channel: "JavaScript Mastery", subs: "1.1M subscribers", views: "489,420 views • 3 weeks ago", desc: "Master full-stack Next.js with Server Actions, Edge Middleware, and Cloudflare Deployments with zero 500 errors.", category: "Next.js", ambient: "rgba(16, 185, 129, 0.35)", duration: "2:45:10", avatar: "J" }, { id: "HXV3zeRR3h4", title: "System Design for High Scale - 100 Million Active Users", channel: "ByteByteGo", subs: "1.9M subscribers", views: "980,120 views • 1 month ago", desc: "An insider look into database sharding, distributed caches, and load balancers at massive hyperscale.", category: "System Design", ambient: "rgba(249, 115, 22, 0.35)", duration: "18:24", avatar: "B" }, { id: "Q7AOvWpIVHU", title: "Three.js 3D Web Graphics & WebGL Shaders Masterclass", channel: "Creative Coding 3D", subs: "340K subscribers", views: "340,900 views • 5 days ago", desc: "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL.", category: "Coding & AI", ambient: "rgba(99, 102, 241, 0.35)", duration: "21:15", avatar: "T" }, { id: "pTJJsmejUOQ", title: "Flutter 3.24 & Dart Full Course for Cross-Platform Mobile Apps", channel: "FreeCodeCamp", subs: "9.8M subscribers", views: "1,420,150 views • 2 months ago", desc: "Build cross-platform iOS & Android mobile applications with clean architecture and state management.", category: "Enlang Stack", ambient: "rgba(20, 184, 166, 0.35)", duration: "4:32:00", avatar: "F" }, { id: "fJ9rUzIMcZQ", title: "Queen - Bohemian Rhapsody (Official Video Remastered)", channel: "Queen Official", subs: "18.2M subscribers", views: "1,740,290,000 views • 15 years ago", desc: "The official music video for Queen's iconic Bohemian Rhapsody, remastered in HD.", category: "Lo-Fi Music", ambient: "rgba(168, 85, 247, 0.35)", duration: "05:59", avatar: "Q" }, { id: "kXYiU_JCYtU", title: "Linkin Park - Numb (Official Music Video 4K)", channel: "Linkin Park", subs: "21.4M subscribers", views: "2,210,000,000 views • 17 years ago", desc: "'Numb' by Linkin Park from the album Meteora. 4K Ultra High Definition remastered.", category: "Lo-Fi Music", ambient: "rgba(59, 130, 246, 0.35)", duration: "03:07", avatar: "L" }, { id: "L_LUpnjgPso", title: "Grand Theft Auto VI Official Trailer 1 - 4K 60FPS", channel: "Rockstar Games", subs: "10.8M subscribers", views: "215,900,000 views • 8 months ago", desc: "Grand Theft Auto VI heads to the state of Leonida, home to the neon-soaked streets of Vice City.", category: "Gaming", ambient: "rgba(236, 72, 153, 0.35)", duration: "01:31", avatar: "R" }, { id: "Un5SEJ8MyPc", title: "Cyberpunk 2077: Phantom Liberty - Official Cinematic Trailer", channel: "Cyberpunk 2077", subs: "1.4M subscribers", views: "14,200,000 views • 1 year ago", desc: "Return to Night City in this spy-thriller expansion featuring Idris Elba as Solomon Reed.", category: "Gaming", ambient: "rgba(234, 179, 8, 0.35)", duration: "04:12", avatar: "C" }, { id: "jNQXAC9IVRw", title: "Me at the zoo (First YouTube Video in History)", channel: "jawed", subs: "4.8M subscribers", views: "325,000,000 views • 19 years ago", desc: "The first video on YouTube, uploaded on April 23, 2005. Recorded at the San Diego Zoo.", category: "All", ambient: "rgba(34, 197, 94, 0.35)", duration: "00:19", avatar: "J" }, { id: "kJQP7kiw5Fk", title: "Luis Fonsi - Despacito ft. Daddy Yankee", channel: "Luis Fonsi", subs: "32.1M subscribers", views: "8,500,000,000 views • 7 years ago", desc: "Despacito official video by Luis Fonsi & Daddy Yankee.", category: "Lo-Fi Music", ambient: "rgba(239, 68, 68, 0.35)", duration: "04:41", avatar: "D" } ]
 
-    # Shorts Database
-    define shortsList as [ { title: "🔥 3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev", author: "@SpandanPrayas", audio: "🎵 Spandan Original Audio • High Performance Remix", views: "3.2M", bg: "linear-gradient(180deg, #1e3a8a, #0f172a)", vid: "gJrjgg1KVL4" }, { title: "🚀 Write Clean Code in English with Enlang! Zero boilerplate #Enlang #Compilers", author: "@EnlangOfficial", audio: "🎵 Enlang Sound Studio • Compiler Waves", views: "1.8M", bg: "linear-gradient(180deg, #047857, #064e3b)", vid: "dQw4w9WgXcQ" }, { title: "🌐 Cloudflare Workers under 1ms Latency around the world #Edge #Cloudflare", author: "@EdgeArchitects", audio: "🎵 Ultra Edge Lo-Fi Beat", views: "950K", bg: "linear-gradient(180deg, #6d28d9, #2e1065)", vid: "8aGhZQkoFbQ" }, { title: "✨ Raymarched Black Hole in 30 Lines of WebGL Shader #Threejs #GLSL", author: "@CreativeCoding3D", audio: "🎵 Cosmic Raymarch Audio", views: "2.4M", bg: "linear-gradient(180deg, #b45309, #451a03)", vid: "Q7AOvWpIVHU" } ]
+    # Real YouTube Shorts Database
+    define shortsList as [ { title: "🔥 3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev", author: "@SpandanPrayas", audio: "🎵 Spandan Original Audio • High Performance Remix", views: "3.2M", bg: "linear-gradient(180deg, #1e3a8a, #0f172a)", vid: "gJrjgg1KVL4" }, { title: "🚀 Write Clean Code in English with Enlang! Zero boilerplate #Enlang #Compilers", author: "@EnlangOfficial", audio: "🎵 Enlang Sound Studio • Compiler Waves", views: "1.8M", bg: "linear-gradient(180deg, #047857, #064e3b)", vid: "dQw4w9WgXcQ" }, { title: "🌐 Cloudflare Workers under 1ms Latency around the world #Edge #Cloudflare", author: "@EdgeArchitects", audio: "🎵 Ultra Edge Lo-Fi Beat", views: "950K", bg: "linear-gradient(180deg, #6d28d9, #2e1065)", vid: "8aGhZQkoFbQ" }, { title: "✨ Raymarched Black Hole in 30 Lines of WebGL Shader #Threejs #GLSL", author: "@CreativeCoding3D", audio: "🎵 Cosmic Raymarch Audio", views: "2.4M", bg: "linear-gradient(180deg, #b45309, #451a03)", vid: "Q7AOvWpIVHU" }, { title: "🎮 GTA 6 Vice City Graphics will blow your mind #GTA6 #Rockstar #Gaming", author: "@RockstarGames", audio: "🎵 Love Is A Long Road • Tom Petty", views: "12.4M", bg: "linear-gradient(180deg, #831843, #500724)", vid: "L_LUpnjgPso" } ]
 
-    # Toast Notification Helper in Pure Enlgs
+    # Toast Notification Helper
     to do showToast with message:
         create toastEl as document.getElementById("yt-toast")
         if toastEl != null:
@@ -33,7 +33,7 @@ in script:
                 if t2 != null:
                     t2.style.display = "none"
 
-    # Time Formatter Helper in Pure Enlgs
+    # Time Formatter Helper
     to do formatDuration with secs:
         create m as Math.floor(secs / 60)
         create s as secs % 60
@@ -41,7 +41,20 @@ in script:
         create sStr as s < 10 ? "0" + s : "" + s
         return mStr + ":" + sStr
 
-    # Hide all views helper in Pure Enlgs
+    # PostMessage Controller to control native YouTube iframe video stream
+    to do sendPlayerCmd with funcName, args:
+        create ifr as document.getElementById("player-iframe")
+        if ifr != null:
+            if ifr.contentWindow != null:
+                ifr.contentWindow.postMessage(JSON.stringify({ event: "command", func: funcName, args: args || [] }), "*")
+
+    to do sendShortsCmd with funcName, args:
+        create ifr as document.getElementById("shorts-iframe")
+        if ifr != null:
+            if ifr.contentWindow != null:
+                ifr.contentWindow.postMessage(JSON.stringify({ event: "command", func: funcName, args: args || [] }), "*")
+
+    # Hide all views helper
     to do hideAllViews:
         create pFeed as document.getElementById("view-feed")
         create pShorts as document.getElementById("view-shorts")
@@ -59,16 +72,17 @@ in script:
         if pLib != null:
             pLib.style.display = "none"
 
-    # Open Home Feed in Pure Enlgs
+    # Open Home Feed View
     to do openHomeFeed:
         call hideAllViews
         create pFeed as document.getElementById("view-feed")
         if pFeed != null:
             pFeed.style.display = "block"
         window.scrollTo(0, 0)
+        call renderGrid with masterCatalog
         call showToast with "🏠 YouTube Home Feed"
 
-    # Open Shorts Reel View in Pure Enlgs
+    # Open Shorts Reel View
     to do openShortsReel:
         call hideAllViews
         create pShorts as document.getElementById("view-shorts")
@@ -78,22 +92,24 @@ in script:
         call renderActiveShort with 0
         call showToast with "⚡ YouTube Shorts Reel active"
 
-    # Open Subscriptions Feed in Pure Enlgs
+    # Open Subscriptions Feed
     to do openSubsFeed:
         call hideAllViews
         create pSubs as document.getElementById("view-subs")
         if pSubs != null:
             pSubs.style.display = "block"
         window.scrollTo(0, 0)
+        call renderSubsGrid
         call showToast with "📺 Subscriptions Feed"
 
-    # Open Library / History View in Pure Enlgs
+    # Open Library / History View
     to do openLibrary:
         call hideAllViews
         create pLib as document.getElementById("view-library")
         if pLib != null:
             pLib.style.display = "block"
         window.scrollTo(0, 0)
+        call renderHistoryList
         call showToast with "📁 Library & Watch History"
 
     # Render Active Short in Reel
@@ -105,32 +121,52 @@ in script:
         create sBox as document.getElementById("shorts-active-box")
         if sBox != null:
             sBox.style.background = s.bg
+        create sIfr as document.getElementById("shorts-iframe")
+        if sIfr != null:
+            sIfr.src = "https://www.youtube-nocookie.com/embed/" + s.vid + "?autoplay=1&enablejsapi=1&controls=0&loop=1"
         create sDesc as document.getElementById("shorts-title-text")
         if sDesc != null:
             sDesc.textContent = s.title
+        create sAuthor as document.getElementById("shorts-author-name")
+        if sAuthor != null:
+            sAuthor.textContent = s.author
+        create sAudio as document.getElementById("shorts-audio-text")
+        if sAudio != null:
+            sAudio.textContent = s.audio
 
-    # Load and Stream Video by ID (Embedding Real Live YouTube Stream)
-    to do openWatchPage with vidId:
+    # Open Watch Page with EXACT Video Metadata matching video
+    to do openWatchPage with vidId, title, channel, views, desc, avatar:
         set currentVideoId = vidId
-        create v as liveVideoCatalog.find(function(item) { return item.id == vidId; })
-        if v == null:
-            create customV as { id: vidId, title: "YouTube Stream #" + vidId, channel: "YouTube Creator", subs: "100K subscribers", views: "Real-time YouTube Stream", desc: "Streaming live from YouTube Innertube Engine.", ambient: "rgba(59, 130, 246, 0.3)" }
-            set v = customV
+        create targetTitle as title || "YouTube Stream Video"
+        create targetChannel as channel || "YouTube Creator"
+        create targetViews as views || "100K views"
+        create targetDesc as desc || ("Watch " + targetTitle + " streaming in high definition on YouTube.")
+        create targetAvatar as avatar || (targetChannel.charAt(0) || "Y")
 
-        set text of "watch-video-title" to v.title
-        set text of "watch-channel-name" to v.channel
-        set text of "watch-sub-count" to v.subs
-        set text of "watch-desc-text" to v.desc
-        set text of "desc-stats" to v.views
+        set text of "watch-video-title" to targetTitle
+        set text of "watch-channel-name" to targetChannel
+        set text of "watch-desc-text" to targetDesc
+        set text of "desc-stats" to targetViews + " • Premiered recently"
+        set text of "watch-channel-avatar" to targetAvatar
 
-        # Mount Real YouTube Iframe Embed
+        # Update Share Link
+        create shareInput as document.getElementById("share-link-input")
+        if shareInput != null:
+            shareInput.value = "https://youtu.be/" + vidId
+
+        # Mount Real YouTube Iframe Stream
         create pIframe as document.getElementById("player-iframe")
         if pIframe != null:
             pIframe.src = "https://www.youtube-nocookie.com/embed/" + vidId + "?autoplay=1&enablejsapi=1"
 
+        # Ambient Glow
         create ambientEl as document.getElementById("player-ambient-light")
         if ambientEl != null:
-            ambientEl.style.background = "radial-gradient(circle, " + (v.ambient || "rgba(59,130,246,0.3)") + " 0%, rgba(15, 15, 15, 0) 75%)"
+            ambientEl.style.background = "radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, rgba(15, 15, 15, 0) 75%)"
+
+        # Reset Player Play State
+        set isPlaying = true
+        set text of "btn-player-play" to "⏸"
 
         call hideAllViews
         create pWatch as document.getElementById("view-watch")
@@ -138,88 +174,111 @@ in script:
             pWatch.style.display = "block"
 
         window.scrollTo(0, 0)
-        call showToast with "▶ Now Streaming: " + v.title
+        call renderRecommendations with vidId
+        call showToast with "▶ Playing: " + targetTitle
 
-    # Render Dynamic Video Cards to Grid
-    to do renderDynamicGrid with items:
+    # Render Recommendations in Watch View
+    to do renderRecommendations with activeVidId:
+        create recList as document.getElementById("rec-list-container")
+        if recList != null:
+            recList.innerHTML = ""
+            create others as masterCatalog.filter(function(item) { return item.id !== activeVidId; })
+            for each item in others:
+                create card as document.createElement("div")
+                card.className = "rec-card"
+                card.innerHTML = "<div class='rec-thumb'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='rec-details'><h4 class='rec-title'>" + item.title + "</h4><p class='rec-channel'>" + item.channel + " ✓</p><p class='rec-stats'>" + item.views + "</p></div>"
+                card.onclick = function() {
+                    openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar);
+                }
+                recList.appendChild(card)
+
+    # Render Subscriptions Feed
+    to do renderSubsGrid:
+        create sGrid as document.getElementById("subs-grid-container")
+        if sGrid != null:
+            sGrid.innerHTML = ""
+            for each item in masterCatalog:
+                create card as document.createElement("div")
+                card.className = "video-card"
+                card.innerHTML = "<div class='thumbnail-wrapper'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='video-meta'><div class='channel-avatar'>" + item.avatar + "</div><div class='video-details'><h3 class='video-title'>" + item.title + "</h3><p class='video-channel'>" + item.channel + " ✓</p><p class='video-stats'>" + item.views + "</p></div></div>"
+                card.onclick = function() {
+                    openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar);
+                }
+                sGrid.appendChild(card)
+
+    # Render History List
+    to do renderHistoryList:
+        create hContainer as document.getElementById("history-list-container")
+        if hContainer != null:
+            hContainer.innerHTML = ""
+            create histItems as masterCatalog.slice(0, 6)
+            for each item in histItems:
+                create card as document.createElement("div")
+                card.className = "history-card"
+                card.innerHTML = "<div class='history-thumb'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='history-details'><h3 class='history-title'>" + item.title + "</h3><p class='history-sub'>" + item.channel + " • " + item.views + "</p><p class='history-time'>Watched recently</p></div>"
+                card.onclick = function() {
+                    openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar);
+                }
+                hContainer.appendChild(card)
+
+    # Render Dynamic Video Cards to Main Grid
+    to do renderGrid with items:
         create grid as document.getElementById("video-grid-container")
         if grid != null:
             grid.innerHTML = ""
             for each item in items:
                 create card as document.createElement("div")
                 card.className = "video-card"
-                card.id = "card-live-" + item.id
-                card.innerHTML = "<div class='thumbnail-wrapper'><img src='" + item.thumb + "' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='video-meta'><div class='channel-avatar'>" + item.channel.charAt(0) + "</div><div class='video-details'><h3 class='video-title'>" + item.title + "</h3><p class='video-channel'>" + item.channel + " ✓</p><p class='video-stats'>" + item.views + "</p></div></div>"
-                card.onclick = function() { openWatchPage(item.id); }
+                card.id = "card-" + item.id
+                card.innerHTML = "<div class='thumbnail-wrapper'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='video-meta'><div class='channel-avatar'>" + (item.avatar || item.channel.charAt(0)) + "</div><div class='video-details'><h3 class='video-title'>" + item.title + "</h3><p class='video-channel'>" + item.channel + " ✓</p><p class='video-stats'>" + item.views + "</p></div></div>"
+                card.onclick = function() {
+                    openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar);
+                }
                 grid.appendChild(card)
 
-    # Category Filter Logic in Pure Enlgs
-    to do renderCategoryFilter with categoryName:
-        create filtered as liveVideoCatalog
-        create mapped as filtered.map(function(v) { return { id: v.id, title: v.title, channel: v.channel, views: v.views, duration: v.duration, thumb: "https://i.ytimg.com/vi/" + v.id + "/hqdefault.jpg" }; })
-        renderDynamicGrid(mapped)
-        create statusSub as document.querySelector(".live-subtext")
-        if statusSub != null:
-            statusSub.textContent = "Displaying YouTube feed for category: " + categoryName
+    # Category Filter Logic
+    to do filterByCategory with categoryName:
+        create allChips as document.querySelectorAll(".chip")
+        allChips.forEach(function(chip) { chip.classList.remove("active"); })
 
-    # ── INNERTUBE LIVE SEARCH & FEED ENGINE IN PURE ENLGS ──
+        create statusTitle as document.getElementById("live-status-title")
+        create statusDesc as document.getElementById("live-status-desc")
+
+        if categoryName == "All":
+            create cAll as document.getElementById("chip-all")
+            if cAll != null:
+                cAll.classList.add("active")
+            renderGrid(masterCatalog)
+            if statusTitle != null:
+                statusTitle.textContent = "🔴 All YouTube Feed"
+            if statusDesc != null:
+                statusDesc.textContent = "Displaying " + masterCatalog.length + " live videos across all genres"
+        else:
+            create filtered as masterCatalog.filter(function(item) { return item.category == categoryName; })
+            if filtered.length == 0:
+                set filtered = masterCatalog
+            renderGrid(filtered)
+            if statusTitle != null:
+                statusTitle.textContent = "🔴 Category: " + categoryName
+            if statusDesc != null:
+                statusDesc.textContent = "Displaying " + filtered.length + " curated live YouTube videos"
+
+        call showToast with "Showing category: " + categoryName
+
+    # ── INNERTUBE LIVE SEARCH & GLOBAL QUERY ENGINE ──
     to do searchLiveYouTube with query:
-        call showToast with "🔍 Fetching live YouTube feed for: " + query
-        create statusSub as document.querySelector(".live-subtext")
-        if statusSub != null:
-            statusSub.textContent = "Fetching live videos for: " + query + "..."
+        call showToast with "🔍 Searching all of YouTube for: " + query
+        create statusTitle as document.getElementById("live-status-title")
+        create statusDesc as document.getElementById("live-status-desc")
+        if statusDesc != null:
+            statusDesc.textContent = "Searching entire YouTube database for: " + query + "..."
 
         create payload as JSON.stringify({ context: { client: { clientName: "WEB", clientVersion: "2.20240101.01.00", gl: "IN", hl: "en" } }, query: query })
         
-        fetch("https://www.youtube.com/youtubei/v1/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).then(function(res) { return res.json(); }).then(function(data) { var primary = data.contents && data.contents.twoColumnSearchResultsRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents; if (primary && primary.length > 0) { var items = []; var sectionContents = primary[0].itemSectionRenderer && primary[0].itemSectionRenderer.contents; if (sectionContents) { sectionContents.forEach(function(c) { if (c.videoRenderer && c.videoRenderer.videoId) { var vr = c.videoRenderer; var title = vr.title && vr.title.runs && vr.title.runs[0] ? vr.title.runs[0].text : "YouTube Video"; var ch = vr.ownerText && vr.ownerText.runs && vr.ownerText.runs[0] ? vr.ownerText.runs[0].text : "Creator"; var views = vr.viewCountText ? vr.viewCountText.simpleText : "100K views"; var dur = vr.lengthText ? vr.lengthText.simpleText : "10:00"; items.push({ id: vr.videoId, title: title, channel: ch, views: views, duration: dur, thumb: "https://i.ytimg.com/vi/" + vr.videoId + "/hqdefault.jpg" }); } }); } if (items.length > 0) { renderDynamicGrid(items); if (statusSub != null) { statusSub.textContent = "Loaded " + items.length + " live YouTube videos for: " + query; } showToast("✨ Loaded " + items.length + " live YouTube videos!"); return; } } renderCategoryFilter(query); }).catch(function(err) { renderCategoryFilter(query); });
+        fetch("https://www.youtube.com/youtubei/v1/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).then(function(res) { return res.json(); }).then(function(data) { var primary = data.contents && data.contents.twoColumnSearchResultsRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents; if (primary && primary.length > 0) { var items = []; var sectionContents = primary[0].itemSectionRenderer && primary[0].itemSectionRenderer.contents; if (sectionContents) { sectionContents.forEach(function(c) { if (c.videoRenderer && c.videoRenderer.videoId) { var vr = c.videoRenderer; var title = vr.title && vr.title.runs && vr.title.runs[0] ? vr.title.runs[0].text : "YouTube Video"; var ch = vr.ownerText && vr.ownerText.runs && vr.ownerText.runs[0] ? vr.ownerText.runs[0].text : "Creator"; var views = vr.viewCountText ? vr.viewCountText.simpleText : "100K views"; var dur = vr.lengthText ? vr.lengthText.simpleText : "10:00"; var snippet = vr.detailedMetadataSnippets && vr.detailedMetadataSnippets[0] && vr.detailedMetadataSnippets[0].snippetText && vr.detailedMetadataSnippets[0].snippetText.runs ? vr.detailedMetadataSnippets[0].snippetText.runs.map(function(r){ return r.text; }).join('') : title; items.push({ id: vr.videoId, title: title, channel: ch, views: views, duration: dur, desc: snippet, avatar: ch.charAt(0) }); } }); } if (items.length > 0) { renderGrid(items); if (statusTitle != null) { statusTitle.textContent = "🔍 Search Results: " + query; } if (statusDesc != null) { statusDesc.textContent = "Found " + items.length + " live YouTube videos from Innertube API"; } showToast("✨ Found " + items.length + " live YouTube videos!"); return; } } var localMatches = masterCatalog.filter(function(v) { return v.title.toLowerCase().includes(query.toLowerCase()) || v.channel.toLowerCase().includes(query.toLowerCase()) || v.desc.toLowerCase().includes(query.toLowerCase()); }); if (localMatches.length > 0) { renderGrid(localMatches); } else { renderGrid(masterCatalog); } }).catch(function(err) { var localMatches = masterCatalog.filter(function(v) { return v.title.toLowerCase().includes(query.toLowerCase()) || v.channel.toLowerCase().includes(query.toLowerCase()) || v.desc.toLowerCase().includes(query.toLowerCase()); }); renderGrid(localMatches.length > 0 ? localMatches : masterCatalog); });
 
-    # ── VIDEO CARDS CLICK HANDLERS ──
-    when "card-video-1" is clicked:
-        call openWatchPage with "gJrjgg1KVL4"
-
-    when "card-video-2" is clicked:
-        call openWatchPage with "dQw4w9WgXcQ"
-
-    when "card-video-3" is clicked:
-        call openWatchPage with "8aGhZQkoFbQ"
-
-    when "card-video-4" is clicked:
-        call openWatchPage with "HXV3zeRR3h4"
-
-    when "card-video-5" is clicked:
-        call openWatchPage with "Q7AOvWpIVHU"
-
-    when "card-video-6" is clicked:
-        call openWatchPage with "pTJJsmejUOQ"
-
-    # Up Next Recommendation Cards
-    when "card-rec-2" is clicked:
-        call openWatchPage with "dQw4w9WgXcQ"
-
-    when "card-rec-3" is clicked:
-        call openWatchPage with "8aGhZQkoFbQ"
-
-    when "card-rec-5" is clicked:
-        call openWatchPage with "Q7AOvWpIVHU"
-
-    when "subs-card-1" is clicked:
-        call openWatchPage with "gJrjgg1KVL4"
-
-    when "subs-card-2" is clicked:
-        call openWatchPage with "dQw4w9WgXcQ"
-
-    # Shorts Shelf Cards on Home Feed
-    when "short-1" is clicked:
-        call openShortsReel
-
-    when "short-2" is clicked:
-        call openShortsReel
-
-    when "short-3" is clicked:
-        call openShortsReel
-
-    when "short-4" is clicked:
-        call openShortsReel
+    # Initial App Load: Render All Feed Cards
+    call renderGrid with masterCatalog
 
     # ── SIDEBAR NAVIGATION ──
     when "nav-home" is clicked:
@@ -241,34 +300,37 @@ in script:
         call openLibrary
 
     when "nav-your-videos" is clicked:
-        call showToast with "🎬 Your uploaded videos list"
+        call openSubsFeed
+        call showToast with "🎬 Your uploaded videos (Spandan Prayas Patra)"
 
     when "nav-watch-later" is clicked:
-        call showToast with "⏱️ Watch Later list (14 videos)"
+        call openLibrary
+        call showToast with "⏱️ Watch Later playlist (14 videos)"
 
     when "nav-liked" is clicked:
+        call openLibrary
         call showToast with "👍 Liked videos playlist (86 videos)"
 
     when "sub-1" is clicked:
-        call searchLiveYouTube with "Java 21 Spring Boot"
+        call filterByCategory with "Java Backend"
 
     when "sub-2" is clicked:
-        call searchLiveYouTube with "Enlang Compiler Architecture"
+        call filterByCategory with "Enlang Stack"
 
     when "sub-3" is clicked:
-        call searchLiveYouTube with "Next.js 15 React 19"
+        call filterByCategory with "Next.js"
 
     when "sub-4" is clicked:
-        call searchLiveYouTube with "Three.js WebGL Shaders"
+        call filterByCategory with "Coding & AI"
 
     when "nav-trending" is clicked:
         call searchLiveYouTube with "Trending in India"
 
     when "nav-music" is clicked:
-        call searchLiveYouTube with "Top Music Songs"
+        call filterByCategory with "Lo-Fi Music"
 
     when "nav-gaming" is clicked:
-        call searchLiveYouTube with "Trending Gaming Gameplay"
+        call filterByCategory with "Gaming"
 
     when "nav-news" is clicked:
         call searchLiveYouTube with "World Tech News"
@@ -305,10 +367,13 @@ in script:
         create uTitle as get value of "upload-title-input"
         if uTitle == "":
             set uTitle = "New Enlang Video by Spandan Prayas Patra"
+        create newV as { id: "gJrjgg1KVL4", title: uTitle, channel: "Spandan Prayas Patra", subs: "128K subscribers", views: "1 view • Just now", desc: "Newly uploaded creator video in Enlang.", category: "All", duration: "12:30", avatar: "S" }
+        masterCatalog.unshift(newV)
+        call openHomeFeed
         create mCreate as document.getElementById("modal-create")
         if mCreate != null:
             mCreate.style.display = "none"
-        call showToast with "🚀 Video Published: " + uTitle
+        call showToast with "🚀 Video Published Live: " + uTitle
 
     when "btn-notif" is clicked:
         create dNotif as document.getElementById("dropdown-notif")
@@ -319,7 +384,7 @@ in script:
                 dNotif.style.display = "flex"
 
     when "btn-voice" is clicked:
-        call showToast with "🎙️ Listening... Speak to search YouTube"
+        call showToast with "🎙️ Listening... Say 'Spring Boot' or 'Gaming' to search"
 
     when "user-profile" is clicked:
         call showToast with "👤 Signed in as Spandan Prayas Patra (Creator)"
@@ -332,76 +397,102 @@ in script:
             return
         call searchLiveYouTube with q
 
-    # ── CATEGORY FILTER CHIPS (LIVE SEARCH INTEGRATION) ──
+    # ── CATEGORY FILTER CHIPS ──
     when "chip-all" is clicked:
-        call searchLiveYouTube with "Trending"
+        call filterByCategory with "All"
 
     when "chip-coding" is clicked:
-        call searchLiveYouTube with "Coding and AI Tutorials"
+        call filterByCategory with "Coding & AI"
 
     when "chip-java" is clicked:
-        call searchLiveYouTube with "Java 21 Spring Boot"
+        call filterByCategory with "Java Backend"
 
     when "chip-spring" is clicked:
-        call searchLiveYouTube with "Spring Boot Microservices"
+        call filterByCategory with "Java Backend"
 
     when "chip-enlang" is clicked:
-        call searchLiveYouTube with "Compiler Engineering Enlang"
+        call filterByCategory with "Enlang Stack"
 
     when "chip-sysdesign" is clicked:
-        call searchLiveYouTube with "System Design High Scale"
+        call filterByCategory with "System Design"
 
     when "chip-next" is clicked:
-        call searchLiveYouTube with "Next.js Full Stack Tutorial"
+        call filterByCategory with "Next.js"
 
     when "chip-edge" is clicked:
-        call searchLiveYouTube with "Cloudflare Pages and Workers"
+        call filterByCategory with "Next.js"
 
     when "chip-music" is clicked:
-        call searchLiveYouTube with "Lo-Fi Beats to Relax"
+        call filterByCategory with "Lo-Fi Music"
 
     when "chip-gaming" is clicked:
-        call searchLiveYouTube with "Gaming Gameplay 2026"
+        call filterByCategory with "Gaming"
 
     when "chip-podcasts" is clicked:
-        call searchLiveYouTube with "Tech Podcasts"
+        call filterByCategory with "System Design"
 
-    # ── VIDEO PLAYER CONTROLS ──
+    # Shorts Shelf Card Clicks
+    when "short-shelf-1" is clicked:
+        call openShortsReel
+
+    when "short-shelf-2" is clicked:
+        call openShortsReel
+
+    when "short-shelf-3" is clicked:
+        call openShortsReel
+
+    when "short-shelf-4" is clicked:
+        call openShortsReel
+
+    # ── VIDEO PLAYER NATIVE CONTROLS (POSTMESSAGE ENABLED) ──
     when "btn-player-play" is clicked:
         if isPlaying == true:
             set isPlaying = false
             set text of "btn-player-play" to "▶"
+            call sendPlayerCmd with "pauseVideo", []
             call showToast with "⏸ Stream paused"
         else:
             set isPlaying = true
             set text of "btn-player-play" to "⏸"
+            call sendPlayerCmd with "playVideo", []
             call showToast with "▶ Stream playing"
 
     when "btn-player-next" is clicked:
-        call openWatchPage with "dQw4w9WgXcQ"
+        create nextItem as masterCatalog[1]
+        call openWatchPage with nextItem.id, nextItem.title, nextItem.channel, nextItem.views, nextItem.desc, nextItem.avatar
 
     when "btn-player-mute" is clicked:
-        create mBtn as document.getElementById("btn-player-mute")
         if isMuted == true:
             set isMuted = false
             set text of "btn-player-mute" to "🔊"
+            call sendPlayerCmd with "unMute", []
             call showToast with "Audio unmuted (100%)"
         else:
             set isMuted = true
             set text of "btn-player-mute" to "🔇"
+            call sendPlayerCmd with "mute", []
             call showToast with "Audio muted"
 
     when "btn-player-speed" is clicked:
         create sBtn as document.getElementById("btn-player-speed")
+        create rate as 1
         if playbackSpeed == "1x":
             set playbackSpeed = "1.5x"
+            set rate = 1.5
         else:
             if playbackSpeed == "1.5x":
                 set playbackSpeed = "2x"
+                set rate = 2
             else:
-                set playbackSpeed = "1x"
+                if playbackSpeed == "2x":
+                    set playbackSpeed = "0.5x"
+                    set rate = 0.5
+                else:
+                    set playbackSpeed = "1x"
+                    set rate = 1
         if sBtn != null:
             sBtn.innerText = playbackSpeed
+        call sendPlayerCmd with "setPlaybackRate", [rate]
         call showToast with "⚡ Playback Speed: " + playbackSpeed
 
     when "btn-player-cc" is clicked:
@@ -420,7 +511,7 @@ in script:
             document.exitFullscreen()
             call showToast with "Exited Fullscreen Player"
 
-    # ── TIMELINE SCRUBBER & CHAPTERS ──
+    # ── TIMELINE SCRUBBER & CHAPTERS (POSTMESSAGE SEEK) ──
     every 1 second:
         if isPlaying == true:
             if playSeconds < totalVideoSeconds:
@@ -435,18 +526,22 @@ in script:
 
     when "ch-1" is clicked:
         set playSeconds = 0
+        call sendPlayerCmd with "seekTo", [0, true]
         call showToast with "📍 Chapter: 00:00 • Introduction"
 
     when "ch-2" is clicked:
         set playSeconds = 255
+        call sendPlayerCmd with "seekTo", [255, true]
         call showToast with "📍 Chapter: 04:15 • HikariCP & Oracle Setup"
 
     when "ch-3" is clicked:
         set playSeconds = 570
+        call sendPlayerCmd with "seekTo", [570, true]
         call showToast with "📍 Chapter: 09:30 • ACID Transactions"
 
     when "ch-4" is clicked:
         set playSeconds = 840
+        call sendPlayerCmd with "seekTo", [840, true]
         call showToast with "📍 Chapter: 14:00 • High-Throughput Benchmarks"
 
     # ── SOCIAL ACTIONS (LIKE, SUBSCRIBE, JOIN, SHARE, CLIP) ──
@@ -554,6 +649,7 @@ in script:
                 sBtn.style.color = "#0f0f0f"
 
     when "btn-shorts-mute" is clicked:
+        call sendShortsCmd with "mute", []
         call showToast with "Shorts audio toggled"
 
     # ── REAL-TIME COMMENTS IN PURE ENLGS ──
@@ -587,17 +683,15 @@ in script:
             hContainer.innerHTML = "<p style='color: #888; padding: 20px;'>Watch history is empty.</p>"
         call showToast with "🗑️ Watch History Cleared"
 
-    # Theme Toggle
+    # Theme Toggle (OLED Dark <-> Pure Black Text Light Mode)
     when "btn-theme" is clicked:
         create b as document.body
         create tBtn as document.getElementById("btn-theme")
         if tBtn.innerText == "☾":
             tBtn.innerText = "☼"
-            b.style.background = "#ffffff"
-            b.style.color = "#0f0f0f"
+            b.classList.add("light-theme")
             call showToast with "Switched to YouTube Light Mode"
         else:
             tBtn.innerText = "☾"
-            b.style.background = "#0f0f0f"
-            b.style.color = "#f1f1f1"
+            b.classList.remove("light-theme")
             call showToast with "Switched to YouTube Dark Mode"
