@@ -2267,7 +2267,7 @@ let playbackSpeed = "1x";
 
 let isShortsLiked = false;
 
-console.log("▶ Initializing YouTube 1:1 Live Engine with Innertube API in Pure Enlang (.enlgs)...");
+console.log("▶ Initializing YouTube 1:1 Live Engine in Pure Enlang (.enlgs)...");
 
 const liveVideoCatalog = [ { id : "gJrjgg1KVL4" , title : "Spring Boot 3 Full Course 2025 - Beginner to Pro" , channel : "Spandan Prayas Patra" , subs : "128K subscribers" , views : "1,039,987 views • Premiered on Aug 15, 2026" , desc : "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." , ambient : "rgba(59, 130, 246, 0.3)" , duration : "1:11:22" } , { id : "dQw4w9WgXcQ" , title : "Rick Astley - Never Gonna Give You Up (Official Music Video 4K)" , channel : "Rick Astley" , subs : "3.4M subscribers" , views : "1,520,840,112 views • 14 years ago" , desc : "The official video for 'Never Gonna Give You Up' by Rick Astley. 4K Remastered." , ambient : "rgba(236, 72, 153, 0.3)" , duration : "03:33" } , { id : "8aGhZQkoFbQ" , title : "Next.js 15 & React 19 Full Stack Masterclass" , channel : "JavaScript Mastery" , subs : "1.1M subscribers" , views : "489,420 views • 3 weeks ago" , desc : "Master full-stack Next.js with Server Actions, Edge Middleware, and Cloudflare Deployments." , ambient : "rgba(16, 185, 129, 0.3)" , duration : "2:45:10" } , { id : "HXV3zeRR3h4" , title : "System Design for High Scale - 100 Million Users" , channel : "ByteByteGo" , subs : "1.9M subscribers" , views : "980,120 views • 1 month ago" , desc : "An insider look into database sharding, distributed caches, and load balancers at massive scale." , ambient : "rgba(249, 115, 22, 0.3)" , duration : "18:24" } , { id : "Q7AOvWpIVHU" , title : "Three.js 3D Web Graphics & WebGL Shaders Tutorial" , channel : "Creative Coding 3D" , subs : "340K subscribers" , views : "340,900 views • 5 days ago" , desc : "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL." , ambient : "rgba(99, 102, 241, 0.3)" , duration : "21:15" } , { id : "pTJJsmejUOQ" , title : "Flutter 3.24 & Dart Full Course for Mobile Apps" , channel : "FreeCodeCamp" , subs : "9.8M subscribers" , views : "1,420,150 views • 2 months ago" , desc : "Build cross-platform iOS & Android mobile applications with clean architecture." , ambient : "rgba(20, 184, 166, 0.3)" , duration : "4:32:00" } ];
 
@@ -2411,31 +2411,34 @@ function searchLiveYouTube(query) {
     statusSub.textContent = "Fetching live videos for: " + query + "...";
   }
   let payload = JSON.stringify ( { context : { client : { clientName : "WEB" , clientVersion : "2.20240101.01.00" , gl : "IN" , hl : "en" } } , query : query } );
-  fetch("https://www.youtube.com/youtubei/v1/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).then(function(res) {
-  return res.json()
-}
-
-}).then(function(data) {
-
-create primary as data.contents && data.contents.twoColumnSearchResultsRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents
-
-if (( primary && primary.length > 0 ) {) {
-  let items = [ ];
-  let sectionContents = primary [ 0 ] .itemSectionRenderer && primary [ 0 ] .itemSectionRenderer.contents;
-  if (( sectionContents ) {) {
-    sectionContents.forEach ( function ( c ) {;
-    if (c.videoRenderer && c.videoRenderer.videoId) {
-    create vr as c.videoRenderer
-    let title = vr.title && vr.title.runs && vr.title.runs [ 0 ] ? vr.title.runs [ 0 ] .text : "YouTube Video";
-    let ch = vr.ownerText && vr.ownerText.runs && vr.ownerText.runs [ 0 ] ? vr.ownerText.runs [ 0 ] .text : "Creator";
-    let views = vr.viewCountText ? vr.viewCountText.simpleText : "100K views";
-    let dur = vr.lengthText ? vr.lengthText.simpleText : "10:00";
-    items.push ( { id : vr.videoId , title : title , channel : ch , views : views , duration : dur , thumb : "https://i.ytimg.com/vi/" + vr.videoId + "/hqdefault.jpg" } );
+  fetch "https://www.youtube.com/youtubei/v1/search" with method "POST" and headers { "Content-Type": "application/json" } and body payload as json:
+  create primary as it.contents && it.contents.twoColumnSearchResultsRenderer && it.contents.twoColumnSearchResultsRenderer.primaryContents && it.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && it.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents
+  if (primary && primary.length > 0) {
+    let items = [ ];
+    let sectionContents = primary [ 0 ] .itemSectionRenderer && primary [ 0 ] .itemSectionRenderer.contents;
+    if (sectionContents) {
+      for (const c of sectionContents) {
+        if (c.videoRenderer && c.videoRenderer.videoId) {
+          let vr = c.videoRenderer;
+          let title = vr.title && vr.title.runs && vr.title.runs [ 0 ] ? vr.title.runs [ 0 ] .text : "YouTube Video";
+          let ch = vr.ownerText && vr.ownerText.runs && vr.ownerText.runs [ 0 ] ? vr.ownerText.runs [ 0 ] .text : "Creator";
+          let views = vr.viewCountText ? vr.viewCountText.simpleText : "100K views";
+          let dur = vr.lengthText ? vr.lengthText.simpleText : "10:00";
+          items.push ( { id : vr.videoId , title : title , channel : ch , views : views , duration : dur , thumb : "https://i.ytimg.com/vi/" + vr.videoId + "/hqdefault.jpg" } );
+        }
+      }
+    }
+    if (items.length > 0) {
+      renderDynamicGrid(items);
+      if (statusSub != null) {
+        statusSub.textContent = "Loaded " + items.length + " live YouTube videos for: " + query;
+      }
+      showToast("✨ Loaded " + items.length + " live YouTube videos!");
+      return;
+    }
   }
-  }
+  renderCategoryFilter(query);
 }
-
-})
     </script>
   </body>
 </html>

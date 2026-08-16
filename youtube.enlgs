@@ -1,4 +1,5 @@
 # Enlang Script (.enlgs) - YouTube 1:1 Complete Live Platform Engine
+# 100% Pure Idiomatic Enlang Syntax
 
 in script:
     # State Declarations
@@ -14,7 +15,7 @@ in script:
     create playbackSpeed as "1x"
     create isShortsLiked as false
 
-    show "▶ Initializing YouTube 1:1 Live Engine with Innertube API in Pure Enlang (.enlgs)..."
+    show "▶ Initializing YouTube 1:1 Live Engine in Pure Enlang (.enlgs)..."
 
     # Default Curated Live Video Database (Real YouTube IDs & HD Thumbnails)
     define liveVideoCatalog as [ { id: "gJrjgg1KVL4", title: "Spring Boot 3 Full Course 2025 - Beginner to Pro", channel: "Spandan Prayas Patra", subs: "128K subscribers", views: "1,039,987 views • Premiered on Aug 15, 2026", desc: "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.", ambient: "rgba(59, 130, 246, 0.3)", duration: "1:11:22" }, { id: "dQw4w9WgXcQ", title: "Rick Astley - Never Gonna Give You Up (Official Music Video 4K)", channel: "Rick Astley", subs: "3.4M subscribers", views: "1,520,840,112 views • 14 years ago", desc: "The official video for 'Never Gonna Give You Up' by Rick Astley. 4K Remastered.", ambient: "rgba(236, 72, 153, 0.3)", duration: "03:33" }, { id: "8aGhZQkoFbQ", title: "Next.js 15 & React 19 Full Stack Masterclass", channel: "JavaScript Mastery", subs: "1.1M subscribers", views: "489,420 views • 3 weeks ago", desc: "Master full-stack Next.js with Server Actions, Edge Middleware, and Cloudflare Deployments.", ambient: "rgba(16, 185, 129, 0.3)", duration: "2:45:10" }, { id: "HXV3zeRR3h4", title: "System Design for High Scale - 100 Million Users", channel: "ByteByteGo", subs: "1.9M subscribers", views: "980,120 views • 1 month ago", desc: "An insider look into database sharding, distributed caches, and load balancers at massive scale.", ambient: "rgba(249, 115, 22, 0.3)", duration: "18:24" }, { id: "Q7AOvWpIVHU", title: "Three.js 3D Web Graphics & WebGL Shaders Tutorial", channel: "Creative Coding 3D", subs: "340K subscribers", views: "340,900 views • 5 days ago", desc: "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL.", ambient: "rgba(99, 102, 241, 0.3)", duration: "21:15" }, { id: "pTJJsmejUOQ", title: "Flutter 3.24 & Dart Full Course for Mobile Apps", channel: "FreeCodeCamp", subs: "9.8M subscribers", views: "1,420,150 views • 2 months ago", desc: "Build cross-platform iOS & Android mobile applications with clean architecture.", ambient: "rgba(20, 184, 166, 0.3)", duration: "4:32:00" } ]
@@ -22,7 +23,7 @@ in script:
     # Shorts Database
     define shortsList as [ { title: "🔥 3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev", author: "@SpandanPrayas", audio: "🎵 Spandan Original Audio • High Performance Remix", views: "3.2M", bg: "linear-gradient(180deg, #1e3a8a, #0f172a)", vid: "gJrjgg1KVL4" }, { title: "🚀 Write Clean Code in English with Enlang! Zero boilerplate #Enlang #Compilers", author: "@EnlangOfficial", audio: "🎵 Enlang Sound Studio • Compiler Waves", views: "1.8M", bg: "linear-gradient(180deg, #047857, #064e3b)", vid: "dQw4w9WgXcQ" }, { title: "🌐 Cloudflare Workers under 1ms Latency around the world #Edge #Cloudflare", author: "@EdgeArchitects", audio: "🎵 Ultra Edge Lo-Fi Beat", views: "950K", bg: "linear-gradient(180deg, #6d28d9, #2e1065)", vid: "8aGhZQkoFbQ" }, { title: "✨ Raymarched Black Hole in 30 Lines of WebGL Shader #Threejs #GLSL", author: "@CreativeCoding3D", audio: "🎵 Cosmic Raymarch Audio", views: "2.4M", bg: "linear-gradient(180deg, #b45309, #451a03)", vid: "Q7AOvWpIVHU" } ]
 
-    # Toast Notification Helper
+    # Toast Notification Helper in Pure Enlgs
     to do showToast with message:
         create toastEl as document.getElementById("yt-toast")
         if toastEl != null:
@@ -33,7 +34,7 @@ in script:
                 if t2 != null:
                     t2.style.display = "none"
 
-    # Time Formatter Helper
+    # Time Formatter Helper in Pure Enlgs
     to do formatDuration with secs:
         create m as Math.floor(secs / 60)
         create s as secs % 60
@@ -41,7 +42,7 @@ in script:
         create sStr as s < 10 ? "0" + s : "" + s
         return mStr + ":" + sStr
 
-    # Hide all views helper
+    # Hide all views helper in Pure Enlgs
     to do hideAllViews:
         create pFeed as document.getElementById("view-feed")
         create pShorts as document.getElementById("view-shorts")
@@ -59,7 +60,7 @@ in script:
         if pLib != null:
             pLib.style.display = "none"
 
-    # Open Home Feed
+    # Open Home Feed in Pure Enlgs
     to do openHomeFeed:
         call hideAllViews
         create pFeed as document.getElementById("view-feed")
@@ -68,7 +69,7 @@ in script:
         window.scrollTo(0, 0)
         call showToast with "🏠 YouTube Home Feed"
 
-    # Open Shorts Reel View
+    # Open Shorts Reel View in Pure Enlgs
     to do openShortsReel:
         call hideAllViews
         create pShorts as document.getElementById("view-shorts")
@@ -78,7 +79,7 @@ in script:
         call renderActiveShort with 0
         call showToast with "⚡ YouTube Shorts Reel active"
 
-    # Open Subscriptions Feed
+    # Open Subscriptions Feed in Pure Enlgs
     to do openSubsFeed:
         call hideAllViews
         create pSubs as document.getElementById("view-subs")
@@ -87,7 +88,7 @@ in script:
         window.scrollTo(0, 0)
         call showToast with "📺 Subscriptions Feed"
 
-    # Open Library / History View
+    # Open Library / History View in Pure Enlgs
     to do openLibrary:
         call hideAllViews
         create pLib as document.getElementById("view-library")
@@ -147,48 +148,37 @@ in script:
         if statusSub != null:
             statusSub.textContent = "Fetching live videos for: " + query + "..."
 
-        # Query YouTube Innertube Search API with fallback
+        # Query YouTube Innertube Search API in Pure Enlgs
         create payload as JSON.stringify({ context: { client: { clientName: "WEB", clientVersion: "2.20240101.01.00", gl: "IN", hl: "en" } }, query: query })
         
-        fetch("https://www.youtube.com/youtubei/v1/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).then(function(res) {
-            return res.json()
-        }).then(function(data) {
-            create primary as data.contents && data.contents.twoColumnSearchResultsRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents
-            if (primary && primary.length > 0) {
+        fetch "https://www.youtube.com/youtubei/v1/search" with method "POST" and headers { "Content-Type": "application/json" } and body payload as json:
+            create primary as it.contents && it.contents.twoColumnSearchResultsRenderer && it.contents.twoColumnSearchResultsRenderer.primaryContents && it.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && it.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents
+            if primary and primary.length > 0:
                 create items as []
                 create sectionContents as primary[0].itemSectionRenderer && primary[0].itemSectionRenderer.contents
-                if (sectionContents) {
-                    sectionContents.forEach(function(c) {
-                        if (c.videoRenderer && c.videoRenderer.videoId) {
+                if sectionContents:
+                    for each c in sectionContents:
+                        if c.videoRenderer and c.videoRenderer.videoId:
                             create vr as c.videoRenderer
                             create title as vr.title && vr.title.runs && vr.title.runs[0] ? vr.title.runs[0].text : "YouTube Video"
                             create ch as vr.ownerText && vr.ownerText.runs && vr.ownerText.runs[0] ? vr.ownerText.runs[0].text : "Creator"
                             create views as vr.viewCountText ? vr.viewCountText.simpleText : "100K views"
                             create dur as vr.lengthText ? vr.lengthText.simpleText : "10:00"
                             items.push({ id: vr.videoId, title: title, channel: ch, views: views, duration: dur, thumb: "https://i.ytimg.com/vi/" + vr.videoId + "/hqdefault.jpg" })
-                        }
-                    })
-                }
-                if (items.length > 0) {
+                if items.length > 0:
                     call renderDynamicGrid with items
-                    if (statusSub != null) {
+                    if statusSub != null:
                         statusSub.textContent = "Loaded " + items.length + " live YouTube videos for: " + query
-                    }
                     call showToast with "✨ Loaded " + items.length + " live YouTube videos!"
                     return
-                }
-            }
             call renderCategoryFilter with query
-        }).catch(function(err) {
-            call renderCategoryFilter with query
-        })
 
-    # Render Dynamic Video Cards to Grid
+    # Render Dynamic Video Cards to Grid in Pure Enlgs
     to do renderDynamicGrid with items:
         create grid as document.getElementById("video-grid-container")
         if grid != null:
             grid.innerHTML = ""
-            items.forEach(function(item) {
+            for each item in items:
                 create card as document.createElement("div")
                 card.className = "video-card"
                 card.id = "card-live-" + item.id
@@ -197,9 +187,8 @@ in script:
                     call openWatchPage with item.id
                 }
                 grid.appendChild(card)
-            })
 
-    # Category Filter Logic
+    # Category Filter Logic in Pure Enlgs
     to do renderCategoryFilter with categoryName:
         create filtered as liveVideoCatalog
         call renderDynamicGrid with filtered.map(function(v) {
