@@ -26,7 +26,7 @@ document enlgf:
                     button "🔔" id "btn-notif" class "yt-icon-btn notif-btn":
                         span "3" class "notif-badge"
                     button "☾" id "btn-theme" class "yt-icon-btn"
-                    div "P" class "yt-user-avatar" id "user-profile"
+                    div "S" class "yt-user-avatar" id "user-profile"
 
             div class "yt-main-layout":
                 # Left Navigation Sidebar
@@ -89,10 +89,10 @@ document enlgf:
                                         span "☕ Java 21 & Spring Boot 3.2 Full Masterclass" class "thumb-text"
                                     span "18:45" class "duration-badge"
                                 div class "video-meta":
-                                    div "P" class "channel-avatar"
+                                    div "S" class "channel-avatar"
                                     div class "video-details":
                                         h3 "Building High-Throughput Microservices with Java & Spring Boot" class "video-title"
-                                        p "Prayas Kumar Sahoo • Java Backend" class "video-channel"
+                                        p "Spandan Prayas Patra • Java Backend" class "video-channel"
                                         p "245K views • 2 days ago" class "video-stats"
 
                             # Video Card 2
@@ -188,9 +188,9 @@ document enlgf:
                                     
                                     div class "watch-actions-row":
                                         div class "channel-info-box":
-                                            div "P" class "channel-avatar-lg"
+                                            div "S" class "channel-avatar-lg"
                                             div:
-                                                h4 "Prayas Kumar Sahoo" id "watch-channel-name" class "channel-title"
+                                                h4 "Spandan Prayas Patra" id "watch-channel-name" class "channel-title"
                                                 p "128K subscribers" id "watch-sub-count" class "channel-subs"
                                             button "Subscribe" id "btn-subscribe" class "btn-subscribe"
 
@@ -206,7 +206,7 @@ document enlgf:
                                 # Description Box
                                 div class "watch-description-box" id "desc-box":
                                     p "245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices" id "desc-stats" class "desc-stats"
-                                    p "In this deep dive tutorial, Prayas Kumar Sahoo walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." id "watch-desc-text" class "desc-content"
+                                    p "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." id "watch-desc-text" class "desc-content"
 
                                 # Comments Section
                                 div class "comments-container":
@@ -216,7 +216,7 @@ document enlgf:
 
                                     # Add Comment Box
                                     div class "add-comment-row":
-                                        div "U" class "user-avatar-sm"
+                                        div "S" class "user-avatar-sm"
                                         div class "comment-input-wrap":
                                             input type "text" id "new-comment-input" placeholder "Add a public comment..." class "comment-input"
                                             div class "comment-btn-bar":
