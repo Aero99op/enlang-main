@@ -26,8 +26,7 @@ document enlgf:
                     button "🔔" id "btn-notif" class "yt-icon-btn notif-btn":
                         span "3" class "notif-badge"
                     button "☾" id "btn-theme" class "yt-icon-btn"
-                    div class "yt-user-avatar" id "user-profile":
-                        span "P"
+                    div "P" class "yt-user-avatar" id "user-profile"
 
             div class "yt-main-layout":
                 # Left Navigation Sidebar
@@ -90,7 +89,7 @@ document enlgf:
                                         span "☕ Java 21 & Spring Boot 3.2 Full Masterclass" class "thumb-text"
                                     span "18:45" class "duration-badge"
                                 div class "video-meta":
-                                    div class "channel-avatar": "P"
+                                    div "P" class "channel-avatar"
                                     div class "video-details":
                                         h3 "Building High-Throughput Microservices with Java & Spring Boot" class "video-title"
                                         p "Prayas Kumar Sahoo • Java Backend" class "video-channel"
@@ -103,7 +102,7 @@ document enlgf:
                                         span "🪐 Enlang Compiler Architecture: Pure English Code" class "thumb-text"
                                     span "24:10" class "duration-badge"
                                 div class "video-meta":
-                                    div class "channel-avatar": "E"
+                                    div "E" class "channel-avatar"
                                     div class "video-details":
                                         h3 "How We Built Enlang: Compiling English to Python, JS & Flutter" class "video-title"
                                         p "Enlang Official • Compiler Engineering" class "video-channel"
@@ -116,7 +115,7 @@ document enlgf:
                                         span "🌐 Cloudflare Pages + Next.js Zero 500 Errors" class "thumb-text"
                                     span "14:20" class "duration-badge"
                                 div class "video-meta":
-                                    div class "channel-avatar": "C"
+                                    div "C" class "channel-avatar"
                                     div class "video-details":
                                         h3 "Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages" class "video-title"
                                         p "Edge Architects • Cloud Dev" class "video-channel"
@@ -129,7 +128,7 @@ document enlgf:
                                         span "🗄️ MySQL vs Oracle 19c: Query Optimization Masterclass" class "thumb-text"
                                     span "32:00" class "duration-badge"
                                 div class "video-meta":
-                                    div class "channel-avatar": "D"
+                                    div "D" class "channel-avatar"
                                     div class "video-details":
                                         h3 "Database Indexing, Stored Procedures & Connection Pooling" class "video-title"
                                         p "Database Wizardry • Performance" class "video-channel"
@@ -142,7 +141,7 @@ document enlgf:
                                         span "🎨 3D Solar & Lunar Shaders in WebGL & Three.js" class "thumb-text"
                                     span "21:15" class "duration-badge"
                                 div class "video-meta":
-                                    div class "channel-avatar": "T"
+                                    div "T" class "channel-avatar"
                                     div class "video-details":
                                         h3 "Procedural Corona Glows & Raymarched Moon Craters in WebGL" class "video-title"
                                         p "Creative Coding 3D • Shader Art" class "video-channel"
@@ -155,7 +154,7 @@ document enlgf:
                                         span "📱 Enlang Mobile (.enlgm): 1:1 Flutter Compilation" class "thumb-text"
                                     span "16:40" class "duration-badge"
                                 div class "video-meta":
-                                    div class "channel-avatar": "M"
+                                    div "M" class "channel-avatar"
                                     div class "video-details":
                                         h3 "Build Android & iOS Flutter Apps with Pure English Sentences" class "video-title"
                                         p "Mobile Mastery • Cross-Platform" class "video-channel"
@@ -189,7 +188,7 @@ document enlgf:
                                     
                                     div class "watch-actions-row":
                                         div class "channel-info-box":
-                                            div class "channel-avatar-lg": "P"
+                                            div "P" class "channel-avatar-lg"
                                             div:
                                                 h4 "Prayas Kumar Sahoo" id "watch-channel-name" class "channel-title"
                                                 p "128K subscribers" id "watch-sub-count" class "channel-subs"
@@ -217,7 +216,7 @@ document enlgf:
 
                                     # Add Comment Box
                                     div class "add-comment-row":
-                                        div class "user-avatar-sm": "U"
+                                        div "U" class "user-avatar-sm"
                                         div class "comment-input-wrap":
                                             input type "text" id "new-comment-input" placeholder "Add a public comment..." class "comment-input"
                                             div class "comment-btn-bar":
@@ -227,7 +226,7 @@ document enlgf:
                                     # Comments List
                                     div class "comment-list" id "comment-list-container":
                                         div class "comment-card":
-                                            div class "user-avatar-sm" style "background: #3b82f6;": "A"
+                                            div "A" class "user-avatar-sm" style "background: #3b82f6;"
                                             div class "comment-body":
                                                 div class "comment-author-row":
                                                     span "@AlexDeveloper" class "comment-author"
@@ -239,7 +238,7 @@ document enlgf:
                                                     button "Reply" class "btn-react"
 
                                         div class "comment-card":
-                                            div class "user-avatar-sm" style "background: #10b981;": "S"
+                                            div "S" class "user-avatar-sm" style "background: #10b981;"
                                             div class "comment-body":
                                                 div class "comment-author-row":
                                                     span "@SarahCode" class "comment-author"

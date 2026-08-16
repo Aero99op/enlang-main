@@ -255,8 +255,8 @@ in script:
         if isPlaying == true:
             if playSeconds < totalVideoSeconds:
                 set playSeconds = playSeconds + 1
-                create curStr as call formatDuration with playSeconds
-                create totStr as call formatDuration with totalVideoSeconds
+                create curStr as formatDuration(playSeconds)
+                create totStr as formatDuration(totalVideoSeconds)
                 set text of "player-time-display" to curStr + " / " + totStr
                 create pct as (playSeconds / totalVideoSeconds) * 100
                 create fillBar as document.getElementById("scrubber-progress")

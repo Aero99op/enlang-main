@@ -940,9 +940,7 @@ body {
             <span class="notif-badge">3</span>
           </button>
           <button id="btn-theme" class="yt-icon-btn">☾</button>
-          <div class="yt-user-avatar" id="user-profile">
-            <span>P</span>
-          </div>
+          <div class="yt-user-avatar" id="user-profile">P</div>
         </div>
       </header>
       <div class="yt-main-layout">
@@ -1007,249 +1005,227 @@ body {
                   <span class="duration-badge">18:45</span>
                 </div>
                 <div class="video-meta">
-                  <div class="channel-avatar">
-                    P
-                    <div class="video-details">
-                      <h3 class="video-title">Building High-Throughput Microservices with Java & Spring Boot</h3>
-                      <p class="video-channel">Prayas Kumar Sahoo • Java Backend</p>
-                      <p class="video-stats">245K views • 2 days ago</p>
+                  <div class="channel-avatar">P</div>
+                  <div class="video-details">
+                    <h3 class="video-title">Building High-Throughput Microservices with Java & Spring Boot</h3>
+                    <p class="video-channel">Prayas Kumar Sahoo • Java Backend</p>
+                    <p class="video-stats">245K views • 2 days ago</p>
+                  </div>
+                </div>
+              </div>
+              <div class="video-card" id="card-video-2">
+                <div class="thumbnail-wrapper">
+                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #065f46, #10b981);">
+                    <span class="thumb-text">🪐 Enlang Compiler Architecture: Pure English Code</span>
+                  </div>
+                  <span class="duration-badge">24:10</span>
+                </div>
+                <div class="video-meta">
+                  <div class="channel-avatar">E</div>
+                  <div class="video-details">
+                    <h3 class="video-title">How We Built Enlang: Compiling English to Python, JS & Flutter</h3>
+                    <p class="video-channel">Enlang Official • Compiler Engineering</p>
+                    <p class="video-stats">512K views • 1 week ago</p>
+                  </div>
+                </div>
+              </div>
+              <div class="video-card" id="card-video-3">
+                <div class="thumbnail-wrapper">
+                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #701a75, #ec4899);">
+                    <span class="thumb-text">🌐 Cloudflare Pages + Next.js Zero 500 Errors</span>
+                  </div>
+                  <span class="duration-badge">14:20</span>
+                </div>
+                <div class="video-meta">
+                  <div class="channel-avatar">C</div>
+                  <div class="video-details">
+                    <h3 class="video-title">Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages</h3>
+                    <p class="video-channel">Edge Architects • Cloud Dev</p>
+                    <p class="video-stats">189K views • 3 days ago</p>
+                  </div>
+                </div>
+              </div>
+              <div class="video-card" id="card-video-4">
+                <div class="thumbnail-wrapper">
+                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #7c2d12, #f97316);">
+                    <span class="thumb-text">🗄️ MySQL vs Oracle 19c: Query Optimization Masterclass</span>
+                  </div>
+                  <span class="duration-badge">32:00</span>
+                </div>
+                <div class="video-meta">
+                  <div class="channel-avatar">D</div>
+                  <div class="video-details">
+                    <h3 class="video-title">Database Indexing, Stored Procedures & Connection Pooling</h3>
+                    <p class="video-channel">Database Wizardry • Performance</p>
+                    <p class="video-stats">98K views • 4 days ago</p>
+                  </div>
+                </div>
+              </div>
+              <div class="video-card" id="card-video-5">
+                <div class="thumbnail-wrapper">
+                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #1e1b4b, #6366f1);">
+                    <span class="thumb-text">🎨 3D Solar & Lunar Shaders in WebGL & Three.js</span>
+                  </div>
+                  <span class="duration-badge">21:15</span>
+                </div>
+                <div class="video-meta">
+                  <div class="channel-avatar">T</div>
+                  <div class="video-details">
+                    <h3 class="video-title">Procedural Corona Glows & Raymarched Moon Craters in WebGL</h3>
+                    <p class="video-channel">Creative Coding 3D • Shader Art</p>
+                    <p class="video-stats">340K views • 5 days ago</p>
+                  </div>
+                </div>
+              </div>
+              <div class="video-card" id="card-video-6">
+                <div class="thumbnail-wrapper">
+                  <div class="thumbnail-bg" style="background: linear-gradient(135deg, #134e4a, #14b8a6);">
+                    <span class="thumb-text">📱 Enlang Mobile (.enlgm): 1:1 Flutter Compilation</span>
+                  </div>
+                  <span class="duration-badge">16:40</span>
+                </div>
+                <div class="video-meta">
+                  <div class="channel-avatar">M</div>
+                  <div class="video-details">
+                    <h3 class="video-title">Build Android & iOS Flutter Apps with Pure English Sentences</h3>
+                    <p class="video-channel">Mobile Mastery • Cross-Platform</p>
+                    <p class="video-stats">420K views • 6 days ago</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="view-watch" class="view-panel">
+            <div class="watch-layout">
+              <div class="watch-primary">
+                <div class="video-player-container">
+                  <div class="player-screen" id="player-canvas">
+                    <div class="player-placeholder-content">
+                      <span class="play-huge-icon" id="play-overlay-icon">▶</span>
+                      <h2 id="active-player-title">Building High-Throughput Microservices with Java & Spring Boot</h2>
+                      <p class="player-badge-sub">Streaming in 1080p60 HD • Pure Enlang Runtime</p>
+                    </div>
+                  </div>
+                  <div class="player-controls">
+                    <button id="btn-player-play" class="ctrl-btn">▶</button>
+                    <span id="player-time-display" class="ctrl-time">04:15 / 18:45</span>
+                    <div class="scrubber-bar" id="scrubber-track">
+                      <div id="scrubber-progress" class="scrubber-fill" style="width: 25%;">
+                      </div>
+                    </div>
+                    <button id="btn-player-mute" class="ctrl-btn">🔊</button>
+                    <button id="btn-player-quality" class="ctrl-btn">⚙️ 1080p</button>
+                    <button id="btn-player-fullscreen" class="ctrl-btn">⛶</button>
+                  </div>
+                </div>
+                <div class="watch-header">
+                  <h1 id="watch-video-title" class="watch-title">Building High-Throughput Microservices with Java & Spring Boot</h1>
+                  <div class="watch-actions-row">
+                    <div class="channel-info-box">
+                      <div class="channel-avatar-lg">P</div>
+                      <div>
+                        <h4 id="watch-channel-name" class="channel-title">Prayas Kumar Sahoo</h4>
+                        <p id="watch-sub-count" class="channel-subs">128K subscribers</p>
+                      </div>
+                      <button id="btn-subscribe" class="btn-subscribe">Subscribe</button>
+                    </div>
+                    <div class="action-buttons-group">
+                      <div class="like-dislike-pill">
+                        <button id="btn-like" class="btn-like">👍 142K</button>
+                        <div class="pill-sep">
+                        </div>
+                        <button id="btn-dislike" class="btn-dislike">👎</button>
+                      </div>
+                      <button id="btn-share" class="btn-action">↗ Share</button>
+                      <button id="btn-download" class="btn-action">⬇ Download</button>
+                      <button id="btn-more" class="btn-action">⋯ More</button>
                     </div>
                   </div>
                 </div>
-                <div class="video-card" id="card-video-2">
-                  <div class="thumbnail-wrapper">
-                    <div class="thumbnail-bg" style="background: linear-gradient(135deg, #065f46, #10b981);">
-                      <span class="thumb-text">🪐 Enlang Compiler Architecture: Pure English Code</span>
-                    </div>
-                    <span class="duration-badge">24:10</span>
+                <div class="watch-description-box" id="desc-box">
+                  <p id="desc-stats" class="desc-stats">245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices</p>
+                  <p id="watch-desc-text" class="desc-content">In this deep dive tutorial, Prayas Kumar Sahoo walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.</p>
+                </div>
+                <div class="comments-container">
+                  <div class="comments-header">
+                    <h3 id="comments-count-header">328 Comments</h3>
+                    <span class="sort-tag">Sort by: Top Comments</span>
                   </div>
-                  <div class="video-meta">
-                    <div class="channel-avatar">
-                      E
-                      <div class="video-details">
-                        <h3 class="video-title">How We Built Enlang: Compiling English to Python, JS & Flutter</h3>
-                        <p class="video-channel">Enlang Official • Compiler Engineering</p>
-                        <p class="video-stats">512K views • 1 week ago</p>
+                  <div class="add-comment-row">
+                    <div class="user-avatar-sm">U</div>
+                    <div class="comment-input-wrap">
+                      <input type="text" id="new-comment-input" placeholder="Add a public comment..." class="comment-input">
+                      <div class="comment-btn-bar">
+                        <button id="btn-cancel-comment" class="btn-ghost">Cancel</button>
+                        <button id="btn-submit-comment" class="btn-primary">Comment</button>
                       </div>
                     </div>
                   </div>
-                  <div class="video-card" id="card-video-3">
-                    <div class="thumbnail-wrapper">
-                      <div class="thumbnail-bg" style="background: linear-gradient(135deg, #701a75, #ec4899);">
-                        <span class="thumb-text">🌐 Cloudflare Pages + Next.js Zero 500 Errors</span>
+                  <div class="comment-list" id="comment-list-container">
+                    <div class="comment-card">
+                      <div class="user-avatar-sm" style="background: #3b82f6;">A</div>
+                      <div class="comment-body">
+                        <div class="comment-author-row">
+                          <span class="comment-author">@AlexDeveloper</span>
+                          <span class="comment-time">2 hours ago</span>
+                        </div>
+                        <p class="comment-msg">The explanation of connection pooling and transaction propagation was crystal clear! Best Java video on YouTube.</p>
+                        <div class="comment-reactions">
+                          <button class="btn-react">👍 48</button>
+                          <button class="btn-react">👎</button>
+                          <button class="btn-react">Reply</button>
+                        </div>
                       </div>
+                    </div>
+                    <div class="comment-card">
+                      <div class="user-avatar-sm" style="background: #10b981;">S</div>
+                      <div class="comment-body">
+                        <div class="comment-author-row">
+                          <span class="comment-author">@SarahCode</span>
+                          <span class="comment-time">5 hours ago</span>
+                        </div>
+                        <p class="comment-msg">Enlang compiling directly to Python, JS and Flutter is blowing my mind. Keep shipping!</p>
+                        <div class="comment-reactions">
+                          <button class="btn-react">👍 124</button>
+                          <button class="btn-react">👎</button>
+                          <button class="btn-react">Reply</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="watch-secondary">
+                <h3 class="rec-header">Up Next</h3>
+                <div class="rec-list">
+                  <div class="rec-card" id="card-rec-2">
+                    <div class="rec-thumb" style="background: linear-gradient(135deg, #065f46, #10b981);">
+                      <span class="duration-badge">24:10</span>
+                    </div>
+                    <div class="rec-details">
+                      <h4 class="rec-title">How We Built Enlang Compiler</h4>
+                      <p class="rec-channel">Enlang Official</p>
+                      <p class="rec-stats">512K views</p>
+                    </div>
+                  </div>
+                  <div class="rec-card" id="card-rec-3">
+                    <div class="rec-thumb" style="background: linear-gradient(135deg, #701a75, #ec4899);">
                       <span class="duration-badge">14:20</span>
                     </div>
-                    <div class="video-meta">
-                      <div class="channel-avatar">
-                        C
-                        <div class="video-details">
-                          <h3 class="video-title">Deploying Full-Stack Edge Apps on Cloudflare Workers & Pages</h3>
-                          <p class="video-channel">Edge Architects • Cloud Dev</p>
-                          <p class="video-stats">189K views • 3 days ago</p>
-                        </div>
-                      </div>
+                    <div class="rec-details">
+                      <h4 class="rec-title">Deploying Edge Apps on Cloudflare</h4>
+                      <p class="rec-channel">Edge Architects</p>
+                      <p class="rec-stats">189K views</p>
                     </div>
-                    <div class="video-card" id="card-video-4">
-                      <div class="thumbnail-wrapper">
-                        <div class="thumbnail-bg" style="background: linear-gradient(135deg, #7c2d12, #f97316);">
-                          <span class="thumb-text">🗄️ MySQL vs Oracle 19c: Query Optimization Masterclass</span>
-                        </div>
-                        <span class="duration-badge">32:00</span>
-                      </div>
-                      <div class="video-meta">
-                        <div class="channel-avatar">
-                          D
-                          <div class="video-details">
-                            <h3 class="video-title">Database Indexing, Stored Procedures & Connection Pooling</h3>
-                            <p class="video-channel">Database Wizardry • Performance</p>
-                            <p class="video-stats">98K views • 4 days ago</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="video-card" id="card-video-5">
-                        <div class="thumbnail-wrapper">
-                          <div class="thumbnail-bg" style="background: linear-gradient(135deg, #1e1b4b, #6366f1);">
-                            <span class="thumb-text">🎨 3D Solar & Lunar Shaders in WebGL & Three.js</span>
-                          </div>
-                          <span class="duration-badge">21:15</span>
-                        </div>
-                        <div class="video-meta">
-                          <div class="channel-avatar">
-                            T
-                            <div class="video-details">
-                              <h3 class="video-title">Procedural Corona Glows & Raymarched Moon Craters in WebGL</h3>
-                              <p class="video-channel">Creative Coding 3D • Shader Art</p>
-                              <p class="video-stats">340K views • 5 days ago</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="video-card" id="card-video-6">
-                          <div class="thumbnail-wrapper">
-                            <div class="thumbnail-bg" style="background: linear-gradient(135deg, #134e4a, #14b8a6);">
-                              <span class="thumb-text">📱 Enlang Mobile (.enlgm): 1:1 Flutter Compilation</span>
-                            </div>
-                            <span class="duration-badge">16:40</span>
-                          </div>
-                          <div class="video-meta">
-                            <div class="channel-avatar">
-                              M
-                              <div class="video-details">
-                                <h3 class="video-title">Build Android & iOS Flutter Apps with Pure English Sentences</h3>
-                                <p class="video-channel">Mobile Mastery • Cross-Platform</p>
-                                <p class="video-stats">420K views • 6 days ago</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div id="view-watch" class="view-panel">
-                        <div class="watch-layout">
-                          <div class="watch-primary">
-                            <div class="video-player-container">
-                              <div class="player-screen" id="player-canvas">
-                                <div class="player-placeholder-content">
-                                  <span class="play-huge-icon" id="play-overlay-icon">▶</span>
-                                  <h2 id="active-player-title">Building High-Throughput Microservices with Java & Spring Boot</h2>
-                                  <p class="player-badge-sub">Streaming in 1080p60 HD • Pure Enlang Runtime</p>
-                                </div>
-                              </div>
-                              <div class="player-controls">
-                                <button id="btn-player-play" class="ctrl-btn">▶</button>
-                                <span id="player-time-display" class="ctrl-time">04:15 / 18:45</span>
-                                <div class="scrubber-bar" id="scrubber-track">
-                                  <div id="scrubber-progress" class="scrubber-fill" style="width: 25%;">
-                                  </div>
-                                </div>
-                                <button id="btn-player-mute" class="ctrl-btn">🔊</button>
-                                <button id="btn-player-quality" class="ctrl-btn">⚙️ 1080p</button>
-                                <button id="btn-player-fullscreen" class="ctrl-btn">⛶</button>
-                              </div>
-                            </div>
-                            <div class="watch-header">
-                              <h1 id="watch-video-title" class="watch-title">Building High-Throughput Microservices with Java & Spring Boot</h1>
-                              <div class="watch-actions-row">
-                                <div class="channel-info-box">
-                                  <div class="channel-avatar-lg">
-                                    P
-                                    <div>
-                                      <h4 id="watch-channel-name" class="channel-title">Prayas Kumar Sahoo</h4>
-                                      <p id="watch-sub-count" class="channel-subs">128K subscribers</p>
-                                    </div>
-                                    <button id="btn-subscribe" class="btn-subscribe">Subscribe</button>
-                                  </div>
-                                  <div class="action-buttons-group">
-                                    <div class="like-dislike-pill">
-                                      <button id="btn-like" class="btn-like">👍 142K</button>
-                                      <div class="pill-sep">
-                                      </div>
-                                      <button id="btn-dislike" class="btn-dislike">👎</button>
-                                    </div>
-                                    <button id="btn-share" class="btn-action">↗ Share</button>
-                                    <button id="btn-download" class="btn-action">⬇ Download</button>
-                                    <button id="btn-more" class="btn-action">⋯ More</button>
-                                  </div>
-                                </div>
-                              </div>
-                              <div class="watch-description-box" id="desc-box">
-                                <p id="desc-stats" class="desc-stats">245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices</p>
-                                <p id="watch-desc-text" class="desc-content">In this deep dive tutorial, Prayas Kumar Sahoo walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.</p>
-                              </div>
-                              <div class="comments-container">
-                                <div class="comments-header">
-                                  <h3 id="comments-count-header">328 Comments</h3>
-                                  <span class="sort-tag">Sort by: Top Comments</span>
-                                </div>
-                                <div class="add-comment-row">
-                                  <div class="user-avatar-sm">
-                                    U
-                                    <div class="comment-input-wrap">
-                                      <input type="text" id="new-comment-input" placeholder="Add a public comment..." class="comment-input">
-                                      <div class="comment-btn-bar">
-                                        <button id="btn-cancel-comment" class="btn-ghost">Cancel</button>
-                                        <button id="btn-submit-comment" class="btn-primary">Comment</button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div class="comment-list" id="comment-list-container">
-                                    <div class="comment-card">
-                                      <div class="user-avatar-sm" style="background: #3b82f6;">
-                                        A
-                                        <div class="comment-body">
-                                          <div class="comment-author-row">
-                                            <span class="comment-author">@AlexDeveloper</span>
-                                            <span class="comment-time">2 hours ago</span>
-                                          </div>
-                                          <p class="comment-msg">The explanation of connection pooling and transaction propagation was crystal clear! Best Java video on YouTube.</p>
-                                          <div class="comment-reactions">
-                                            <button class="btn-react">👍 48</button>
-                                            <button class="btn-react">👎</button>
-                                            <button class="btn-react">Reply</button>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div class="comment-card">
-                                        <div class="user-avatar-sm" style="background: #10b981;">
-                                          S
-                                          <div class="comment-body">
-                                            <div class="comment-author-row">
-                                              <span class="comment-author">@SarahCode</span>
-                                              <span class="comment-time">5 hours ago</span>
-                                            </div>
-                                            <p class="comment-msg">Enlang compiling directly to Python, JS and Flutter is blowing my mind. Keep shipping!</p>
-                                            <div class="comment-reactions">
-                                              <button class="btn-react">👍 124</button>
-                                              <button class="btn-react">👎</button>
-                                              <button class="btn-react">Reply</button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div class="watch-secondary">
-                                    <h3 class="rec-header">Up Next</h3>
-                                    <div class="rec-list">
-                                      <div class="rec-card" id="card-rec-2">
-                                        <div class="rec-thumb" style="background: linear-gradient(135deg, #065f46, #10b981);">
-                                          <span class="duration-badge">24:10</span>
-                                        </div>
-                                        <div class="rec-details">
-                                          <h4 class="rec-title">How We Built Enlang Compiler</h4>
-                                          <p class="rec-channel">Enlang Official</p>
-                                          <p class="rec-stats">512K views</p>
-                                        </div>
-                                      </div>
-                                      <div class="rec-card" id="card-rec-3">
-                                        <div class="rec-thumb" style="background: linear-gradient(135deg, #701a75, #ec4899);">
-                                          <span class="duration-badge">14:20</span>
-                                        </div>
-                                        <div class="rec-details">
-                                          <h4 class="rec-title">Deploying Edge Apps on Cloudflare</h4>
-                                          <p class="rec-channel">Edge Architects</p>
-                                          <p class="rec-stats">189K views</p>
-                                        </div>
-                                      </div>
-                                      <div class="rec-card" id="card-rec-5">
-                                        <div class="rec-thumb" style="background: linear-gradient(135deg, #1e1b4b, #6366f1);">
-                                          <span class="duration-badge">21:15</span>
-                                        </div>
-                                        <div class="rec-details">
-                                          <h4 class="rec-title">3D Solar & Lunar WebGL Shaders</h4>
-                                          <p class="rec-channel">Creative Coding 3D</p>
-                                          <p class="rec-stats">340K views</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div id="yt-toast" class="yt-toast">
-                        </div>
-                      </div>
+                  </div>
+                  <div class="rec-card" id="card-rec-5">
+                    <div class="rec-thumb" style="background: linear-gradient(135deg, #1e1b4b, #6366f1);">
+                      <span class="duration-badge">21:15</span>
+                    </div>
+                    <div class="rec-details">
+                      <h4 class="rec-title">3D Solar & Lunar WebGL Shaders</h4>
+                      <p class="rec-channel">Creative Coding 3D</p>
+                      <p class="rec-stats">340K views</p>
                     </div>
                   </div>
                 </div>
@@ -1258,6 +1234,8 @@ body {
           </div>
         </main>
       </div>
+    </div>
+    <div id="yt-toast" class="yt-toast">
     </div>
     <script>
 let isPlaying = false;
@@ -1563,8 +1541,8 @@ setInterval(function() {
   if (isPlaying == true) {
     if (playSeconds < totalVideoSeconds) {
       playSeconds = playSeconds + 1;
-      let curStr = call formatDuration playSeconds;
-      let totStr = call formatDuration totalVideoSeconds;
+      let curStr = formatDuration ( playSeconds );
+      let totStr = formatDuration ( totalVideoSeconds );
       (document.getElementById("player-time-display") || document.querySelector("player-time-display")).textContent = curStr + " / " + totStr;
       let pct = ( playSeconds / totalVideoSeconds ) * 100;
       let fillBar = document.getElementById ( "scrubber-progress" );
