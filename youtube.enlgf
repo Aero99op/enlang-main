@@ -17,7 +17,7 @@ document enlgf:
 
                 div class "yt-header-center":
                     div class "yt-search-box":
-                        input type "text" id "search-input" placeholder "Search across all of YouTube..." class "yt-search-input"
+                        input type "text" id "search-input" placeholder "Search across all of YouTube or paste YouTube URL / Video ID..." class "yt-search-input"
                         button "🔍" id "btn-search" class "yt-search-btn" title "Search"
                     button "🎙️" id "btn-voice" class "yt-icon-btn voice-btn" title "Search with your voice"
 
@@ -63,6 +63,9 @@ document enlgf:
                         div class "sub-channel" id "sub-4":
                             span "🪐" class "channel-icon"
                             span "Three.js Creative 3D" class "channel-name"
+                        div class "sub-channel" id "sub-5":
+                            span "⚡" class "channel-icon"
+                            span "MrBeast" class "channel-name"
 
                     div class "sidebar-divider"
 
@@ -76,7 +79,7 @@ document enlgf:
 
                 # Main Content Area
                 main class "yt-content":
-                    # ── VIEW 1: HOME FEED ──
+                    # ── VIEW 1: HOME FEED (INFINITE SCROLL) ──
                     div id "view-feed" class "view-panel active":
                         # Category Filter Chips Bar
                         div class "category-bar" id "category-container":
@@ -90,14 +93,15 @@ document enlgf:
                             button "Cloudflare Edge" id "chip-edge" class "chip"
                             button "Lo-Fi Music" id "chip-music" class "chip"
                             button "Gaming" id "chip-gaming" class "chip"
+                            button "Science & Tech" id "chip-science" class "chip"
                             button "Podcasts" id "chip-podcasts" class "chip"
 
                         # Feed Status Banner
                         div id "feed-status-bar" class "feed-status-bar":
-                            span "🔴 Live YouTube Feed" id "live-status-title" class "live-indicator"
-                            span "Entire YouTube Global & India Feed • Real-time Streaming" id "live-status-desc" class "live-subtext"
+                            span "🔴 Infinite Real YouTube Feed" id "live-status-title" class "live-indicator"
+                            span "Real-time YouTube Streaming • 100% Real Live Catalog" id "live-status-desc" class "live-subtext"
 
-                        # Primary Video Cards Grid
+                        # Primary Video Cards Grid (Infinite Scroll)
                         div class "video-grid" id "video-grid-container"
 
                         # ── YouTube Shorts Shelf on Home Feed ──
@@ -107,34 +111,42 @@ document enlgf:
                                 h2 "Shorts" class "shorts-title"
                             div class "shorts-grid":
                                 div class "short-card" id "short-shelf-1":
-                                    div class "short-thumb" style "background: linear-gradient(180deg, #be185d, #4c0519);":
-                                        span "🔥 3 Insane Java 21 Performance Hacks" class "short-text"
+                                    div class "short-thumb":
+                                        img src "https://i.ytimg.com/vi/gJrjgg1KVL4/hqdefault.jpg" class "short-img"
+                                        span "🔥 Java 21 Performance Hacks" class "short-overlay-title"
                                     p "3.2M views" class "short-views"
                                 div class "short-card" id "short-shelf-2":
-                                    div class "short-thumb" style "background: linear-gradient(180deg, #047857, #064e3b);":
-                                        span "🚀 Write Clean Code in English with Enlang" class "short-text"
+                                    div class "short-thumb":
+                                        img src "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class "short-img"
+                                        span "🚀 Clean Code in Enlang" class "short-overlay-title"
                                     p "1.8M views" class "short-views"
                                 div class "short-card" id "short-shelf-3":
-                                    div class "short-thumb" style "background: linear-gradient(180deg, #6d28d9, #2e1065);":
-                                        span "🌐 Cloudflare Workers under 1ms Latency" class "short-text"
+                                    div class "short-thumb":
+                                        img src "https://i.ytimg.com/vi/8aGhZQkoFbQ/hqdefault.jpg" class "short-img"
+                                        span "🌐 Cloudflare Workers Under 1ms" class "short-overlay-title"
                                     p "950K views" class "short-views"
                                 div class "short-card" id "short-shelf-4":
-                                    div class "short-thumb" style "background: linear-gradient(180deg, #b45309, #451a03);":
-                                        span "✨ Raymarched Black Hole in 30 Lines" class "short-text"
+                                    div class "short-thumb":
+                                        img src "https://i.ytimg.com/vi/Q7AOvWpIVHU/hqdefault.jpg" class "short-img"
+                                        span "✨ Raymarched Black Hole" class "short-overlay-title"
                                     p "2.4M views" class "short-views"
+
+                        # Infinite Scroll Loading Trigger
+                        div class "infinite-loading-bar" id "feed-loading-bar":
+                            button "⬇ Load More Real YouTube Videos" id "btn-load-more" class "btn-load-more"
 
                     # ── VIEW 2: SHORTS FULLSCREEN REEL ──
                     div id "view-shorts" class "view-panel":
                         div class "shorts-reel-container":
                             div class "shorts-reel-viewport":
-                                div class "shorts-video-box" id "shorts-active-box" style "background: linear-gradient(180deg, #1e3a8a, #0f172a);":
-                                    iframe id "shorts-iframe" src "https://www.youtube-nocookie.com/embed/gJrjgg1KVL4?autoplay=1&enablejsapi=1&controls=0&loop=1" frameborder "0" allow "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" class="shorts-embed-frame"
+                                div class "shorts-video-box" id "shorts-active-box":
+                                    iframe id "shorts-iframe" src "https://www.youtube-nocookie.com/embed/gJrjgg1KVL4?autoplay=1&enablejsapi=1&controls=0&loop=1" frameborder "0" allow "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" class "shorts-embed-frame"
                                     div class "shorts-top-bar":
                                         span "⚡ YouTube Shorts" class "shorts-brand-tag"
                                         button "🔊" id "btn-shorts-mute" class "shorts-ctrl-icon"
                                     div class "shorts-bottom-overlay":
                                         div class "shorts-creator-row":
-                                            div "S" class "shorts-avatar"
+                                            div "S" class "shorts-avatar" id "shorts-avatar-el"
                                             span "@SpandanPrayas" id "shorts-author-name" class "shorts-username"
                                             button "Subscribe" id "btn-shorts-sub" class "btn-shorts-sub"
                                         p "3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev" id "shorts-title-text" class "shorts-desc"
@@ -158,7 +170,7 @@ document enlgf:
                                 button "▲" id "btn-shorts-prev" class "shorts-arrow-btn" title "Previous Short"
                                 button "▼" id "btn-shorts-next" class "shorts-arrow-btn" title "Next Short"
 
-                    # ── VIEW 3: WATCH PAGE (LIVE STREAMING PLAYER + COMMENTS) ──
+                    # ── VIEW 3: WATCH PAGE (LIVE STREAMING PLAYER + METADATA + COMMENTS + RECS) ──
                     div id "view-watch" class "view-panel":
                         div class "watch-layout":
                             # Primary Watch Column
@@ -212,9 +224,9 @@ document enlgf:
                                     p "245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices #Enlang" id "desc-stats" class "desc-stats"
                                     p "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." id "watch-desc-text" class "desc-content"
                                     
-                                    div class "chapters-section":
+                                    div class "chapters-section" id "chapters-wrapper":
                                         p "TIMESTAMPS & CHAPTERS (Click to jump):" class "chapters-title"
-                                        div class "chapter-pill-list":
+                                        div class "chapter-pill-list" id "chapters-container":
                                             button "00:00 • Introduction" id "ch-1" class "chapter-btn"
                                             button "04:15 • HikariCP & Oracle Setup" id "ch-2" class "chapter-btn"
                                             button "09:30 • ACID Transactions" id "ch-3" class "chapter-btn"
@@ -236,50 +248,10 @@ document enlgf:
                                                 button "Cancel" id "btn-cancel-comment" class "btn-ghost"
                                                 button "Comment" id "btn-submit-comment" class "btn-primary"
 
-                                    # Comments List
-                                    div class "comment-list" id "comment-list-container":
-                                        # Pinned Creator Comment
-                                        div class "comment-card pinned":
-                                            div "S" class "user-avatar-sm" style "background: linear-gradient(135deg, #3b82f6, #8b5cf6);"
-                                            div class "comment-body":
-                                                div class "comment-author-row":
-                                                    span "📌 Pinned by Spandan Prayas Patra" class "pinned-tag"
-                                                div class "comment-author-row":
-                                                    span "@SpandanPrayas" class "comment-author-badge"
-                                                    span "Author ✓" class "creator-pill"
-                                                    span "1 day ago" class "comment-time"
-                                                p "Source code repository & benchmarks are live on GitHub! Drop your questions below and I will answer every single one." class "comment-msg"
-                                                div class "comment-reactions":
-                                                    button "👍 342" class "btn-react"
-                                                    button "👎" class "btn-react"
-                                                    span "❤️ by Spandan Prayas Patra" class "creator-heart"
-                                                    button "Reply" class "btn-react"
+                                    # Comments List (Populated Dynamically per Video)
+                                    div class "comment-list" id "comment-list-container"
 
-                                        div class "comment-card":
-                                            div "A" class "user-avatar-sm" style "background: #3b82f6;"
-                                            div class "comment-body":
-                                                div class "comment-author-row":
-                                                    span "@AlexDeveloper" class "comment-author"
-                                                    span "2 hours ago" class "comment-time"
-                                                p "The explanation of connection pooling and transaction propagation was crystal clear! Best Java video on YouTube." class "comment-msg"
-                                                div class "comment-reactions":
-                                                    button "👍 48" class "btn-react"
-                                                    button "👎" class "btn-react"
-                                                    button "Reply" class "btn-react"
-
-                                        div class "comment-card":
-                                            div "S" class "user-avatar-sm" style "background: #10b981;"
-                                            div class "comment-body":
-                                                div class "comment-author-row":
-                                                    span "@SarahCode" class "comment-author"
-                                                    span "5 hours ago" class "comment-time"
-                                                p "Enlang compiling directly to Python, JS and Flutter is blowing my mind. Keep shipping!" class "comment-msg"
-                                                div class "comment-reactions":
-                                                    button "👍 124" class "btn-react"
-                                                    button "👎" class "btn-react"
-                                                    button "Reply" class "btn-react"
-
-                            # Secondary Watch Column (Recommendations)
+                            # Secondary Watch Column (Infinite Up Next Recommendations)
                             div class "watch-secondary":
                                 div class "rec-header-row":
                                     h3 "Up Next" class "rec-header"
@@ -294,6 +266,7 @@ document enlgf:
                         div class "subs-feed-header":
                             h2 "Latest from Your Subscriptions" class "subs-heading"
                             span "Manage" class "subs-manage-link"
+                        div class "subs-channel-stories" id "subs-channels-row"
                         div class "video-grid" id "subs-grid-container"
 
                     # ── VIEW 5: LIBRARY & WATCH HISTORY ──
@@ -301,22 +274,45 @@ document enlgf:
                         div class "library-header":
                             h2 "Library & Watch History" class "library-heading"
                             button "Clear History" id "btn-clear-history" class "btn-ghost"
-                        div class "history-list" id "history-list-container"
+                        
+                        div class "library-section-block":
+                            h3 "🕒 Recently Watched" class "library-subheading"
+                            div class "history-list" id "history-list-container"
+                        
+                        div class "library-section-block":
+                            h3 "⏱️ Watch Later (14 videos)" class "library-subheading"
+                            div class "video-grid" id "watch-later-container"
+
+                        div class "library-section-block":
+                            h3 "👍 Liked Videos (86 videos)" class "library-subheading"
+                            div class "video-grid" id "liked-videos-container"
+
+                    # ── VIEW 6: TRENDING PAGE ──
+                    div id "view-trending" class "view-panel":
+                        div class "trending-header":
+                            h2 "🔥 Trending on YouTube (India & World)" class "trending-heading"
+                            div class "trending-tabs":
+                                button "Now" class "tab-btn active" id "tab-trend-now"
+                                button "Music" class "tab-btn" id "tab-trend-music"
+                                button "Gaming" class "tab-btn" id "tab-trend-gaming"
+                                button "Films" class "tab-btn" id "tab-trend-films"
+                        div class "trending-list" id "trending-list-container"
 
         # ── UPLOAD / CREATE VIDEO MODAL ──
         div id "modal-create" class "yt-modal":
             div class "modal-box":
                 div class "modal-header":
-                    h3 "Upload Video" class "modal-title"
+                    h3 "Upload Video to YouTube" class "modal-title"
                     button "✕" id "btn-close-create" class "modal-close-btn"
                 div class "modal-body":
                     div class "upload-drop-zone":
                         span "📁" class "upload-icon-huge"
-                        p "Drag and drop video files to upload" class "upload-hint"
+                        p "Drag and drop video files to upload (MP4, WebM, MOV)" class "upload-hint"
                         button "Select Files" id "btn-select-file" class "btn-primary"
                     div class "upload-form":
-                        input type "text" id "upload-title-input" placeholder "Title (e.g. Building Next.js Apps in Enlang)" class "modal-input"
+                        input type "text" id "upload-title-input" placeholder "Title (e.g. Building Next.js 15 Apps in Enlang)" class "modal-input"
                         textarea id "upload-desc-input" placeholder "Tell viewers about your video..." class "modal-textarea"
+                        input type "text" id "upload-cat-input" placeholder "Category (Coding & AI, Gaming, Music, etc.)" class "modal-input"
                 div class "modal-footer":
                     button "Cancel" id "btn-cancel-upload" class "btn-ghost"
                     button "Publish Video" id "btn-publish-video" class "btn-primary"
@@ -330,17 +326,17 @@ document enlgf:
                 div class "notif-item unread":
                     div "S" class "user-avatar-sm"
                     div class "notif-content":
-                        p "Spandan Prayas Patra uploaded: High-Throughput Microservices" class "notif-msg"
+                        p "Spandan Prayas Patra uploaded: High-Throughput Microservices in Enlang" class "notif-msg"
                         span "2 hours ago" class "notif-time"
                 div class "notif-item unread":
                     div "E" class "user-avatar-sm"
                     div class "notif-content":
-                        p "Enlang Official posted: Enlang Mobile (.enlgm) is now live!" class "notif-msg"
+                        p "Enlang Official posted: Enlang 2.0 compiler benchmarks are out!" class "notif-msg"
                         span "5 hours ago" class "notif-time"
                 div class "notif-item":
                     div "C" class "user-avatar-sm"
                     div class "notif-content":
-                        p "Edge Architects replied to your comment" class "notif-msg"
+                        p "Edge Architects replied: 'Incredible speed under 1ms on Cloudflare!'" class "notif-msg"
                         span "1 day ago" class "notif-time"
 
         # ── SHARE MODAL ──

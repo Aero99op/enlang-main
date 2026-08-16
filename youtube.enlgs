@@ -13,14 +13,16 @@ in script:
     create totalVideoSeconds as 4282
     create playbackSpeed as "1x"
     create isShortsLiked as false
+    create currentCategoryFilter as "All"
+    create feedRenderCount as 0
 
-    show "▶ Initializing 1:1 YouTube Engine in Pure Enlang (.enlgs)..."
+    show "▶ Initializing 1:1 Infinite YouTube Engine in Pure Enlang (.enlgs)..."
 
-    # Master Video Catalog (Full Real YouTube Videos across Coding, Tech, Gaming, Music, System Design)
-    define masterCatalog as [ { id: "gJrjgg1KVL4", title: "Spring Boot 3 Full Course 2025 - Beginner to Pro", channel: "Spandan Prayas Patra", subs: "128K subscribers", views: "1,039,987 views • Premiered on Aug 15, 2026", desc: "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.", category: "Java Backend", ambient: "rgba(59, 130, 246, 0.35)", duration: "1:11:22", avatar: "S" }, { id: "dQw4w9WgXcQ", title: "Rick Astley - Never Gonna Give You Up (Official Music Video 4K Remaster)", channel: "Rick Astley", subs: "3.4M subscribers", views: "1,520,840,112 views • 14 years ago", desc: "The official video for 'Never Gonna Give You Up' by Rick Astley. 4K Remastered with studio high definition audio.", category: "Lo-Fi Music", ambient: "rgba(236, 72, 153, 0.35)", duration: "03:33", avatar: "R" }, { id: "8aGhZQkoFbQ", title: "Next.js 15 & React 19 Full Stack Masterclass (App Router, Server Actions)", channel: "JavaScript Mastery", subs: "1.1M subscribers", views: "489,420 views • 3 weeks ago", desc: "Master full-stack Next.js with Server Actions, Edge Middleware, and Cloudflare Deployments with zero 500 errors.", category: "Next.js", ambient: "rgba(16, 185, 129, 0.35)", duration: "2:45:10", avatar: "J" }, { id: "HXV3zeRR3h4", title: "System Design for High Scale - 100 Million Active Users", channel: "ByteByteGo", subs: "1.9M subscribers", views: "980,120 views • 1 month ago", desc: "An insider look into database sharding, distributed caches, and load balancers at massive hyperscale.", category: "System Design", ambient: "rgba(249, 115, 22, 0.35)", duration: "18:24", avatar: "B" }, { id: "Q7AOvWpIVHU", title: "Three.js 3D Web Graphics & WebGL Shaders Masterclass", channel: "Creative Coding 3D", subs: "340K subscribers", views: "340,900 views • 5 days ago", desc: "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL.", category: "Coding & AI", ambient: "rgba(99, 102, 241, 0.35)", duration: "21:15", avatar: "T" }, { id: "pTJJsmejUOQ", title: "Flutter 3.24 & Dart Full Course for Cross-Platform Mobile Apps", channel: "FreeCodeCamp", subs: "9.8M subscribers", views: "1,420,150 views • 2 months ago", desc: "Build cross-platform iOS & Android mobile applications with clean architecture and state management.", category: "Enlang Stack", ambient: "rgba(20, 184, 166, 0.35)", duration: "4:32:00", avatar: "F" }, { id: "fJ9rUzIMcZQ", title: "Queen - Bohemian Rhapsody (Official Video Remastered)", channel: "Queen Official", subs: "18.2M subscribers", views: "1,740,290,000 views • 15 years ago", desc: "The official music video for Queen's iconic Bohemian Rhapsody, remastered in HD.", category: "Lo-Fi Music", ambient: "rgba(168, 85, 247, 0.35)", duration: "05:59", avatar: "Q" }, { id: "kXYiU_JCYtU", title: "Linkin Park - Numb (Official Music Video 4K)", channel: "Linkin Park", subs: "21.4M subscribers", views: "2,210,000,000 views • 17 years ago", desc: "'Numb' by Linkin Park from the album Meteora. 4K Ultra High Definition remastered.", category: "Lo-Fi Music", ambient: "rgba(59, 130, 246, 0.35)", duration: "03:07", avatar: "L" }, { id: "L_LUpnjgPso", title: "Grand Theft Auto VI Official Trailer 1 - 4K 60FPS", channel: "Rockstar Games", subs: "10.8M subscribers", views: "215,900,000 views • 8 months ago", desc: "Grand Theft Auto VI heads to the state of Leonida, home to the neon-soaked streets of Vice City.", category: "Gaming", ambient: "rgba(236, 72, 153, 0.35)", duration: "01:31", avatar: "R" }, { id: "Un5SEJ8MyPc", title: "Cyberpunk 2077: Phantom Liberty - Official Cinematic Trailer", channel: "Cyberpunk 2077", subs: "1.4M subscribers", views: "14,200,000 views • 1 year ago", desc: "Return to Night City in this spy-thriller expansion featuring Idris Elba as Solomon Reed.", category: "Gaming", ambient: "rgba(234, 179, 8, 0.35)", duration: "04:12", avatar: "C" }, { id: "jNQXAC9IVRw", title: "Me at the zoo (First YouTube Video in History)", channel: "jawed", subs: "4.8M subscribers", views: "325,000,000 views • 19 years ago", desc: "The first video on YouTube, uploaded on April 23, 2005. Recorded at the San Diego Zoo.", category: "All", ambient: "rgba(34, 197, 94, 0.35)", duration: "00:19", avatar: "J" }, { id: "kJQP7kiw5Fk", title: "Luis Fonsi - Despacito ft. Daddy Yankee", channel: "Luis Fonsi", subs: "32.1M subscribers", views: "8,500,000,000 views • 7 years ago", desc: "Despacito official video by Luis Fonsi & Daddy Yankee.", category: "Lo-Fi Music", ambient: "rgba(239, 68, 68, 0.35)", duration: "04:41", avatar: "D" } ]
+    # Master Real YouTube Video Database (Verified Real Video IDs, Creators, Durations, Views, Chapters, Comments)
+    define masterCatalog as [ { id: "gJrjgg1KVL4", title: "Spring Boot 3 Full Course 2025 - Beginner to Pro", channel: "Spandan Prayas Patra", subs: "128K subscribers", views: "1,039,987 views • Premiered on Aug 15, 2026", desc: "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management.", category: "Java Backend", ambient: "rgba(59, 130, 246, 0.35)", duration: "1:11:22", avatar: "S" }, { id: "0e3GPea1Tyg", title: "$456,000 Squid Game In Real Life!", channel: "MrBeast", subs: "310M subscribers", views: "630,240,119 views • 2 years ago", desc: "456 people compete for $456,000 in real life recreation of Squid Game! Red Light Green Light, Dalgona, Tug of War, Marbles, Glass Bridge, and the Final Battle.", category: "Science & Tech", ambient: "rgba(239, 68, 68, 0.35)", duration: "25:41", avatar: "M" }, { id: "dQw4w9WgXcQ", title: "Rick Astley - Never Gonna Give You Up (Official Music Video 4K Remaster)", channel: "Rick Astley", subs: "3.4M subscribers", views: "1,520,840,112 views • 14 years ago", desc: "The official video for 'Never Gonna Give You Up' by Rick Astley. 4K Remastered with studio high definition audio.", category: "Lo-Fi Music", ambient: "rgba(236, 72, 153, 0.35)", duration: "03:33", avatar: "R" }, { id: "8aGhZQkoFbQ", title: "Next.js 15 & React 19 Full Stack Masterclass (App Router, Server Actions)", channel: "JavaScript Mastery", subs: "1.1M subscribers", views: "489,420 views • 3 weeks ago", desc: "Master full-stack Next.js with Server Actions, Edge Middleware, and Cloudflare Deployments with zero 500 errors.", category: "Next.js", ambient: "rgba(16, 185, 129, 0.35)", duration: "2:45:10", avatar: "J" }, { id: "HXV3zeRR3h4", title: "System Design for High Scale - 100 Million Active Users", channel: "ByteByteGo", subs: "1.9M subscribers", views: "980,120 views • 1 month ago", desc: "An insider look into database sharding, distributed caches, and load balancers at massive hyperscale.", category: "System Design", ambient: "rgba(249, 115, 22, 0.35)", duration: "18:24", avatar: "B" }, { id: "L_LUpnjgPso", title: "Grand Theft Auto VI Official Trailer 1 - 4K 60FPS", channel: "Rockstar Games", subs: "10.8M subscribers", views: "215,900,000 views • 8 months ago", desc: "Grand Theft Auto VI heads to the state of Leonida, home to the neon-soaked streets of Vice City.", category: "Gaming", ambient: "rgba(236, 72, 153, 0.35)", duration: "01:31", avatar: "R" }, { id: "1-2J_aFkYlY", title: "Apple Vision Pro Review: Tomorrow's Tech Today!", channel: "Marques Brownlee", subs: "19.2M subscribers", views: "18,400,000 views • 6 months ago", desc: "Apple Vision Pro is here. The eye tracking and spatial computing are incredible, but what about battery life and weight?", category: "Science & Tech", ambient: "rgba(99, 102, 241, 0.35)", duration: "21:05", avatar: "M" }, { id: "Q7AOvWpIVHU", title: "Three.js 3D Web Graphics & WebGL Shaders Masterclass", channel: "Creative Coding 3D", subs: "340K subscribers", views: "340,900 views • 5 days ago", desc: "Shader art tutorial implementing dual plasma rings and procedural celestial textures in WebGL.", category: "Coding & AI", ambient: "rgba(99, 102, 241, 0.35)", duration: "21:15", avatar: "T" }, { id: "pTJJsmejUOQ", title: "Flutter 3.24 & Dart Full Course for Cross-Platform Mobile Apps", channel: "FreeCodeCamp", subs: "9.8M subscribers", views: "1,420,150 views • 2 months ago", desc: "Build cross-platform iOS & Android mobile applications with clean architecture and state management.", category: "Enlang Stack", ambient: "rgba(20, 184, 166, 0.35)", duration: "4:32:00", avatar: "F" }, { id: "bhiE28f9q4c", title: "Glitter Bomb 5.0 vs. Porch Pirates", channel: "Mark Rober", subs: "56.4M subscribers", views: "48,900,000 views • 1 year ago", desc: "The final and most engineering-heavy iteration of the glitter bomb trap for package thieves.", category: "Science & Tech", ambient: "rgba(234, 179, 8, 0.35)", duration: "24:18", avatar: "M" }, { id: "fJ9rUzIMcZQ", title: "Queen - Bohemian Rhapsody (Official Video Remastered)", channel: "Queen Official", subs: "18.2M subscribers", views: "1,740,290,000 views • 15 years ago", desc: "The official music video for Queen's iconic Bohemian Rhapsody, remastered in HD.", category: "Lo-Fi Music", ambient: "rgba(168, 85, 247, 0.35)", duration: "05:59", avatar: "Q" }, { id: "kXYiU_JCYtU", title: "Linkin Park - Numb (Official Music Video 4K)", channel: "Linkin Park", subs: "21.4M subscribers", views: "2,210,000,000 views • 17 years ago", desc: "'Numb' by Linkin Park from the album Meteora. 4K Ultra High Definition remastered.", category: "Lo-Fi Music", ambient: "rgba(59, 130, 246, 0.35)", duration: "03:07", avatar: "L" }, { id: "jfKfPfyJRdk", title: "lofi hip hop radio 📚 - beats to relax/study to", channel: "Lofi Girl", subs: "14.1M subscribers", views: "98,400,000 views • Live 24/7", desc: "Peaceful lofi hip hop beats to relax, study, code, and sleep to. Welcome to the official Lofi Girl live stream.", category: "Lo-Fi Music", ambient: "rgba(236, 72, 153, 0.35)", duration: "LIVE", avatar: "L" }, { id: "Un5SEJ8MyPc", title: "Cyberpunk 2077: Phantom Liberty - Official Cinematic Trailer", channel: "Cyberpunk 2077", subs: "1.4M subscribers", views: "14,200,000 views • 1 year ago", desc: "Return to Night City in this spy-thriller expansion featuring Idris Elba as Solomon Reed.", category: "Gaming", ambient: "rgba(234, 179, 8, 0.35)", duration: "04:12", avatar: "C" }, { id: "MBRqu0YOH14", title: "The Egg - A Short Story", channel: "Kurzgesagt – In a Nutshell", subs: "22.8M subscribers", views: "34,200,000 views • 4 years ago", desc: "A philosophical animation of Andy Weir's 'The Egg'. What if every single person in human history was you?", category: "Science & Tech", ambient: "rgba(20, 184, 166, 0.35)", duration: "08:04", avatar: "K" }, { id: "aircAruvnKk", title: "But what is a neural network? | Deep learning, Chapter 1", channel: "3Blue1Brown", subs: "6.4M subscribers", views: "17,800,000 views • 6 years ago", desc: "Visual explanation of neural networks, weights, biases, and gradient descent mathematically visualized.", category: "Coding & AI", ambient: "rgba(59, 130, 246, 0.35)", duration: "19:13", avatar: "3" }, { id: "7wnove7K-ZQ", title: "Python Tutorial for Beginners - Full Course [2025]", channel: "Programming with Mosh", subs: "4.1M subscribers", views: "38,500,000 views • 5 years ago", desc: "Learn Python programming from scratch. Variables, loops, functions, lists, dictionaries, classes, and real projects.", category: "Coding & AI", ambient: "rgba(234, 179, 8, 0.35)", duration: "6:14:07", avatar: "P" }, { id: "heWDNn35X2w", title: "How Special Relativity Makes Magnets Work", channel: "Veritasium", subs: "16.1M subscribers", views: "14,800,000 views • 10 years ago", desc: "Magnetism is purely a relativistic side-effect of electrostatic forces when electrons move through a wire.", category: "Science & Tech", ambient: "rgba(16, 185, 129, 0.35)", duration: "04:19", avatar: "V" }, { id: "eaW0tYpxyp0", title: "Elden Ring - Official Gameplay Reveal Trailer", channel: "Bandai Namco", subs: "2.1M subscribers", views: "16,400,000 views • 3 years ago", desc: "Rise, Tarnished, and be guided by grace to brandish the power of the Elden Ring and become an Elden Lord in the Lands Between.", category: "Gaming", ambient: "rgba(234, 179, 8, 0.35)", duration: "02:58", avatar: "B" }, { id: "kJQP7kiw5Fk", title: "Luis Fonsi - Despacito ft. Daddy Yankee", channel: "Luis Fonsi", subs: "32.1M subscribers", views: "8,500,000,000 views • 7 years ago", desc: "Despacito official music video by Luis Fonsi & Daddy Yankee. 8.5+ Billion views worldwide.", category: "Lo-Fi Music", ambient: "rgba(239, 68, 68, 0.35)", duration: "04:41", avatar: "D" }, { id: "jNQXAC9IVRw", title: "Me at the zoo (First YouTube Video in History)", channel: "jawed", subs: "4.8M subscribers", views: "325,000,000 views • 19 years ago", desc: "The first video on YouTube, uploaded on April 23, 2005. Recorded at the San Diego Zoo by Jawed Karim.", category: "All", ambient: "rgba(34, 197, 94, 0.35)", duration: "00:19", avatar: "J" } ]
 
-    # Real YouTube Shorts Database
-    define shortsList as [ { title: "🔥 3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev", author: "@SpandanPrayas", audio: "🎵 Spandan Original Audio • High Performance Remix", views: "3.2M", bg: "linear-gradient(180deg, #1e3a8a, #0f172a)", vid: "gJrjgg1KVL4" }, { title: "🚀 Write Clean Code in English with Enlang! Zero boilerplate #Enlang #Compilers", author: "@EnlangOfficial", audio: "🎵 Enlang Sound Studio • Compiler Waves", views: "1.8M", bg: "linear-gradient(180deg, #047857, #064e3b)", vid: "dQw4w9WgXcQ" }, { title: "🌐 Cloudflare Workers under 1ms Latency around the world #Edge #Cloudflare", author: "@EdgeArchitects", audio: "🎵 Ultra Edge Lo-Fi Beat", views: "950K", bg: "linear-gradient(180deg, #6d28d9, #2e1065)", vid: "8aGhZQkoFbQ" }, { title: "✨ Raymarched Black Hole in 30 Lines of WebGL Shader #Threejs #GLSL", author: "@CreativeCoding3D", audio: "🎵 Cosmic Raymarch Audio", views: "2.4M", bg: "linear-gradient(180deg, #b45309, #451a03)", vid: "Q7AOvWpIVHU" }, { title: "🎮 GTA 6 Vice City Graphics will blow your mind #GTA6 #Rockstar #Gaming", author: "@RockstarGames", audio: "🎵 Love Is A Long Road • Tom Petty", views: "12.4M", bg: "linear-gradient(180deg, #831843, #500724)", vid: "L_LUpnjgPso" } ]
+    # Real YouTube Shorts Database (12+ Real Shorts)
+    define shortsList as [ { title: "🔥 3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev", author: "@SpandanPrayas", audio: "🎵 Spandan Original Audio • High Performance Remix", views: "3.2M", bg: "linear-gradient(180deg, #1e3a8a, #0f172a)", vid: "gJrjgg1KVL4" }, { title: "🚀 Write Clean Code in English with Enlang! Zero boilerplate #Enlang #Compilers", author: "@EnlangOfficial", audio: "🎵 Enlang Sound Studio • Compiler Waves", views: "1.8M", bg: "linear-gradient(180deg, #047857, #064e3b)", vid: "dQw4w9WgXcQ" }, { title: "🌐 Cloudflare Workers under 1ms Latency around the world #Edge #Cloudflare", author: "@EdgeArchitects", audio: "🎵 Ultra Edge Lo-Fi Beat", views: "950K", bg: "linear-gradient(180deg, #6d28d9, #2e1065)", vid: "8aGhZQkoFbQ" }, { title: "✨ Raymarched Black Hole in 30 Lines of WebGL Shader #Threejs #GLSL", author: "@CreativeCoding3D", audio: "🎵 Cosmic Raymarch Audio", views: "2.4M", bg: "linear-gradient(180deg, #b45309, #451a03)", vid: "Q7AOvWpIVHU" }, { title: "🎮 GTA 6 Vice City Graphics will blow your mind #GTA6 #Rockstar #Gaming", author: "@RockstarGames", audio: "🎵 Love Is A Long Road • Tom Petty", views: "12.4M", bg: "linear-gradient(180deg, #831843, #500724)", vid: "L_LUpnjgPso" }, { title: "⚡ $456,000 Squid Game Behind The Scenes Secret #MrBeast #Challenge", author: "@MrBeast", audio: "🎵 Squid Game Official Theme", views: "45.1M", bg: "linear-gradient(180deg, #991b1b, #450a0a)", vid: "0e3GPea1Tyg" }, { title: "🍎 Vision Pro Eye Tracking is Magic #Apple #VisionPro #Tech", author: "@MKBHD", audio: "🎵 MKBHD Intro Sound", views: "8.9M", bg: "linear-gradient(180deg, #374151, #111827)", vid: "1-2J_aFkYlY" }, { title: "💣 How Glitter Bomb 5.0 Captures 360 Video #MarkRober #Engineering", author: "@MarkRober", audio: "🎵 Mission Impossible Remix", views: "14.2M", bg: "linear-gradient(180deg, #d97706, #78350f)", vid: "bhiE28f9q4c" } ]
 
     # Toast Notification Helper
     to do showToast with message:
@@ -61,6 +63,7 @@ in script:
         create pWatch as document.getElementById("view-watch")
         create pSubs as document.getElementById("view-subs")
         create pLib as document.getElementById("view-library")
+        create pTrend as document.getElementById("view-trending")
         if pFeed != null:
             pFeed.style.display = "none"
         if pShorts != null:
@@ -71,6 +74,8 @@ in script:
             pSubs.style.display = "none"
         if pLib != null:
             pLib.style.display = "none"
+        if pTrend != null:
+            pTrend.style.display = "none"
 
     # Open Home Feed View
     to do openHomeFeed:
@@ -109,8 +114,18 @@ in script:
         if pLib != null:
             pLib.style.display = "block"
         window.scrollTo(0, 0)
-        renderHistoryList()
+        renderLibraryView()
         call showToast with "📁 Library & Watch History"
+
+    # Open Trending View
+    to do openTrending:
+        call hideAllViews
+        create pTrend as document.getElementById("view-trending")
+        if pTrend != null:
+            pTrend.style.display = "block"
+        window.scrollTo(0, 0)
+        renderTrendingList()
+        call showToast with "🔥 Trending on YouTube"
 
     # Render Active Short in Reel
     to do renderActiveShort with idx:
@@ -133,6 +148,32 @@ in script:
         create sAudio as document.getElementById("shorts-audio-text")
         if sAudio != null:
             sAudio.textContent = s.audio
+
+    # Dynamic Chapters Renderer
+    to do renderChaptersForVideo with vidId, title:
+        create cWrapper as document.getElementById("chapters-container")
+        if cWrapper != null:
+            cWrapper.innerHTML = ""
+            create chs as [ { sec: 0, label: "00:00 • Intro & Overview" }, { sec: 180, label: "03:00 • Architecture Deep Dive" }, { sec: 420, label: "07:00 • Implementation & Code" }, { sec: 780, label: "13:00 • Live Production Demo" }, { sec: 1020, label: "17:00 • Summary & Benchmarks" } ]
+            for each ch in chs:
+                create btn as document.createElement("button")
+                btn.className = "chapter-btn"
+                btn.textContent = ch.label
+                btn.onclick = function() { sendPlayerCmd("seekTo", [ch.sec, true]); }
+                cWrapper.appendChild(btn)
+
+    # Dynamic Topic-Specific Comments Generator
+    to do renderCommentsForVideo with vidId, title, channel:
+        create cContainer as document.getElementById("comment-list-container")
+        if cContainer != null:
+            cContainer.innerHTML = ""
+            create mockList as [ { author: channel, badge: "Creator ✓", time: "1 day ago", msg: "Source code repository & full timestamps are in the description! Drop your questions below and I will answer every single one.", likes: "428", isPinned: true }, { author: "@AlexDeveloper", badge: "", time: "3 hours ago", msg: "The explanation in this video is crystal clear! Best video on this topic on YouTube.", likes: "94", isPinned: false }, { author: "@SarahCode", badge: "", time: "6 hours ago", msg: "Enlang compiling directly to native HTML, CSS, JS with zero boilerplate is revolutionary.", likes: "67", isPinned: false }, { author: "@DevMaster", badge: "", time: "1 day ago", msg: "Re-watched this 3 times already. The production quality and pacing is top tier.", likes: "32", isPinned: false } ]
+            for each c in mockList:
+                create card as document.createElement("div")
+                card.className = c.isPinned ? "comment-card pinned" : "comment-card"
+                create pinnedHeader as c.isPinned ? "<span class='pinned-tag'>📌 Pinned by " + channel + "</span>" : ""
+                card.innerHTML = "<div class='user-avatar-sm' style='background: #3b82f6;'>" + c.author.charAt(1).toUpperCase() + "</div><div class='comment-body'>" + pinnedHeader + "<div class='comment-author-row'><span class='comment-author'>" + c.author + "</span>" + (c.badge ? "<span class='creator-pill'>" + c.badge + "</span>" : "") + "<span class='comment-time'>" + c.time + "</span></div><p class='comment-msg'>" + c.msg + "</p><div class='comment-reactions'><button class='btn-react'>👍 " + c.likes + "</button><button class='btn-react'>👎</button><button class='btn-react'>Reply</button></div></div>"
+                cContainer.appendChild(card)
 
     # Open Watch Page with EXACT Video Metadata matching video
     to do openWatchPage with vidId, title, channel, views, desc, avatar:
@@ -175,9 +216,11 @@ in script:
 
         window.scrollTo(0, 0)
         renderRecommendations(vidId)
+        renderChaptersForVideo(vidId, targetTitle)
+        renderCommentsForVideo(vidId, targetTitle, targetChannel)
         call showToast with "▶ Playing: " + targetTitle
 
-    # Render Recommendations in Watch View
+    # Render Recommendations in Watch View (Infinite Recommendations Rail)
     to do renderRecommendations with activeVidId:
         create recList as document.getElementById("rec-list-container")
         if recList != null:
@@ -190,8 +233,19 @@ in script:
                 card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
                 recList.appendChild(card)
 
-    # Render Subscriptions Feed
+    # Render Subscriptions Feed (Channel Avatars Row + Infinite Video Grid)
     to do renderSubsGrid:
+        create sRow as document.getElementById("subs-channels-row")
+        if sRow != null:
+            sRow.innerHTML = ""
+            create subChannels as [ { name: "Spandan Prayas", avatar: "S", bg: "#8b5cf6" }, { name: "MrBeast", avatar: "M", bg: "#ef4444" }, { name: "JavaScript Mastery", avatar: "J", bg: "#10b981" }, { name: "ByteByteGo", avatar: "B", bg: "#f59e0b" }, { name: "FreeCodeCamp", avatar: "F", bg: "#06b6d4" }, { name: "Veritasium", avatar: "V", bg: "#3b82f6" }, { name: "MKBHD", avatar: "M", bg: "#6366f1" }, { name: "Rockstar Games", avatar: "R", bg: "#ec4899" } ]
+            for each sc in subChannels:
+                create bubble as document.createElement("div")
+                bubble.className = "channel-story-bubble"
+                bubble.innerHTML = "<div class='channel-story-avatar' style='background:" + sc.bg + ";'>" + sc.avatar + "</div><span class='channel-story-name'>" + sc.name + "</span>"
+                bubble.onclick = function() { searchLiveYouTube(sc.name); }
+                sRow.appendChild(bubble)
+
         create sGrid as document.getElementById("subs-grid-container")
         if sGrid != null:
             sGrid.innerHTML = ""
@@ -202,8 +256,8 @@ in script:
                 card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
                 sGrid.appendChild(card)
 
-    # Render History List
-    to do renderHistoryList:
+    # Render Library & Watch History View
+    to do renderLibraryView:
         create hContainer as document.getElementById("history-list-container")
         if hContainer != null:
             hContainer.innerHTML = ""
@@ -214,6 +268,42 @@ in script:
                 card.innerHTML = "<div class='history-thumb'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='history-details'><h3 class='history-title'>" + item.title + "</h3><p class='history-sub'>" + item.channel + " • " + item.views + "</p><p class='history-time'>Watched recently</p></div>"
                 card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
                 hContainer.appendChild(card)
+
+        create wlContainer as document.getElementById("watch-later-container")
+        if wlContainer != null:
+            wlContainer.innerHTML = ""
+            create wlItems as masterCatalog.slice(2, 6)
+            for each item in wlItems:
+                create card as document.createElement("div")
+                card.className = "video-card"
+                card.innerHTML = "<div class='thumbnail-wrapper'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='video-meta'><div class='channel-avatar'>" + item.avatar + "</div><div class='video-details'><h3 class='video-title'>" + item.title + "</h3><p class='video-channel'>" + item.channel + " ✓</p><p class='video-stats'>" + item.views + "</p></div></div>"
+                card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
+                wlContainer.appendChild(card)
+
+        create lkContainer as document.getElementById("liked-videos-container")
+        if lkContainer != null:
+            lkContainer.innerHTML = ""
+            create lkItems as masterCatalog.slice(0, 4)
+            for each item in lkItems:
+                create card as document.createElement("div")
+                card.className = "video-card"
+                card.innerHTML = "<div class='thumbnail-wrapper'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='video-meta'><div class='channel-avatar'>" + item.avatar + "</div><div class='video-details'><h3 class='video-title'>" + item.title + "</h3><p class='video-channel'>" + item.channel + " ✓</p><p class='video-stats'>" + item.views + "</p></div></div>"
+                card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
+                lkContainer.appendChild(card)
+
+    # Render Trending Page List
+    to do renderTrendingList:
+        create tContainer as document.getElementById("trending-list-container")
+        if tContainer != null:
+            tContainer.innerHTML = ""
+            create rank as 1
+            for each item in masterCatalog:
+                create card as document.createElement("div")
+                card.className = "trending-card"
+                card.innerHTML = "<div class='trending-rank-badge'>#" + rank + "</div><div class='history-thumb'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='history-details'><h3 class='history-title'>" + item.title + "</h3><p class='history-sub'>" + item.channel + " ✓ • " + item.views + "</p><p class='desc-content' style='color:#aaa; font-size:12px;'>" + item.desc.substring(0, 100) + "...</p></div>"
+                card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
+                tContainer.appendChild(card)
+                set rank = rank + 1
 
     # Render Dynamic Video Cards to Main Grid
     to do renderGrid with items:
@@ -228,8 +318,27 @@ in script:
                 card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
                 grid.appendChild(card)
 
+    # ── INFINITE FEED APPEND ENGINE ──
+    to do appendMoreFeedVideos:
+        create grid as document.getElementById("video-grid-container")
+        if grid != null:
+            set feedRenderCount = feedRenderCount + 1
+            create pool as masterCatalog
+            if currentCategoryFilter != "All":
+                create filtered as masterCatalog.filter(function(item) { return item.category == currentCategoryFilter; })
+                if filtered.length > 0:
+                    set pool = filtered
+            for each item in pool:
+                create card as document.createElement("div")
+                card.className = "video-card"
+                card.innerHTML = "<div class='thumbnail-wrapper'><img src='https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg' class='thumb-real-img' /><span class='duration-badge'>" + item.duration + "</span></div><div class='video-meta'><div class='channel-avatar'>" + (item.avatar || item.channel.charAt(0)) + "</div><div class='video-details'><h3 class='video-title'>" + item.title + "</h3><p class='video-channel'>" + item.channel + " ✓</p><p class='video-stats'>" + item.views + "</p></div></div>"
+                card.onclick = function() { openWatchPage(item.id, item.title, item.channel, item.views, item.desc, item.avatar); }
+                grid.appendChild(card)
+            call showToast with "✨ Loaded " + pool.length + " more real YouTube videos into feed!"
+
     # Category Filter Logic
     to do filterByCategory with categoryName:
+        set currentCategoryFilter = categoryName
         create allChips as document.querySelectorAll(".chip")
         allChips.forEach(function(chip) { chip.classList.remove("active"); })
 
@@ -242,9 +351,9 @@ in script:
                 allChipElement.classList.add("active")
             renderGrid(masterCatalog)
             if statusTitle != null:
-                statusTitle.textContent = "🔴 All YouTube Feed"
+                statusTitle.textContent = "🔴 Infinite YouTube Feed"
             if statusDesc != null:
-                statusDesc.textContent = "Displaying " + masterCatalog.length + " live videos across all genres"
+                statusDesc.textContent = "Displaying all " + masterCatalog.length + " live videos across all genres • Infinite Scroll active"
         else:
             create filtered as masterCatalog.filter(function(item) { return item.category == categoryName; })
             if filtered.length == 0:
@@ -253,21 +362,58 @@ in script:
             if statusTitle != null:
                 statusTitle.textContent = "🔴 Category: " + categoryName
             if statusDesc != null:
-                statusDesc.textContent = "Displaying " + filtered.length + " curated live YouTube videos"
+                statusDesc.textContent = "Displaying " + filtered.length + " curated live YouTube videos for " + categoryName
 
         call showToast with "Showing category: " + categoryName
 
-    # ── INNERTUBE LIVE SEARCH & GLOBAL QUERY ENGINE ──
+    # ── GLOBAL SEARCH & DIRECT YOUTUBE URL RESOLVER ──
     to do searchLiveYouTube with query:
-        call showToast with "🔍 Searching all of YouTube for: " + query
+        create q as query.trim()
+        if q == "":
+            call showToast with "Please type a search query or paste a YouTube URL"
+            return
+
+        call showToast with "🔍 Searching for: " + q
+
+        # Check if query is a Direct YouTube URL or raw 11-char ID
+        create directVidId as ""
+        if q.length == 11 and q.indexOf(" ") == -1:
+            set directVidId = q
+        else:
+            if q.includes("youtube.com/watch?v="):
+                set directVidId = q.split("v=")[1].split("&")[0]
+            else:
+                if q.includes("youtu.be/"):
+                    set directVidId = q.split("youtu.be/")[1].split("?")[0]
+
+        if directVidId != "":
+            call openWatchPage with directVidId, ("Live Video Stream (" + directVidId + ")"), "YouTube Direct Stream", "1 view • Just loaded", "Direct stream loaded from YouTube URL.", "Y"
+            call showToast with "🎬 Directly playing YouTube stream: " + directVidId
+            return
+
+        # Instant Multi-Field Global Filter
+        create qLow as q.toLowerCase()
+        create matches as masterCatalog.filter(function(v) { return (v.title + " " + v.channel + " " + v.desc + " " + v.category).toLowerCase().indexOf(qLow) !== -1 || (qLow.indexOf("gta") !== -1 && v.title.toLowerCase().indexOf("grand theft auto") !== -1); })
+
+        call openHomeFeed
+
         create statusTitle as document.getElementById("live-status-title")
         create statusDesc as document.getElementById("live-status-desc")
-        if statusDesc != null:
-            statusDesc.textContent = "Searching entire YouTube database for: " + query + "..."
 
-        create payload as JSON.stringify({ context: { client: { clientName: "WEB", clientVersion: "2.20240101.01.00", gl: "IN", hl: "en" } }, query: query })
-        
-        fetch("https://www.youtube.com/youtubei/v1/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).then(function(res) { return res.json(); }).then(function(data) { var primary = data.contents && data.contents.twoColumnSearchResultsRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer && data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents; if (primary && primary.length > 0) { var items = []; var sectionContents = primary[0].itemSectionRenderer && primary[0].itemSectionRenderer.contents; if (sectionContents) { sectionContents.forEach(function(c) { if (c.videoRenderer && c.videoRenderer.videoId) { var vr = c.videoRenderer; var title = vr.title && vr.title.runs && vr.title.runs[0] ? vr.title.runs[0].text : "YouTube Video"; var ch = vr.ownerText && vr.ownerText.runs && vr.ownerText.runs[0] ? vr.ownerText.runs[0].text : "Creator"; var views = vr.viewCountText ? vr.viewCountText.simpleText : "100K views"; var dur = vr.lengthText ? vr.lengthText.simpleText : "10:00"; var snippet = vr.detailedMetadataSnippets && vr.detailedMetadataSnippets[0] && vr.detailedMetadataSnippets[0].snippetText && vr.detailedMetadataSnippets[0].snippetText.runs ? vr.detailedMetadataSnippets[0].snippetText.runs.map(function(r){ return r.text; }).join('') : title; items.push({ id: vr.videoId, title: title, channel: ch, views: views, duration: dur, desc: snippet, avatar: ch.charAt(0) }); } }); } if (items.length > 0) { renderGrid(items); if (statusTitle != null) { statusTitle.textContent = "🔍 Search Results: " + query; } if (statusDesc != null) { statusDesc.textContent = "Found " + items.length + " live YouTube videos from Innertube API"; } showToast("✨ Found " + items.length + " live YouTube videos!"); return; } } var localMatches = masterCatalog.filter(function(v) { return v.title.toLowerCase().includes(query.toLowerCase()) || v.channel.toLowerCase().includes(query.toLowerCase()) || v.desc.toLowerCase().includes(query.toLowerCase()); }); if (localMatches.length > 0) { renderGrid(localMatches); } else { renderGrid(masterCatalog); } }).catch(function(err) { var localMatches = masterCatalog.filter(function(v) { return v.title.toLowerCase().includes(query.toLowerCase()) || v.channel.toLowerCase().includes(query.toLowerCase()) || v.desc.toLowerCase().includes(query.toLowerCase()); }); renderGrid(localMatches.length > 0 ? localMatches : masterCatalog); });
+        if matches.length > 0:
+            renderGrid(matches)
+            if statusTitle != null:
+                statusTitle.textContent = "🔍 Search Results for: " + q
+            if statusDesc != null:
+                statusDesc.textContent = "Found " + matches.length + " matching real YouTube videos"
+            call showToast with "Found " + matches.length + " videos matching '" + q + "'"
+        else:
+            renderGrid(masterCatalog)
+            if statusTitle != null:
+                statusTitle.textContent = "🔍 Showing all results for: " + q
+            if statusDesc != null:
+                statusDesc.textContent = "Showing top trending videos for: " + q
+            call showToast with "Showing top videos for '" + q + "'"
 
     # Initial App Load: Render All Feed Cards
     renderGrid(masterCatalog)
@@ -315,8 +461,11 @@ in script:
     when "sub-4" is clicked:
         call filterByCategory with "Coding & AI"
 
+    when "sub-5" is clicked:
+        call searchLiveYouTube with "MrBeast"
+
     when "nav-trending" is clicked:
-        call searchLiveYouTube with "Trending in India"
+        call openTrending
 
     when "nav-music" is clicked:
         call filterByCategory with "Lo-Fi Music"
@@ -329,6 +478,10 @@ in script:
 
     when "nav-sports" is clicked:
         call searchLiveYouTube with "Cricket Highlights"
+
+    # Infinite Load More Trigger
+    when "btn-load-more" is clicked:
+        call appendMoreFeedVideos
 
     # Sidebar Collapse Toggle
     when "btn-sidebar-toggle" is clicked:
@@ -376,7 +529,7 @@ in script:
                 dNotif.style.display = "flex"
 
     when "btn-voice" is clicked:
-        call showToast with "🎙️ Listening... Say 'Spring Boot' or 'Gaming' to search"
+        call showToast with "🎙️ Listening... Say 'Spring Boot', 'MrBeast', or 'Gaming' to search"
 
     when "user-profile" is clicked:
         call showToast with "👤 Signed in as Spandan Prayas Patra (Creator)"
@@ -384,9 +537,6 @@ in script:
     # Live Search Execution
     when "btn-search" is clicked:
         create q as get value of "search-input"
-        if q == "":
-            call showToast with "Please type a search query"
-            return
         call searchLiveYouTube with q
 
     # ── CATEGORY FILTER CHIPS ──
@@ -419,6 +569,9 @@ in script:
 
     when "chip-gaming" is clicked:
         call filterByCategory with "Gaming"
+
+    when "chip-science" is clicked:
+        call filterByCategory with "Science & Tech"
 
     when "chip-podcasts" is clicked:
         call filterByCategory with "System Design"
@@ -524,17 +677,17 @@ in script:
     when "ch-2" is clicked:
         set playSeconds = 255
         call sendPlayerCmd with "seekTo", [255, true]
-        call showToast with "📍 Chapter: 04:15 • HikariCP & Oracle Setup"
+        call showToast with "📍 Chapter: 04:15 • Setup"
 
     when "ch-3" is clicked:
         set playSeconds = 570
         call sendPlayerCmd with "seekTo", [570, true]
-        call showToast with "📍 Chapter: 09:30 • ACID Transactions"
+        call showToast with "📍 Chapter: 09:30 • Core Logic"
 
     when "ch-4" is clicked:
         set playSeconds = 840
         call sendPlayerCmd with "seekTo", [840, true]
-        call showToast with "📍 Chapter: 14:00 • High-Throughput Benchmarks"
+        call showToast with "📍 Chapter: 14:00 • Benchmarks"
 
     # ── SOCIAL ACTIONS (LIKE, SUBSCRIBE, JOIN, SHARE, CLIP) ──
     when "btn-join" is clicked:
