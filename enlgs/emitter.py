@@ -283,14 +283,31 @@ class ENLGSEmitter:
                 el = "window"
                 ev_name = "DOMContentLoaded"
 
-            lines = [f"{pad}{el}.addEventListener('{ev_name}', function(event) {{"]
-            if node.key_filter:
-                lines.append(f"{pad}  if (event.key !== '{node.key_filter}') return;")
-            for child in node.body:
-                c = self._emit_node(child, indent + 1)
-                if c:
-                    lines.append(c)
-            lines.append(pad + "});")
+            if el in ("window", "document", "document.body"):
+                lines = [f"{pad}{el}.addEventListener('{ev_name}', function(event) {{"]
+                if node.key_filter:
+                    lines.append(f"{pad}  if (event.key !== '{node.key_filter}') return;")
+                for child in node.body:
+                    c = self._emit_node(child, indent + 1)
+                    if c:
+                        lines.append(c)
+                lines.append(pad + "});")
+            else:
+                lines = [
+                    f"{pad}(function() {{",
+                    f"{pad}  const targetEl = {el};",
+                    f"{pad}  if (targetEl != null) {{",
+                    f"{pad}    targetEl.addEventListener('{ev_name}', function(event) {{"
+                ]
+                if node.key_filter:
+                    lines.append(f"{pad}      if (event.key !== '{node.key_filter}') return;")
+                for child in node.body:
+                    c = self._emit_node(child, indent + 3)
+                    if c:
+                        lines.append(c)
+                lines.append(pad + "    });")
+                lines.append(pad + "  }")
+                lines.append(pad + "})();")
             return "\n".join(lines)
 
         # ── Fetch / Network ──

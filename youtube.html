@@ -2476,304 +2476,549 @@ function searchLiveYouTube(query) {
 
 renderGrid ( masterCatalog );
 
-(document.getElementById("nav-home") || document.querySelector("nav-home")).addEventListener('click', function(event) {
-  openHomeFeed();
-});
-
-(document.getElementById("btn-logo") || document.querySelector("btn-logo")).addEventListener('click', function(event) {
-  openHomeFeed();
-});
-
-(document.getElementById("nav-shorts") || document.querySelector("nav-shorts")).addEventListener('click', function(event) {
-  openShortsReel();
-});
-
-(document.getElementById("nav-subs") || document.querySelector("nav-subs")).addEventListener('click', function(event) {
-  openSubsFeed();
-});
-
-(document.getElementById("nav-library") || document.querySelector("nav-library")).addEventListener('click', function(event) {
-  openLibrary();
-});
-
-(document.getElementById("nav-history") || document.querySelector("nav-history")).addEventListener('click', function(event) {
-  openLibrary();
-});
-
-(document.getElementById("nav-your-videos") || document.querySelector("nav-your-videos")).addEventListener('click', function(event) {
-  openSubsFeed();
-  showToast("🎬 Your uploaded videos (Spandan Prayas Patra)");
-});
-
-(document.getElementById("nav-watch-later") || document.querySelector("nav-watch-later")).addEventListener('click', function(event) {
-  openLibrary();
-  showToast("⏱️ Watch Later playlist (14 videos)");
-});
-
-(document.getElementById("nav-liked") || document.querySelector("nav-liked")).addEventListener('click', function(event) {
-  openLibrary();
-  showToast("👍 Liked videos playlist (86 videos)");
-});
-
-(document.getElementById("sub-1") || document.querySelector("sub-1")).addEventListener('click', function(event) {
-  filterByCategory("Java Backend");
-});
-
-(document.getElementById("sub-2") || document.querySelector("sub-2")).addEventListener('click', function(event) {
-  filterByCategory("Enlang Stack");
-});
-
-(document.getElementById("sub-3") || document.querySelector("sub-3")).addEventListener('click', function(event) {
-  filterByCategory("Next.js");
-});
-
-(document.getElementById("sub-4") || document.querySelector("sub-4")).addEventListener('click', function(event) {
-  filterByCategory("Coding & AI");
-});
-
-(document.getElementById("nav-trending") || document.querySelector("nav-trending")).addEventListener('click', function(event) {
-  searchLiveYouTube("Trending in India");
-});
-
-(document.getElementById("nav-music") || document.querySelector("nav-music")).addEventListener('click', function(event) {
-  filterByCategory("Lo-Fi Music");
-});
-
-(document.getElementById("nav-gaming") || document.querySelector("nav-gaming")).addEventListener('click', function(event) {
-  filterByCategory("Gaming");
-});
-
-(document.getElementById("nav-news") || document.querySelector("nav-news")).addEventListener('click', function(event) {
-  searchLiveYouTube("World Tech News");
-});
-
-(document.getElementById("nav-sports") || document.querySelector("nav-sports")).addEventListener('click', function(event) {
-  searchLiveYouTube("Cricket Highlights");
-});
-
-(document.getElementById("btn-sidebar-toggle") || document.querySelector("btn-sidebar-toggle")).addEventListener('click', function(event) {
-  let sb = document.getElementById ( "yt-sidebar" );
-  if (sb != null) {
-    if (sb.style.display == "none") {
-      sb.style.display = "flex";
-    }
-    else {
-      sb.style.display = "none";
-    }
+(function() {
+  const targetEl = (document.getElementById("nav-home") || document.querySelector("nav-home"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openHomeFeed();
+    });
   }
-});
+})();
 
-(document.getElementById("btn-create") || document.querySelector("btn-create")).addEventListener('click', function(event) {
-  let mCreate = document.getElementById ( "modal-create" );
-  if (mCreate != null) {
-    mCreate.style.display = "flex";
+(function() {
+  const targetEl = (document.getElementById("btn-logo") || document.querySelector("btn-logo"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openHomeFeed();
+    });
   }
-});
+})();
 
-(document.getElementById("btn-close-create") || document.querySelector("btn-close-create")).addEventListener('click', function(event) {
-  let mCreate = document.getElementById ( "modal-create" );
-  if (mCreate != null) {
-    mCreate.style.display = "none";
+(function() {
+  const targetEl = (document.getElementById("nav-shorts") || document.querySelector("nav-shorts"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openShortsReel();
+    });
   }
-});
+})();
 
-(document.getElementById("btn-cancel-upload") || document.querySelector("btn-cancel-upload")).addEventListener('click', function(event) {
-  let mCreate = document.getElementById ( "modal-create" );
-  if (mCreate != null) {
-    mCreate.style.display = "none";
+(function() {
+  const targetEl = (document.getElementById("nav-subs") || document.querySelector("nav-subs"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openSubsFeed();
+    });
   }
-});
+})();
 
-(document.getElementById("btn-publish-video") || document.querySelector("btn-publish-video")).addEventListener('click', function(event) {
-  let uTitle = (document.getElementById("upload-title-input") || document.querySelector("upload-title-input")).value;
-  if (uTitle == "") {
-    uTitle = "New Enlang Video by Spandan Prayas Patra";
+(function() {
+  const targetEl = (document.getElementById("nav-library") || document.querySelector("nav-library"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openLibrary();
+    });
   }
-  let newV = { id : "gJrjgg1KVL4" , title : uTitle , channel : "Spandan Prayas Patra" , subs : "128K subscribers" , views : "1 view • Just now" , desc : "Newly uploaded creator video in Enlang." , category : "All" , duration : "12:30" , avatar : "S" };
-  masterCatalog.unshift ( newV );
-  openHomeFeed();
-  let mCreate = document.getElementById ( "modal-create" );
-  if (mCreate != null) {
-    mCreate.style.display = "none";
+})();
+
+(function() {
+  const targetEl = (document.getElementById("nav-history") || document.querySelector("nav-history"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openLibrary();
+    });
   }
-  showToast("🚀 Video Published Live: " + uTitle);
-});
+})();
 
-(document.getElementById("btn-notif") || document.querySelector("btn-notif")).addEventListener('click', function(event) {
-  let dNotif = document.getElementById ( "dropdown-notif" );
-  if (dNotif != null) {
-    if (dNotif.style.display == "flex") {
-      dNotif.style.display = "none";
-    }
-    else {
-      dNotif.style.display = "flex";
-    }
+(function() {
+  const targetEl = (document.getElementById("nav-your-videos") || document.querySelector("nav-your-videos"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openSubsFeed();
+      showToast("🎬 Your uploaded videos (Spandan Prayas Patra)");
+    });
   }
-});
+})();
 
-(document.getElementById("btn-voice") || document.querySelector("btn-voice")).addEventListener('click', function(event) {
-  showToast("🎙️ Listening... Say 'Spring Boot' or 'Gaming' to search");
-});
-
-(document.getElementById("user-profile") || document.querySelector("user-profile")).addEventListener('click', function(event) {
-  showToast("👤 Signed in as Spandan Prayas Patra (Creator)");
-});
-
-(document.getElementById("btn-search") || document.querySelector("btn-search")).addEventListener('click', function(event) {
-  let q = (document.getElementById("search-input") || document.querySelector("search-input")).value;
-  if (q == "") {
-    showToast("Please type a search query");
-    return;
+(function() {
+  const targetEl = (document.getElementById("nav-watch-later") || document.querySelector("nav-watch-later"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openLibrary();
+      showToast("⏱️ Watch Later playlist (14 videos)");
+    });
   }
-  searchLiveYouTube(q);
-});
+})();
 
-(document.getElementById("chip-all") || document.querySelector("chip-all")).addEventListener('click', function(event) {
-  filterByCategory("All");
-});
-
-(document.getElementById("chip-coding") || document.querySelector("chip-coding")).addEventListener('click', function(event) {
-  filterByCategory("Coding & AI");
-});
-
-(document.getElementById("chip-java") || document.querySelector("chip-java")).addEventListener('click', function(event) {
-  filterByCategory("Java Backend");
-});
-
-(document.getElementById("chip-spring") || document.querySelector("chip-spring")).addEventListener('click', function(event) {
-  filterByCategory("Java Backend");
-});
-
-(document.getElementById("chip-enlang") || document.querySelector("chip-enlang")).addEventListener('click', function(event) {
-  filterByCategory("Enlang Stack");
-});
-
-(document.getElementById("chip-sysdesign") || document.querySelector("chip-sysdesign")).addEventListener('click', function(event) {
-  filterByCategory("System Design");
-});
-
-(document.getElementById("chip-next") || document.querySelector("chip-next")).addEventListener('click', function(event) {
-  filterByCategory("Next.js");
-});
-
-(document.getElementById("chip-edge") || document.querySelector("chip-edge")).addEventListener('click', function(event) {
-  filterByCategory("Next.js");
-});
-
-(document.getElementById("chip-music") || document.querySelector("chip-music")).addEventListener('click', function(event) {
-  filterByCategory("Lo-Fi Music");
-});
-
-(document.getElementById("chip-gaming") || document.querySelector("chip-gaming")).addEventListener('click', function(event) {
-  filterByCategory("Gaming");
-});
-
-(document.getElementById("chip-podcasts") || document.querySelector("chip-podcasts")).addEventListener('click', function(event) {
-  filterByCategory("System Design");
-});
-
-(document.getElementById("short-shelf-1") || document.querySelector("short-shelf-1")).addEventListener('click', function(event) {
-  openShortsReel();
-});
-
-(document.getElementById("short-shelf-2") || document.querySelector("short-shelf-2")).addEventListener('click', function(event) {
-  openShortsReel();
-});
-
-(document.getElementById("short-shelf-3") || document.querySelector("short-shelf-3")).addEventListener('click', function(event) {
-  openShortsReel();
-});
-
-(document.getElementById("short-shelf-4") || document.querySelector("short-shelf-4")).addEventListener('click', function(event) {
-  openShortsReel();
-});
-
-(document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).addEventListener('click', function(event) {
-  if (isPlaying == true) {
-    isPlaying = false;
-    (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "▶";
-    sendPlayerCmd("pauseVideo" , [ ]);
-    showToast("⏸ Stream paused");
+(function() {
+  const targetEl = (document.getElementById("nav-liked") || document.querySelector("nav-liked"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openLibrary();
+      showToast("👍 Liked videos playlist (86 videos)");
+    });
   }
-  else {
-    isPlaying = true;
-    (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "⏸";
-    sendPlayerCmd("playVideo" , [ ]);
-    showToast("▶ Stream playing");
-  }
-});
+})();
 
-(document.getElementById("btn-player-next") || document.querySelector("btn-player-next")).addEventListener('click', function(event) {
-  let nextItem = masterCatalog [ 1 ];
-  openWatchPage(nextItem.id , nextItem.title , nextItem.channel , nextItem.views , nextItem.desc , nextItem.avatar);
-});
+(function() {
+  const targetEl = (document.getElementById("sub-1") || document.querySelector("sub-1"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Java Backend");
+    });
+  }
+})();
 
-(document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).addEventListener('click', function(event) {
-  if (isMuted == true) {
-    isMuted = false;
-    (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).textContent = "🔊";
-    sendPlayerCmd("unMute" , [ ]);
-    showToast("Audio unmuted (100%)");
+(function() {
+  const targetEl = (document.getElementById("sub-2") || document.querySelector("sub-2"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Enlang Stack");
+    });
   }
-  else {
-    isMuted = true;
-    (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).textContent = "🔇";
-    sendPlayerCmd("mute" , [ ]);
-    showToast("Audio muted");
-  }
-});
+})();
 
-(document.getElementById("btn-player-speed") || document.querySelector("btn-player-speed")).addEventListener('click', function(event) {
-  let sBtn = document.getElementById ( "btn-player-speed" );
-  let rate = 1;
-  if (playbackSpeed == "1x") {
-    playbackSpeed = "1.5x";
-    rate = 1.5;
+(function() {
+  const targetEl = (document.getElementById("sub-3") || document.querySelector("sub-3"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Next.js");
+    });
   }
-  else {
-    if (playbackSpeed == "1.5x") {
-      playbackSpeed = "2x";
-      rate = 2;
-    }
-    else {
-      if (playbackSpeed == "2x") {
-        playbackSpeed = "0.5x";
-        rate = 0.5;
+})();
+
+(function() {
+  const targetEl = (document.getElementById("sub-4") || document.querySelector("sub-4"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Coding & AI");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("nav-trending") || document.querySelector("nav-trending"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      searchLiveYouTube("Trending in India");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("nav-music") || document.querySelector("nav-music"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Lo-Fi Music");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("nav-gaming") || document.querySelector("nav-gaming"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Gaming");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("nav-news") || document.querySelector("nav-news"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      searchLiveYouTube("World Tech News");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("nav-sports") || document.querySelector("nav-sports"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      searchLiveYouTube("Cricket Highlights");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-sidebar-toggle") || document.querySelector("btn-sidebar-toggle"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let sb = document.getElementById ( "yt-sidebar" );
+      if (sb != null) {
+        if (sb.style.display == "none") {
+          sb.style.display = "flex";
+        }
+        else {
+          sb.style.display = "none";
+        }
+      }
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-create") || document.querySelector("btn-create"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let mCreate = document.getElementById ( "modal-create" );
+      if (mCreate != null) {
+        mCreate.style.display = "flex";
+      }
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-close-create") || document.querySelector("btn-close-create"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let mCreate = document.getElementById ( "modal-create" );
+      if (mCreate != null) {
+        mCreate.style.display = "none";
+      }
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-cancel-upload") || document.querySelector("btn-cancel-upload"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let mCreate = document.getElementById ( "modal-create" );
+      if (mCreate != null) {
+        mCreate.style.display = "none";
+      }
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-publish-video") || document.querySelector("btn-publish-video"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let uTitle = (document.getElementById("upload-title-input") || document.querySelector("upload-title-input")).value;
+      if (uTitle == "") {
+        uTitle = "New Enlang Video by Spandan Prayas Patra";
+      }
+      let newV = { id : "gJrjgg1KVL4" , title : uTitle , channel : "Spandan Prayas Patra" , subs : "128K subscribers" , views : "1 view • Just now" , desc : "Newly uploaded creator video in Enlang." , category : "All" , duration : "12:30" , avatar : "S" };
+      masterCatalog.unshift ( newV );
+      openHomeFeed();
+      let mCreate = document.getElementById ( "modal-create" );
+      if (mCreate != null) {
+        mCreate.style.display = "none";
+      }
+      showToast("🚀 Video Published Live: " + uTitle);
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-notif") || document.querySelector("btn-notif"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let dNotif = document.getElementById ( "dropdown-notif" );
+      if (dNotif != null) {
+        if (dNotif.style.display == "flex") {
+          dNotif.style.display = "none";
+        }
+        else {
+          dNotif.style.display = "flex";
+        }
+      }
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-voice") || document.querySelector("btn-voice"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("🎙️ Listening... Say 'Spring Boot' or 'Gaming' to search");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("user-profile") || document.querySelector("user-profile"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("👤 Signed in as Spandan Prayas Patra (Creator)");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-search") || document.querySelector("btn-search"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let q = (document.getElementById("search-input") || document.querySelector("search-input")).value;
+      if (q == "") {
+        showToast("Please type a search query");
+        return;
+      }
+      searchLiveYouTube(q);
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("chip-all") || document.querySelector("chip-all"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("All");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("chip-coding") || document.querySelector("chip-coding"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Coding & AI");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("chip-java") || document.querySelector("chip-java"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Java Backend");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("chip-spring") || document.querySelector("chip-spring"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Java Backend");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("chip-enlang") || document.querySelector("chip-enlang"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Enlang Stack");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("chip-sysdesign") || document.querySelector("chip-sysdesign"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("System Design");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("chip-next") || document.querySelector("chip-next"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Next.js");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("chip-edge") || document.querySelector("chip-edge"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Next.js");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("chip-music") || document.querySelector("chip-music"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Lo-Fi Music");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("chip-gaming") || document.querySelector("chip-gaming"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("Gaming");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("chip-podcasts") || document.querySelector("chip-podcasts"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      filterByCategory("System Design");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("short-shelf-1") || document.querySelector("short-shelf-1"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openShortsReel();
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("short-shelf-2") || document.querySelector("short-shelf-2"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openShortsReel();
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("short-shelf-3") || document.querySelector("short-shelf-3"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openShortsReel();
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("short-shelf-4") || document.querySelector("short-shelf-4"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      openShortsReel();
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-player-play") || document.querySelector("btn-player-play"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      if (isPlaying == true) {
+        isPlaying = false;
+        (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "▶";
+        sendPlayerCmd("pauseVideo" , [ ]);
+        showToast("⏸ Stream paused");
       }
       else {
-        playbackSpeed = "1x";
-        rate = 1;
+        isPlaying = true;
+        (document.getElementById("btn-player-play") || document.querySelector("btn-player-play")).textContent = "⏸";
+        sendPlayerCmd("playVideo" , [ ]);
+        showToast("▶ Stream playing");
       }
-    }
+    });
   }
-  if (sBtn != null) {
-    sBtn.innerText = playbackSpeed;
-  }
-  sendPlayerCmd("setPlaybackRate" , [ rate ]);
-  showToast("⚡ Playback Speed: " + playbackSpeed);
-});
+})();
 
-(document.getElementById("btn-player-cc") || document.querySelector("btn-player-cc")).addEventListener('click', function(event) {
-  showToast("📝 Closed Captions: English (Auto-generated)");
-});
-
-(document.getElementById("btn-player-quality") || document.querySelector("btn-player-quality")).addEventListener('click', function(event) {
-  showToast("⚙️ Stream Quality: 1080p60 Full HD");
-});
-
-(document.getElementById("btn-player-fullscreen") || document.querySelector("btn-player-fullscreen")).addEventListener('click', function(event) {
-  let pCont = document.querySelector ( ".video-player-container" );
-  if (document.fullscreenElement == null) {
-    if (pCont != null) {
-      pCont.requestFullscreen ( );
-      showToast("Entered Fullscreen Player");
-    }
+(function() {
+  const targetEl = (document.getElementById("btn-player-next") || document.querySelector("btn-player-next"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let nextItem = masterCatalog [ 1 ];
+      openWatchPage(nextItem.id , nextItem.title , nextItem.channel , nextItem.views , nextItem.desc , nextItem.avatar);
+    });
   }
-  else {
-    document.exitFullscreen ( );
-    showToast("Exited Fullscreen Player");
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      if (isMuted == true) {
+        isMuted = false;
+        (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).textContent = "🔊";
+        sendPlayerCmd("unMute" , [ ]);
+        showToast("Audio unmuted (100%)");
+      }
+      else {
+        isMuted = true;
+        (document.getElementById("btn-player-mute") || document.querySelector("btn-player-mute")).textContent = "🔇";
+        sendPlayerCmd("mute" , [ ]);
+        showToast("Audio muted");
+      }
+    });
   }
-});
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-player-speed") || document.querySelector("btn-player-speed"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let sBtn = document.getElementById ( "btn-player-speed" );
+      let rate = 1;
+      if (playbackSpeed == "1x") {
+        playbackSpeed = "1.5x";
+        rate = 1.5;
+      }
+      else {
+        if (playbackSpeed == "1.5x") {
+          playbackSpeed = "2x";
+          rate = 2;
+        }
+        else {
+          if (playbackSpeed == "2x") {
+            playbackSpeed = "0.5x";
+            rate = 0.5;
+          }
+          else {
+            playbackSpeed = "1x";
+            rate = 1;
+          }
+        }
+      }
+      if (sBtn != null) {
+        sBtn.innerText = playbackSpeed;
+      }
+      sendPlayerCmd("setPlaybackRate" , [ rate ]);
+      showToast("⚡ Playback Speed: " + playbackSpeed);
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-player-cc") || document.querySelector("btn-player-cc"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("📝 Closed Captions: English (Auto-generated)");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-player-quality") || document.querySelector("btn-player-quality"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("⚙️ Stream Quality: 1080p60 Full HD");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-player-fullscreen") || document.querySelector("btn-player-fullscreen"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let pCont = document.querySelector ( ".video-player-container" );
+      if (document.fullscreenElement == null) {
+        if (pCont != null) {
+          pCont.requestFullscreen ( );
+          showToast("Entered Fullscreen Player");
+        }
+      }
+      else {
+        document.exitFullscreen ( );
+        showToast("Exited Fullscreen Player");
+      }
+    });
+  }
+})();
 
 setInterval(function() {
   if (isPlaying == true) {
@@ -2791,167 +3036,277 @@ setInterval(function() {
   }
 }, 1000);
 
-(document.getElementById("ch-1") || document.querySelector("ch-1")).addEventListener('click', function(event) {
-  playSeconds = 0;
-  sendPlayerCmd("seekTo" , [ 0 , true ]);
-  showToast("📍 Chapter: 00:00 • Introduction");
-});
-
-(document.getElementById("ch-2") || document.querySelector("ch-2")).addEventListener('click', function(event) {
-  playSeconds = 255;
-  sendPlayerCmd("seekTo" , [ 255 , true ]);
-  showToast("📍 Chapter: 04:15 • HikariCP & Oracle Setup");
-});
-
-(document.getElementById("ch-3") || document.querySelector("ch-3")).addEventListener('click', function(event) {
-  playSeconds = 570;
-  sendPlayerCmd("seekTo" , [ 570 , true ]);
-  showToast("📍 Chapter: 09:30 • ACID Transactions");
-});
-
-(document.getElementById("ch-4") || document.querySelector("ch-4")).addEventListener('click', function(event) {
-  playSeconds = 840;
-  sendPlayerCmd("seekTo" , [ 840 , true ]);
-  showToast("📍 Chapter: 14:00 • High-Throughput Benchmarks");
-});
-
-(document.getElementById("btn-join") || document.querySelector("btn-join")).addEventListener('click', function(event) {
-  showToast("⭐ Welcome! Channel Membership perks unlocked.");
-});
-
-(document.getElementById("btn-subscribe") || document.querySelector("btn-subscribe")).addEventListener('click', function(event) {
-  let sBtn = document.getElementById ( "btn-subscribe" );
-  if (isSubscribed == true) {
-    isSubscribed = false;
-    sBtn.innerText = "Subscribe";
-    sBtn.style.background = "#ffffff";
-    sBtn.style.color = "#0f0f0f";
-    showToast("Unsubscribed from Creator");
+(function() {
+  const targetEl = (document.getElementById("ch-1") || document.querySelector("ch-1"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      playSeconds = 0;
+      sendPlayerCmd("seekTo" , [ 0 , true ]);
+      showToast("📍 Chapter: 00:00 • Introduction");
+    });
   }
-  else {
-    isSubscribed = true;
-    sBtn.innerText = "Subscribed ✓";
-    sBtn.style.background = "#272727";
-    sBtn.style.color = "#aaaaaa";
-    showToast("🔔 Subscribed to Creator!");
+})();
+
+(function() {
+  const targetEl = (document.getElementById("ch-2") || document.querySelector("ch-2"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      playSeconds = 255;
+      sendPlayerCmd("seekTo" , [ 255 , true ]);
+      showToast("📍 Chapter: 04:15 • HikariCP & Oracle Setup");
+    });
   }
-});
+})();
 
-(document.getElementById("btn-like") || document.querySelector("btn-like")).addEventListener('click', function(event) {
-  let lBtn = document.getElementById ( "btn-like" );
-  if (isLiked == true) {
-    isLiked = false;
-    lBtn.innerText = "👍 142K";
-    lBtn.style.color = "#f1f1f1";
+(function() {
+  const targetEl = (document.getElementById("ch-3") || document.querySelector("ch-3"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      playSeconds = 570;
+      sendPlayerCmd("seekTo" , [ 570 , true ]);
+      showToast("📍 Chapter: 09:30 • ACID Transactions");
+    });
   }
-  else {
-    isLiked = true;
-    lBtn.innerText = "👍 142.1K";
-    lBtn.style.color = "#3ea6ff";
-    showToast("Added to Liked Videos");
+})();
+
+(function() {
+  const targetEl = (document.getElementById("ch-4") || document.querySelector("ch-4"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      playSeconds = 840;
+      sendPlayerCmd("seekTo" , [ 840 , true ]);
+      showToast("📍 Chapter: 14:00 • High-Throughput Benchmarks");
+    });
   }
-});
+})();
 
-(document.getElementById("btn-dislike") || document.querySelector("btn-dislike")).addEventListener('click', function(event) {
-  showToast("Disliked video");
-});
-
-(document.getElementById("btn-share") || document.querySelector("btn-share")).addEventListener('click', function(event) {
-  let mShare = document.getElementById ( "modal-share" );
-  if (mShare != null) {
-    mShare.style.display = "flex";
+(function() {
+  const targetEl = (document.getElementById("btn-join") || document.querySelector("btn-join"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("⭐ Welcome! Channel Membership perks unlocked.");
+    });
   }
-});
+})();
 
-(document.getElementById("btn-close-share") || document.querySelector("btn-close-share")).addEventListener('click', function(event) {
-  let mShare = document.getElementById ( "modal-share" );
-  if (mShare != null) {
-    mShare.style.display = "none";
+(function() {
+  const targetEl = (document.getElementById("btn-subscribe") || document.querySelector("btn-subscribe"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let sBtn = document.getElementById ( "btn-subscribe" );
+      if (isSubscribed == true) {
+        isSubscribed = false;
+        sBtn.innerText = "Subscribe";
+        sBtn.style.background = "#ffffff";
+        sBtn.style.color = "#0f0f0f";
+        showToast("Unsubscribed from Creator");
+      }
+      else {
+        isSubscribed = true;
+        sBtn.innerText = "Subscribed ✓";
+        sBtn.style.background = "#272727";
+        sBtn.style.color = "#aaaaaa";
+        showToast("🔔 Subscribed to Creator!");
+      }
+    });
   }
-});
+})();
 
-(document.getElementById("btn-copy-share") || document.querySelector("btn-copy-share")).addEventListener('click', function(event) {
-  let mShare = document.getElementById ( "modal-share" );
-  if (mShare != null) {
-    mShare.style.display = "none";
+(function() {
+  const targetEl = (document.getElementById("btn-like") || document.querySelector("btn-like"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let lBtn = document.getElementById ( "btn-like" );
+      if (isLiked == true) {
+        isLiked = false;
+        lBtn.innerText = "👍 142K";
+        lBtn.style.color = "#f1f1f1";
+      }
+      else {
+        isLiked = true;
+        lBtn.innerText = "👍 142.1K";
+        lBtn.style.color = "#3ea6ff";
+        showToast("Added to Liked Videos");
+      }
+    });
   }
-  showToast("🔗 Link copied to clipboard!");
-});
+})();
 
-(document.getElementById("btn-download") || document.querySelector("btn-download")).addEventListener('click', function(event) {
-  showToast("⬇ Downloading 1080p stream for offline playback...");
-});
-
-(document.getElementById("btn-clip") || document.querySelector("btn-clip")).addEventListener('click', function(event) {
-  showToast("✂ Create Clip dialog opened");
-});
-
-(document.getElementById("btn-more") || document.querySelector("btn-more")).addEventListener('click', function(event) {
-  showToast("⋯ Options: Save to Playlist, Report, Transcript");
-});
-
-(document.getElementById("btn-shorts-next") || document.querySelector("btn-shorts-next")).addEventListener('click', function(event) {
-  let nextIdx = ( currentShortIndex + 1 ) % shortsList.length;
-  renderActiveShort ( nextIdx );
-  showToast("Next Short loaded");
-});
-
-(document.getElementById("btn-shorts-prev") || document.querySelector("btn-shorts-prev")).addEventListener('click', function(event) {
-  let prevIdx = ( currentShortIndex - 1 + shortsList.length ) % shortsList.length;
-  renderActiveShort ( prevIdx );
-  showToast("Previous Short loaded");
-});
-
-(document.getElementById("btn-shorts-like") || document.querySelector("btn-shorts-like")).addEventListener('click', function(event) {
-  let sLike = document.getElementById ( "shorts-like-count" );
-  if (isShortsLiked == true) {
-    isShortsLiked = false;
-    if (sLike != null) {
-      sLike.textContent = "245K";
-    }
+(function() {
+  const targetEl = (document.getElementById("btn-dislike") || document.querySelector("btn-dislike"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("Disliked video");
+    });
   }
-  else {
-    isShortsLiked = true;
-    if (sLike != null) {
-      sLike.textContent = "245.1K";
-    }
-    showToast("Liked Short!");
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-share") || document.querySelector("btn-share"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let mShare = document.getElementById ( "modal-share" );
+      if (mShare != null) {
+        mShare.style.display = "flex";
+      }
+    });
   }
-});
+})();
 
-(document.getElementById("btn-shorts-dislike") || document.querySelector("btn-shorts-dislike")).addEventListener('click', function(event) {
-  showToast("Disliked Short");
-});
-
-(document.getElementById("btn-shorts-comment") || document.querySelector("btn-shorts-comment")).addEventListener('click', function(event) {
-  showToast("💬 Opening Shorts Comments (4.2K)");
-});
-
-(document.getElementById("btn-shorts-share") || document.querySelector("btn-shorts-share")).addEventListener('click', function(event) {
-  showToast("🔗 Shorts link copied!");
-});
-
-(document.getElementById("btn-shorts-sub") || document.querySelector("btn-shorts-sub")).addEventListener('click', function(event) {
-  let sBtn = document.getElementById ( "btn-shorts-sub" );
-  if (sBtn != null) {
-    if (sBtn.innerText == "Subscribe") {
-      sBtn.innerText = "Subscribed ✓";
-      sBtn.style.background = "#272727";
-      sBtn.style.color = "#aaaaaa";
-      showToast("Subscribed to Creator!");
-    }
-    else {
-      sBtn.innerText = "Subscribe";
-      sBtn.style.background = "#ffffff";
-      sBtn.style.color = "#0f0f0f";
-    }
+(function() {
+  const targetEl = (document.getElementById("btn-close-share") || document.querySelector("btn-close-share"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let mShare = document.getElementById ( "modal-share" );
+      if (mShare != null) {
+        mShare.style.display = "none";
+      }
+    });
   }
-});
+})();
 
-(document.getElementById("btn-shorts-mute") || document.querySelector("btn-shorts-mute")).addEventListener('click', function(event) {
-  sendShortsCmd("mute" , [ ]);
-  showToast("Shorts audio toggled");
-});
+(function() {
+  const targetEl = (document.getElementById("btn-copy-share") || document.querySelector("btn-copy-share"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let mShare = document.getElementById ( "modal-share" );
+      if (mShare != null) {
+        mShare.style.display = "none";
+      }
+      showToast("🔗 Link copied to clipboard!");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-download") || document.querySelector("btn-download"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("⬇ Downloading 1080p stream for offline playback...");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-clip") || document.querySelector("btn-clip"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("✂ Create Clip dialog opened");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-more") || document.querySelector("btn-more"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("⋯ Options: Save to Playlist, Report, Transcript");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-shorts-next") || document.querySelector("btn-shorts-next"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let nextIdx = ( currentShortIndex + 1 ) % shortsList.length;
+      renderActiveShort ( nextIdx );
+      showToast("Next Short loaded");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-shorts-prev") || document.querySelector("btn-shorts-prev"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let prevIdx = ( currentShortIndex - 1 + shortsList.length ) % shortsList.length;
+      renderActiveShort ( prevIdx );
+      showToast("Previous Short loaded");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-shorts-like") || document.querySelector("btn-shorts-like"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let sLike = document.getElementById ( "shorts-like-count" );
+      if (isShortsLiked == true) {
+        isShortsLiked = false;
+        if (sLike != null) {
+          sLike.textContent = "245K";
+        }
+      }
+      else {
+        isShortsLiked = true;
+        if (sLike != null) {
+          sLike.textContent = "245.1K";
+        }
+        showToast("Liked Short!");
+      }
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-shorts-dislike") || document.querySelector("btn-shorts-dislike"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("Disliked Short");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-shorts-comment") || document.querySelector("btn-shorts-comment"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("💬 Opening Shorts Comments (4.2K)");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-shorts-share") || document.querySelector("btn-shorts-share"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      showToast("🔗 Shorts link copied!");
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-shorts-sub") || document.querySelector("btn-shorts-sub"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let sBtn = document.getElementById ( "btn-shorts-sub" );
+      if (sBtn != null) {
+        if (sBtn.innerText == "Subscribe") {
+          sBtn.innerText = "Subscribed ✓";
+          sBtn.style.background = "#272727";
+          sBtn.style.color = "#aaaaaa";
+          showToast("Subscribed to Creator!");
+        }
+        else {
+          sBtn.innerText = "Subscribe";
+          sBtn.style.background = "#ffffff";
+          sBtn.style.color = "#0f0f0f";
+        }
+      }
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-shorts-mute") || document.querySelector("btn-shorts-mute"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      sendShortsCmd("mute" , [ ]);
+      showToast("Shorts audio toggled");
+    });
+  }
+})();
 
 function postComment() {
   let cText = (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value;
@@ -2972,36 +3327,60 @@ function postComment() {
   }
 }
 
-(document.getElementById("btn-submit-comment") || document.querySelector("btn-submit-comment")).addEventListener('click', function(event) {
-  postComment();
-});
-
-(document.getElementById("btn-cancel-comment") || document.querySelector("btn-cancel-comment")).addEventListener('click', function(event) {
-  (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value = "";
-});
-
-(document.getElementById("btn-clear-history") || document.querySelector("btn-clear-history")).addEventListener('click', function(event) {
-  let hContainer = document.getElementById ( "history-list-container" );
-  if (hContainer != null) {
-    hContainer.innerHTML = "<p style='color: #888; padding: 20px;'>Watch history is empty.</p>";
+(function() {
+  const targetEl = (document.getElementById("btn-submit-comment") || document.querySelector("btn-submit-comment"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      postComment();
+    });
   }
-  showToast("🗑️ Watch History Cleared");
-});
+})();
 
-(document.getElementById("btn-theme") || document.querySelector("btn-theme")).addEventListener('click', function(event) {
-  let b = document.body;
-  let tBtn = document.getElementById ( "btn-theme" );
-  if (tBtn.innerText == "☾") {
-    tBtn.innerText = "☼";
-    b.classList.add ( "light-theme" );
-    showToast("Switched to YouTube Light Mode");
+(function() {
+  const targetEl = (document.getElementById("btn-cancel-comment") || document.querySelector("btn-cancel-comment"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      (document.getElementById("new-comment-input") || document.querySelector("new-comment-input")).value = "";
+    });
   }
-  else {
-    tBtn.innerText = "☾";
-    b.classList.remove ( "light-theme" );
-    showToast("Switched to YouTube Dark Mode");
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-clear-history") || document.querySelector("btn-clear-history"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let hContainer = document.getElementById ( "history-list-container" );
+      if (hContainer != null) {
+        hContainer.innerHTML = "<p style='color: #888; padding: 20px;'>Watch history is empty.</p>";
+      }
+      showToast("🗑️ Watch History Cleared");
+    });
   }
-});
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-theme") || document.querySelector("btn-theme"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let b = document.body;
+      let tBtn = document.getElementById ( "btn-theme" );
+      if (b.classList.contains ( "light-theme" )) {
+        b.classList.remove ( "light-theme" );
+        if (tBtn != null) {
+          (document.getElementById("btn-theme") || document.querySelector("btn-theme")).textContent = "☾";
+        }
+        showToast("Switched to YouTube Dark Mode");
+      }
+      else {
+        b.classList.add ( "light-theme" );
+        if (tBtn != null) {
+          (document.getElementById("btn-theme") || document.querySelector("btn-theme")).textContent = "☼";
+        }
+        showToast("Switched to YouTube Light Mode");
+      }
+    });
+  }
+})();
     </script>
   </body>
 </html>

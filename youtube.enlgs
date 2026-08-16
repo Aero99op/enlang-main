@@ -679,11 +679,13 @@ in script:
     when "btn-theme" is clicked:
         create b as document.body
         create tBtn as document.getElementById("btn-theme")
-        if tBtn.innerText == "☾":
-            tBtn.innerText = "☼"
-            b.classList.add("light-theme")
-            call showToast with "Switched to YouTube Light Mode"
-        else:
-            tBtn.innerText = "☾"
+        if b.classList.contains("light-theme"):
             b.classList.remove("light-theme")
+            if tBtn != null:
+                set text of "btn-theme" to "☾"
             call showToast with "Switched to YouTube Dark Mode"
+        else:
+            b.classList.add("light-theme")
+            if tBtn != null:
+                set text of "btn-theme" to "☼"
+            call showToast with "Switched to YouTube Light Mode"
