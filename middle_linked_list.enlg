@@ -1,0 +1,56 @@
+# ==============================================================================
+# Enlang (.enlg) - Find Middle Element of a Singly Linked List
+# (Tortoise & Hare: Slow & Fast Pointers Algorithm - Zero Commas)
+# ==============================================================================
+
+import std
+
+# 1. Helper function to print a Linked List
+function print_list with head:
+    declare curr = head
+    while curr is not "none":
+        show call get_item on curr at 0
+        set curr = call get_item on curr at 1
+
+# 2. Algorithm: Find Middle Element (Slow & Fast Pointers)
+function find_middle with head:
+    declare slow = head
+    declare fast = head
+    
+    while fast is not "none":
+        declare next_fast = call get_item on fast at 1
+        if next_fast is "none":
+            declare mid_val = call get_item on slow at 0
+            return mid_val
+        else:
+            set slow = call get_item on slow at 1
+            set fast = call get_item on next_fast at 1
+        
+    declare final_mid = call get_item on slow at 0
+    return final_mid
+
+show "=========================================================="
+show "        FIND MIDDLE ELEMENT OF LINKED LIST IN ENLG        "
+show "=========================================================="
+
+# Test Case 1: Odd Length List (5 elements: 10 -> 20 -> 30 -> 40 -> 50)
+declare list1 = [10, [20, [30, [40, [50, "none"]]]]]
+show "[Test 1] Odd Length List (10, 20, 30, 40, 50):"
+call print_list on list1
+
+declare mid1 = call find_middle on list1
+show ">> Middle Element is:"
+show mid1
+
+show "----------------------------------------------------------"
+
+# Test Case 2: Even Length List (6 elements: 10 -> 20 -> 30 -> 40 -> 50 -> 60)
+declare list2 = [10, [20, [30, [40, [50, [60, "none"]]]]]]
+show "[Test 2] Even Length List (10, 20, 30, 40, 50, 60):"
+call print_list on list2
+
+declare mid2 = call find_middle on list2
+show ">> Middle Element is:"
+show mid2
+
+show "=========================================================="

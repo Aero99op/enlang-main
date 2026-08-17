@@ -1,0 +1,23 @@
+import std
+
+function check_palindrome with s:
+    declare length = call get_length on s
+    declare left = 0
+    declare right = length - 1
+    
+    while left < right:
+        declare l = call get_item on s at index left
+        declare r = call get_item on s at index right
+        if l != r:
+            show s + " -> NOT A PALINDROME"
+            return false
+        set left = left + 1
+        set right = right - 1
+        
+    show s + " -> PALINDROME"
+    return true
+
+# Testing directly:
+call check_palindrome on "racecar"
+call check_palindrome on "enlang"
+call check_palindrome on "madam"

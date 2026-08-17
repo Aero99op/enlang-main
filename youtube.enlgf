@@ -77,12 +77,12 @@ document enlgf:
                         button "📰 News" id "nav-news" class "sidebar-item"
                         button "🏆 Sports" id "nav-sports" class "sidebar-item"
 
-                # Main Content Area
-                main class "yt-content":
-                    # ── VIEW 1: HOME FEED (INFINITE SCROLL) ──
+                # Central Multi-View Panel
+                section class "yt-content":
+                    # 1. Main Video Feed Panel
                     div id "view-feed" class "view-panel active":
-                        # Category Filter Chips Bar
-                        div class "category-bar" id "category-container":
+                        # Category Chips Bar
+                        nav class "category-bar":
                             button "All" id "chip-all" class "chip active"
                             button "Coding & AI" id "chip-coding" class "chip"
                             button "Java Backend" id "chip-java" class "chip"
@@ -96,119 +96,120 @@ document enlgf:
                             button "Science & Tech" id "chip-science" class "chip"
                             button "Podcasts" id "chip-podcasts" class "chip"
 
-                        # Feed Status Banner
-                        div id "feed-status-bar" class "feed-status-bar":
+                        # Real-time Status Banner
+                        div class "feed-status-bar":
                             span "🔴 Infinite Real YouTube Feed" id "live-status-title" class "live-indicator"
                             span "Real-time YouTube Streaming • 100% Real Live Catalog" id "live-status-desc" class "live-subtext"
 
-                        # Primary Video Cards Grid (Infinite Scroll)
+                        # Dynamic Video Cards Grid
                         div class "video-grid" id "video-grid-container"
 
-                        # ── YouTube Shorts Shelf on Home Feed ──
+                        # Shorts Shelf on Home
                         div class "shorts-shelf":
                             div class "shorts-header":
                                 span "⚡" class "shorts-icon"
-                                h2 "Shorts" class "shorts-title"
+                                h3 "Shorts" class "shorts-title"
                             div class "shorts-grid":
                                 div class "short-card" id "short-shelf-1":
                                     div class "short-thumb":
                                         img src "https://i.ytimg.com/vi/gJrjgg1KVL4/hqdefault.jpg" class "short-img"
-                                        span "🔥 Java 21 Performance Hacks" class "short-overlay-title"
+                                        span "🔥 3 Java Performance Hacks" class "short-overlay-title"
                                     p "3.2M views" class "short-views"
                                 div class "short-card" id "short-shelf-2":
                                     div class "short-thumb":
                                         img src "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" class "short-img"
-                                        span "🚀 Clean Code in Enlang" class "short-overlay-title"
+                                        span "🚀 Enlang 100% Native Output" class "short-overlay-title"
                                     p "1.8M views" class "short-views"
                                 div class "short-card" id "short-shelf-3":
                                     div class "short-thumb":
                                         img src "https://i.ytimg.com/vi/8aGhZQkoFbQ/hqdefault.jpg" class "short-img"
-                                        span "🌐 Cloudflare Workers Under 1ms" class "short-overlay-title"
+                                        span "🌐 Cloudflare 0ms Latency" class "short-overlay-title"
                                     p "950K views" class "short-views"
                                 div class "short-card" id "short-shelf-4":
                                     div class "short-thumb":
                                         img src "https://i.ytimg.com/vi/Q7AOvWpIVHU/hqdefault.jpg" class "short-img"
-                                        span "✨ Raymarched Black Hole" class "short-overlay-title"
+                                        span "✨ Raymarched 3D Shaders" class "short-overlay-title"
                                     p "2.4M views" class "short-views"
 
-                        # Infinite Scroll Loading Trigger
-                        div class "infinite-loading-bar" id "feed-loading-bar":
-                            button "⬇ Load More Real YouTube Videos" id "btn-load-more" class "btn-load-more"
+                        # Infinite Load More Trigger
+                        div class "infinite-loading-bar":
+                            button "Load More Videos" id "btn-load-more" class "btn-load-more"
 
-                    # ── VIEW 2: SHORTS FULLSCREEN REEL ──
+                    # 2. Shorts Fullscreen Player Panel
                     div id "view-shorts" class "view-panel":
                         div class "shorts-reel-container":
                             div class "shorts-reel-viewport":
                                 div class "shorts-video-box" id "shorts-active-box":
-                                    iframe id "shorts-iframe" src "https://www.youtube-nocookie.com/embed/gJrjgg1KVL4?autoplay=1&enablejsapi=1&controls=0&loop=1" frameborder "0" allow "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" class "shorts-embed-frame"
+                                    iframe id "shorts-iframe" class "shorts-embed-frame" src "about:blank" allow "autoplay; encrypted-media; picture-in-picture" allowfullscreen "true"
                                     div class "shorts-top-bar":
                                         span "⚡ YouTube Shorts" class "shorts-brand-tag"
-                                        button "🔊" id "btn-shorts-mute" class "shorts-ctrl-icon"
+                                        button "🔇" id "btn-shorts-mute" class "shorts-ctrl-icon"
                                     div class "shorts-bottom-overlay":
                                         div class "shorts-creator-row":
-                                            div "S" class "shorts-avatar" id "shorts-avatar-el"
+                                            div "S" class "shorts-avatar"
                                             span "@SpandanPrayas" id "shorts-author-name" class "shorts-username"
                                             button "Subscribe" id "btn-shorts-sub" class "btn-shorts-sub"
-                                        p "3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev" id "shorts-title-text" class "shorts-desc"
+                                        p "🔥 3 Insane Java 21 Performance Hacks you never knew existed! #Java #SpringBoot #Dev" id "shorts-title-text" class "shorts-desc"
                                         div class "shorts-music-row":
-                                            span "🎵 Spandan Original Audio • High Performance Remix" id "shorts-audio-text" class "shorts-music-title"
-
+                                            span "🎵 Spandan Original Audio • High Performance Remix" id "shorts-audio-text"
                                 div class "shorts-action-rail":
-                                    button "👍" id "btn-shorts-like" class "shorts-rail-btn":
+                                    button id "btn-shorts-like" class "shorts-rail-btn":
+                                        span "👍"
                                         span "245K" id "shorts-like-count" class "rail-count"
-                                    button "👎" id "btn-shorts-dislike" class "shorts-rail-btn":
+                                    button id "btn-shorts-dislike" class "shorts-rail-btn":
+                                        span "👎"
                                         span "Dislike" class "rail-count"
-                                    button "💬" id "btn-shorts-comment" class "shorts-rail-btn":
+                                    button id "btn-shorts-comment" class "shorts-rail-btn":
+                                        span "💬"
                                         span "4.2K" class "rail-count"
-                                    button "↗" id "btn-shorts-share" class "shorts-rail-btn":
+                                    button id "btn-shorts-share" class "shorts-rail-btn":
+                                        span "↗"
                                         span "Share" class "rail-count"
-                                    button "⋯" id "btn-shorts-more" class "shorts-rail-btn":
+                                    button id "btn-shorts-more" class "shorts-rail-btn":
+                                        span "⋯"
                                         span "More" class "rail-count"
-                                    div class "shorts-sound-disc" id "shorts-disc"
+                                    div class "shorts-sound-disc"
+                                div class "shorts-nav-arrows":
+                                    button "▲" id "btn-shorts-prev" class "shorts-arrow-btn" title "Previous Short"
+                                    button "▼" id "btn-shorts-next" class "shorts-arrow-btn" title "Next Short"
 
-                            div class "shorts-nav-arrows":
-                                button "▲" id "btn-shorts-prev" class "shorts-arrow-btn" title "Previous Short"
-                                button "▼" id "btn-shorts-next" class "shorts-arrow-btn" title "Next Short"
-
-                    # ── VIEW 3: WATCH PAGE (LIVE STREAMING PLAYER + METADATA + COMMENTS + RECS) ──
+                    # 3. Watch Video Page Panel
                     div id "view-watch" class "view-panel":
                         div class "watch-layout":
-                            # Primary Watch Column
+                            # Left Primary Column
                             div class "watch-primary":
-                                # Video Player Canvas with Ambient Glow & Real Stream Embed
+                                # Player Container with Ambient Backlight
                                 div class "ambient-glow-wrapper":
                                     div class "ambient-backlight" id "player-ambient-light"
                                     div class "video-player-container":
-                                        div class "player-screen" id "player-canvas":
-                                            iframe id "player-iframe" src "https://www.youtube-nocookie.com/embed/gJrjgg1KVL4?autoplay=1&enablejsapi=1" frameborder "0" allow "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" class "yt-embed-frame"
-
+                                        div class "player-screen" id "main-player-screen":
+                                            iframe id "player-iframe" class "yt-embed-frame" src "about:blank" allow "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen "true"
+                                        # Native-Styled Video Controls Bar
                                         div class "player-controls":
-                                            button "⏸" id "btn-player-play" class "ctrl-btn" title "Play/Pause (k / Space)"
+                                            button "⏸" id "btn-player-play" class "ctrl-btn" title "Play/Pause (k)"
                                             button "⏭" id "btn-player-next" class "ctrl-btn" title "Next video (Shift+N)"
                                             div class "volume-group":
                                                 button "🔊" id "btn-player-mute" class "ctrl-btn" title "Mute (m)"
-                                                input type "range" id "volume-slider" min "0" max "100" value "80" class "vol-slider" title "Volume"
-                                            span "04:15 / 18:45" id "player-time-display" class "ctrl-time"
-                                            div class "scrubber-bar" id "scrubber-track" title "Seek":
-                                                div id "scrubber-progress" class "scrubber-fill" style "width: 25%;"
-                                            button "CC" id "btn-player-cc" class "ctrl-btn" title "Subtitles/CC (c)"
-                                            button "1x" id "btn-player-speed" class "ctrl-btn" title "Playback speed"
-                                            button "⚙️ 1080p" id "btn-player-quality" class "ctrl-btn" title "Settings"
-                                            button "⛶" id "btn-player-fullscreen" class "ctrl-btn" title "Fullscreen (f)"
+                                                input type "range" min "0" max "100" value "100" class "vol-slider" id "player-volume"
+                                            span "04:18 / 71:22" id "player-time-display" class "ctrl-time"
+                                            div class "scrubber-bar" id "player-scrubber":
+                                                div class "scrubber-fill" id "scrubber-progress" style "width: 15%;"
+                                            button "CC" id "btn-player-cc" class "ctrl-btn" title "Subtitles/Closed Captions (c)"
+                                            button "1x" id "btn-player-speed" class "ctrl-btn" title "Playback Speed"
+                                            button "⚙️ 1080p" id "btn-player-quality" class "ctrl-btn" title "Quality (1080p HD)"
+                                            button "⛶" id "btn-player-fullscreen" class "ctrl-btn" title "Full screen (f)"
 
-                                # Video Title & Actions Bar
+                                # Video Title & Creator Row
                                 div class "watch-header":
                                     h1 "Spring Boot 3 Full Course 2025 - Beginner to Pro" id "watch-video-title" class "watch-title"
-                                    
                                     div class "watch-actions-row":
                                         div class "channel-info-box":
                                             div "S" id "watch-channel-avatar" class "channel-avatar-lg"
-                                            div:
-                                                h4 "Spandan Prayas Patra" id "watch-channel-name" class "channel-title"
-                                                p "128K subscribers" id "watch-sub-count" class "channel-subs"
+                                            div class "channel-details":
+                                                h3 "Spandan Prayas Patra" id "watch-channel-name" class "channel-title"
+                                                p "128K subscribers" id "watch-channel-subs" class "channel-subs"
                                             button "Join" id "btn-join" class "btn-join"
                                             button "Subscribe" id "btn-subscribe" class "btn-subscribe"
-
                                         div class "action-buttons-group":
                                             div class "like-dislike-pill":
                                                 button "👍 142K" id "btn-like" class "btn-like"
@@ -219,142 +220,140 @@ document enlgf:
                                             button "✂ Clip" id "btn-clip" class "btn-action"
                                             button "⋯ More" id "btn-more" class "btn-action"
 
-                                # Description Box with Interactive Chapters
-                                div class "watch-description-box" id "desc-box":
-                                    p "245,189 views • Premiered on Aug 15, 2026 • #Java #SpringBoot #Microservices #Enlang" id "desc-stats" class "desc-stats"
+                                # Video Description Box & Chapters
+                                div class "watch-description-box":
+                                    p "1,039,987 views • Premiered on Aug 15, 2026" id "desc-stats" class "desc-stats"
                                     p "In this deep dive tutorial, Spandan Prayas Patra walks through architecting mission-critical Java 21 backend microservices, configuring HikariCP connection pools for Oracle & MySQL, and applying strict ACID transaction management." id "watch-desc-text" class "desc-content"
-                                    
-                                    div class "chapters-section" id "chapters-wrapper":
+                                    div class "chapters-section":
                                         p "TIMESTAMPS & CHAPTERS (Click to jump):" class "chapters-title"
                                         div class "chapter-pill-list" id "chapters-container":
                                             button "00:00 • Introduction" id "ch-1" class "chapter-btn"
-                                            button "04:15 • HikariCP & Oracle Setup" id "ch-2" class "chapter-btn"
-                                            button "09:30 • ACID Transactions" id "ch-3" class "chapter-btn"
-                                            button "14:00 • High-Throughput Benchmarks" id "ch-4" class "chapter-btn"
+                                            button "04:15 • Setup" id "ch-2" class "chapter-btn"
+                                            button "09:30 • Core Logic" id "ch-3" class "chapter-btn"
+                                            button "14:00 • Benchmarks" id "ch-4" class "chapter-btn"
 
-                                # Comments Section
+                                # Real-time Public Comments
                                 div class "comments-container":
                                     div class "comments-header":
                                         h3 "328 Comments" id "comments-count-header"
-                                        div class "sort-dropdown-wrap":
-                                            span "☰ Sort by: Top Comments" id "btn-sort-comments" class "sort-tag"
-
-                                    # Add Comment Box
+                                        span "𝄘 Sort by" id "btn-sort-comments" class "sort-tag"
                                     div class "add-comment-row":
                                         div "S" class "user-avatar-sm"
                                         div class "comment-input-wrap":
-                                            input type "text" id "new-comment-input" placeholder "Add a public comment..." class "comment-input"
+                                            input type "text" id "new-comment-input" placeholder "Add a comment..." class "comment-input"
                                             div class "comment-btn-bar":
                                                 button "Cancel" id "btn-cancel-comment" class "btn-ghost"
                                                 button "Comment" id "btn-submit-comment" class "btn-primary"
-
-                                    # Comments List (Populated Dynamically per Video)
                                     div class "comment-list" id "comment-list-container"
 
-                            # Secondary Watch Column (Infinite Up Next Recommendations)
-                            div class "watch-secondary":
+                            # Right Secondary Column: Up Next Recommendations
+                            aside class "watch-secondary":
                                 div class "rec-header-row":
                                     h3 "Up Next" class "rec-header"
                                     div class "autoplay-toggle-wrap":
                                         span "Autoplay" class "autoplay-label"
-                                        input type "checkbox" id "autoplay-check" checked "true" class "autoplay-switch"
-
+                                        input type "checkbox" checked "true" id "toggle-autoplay"
                                 div class "rec-list" id "rec-list-container"
 
-                    # ── VIEW 4: SUBSCRIPTIONS FEED ──
+                    # 4. Subscriptions Feed Panel
                     div id "view-subs" class "view-panel":
-                        div class "subs-feed-header":
-                            h2 "Latest from Your Subscriptions" class "subs-heading"
-                            span "Manage" class "subs-manage-link"
+                        h2 "Latest from Your Subscriptions" class "library-heading"
                         div class "subs-channel-stories" id "subs-channels-row"
                         div class "video-grid" id "subs-grid-container"
 
-                    # ── VIEW 5: LIBRARY & WATCH HISTORY ──
+                    # 5. Library & Watch History Panel
                     div id "view-library" class "view-panel":
-                        div class "library-header":
-                            h2 "Library & Watch History" class "library-heading"
-                            button "Clear History" id "btn-clear-history" class "btn-ghost"
-                        
+                        h2 "Library & Watch History" class "library-heading"
                         div class "library-section-block":
+                            button "Clear History" id "btn-clear-history" class "btn-ghost"
                             h3 "🕒 Recently Watched" class "library-subheading"
                             div class "history-list" id "history-list-container"
-                        
                         div class "library-section-block":
-                            h3 "⏱️ Watch Later (14 videos)" class "library-subheading"
+                            h3 "⏱️ Watch Later" class "library-subheading"
                             div class "video-grid" id "watch-later-container"
-
                         div class "library-section-block":
-                            h3 "👍 Liked Videos (86 videos)" class "library-subheading"
+                            h3 "👍 Liked Videos" class "library-subheading"
                             div class "video-grid" id "liked-videos-container"
 
-                    # ── VIEW 6: TRENDING PAGE ──
+                    # 6. Trending View Panel
                     div id "view-trending" class "view-panel":
-                        div class "trending-header":
-                            h2 "🔥 Trending on YouTube (India & World)" class "trending-heading"
-                            div class "trending-tabs":
-                                button "Now" class "tab-btn active" id "tab-trend-now"
-                                button "Music" class "tab-btn" id "tab-trend-music"
-                                button "Gaming" class "tab-btn" id "tab-trend-gaming"
-                                button "Films" class "tab-btn" id "tab-trend-films"
+                        h2 "🔥 Trending on YouTube (India & World)" class "trending-heading"
+                        div class "trending-tabs":
+                            button "Now" id "tab-trend-now" class "tab-btn active"
+                            button "Music" id "tab-trend-music" class "tab-btn"
+                            button "Gaming" id "tab-trend-gaming" class "tab-btn"
+                            button "Films" id "tab-trend-films" class "tab-btn"
                         div class "trending-list" id "trending-list-container"
 
-        # ── UPLOAD / CREATE VIDEO MODAL ──
-        div id "modal-create" class "yt-modal":
-            div class "modal-box":
-                div class "modal-header":
-                    h3 "Upload Video to YouTube" class "modal-title"
-                    button "✕" id "btn-close-create" class "modal-close-btn"
-                div class "modal-body":
-                    div class "upload-drop-zone":
-                        span "📁" class "upload-icon-huge"
-                        p "Drag and drop video files to upload (MP4, WebM, MOV)" class "upload-hint"
-                        button "Select Files" id "btn-select-file" class "btn-primary"
-                    div class "upload-form":
-                        input type "text" id "upload-title-input" placeholder "Title (e.g. Building Next.js 15 Apps in Enlang)" class "modal-input"
-                        textarea id "upload-desc-input" placeholder "Tell viewers about your video..." class "modal-textarea"
-                        input type "text" id "upload-cat-input" placeholder "Category (Coding & AI, Gaming, Music, etc.)" class "modal-input"
-                div class "modal-footer":
-                    button "Cancel" id "btn-cancel-upload" class "btn-ghost"
-                    button "Publish Video" id "btn-publish-video" class "btn-primary"
+            # ── Profile Menu Dropdown ──
+            div class "profile-dropdown" id "dropdown-profile":
+                div class "profile-dropdown-header":
+                    div "S" class "yt-user-avatar"
+                    div class "profile-header-meta":
+                        h4 "Spandan Prayas Patra" class "profile-name"
+                        p "@SpandanPrayas" class "profile-handle"
+                div class "profile-divider"
+                button "👤 Your channel" id "btn-profile-channel" class "profile-menu-item"
+                button "⚙️ YouTube Studio" id "btn-profile-studio" class "profile-menu-item"
+                button "🔄 Switch account" id "btn-profile-switch" class "profile-menu-item"
+                button "🚪 Sign out" id "btn-profile-signout" class "profile-menu-item"
+                div class "profile-divider"
+                button "🌓 Appearance: Dark/Light" id "btn-profile-appearance" class "profile-menu-item"
+                button "🌐 Location: India" id "btn-profile-location" class "profile-menu-item"
 
-        # ── NOTIFICATIONS DROPDOWN PANEL ──
-        div id "dropdown-notif" class "notif-dropdown":
-            div class "notif-header":
-                h4 "Notifications" class "notif-title"
-                button "⚙️" class "notif-opt-btn"
-            div class "notif-list":
-                div class "notif-item unread":
-                    div "S" class "user-avatar-sm"
-                    div class "notif-content":
-                        p "Spandan Prayas Patra uploaded: High-Throughput Microservices in Enlang" class "notif-msg"
-                        span "2 hours ago" class "notif-time"
-                div class "notif-item unread":
-                    div "E" class "user-avatar-sm"
-                    div class "notif-content":
-                        p "Enlang Official posted: Enlang 2.0 compiler benchmarks are out!" class "notif-msg"
-                        span "5 hours ago" class "notif-time"
-                div class "notif-item":
-                    div "C" class "user-avatar-sm"
-                    div class "notif-content":
-                        p "Edge Architects replied: 'Incredible speed under 1ms on Cloudflare!'" class "notif-msg"
-                        span "1 day ago" class "notif-time"
+            # ── Modals & Notifications Dropdown ──
+            div class "yt-modal" id "modal-create":
+                div class "modal-box":
+                    div class "modal-header":
+                        h3 "Upload Video" class "modal-title"
+                        button "✕" id "btn-close-create" class "modal-close-btn"
+                    div class "modal-body":
+                        div class "upload-drop-zone":
+                            span "☁️" class "upload-icon-huge"
+                            p "Drag and drop video files to upload" class "upload-hint"
+                        div class "upload-form":
+                            input type "text" id "upload-title-input" placeholder "Title (required)" class "modal-input"
+                            textarea id "upload-desc-input" placeholder "Tell viewers about your video..." class "modal-textarea"
+                    div class "modal-footer":
+                        button "Cancel" id "btn-cancel-upload" class "btn-ghost"
+                        button "Publish" id "btn-publish-video" class "btn-primary"
 
-        # ── SHARE MODAL ──
-        div id "modal-share" class "yt-modal":
-            div class "modal-box":
-                div class "modal-header":
-                    h3 "Share Video" class "modal-title"
-                    button "✕" id "btn-close-share" class "modal-close-btn"
-                div class "modal-body":
-                    div class "share-social-grid":
-                        button "💬 WhatsApp" class "social-btn"
-                        button "🐦 Twitter / X" class "social-btn"
-                        button "📱 Reddit" class "social-btn"
-                        button "💼 LinkedIn" class "social-btn"
-                        button "✉️ Email" class "social-btn"
-                    div class "share-link-row":
-                        input type "text" id "share-link-input" value "https://youtu.be/gJrjgg1KVL4" class "share-link-box" readonly "true"
-                        button "Copy" id "btn-copy-share" class "btn-primary"
+            div class "yt-modal" id "modal-share":
+                div class "modal-box":
+                    div class "modal-header":
+                        h3 "Share Video" class "modal-title"
+                        button "✕" id "btn-close-share" class "modal-close-btn"
+                    div class "modal-body":
+                        div class "share-social-grid":
+                            button "WhatsApp" class "social-btn"
+                            button "Twitter / X" class "social-btn"
+                            button "Facebook" class "social-btn"
+                            button "Reddit" class "social-btn"
+                            button "Email" class "social-btn"
+                        div class "share-link-row":
+                            input type "text" id "share-link-input" readonly "true" value "https://youtu.be/gJrjgg1KVL4" class "share-link-box"
+                            button "Copy" id "btn-copy-share" class "btn-primary"
 
-        # ── Toast Alert Banner ──
-        div id "yt-toast" class "yt-toast"
+            div class "notif-dropdown" id "dropdown-notif":
+                div class "notif-header":
+                    h4 "Notifications" class "notif-title"
+                    button "⚙️" class "notif-opt-btn"
+                div class "notif-list":
+                    div class "notif-item unread":
+                        div "S" class "user-avatar-sm"
+                        div class "notif-content":
+                            p "Spandan Prayas Patra uploaded: Spring Boot 3 Full Course 2025" class "notif-msg"
+                            span "1 hour ago" class "notif-time"
+                    div class "notif-item unread":
+                        div "J" class "user-avatar-sm"
+                        div class "notif-content":
+                            p "JavaScript Mastery uploaded: Next.js 15 & React 19 Full Stack" class "notif-msg"
+                            span "3 hours ago" class "notif-time"
+                    div class "notif-item":
+                        div "R" class "user-avatar-sm"
+                        div class "notif-content":
+                            p "Rockstar Games premiered: GTA VI Official Trailer 1" class "notif-msg"
+                            span "1 day ago" class "notif-time"
+
+            # Bottom Toast Alert Banner
+            div class "yt-toast" id "yt-toast"

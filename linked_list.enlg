@@ -1,0 +1,36 @@
+# ==============================================================================
+# Enlang (.enlg) - Super Easy Singly Linked List Reversal (Zero Commas / Pure English)
+# ==============================================================================
+
+import std
+
+# 1. Linked List create ki: [10 -> 20 -> 30 -> 40 -> 50 -> "none"]
+declare list = [10, [20, [30, [40, [50, "none"]]]]]
+
+# 2. Original List print ki (Zero Commas, using 'on curr at 0'):
+show "Original Linked List:"
+declare curr = list
+while curr is not "none":
+    show call get_item on curr at 0
+    set curr = call get_item on curr at 1
+
+# ==============================================================================
+# 3. Super Simple Reversal (4 Lines Logic):
+# ==============================================================================
+declare reversed = "none"
+set curr = list
+
+while curr is not "none":
+    declare val = call get_item on curr at 0
+    set reversed = [val, reversed]
+    set curr = call get_item on curr at 1
+
+# ==============================================================================
+# 4. Reversed List print ki:
+# ==============================================================================
+show "----------------------------------------------------------"
+show "Reversed Linked List:"
+set curr = reversed
+while curr is not "none":
+    show call get_item on curr at 0
+    set curr = call get_item on curr at 1

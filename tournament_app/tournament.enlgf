@@ -1,0 +1,531 @@
+document enlgf:
+    head:
+        title "VORTEX ESPORTS | Tournament Operating Platform"
+        connect design tournament.enlgd
+        connect script tournament.enlgs
+
+    body:
+        # ── Global Navigation Bar ─────────────────────────────────────────────
+        header class "anime-header":
+            div class "nav-container":
+                div class "brand-logo" id "btn-nav-brand":
+                    span "//" class "logo-slash"
+                    span "VORTEX" class "logo-text"
+                    span "ESPORTS OS" class "logo-badge"
+
+                nav class "main-nav":
+                    button "HOME" class "nav-link active" id "nav-landing"
+                    button "CREATE TOURNAMENT" class "nav-link" id "nav-create"
+                    button "MANAGE TOURNAMENTS" class "nav-link" id "nav-manage"
+
+                div class "nav-actions":
+                    button "🔑 LOGIN / SIGNUP" class "btn-auth-pill" id "btn-open-auth"
+                    div class "user-profile-badge" id "user-profile-badge" style "display:none;":
+                        span "●" class "avatar-dot"
+                        span "Kiryu_FF" class "user-name" id "display-user-name"
+                        button "LOGOUT" class "btn-logout" id "btn-logout-act"
+
+        # ── Main Content Area ─────────────────────────────────────────────────
+        main class "app-viewport":
+
+            # ==================================================================
+            # VIEW 1: MINIMALIST LANDING PAGE
+            # ==================================================================
+            section class "view-section active" id "view-landing":
+                div class "hero-banner":
+                    div "NEXT-GEN FREE FIRE ESPORTS OPERATING SYSTEM" class "hero-tag"
+                    h1 "COMPETE. OPERATE. DOMINATE." class "hero-headline"
+                    p "The ultimate minimalist tournament management platform. Create custom brackets, manage squad rosters, operate live points tables with auto-calc, and export official standings." class "hero-tagline"
+
+                    div class "hero-action-cards":
+                        div class "hero-action-card" id "card-act-create":
+                            div "➕" class "card-icon"
+                            h3 "CREATE TOURNAMENT" class "card-heading"
+                            p "Set game, maps, custom point system rules, and register initial squads." class "card-desc"
+                            button "START CREATOR ➔" class "btn-card-launch"
+
+                        div class "hero-action-card" id "card-act-manage":
+                            div "⚙️" class "card-icon"
+                            h3 "MANAGE TOURNAMENTS" class "card-heading"
+                            p "Access organizer workspace, edit live points, manage rosters, and publish standings." class "card-desc"
+                            button "OPEN DASHBOARD ➔" class "btn-card-launch"
+
+                        div class "hero-action-card" id "card-act-auth":
+                            div "🛡️" class "card-icon"
+                            h3 "ORGANIZER ACCESS" class "card-heading"
+                            p "Log in to authenticate your guild, verify player UIDs, and resolve dispute tickets." class "card-desc"
+                            button "SIGN IN / REGISTER ➔" class "btn-card-launch"
+
+                div class "landing-stats-strip":
+                    div class "landing-stat-item":
+                        span "₹1,50,000+" class "stat-big-val"
+                        span "PRIZES DISTRIBUTED" class "stat-sub-lbl"
+                    div class "landing-stat-item":
+                        span "1,240+" class "stat-big-val"
+                        span "VERIFIED SQUADS" class "stat-sub-lbl"
+                    div class "landing-stat-item":
+                        span "98.8%" class "stat-big-val"
+                        span "DISPUTE RESOLUTION" class "stat-sub-lbl"
+                    div class "landing-stat-item":
+                        span "0.0s" class "stat-big-val"
+                        span "LIVE AUTO-CALC DELAY" class "stat-sub-lbl"
+
+                div class "section-block":
+                    div class "section-header-row":
+                        h2 "FEATURED ACTIVE ARENAS" class "section-title"
+                        button "VIEW ALL IN MANAGER ➔" class "btn-link-action" id "btn-landing-view-all"
+
+                    div class "tourney-cards-grid" id "landing-tourney-grid"
+
+            # ==================================================================
+            # VIEW 2: CREATE TOURNAMENT PAGE
+            # ==================================================================
+            section class "view-section" id "view-create":
+                div class "view-header-strip":
+                    button "← BACK TO HOME" class "btn-back-link" id "btn-back-create-landing"
+                    h1 "CREATE NEW TOURNAMENT" class "page-title"
+                    p "Configure your esports tournament format, custom points schema, and participating squads." class "page-sub"
+
+                div class "create-form-layout":
+                    div class "form-col-main":
+                        # Section A: Basic Tournament Details
+                        div class "form-card":
+                            h3 "1. TOURNAMENT BASICS & MAPS" class "card-form-title"
+                            div class "form-row-2":
+                                div class "form-group":
+                                    label "Tournament Title *" class "form-label"
+                                    input type "text" class "form-input" id "new-tourney-title" placeholder "e.g. VORTEX GRANDMASTERS CUP S4"
+                                div class "form-group":
+                                    label "Game Name *" class "form-label"
+                                    select class "form-select" id "new-tourney-game":
+                                        option "Free Fire MAX" value "Free Fire MAX"
+                                        option "Free Fire (Standard)" value "Free Fire (Standard)"
+                                        option "BGMI / PUBG" value "BGMI / PUBG"
+                                        option "Custom Battle Royale" value "Custom BR"
+
+                            div class "form-row-3":
+                                div class "form-group":
+                                    label "Format *" class "form-label"
+                                    select class "form-select" id "new-tourney-format":
+                                        option "SQUAD (BR - 4 Players)" value "SQUAD (BR)"
+                                        option "DUO (BR - 2 Players)" value "DUO (BR)"
+                                        option "SOLO (BR - 1 Player)" value "SOLO (BR)"
+                                        option "CLASH SQUAD (4v4 Knockout)" value "CLASH SQUAD (4v4)"
+                                div class "form-group":
+                                    label "Total Squad Slots *" class "form-label"
+                                    input type "number" class "form-input" id "new-tourney-slots" value "12" min "2" max "48"
+                                div class "form-group":
+                                    label "Prize Pool (₹)" class "form-label"
+                                    input type "text" class "form-input" id "new-tourney-prize" placeholder "e.g. ₹20,000"
+
+                            div class "form-group":
+                                label "Tournament Map Rotation (Select / Type)" class "form-label"
+                                input type "text" class "form-input" id "new-tourney-maps" value "Bermuda, Purgatory, Kalahari, Alpine" placeholder "Comma separated maps"
+
+                        # Section B: Custom Point System Decider
+                        div class "form-card":
+                            h3 "2. CUSTOM POINT SYSTEM RULES" class "card-form-title"
+                            p "Define placement points for each rank and the kill point multiplier." class "card-form-sub"
+                            div class "form-row-2":
+                                div class "form-group":
+                                    label "Kill Point Multiplier (Pts per Kill)" class "form-label"
+                                    input type "number" class "form-input" id "new-pts-kill" value "1" min "0" max "10"
+                                div class "form-group":
+                                    label "Point Table Type" class "form-label"
+                                    select class "form-select" id "new-pts-type":
+                                        option "Official Free Fire Esports (12-9-8-7-6-5-4-3-2-1)" value "Official Esports (12-9-8-7-6-5-4-3-2-1)"
+                                        option "Standard BR (15-12-10-8-6-4-2-1)" value "Standard BR (15-12-10-8-6-4-2-1)"
+                                        option "Kill Heavy (10-6-5-4-3-2-1 + 2x Kills)" value "Kill Heavy (10-6-5-4-3-2-1 + 2x Kills)"
+                                        option "Custom Placement Grid" value "Custom Placement Grid"
+
+                            div class "placement-points-grid" id "new-custom-pts-grid":
+                                div class "pt-box":
+                                    span "#1 (Booyah)" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-1" value "12"
+                                div class "pt-box":
+                                    span "#2 Place" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-2" value "9"
+                                div class "pt-box":
+                                    span "#3 Place" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-3" value "8"
+                                div class "pt-box":
+                                    span "#4 Place" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-4" value "7"
+                                div class "pt-box":
+                                    span "#5 Place" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-5" value "6"
+                                div class "pt-box":
+                                    span "#6 Place" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-6" value "5"
+                                div class "pt-box":
+                                    span "#7 Place" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-7" value "4"
+                                div class "pt-box":
+                                    span "#8 Place" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-8" value "3"
+                                div class "pt-box":
+                                    span "#9 Place" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-9" value "2"
+                                div class "pt-box":
+                                    span "#10 Place" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-10" value "1"
+                                div class "pt-box":
+                                    span "#11 Place" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-11" value "0"
+                                div class "pt-box":
+                                    span "#12 Place" class "pt-lbl"
+                                    input type "number" class "pt-input" id "pt-rank-12" value "0"
+
+                        # Section C: Initial Participating Squads
+                        div class "form-card":
+                            div class "card-header-flex":
+                                div:
+                                    h3 "3. PARTICIPATING SQUADS" class "card-form-title"
+                                    p "You can pre-load participating squads or add them later in the Organizer Workspace." class "card-form-sub"
+                                button "+ ADD INITIAL SQUAD" class "btn-secondary-sm" id "btn-add-quick-team"
+
+                            div class "squads-list-box" id "create-squads-preview-list":
+                                div class "squad-item-row":
+                                    span "SLOT 1" class "squad-slot-tag"
+                                    span "Shadow Ninjas (Tag: SNE)" class "squad-name-tag"
+                                    span "Kiryu_FF (UID: 77489210) + 3 Players" class "squad-roster-summary"
+                                div class "squad-item-row":
+                                    span "SLOT 2" class "squad-slot-tag"
+                                    span "Aero Esports (Tag: AERO)" class "squad-name-tag"
+                                    span "Aero_Alpha (UID: 66120101) + 3 Players" class "squad-roster-summary"
+
+                        # Submit Button
+                        div class "form-actions-footer":
+                            button "🚀 LAUNCH & OPEN TOURNAMENT WORKSPACE" class "btn-action-primary" id "btn-submit-create-tourney"
+
+            # ==================================================================
+            # VIEW 3: MANAGE TOURNAMENTS HUB
+            # ==================================================================
+            section class "view-section" id "view-manage":
+                div class "view-header-strip":
+                    div:
+                        h1 "TOURNAMENT MANAGEMENT HUB" class "page-title"
+                        p "Select any tournament below to open its full organizer operating workspace." class "page-sub"
+                    button "➕ CREATE NEW TOURNAMENT" class "btn-action-primary" id "btn-manage-to-create"
+
+                div class "tourney-cards-grid" id "manage-tournaments-grid"
+
+            # ==================================================================
+            # VIEW 4: DEDICATED TOURNAMENT OPERATING WORKSPACE
+            # ==================================================================
+            section class "view-section" id "view-workspace":
+                # Workspace Header Banner
+                div class "workspace-header-card":
+                    div class "ws-top-row":
+                        button "← BACK TO ALL TOURNAMENTS" class "btn-back-link" id "btn-ws-back-to-manage"
+                        div class "ws-status-group":
+                            span "LIVE TOURNAMENT" class "ws-badge-status" id "ws-status-badge"
+
+                    div class "ws-title-row":
+                        h1 "VORTEX GRANDMASTERS CHAMPIONSHIP" class "ws-title" id "ws-tourney-title"
+                        p "Free Fire MAX • SQUAD (BR) • Prize: ₹25,000 • Maps: Bermuda, Purgatory, Kalahari, Alpine" class "ws-game-meta" id "ws-game-meta"
+
+                    # Workspace Sub-Navigation Tabs
+                    div class "workspace-nav-tabs":
+                        button "📊 OVERVIEW & STANDINGS" class "ws-tab active" id "ws-tab-overview"
+                        button "🛡️ TEAMS & ROSTERS" class "ws-tab" id "ws-tab-teams"
+                        button "🎮 MATCHES & ROOMS" class "ws-tab" id "ws-tab-matches"
+                        button "🎯 MATCH-WISE RESULTS" class "ws-tab" id "ws-tab-match-standings"
+                        button "🏆 OVERALL STANDINGS & REVERT" class "ws-tab" id "ws-tab-overall-standings"
+                        button "⚙️ POINT RULES" class "ws-tab" id "ws-tab-points-rules"
+                        button "📥 EXPORT & REPORTS" class "ws-tab" id "ws-tab-exports"
+
+                # Sub-Panel 1: Overview
+                div class "ws-panel active" id "panel-ws-overview":
+                    div class "stats-cards-grid":
+                        div class "stat-card":
+                            span "REGISTERED SQUADS" class "sc-label"
+                            span "6 / 12" class "sc-val" id "stat-total-teams"
+                        div class "stat-card":
+                            span "MATCHES PLAYED" class "sc-label"
+                            span "2 / 3" class "sc-val" id "stat-matches-played"
+                        div class "stat-card":
+                            span "PRIZE POOL" class "sc-label"
+                            span "₹25,000" class "sc-val highlight" id "stat-prize-pool"
+                        div class "stat-card":
+                            span "CURRENT LEADER" class "sc-label"
+                            span "Shadow Ninjas (21 PTS)" class "sc-val" id "stat-table-leader"
+
+                    div class "quick-actions-bar":
+                        button "➕ ADD TEAM" class "btn-quick-act" id "quick-act-add-team"
+                        button "🎮 SCHEDULE MATCH" class "btn-quick-act" id "quick-act-new-match"
+                        button "🎯 EDIT MATCH SCORES" class "btn-quick-act" id "quick-act-edit-points"
+                        button "📥 EXPORT CSV" class "btn-quick-act" id "quick-act-download-csv"
+
+                    div class "custom-table-wrapper":
+                        div class "table-header-strip":
+                            h3 "CURRENT TOURNAMENT STANDINGS SNAPSHOT" class "table-title"
+                            button "VIEW FULL STANDINGS & REVERT ➔" class "btn-link-action" id "link-view-full-overall"
+                        table class "anime-table":
+                            thead:
+                                tr:
+                                    th "RANK"
+                                    th "SQUAD"
+                                    th "MATCHES"
+                                    th "BOOYAH"
+                                    th "KILL PTS"
+                                    th "PLACE PTS"
+                                    th "TOTAL PTS"
+                                    th "ACTIONS"
+                            tbody id "ws-overview-table-body"
+
+                # Sub-Panel 2: Teams & Detailed Player Roster (Deep CRUD)
+                div class "ws-panel" id "panel-ws-teams":
+                    div class "section-header-row":
+                        div:
+                            h2 "SQUADS & PLAYER ROSTERS" class "section-title"
+                            p "Add squads, assign slot numbers, edit IGNs and Free Fire UIDs for every player." class "section-sub"
+                        button "+ ADD NEW SQUAD" class "btn-action-primary" id "btn-open-add-team-modal"
+
+                    div class "teams-roster-list" id "ws-teams-container"
+
+                # Sub-Panel 3: Matches & Rooms
+                div class "ws-panel" id "panel-ws-matches":
+                    div class "section-header-row":
+                        div:
+                            h2 "MATCH SCHEDULE & CUSTOM ROOMS" class "section-title"
+                            p "Generate custom room IDs, passwords, and track live match progress." class "section-sub"
+                        button "+ SCHEDULE NEW MATCH" class "btn-action-primary" id "btn-open-add-match-modal"
+
+                    div class "tourney-cards-grid" id "ws-matches-grid"
+
+                # Sub-Panel 4: Match-Wise Results & Standings Editor
+                div class "ws-panel" id "panel-ws-match-standings":
+                    div class "match-selector-bar":
+                        label "SELECT MATCH TO EDIT:" class "form-label-inline"
+                        select class "form-select-sm" id "ws-match-select-dropdown"
+                        div class "match-actions-inline":
+                            button "💾 SAVE MATCH SCORES" class "btn-secondary-sm" id "btn-ws-save-match-results"
+                            button "📢 PUBLISH TO OVERALL" class "btn-action-primary-sm" id "btn-ws-publish-match"
+
+                    div class "match-status-banner":
+                        span "Editing Standings for:" class "msb-lbl"
+                        span "Match 1 - Bermuda Battle" class "msb-val" id "ws-active-match-title"
+                        span "COMPLETED" class "badge-tag live" id "ws-active-match-status"
+
+                    div class "custom-table-wrapper":
+                        table class "anime-table":
+                            thead:
+                                tr:
+                                    th "POS"
+                                    th "SQUAD NAME"
+                                    th "RANK (1-12)"
+                                    th "KILLS"
+                                    th "KILL PTS"
+                                    th "PLACE PTS"
+                                    th "BONUS"
+                                    th "PENALTY"
+                                    th "MATCH TOTAL"
+                                    th "ACTIONS"
+                            tbody id "ws-match-standings-tbody"
+
+                # Sub-Panel 5: Overall Standings & Checkpoint Revert System
+                div class "ws-panel" id "panel-ws-overall-standings":
+                    div class "section-header-row":
+                        div:
+                            h2 "CUMULATIVE OVERALL STANDINGS" class "section-title"
+                            p "Live aggregated leaderboard computed across all completed and live matches." class "section-sub"
+                        div style "display:flex; gap:8px;":
+                            button "🔖 CREATE CHECKPOINT" class "btn-secondary-sm" id "btn-ws-create-checkpoint"
+                            button "⏪ REVERT STANDINGS" class "btn-revert-sm" id "btn-ws-open-revert-modal"
+
+                    div class "custom-table-wrapper":
+                        table class "anime-table":
+                            thead:
+                                tr:
+                                    th "OVERALL RANK"
+                                    th "SQUAD NAME"
+                                    th "MATCHES PLAYED"
+                                    th "BOOYAH (WWCD)"
+                                    th "TOTAL KILLS"
+                                    th "KILL PTS"
+                                    th "PLACE PTS"
+                                    th "TOTAL PTS"
+                                    th "ACTIONS / EDIT MATCHES"
+                            tbody id "ws-overall-standings-tbody"
+
+                # Sub-Panel 6: Edit Point System Rules Live
+                div class "ws-panel" id "panel-ws-points-rules":
+                    div class "form-card":
+                        h3 "EDIT POINT SYSTEM RULES (LIVE RE-CALCULATION)" class "card-form-title"
+                        p "Modifying these rules will instantly recalculate placement and kill points for all matches." class "card-form-sub"
+                        div class "form-row-2":
+                            div class "form-group":
+                                label "Kill Point Multiplier" class "form-label"
+                                input type "number" class "form-input" id "ws-rules-kill-pts" value "1" min "0" max "10"
+
+                        div class "placement-points-grid" id "ws-rules-pts-grid"
+
+                        div class "form-actions-footer":
+                            button "✓ APPLY & RECALCULATE ALL POINTS" class "btn-action-primary" id "btn-ws-save-point-rules"
+
+                # Sub-Panel 7: Exports & Reports
+                div class "ws-panel" id "panel-ws-exports":
+                    div class "hero-action-cards":
+                        div class "hero-action-card":
+                            div "📊" class "card-icon"
+                            h3 "DOWNLOAD CSV STANDINGS" class "card-heading"
+                            p "Export complete overall standings table with kills, placement points, and ranks into a CSV file." class "card-desc"
+                            button "📥 DOWNLOAD FULL CSV" class "btn-card-launch" id "btn-export-full-csv"
+
+                        div class "hero-action-card":
+                            div "📋" class "card-icon"
+                            h3 "COPY DISCORD / WHATSAPP REPORT" class "card-heading"
+                            p "Copy beautifully formatted emoji text leaderboard directly to your clipboard for sharing." class "card-desc"
+                            button "📋 COPY TEXT REPORT" class "btn-card-launch" id "btn-export-text-report"
+
+        # ── Modals ────────────────────────────────────────────────────────────
+
+        # Modal 1: Auth (Login/Signup)
+        div class "modal-overlay" id "modal-auth":
+            div class "modal-content":
+                div class "modal-header":
+                    h3 "ORGANIZER / PLAYER AUTHENTICATION" class "modal-title"
+                    button "✕" class "btn-close-modal" id "btn-close-auth-modal"
+                div class "modal-body":
+                    div class "form-group":
+                        label "In-Game Name / Organizer Handle" class "form-label"
+                        input type "text" class "form-input" id "auth-username" value "Kiryu_FF"
+                    div class "form-group":
+                        label "Free Fire UID" class "form-label"
+                        input type "text" class "form-input" id "auth-uid" value "77489210"
+                    div class "form-group":
+                        label "Role" class "form-label"
+                        select class "form-select" id "auth-role":
+                            option "Organizer / Admin" value "Organizer"
+                            option "Team Captain" value "Captain"
+                            option "Player" value "Player"
+                div class "modal-footer":
+                    button "CANCEL" class "btn-secondary-sm" id "btn-cancel-auth"
+                    button "AUTHENTICATE" class "btn-action-primary-sm" id "btn-confirm-auth"
+
+        # Modal 2: Add/Edit Squad Details
+        div class "modal-overlay" id "modal-team-edit":
+            div class "modal-content":
+                div class "modal-header":
+                    h3 "EDIT SQUAD DETAILS" class "modal-title" id "modal-team-title"
+                    button "✕" class "btn-close-modal" id "btn-close-team-modal"
+                div class "modal-body":
+                    input type "hidden" id "edit-team-idx" value "-1"
+                    div class "form-row-2":
+                        div class "form-group":
+                            label "Slot Number (1-12)" class "form-label"
+                            input type "number" class "form-input" id "team-input-slot" value "1" min "1" max "48"
+                        div class "form-group":
+                            label "Squad Tag (e.g. SNE)" class "form-label"
+                            input type "text" class "form-input" id "team-input-tag" placeholder "SNE"
+                    div class "form-group":
+                        label "Squad Name *" class "form-label"
+                        input type "text" class "form-input" id "team-input-name" placeholder "e.g. Shadow Ninjas"
+                    div class "form-group":
+                        label "Captain Name & Contact / UID" class "form-label"
+                        input type "text" class "form-input" id "team-input-captain" placeholder "e.g. Kiryu_FF (UID: 77489210)"
+                div class "modal-footer":
+                    button "CANCEL" class "btn-secondary-sm" id "btn-cancel-team"
+                    button "SAVE SQUAD" class "btn-action-primary-sm" id "btn-save-team"
+
+        # Modal 3: Add/Edit Specific Team Player
+        div class "modal-overlay" id "modal-player-edit":
+            div class "modal-content":
+                div class "modal-header":
+                    h3 "EDIT PLAYER ROSTER" class "modal-title" id "modal-player-title"
+                    button "✕" class "btn-close-modal" id "btn-close-player-modal"
+                div class "modal-body":
+                    input type "hidden" id "edit-player-team-idx" value "0"
+                    input type "hidden" id "edit-player-idx" value "-1"
+                    div class "form-group":
+                        label "Player IGN (In-Game Name) *" class "form-label"
+                        input type "text" class "form-input" id "player-input-name" placeholder "e.g. Kiryu_FF"
+                    div class "form-group":
+                        label "Free Fire UID *" class "form-label"
+                        input type "text" class "form-input" id "player-input-uid" placeholder "e.g. 77489210"
+                    div class "form-group":
+                        label "Squad Role" class "form-label"
+                        select class "form-select" id "player-input-role":
+                            option "IGL (In-Game Leader)" value "IGL (In-Game Leader)"
+                            option "Entry Fragger / Rusher" value "Entry Fragger / Rusher"
+                            option "Sniper / Marksman" value "Sniper / Marksman"
+                            option "Support / Healer" value "Support / Healer"
+                            option "Substitute" value "Substitute"
+                div class "modal-footer":
+                    button "CANCEL" class "btn-secondary-sm" id "btn-cancel-player"
+                    button "SAVE PLAYER" class "btn-action-primary-sm" id "btn-save-player"
+
+        # Modal 4: Schedule / Edit Match & Room Credentials
+        div class "modal-overlay" id "modal-match-edit":
+            div class "modal-content":
+                div class "modal-header":
+                    h3 "SCHEDULE NEW CUSTOM MATCH" class "modal-title"
+                    button "✕" class "btn-close-modal" id "btn-close-match-modal"
+                div class "modal-body":
+                    div class "form-group":
+                        label "Match Title *" class "form-label"
+                        input type "text" class "form-input" id "match-input-title" placeholder "e.g. Match 4 - Alpine Clash"
+                    div class "form-row-2":
+                        div class "form-group":
+                            label "Map *" class "form-label"
+                            select class "form-select" id "match-input-map":
+                                option "Bermuda" value "Bermuda"
+                                option "Purgatory" value "Purgatory"
+                                option "Kalahari" value "Kalahari"
+                                option "Alpine" value "Alpine"
+                                option "NexTerra" value "NexTerra"
+                        div class "form-group":
+                            label "Match Scheduled Time" class "form-label"
+                            input type "text" class "form-input" id "match-input-time" value "9:30 PM IST"
+                    div class "form-row-2":
+                        div class "form-group":
+                            label "Custom Room ID" class "form-label"
+                            input type "text" class "form-input" id "match-input-room-id" placeholder "e.g. 8892019"
+                        div class "form-group":
+                            label "Room Password" class "form-label"
+                            input type "text" class "form-input" id "match-input-room-pass" placeholder "e.g. VORTEX99"
+                div class "modal-footer":
+                    button "CANCEL" class "btn-secondary-sm" id "btn-cancel-match"
+                    button "SCHEDULE MATCH" class "btn-action-primary-sm" id "btn-save-match"
+
+        # Modal 5: Revert Standings Checkpoint
+        div class "modal-overlay" id "modal-revert-standings":
+            div class "modal-content":
+                div class "modal-header":
+                    h3 "REVERT STANDINGS TO CHECKPOINT" class "modal-title"
+                    button "✕" class "btn-close-modal" id "btn-close-revert-modal"
+                div class "modal-body":
+                    p "Select a historical snapshot to instantly revert all points and standings back to that state:" class "modal-sub-desc"
+                    div class "checkpoints-list" id "revert-checkpoints-list"
+                div class "modal-footer":
+                    button "CLOSE" class "btn-secondary-sm" id "btn-cancel-revert"
+
+        # Modal 6: Edit All Match Scores For Squad
+        div class "modal-overlay" id "modal-team-matches-edit":
+            div class "modal-content" style "max-width:780px;":
+                div class "modal-header":
+                    div:
+                        h3 "EDIT ALL MATCH SCORES FOR SQUAD" class "modal-title" id "modal-team-matches-title"
+                        p "Edit rank, kills, bonus, and penalty across all matches. Auto-calculates cumulative points live." class "modal-sub-desc" style "margin-bottom:0;"
+                    button "✕" class "btn-close-modal" id "btn-close-team-matches-modal"
+                div class "modal-body":
+                    div class "custom-table-wrapper" style "max-height:340px; overflow-y:auto; margin-bottom:12px;":
+                        table class "anime-table":
+                            thead:
+                                tr:
+                                    th "MATCH & MAP"
+                                    th "STATUS"
+                                    th "RANK (1-12)"
+                                    th "KILLS"
+                                    th "BONUS"
+                                    th "PENALTY"
+                                    th "CALC PTS"
+                            tbody id "modal-team-matches-tbody"
+                    div class "team-modal-summary-strip" id "team-modal-stats-summary"
+                div class "modal-footer":
+                    button "CANCEL" class "btn-secondary-sm" id "btn-cancel-team-matches"
+                    button "💾 SAVE & AUTO-CALCULATE ALL MATCHES" class "btn-action-primary-sm" id "btn-save-team-matches"
+
+        # Toast Container
+        div class "toast-container" id "toast-container"

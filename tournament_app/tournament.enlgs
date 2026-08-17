@@ -1,0 +1,1140 @@
+# ==============================================================================
+# VORTEX ESPORTS - Tournament Operating Platform (.enlgs)
+# ==============================================================================
+
+in script:
+
+    # ── State Store ───────────────────────────────────────────────────────────
+    create currentView as "view-landing"
+    create currentWsTab as "panel-ws-overview"
+    create activeTourneyId as 1
+    create activeMatchIdx as 0
+    create editingTeamName as ""
+    create currentUser as { name: "Kiryu_FF", uid: "77489210", role: "Organizer", loggedIn: true }
+
+    # Multi-Tournament Database
+    define tournamentsDb as [ { id: 1, title: "VORTEX GRANDMASTERS CHAMPIONSHIP", game: "Free Fire MAX", format: "SQUAD (BR)", maps: "Bermuda, Purgatory, Kalahari, Alpine", slots: 12, prize: "₹25,000", status: "LIVE", statusClass: "live", killMultiplier: 1, placementPoints: { "1": 12, "2": 9, "3": 8, "4": 7, "5": 6, "6": 5, "7": 4, "8": 3, "9": 2, "10": 1, "11": 0, "12": 0 }, teams: [ { slot: 1, name: "Shadow Ninjas", tag: "SNE", captain: "Kiryu_FF", players: [ { name: "Kiryu_FF", uid: "77489210", role: "IGL (In-Game Leader)" }, { name: "Zen_99", uid: "77489211", role: "Entry Fragger / Rusher" }, { name: "Taro_X", uid: "77489212", role: "Support / Healer" }, { name: "Ken", uid: "77489213", role: "Sniper / Marksman" } ] }, { slot: 2, name: "Aero Esports", tag: "AERO", captain: "Aero_Alpha", players: [ { name: "Aero_Alpha", uid: "66120101", role: "IGL (In-Game Leader)" }, { name: "Aero_Sniper", uid: "66120102", role: "Sniper / Marksman" }, { name: "Aero_Ghost", uid: "66120103", role: "Entry Fragger / Rusher" }, { name: "Rex", uid: "66120104", role: "Support / Healer" } ] }, { slot: 3, name: "Titan Squad", tag: "TITAN", captain: "Titan_Max", players: [ { name: "Titan_Max", uid: "5510101", role: "IGL (In-Game Leader)" }, { name: "Titan_Bolt", uid: "5510102", role: "Entry Fragger / Rusher" }, { name: "Titan_Frost", uid: "5510103", role: "Support / Healer" }, { name: "Spike", uid: "5510104", role: "Sniper / Marksman" } ] }, { slot: 4, name: "Nova Gaming", tag: "NOVA", captain: "Nova_Flash", players: [ { name: "Nova_Flash", uid: "4419010", role: "IGL (In-Game Leader)" }, { name: "Nova_Strike", uid: "4419011", role: "Entry Fragger / Rusher" }, { name: "Nova_Viper", uid: "4419012", role: "Support / Healer" } ] }, { slot: 5, name: "Phoenix Esports", tag: "PHX", captain: "Phx_Flame", players: [ { name: "Phx_Flame", uid: "3310001", role: "IGL (In-Game Leader)" }, { name: "Phx_Blaze", uid: "3310002", role: "Entry Fragger / Rusher" }, { name: "Spark", uid: "3310003", role: "Support / Healer" } ] }, { slot: 6, name: "GodLike Elite", tag: "GDL", captain: "God_Zeus", players: [ { name: "God_Zeus", uid: "2218001", role: "IGL (In-Game Leader)" }, { name: "God_Thor", uid: "2218002", role: "Entry Fragger / Rusher" }, { name: "Ares", uid: "2218003", role: "Support / Healer" } ] } ], matches: [ { id: 1, title: "Match 1 - Bermuda Battle", map: "Bermuda", time: "8:00 PM IST", roomId: "8849201", roomPass: "VORTEX77", status: "COMPLETED", scores: [ { team: "Shadow Ninjas", place: 1, kills: 9, bonus: 0, penalty: 0 }, { team: "Aero Esports", place: 2, kills: 8, bonus: 0, penalty: 0 }, { team: "Titan Squad", place: 3, kills: 6, bonus: 0, penalty: 0 }, { team: "Nova Gaming", place: 4, kills: 5, bonus: 0, penalty: 0 }, { team: "Phoenix Esports", place: 5, kills: 4, bonus: 0, penalty: 0 }, { team: "GodLike Elite", place: 6, kills: 3, bonus: 0, penalty: 0 } ] }, { id: 2, title: "Match 2 - Purgatory Clash", map: "Purgatory", time: "8:40 PM IST", roomId: "8849202", roomPass: "VORTEX88", status: "LIVE", scores: [ { team: "Aero Esports", place: 1, kills: 11, bonus: 0, penalty: 0 }, { team: "Shadow Ninjas", place: 2, kills: 7, bonus: 0, penalty: 0 }, { team: "Nova Gaming", place: 3, kills: 6, bonus: 0, penalty: 0 }, { team: "Titan Squad", place: 4, kills: 4, bonus: 0, penalty: 0 }, { team: "GodLike Elite", place: 5, kills: 3, bonus: 0, penalty: 0 }, { team: "Phoenix Esports", place: 6, kills: 2, bonus: 0, penalty: 0 } ] }, { id: 3, title: "Match 3 - Kalahari Desert", map: "Kalahari", time: "9:20 PM IST", roomId: "8849203", roomPass: "VORTEX99", status: "SCHEDULED", scores: [] } ], checkpoints: [ { title: "Initial Baseline (Before Match 1)", timestamp: "8:00 PM IST", standings: [ { team: "Shadow Ninjas", played: 0, wwcd: 0, kills: 0, killPts: 0, placePts: 0, totalPts: 0 }, { team: "Aero Esports", played: 0, wwcd: 0, kills: 0, killPts: 0, placePts: 0, totalPts: 0 } ] }, { title: "Post Match 1 Standings", timestamp: "8:35 PM IST", standings: [ { team: "Shadow Ninjas", played: 1, wwcd: 1, kills: 9, killPts: 9, placePts: 12, totalPts: 21 }, { team: "Aero Esports", played: 1, wwcd: 0, kills: 8, killPts: 8, placePts: 9, totalPts: 17 }, { team: "Titan Squad", played: 1, wwcd: 0, kills: 6, killPts: 6, placePts: 8, totalPts: 14 } ] } ] }, { id: 2, title: "AERO PRO LEAGUE SEASON 4", game: "Free Fire MAX", format: "SQUAD (BR)", maps: "Purgatory, Alpine, NexTerra", slots: 12, prize: "₹10,000", status: "LIVE", statusClass: "live", killMultiplier: 1, placementPoints: { "1": 12, "2": 9, "3": 8, "4": 7, "5": 6, "6": 5, "7": 4, "8": 3, "9": 2, "10": 1, "11": 0, "12": 0 }, teams: [ { slot: 1, name: "Aero Esports", tag: "AERO", captain: "Aero_Alpha", players: [ { name: "Aero_Alpha", uid: "66120101", role: "IGL" }, { name: "Aero_Sniper", uid: "66120102", role: "Sniper" } ] }, { slot: 2, name: "Dark Hunters", tag: "DHK", captain: "Hunter_07", players: [ { name: "Hunter_07", uid: "119001", role: "IGL" }, { name: "Hunter_Wolf", uid: "119002", role: "Rusher" } ] } ], matches: [ { id: 1, title: "Match 1 - Purgatory", map: "Purgatory", time: "7:00 PM IST", roomId: "9910441", roomPass: "AERO99", status: "COMPLETED", scores: [] } ], checkpoints: [] }, { id: 3, title: "MIDNIGHT CLASH SCRIMS", game: "Free Fire MAX", format: "SQUAD (BR)", maps: "Kalahari, Alpine", slots: 12, prize: "₹5,000", status: "UPCOMING", statusClass: "open", killMultiplier: 1, placementPoints: { "1": 12, "2": 9, "3": 8, "4": 7, "5": 6, "6": 5, "7": 4, "8": 3, "9": 2, "10": 1, "11": 0, "12": 0 }, teams: [], matches: [], checkpoints: [] } ]
+
+    # ── Toast Notification Helper ─────────────────────────────────────────────
+    to do showToast with message:
+        create container as document.getElementById("toast-container")
+        if container != null:
+            create toast as document.createElement("div")
+            toast.className = "toast-item"
+            toast.innerText = message
+            container.appendChild(toast)
+            after 3 seconds:
+                if toast.parentNode != null:
+                    toast.parentNode.removeChild(toast)
+
+    # ── Helper to Get Active Tournament ───────────────────────────────────────
+    to do getActiveTourney:
+        for each t in tournamentsDb:
+            if t.id == activeTourneyId:
+                return t
+        return tournamentsDb[0]
+
+    # ── View Routing ──────────────────────────────────────────────────────────
+    to do switchView with targetId:
+        set currentView = targetId
+        create allSections as document.querySelectorAll(".view-section")
+        for each sec in allSections:
+            sec.classList.remove("active")
+            sec.style.display = "none"
+
+        create targetSec as document.getElementById(targetId)
+        if targetSec != null:
+            targetSec.classList.add("active")
+            targetSec.style.display = "block"
+
+        create navLinks as document.querySelectorAll(".nav-link")
+        for each lnk in navLinks:
+            lnk.classList.remove("active")
+
+        if targetId == "view-landing":
+            create l1 as document.getElementById("nav-landing")
+            if l1 != null:
+                l1.classList.add("active")
+        if targetId == "view-create":
+            create l2 as document.getElementById("nav-create")
+            if l2 != null:
+                l2.classList.add("active")
+        if targetId == "view-manage":
+            create l3 as document.getElementById("nav-manage")
+            if l3 != null:
+                l3.classList.add("active")
+
+        window.scrollTo(0, 0)
+
+    # ── Workspace Tab Routing ─────────────────────────────────────────────────
+    to do switchWsTab with panelId:
+        set currentWsTab = panelId
+        create allPanels as document.querySelectorAll(".ws-panel")
+        for each p in allPanels:
+            p.classList.remove("active")
+            p.style.display = "none"
+
+        create targetPanel as document.getElementById(panelId)
+        if targetPanel != null:
+            targetPanel.classList.add("active")
+            targetPanel.style.display = "block"
+
+        create allTabs as document.querySelectorAll(".ws-tab")
+        for each tb in allTabs:
+            tb.classList.remove("active")
+
+        if panelId == "panel-ws-overview":
+            create t1 as document.getElementById("ws-tab-overview")
+            if t1 != null:
+                t1.classList.add("active")
+        if panelId == "panel-ws-teams":
+            create t2 as document.getElementById("ws-tab-teams")
+            if t2 != null:
+                t2.classList.add("active")
+        if panelId == "panel-ws-matches":
+            create t3 as document.getElementById("ws-tab-matches")
+            if t3 != null:
+                t3.classList.add("active")
+        if panelId == "panel-ws-match-standings":
+            create t4 as document.getElementById("ws-tab-match-standings")
+            if t4 != null:
+                t4.classList.add("active")
+        if panelId == "panel-ws-overall-standings":
+            create t5 as document.getElementById("ws-tab-overall-standings")
+            if t5 != null:
+                t5.classList.add("active")
+        if panelId == "panel-ws-points-rules":
+            create t6 as document.getElementById("ws-tab-points-rules")
+            if t6 != null:
+                t6.classList.add("active")
+        if panelId == "panel-ws-exports":
+            create t7 as document.getElementById("ws-tab-exports")
+            if t7 != null:
+                t7.classList.add("active")
+
+    # ── Render Landing Page Featured Cards ────────────────────────────────────
+    to do renderLandingFeatured:
+        create grid as document.getElementById("landing-tourney-grid")
+        if grid != null:
+            create htmlBuffer as ""
+            for each tourney in tournamentsDb:
+                htmlBuffer = htmlBuffer + "<div class='tourney-card-item' onclick='window.vortexOpenWorkspace(" + tourney.id + ")'>"
+                htmlBuffer = htmlBuffer + "<div class='card-top-row'>"
+                htmlBuffer = htmlBuffer + "<span class='badge-tag " + tourney.statusClass + "'>" + tourney.status + "</span>"
+                htmlBuffer = htmlBuffer + "<span class='badge-tag open'>" + tourney.format + "</span>"
+                htmlBuffer = htmlBuffer + "</div>"
+                htmlBuffer = htmlBuffer + "<div class='t-card-title'>" + tourney.title + "</div>"
+                htmlBuffer = htmlBuffer + "<div class='t-card-meta'>Game: " + tourney.game + " • Maps: " + tourney.maps + "</div>"
+                htmlBuffer = htmlBuffer + "<div class='t-card-metrics'>"
+                htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>PRIZE POOL</span><span class='tm-val highlight'>" + tourney.prize + "</span></div>"
+                htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>SQUADS</span><span class='tm-val'>" + tourney.teams.length + " / " + tourney.slots + "</span></div>"
+                htmlBuffer = htmlBuffer + "</div>"
+                htmlBuffer = htmlBuffer + "<button class='btn-action-primary' style='width:100%;'>OPEN WORKSPACE ➔</button>"
+                htmlBuffer = htmlBuffer + "</div>"
+
+            grid.innerHTML = htmlBuffer
+
+    # ── Render Manage Tournaments List ────────────────────────────────────────
+    to do renderManageList:
+        create grid as document.getElementById("manage-tournaments-grid")
+        if grid != null:
+            create htmlBuffer as ""
+            for each tourney in tournamentsDb:
+                htmlBuffer = htmlBuffer + "<div class='tourney-card-item' onclick='window.vortexOpenWorkspace(" + tourney.id + ")'>"
+                htmlBuffer = htmlBuffer + "<div class='card-top-row'>"
+                htmlBuffer = htmlBuffer + "<span class='badge-tag " + tourney.statusClass + "'>" + tourney.status + "</span>"
+                htmlBuffer = htmlBuffer + "<span class='badge-tag open'>" + tourney.game + "</span>"
+                htmlBuffer = htmlBuffer + "</div>"
+                htmlBuffer = htmlBuffer + "<div class='t-card-title'>" + tourney.title + "</div>"
+                htmlBuffer = htmlBuffer + "<div class='t-card-meta'>Format: " + tourney.format + " • Maps: " + tourney.maps + "</div>"
+                htmlBuffer = htmlBuffer + "<div class='t-card-metrics'>"
+                htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>PRIZE POOL</span><span class='tm-val highlight'>" + tourney.prize + "</span></div>"
+                htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>SQUADS REGISTERED</span><span class='tm-val'>" + tourney.teams.length + " / " + tourney.slots + "</span></div>"
+                htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>MATCHES</span><span class='tm-val'>" + tourney.matches.length + " Scheduled</span></div>"
+                htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>CHECKPOINTS</span><span class='tm-val'>" + tourney.checkpoints.length + " Saved</span></div>"
+                htmlBuffer = htmlBuffer + "</div>"
+                htmlBuffer = htmlBuffer + "<button class='btn-action-primary' style='width:100%;'>ENTER ORGANIZER WORKSPACE ➔</button>"
+                htmlBuffer = htmlBuffer + "</div>"
+
+            grid.innerHTML = htmlBuffer
+
+    # ── Open Tournament Workspace ─────────────────────────────────────────────
+    to do openWorkspaceWithId with tourneyId:
+        set activeTourneyId = tourneyId
+        create activeT as null
+        for each t in tournamentsDb:
+            if t.id == tourneyId:
+                set activeT = t
+
+        if activeT != null:
+            create titleEl as document.getElementById("ws-tourney-title")
+            if titleEl != null:
+                titleEl.innerText = activeT.title
+            create metaEl as document.getElementById("ws-game-meta")
+            if metaEl != null:
+                metaEl.innerText = activeT.game + " • " + activeT.format + " • Prize: " + activeT.prize + " • Maps: " + activeT.maps
+            create statusBadge as document.getElementById("ws-status-badge")
+            if statusBadge != null:
+                statusBadge.innerText = activeT.status
+
+            call renderWorkspaceOverview
+            call renderWorkspaceTeams
+            call renderWorkspaceMatches
+            call renderWorkspaceMatchStandings
+            call renderWorkspaceOverallStandings
+            call renderWorkspacePointRules
+            call switchWsTab with "panel-ws-overview"
+            call switchView with "view-workspace"
+
+    # ── Render Workspace Overview ─────────────────────────────────────────────
+    to do renderWorkspaceOverview:
+        create activeT as getActiveTourney()
+        if activeT != null:
+            document.getElementById("stat-total-teams").innerText = activeT.teams.length + " / " + activeT.slots
+            create completedMatches as 0
+            for each m in activeT.matches:
+                if m.status == "COMPLETED":
+                    set completedMatches = completedMatches + 1
+            document.getElementById("stat-matches-played").innerText = completedMatches + " / " + activeT.matches.length
+            document.getElementById("stat-prize-pool").innerText = activeT.prize
+
+            # Overview Table Body
+            create overviewBody as document.getElementById("ws-overview-table-body")
+            if overviewBody != null:
+                create overallList as computeOverallStandings(activeT)
+                if overallList.length > 0:
+                    document.getElementById("stat-table-leader").innerText = overallList[0].team + " (" + overallList[0].totalPts + " PTS)"
+
+                create htmlBuffer as ""
+                create rank as 1
+                for each row in overallList:
+                    create rankClass as "rank-badge"
+                    if rank == 1:
+                        set rankClass = "rank-badge rank-1"
+                    if rank == 2:
+                        set rankClass = "rank-badge rank-2"
+                    if rank == 3:
+                        set rankClass = "rank-badge rank-3"
+
+                    htmlBuffer = htmlBuffer + "<tr>"
+                    htmlBuffer = htmlBuffer + "<td><span class='" + rankClass + "'>#" + rank + "</span></td>"
+                    htmlBuffer = htmlBuffer + "<td><strong>" + row.team + "</strong></td>"
+                    htmlBuffer = htmlBuffer + "<td>" + row.played + "</td>"
+                    htmlBuffer = htmlBuffer + "<td>" + row.wwcd + "</td>"
+                    htmlBuffer = htmlBuffer + "<td>" + row.killPts + "</td>"
+                    htmlBuffer = htmlBuffer + "<td>" + row.placePts + "</td>"
+                    htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill'>" + row.totalPts + " PTS</span></td>"
+                    htmlBuffer = htmlBuffer + "<td style='text-align:right;'><button class='btn-secondary-sm' style='padding:3px 8px; font-size:11px;' onclick='window.vortexOpenTeamMatchesModal(\"" + row.team + "\")'>✏️ EDIT MATCHES</button></td>"
+                    htmlBuffer = htmlBuffer + "</tr>"
+                    set rank = rank + 1
+
+                overviewBody.innerHTML = htmlBuffer
+
+    # ── Render Teams & Detailed Player Roster (Deep CRUD) ─────────────────────
+    to do renderWorkspaceTeams:
+        create activeT as getActiveTourney()
+        create container as document.getElementById("ws-teams-container")
+        if activeT != null && container != null:
+            if activeT.teams.length == 0:
+                container.innerHTML = "<div style='padding:32px; text-align:center; color:#64748b;'>No squads registered yet. Click '+ ADD NEW TEAM' to register squad slots.</div>"
+                return 0
+
+            create htmlBuffer as ""
+            create tIdx as 0
+            for each team in activeT.teams:
+                htmlBuffer = htmlBuffer + "<div class='team-roster-card'>"
+                htmlBuffer = htmlBuffer + "<div class='team-roster-header'>"
+                htmlBuffer = htmlBuffer + "<div class='team-title-group'>"
+                htmlBuffer = htmlBuffer + "<span class='team-slot-badge'>SLOT " + team.slot + "</span>"
+                htmlBuffer = htmlBuffer + "<span class='team-name-text'>" + team.name + "</span>"
+                htmlBuffer = htmlBuffer + "<span class='team-tag-pill'>" + team.tag + "</span>"
+                htmlBuffer = htmlBuffer + "<span style='font-size:12px; color:#94a3b8;'>Captain: " + team.captain + "</span>"
+                htmlBuffer = htmlBuffer + "</div>"
+                htmlBuffer = htmlBuffer + "<div class='team-actions-group'>"
+                htmlBuffer = htmlBuffer + "<button class='btn-secondary-sm' onclick='window.vortexOpenTeamMatchesModal(\"" + team.name + "\")'>EDIT ALL MATCHES</button>"
+                htmlBuffer = htmlBuffer + "<button class='btn-secondary-sm' onclick='window.vortexOpenAddPlayerModal(" + tIdx + ")'>+ ADD PLAYER</button>"
+                htmlBuffer = htmlBuffer + "<button class='btn-secondary-sm' onclick='window.vortexEditTeamModal(" + tIdx + ")'>EDIT SQUAD</button>"
+                htmlBuffer = htmlBuffer + "<button class='btn-row-del' onclick='window.vortexDeleteTeam(" + tIdx + ")'>REMOVE SQUAD</button>"
+                htmlBuffer = htmlBuffer + "</div>"
+                htmlBuffer = htmlBuffer + "</div>"
+
+                # Players Table for this specific team
+                htmlBuffer = htmlBuffer + "<div class='players-table-wrapper'>"
+                htmlBuffer = htmlBuffer + "<table class='anime-table'>"
+                htmlBuffer = htmlBuffer + "<thead><tr><th>PLAYER IGN</th><th>FREE FIRE UID</th><th>SQUAD ROLE</th><th style='text-align:right;'>PLAYER ACTIONS</th></tr></thead>"
+                htmlBuffer = htmlBuffer + "<tbody>"
+
+                if team.players == undefined || team.players.length == 0:
+                    htmlBuffer = htmlBuffer + "<tr><td colspan='4' style='color:#64748b; text-align:center;'>No players added to this squad roster yet.</td></tr>"
+                else:
+                    create pIdx as 0
+                    for each player in team.players:
+                        htmlBuffer = htmlBuffer + "<tr>"
+                        htmlBuffer = htmlBuffer + "<td><strong>" + player.name + "</strong></td>"
+                        htmlBuffer = htmlBuffer + "<td style='font-family:monospace; color:#00f0ff;'>" + player.uid + "</td>"
+                        htmlBuffer = htmlBuffer + "<td><span class='player-role-badge'>" + player.role + "</span></td>"
+                        htmlBuffer = htmlBuffer + "<td style='text-align:right;'>"
+                        htmlBuffer = htmlBuffer + "<button class='btn-secondary-sm' style='padding:2px 8px; margin-right:4px;' onclick='window.vortexEditPlayerModal(" + tIdx + ", " + pIdx + ")'>EDIT</button>"
+                        htmlBuffer = htmlBuffer + "<button class='btn-row-del' style='padding:2px 8px;' onclick='window.vortexDeletePlayer(" + tIdx + ", " + pIdx + ")'>REMOVE</button>"
+                        htmlBuffer = htmlBuffer + "</td>"
+                        htmlBuffer = htmlBuffer + "</tr>"
+                        set pIdx = pIdx + 1
+
+                htmlBuffer = htmlBuffer + "</tbody></table></div></div>"
+                set tIdx = tIdx + 1
+
+            container.innerHTML = htmlBuffer
+
+    # ── Render Matches & Room Credentials ─────────────────────────────────────
+    to do renderWorkspaceMatches:
+        create activeT as getActiveTourney()
+        create grid as document.getElementById("ws-matches-grid")
+        if activeT != null && grid != null:
+            if activeT.matches.length == 0:
+                grid.innerHTML = "<div style='padding:32px; text-align:center; color:#64748b;'>No matches scheduled yet. Click '+ SCHEDULE NEW MATCH' to create brackets.</div>"
+                return 0
+
+            create htmlBuffer as ""
+            for each matchItem in activeT.matches:
+                create statusBadge as "open"
+                if matchItem.status == "LIVE":
+                    set statusBadge = "live"
+                if matchItem.status == "COMPLETED":
+                    set statusBadge = "completed"
+
+                htmlBuffer = htmlBuffer + "<div class='tourney-card-item' style='cursor:default;'>"
+                htmlBuffer = htmlBuffer + "<div class='card-top-row'>"
+                htmlBuffer = htmlBuffer + "<span class='badge-tag " + statusBadge + "'>" + matchItem.status + "</span>"
+                htmlBuffer = htmlBuffer + "<span class='badge-tag open'>" + matchItem.map + "</span>"
+                htmlBuffer = htmlBuffer + "</div>"
+                htmlBuffer = htmlBuffer + "<div class='t-card-title'>" + matchItem.title + "</div>"
+                htmlBuffer = htmlBuffer + "<div class='t-card-meta'>Scheduled Time: " + matchItem.time + "</div>"
+                htmlBuffer = htmlBuffer + "<div class='t-card-metrics'>"
+                htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>CUSTOM ROOM ID</span><span class='tm-val highlight' style='letter-spacing:1px;'>" + matchItem.roomId + "</span></div>"
+                htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>ROOM PASSWORD</span><span class='tm-val' style='letter-spacing:1px;'>" + matchItem.roomPass + "</span></div>"
+                htmlBuffer = htmlBuffer + "</div>"
+                htmlBuffer = htmlBuffer + "<button class='btn-secondary-sm' style='width:100%;' onclick='window.vortexToggleMatchStatus(" + matchItem.id + ")'>TOGGLE STATUS (SCHEDULED / LIVE / DONE)</button>"
+                htmlBuffer = htmlBuffer + "</div>"
+
+            grid.innerHTML = htmlBuffer
+
+    # ── Match-Wise Standings Engine & Auto-Calc ────────────────────────────────
+    to do renderWorkspaceMatchStandings:
+        create activeT as getActiveTourney()
+        if activeT != null:
+            # Populate Match Selector Dropdown
+            create selectEl as document.getElementById("ws-match-select-dropdown")
+            if selectEl != null:
+                create optBuffer as ""
+                create mIdx as 0
+                for each m in activeT.matches:
+                    create selectedAttr as ""
+                    if mIdx == activeMatchIdx:
+                        set selectedAttr = " selected"
+                    optBuffer = optBuffer + "<option value='" + mIdx + "'" + selectedAttr + ">" + m.title + " (" + m.status + ")</option>"
+                    set mIdx = mIdx + 1
+                selectEl.innerHTML = optBuffer
+
+            create activeMatch as activeT.matches[activeMatchIdx]
+            if activeMatch != undefined:
+                document.getElementById("ws-active-match-title").innerText = activeMatch.title
+                document.getElementById("ws-active-match-status").innerText = activeMatch.status
+
+                # If active match has no scores populated, init from team list
+                if activeMatch.scores.length == 0:
+                    create initRank as 1
+                    for each teamItem in activeT.teams:
+                        activeMatch.scores.push({ team: teamItem.name, place: initRank, kills: 0, bonus: 0, penalty: 0 })
+                        set initRank = initRank + 1
+
+                create tbody as document.getElementById("ws-match-standings-tbody")
+                if tbody != null:
+                    create htmlBuffer as ""
+                    create sIdx as 0
+                    for each scoreRow in activeMatch.scores:
+                        create pKey as String(scoreRow.place)
+                        create placePts as 0
+                        if activeT.placementPoints[pKey] != undefined:
+                            set placePts = activeT.placementPoints[pKey]
+
+                        create killPts as Number(scoreRow.kills) * Number(activeT.killMultiplier)
+                        create totalPts as placePts + killPts + Number(scoreRow.bonus) - Number(scoreRow.penalty)
+
+                        htmlBuffer = htmlBuffer + "<tr>"
+                        htmlBuffer = htmlBuffer + "<td><strong class='rank-badge'>#" + (sIdx + 1) + "</strong></td>"
+                        htmlBuffer = htmlBuffer + "<td><strong>" + scoreRow.team + "</strong></td>"
+                        htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='1' max='12' value='" + scoreRow.place + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"place\", this.value)'></td>"
+                        htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='0' max='50' value='" + scoreRow.kills + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"kills\", this.value)'></td>"
+                        htmlBuffer = htmlBuffer + "<td>" + killPts + "</td>"
+                        htmlBuffer = htmlBuffer + "<td>" + placePts + "</td>"
+                        htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='0' max='20' value='" + scoreRow.bonus + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"bonus\", this.value)'></td>"
+                        htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='0' max='20' value='" + scoreRow.penalty + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"penalty\", this.value)'></td>"
+                        htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill'>" + totalPts + " PTS</span></td>"
+                        htmlBuffer = htmlBuffer + "<td>"
+                        htmlBuffer = htmlBuffer + "<button class='btn-secondary-sm' style='padding:2px 6px; margin-right:4px; font-size:10px;' onclick='window.vortexOpenTeamMatchesModal(\"" + scoreRow.team + "\")'>ALL MATCHES</button>"
+                        htmlBuffer = htmlBuffer + "<button class='btn-row-del' onclick='window.vortexDeleteMatchRow(" + sIdx + ")'>DEL</button>"
+                        htmlBuffer = htmlBuffer + "</td>"
+                        htmlBuffer = htmlBuffer + "</tr>"
+                        set sIdx = sIdx + 1
+
+                    tbody.innerHTML = htmlBuffer
+
+    # ── Compute Overall Aggregated Standings ──────────────────────────────────
+    to do computeOverallStandings with activeT:
+        create teamMap as {}
+        for each teamItem in activeT.teams:
+            teamMap[teamItem.name] = { team: teamItem.name, played: 0, wwcd: 0, kills: 0, killPts: 0, placePts: 0, totalPts: 0 }
+
+        for each m in activeT.matches:
+            if m.status == "COMPLETED" || m.status == "LIVE":
+                for each sc in m.scores:
+                    if teamMap[sc.team] == undefined:
+                        teamMap[sc.team] = { team: sc.team, played: 0, wwcd: 0, kills: 0, killPts: 0, placePts: 0, totalPts: 0 }
+
+                    create record as teamMap[sc.team]
+                    record.played = record.played + 1
+                    if Number(sc.place) == 1:
+                        record.wwcd = record.wwcd + 1
+
+                    create pKey as String(sc.place)
+                    create pPts as 0
+                    if activeT.placementPoints[pKey] != undefined:
+                        set pPts = activeT.placementPoints[pKey]
+
+                    create kPts as Number(sc.kills) * Number(activeT.killMultiplier)
+                    record.kills = record.kills + Number(sc.kills)
+                    record.killPts = record.killPts + kPts
+                    record.placePts = record.placePts + pPts
+                    record.totalPts = record.totalPts + pPts + kPts + Number(sc.bonus) - Number(sc.penalty)
+
+        create resultList as []
+        for each k in Object.keys(teamMap):
+            resultList.push(teamMap[k])
+
+        # Sort descending by totalPts
+        resultList.sort(function(itemA, itemB) { return itemB.totalPts - itemA.totalPts; })
+        return resultList
+
+    # ── Render Workspace Overall Standings ────────────────────────────────────
+    to do renderWorkspaceOverallStandings:
+        create activeT as getActiveTourney()
+        create tbody as document.getElementById("ws-overall-standings-tbody")
+        if activeT != null && tbody != null:
+            create overallList as computeOverallStandings(activeT)
+            create htmlBuffer as ""
+            create rank as 1
+            for each row in overallList:
+                create rankClass as "rank-badge"
+                if rank == 1:
+                    set rankClass = "rank-badge rank-1"
+                if rank == 2:
+                    set rankClass = "rank-badge rank-2"
+                if rank == 3:
+                    set rankClass = "rank-badge rank-3"
+
+                htmlBuffer = htmlBuffer + "<tr>"
+                htmlBuffer = htmlBuffer + "<td><span class='" + rankClass + "'>#" + rank + "</span></td>"
+                htmlBuffer = htmlBuffer + "<td><strong>" + row.team + "</strong></td>"
+                htmlBuffer = htmlBuffer + "<td>" + row.played + "</td>"
+                htmlBuffer = htmlBuffer + "<td>" + row.wwcd + "</td>"
+                htmlBuffer = htmlBuffer + "<td>" + row.kills + "</td>"
+                htmlBuffer = htmlBuffer + "<td>" + row.killPts + "</td>"
+                htmlBuffer = htmlBuffer + "<td>" + row.placePts + "</td>"
+                htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill'>" + row.totalPts + " PTS</span></td>"
+                htmlBuffer = htmlBuffer + "<td style='text-align:right;'><button class='btn-action-primary-sm' style='padding:4px 10px; font-size:11px;' onclick='window.vortexOpenTeamMatchesModal(\"" + row.team + "\")'>✏️ EDIT ALL MATCHES</button></td>"
+                htmlBuffer = htmlBuffer + "</tr>"
+                set rank = rank + 1
+
+            tbody.innerHTML = htmlBuffer
+
+    # ── Edit All Matches Matrix For Specific Team ─────────────────────────────
+    to do openTeamMatchesModal with targetTeam:
+        set editingTeamName = targetTeam
+        create activeT as getActiveTourney()
+        create tbody as document.getElementById("modal-team-matches-tbody")
+        if activeT != null && tbody != null:
+            document.getElementById("modal-team-matches-title").innerText = "EDIT ALL MATCH SCORES — " + targetTeam
+            create htmlBuffer as ""
+            create mIdx as 0
+            for each m in activeT.matches:
+                create placeVal as 12
+                create killsVal as 0
+                create bonusVal as 0
+                create penaltyVal as 0
+
+                for each sc in m.scores:
+                    if sc.team == targetTeam:
+                        set placeVal = Number(sc.place)
+                        set killsVal = Number(sc.kills)
+                        set bonusVal = Number(sc.bonus)
+                        set penaltyVal = Number(sc.penalty)
+
+                create pKey as String(placeVal)
+                create placePts as 0
+                if activeT.placementPoints[pKey] != undefined:
+                    set placePts = activeT.placementPoints[pKey]
+
+                create killPts as killsVal * Number(activeT.killMultiplier)
+                create totalMatchPts as placePts + killPts + bonusVal - penaltyVal
+
+                create statusBadge as "open"
+                if m.status == "LIVE":
+                    set statusBadge = "live"
+                if m.status == "COMPLETED":
+                    set statusBadge = "completed"
+
+                htmlBuffer = htmlBuffer + "<tr>"
+                htmlBuffer = htmlBuffer + "<td><strong>" + m.title + "</strong><br><span style='font-size:11px; color:#64748b;'>Map: " + m.map + "</span></td>"
+                htmlBuffer = htmlBuffer + "<td><span class='badge-tag " + statusBadge + "'>" + m.status + "</span></td>"
+                htmlBuffer = htmlBuffer + "<td><input type='number' min='1' max='12' class='table-edit-input' id='modal-m-place-" + mIdx + "' value='" + placeVal + "' oninput='window.vortexCalcTeamModalLive()'></td>"
+                htmlBuffer = htmlBuffer + "<td><input type='number' min='0' max='50' class='table-edit-input' id='modal-m-kills-" + mIdx + "' value='" + killsVal + "' oninput='window.vortexCalcTeamModalLive()'></td>"
+                htmlBuffer = htmlBuffer + "<td><input type='number' min='0' max='20' class='table-edit-input' id='modal-m-bonus-" + mIdx + "' value='" + bonusVal + "' oninput='window.vortexCalcTeamModalLive()'></td>"
+                htmlBuffer = htmlBuffer + "<td><input type='number' min='0' max='20' class='table-edit-input' id='modal-m-penalty-" + mIdx + "' value='" + penaltyVal + "' oninput='window.vortexCalcTeamModalLive()'></td>"
+                htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill' id='modal-m-pts-" + mIdx + "'>" + totalMatchPts + " PTS</span></td>"
+                htmlBuffer = htmlBuffer + "</tr>"
+                set mIdx = mIdx + 1
+
+            tbody.innerHTML = htmlBuffer
+            call calcTeamModalLive
+            document.getElementById("modal-team-matches-edit").classList.add("show")
+
+    to do calcTeamModalLive:
+        create activeT as getActiveTourney()
+        if activeT != null:
+            create cumPlayed as 0
+            create cumWwcd as 0
+            create cumKills as 0
+            create cumKillPts as 0
+            create cumPlacePts as 0
+            create cumTotalPts as 0
+
+            create mIdx as 0
+            for each m in activeT.matches:
+                create pEl as document.getElementById("modal-m-place-" + mIdx)
+                create kEl as document.getElementById("modal-m-kills-" + mIdx)
+                create bEl as document.getElementById("modal-m-bonus-" + mIdx)
+                create penEl as document.getElementById("modal-m-penalty-" + mIdx)
+                create ptsEl as document.getElementById("modal-m-pts-" + mIdx)
+
+                if pEl != null && kEl != null:
+                    create pVal as Number(pEl.value)
+                    create kVal as Number(kEl.value)
+                    create bVal as Number(bEl.value)
+                    create penVal as Number(penEl.value)
+
+                    create pKey as String(pVal)
+                    create placePts as 0
+                    if activeT.placementPoints[pKey] != undefined:
+                        set placePts = activeT.placementPoints[pKey]
+
+                    create killPts as kVal * Number(activeT.killMultiplier)
+                    create rowTotal as placePts + killPts + bVal - penVal
+
+                    if ptsEl != null:
+                        ptsEl.innerText = rowTotal + " PTS"
+
+                    set cumPlayed = cumPlayed + 1
+                    if pVal == 1:
+                        set cumWwcd = cumWwcd + 1
+                    set cumKills = cumKills + kVal
+                    set cumKillPts = cumKillPts + killPts
+                    set cumPlacePts = cumPlacePts + placePts
+                    set cumTotalPts = cumTotalPts + rowTotal
+
+                set mIdx = mIdx + 1
+
+            create summaryEl as document.getElementById("team-modal-stats-summary")
+            if summaryEl != null:
+                create sumHtml as ""
+                sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>MATCHES</span><span class='tm-stat-val'>" + cumPlayed + " / " + activeT.matches.length + "</span></div>"
+                sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>BOOYAH (WWCD)</span><span class='tm-stat-val highlight'>" + cumWwcd + "</span></div>"
+                sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>TOTAL KILLS</span><span class='tm-stat-val'>" + cumKills + " (" + cumKillPts + " PTS)</span></div>"
+                sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>PLACEMENT PTS</span><span class='tm-stat-val'>" + cumPlacePts + " PTS</span></div>"
+                sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>NEW OVERALL TOTAL</span><span class='tm-stat-val super'>" + cumTotalPts + " PTS</span></div>"
+                summaryEl.innerHTML = sumHtml
+
+    to do saveTeamAllMatches:
+        create activeT as getActiveTourney()
+        if activeT != null && editingTeamName != "":
+            create mIdx as 0
+            for each m in activeT.matches:
+                create pEl as document.getElementById("modal-m-place-" + mIdx)
+                create kEl as document.getElementById("modal-m-kills-" + mIdx)
+                create bEl as document.getElementById("modal-m-bonus-" + mIdx)
+                create penEl as document.getElementById("modal-m-penalty-" + mIdx)
+
+                if pEl != null && kEl != null:
+                    create pVal as Number(pEl.value)
+                    create kVal as Number(kEl.value)
+                    create bVal as Number(bEl.value)
+                    create penVal as Number(penEl.value)
+
+                    create found as false
+                    for each sc in m.scores:
+                        if sc.team == editingTeamName:
+                            sc.place = pVal
+                            sc.kills = kVal
+                            sc.bonus = bVal
+                            sc.penalty = penVal
+                            set found = true
+
+                    if found == false:
+                        m.scores.push({ team: editingTeamName, place: pVal, kills: kVal, bonus: bVal, penalty: penVal })
+
+                    # Sort match scores by placement ascending
+                    m.scores.sort(function(itemA, itemB) { return itemA.place - itemB.place; })
+
+                set mIdx = mIdx + 1
+
+            document.getElementById("modal-team-matches-edit").classList.remove("show")
+            call renderWorkspaceOverview
+            call renderWorkspaceMatches
+            call renderWorkspaceMatchStandings
+            call renderWorkspaceOverallStandings
+            call showToast with "✓ Saved & auto-calculated all matches for " + editingTeamName + "! Standings updated live."
+
+    # ── Render Custom Point System Rules ──────────────────────────────────────
+    to do renderWorkspacePointRules:
+        create activeT as getActiveTourney()
+        create grid as document.getElementById("ws-rules-pts-grid")
+        if activeT != null && grid != null:
+            document.getElementById("ws-rules-kill-pts").value = activeT.killMultiplier
+            create htmlBuffer as ""
+            for each r in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
+                create val as 0
+                if activeT.placementPoints[String(r)] != undefined:
+                    set val = activeT.placementPoints[String(r)]
+                htmlBuffer = htmlBuffer + "<div class='pt-box'>"
+                htmlBuffer = htmlBuffer + "<span class='pt-lbl'>#" + r + " Rank</span>"
+                htmlBuffer = htmlBuffer + "<input type='number' class='pt-input' id='ws-pt-rank-" + r + "' value='" + val + "'>"
+                htmlBuffer = htmlBuffer + "</div>"
+            grid.innerHTML = htmlBuffer
+
+    # ── Standings Checkpoints & Revert System ──────────────────────────────────
+    to do createStandingsCheckpoint with customTitle:
+        create activeT as getActiveTourney()
+        if activeT != null:
+            create overallSnapshot as computeOverallStandings(activeT)
+            create titleText as customTitle
+            if titleText == undefined || titleText == "":
+                set titleText = "Manual Checkpoint #" + (activeT.checkpoints.length + 1)
+
+            create timeStr as new Date().toLocaleTimeString()
+            activeT.checkpoints.push({ title: titleText, timestamp: timeStr, standings: JSON.parse(JSON.stringify(overallSnapshot)) })
+            call showToast with "🔖 Checkpoint saved: " + titleText
+
+    to do renderRevertModalList:
+        create activeT as getActiveTourney()
+        create list as document.getElementById("revert-checkpoints-list")
+        if activeT != null && list != null:
+            if activeT.checkpoints.length == 0:
+                list.innerHTML = "<div style='color:#64748b; text-align:center; padding:16px;'>No checkpoints recorded yet for this tournament.</div>"
+                return 0
+
+            create htmlBuffer as ""
+            create cIdx as 0
+            for each cp in activeT.checkpoints:
+                htmlBuffer = htmlBuffer + "<div class='tourney-card-item' style='margin-bottom:10px; padding:12px; cursor:default;'>"
+                htmlBuffer = htmlBuffer + "<div style='display:flex; justify-content:space-between; align-items:center;'>"
+                htmlBuffer = htmlBuffer + "<div><strong>" + cp.title + "</strong><br><span style='font-size:11px; color:#64748b;'>Saved At: " + cp.timestamp + " (" + cp.standings.length + " Squads)</span></div>"
+                htmlBuffer = htmlBuffer + "<button class='btn-revert-sm' onclick='window.vortexApplyRevert(" + cIdx + ")'>RESTORE THIS STATE</button>"
+                htmlBuffer = htmlBuffer + "</div>"
+                htmlBuffer = htmlBuffer + "</div>"
+                set cIdx = cIdx + 1
+
+            list.innerHTML = htmlBuffer
+
+    # ── Export CSV & Text Reports ─────────────────────────────────────────────
+    to do downloadTournamentCSV:
+        create activeT as getActiveTourney()
+        if activeT != null:
+            create overallList as computeOverallStandings(activeT)
+            create csvContent as "Overall_Rank,Squad,Matches_Played,Booyah_WWCD,Total_Kills,Kill_Points,Placement_Points,Total_Points\n"
+            create rank as 1
+            for each row in overallList:
+                set csvContent = csvContent + rank + "," + row.team + "," + row.played + "," + row.wwcd + "," + row.kills + "," + row.killPts + "," + row.placePts + "," + row.totalPts + "\n"
+                set rank = rank + 1
+
+            create blob as new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+            create link as document.createElement("a")
+            create url as URL.createObjectURL(blob)
+            link.setAttribute("href", url)
+            link.setAttribute("download", activeT.title.replaceAll(" ", "_") + "_Standings.csv")
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            call showToast with "📥 Full Tournament CSV Downloaded!"
+
+    to do copyTextLeaderboardReport:
+        create activeT as getActiveTourney()
+        if activeT != null:
+            create overallList as computeOverallStandings(activeT)
+            create report as "🏆 " + activeT.title + " 🏆\n"
+            set report = report + "🎮 " + activeT.game + " • Format: " + activeT.format + " • Prize: " + activeT.prize + "\n"
+            set report = report + "═══════════════════════════════════════\n\n"
+            create rank as 1
+            for each row in overallList:
+                set report = report + "#" + rank + " " + row.team + " | WWCD: " + row.wwcd + " | Kills: " + row.kills + " | Total: " + row.totalPts + " PTS\n"
+                set rank = rank + 1
+
+            set report = report + "\n═══════════════════════════════════════\nGenerated via Vortex Esports OS"
+            navigator.clipboard.writeText(report)
+            call showToast with "📋 Formatted Text Report copied to clipboard!"
+
+    # ── Interop Procedures ───────────────────────────────────────────────────
+    to do editTeamModal with teamIdx:
+        create activeT as getActiveTourney()
+        if activeT != null && activeT.teams[teamIdx] != undefined:
+            create sq as activeT.teams[teamIdx]
+            document.getElementById("edit-team-idx").value = teamIdx
+            document.getElementById("team-input-slot").value = sq.slot
+            document.getElementById("team-input-tag").value = sq.tag
+            document.getElementById("team-input-name").value = sq.name
+            document.getElementById("team-input-captain").value = sq.captain
+            document.getElementById("modal-team-title").innerText = "EDIT SQUAD DETAILS"
+            document.getElementById("modal-team-edit").classList.add("show")
+
+    to do deleteTeam with teamIdx:
+        create activeT as getActiveTourney()
+        if activeT != null && activeT.teams[teamIdx] != undefined:
+            create name as activeT.teams[teamIdx].name
+            activeT.teams.splice(teamIdx, 1)
+            call renderWorkspaceOverview
+            call renderWorkspaceTeams
+            call renderWorkspaceMatchStandings
+            call renderWorkspaceOverallStandings
+            call showToast with "Removed squad '" + name + "' from tournament."
+
+    to do openAddPlayerModal with teamIdx:
+        document.getElementById("edit-player-team-idx").value = teamIdx
+        document.getElementById("edit-player-idx").value = "-1"
+        document.getElementById("player-input-name").value = ""
+        document.getElementById("player-input-uid").value = ""
+        document.getElementById("modal-player-title").innerText = "ADD PLAYER TO SQUAD"
+        document.getElementById("modal-player-edit").classList.add("show")
+
+    to do editPlayerModal with teamIdx, playerIdx:
+        create activeT as getActiveTourney()
+        if activeT != null && activeT.teams[teamIdx] != undefined:
+            create p as activeT.teams[teamIdx].players[playerIdx]
+            if p != undefined:
+                document.getElementById("edit-player-team-idx").value = teamIdx
+                document.getElementById("edit-player-idx").value = playerIdx
+                document.getElementById("player-input-name").value = p.name
+                document.getElementById("player-input-uid").value = p.uid
+                document.getElementById("player-input-role").value = p.role
+                document.getElementById("modal-player-title").innerText = "EDIT PLAYER ROSTER"
+                document.getElementById("modal-player-edit").classList.add("show")
+
+    to do deletePlayer with teamIdx, playerIdx:
+        create activeT as getActiveTourney()
+        if activeT != null && activeT.teams[teamIdx] != undefined:
+            create pName as activeT.teams[teamIdx].players[playerIdx].name
+            activeT.teams[teamIdx].players.splice(playerIdx, 1)
+            call renderWorkspaceTeams
+            call showToast with "Removed player '" + pName + "' from squad."
+
+    to do toggleMatchStatus with matchId:
+        create activeT as getActiveTourney()
+        if activeT != null:
+            for each m in activeT.matches:
+                if m.id == matchId:
+                    if m.status == "SCHEDULED":
+                        m.status = "LIVE"
+                    else if m.status == "LIVE":
+                        m.status = "COMPLETED"
+                    else:
+                        m.status = "SCHEDULED"
+                    call renderWorkspaceOverview
+                    call renderWorkspaceMatches
+                    call renderWorkspaceMatchStandings
+                    call renderWorkspaceOverallStandings
+                    call showToast with m.title + " status changed to: " + m.status
+
+    to do updateMatchScore with scoreIdx, field, val:
+        create activeT as getActiveTourney()
+        if activeT != null && activeT.matches[activeMatchIdx] != undefined:
+            create row as activeT.matches[activeMatchIdx].scores[scoreIdx]
+            if row != undefined:
+                row[field] = Number(val)
+                # Sort match scores by placement ascending
+                activeT.matches[activeMatchIdx].scores.sort(function(itemA, itemB) { return itemA.place - itemB.place; })
+                call renderWorkspaceOverview
+                call renderWorkspaceMatchStandings
+                call renderWorkspaceOverallStandings
+                call showToast with "✓ Updated " + row.team + " " + field + " to " + val
+
+    to do deleteMatchRow with scoreIdx:
+        create activeT as getActiveTourney()
+        if activeT != null && activeT.matches[activeMatchIdx] != undefined:
+            activeT.matches[activeMatchIdx].scores.splice(scoreIdx, 1)
+            call renderWorkspaceMatchStandings
+            call renderWorkspaceOverallStandings
+            call showToast with "Removed squad score row."
+
+    to do applyRevert with checkpointIdx:
+        create activeT as getActiveTourney()
+        if activeT != null && activeT.checkpoints[checkpointIdx] != undefined:
+            create cp as activeT.checkpoints[checkpointIdx]
+            # Replace overall standings snapshot in display
+            create tbody as document.getElementById("ws-overall-standings-tbody")
+            if tbody != null:
+                create htmlBuffer as ""
+                create rank as 1
+                for each row in cp.standings:
+                    htmlBuffer = htmlBuffer + "<tr>"
+                    htmlBuffer = htmlBuffer + "<td><strong class='rank-badge'>#" + rank + "</strong></td>"
+                    htmlBuffer = htmlBuffer + "<td><strong>" + row.team + "</strong></td>"
+                    htmlBuffer = htmlBuffer + "<td>" + row.played + "</td>"
+                    htmlBuffer = htmlBuffer + "<td>" + row.wwcd + "</td>"
+                    htmlBuffer = htmlBuffer + "<td>" + row.kills + "</td>"
+                    htmlBuffer = htmlBuffer + "<td>" + row.killPts + "</td>"
+                    htmlBuffer = htmlBuffer + "<td>" + row.placePts + "</td>"
+                    htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill'>" + row.totalPts + " PTS</span></td>"
+                    htmlBuffer = htmlBuffer + "<td style='text-align:right;'><button class='btn-action-primary-sm' style='padding:4px 10px; font-size:11px;' onclick='window.vortexOpenTeamMatchesModal(\"" + row.team + "\")'>✏️ EDIT ALL MATCHES</button></td>"
+                    htmlBuffer = htmlBuffer + "</tr>"
+                    set rank = rank + 1
+
+                tbody.innerHTML = htmlBuffer
+
+            document.getElementById("modal-revert-standings").classList.remove("show")
+            call showToast with "⏪ Successfully reverted standings to: " + cp.title
+
+    # ── Bind Global Interop to Window ─────────────────────────────────────────
+    window.vortexOpenWorkspace = function(id) { openWorkspaceWithId(id); };
+    window.vortexEditTeamModal = function(idx) { editTeamModal(idx); };
+    window.vortexDeleteTeam = function(idx) { deleteTeam(idx); };
+    window.vortexOpenAddPlayerModal = function(idx) { openAddPlayerModal(idx); };
+    window.vortexEditPlayerModal = function(tIdx, pIdx) { editPlayerModal(tIdx, pIdx); };
+    window.vortexDeletePlayer = function(tIdx, pIdx) { deletePlayer(tIdx, pIdx); };
+    window.vortexToggleMatchStatus = function(id) { toggleMatchStatus(id); };
+    window.vortexUpdateMatchScore = function(sIdx, fld, val) { updateMatchScore(sIdx, fld, val); };
+    window.vortexDeleteMatchRow = function(sIdx) { deleteMatchRow(sIdx); };
+    window.vortexApplyRevert = function(idx) { applyRevert(idx); };
+    window.vortexOpenTeamMatchesModal = function(team) { openTeamMatchesModal(team); };
+    window.vortexCalcTeamModalLive = function() { calcTeamModalLive(); };
+
+    # ── Declarative Event Listeners ───────────────────────────────────────────
+    when "btn-nav-brand" is clicked:
+        call switchView with "view-landing"
+
+    when "nav-landing" is clicked:
+        call switchView with "view-landing"
+
+    when "nav-create" is clicked:
+        call switchView with "view-create"
+
+    when "nav-manage" is clicked:
+        call switchView with "view-manage"
+
+    when "card-act-create" is clicked:
+        call switchView with "view-create"
+
+    when "card-act-manage" is clicked:
+        call switchView with "view-manage"
+
+    when "btn-landing-view-all" is clicked:
+        call switchView with "view-manage"
+
+    when "btn-manage-to-create" is clicked:
+        call switchView with "view-create"
+
+    when "btn-back-create-landing" is clicked:
+        call switchView with "view-landing"
+
+    when "btn-ws-back-to-manage" is clicked:
+        call switchView with "view-manage"
+
+    when "card-act-auth" is clicked:
+        document.getElementById("modal-auth").classList.add("show")
+
+    when "btn-open-auth" is clicked:
+        document.getElementById("modal-auth").classList.add("show")
+
+    when "btn-close-auth-modal" is clicked:
+        document.getElementById("modal-auth").classList.remove("show")
+
+    when "btn-cancel-auth" is clicked:
+        document.getElementById("modal-auth").classList.remove("show")
+
+    when "btn-confirm-auth" is clicked:
+        create uname as document.getElementById("auth-username").value
+        create uidVal as document.getElementById("auth-uid").value
+        create roleVal as document.getElementById("auth-role").value
+
+        currentUser.name = uname
+        currentUser.uid = uidVal
+        currentUser.role = roleVal
+        currentUser.loggedIn = true
+
+        document.getElementById("display-user-name").innerText = uname + " (" + roleVal + ")"
+        document.getElementById("user-profile-badge").style.display = "flex"
+        document.getElementById("btn-open-auth").style.display = "none"
+
+        document.getElementById("modal-auth").classList.remove("show")
+        call showToast with "🛡️ Authenticated as " + uname + " [" + roleVal + "]!"
+
+    when "btn-logout-act" is clicked:
+        currentUser.loggedIn = false
+        document.getElementById("user-profile-badge").style.display = "none"
+        document.getElementById("btn-open-auth").style.display = "inline-block"
+        call showToast with "Logged out successfully."
+
+    # Workspace Tab Handlers
+    when "ws-tab-overview" is clicked:
+        call switchWsTab with "panel-ws-overview"
+
+    when "ws-tab-teams" is clicked:
+        call switchWsTab with "panel-ws-teams"
+
+    when "ws-tab-matches" is clicked:
+        call switchWsTab with "panel-ws-matches"
+
+    when "ws-tab-match-standings" is clicked:
+        call switchWsTab with "panel-ws-match-standings"
+
+    when "ws-tab-overall-standings" is clicked:
+        call switchWsTab with "panel-ws-overall-standings"
+
+    when "ws-tab-points-rules" is clicked:
+        call switchWsTab with "panel-ws-points-rules"
+
+    when "ws-tab-exports" is clicked:
+        call switchWsTab with "panel-ws-exports"
+
+    when "link-view-full-overall" is clicked:
+        call switchWsTab with "panel-ws-overall-standings"
+
+    # Quick Action Bar Handlers
+    when "quick-act-add-team" is clicked:
+        call switchWsTab with "panel-ws-teams"
+        document.getElementById("edit-team-idx").value = "-1"
+        document.getElementById("team-input-slot").value = "7"
+        document.getElementById("team-input-tag").value = ""
+        document.getElementById("team-input-name").value = ""
+        document.getElementById("team-input-captain").value = ""
+        document.getElementById("modal-team-edit").classList.add("show")
+
+    when "quick-act-new-match" is clicked:
+        call switchWsTab with "panel-ws-matches"
+        document.getElementById("modal-match-edit").classList.add("show")
+
+    when "quick-act-edit-points" is clicked:
+        call switchWsTab with "panel-ws-match-standings"
+
+    when "quick-act-download-csv" is clicked:
+        call downloadTournamentCSV
+
+    when "btn-export-full-csv" is clicked:
+        call downloadTournamentCSV
+
+    when "btn-export-text-report" is clicked:
+        call copyTextLeaderboardReport
+
+    # Team Modal Handlers
+    when "btn-open-add-team-modal" is clicked:
+        document.getElementById("edit-team-idx").value = "-1"
+        document.getElementById("team-input-slot").value = String(tournamentsDb[0].teams.length + 1)
+        document.getElementById("team-input-tag").value = ""
+        document.getElementById("team-input-name").value = ""
+        document.getElementById("team-input-captain").value = ""
+        document.getElementById("modal-team-title").innerText = "ADD NEW SQUAD"
+        document.getElementById("modal-team-edit").classList.add("show")
+
+    when "btn-close-team-modal" is clicked:
+        document.getElementById("modal-team-edit").classList.remove("show")
+
+    when "btn-cancel-team" is clicked:
+        document.getElementById("modal-team-edit").classList.remove("show")
+
+    when "btn-save-team" is clicked:
+        create activeT as getActiveTourney()
+        create editIdx as Number(document.getElementById("edit-team-idx").value)
+        create slotVal as Number(document.getElementById("team-input-slot").value)
+        create tagVal as document.getElementById("team-input-tag").value
+        create nameVal as document.getElementById("team-input-name").value
+        create capVal as document.getElementById("team-input-captain").value
+
+        if nameVal == "":
+            set nameVal = "Alpha Wolves"
+        if tagVal == "":
+            set tagVal = "AW"
+        if capVal == "":
+            set capVal = "Wolf_Alpha (UID: 8810291)"
+
+        if activeT != null:
+            if editIdx >= 0:
+                activeT.teams[editIdx].slot = slotVal
+                activeT.teams[editIdx].tag = tagVal
+                activeT.teams[editIdx].name = nameVal
+                activeT.teams[editIdx].captain = capVal
+                call showToast with "✓ Squad " + nameVal + " updated!"
+            else:
+                activeT.teams.push({ slot: slotVal, tag: tagVal, name: nameVal, captain: capVal, players: [ { name: capVal.split(" ")[0], uid: "8810291", role: "IGL" } ] })
+                call showToast with "✓ Squad " + nameVal + " added to Slot " + slotVal + "!"
+
+            call renderWorkspaceOverview
+            call renderWorkspaceTeams
+            call renderWorkspaceMatchStandings
+            call renderWorkspaceOverallStandings
+            document.getElementById("modal-team-edit").classList.remove("show")
+
+    # Player Modal Handlers
+    when "btn-close-player-modal" is clicked:
+        document.getElementById("modal-player-edit").classList.remove("show")
+
+    when "btn-cancel-player" is clicked:
+        document.getElementById("modal-player-edit").classList.remove("show")
+
+    when "btn-save-player" is clicked:
+        create activeT as getActiveTourney()
+        create tIdx as Number(document.getElementById("edit-player-team-idx").value)
+        create pIdx as Number(document.getElementById("edit-player-idx").value)
+        create pName as document.getElementById("player-input-name").value
+        create pUid as document.getElementById("player-input-uid").value
+        create pRole as document.getElementById("player-input-role").value
+
+        if pName == "":
+            set pName = "Striker_99"
+        if pUid == "":
+            set pUid = String(Math.floor(10000000 + Math.random() * 90000000))
+
+        if activeT != null && activeT.teams[tIdx] != undefined:
+            if pIdx >= 0:
+                activeT.teams[tIdx].players[pIdx].name = pName
+                activeT.teams[tIdx].players[pIdx].uid = pUid
+                activeT.teams[tIdx].players[pIdx].role = pRole
+                call showToast with "✓ Player " + pName + " updated!"
+            else:
+                activeT.teams[tIdx].players.push({ name: pName, uid: pUid, role: pRole })
+                call showToast with "✓ Added " + pName + " to " + activeT.teams[tIdx].name + " roster!"
+
+            call renderWorkspaceTeams
+            document.getElementById("modal-player-edit").classList.remove("show")
+
+    # Match Modal Handlers
+    when "btn-open-add-match-modal" is clicked:
+        document.getElementById("modal-match-edit").classList.add("show")
+
+    when "btn-close-match-modal" is clicked:
+        document.getElementById("modal-match-edit").classList.remove("show")
+
+    when "btn-cancel-match" is clicked:
+        document.getElementById("modal-match-edit").classList.remove("show")
+
+    when "btn-save-match" is clicked:
+        create activeT as getActiveTourney()
+        create mTitle as document.getElementById("match-input-title").value
+        create mMap as document.getElementById("match-input-map").value
+        create mTime as document.getElementById("match-input-time").value
+        create mRoomId as document.getElementById("match-input-room-id").value
+        create mPass as document.getElementById("match-input-room-pass").value
+
+        if mTitle == "":
+            set mTitle = "Match " + (activeT.matches.length + 1) + " - " + mMap
+        if mRoomId == "":
+            set mRoomId = String(Math.floor(1000000 + Math.random() * 9000000))
+        if mPass == "":
+            set mPass = "VORTEX2026"
+
+        if activeT != null:
+            activeT.matches.push({ id: activeT.matches.length + 1, title: mTitle, map: mMap, time: mTime, roomId: mRoomId, roomPass: mPass, status: "SCHEDULED", scores: [] })
+            call renderWorkspaceOverview
+            call renderWorkspaceMatches
+            call renderWorkspaceMatchStandings
+            document.getElementById("modal-match-edit").classList.remove("show")
+            call showToast with "🎮 Custom Match scheduled & Room ID " + mRoomId + " generated!"
+
+    # Team Match Performance Matrix Handlers
+    when "btn-close-team-matches-modal" is clicked:
+        document.getElementById("modal-team-matches-edit").classList.remove("show")
+
+    when "btn-cancel-team-matches" is clicked:
+        document.getElementById("modal-team-matches-edit").classList.remove("show")
+
+    when "btn-save-team-matches" is clicked:
+        call saveTeamAllMatches
+
+    # Match Standings & Publishing
+    when "btn-ws-save-match-results" is clicked:
+        call renderWorkspaceOverallStandings
+        call renderWorkspaceOverview
+        call showToast with "💾 Match scores saved and overall leaderboard recalculated!"
+
+    when "btn-ws-publish-match" is clicked:
+        create activeT as getActiveTourney()
+        if activeT != null && activeT.matches[activeMatchIdx] != undefined:
+            activeT.matches[activeMatchIdx].status = "COMPLETED"
+            call createStandingsCheckpoint with ("Snapshot After " + activeT.matches[activeMatchIdx].title)
+            call renderWorkspaceOverview
+            call renderWorkspaceMatches
+            call renderWorkspaceMatchStandings
+            call renderWorkspaceOverallStandings
+            call showToast with "📢 Match published and official standings checkpoint created!"
+
+    when "btn-ws-create-checkpoint" is clicked:
+        call createStandingsCheckpoint with "Manual Standings Checkpoint"
+
+    when "btn-ws-open-revert-modal" is clicked:
+        call renderRevertModalList
+        document.getElementById("modal-revert-standings").classList.add("show")
+
+    when "btn-close-revert-modal" is clicked:
+        document.getElementById("modal-revert-standings").classList.remove("show")
+
+    when "btn-cancel-revert" is clicked:
+        document.getElementById("modal-revert-standings").classList.remove("show")
+
+    when "btn-ws-save-point-rules" is clicked:
+        create activeT as getActiveTourney()
+        if activeT != null:
+            activeT.killMultiplier = Number(document.getElementById("ws-rules-kill-pts").value)
+            for each r in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
+                create el as document.getElementById("ws-pt-rank-" + r)
+                if el != null:
+                    activeT.placementPoints[String(r)] = Number(el.value)
+
+            call renderWorkspaceOverview
+            call renderWorkspaceMatchStandings
+            call renderWorkspaceOverallStandings
+            call showToast with "✓ Point system rules updated and standings recalculated!"
+
+    # Create Tournament Wizard
+    when "btn-submit-create-tourney" is clicked:
+        create tTitle as document.getElementById("new-tourney-title").value
+        create tGame as document.getElementById("new-tourney-game").value
+        create tFormat as document.getElementById("new-tourney-format").value
+        create tSlots as Number(document.getElementById("new-tourney-slots").value)
+        create tPrize as document.getElementById("new-tourney-prize").value
+        create tMaps as document.getElementById("new-tourney-maps").value
+        create tKillMultiplier as Number(document.getElementById("new-pts-kill").value)
+
+        if tTitle == "":
+            set tTitle = "VORTEX CLASH TOURNAMENT S1"
+        if tPrize == "":
+            set tPrize = "₹15,000"
+        if tMaps == "":
+            set tMaps = "Bermuda, Purgatory, Kalahari"
+
+        create customPlacementMap as {}
+        for each r in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
+            create ptEl as document.getElementById("pt-rank-" + r)
+            if ptEl != null:
+                customPlacementMap[String(r)] = Number(ptEl.value)
+            else:
+                customPlacementMap[String(r)] = 0
+
+        create newId as tournamentsDb.length + 1
+        create newTourney as { id: newId, title: tTitle, game: tGame, format: tFormat, maps: tMaps, slots: tSlots, prize: tPrize, status: "LIVE", statusClass: "live", killMultiplier: tKillMultiplier, placementPoints: customPlacementMap, teams: [ { slot: 1, name: "Shadow Ninjas", tag: "SNE", captain: "Kiryu_FF", players: [ { name: "Kiryu_FF", uid: "77489210", role: "IGL" }, { name: "Zen_99", uid: "77489211", role: "Rusher" } ] }, { slot: 2, name: "Aero Esports", tag: "AERO", captain: "Aero_Alpha", players: [ { name: "Aero_Alpha", uid: "66120101", role: "IGL" }, { name: "Aero_Sniper", uid: "66120102", role: "Sniper" } ] } ], matches: [ { id: 1, title: "Match 1 - " + tMaps.split(",")[0], map: tMaps.split(",")[0], time: "8:00 PM IST", roomId: String(Math.floor(1000000 + Math.random() * 9000000)), roomPass: "VORTEX2026", status: "SCHEDULED", scores: [] } ], checkpoints: [] }
+
+        tournamentsDb.unshift(newTourney)
+        call renderLandingFeatured
+        call renderManageList
+        call openWorkspaceWithId with newId
+        call showToast with "🚀 Tournament '" + tTitle + "' successfully created & launched!"
+
+    # ── Initial Invocations ───────────────────────────────────────────────────
+    call renderLandingFeatured
+    call renderManageList
+    call openWorkspaceWithId with 1
+    call switchView with "view-landing"

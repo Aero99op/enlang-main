@@ -1,0 +1,1215 @@
+# ==============================================================================
+# VORTEX ESPORTS - Anime Minimalist Black & White Theme (.enlgd)
+# ==============================================================================
+
+define color "bg-main" as "#070709"
+define color "bg-card" as "#0c0c12"
+define color "bg-surface" as "#12121a"
+define color "border-subtle" as "#1c1c28"
+define color "border-strong" as "#2d2d40"
+define color "text-pure" as "#ffffff"
+define color "text-muted" as "#94a3b8"
+define color "accent-crimson" as "#ff2d55"
+define color "accent-cyan" as "#00f0ff"
+define color "accent-gold" as "#ffd700"
+
+for "*" apply:
+    box-sizing "border-box"
+    margin 0
+    padding 0
+end
+
+for "body" apply:
+    background "#070709"
+    color "#f1f5f9"
+    font-family "'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    line-height 1.5
+    overflow-x "hidden"
+    min-height 100vh
+end
+
+# ── Global Navigation ──
+for ".anime-header" apply:
+    position "sticky"
+    top 0
+    z-index 1000
+    background "rgba(7, 7, 9, 0.95)"
+    backdrop-filter "blur(16px)"
+    border-bottom "1px solid #1a1a26"
+    padding "12px 24px"
+end
+
+for ".nav-container" apply:
+    display "flex"
+    align-items "center"
+    justify-content "space-between"
+    max-width 1440
+    margin "0 auto"
+    gap 16
+end
+
+for ".brand-logo" apply:
+    display "flex"
+    align-items "center"
+    gap 8
+    cursor "pointer"
+    font-weight 900
+    letter-spacing "1px"
+    user-select "none"
+end
+
+for ".logo-slash" apply:
+    color "#ff2d55"
+    font-size 22
+end
+
+for ".logo-text" apply:
+    color "#ffffff"
+    font-size 20
+    font-weight 900
+end
+
+for ".logo-badge" apply:
+    background "#14141e"
+    color "#00f0ff"
+    font-size 10
+    padding "2px 8px"
+    border-radius 4
+    font-weight 800
+    border "1px solid rgba(0, 240, 255, 0.25)"
+    letter-spacing "0.5px"
+end
+
+for ".main-nav" apply:
+    display "flex"
+    gap 8
+    align-items "center"
+end
+
+for ".nav-link" apply:
+    background "transparent"
+    border "none"
+    color "#94a3b8"
+    font-size 13
+    font-weight 800
+    letter-spacing "0.5px"
+    padding "8px 16px"
+    border-radius 6
+    cursor "pointer"
+    transition "all 0.15s ease"
+end
+
+for ".nav-link:hover" apply:
+    color "#ffffff"
+    background "#14141e"
+end
+
+for ".nav-link.active" apply:
+    color "#070709"
+    background "#ffffff"
+    font-weight 900
+end
+
+for ".nav-actions" apply:
+    display "flex"
+    align-items "center"
+    gap 12
+end
+
+for ".btn-auth-pill" apply:
+    background "#14141e"
+    border "1px solid #28283a"
+    color "#ffffff"
+    font-size 12
+    font-weight 800
+    padding "8px 16px"
+    border-radius 20
+    cursor "pointer"
+    transition "border-color 0.2s ease"
+end
+
+for ".btn-auth-pill:hover" apply:
+    border-color "#00f0ff"
+    color "#00f0ff"
+end
+
+for ".user-profile-badge" apply:
+    display "flex"
+    align-items "center"
+    gap 8
+    background "#12121b"
+    border "1px solid #222232"
+    padding "4px 12px"
+    border-radius 20
+    font-size 12
+    color "#f8fafc"
+end
+
+for ".avatar-dot" apply:
+    color "#00f0ff"
+    font-size 10
+end
+
+for ".btn-logout" apply:
+    background "transparent"
+    border "none"
+    color "#ff2d55"
+    font-size 11
+    font-weight 800
+    cursor "pointer"
+    margin-left 6
+end
+
+# ── Main Viewport Layout ──
+for ".app-viewport" apply:
+    max-width 1440
+    margin "0 auto"
+    padding 24
+    min-height "calc(100vh - 140px)"
+end
+
+for ".view-section" apply:
+    display "none"
+end
+
+for ".view-section.active" apply:
+    display "block"
+end
+
+# ── Landing Hero ──
+for ".hero-banner" apply:
+    background "linear-gradient(180deg, #0e0e16 0%, #08080c 100%)"
+    border "1px solid #1c1c28"
+    border-radius 16
+    padding "48px 36px"
+    text-align "center"
+    margin-bottom 32
+end
+
+for ".hero-tag" apply:
+    display "inline-block"
+    background "#151520"
+    border "1px solid rgba(255, 45, 85, 0.3)"
+    color "#ff2d55"
+    font-size 11
+    font-weight 800
+    letter-spacing "1.5px"
+    padding "4px 14px"
+    border-radius 20
+    margin-bottom 16
+end
+
+for ".hero-headline" apply:
+    font-size 46
+    font-weight 900
+    letter-spacing "-1px"
+    color "#ffffff"
+    margin-bottom 12
+end
+
+for ".hero-tagline" apply:
+    color "#94a3b8"
+    font-size 15
+    max-width 680
+    margin "0 auto 36px auto"
+end
+
+for ".hero-action-cards" apply:
+    display "grid"
+    grid-template-columns "repeat(auto-fit, minmax(280px, 1fr))"
+    gap 20
+    text-align "left"
+end
+
+for ".hero-action-card" apply:
+    background "#0c0c12"
+    border "1px solid #1f1f2e"
+    border-radius 12
+    padding 24
+    display "flex"
+    flex-direction "column"
+    justify-content "space-between"
+    transition "border-color 0.2s ease, transform 0.15s ease"
+    cursor "pointer"
+end
+
+for ".hero-action-card:hover" apply:
+    border-color "#ffffff"
+    transform "translateY(-3px)"
+end
+
+for ".card-icon" apply:
+    font-size 28
+    margin-bottom 12
+end
+
+for ".card-heading" apply:
+    font-size 18
+    font-weight 900
+    color "#ffffff"
+    margin-bottom 8
+end
+
+for ".card-desc" apply:
+    font-size 13
+    color "#94a3b8"
+    margin-bottom 20
+    line-height 1.4
+end
+
+for ".btn-card-launch" apply:
+    background "#161622"
+    color "#ffffff"
+    border "1px solid #2d2d40"
+    padding "10px 16px"
+    border-radius 6
+    font-weight 800
+    font-size 12
+    cursor "pointer"
+    width 100%
+    text-align "center"
+    transition "background 0.2s ease"
+end
+
+for ".hero-action-card:hover .btn-card-launch" apply:
+    background "#ffffff"
+    color "#070709"
+    border-color "#ffffff"
+end
+
+for ".landing-stats-strip" apply:
+    display "grid"
+    grid-template-columns "repeat(auto-fit, minmax(200px, 1fr))"
+    gap 16
+    background "#0d0d14"
+    border "1px solid #1c1c28"
+    border-radius 12
+    padding "20px 24px"
+    margin-bottom 36
+    text-align "center"
+end
+
+for ".landing-stat-item" apply:
+    display "flex"
+    flex-direction "column"
+    gap 4
+end
+
+for ".stat-big-val" apply:
+    font-size 24
+    font-weight 900
+    color "#ffffff"
+end
+
+for ".stat-sub-lbl" apply:
+    font-size 11
+    color "#64748b"
+    font-weight 800
+    letter-spacing "0.5px"
+end
+
+# ── General Headers & Buttons ──
+for ".view-header-strip" apply:
+    display "flex"
+    justify-content "space-between"
+    align-items "flex-start"
+    border-bottom "1px solid #1a1a26"
+    padding-bottom 20
+    margin-bottom 24
+    gap 16
+end
+
+for ".page-title" apply:
+    font-size 28
+    font-weight 900
+    color "#ffffff"
+end
+
+for ".page-sub" apply:
+    font-size 14
+    color "#94a3b8"
+end
+
+for ".section-header-row" apply:
+    display "flex"
+    justify-content "space-between"
+    align-items "center"
+    margin-bottom 18
+end
+
+for ".section-title" apply:
+    font-size 20
+    font-weight 900
+    color "#ffffff"
+end
+
+for ".section-sub" apply:
+    font-size 13
+    color "#94a3b8"
+    margin-top 2
+end
+
+for ".btn-back-link" apply:
+    background "transparent"
+    border "none"
+    color "#64748b"
+    font-size 12
+    font-weight 800
+    cursor "pointer"
+    width "max-content"
+    margin-bottom 4
+end
+
+for ".btn-back-link:hover" apply:
+    color "#ffffff"
+end
+
+for ".btn-action-primary" apply:
+    background "#ffffff"
+    color "#070709"
+    font-weight 900
+    font-size 12
+    letter-spacing "0.5px"
+    border "none"
+    padding "10px 18px"
+    border-radius 6
+    cursor "pointer"
+    transition "transform 0.15s ease"
+end
+
+for ".btn-action-primary:hover" apply:
+    transform "scale(1.02)"
+end
+
+for ".btn-action-primary-sm" apply:
+    background "#ffffff"
+    color "#070709"
+    font-weight 900
+    font-size 11
+    border "none"
+    padding "8px 14px"
+    border-radius 6
+    cursor "pointer"
+end
+
+for ".btn-secondary-sm" apply:
+    background "#14141e"
+    border "1px solid #28283a"
+    color "#ffffff"
+    font-size 12
+    font-weight 800
+    padding "8px 14px"
+    border-radius 6
+    cursor "pointer"
+end
+
+for ".btn-secondary-sm:hover" apply:
+    border-color "#ffffff"
+end
+
+for ".btn-revert-sm" apply:
+    background "#241018"
+    border "1px solid rgba(255, 45, 85, 0.4)"
+    color "#ff2d55"
+    font-size 12
+    font-weight 800
+    padding "8px 14px"
+    border-radius 6
+    cursor "pointer"
+end
+
+for ".btn-revert-sm:hover" apply:
+    background "#ff2d55"
+    color "#ffffff"
+end
+
+for ".btn-row-del" apply:
+    background "#201014"
+    border "1px solid #4a1520"
+    color "#ff2d55"
+    font-size 11
+    font-weight 800
+    padding "4px 8px"
+    border-radius 4
+    cursor "pointer"
+end
+
+for ".btn-row-del:hover" apply:
+    background "#ff2d55"
+    color "#ffffff"
+end
+
+for ".btn-link-action" apply:
+    background "transparent"
+    border "none"
+    color "#00f0ff"
+    font-size 12
+    font-weight 800
+    cursor "pointer"
+end
+
+for ".btn-link-action:hover" apply:
+    text-decoration "underline"
+end
+
+# ── Tournament Cards Grid ──
+for ".tourney-cards-grid" apply:
+    display "grid"
+    grid-template-columns "repeat(auto-fill, minmax(320px, 1fr))"
+    gap 20
+end
+
+for ".tourney-card-item" apply:
+    background "#0c0c12"
+    border "1px solid #1c1c28"
+    border-radius 12
+    padding 20
+    display "flex"
+    flex-direction "column"
+    justify-content "space-between"
+    transition "border-color 0.2s ease, transform 0.15s ease"
+    cursor "pointer"
+end
+
+for ".tourney-card-item:hover" apply:
+    border-color "#444460"
+    transform "translateY(-2px)"
+end
+
+for ".card-top-row" apply:
+    display "flex"
+    justify-content "space-between"
+    align-items "center"
+    margin-bottom 12
+end
+
+for ".badge-tag" apply:
+    font-size 10
+    font-weight 900
+    padding "3px 8px"
+    border-radius 4
+    letter-spacing "0.5px"
+end
+
+for ".badge-tag.live" apply:
+    background "rgba(255, 45, 85, 0.15)"
+    color "#ff2d55"
+    border "1px solid rgba(255, 45, 85, 0.4)"
+end
+
+for ".badge-tag.open" apply:
+    background "rgba(0, 240, 255, 0.15)"
+    color "#00f0ff"
+    border "1px solid rgba(0, 240, 255, 0.3)"
+end
+
+for ".badge-tag.completed" apply:
+    background "rgba(100, 116, 139, 0.2)"
+    color "#94a3b8"
+    border "1px solid #2d2d40"
+end
+
+for ".t-card-title" apply:
+    font-size 17
+    font-weight 900
+    color "#ffffff"
+    margin-bottom 4
+end
+
+for ".t-card-meta" apply:
+    font-size 12
+    color "#94a3b8"
+    margin-bottom 16
+end
+
+for ".t-card-metrics" apply:
+    display "grid"
+    grid-template-columns "1fr 1fr"
+    gap 10
+    background "#12121a"
+    padding 12
+    border-radius 8
+    border "1px solid #1c1c28"
+    margin-bottom 16
+end
+
+for ".t-metric" apply:
+    display "flex"
+    flex-direction "column"
+end
+
+for ".tm-label" apply:
+    font-size 10
+    color "#64748b"
+    font-weight 700
+end
+
+for ".tm-val" apply:
+    font-size 14
+    color "#ffffff"
+    font-weight 800
+end
+
+for ".tm-val.highlight" apply:
+    color "#ff2d55"
+end
+
+# ── Forms & Creation Layout ──
+for ".create-form-layout" apply:
+    max-width 1000
+    margin "0 auto"
+end
+
+for ".form-card" apply:
+    background "#0c0c12"
+    border "1px solid #1c1c28"
+    border-radius 12
+    padding 24
+    margin-bottom 24
+end
+
+for ".card-header-flex" apply:
+    display "flex"
+    justify-content "space-between"
+    align-items "center"
+    margin-bottom 16
+end
+
+for ".card-form-title" apply:
+    font-size 16
+    font-weight 900
+    color "#ffffff"
+    margin-bottom 6
+end
+
+for ".card-form-sub" apply:
+    font-size 13
+    color "#94a3b8"
+    margin-bottom 18
+end
+
+for ".form-group" apply:
+    margin-bottom 16
+end
+
+for ".form-row-2" apply:
+    display "grid"
+    grid-template-columns "1fr 1fr"
+    gap 16
+end
+
+for ".form-row-3" apply:
+    display "grid"
+    grid-template-columns "1fr 1fr 1fr"
+    gap 16
+end
+
+for ".form-label" apply:
+    display "block"
+    font-size 12
+    font-weight 800
+    color "#94a3b8"
+    margin-bottom 6
+end
+
+for ".form-label-inline" apply:
+    font-size 12
+    font-weight 800
+    color "#94a3b8"
+end
+
+for ".form-input" apply:
+    width 100%
+    background "#14141e"
+    border "1px solid #242436"
+    color "#ffffff"
+    padding "10px 12px"
+    border-radius 6
+    font-size 13
+    font-family "inherit"
+end
+
+for ".form-input:focus" apply:
+    border-color "#00f0ff"
+    outline "none"
+end
+
+for ".form-select" apply:
+    width 100%
+    background "#14141e"
+    border "1px solid #242436"
+    color "#ffffff"
+    padding "10px 12px"
+    border-radius 6
+    font-size 13
+    font-family "inherit"
+end
+
+for ".form-select-sm" apply:
+    background "#14141e"
+    border "1px solid #242436"
+    color "#ffffff"
+    padding "6px 12px"
+    border-radius 6
+    font-size 12
+    font-family "inherit"
+end
+
+for ".placement-points-grid" apply:
+    display "grid"
+    grid-template-columns "repeat(auto-fit, minmax(110px, 1fr))"
+    gap 10
+    margin-top 12
+end
+
+for ".pt-box" apply:
+    background "#12121a"
+    border "1px solid #20202e"
+    padding 10
+    border-radius 6
+    display "flex"
+    flex-direction "column"
+    align-items "center"
+    gap 4
+end
+
+for ".pt-lbl" apply:
+    font-size 11
+    font-weight 800
+    color "#94a3b8"
+end
+
+for ".pt-input" apply:
+    width 60
+    background "#181824"
+    border "1px solid #2e2e42"
+    color "#ffffff"
+    font-size 14
+    font-weight 900
+    text-align "center"
+    padding "4px 6px"
+    border-radius 4
+end
+
+for ".squads-list-box" apply:
+    display "flex"
+    flex-direction "column"
+    gap 10
+end
+
+for ".squad-item-row" apply:
+    display "flex"
+    align-items "center"
+    gap 12
+    background "#12121a"
+    border "1px solid #1c1c28"
+    padding "10px 14px"
+    border-radius 6
+end
+
+for ".squad-slot-tag" apply:
+    background "#1c1c28"
+    color "#00f0ff"
+    font-size 11
+    font-weight 900
+    padding "2px 8px"
+    border-radius 4
+end
+
+for ".squad-name-tag" apply:
+    font-weight 800
+    color "#ffffff"
+    font-size 13
+end
+
+for ".squad-roster-summary" apply:
+    font-size 12
+    color "#64748b"
+    margin-left "auto"
+end
+
+for ".form-actions-footer" apply:
+    display "flex"
+    justify-content "flex-end"
+    margin-top 24
+end
+
+# ── Tournament Workspace ──
+for ".workspace-header-card" apply:
+    background "#0c0c12"
+    border "1px solid #1c1c28"
+    border-radius 16
+    padding 24
+    margin-bottom 24
+end
+
+for ".ws-top-row" apply:
+    display "flex"
+    justify-content "space-between"
+    align-items "center"
+    margin-bottom 16
+end
+
+for ".ws-status-group" apply:
+    display "flex"
+    align-items "center"
+    gap 12
+end
+
+for ".ws-badge-status" apply:
+    background "rgba(255, 45, 85, 0.15)"
+    border "1px solid rgba(255, 45, 85, 0.3)"
+    color "#ff2d55"
+    font-size 11
+    font-weight 900
+    padding "4px 12px"
+    border-radius 4
+end
+
+for ".ws-title-row" apply:
+    margin-bottom 20
+end
+
+for ".ws-title" apply:
+    font-size 32
+    font-weight 900
+    color "#ffffff"
+    margin-bottom 4
+end
+
+for ".ws-game-meta" apply:
+    font-size 14
+    color "#94a3b8"
+end
+
+for ".workspace-nav-tabs" apply:
+    display "flex"
+    gap 8
+    border-top "1px solid #1a1a26"
+    padding-top 16
+    overflow-x "auto"
+end
+
+for ".ws-tab" apply:
+    background "#12121a"
+    border "1px solid #1f1f2e"
+    color "#94a3b8"
+    font-size 12
+    font-weight 800
+    padding "10px 16px"
+    border-radius 6
+    cursor "pointer"
+    white-space "nowrap"
+end
+
+for ".ws-tab:hover" apply:
+    color "#ffffff"
+    border-color "#3a3a50"
+end
+
+for ".ws-tab.active" apply:
+    background "#ffffff"
+    color "#070709"
+    border-color "#ffffff"
+    font-weight 900
+end
+
+for ".ws-panel" apply:
+    display "none"
+end
+
+for ".ws-panel.active" apply:
+    display "block"
+end
+
+# ── Stats Cards Grid ──
+for ".stats-cards-grid" apply:
+    display "grid"
+    grid-template-columns "repeat(auto-fit, minmax(220px, 1fr))"
+    gap 16
+    margin-bottom 24
+end
+
+for ".stat-card" apply:
+    background "#0c0c12"
+    border "1px solid #1c1c28"
+    padding "18px 20px"
+    border-radius 10
+    display "flex"
+    flex-direction "column"
+    gap 4
+end
+
+for ".sc-label" apply:
+    font-size 11
+    color "#64748b"
+    font-weight 800
+end
+
+for ".sc-val" apply:
+    font-size 20
+    font-weight 900
+    color "#ffffff"
+end
+
+for ".sc-val.highlight" apply:
+    color "#00f0ff"
+end
+
+for ".quick-actions-bar" apply:
+    display "flex"
+    gap 12
+    flex-wrap "wrap"
+    margin-bottom 24
+end
+
+for ".btn-quick-act" apply:
+    background "#14141e"
+    border "1px solid #28283a"
+    color "#ffffff"
+    font-size 13
+    font-weight 800
+    padding "10px 18px"
+    border-radius 8
+    cursor "pointer"
+end
+
+for ".btn-quick-act:hover" apply:
+    border-color "#00f0ff"
+    color "#00f0ff"
+end
+
+# ── Table Styles ──
+for ".custom-table-wrapper" apply:
+    background "#0c0c12"
+    border "1px solid #1c1c28"
+    border-radius 12
+    overflow-x "auto"
+    margin-bottom 24
+end
+
+for ".table-header-strip" apply:
+    display "flex"
+    justify-content "space-between"
+    align-items "center"
+    padding "14px 20px"
+    border-bottom "1px solid #1a1a26"
+end
+
+for ".table-title" apply:
+    font-size 14
+    font-weight 900
+    color "#ffffff"
+end
+
+for ".anime-table" apply:
+    width 100%
+    border-collapse "collapse"
+    text-align "left"
+    font-size 13
+end
+
+for ".anime-table th" apply:
+    background "#12121a"
+    color "#64748b"
+    font-weight 900
+    font-size 11
+    letter-spacing "0.5px"
+    padding "14px 16px"
+    border-bottom "1px solid #1a1a26"
+end
+
+for ".anime-table td" apply:
+    padding "12px 16px"
+    border-bottom "1px solid #14141e"
+    color "#f1f5f9"
+end
+
+for ".anime-table tr:hover td" apply:
+    background "#0f0f16"
+end
+
+for ".rank-badge" apply:
+    font-weight 900
+    font-size 13
+    color "#ffffff"
+end
+
+for ".rank-1" apply:
+    color "#ffd700"
+end
+
+for ".rank-2" apply:
+    color "#e2e8f0"
+end
+
+for ".rank-3" apply:
+    color "#cd7f32"
+end
+
+for ".total-pts-pill" apply:
+    background "#161622"
+    border "1px solid #2f2f44"
+    color "#00f0ff"
+    font-weight 900
+    padding "4px 10px"
+    border-radius 6
+    display "inline-block"
+end
+
+for ".table-edit-input" apply:
+    background "#151520"
+    border "1px solid #2d2d40"
+    color "#ffffff"
+    font-weight 800
+    font-size 13
+    padding "6px 8px"
+    border-radius 4
+    width 60
+    text-align "center"
+end
+
+for ".table-edit-input:focus" apply:
+    border-color "#00f0ff"
+    outline "none"
+end
+
+# ── Match Selector Bar & Status Banner ──
+for ".match-selector-bar" apply:
+    display "flex"
+    align-items "center"
+    gap 12
+    background "#0c0c12"
+    border "1px solid #1c1c28"
+    padding "14px 20px"
+    border-radius 10
+    margin-bottom 12
+end
+
+for ".match-actions-inline" apply:
+    display "flex"
+    gap 10
+    margin-left "auto"
+end
+
+for ".match-status-banner" apply:
+    display "flex"
+    align-items "center"
+    gap 12
+    background "#12121a"
+    border "1px solid #1c1c28"
+    padding "10px 16px"
+    border-radius 8
+    margin-bottom 16
+    font-size 13
+end
+
+for ".msb-lbl" apply:
+    color "#64748b"
+end
+
+for ".msb-val" apply:
+    font-weight 900
+    color "#ffffff"
+end
+
+# ── Teams & Player Roster Manager (Deep CRUD) ──
+for ".team-roster-card" apply:
+    background "#0c0c12"
+    border "1px solid #1c1c28"
+    border-radius 12
+    padding 20
+    margin-bottom 16
+end
+
+for ".team-roster-header" apply:
+    display "flex"
+    justify-content "space-between"
+    align-items "center"
+    border-bottom "1px solid #181824"
+    padding-bottom 12
+    margin-bottom 14
+end
+
+for ".team-title-group" apply:
+    display "flex"
+    align-items "center"
+    gap 10
+end
+
+for ".team-slot-badge" apply:
+    background "#161622"
+    color "#00f0ff"
+    font-weight 900
+    font-size 12
+    padding "4px 10px"
+    border-radius 4
+    border "1px solid rgba(0, 240, 255, 0.3)"
+end
+
+for ".team-name-text" apply:
+    font-size 18
+    font-weight 900
+    color "#ffffff"
+end
+
+for ".team-tag-pill" apply:
+    background "#181824"
+    color "#94a3b8"
+    font-size 11
+    font-weight 800
+    padding "2px 8px"
+    border-radius 4
+end
+
+for ".team-actions-group" apply:
+    display "flex"
+    gap 8
+end
+
+for ".players-table-wrapper" apply:
+    background "#101016"
+    border "1px solid #1a1a24"
+    border-radius 8
+    overflow-x "auto"
+end
+
+for ".player-role-badge" apply:
+    font-size 11
+    font-weight 800
+    color "#00f0ff"
+    background "#141420"
+    padding "2px 8px"
+    border-radius 4
+end
+
+# ── Modals & Popups ──
+for ".modal-overlay" apply:
+    position "fixed"
+    top 0
+    left 0
+    right 0
+    bottom 0
+    background "rgba(0, 0, 0, 0.88)"
+    backdrop-filter "blur(8px)"
+    z-index 2000
+    display "none"
+    align-items "center"
+    justify-content "center"
+    padding 16
+end
+
+for ".modal-overlay.show" apply:
+    display "flex"
+end
+
+for ".modal-content" apply:
+    background "#0c0c12"
+    border "1px solid #2e2e42"
+    border-radius 14
+    width 100%
+    max-width 540
+    overflow "hidden"
+end
+
+for ".modal-header" apply:
+    display "flex"
+    justify-content "space-between"
+    align-items "center"
+    padding "16px 20px"
+    border-bottom "1px solid #1c1c28"
+end
+
+for ".modal-title" apply:
+    font-size 16
+    font-weight 900
+    color "#ffffff"
+end
+
+for ".btn-close-modal" apply:
+    background "transparent"
+    border "none"
+    color "#64748b"
+    font-size 18
+    cursor "pointer"
+end
+
+for ".modal-body" apply:
+    padding 20
+end
+
+for ".modal-sub-desc" apply:
+    font-size 13
+    color "#94a3b8"
+    margin-bottom 16
+end
+
+for ".modal-footer" apply:
+    display "flex"
+    justify-content "flex-end"
+    gap 12
+    padding "16px 20px"
+    border-top "1px solid #1c1c28"
+end
+
+# ── Team Match Matrix Modal & Live Summary Strip ──
+for ".team-modal-summary-strip" apply:
+    display "grid"
+    grid-template-columns "repeat(auto-fit, minmax(110px, 1fr))"
+    gap 10
+    background "#12121a"
+    border "1px solid #1c1c28"
+    padding 12
+    border-radius 8
+    text-align "center"
+    margin-top 12
+end
+
+for ".tm-stat-box" apply:
+    display "flex"
+    flex-direction "column"
+    gap 2
+end
+
+for ".tm-stat-lbl" apply:
+    font-size 10
+    color "#64748b"
+    font-weight 800
+    letter-spacing "0.5px"
+end
+
+for ".tm-stat-val" apply:
+    font-size 15
+    font-weight 900
+    color "#ffffff"
+end
+
+for ".tm-stat-val.highlight" apply:
+    color "#00f0ff"
+end
+
+for ".tm-stat-val.super" apply:
+    color "#ffd700"
+end
+
+# ── Toast Notifications ──
+for ".toast-container" apply:
+    position "fixed"
+    bottom 24
+    right 24
+    z-index 3000
+    display "flex"
+    flex-direction "column"
+    gap 8
+end
+
+for ".toast-item" apply:
+    background "#12121a"
+    border "1px solid #00f0ff"
+    color "#ffffff"
+    font-size 13
+    font-weight 800
+    padding "12px 20px"
+    border-radius 8
+    box-shadow "0 8px 24px rgba(0,0,0,0.7)"
+end

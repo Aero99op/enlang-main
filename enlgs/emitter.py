@@ -206,7 +206,7 @@ class ENLGSEmitter:
 
         elif isinstance(node, DOMVisibilityNode):
             el = _dom_el(node.target)
-            display_val = "''" if node.action == "show" else "'none'"
+            display_val = "'block'" if node.action == "show" else "'none'"
             return f"{pad}{el}.style.display = {display_val};"
 
         # ── Declarative UI Elements ──

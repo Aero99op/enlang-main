@@ -22,10 +22,14 @@ for "body" apply:
     overflow-x hidden
 end
 
-# ── Light Mode Overrides (Pure Black Text & Clean Light Surface) ──
+# ── Complete Light Mode (White Theme) Overrides ──
 for "body.light-theme" apply:
     background "#ffffff"
     color "#0f0f0f"
+end
+
+for "body.light-theme .yt-app" apply:
+    background "#ffffff"
 end
 
 for "body.light-theme .yt-header" apply:
@@ -56,8 +60,39 @@ for "body.light-theme .yt-search-btn" apply:
     color "#0f0f0f"
 end
 
+for "body.light-theme .yt-sidebar" apply:
+    background "#ffffff"
+    border-right "1px solid #e5e5e5"
+end
+
 for "body.light-theme .sidebar-item" apply:
     color "#0f0f0f"
+end
+
+for "body.light-theme .sidebar-item:hover" apply:
+    background "#f2f2f2"
+end
+
+for "body.light-theme .sidebar-item.active" apply:
+    background "#f2f2f2"
+    color "#0f0f0f"
+    font-weight 600
+end
+
+for "body.light-theme .sub-channel" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .sub-channel:hover" apply:
+    background "#f2f2f2"
+end
+
+for "body.light-theme .sidebar-heading" apply:
+    color "#606060"
+end
+
+for "body.light-theme .sidebar-divider" apply:
+    background "#e5e5e5"
 end
 
 for "body.light-theme .chip" apply:
@@ -79,6 +114,10 @@ for "body.light-theme .video-channel" apply:
     color "#606060"
 end
 
+for "body.light-theme .video-stats" apply:
+    color "#606060"
+end
+
 for "body.light-theme .watch-title" apply:
     color "#0f0f0f"
 end
@@ -87,7 +126,15 @@ for "body.light-theme .channel-title" apply:
     color "#0f0f0f"
 end
 
+for "body.light-theme .channel-subs" apply:
+    color "#606060"
+end
+
 for "body.light-theme .desc-content" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .desc-stats" apply:
     color "#0f0f0f"
 end
 
@@ -113,11 +160,35 @@ for "body.light-theme .btn-dislike" apply:
     color "#0f0f0f"
 end
 
+for "body.light-theme .btn-subscribe" apply:
+    background "#0f0f0f"
+    color "#ffffff"
+end
+
+for "body.light-theme .btn-join" apply:
+    background "#f2f2f2"
+    color "#0f0f0f"
+    border "1px solid #cccccc"
+end
+
 for "body.light-theme .comment-msg" apply:
     color "#0f0f0f"
 end
 
 for "body.light-theme .comment-author" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .comment-input" apply:
+    color "#0f0f0f"
+    border-bottom "1px solid #cccccc"
+end
+
+for "body.light-theme .comments-header h3" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .sort-tag" apply:
     color "#0f0f0f"
 end
 
@@ -129,8 +200,16 @@ for "body.light-theme .rec-channel" apply:
     color "#606060"
 end
 
+for "body.light-theme .rec-stats" apply:
+    color "#606060"
+end
+
 for "body.light-theme .history-title" apply:
     color "#0f0f0f"
+end
+
+for "body.light-theme .history-sub" apply:
+    color "#606060"
 end
 
 for "body.light-theme .library-heading" apply:
@@ -142,6 +221,10 @@ for "body.light-theme .library-subheading" apply:
 end
 
 for "body.light-theme .trending-heading" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .channel-story-name" apply:
     color "#0f0f0f"
 end
 
@@ -177,11 +260,44 @@ for "body.light-theme .chapter-btn:hover" apply:
     background "#e5e5e5"
 end
 
+for "body.light-theme .notif-dropdown" apply:
+    background "#ffffff"
+    color "#0f0f0f"
+    border "1px solid #cccccc"
+end
+
+for "body.light-theme .notif-title" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .notif-msg" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .profile-dropdown" apply:
+    background "#ffffff"
+    color "#0f0f0f"
+    border "1px solid #cccccc"
+end
+
+for "body.light-theme .profile-name" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .profile-menu-item" apply:
+    color "#0f0f0f"
+end
+
+for "body.light-theme .profile-menu-item:hover" apply:
+    background "#f2f2f2"
+end
+
 # ── General Structure & Components ──
 for ".yt-app" apply:
     display flex
     flex-direction column
     min-height 100 viewport-height
+    background use color "yt-bg"
 end
 
 for ".yt-header" apply:
@@ -189,29 +305,30 @@ for ".yt-header" apply:
     align-items center
     justify-content space-between
     padding "0 16px"
-    height 56 pixels
+    height "56px"
     position sticky
     top 0
     z-index 1000
     background use color "yt-header-bg"
     border-bottom "1px solid rgba(255, 255, 255, 0.08)"
+    box-sizing border-box
 end
 
 for ".yt-header-left" apply:
     display flex
     align-items center
-    gap 16 pixels
+    gap "16px"
 end
 
 for ".yt-icon-btn" apply:
     background transparent
     border none
     color use color "yt-text"
-    font-size 18 pixels
+    font-size "18px"
     cursor pointer
-    width 40 pixels
-    height 40 pixels
-    border-radius 50 percent
+    width "40px"
+    height "40px"
+    border-radius "50%"
     display flex
     align-items center
     justify-content center
@@ -225,34 +342,34 @@ end
 for ".yt-logo" apply:
     display flex
     align-items center
-    gap 4 pixels
+    gap "4px"
     cursor pointer
     user-select none
 end
 
 for ".yt-logo-icon" apply:
     color "#ff0000"
-    font-size 22 pixels
+    font-size "22px"
 end
 
 for ".yt-logo-text" apply:
-    font-size 18 pixels
+    font-size "18px"
     font-weight 700
-    letter-spacing -0.5 pixels
+    letter-spacing "-0.5px"
     color "#ffffff"
 end
 
 for ".yt-country" apply:
-    font-size 10 pixels
+    font-size "10px"
     color "#aaaaaa"
-    margin-top -10 pixels
+    margin-top "-10px"
 end
 
 for ".yt-header-center" apply:
     display flex
     align-items center
-    gap 12 pixels
-    flex 0 1 732 pixels
+    gap "12px"
+    flex "0 1 680px"
     justify-content center
 end
 
@@ -260,11 +377,11 @@ for ".yt-search-box" apply:
     display flex
     align-items center
     width 100 percent
-    max-width 600 pixels
-    height 40 pixels
+    max-width "560px"
+    height "40px"
     background "#121212"
     border "1px solid #303030"
-    border-radius 40 pixels
+    border-radius "40px"
     overflow hidden
 end
 
@@ -275,38 +392,38 @@ for ".yt-search-input" apply:
     background transparent
     border none
     color "#ffffff"
-    font-size 16 pixels
+    font-size "15px"
     outline none
 end
 
 for ".yt-search-btn" apply:
-    width 64 pixels
+    width "64px"
     height 100 percent
     background "#222222"
     border none
     border-left "1px solid #303030"
     color "#ffffff"
     cursor pointer
-    font-size 16 pixels
+    font-size "16px"
 end
 
 for ".yt-header-right" apply:
     display flex
     align-items center
-    gap 8 pixels
+    gap "8px"
 end
 
 for ".yt-btn-create" apply:
     display flex
     align-items center
-    gap 6 pixels
-    height 36 pixels
+    gap "6px"
+    height "36px"
     padding "0 14px"
-    border-radius 18 pixels
+    border-radius "18px"
     background use color "yt-surface"
     border none
     color use color "yt-text"
-    font-size 14 pixels
+    font-size "14px"
     font-weight 600
     cursor pointer
 end
@@ -317,27 +434,27 @@ end
 
 for ".notif-badge" apply:
     position absolute
-    top 4 pixels
-    right 4 pixels
+    top "4px"
+    right "4px"
     background "#cc0000"
     color "#ffffff"
-    font-size 10 pixels
+    font-size "10px"
     font-weight 700
     padding "1px 5px"
-    border-radius 10 pixels
+    border-radius "10px"
 end
 
 for ".yt-user-avatar" apply:
-    width 34 pixels
-    height 34 pixels
-    border-radius 50 percent
+    width "34px"
+    height "34px"
+    border-radius "50%"
     background "#8b5cf6"
     color "#ffffff"
     display flex
     align-items center
     justify-content center
     font-weight 700
-    font-size 15 pixels
+    font-size "15px"
     cursor pointer
     user-select none
 end
@@ -346,49 +463,51 @@ for ".yt-main-layout" apply:
     display flex
     flex 1
     position relative
+    min-height "calc(100vh - 56px)"
 end
 
 # ── Sidebar ──
 for ".yt-sidebar" apply:
-    width 240 pixels
+    width "240px"
     background use color "yt-bg"
     padding "12px 12px"
     display flex
     flex-direction column
-    gap 6 pixels
+    gap "4px"
     position sticky
-    top 56 pixels
+    top "56px"
     height "calc(100vh - 56px)"
     overflow-y auto
     box-sizing border-box
+    flex-shrink 0
 end
 
 for ".sidebar-section" apply:
     display flex
     flex-direction column
-    gap 2 pixels
+    gap "2px"
 end
 
 for ".sidebar-heading" apply:
-    font-size 12 pixels
+    font-size "12px"
     font-weight 700
     color use color "yt-muted"
     padding "8px 12px 4px"
     margin 0
     text-transform uppercase
-    letter-spacing 0.5 pixels
+    letter-spacing "0.5px"
 end
 
 for ".sidebar-item" apply:
     display flex
     align-items center
-    gap 16 pixels
+    gap "16px"
     padding "10px 12px"
-    border-radius 10 pixels
+    border-radius "10px"
     background transparent
     border none
     color use color "yt-text"
-    font-size 14 pixels
+    font-size "14px"
     font-weight 500
     cursor pointer
     text-align left
@@ -406,7 +525,7 @@ for ".sidebar-item.active" apply:
 end
 
 for ".sidebar-divider" apply:
-    height 1 pixels
+    height "1px"
     background "rgba(255, 255, 255, 0.1)"
     margin "8px 0"
 end
@@ -414,11 +533,11 @@ end
 for ".sub-channel" apply:
     display flex
     align-items center
-    gap 12 pixels
+    gap "12px"
     padding "8px 12px"
-    border-radius 10 pixels
+    border-radius "10px"
     cursor pointer
-    font-size 14 pixels
+    font-size "14px"
 end
 
 for ".sub-channel:hover" apply:
@@ -426,14 +545,14 @@ for ".sub-channel:hover" apply:
 end
 
 for ".channel-icon" apply:
-    font-size 18 pixels
+    font-size "18px"
 end
 
 # ── Main Content & Panels ──
 for ".yt-content" apply:
     flex 1
     padding "16px 24px"
-    max-width 100 percent
+    min-width 0
     box-sizing border-box
     overflow-y auto
 end
@@ -449,7 +568,7 @@ end
 # ── Category Chips Bar ──
 for ".category-bar" apply:
     display flex
-    gap 10 pixels
+    gap "10px"
     overflow-x auto
     padding "4px 0 16px"
     scrollbar-width none
@@ -457,11 +576,11 @@ end
 
 for ".chip" apply:
     padding "8px 14px"
-    border-radius 8 pixels
+    border-radius "8px"
     background use color "yt-surface"
     border none
     color use color "yt-text"
-    font-size 14 pixels
+    font-size "14px"
     font-weight 500
     cursor pointer
     white-space nowrap
@@ -486,32 +605,32 @@ for ".feed-status-bar" apply:
     padding "8px 16px"
     background "rgba(59, 130, 246, 0.1)"
     border "1px solid rgba(59, 130, 246, 0.25)"
-    border-radius 10 pixels
-    margin-bottom 16 pixels
+    border-radius "10px"
+    margin-bottom "16px"
 end
 
 for ".live-indicator" apply:
-    font-size 13 pixels
+    font-size "13px"
     font-weight 700
     color "#60a5fa"
 end
 
 for ".live-subtext" apply:
-    font-size 12 pixels
+    font-size "12px"
     color "#94a3b8"
 end
 
 # ── Video Grid & Cards ──
 for ".video-grid" apply:
     display grid
-    grid-template-columns "repeat(auto-fill, minmax(310px, 1fr))"
-    gap 20 pixels
+    grid-template-columns "repeat(auto-fill, minmax(320px, 1fr))"
+    gap "20px"
 end
 
 for ".video-card" apply:
     display flex
     flex-direction column
-    gap 10 pixels
+    gap "8px"
     cursor pointer
     transition "transform 0.2s ease"
 end
@@ -524,7 +643,7 @@ for ".thumbnail-wrapper" apply:
     position relative
     width 100 percent
     aspect-ratio "16 / 9"
-    border-radius 12 pixels
+    border-radius "12px"
     overflow hidden
     background "#1a1a1a"
 end
@@ -538,62 +657,66 @@ end
 
 for ".duration-badge" apply:
     position absolute
-    bottom 8 pixels
-    right 8 pixels
+    bottom "8px"
+    right "8px"
     background "rgba(0, 0, 0, 0.85)"
     color "#ffffff"
-    font-size 12 pixels
+    font-size "12px"
     font-weight 600
-    padding "2px 5px"
-    border-radius 4 pixels
+    padding "2px 6px"
+    border-radius "4px"
 end
 
 for ".video-meta" apply:
     display flex
-    gap 12 pixels
+    gap "12px"
+    align-items flex-start
+    margin-top "6px"
 end
 
 for ".channel-avatar" apply:
-    width 36 pixels
-    height 36 pixels
-    border-radius 50 percent
+    width "36px"
+    height "36px"
+    border-radius "50%"
     background "#2563eb"
     color "#ffffff"
     display flex
     align-items center
     justify-content center
     font-weight 700
-    font-size 14 pixels
+    font-size "14px"
     flex-shrink 0
+    margin 0
 end
 
 for ".video-details" apply:
     display flex
     flex-direction column
-    gap 4 pixels
+    gap "4px"
     flex 1
+    min-width 0
 end
 
 for ".video-title" apply:
-    font-size 15 pixels
+    font-size "14px"
     font-weight 600
     color use color "yt-text"
     margin 0
     line-height 1.3
-    display -webkit-box
+    display "-webkit-box"
     -webkit-line-clamp 2
     -webkit-box-orient vertical
     overflow hidden
 end
 
 for ".video-channel" apply:
-    font-size 13 pixels
+    font-size "13px"
     color use color "yt-muted"
     margin 0
 end
 
 for ".video-stats" apply:
-    font-size 12 pixels
+    font-size "12px"
     color use color "yt-muted"
     margin 0
 end
@@ -609,17 +732,17 @@ end
 for ".shorts-header" apply:
     display flex
     align-items center
-    gap 8 pixels
-    margin-bottom 16 pixels
+    gap "8px"
+    margin-bottom "16px"
 end
 
 for ".shorts-icon" apply:
-    font-size 22 pixels
+    font-size "22px"
     color "#ff0000"
 end
 
 for ".shorts-title" apply:
-    font-size 18 pixels
+    font-size "18px"
     font-weight 700
     margin 0
 end
@@ -627,13 +750,13 @@ end
 for ".shorts-grid" apply:
     display grid
     grid-template-columns "repeat(auto-fill, minmax(200px, 1fr))"
-    gap 16 pixels
+    gap "16px"
 end
 
 for ".short-card" apply:
     display flex
     flex-direction column
-    gap 8 pixels
+    gap "8px"
     cursor pointer
 end
 
@@ -641,7 +764,7 @@ for ".short-thumb" apply:
     position relative
     width 100 percent
     aspect-ratio "9 / 16"
-    border-radius 12 pixels
+    border-radius "12px"
     overflow hidden
     background "#1e293b"
 end
@@ -655,17 +778,17 @@ end
 
 for ".short-overlay-title" apply:
     position absolute
-    bottom 10 pixels
-    left 10 pixels
-    right 10 pixels
+    bottom "10px"
+    left "10px"
+    right "10px"
     color "#ffffff"
-    font-size 13 pixels
+    font-size "13px"
     font-weight 600
     text-shadow "0 2px 4px rgba(0,0,0,0.8)"
 end
 
 for ".short-views" apply:
-    font-size 12 pixels
+    font-size "12px"
     color use color "yt-muted"
     margin 0
 end
@@ -679,11 +802,11 @@ end
 
 for ".btn-load-more" apply:
     padding "12px 28px"
-    border-radius 24 pixels
+    border-radius "24px"
     background use color "yt-surface"
     border "1px solid rgba(255, 255, 255, 0.15)"
     color use color "yt-text"
-    font-size 14 pixels
+    font-size "14px"
     font-weight 600
     cursor pointer
     transition "background 0.2s ease, transform 0.2s ease"
@@ -697,27 +820,27 @@ end
 # ── Watch Page Layout ──
 for ".watch-layout" apply:
     display flex
-    gap 24 pixels
-    max-width 1700 pixels
+    gap "24px"
+    max-width "1700px"
     margin "0 auto"
 end
 
 for ".watch-primary" apply:
-    flex "1 1 70%"
+    flex "1 1 68%"
     min-width 0
 end
 
 for ".watch-secondary" apply:
-    flex "0 0 380 pixels"
-    min-width 340 pixels
+    flex "0 0 380px"
+    min-width "340px"
 end
 
 for ".ambient-glow-wrapper" apply:
     position relative
     width 100 percent
-    border-radius 16 pixels
+    border-radius "16px"
     overflow hidden
-    margin-bottom 16 pixels
+    margin-bottom "16px"
 end
 
 for ".ambient-backlight" apply:
@@ -736,7 +859,7 @@ for ".video-player-container" apply:
     position relative
     z-index 1
     background "#000000"
-    border-radius 16 pixels
+    border-radius "16px"
     overflow hidden
     box-shadow "0 8px 32px rgba(0, 0, 0, 0.5)"
 end
@@ -757,7 +880,7 @@ end
 for ".player-controls" apply:
     display flex
     align-items center
-    gap 12 pixels
+    gap "12px"
     padding "8px 16px"
     background "rgba(15, 15, 15, 0.95)"
     border-top "1px solid rgba(255, 255, 255, 0.08)"
@@ -767,10 +890,10 @@ for ".ctrl-btn" apply:
     background transparent
     border none
     color "#ffffff"
-    font-size 15 pixels
+    font-size "15px"
     cursor pointer
     padding "6px 10px"
-    border-radius 6 pixels
+    border-radius "6px"
     transition "background 0.2s ease"
 end
 
@@ -781,43 +904,48 @@ end
 for ".volume-group" apply:
     display flex
     align-items center
-    gap 6 pixels
+    gap "6px"
 end
 
 for ".vol-slider" apply:
-    width 70 pixels
+    width "70px"
     accent-color "#ff0000"
     cursor pointer
 end
 
 for ".ctrl-time" apply:
-    font-size 12 pixels
+    font-size "12px"
     color "#aaaaaa"
     font-family monospace
 end
 
 for ".scrubber-bar" apply:
     flex 1
-    height 6 pixels
+    height "8px"
     background "#444444"
-    border-radius 3 pixels
+    border-radius "4px"
     cursor pointer
     position relative
     overflow hidden
 end
 
+for ".scrubber-bar:hover" apply:
+    height "10px"
+end
+
 for ".scrubber-fill" apply:
     height 100 percent
     background "#ff0000"
-    border-radius 3 pixels
+    border-radius "4px"
+    pointer-events none
 end
 
 for ".watch-header" apply:
-    margin-bottom 16 pixels
+    margin-bottom "16px"
 end
 
 for ".watch-title" apply:
-    font-size 20 pixels
+    font-size "20px"
     font-weight 700
     margin "0 0 12px 0"
     line-height 1.3
@@ -828,58 +956,58 @@ for ".watch-actions-row" apply:
     align-items center
     justify-content space-between
     flex-wrap wrap
-    gap 16 pixels
+    gap "16px"
 end
 
 for ".channel-info-box" apply:
     display flex
     align-items center
-    gap 12 pixels
+    gap "12px"
 end
 
 for ".channel-avatar-lg" apply:
-    width 44 pixels
-    height 44 pixels
-    border-radius 50 percent
+    width "44px"
+    height "44px"
+    border-radius "50%"
     background "#3b82f6"
     color "#ffffff"
     display flex
     align-items center
     justify-content center
     font-weight 700
-    font-size 18 pixels
+    font-size "18px"
 end
 
 for ".channel-title" apply:
-    font-size 15 pixels
+    font-size "15px"
     font-weight 700
     margin 0
 end
 
 for ".channel-subs" apply:
-    font-size 12 pixels
+    font-size "12px"
     color use color "yt-muted"
     margin 0
 end
 
 for ".btn-join" apply:
     padding "8px 16px"
-    border-radius 18 pixels
+    border-radius "18px"
     background "rgba(255, 255, 255, 0.1)"
     border "1px solid rgba(255, 255, 255, 0.2)"
     color use color "yt-text"
-    font-size 13 pixels
+    font-size "13px"
     font-weight 600
     cursor pointer
 end
 
 for ".btn-subscribe" apply:
     padding "8px 18px"
-    border-radius 18 pixels
+    border-radius "18px"
     background "#ffffff"
     border none
     color "#0f0f0f"
-    font-size 13 pixels
+    font-size "13px"
     font-weight 700
     cursor pointer
     transition "background 0.2s ease"
@@ -892,14 +1020,14 @@ end
 for ".action-buttons-group" apply:
     display flex
     align-items center
-    gap 8 pixels
+    gap "8px"
 end
 
 for ".like-dislike-pill" apply:
     display flex
     align-items center
     background use color "yt-surface"
-    border-radius 18 pixels
+    border-radius "18px"
     overflow hidden
 end
 
@@ -908,17 +1036,17 @@ for ".btn-like" apply:
     background transparent
     border none
     color use color "yt-text"
-    font-size 13 pixels
+    font-size "13px"
     font-weight 600
     cursor pointer
     display flex
     align-items center
-    gap 6 pixels
+    gap "6px"
 end
 
 for ".pill-sep" apply:
-    width 1 pixels
-    height 20 pixels
+    width "1px"
+    height "20px"
     background "rgba(255, 255, 255, 0.15)"
 end
 
@@ -927,53 +1055,53 @@ for ".btn-dislike" apply:
     background transparent
     border none
     color use color "yt-text"
-    font-size 13 pixels
+    font-size "13px"
     cursor pointer
 end
 
 for ".btn-action" apply:
     padding "8px 14px"
-    border-radius 18 pixels
+    border-radius "18px"
     background use color "yt-surface"
     border none
     color use color "yt-text"
-    font-size 13 pixels
+    font-size "13px"
     font-weight 600
     cursor pointer
     display flex
     align-items center
-    gap 6 pixels
+    gap "6px"
 end
 
 # ── Description Box & Chapters ──
 for ".watch-description-box" apply:
     background use color "yt-surface"
-    border-radius 12 pixels
-    padding 16 pixels
-    margin-bottom 24 pixels
+    border-radius "12px"
+    padding "16px"
+    margin-bottom "24px"
 end
 
 for ".desc-stats" apply:
-    font-size 14 pixels
+    font-size "14px"
     font-weight 700
     margin "0 0 8px 0"
 end
 
 for ".desc-content" apply:
-    font-size 14 pixels
+    font-size "14px"
     line-height 1.5
     margin 0
     white-space pre-line
 end
 
 for ".chapters-section" apply:
-    margin-top 16 pixels
-    padding-top 12 pixels
+    margin-top "16px"
+    padding-top "12px"
     border-top "1px solid rgba(255, 255, 255, 0.1)"
 end
 
 for ".chapters-title" apply:
-    font-size 13 pixels
+    font-size "13px"
     font-weight 700
     color use color "yt-blue"
     margin "0 0 8px 0"
@@ -982,16 +1110,16 @@ end
 for ".chapter-pill-list" apply:
     display flex
     flex-wrap wrap
-    gap 8 pixels
+    gap "8px"
 end
 
 for ".chapter-btn" apply:
     padding "6px 12px"
-    border-radius 6 pixels
+    border-radius "6px"
     background "#1a1a1a"
     border "1px solid #333333"
     color "#3ea6ff"
-    font-size 12 pixels
+    font-size "12px"
     font-weight 600
     cursor pointer
     transition "background 0.2s ease"
@@ -1005,44 +1133,44 @@ end
 for ".comments-container" apply:
     display flex
     flex-direction column
-    gap 16 pixels
+    gap "16px"
 end
 
 for ".comments-header" apply:
     display flex
     align-items center
-    gap 24 pixels
+    gap "24px"
 end
 
 for ".comments-header h3" apply:
-    font-size 18 pixels
+    font-size "18px"
     font-weight 700
     margin 0
 end
 
 for ".sort-tag" apply:
-    font-size 13 pixels
+    font-size "13px"
     font-weight 600
     cursor pointer
 end
 
 for ".add-comment-row" apply:
     display flex
-    gap 16 pixels
+    gap "16px"
     align-items flex-start
 end
 
 for ".user-avatar-sm" apply:
-    width 36 pixels
-    height 36 pixels
-    border-radius 50 percent
+    width "36px"
+    height "36px"
+    border-radius "50%"
     background "#8b5cf6"
     color "#ffffff"
     display flex
     align-items center
     justify-content center
     font-weight 700
-    font-size 14 pixels
+    font-size "14px"
     flex-shrink 0
 end
 
@@ -1050,7 +1178,7 @@ for ".comment-input-wrap" apply:
     flex 1
     display flex
     flex-direction column
-    gap 8 pixels
+    gap "8px"
 end
 
 for ".comment-input" apply:
@@ -1059,7 +1187,7 @@ for ".comment-input" apply:
     border none
     border-bottom "1px solid rgba(255, 255, 255, 0.2)"
     color "#ffffff"
-    font-size 14 pixels
+    font-size "14px"
     padding "6px 0"
     outline none
 end
@@ -1067,27 +1195,27 @@ end
 for ".comment-btn-bar" apply:
     display flex
     justify-content flex-end
-    gap 8 pixels
+    gap "8px"
 end
 
 for ".btn-ghost" apply:
     padding "8px 16px"
-    border-radius 18 pixels
+    border-radius "18px"
     background transparent
     border none
     color use color "yt-text"
-    font-size 13 pixels
+    font-size "13px"
     font-weight 600
     cursor pointer
 end
 
 for ".btn-primary" apply:
     padding "8px 16px"
-    border-radius 18 pixels
+    border-radius "18px"
     background use color "yt-blue"
     border none
     color "#0f0f0f"
-    font-size 13 pixels
+    font-size "13px"
     font-weight 700
     cursor pointer
 end
@@ -1095,13 +1223,13 @@ end
 for ".comment-list" apply:
     display flex
     flex-direction column
-    gap 16 pixels
-    margin-top 8 pixels
+    gap "16px"
+    margin-top "8px"
 end
 
 for ".comment-card" apply:
     display flex
-    gap 16 pixels
+    gap "16px"
     align-items flex-start
 end
 
@@ -1113,10 +1241,10 @@ for ".comment-card.pinned" apply:
 end
 
 for ".pinned-tag" apply:
-    font-size 11 pixels
+    font-size "11px"
     color "#3ea6ff"
     font-weight 700
-    margin-bottom 4 pixels
+    margin-bottom "4px"
     display block
 end
 
@@ -1124,42 +1252,42 @@ for ".comment-body" apply:
     flex 1
     display flex
     flex-direction column
-    gap 4 pixels
+    gap "4px"
 end
 
 for ".comment-author-row" apply:
     display flex
     align-items center
-    gap 8 pixels
+    gap "8px"
 end
 
 for ".comment-author" apply:
-    font-size 13 pixels
+    font-size "13px"
     font-weight 700
     color use color "yt-text"
 end
 
 for ".comment-author-badge" apply:
-    font-size 13 pixels
+    font-size "13px"
     font-weight 700
     color "#3ea6ff"
 end
 
 for ".creator-pill" apply:
-    font-size 11 pixels
+    font-size "11px"
     background "#2563eb"
     color "#ffffff"
     padding "1px 6px"
-    border-radius 10 pixels
+    border-radius "10px"
 end
 
 for ".comment-time" apply:
-    font-size 12 pixels
+    font-size "12px"
     color use color "yt-muted"
 end
 
 for ".comment-msg" apply:
-    font-size 14 pixels
+    font-size "14px"
     line-height 1.4
     margin 0
 end
@@ -1167,30 +1295,25 @@ end
 for ".comment-reactions" apply:
     display flex
     align-items center
-    gap 12 pixels
-    margin-top 4 pixels
+    gap "12px"
+    margin-top "4px"
 end
 
 for ".btn-react" apply:
     background transparent
     border none
     color use color "yt-muted"
-    font-size 12 pixels
+    font-size "12px"
     cursor pointer
     padding "2px 6px"
-    border-radius 4 pixels
-end
-
-for ".creator-heart" apply:
-    font-size 12 pixels
-    color "#ef4444"
+    border-radius "4px"
 end
 
 # ── Up Next Recommendations ──
 for ".watch-secondary" apply:
     display flex
     flex-direction column
-    gap 12 pixels
+    gap "12px"
 end
 
 for ".rec-header-row" apply:
@@ -1200,7 +1323,7 @@ for ".rec-header-row" apply:
 end
 
 for ".rec-header" apply:
-    font-size 16 pixels
+    font-size "16px"
     font-weight 700
     margin 0
 end
@@ -1208,26 +1331,26 @@ end
 for ".autoplay-toggle-wrap" apply:
     display flex
     align-items center
-    gap 8 pixels
+    gap "8px"
 end
 
 for ".autoplay-label" apply:
-    font-size 13 pixels
+    font-size "13px"
     color use color "yt-muted"
 end
 
 for ".rec-list" apply:
     display flex
     flex-direction column
-    gap 12 pixels
+    gap "12px"
 end
 
 for ".rec-card" apply:
     display flex
-    gap 10 pixels
+    gap "10px"
     cursor pointer
-    border-radius 8 pixels
-    padding 4 pixels
+    border-radius "8px"
+    padding "4px"
     transition "background 0.2s ease"
 end
 
@@ -1237,9 +1360,9 @@ end
 
 for ".rec-thumb" apply:
     position relative
-    width 140 pixels
+    width "140px"
     aspect-ratio "16 / 9"
-    border-radius 8 pixels
+    border-radius "8px"
     overflow hidden
     background "#1a1a1a"
     flex-shrink 0
@@ -1249,30 +1372,30 @@ for ".rec-details" apply:
     flex 1
     display flex
     flex-direction column
-    gap 2 pixels
+    gap "2px"
     min-width 0
 end
 
 for ".rec-title" apply:
-    font-size 13 pixels
+    font-size "13px"
     font-weight 600
     color use color "yt-text"
     margin 0
     line-height 1.3
-    display -webkit-box
+    display "-webkit-box"
     -webkit-line-clamp 2
     -webkit-box-orient vertical
     overflow hidden
 end
 
 for ".rec-channel" apply:
-    font-size 12 pixels
+    font-size "12px"
     color use color "yt-muted"
     margin 0
 end
 
 for ".rec-stats" apply:
-    font-size 11 pixels
+    font-size "11px"
     color use color "yt-muted"
     margin 0
 end
@@ -1289,16 +1412,16 @@ end
 for ".shorts-reel-viewport" apply:
     display flex
     align-items center
-    gap 16 pixels
+    gap "16px"
     height 100 percent
-    max-height 750 pixels
+    max-height "750px"
 end
 
 for ".shorts-video-box" apply:
     position relative
-    width 420 pixels
+    width "420px"
     height 100 percent
-    border-radius 16 pixels
+    border-radius "16px"
     overflow hidden
     box-shadow "0 12px 40px rgba(0, 0, 0, 0.7)"
     background "#000000"
@@ -1313,9 +1436,9 @@ end
 
 for ".shorts-top-bar" apply:
     position absolute
-    top 16 pixels
-    left 16 pixels
-    right 16 pixels
+    top "16px"
+    left "16px"
+    right "16px"
     display flex
     justify-content space-between
     align-items center
@@ -1323,7 +1446,7 @@ for ".shorts-top-bar" apply:
 end
 
 for ".shorts-brand-tag" apply:
-    font-size 14 pixels
+    font-size "14px"
     font-weight 700
     color "#ffffff"
     text-shadow "0 2px 4px rgba(0,0,0,0.8)"
@@ -1333,21 +1456,21 @@ for ".shorts-ctrl-icon" apply:
     background "rgba(0, 0, 0, 0.6)"
     border none
     color "#ffffff"
-    font-size 16 pixels
-    border-radius 50 percent
-    width 36 pixels
-    height 36 pixels
+    font-size "16px"
+    border-radius "50%"
+    width "36px"
+    height "36px"
     cursor pointer
 end
 
 for ".shorts-bottom-overlay" apply:
     position absolute
-    bottom 16 pixels
-    left 16 pixels
-    right 16 pixels
+    bottom "16px"
+    left "16px"
+    right "16px"
     display flex
     flex-direction column
-    gap 8 pixels
+    gap "8px"
     z-index 10
     text-shadow "0 2px 4px rgba(0,0,0,0.8)"
 end
@@ -1355,13 +1478,13 @@ end
 for ".shorts-creator-row" apply:
     display flex
     align-items center
-    gap 10 pixels
+    gap "10px"
 end
 
 for ".shorts-avatar" apply:
-    width 36 pixels
-    height 36 pixels
-    border-radius 50 percent
+    width "36px"
+    height "36px"
+    border-radius "50%"
     background "#8b5cf6"
     color "#ffffff"
     display flex
@@ -1371,24 +1494,24 @@ for ".shorts-avatar" apply:
 end
 
 for ".shorts-username" apply:
-    font-size 14 pixels
+    font-size "14px"
     font-weight 700
     color "#ffffff"
 end
 
 for ".btn-shorts-sub" apply:
     padding "6px 14px"
-    border-radius 16 pixels
+    border-radius "16px"
     background "#ffffff"
     border none
     color "#0f0f0f"
-    font-size 12 pixels
+    font-size "12px"
     font-weight 700
     cursor pointer
 end
 
 for ".shorts-desc" apply:
-    font-size 13 pixels
+    font-size "13px"
     color "#ffffff"
     margin 0
     line-height 1.3
@@ -1397,8 +1520,8 @@ end
 for ".shorts-music-row" apply:
     display flex
     align-items center
-    gap 6 pixels
-    font-size 12 pixels
+    gap "6px"
+    font-size "12px"
     color "#e2e8f0"
 end
 
@@ -1406,21 +1529,21 @@ for ".shorts-action-rail" apply:
     display flex
     flex-direction column
     align-items center
-    gap 16 pixels
+    gap "16px"
 end
 
 for ".shorts-rail-btn" apply:
     display flex
     flex-direction column
     align-items center
-    gap 4 pixels
+    gap "4px"
     background use color "yt-surface"
     border none
     color "#ffffff"
-    font-size 18 pixels
-    width 48 pixels
-    height 48 pixels
-    border-radius 50 percent
+    font-size "18px"
+    width "48px"
+    height "48px"
+    border-radius "50%"
     cursor pointer
     justify-content center
     transition "transform 0.2s ease"
@@ -1431,34 +1554,33 @@ for ".shorts-rail-btn:hover" apply:
 end
 
 for ".rail-count" apply:
-    font-size 11 pixels
+    font-size "11px"
     font-weight 600
 end
 
 for ".shorts-sound-disc" apply:
-    width 40 pixels
-    height 40 pixels
-    border-radius 50 percent
+    width "40px"
+    height "40px"
+    border-radius "50%"
     background "conic-gradient(#ff0000, #3ea6ff, #10b981, #ff0000)"
     border "3px solid #ffffff"
-    animation "spin 4s linear infinite"
 end
 
 for ".shorts-nav-arrows" apply:
     display flex
     flex-direction column
-    gap 12 pixels
-    margin-left 16 pixels
+    gap "12px"
+    margin-left "16px"
 end
 
 for ".shorts-arrow-btn" apply:
-    width 44 pixels
-    height 44 pixels
-    border-radius 50 percent
+    width "44px"
+    height "44px"
+    border-radius "50%"
     background use color "yt-surface"
     border "1px solid rgba(255, 255, 255, 0.1)"
     color "#ffffff"
-    font-size 16 pixels
+    font-size "16px"
     cursor pointer
     display flex
     align-items center
@@ -1468,52 +1590,52 @@ end
 # ── Subscriptions, Library, Trending ──
 for ".subs-channel-stories" apply:
     display flex
-    gap 16 pixels
+    gap "16px"
     overflow-x auto
     padding "12px 0 20px"
-    margin-bottom 16 pixels
+    margin-bottom "16px"
 end
 
 for ".channel-story-bubble" apply:
     display flex
     flex-direction column
     align-items center
-    gap 6 pixels
+    gap "6px"
     cursor pointer
-    min-width 72 pixels
+    min-width "72px"
 end
 
 for ".channel-story-avatar" apply:
-    width 56 pixels
-    height 56 pixels
-    border-radius 50 percent
-    padding 2 pixels
+    width "56px"
+    height "56px"
+    border-radius "50%"
+    padding "2px"
     border "2px solid #3ea6ff"
     display flex
     align-items center
     justify-content center
     font-weight 700
-    font-size 18 pixels
+    font-size "18px"
     background "#1e293b"
     color "#ffffff"
 end
 
 for ".channel-story-name" apply:
-    font-size 11 pixels
+    font-size "11px"
     color use color "yt-text"
     text-align center
     white-space nowrap
     overflow hidden
     text-overflow ellipsis
-    max-width 70 pixels
+    max-width "70px"
 end
 
 for ".library-section-block" apply:
-    margin-bottom 32 pixels
+    margin-bottom "32px"
 end
 
 for ".library-subheading" apply:
-    font-size 16 pixels
+    font-size "16px"
     font-weight 700
     margin "0 0 16px 0"
 end
@@ -1521,15 +1643,15 @@ end
 for ".history-list" apply:
     display flex
     flex-direction column
-    gap 12 pixels
+    gap "12px"
 end
 
 for ".history-card" apply:
     display flex
-    gap 16 pixels
+    gap "16px"
     cursor pointer
-    padding 8 pixels
-    border-radius 10 pixels
+    padding "8px"
+    border-radius "10px"
     transition "background 0.2s ease"
 end
 
@@ -1539,9 +1661,9 @@ end
 
 for ".history-thumb" apply:
     position relative
-    width 200 pixels
+    width "200px"
     aspect-ratio "16 / 9"
-    border-radius 10 pixels
+    border-radius "10px"
     overflow hidden
     background "#1a1a1a"
     flex-shrink 0
@@ -1550,24 +1672,24 @@ end
 for ".history-details" apply:
     display flex
     flex-direction column
-    gap 4 pixels
+    gap "4px"
     flex 1
 end
 
 for ".history-title" apply:
-    font-size 15 pixels
+    font-size "15px"
     font-weight 600
     margin 0
 end
 
 for ".history-sub" apply:
-    font-size 13 pixels
+    font-size "13px"
     color use color "yt-muted"
     margin 0
 end
 
 for ".history-time" apply:
-    font-size 12 pixels
+    font-size "12px"
     color use color "yt-blue"
     margin 0
 end
@@ -1575,17 +1697,17 @@ end
 # ── Trending View ──
 for ".trending-tabs" apply:
     display flex
-    gap 12 pixels
+    gap "12px"
     margin "16px 0 24px"
 end
 
 for ".tab-btn" apply:
     padding "8px 20px"
-    border-radius 20 pixels
+    border-radius "20px"
     background use color "yt-surface"
     border none
     color use color "yt-text"
-    font-size 14 pixels
+    font-size "14px"
     font-weight 600
     cursor pointer
 end
@@ -1598,16 +1720,17 @@ end
 for ".trending-list" apply:
     display flex
     flex-direction column
-    gap 16 pixels
+    gap "16px"
 end
 
 for ".trending-card" apply:
     display flex
-    gap 20 pixels
+    gap "20px"
     cursor pointer
-    padding 12 pixels
-    border-radius 12 pixels
+    padding "12px"
+    border-radius "12px"
     transition "background 0.2s ease"
+    align-items flex-start
 end
 
 for ".trending-card:hover" apply:
@@ -1615,13 +1738,14 @@ for ".trending-card:hover" apply:
 end
 
 for ".trending-rank-badge" apply:
-    font-size 22 pixels
+    font-size "26px"
     font-weight 900
     color "#ef4444"
-    width 30 pixels
+    width "40px"
     display flex
     align-items center
     justify-content center
+    flex-shrink 0
 end
 
 # ── Modals & Toasts ──
@@ -1632,7 +1756,6 @@ for ".yt-modal" apply:
     right 0
     bottom 0
     background "rgba(0, 0, 0, 0.75)"
-    backdrop-filter "blur(6px)"
     display none
     align-items center
     justify-content center
@@ -1640,10 +1763,10 @@ for ".yt-modal" apply:
 end
 
 for ".modal-box" apply:
-    width 520 pixels
+    width "520px"
     max-width 90 percent
     background "#212121"
-    border-radius 16 pixels
+    border-radius "16px"
     border "1px solid rgba(255, 255, 255, 0.1)"
     box-shadow "0 16px 48px rgba(0,0,0,0.8)"
     overflow hidden
@@ -1660,7 +1783,7 @@ for ".modal-header" apply:
 end
 
 for ".modal-title" apply:
-    font-size 18 pixels
+    font-size "18px"
     font-weight 700
     margin 0
 end
@@ -1669,34 +1792,34 @@ for ".modal-close-btn" apply:
     background transparent
     border none
     color use color "yt-text"
-    font-size 18 pixels
+    font-size "18px"
     cursor pointer
 end
 
 for ".modal-body" apply:
-    padding 20 pixels
+    padding "20px"
     display flex
     flex-direction column
-    gap 16 pixels
+    gap "16px"
 end
 
 for ".upload-drop-zone" apply:
     border "2px dashed rgba(255, 255, 255, 0.2)"
-    border-radius 12 pixels
+    border-radius "12px"
     padding "32px 16px"
     display flex
     flex-direction column
     align-items center
-    gap 12 pixels
+    gap "12px"
     background "rgba(255, 255, 255, 0.02)"
 end
 
 for ".upload-icon-huge" apply:
-    font-size 44 pixels
+    font-size "44px"
 end
 
 for ".upload-hint" apply:
-    font-size 14 pixels
+    font-size "14px"
     color use color "yt-muted"
     margin 0
 end
@@ -1704,7 +1827,7 @@ end
 for ".upload-form" apply:
     display flex
     flex-direction column
-    gap 12 pixels
+    gap "12px"
 end
 
 for ".modal-input" apply:
@@ -1712,21 +1835,21 @@ for ".modal-input" apply:
     padding "10px 14px"
     background "#121212"
     border "1px solid #383838"
-    border-radius 8 pixels
+    border-radius "8px"
     color "#ffffff"
-    font-size 14 pixels
+    font-size "14px"
     box-sizing border-box
 end
 
 for ".modal-textarea" apply:
     width 100 percent
-    height 80 pixels
+    height "80px"
     padding "10px 14px"
     background "#121212"
     border "1px solid #383838"
-    border-radius 8 pixels
+    border-radius "8px"
     color "#ffffff"
-    font-size 14 pixels
+    font-size "14px"
     box-sizing border-box
     resize vertical
 end
@@ -1734,7 +1857,7 @@ end
 for ".modal-footer" apply:
     display flex
     justify-content flex-end
-    gap 12 pixels
+    gap "12px"
     padding "14px 20px"
     border-top "1px solid rgba(255, 255, 255, 0.1)"
 end
@@ -1742,24 +1865,24 @@ end
 for ".share-social-grid" apply:
     display grid
     grid-template-columns "repeat(auto-fit, minmax(130px, 1fr))"
-    gap 10 pixels
+    gap "10px"
 end
 
 for ".social-btn" apply:
     padding "10px 12px"
     background use color "yt-surface"
     border "1px solid rgba(255, 255, 255, 0.1)"
-    border-radius 8 pixels
+    border-radius "8px"
     color "#ffffff"
-    font-size 13 pixels
+    font-size "13px"
     font-weight 600
     cursor pointer
 end
 
 for ".share-link-row" apply:
     display flex
-    gap 8 pixels
-    margin-top 8 pixels
+    gap "8px"
+    margin-top "8px"
 end
 
 for ".share-link-box" apply:
@@ -1767,20 +1890,20 @@ for ".share-link-box" apply:
     padding "10px 14px"
     background "#121212"
     border "1px solid #383838"
-    border-radius 8 pixels
+    border-radius "8px"
     color use color "yt-blue"
-    font-size 14 pixels
+    font-size "14px"
 end
 
 # ── Notifications Dropdown ──
 for ".notif-dropdown" apply:
     position fixed
-    top 60 pixels
-    right 80 pixels
-    width 380 pixels
+    top "60px"
+    right "80px"
+    width "380px"
     background "#212121"
     border "1px solid rgba(255, 255, 255, 0.15)"
-    border-radius 12 pixels
+    border-radius "12px"
     box-shadow "0 12px 36px rgba(0,0,0,0.7)"
     display none
     flex-direction column
@@ -1797,7 +1920,7 @@ for ".notif-header" apply:
 end
 
 for ".notif-title" apply:
-    font-size 15 pixels
+    font-size "15px"
     font-weight 700
     margin 0
 end
@@ -1812,13 +1935,13 @@ end
 for ".notif-list" apply:
     display flex
     flex-direction column
-    max-height 360 pixels
+    max-height "360px"
     overflow-y auto
 end
 
 for ".notif-item" apply:
     display flex
-    gap 12 pixels
+    gap "12px"
     padding "12px 16px"
     cursor pointer
     border-bottom "1px solid rgba(255, 255, 255, 0.05)"
@@ -1836,33 +1959,117 @@ for ".notif-content" apply:
     flex 1
     display flex
     flex-direction column
-    gap 4 pixels
+    gap "4px"
 end
 
 for ".notif-msg" apply:
-    font-size 13 pixels
+    font-size "13px"
     margin 0
     line-height 1.3
 end
 
 for ".notif-time" apply:
-    font-size 11 pixels
+    font-size "11px"
     color use color "yt-muted"
+end
+
+# ── Profile Menu Dropdown ──
+for ".profile-dropdown" apply:
+    position fixed
+    top "60px"
+    right "16px"
+    width "280px"
+    background "#212121"
+    border "1px solid rgba(255, 255, 255, 0.15)"
+    border-radius "12px"
+    box-shadow "0 12px 36px rgba(0,0,0,0.7)"
+    display none
+    flex-direction column
+    z-index 1500
+    overflow hidden
+end
+
+for ".profile-dropdown-header" apply:
+    display flex
+    align-items center
+    gap "12px"
+    padding "16px"
+end
+
+for ".profile-header-meta" apply:
+    display flex
+    flex-direction column
+    gap "2px"
+end
+
+for ".profile-name" apply:
+    font-size "14px"
+    font-weight 700
+    margin 0
+    color use color "yt-text"
+end
+
+for ".profile-handle" apply:
+    font-size "12px"
+    color use color "yt-muted"
+    margin 0
+end
+
+for ".profile-divider" apply:
+    height "1px"
+    background "rgba(255, 255, 255, 0.1)"
+    margin "4px 0"
+end
+
+for ".profile-menu-item" apply:
+    display flex
+    align-items center
+    gap "12px"
+    padding "10px 16px"
+    background transparent
+    border none
+    color use color "yt-text"
+    font-size "14px"
+    cursor pointer
+    text-align left
+    width 100 percent
+    transition "background 0.15s ease"
+end
+
+for ".profile-menu-item:hover" apply:
+    background use color "yt-hover"
 end
 
 # ── Toast Alert Banner ──
 for ".yt-toast" apply:
     position fixed
-    bottom 24 pixels
-    left 24 pixels
+    bottom "24px"
+    left "24px"
     background "#212121"
     color "#ffffff"
     padding "12px 20px"
-    border-radius 8 pixels
+    border-radius "8px"
     box-shadow "0 8px 24px rgba(0,0,0,0.6)"
     border "1px solid rgba(255, 255, 255, 0.15)"
-    font-size 14 pixels
+    font-size "14px"
     font-weight 600
     z-index 3000
     display none
 end
+
+for ".channel-avatar-img" apply:
+    width 100 percent
+    height 100 percent
+    border-radius "50%"
+    object-fit cover
+    display block
+end
+
+for ".comment-avatar-img" apply:
+    width 100 percent
+    height 100 percent
+    border-radius "50%"
+    object-fit cover
+    display block
+end
+
