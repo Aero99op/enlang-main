@@ -18,7 +18,8 @@ from .ast_nodes import (
     World3DNode, AnimationFrameLoopNode, RotateByNode, TranslateByNode,
     RenderSceneNode, MoveTargetNode,
     ExtractDestructureNode, WebSocketConnectNode, WebSocketReceiveNode,
-    GeneratorDefNode, GeneratorYieldNode, PreventDefaultNode
+    GeneratorDefNode, GeneratorYieldNode, PreventDefaultNode,
+    ListAddNode, ListRemoveAtNode, ListInsertNode
 )
 
 def _dom_el(target: str) -> str:
@@ -250,6 +251,16 @@ class ENLGSEmitter:
         elif isinstance(node, AnimateTargetNode):
             el = _dom_el(node.target)
             return pad + f"{el}.animate({node.properties}, {{ duration: {node.duration_ms}, fill: 'forwards' }});"
+
+        # ── List / Array Operations ──
+        elif isinstance(node, ListAddNode):
+            return f"{pad}{node.target}.push({node.item});"
+
+        elif isinstance(node, ListRemoveAtNode):
+            return f"{pad}{node.target}.splice({node.index}, 1);"
+
+        elif isinstance(node, ListInsertNode):
+            return f"{pad}{node.target}.splice({node.index}, 0, {node.item});"
 
         # ── TypeScript Shapes ──
         elif isinstance(node, ShapeDefNode):

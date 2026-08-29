@@ -19,7 +19,8 @@ from .ast_nodes import (
     World3DNode, AnimationFrameLoopNode, RotateByNode, TranslateByNode,
     RenderSceneNode, MoveTargetNode,
     ExtractDestructureNode, WebSocketConnectNode, WebSocketReceiveNode,
-    GeneratorDefNode, GeneratorYieldNode, PreventDefaultNode
+    GeneratorDefNode, GeneratorYieldNode, PreventDefaultNode,
+    ListAddNode, ListRemoveAtNode, ListInsertNode
 )
 
 def _tokens_to_expr(tokens: List[Token]) -> str:
@@ -248,6 +249,38 @@ class ENLGSParser:
             val = _tokens_to_expr(val_tokens) if val_tokens else None
             return VarDeclNode(kind="const", name=name, value=val)
 
+        elif intent == "PUT_INTO":
+            if not tokens:
+                return RawJSNode(code=line_tokens[0].raw_text)
+
+            # Check for: put <expr> at <idx> in <target> / put <expr> at index <idx> in <target>
+            at_idx = -1
+            in_idx = -1
+            into_idx = -1
+            for idx, t in enumerate(tokens):
+                t_low = t.value.lower()
+                if t_low == "at" and at_idx == -1:
+                    at_idx = idx
+                elif t_low in ("in", "into"):
+                    if at_idx != -1 and in_idx == -1:
+                        in_idx = idx
+                    elif into_idx == -1:
+                        into_idx = idx
+
+            if at_idx != -1 and in_idx != -1:
+                val_expr = _tokens_to_expr(tokens[:at_idx])
+                idx_tokens = [t for t in tokens[at_idx+1:in_idx] if t.value.lower() != "index"]
+                idx_expr = _tokens_to_expr(idx_tokens)
+                target_expr = _tokens_to_expr(tokens[in_idx+1:])
+                return VarAssignNode(name=f"{target_expr}[{idx_expr}]", op="=", value=val_expr)
+
+            elif into_idx != -1:
+                val_expr = _tokens_to_expr(tokens[:into_idx])
+                target_expr = _tokens_to_expr(tokens[into_idx+1:])
+                return VarAssignNode(name=target_expr, op="=", value=val_expr)
+
+            return RawJSNode(code=line_tokens[0].raw_text)
+
         elif intent == "ASSIGN_VAR":
             if not tokens:
                 return RawJSNode(code=line_tokens[0].raw_text)
@@ -266,6 +299,21 @@ class ENLGSParser:
                 target_obj = _tokens_to_expr(tokens[of_idx+1:to_idx])
                 val_expr = _tokens_to_expr(tokens[to_idx+1:])
                 return VarAssignNode(name=f"{target_obj}.{prop_name}", op="=", value=val_expr)
+
+            # Check for: update/set/change/assign <target> to/as/= <val>
+            to_sep_idx = -1
+            eq_sep_idx = -1
+            for idx, t in enumerate(tokens):
+                if t.value.lower() in ("to", "as") and to_sep_idx == -1:
+                    to_sep_idx = idx
+                elif t.value == "=" and eq_sep_idx == -1:
+                    eq_sep_idx = idx
+
+            sep_idx = to_sep_idx if to_sep_idx != -1 else eq_sep_idx
+            if sep_idx != -1 and sep_idx > 0:
+                target_expr = _tokens_to_expr(tokens[:sep_idx])
+                val_expr = _tokens_to_expr(tokens[sep_idx+1:])
+                return VarAssignNode(name=target_expr, op="=", value=val_expr)
 
             name = tokens[0].value
             val_tokens = tokens[1:]
@@ -392,6 +440,106 @@ class ENLGSParser:
             clean_tokens = [t for t in tokens if t.value.lower() not in ("element", "the", "a", "an")]
             target = clean_tokens[0].value.strip('"\'') if clean_tokens else "body"
             return DOMVisibilityNode(action=action, target=target)
+
+        # ── List / Array Operations ──
+        elif intent == "LIST_ADD":
+            if not tokens:
+                return RawJSNode(code=line_tokens[0].raw_text)
+
+            # Check if this is DOMClassNode: add class "active" to "nav"
+            if tokens[0].value.lower() == "class":
+                clean_tokens = [t for t in tokens if t.value.lower() not in ("class", "to", "from", "on", "in", "of", "the", "a", "an")]
+                cls_name = clean_tokens[0].value.strip('"\'') if clean_tokens else "active"
+                target = clean_tokens[1].value.strip('"\'') if len(clean_tokens) > 1 else "body"
+                return DOMClassNode(action="add", class_name=cls_name, target=target)
+
+            # Check if this is DOMAddElementNode: add element "h1" with text "..."
+            if tokens[0].value.lower() == "element":
+                clean_tokens = [t for t in tokens if t.value.lower() not in ("element", "with", "the", "a", "an")]
+                tag = clean_tokens[0].value.strip('"\'') if clean_tokens else "div"
+                attrs = {}
+                text_val = None
+                for idx, tok in enumerate(clean_tokens):
+                    t_low = tok.value.lower()
+                    if t_low == "text" and idx + 1 < len(clean_tokens):
+                        text_val = clean_tokens[idx + 1].value.strip('"\'')
+                    elif t_low in ("class", "id", "style", "type", "href", "src") and idx + 1 < len(clean_tokens):
+                        attrs[t_low] = clean_tokens[idx + 1].value.strip('"\'')
+                return DOMAddElementNode(tag=tag, attrs=attrs, text=text_val)
+
+            # Otherwise: add <item> to <target> / push <item> to <target> / add <item> into <target>
+            sep_idx = -1
+            for idx, t in enumerate(tokens):
+                if t.value.lower() in ("to", "into", "in"):
+                    sep_idx = idx
+            
+            if sep_idx != -1:
+                item_expr = _tokens_to_expr(tokens[:sep_idx])
+                target_expr = _tokens_to_expr(tokens[sep_idx+1:])
+                return ListAddNode(item=item_expr, target=target_expr)
+
+            return RawJSNode(code=line_tokens[0].raw_text)
+
+        elif intent in ("LIST_REMOVE", "LIST_DELETE_FROM"):
+            if not tokens:
+                return RawJSNode(code=line_tokens[0].raw_text)
+
+            # Check if this is DOMClassNode: remove class "active" from "nav"
+            if tokens[0].value.lower() == "class":
+                clean_tokens = [t for t in tokens if t.value.lower() not in ("class", "to", "from", "on", "in", "of", "the", "a", "an")]
+                cls_name = clean_tokens[0].value.strip('"\'') if clean_tokens else "active"
+                target = clean_tokens[1].value.strip('"\'') if len(clean_tokens) > 1 else "body"
+                return DOMClassNode(action="remove", class_name=cls_name, target=target)
+
+            # Check for: remove item at <idx> from <target> / remove at <idx> from <target> / remove index <idx> from <target>
+            from_idx = -1
+            for idx, t in enumerate(tokens):
+                if t.value.lower() == "from":
+                    from_idx = idx
+                    break
+
+            if from_idx != -1:
+                idx_tokens = [t for t in tokens[:from_idx] if t.value.lower() not in ("item", "at", "index", "the")]
+                idx_expr = _tokens_to_expr(idx_tokens)
+                target_expr = _tokens_to_expr(tokens[from_idx+1:])
+                return ListRemoveAtNode(index=idx_expr, target=target_expr)
+
+            return RawJSNode(code=line_tokens[0].raw_text)
+
+        elif intent == "LIST_INSERT":
+            if not tokens:
+                return RawJSNode(code=line_tokens[0].raw_text)
+
+            # insert <item> at <idx> in <target> / insert <item> into <target> at <idx>
+            at_idx = -1
+            in_idx = -1
+            into_idx = -1
+            for idx, t in enumerate(tokens):
+                t_low = t.value.lower()
+                if t_low == "at" and at_idx == -1:
+                    at_idx = idx
+                elif t_low == "in" and in_idx == -1:
+                    in_idx = idx
+                elif t_low == "into" and into_idx == -1:
+                    into_idx = idx
+
+            # Case A: insert <item> at [index] <idx> in <target>
+            if at_idx != -1 and in_idx != -1 and at_idx < in_idx:
+                item_expr = _tokens_to_expr(tokens[:at_idx])
+                idx_tokens = [t for t in tokens[at_idx+1:in_idx] if t.value.lower() != "index"]
+                idx_expr = _tokens_to_expr(idx_tokens)
+                target_expr = _tokens_to_expr(tokens[in_idx+1:])
+                return ListInsertNode(item=item_expr, index=idx_expr, target=target_expr)
+
+            # Case B: insert <item> into <target> at [index] <idx>
+            if into_idx != -1 and at_idx != -1 and into_idx < at_idx:
+                item_expr = _tokens_to_expr(tokens[:into_idx])
+                target_expr = _tokens_to_expr(tokens[into_idx+1:at_idx])
+                idx_tokens = [t for t in tokens[at_idx+1:] if t.value.lower() != "index"]
+                idx_expr = _tokens_to_expr(idx_tokens)
+                return ListInsertNode(item=item_expr, index=idx_expr, target=target_expr)
+
+            return RawJSNode(code=line_tokens[0].raw_text)
 
         # ── Declarative UI Elements ──
         elif intent == "DOM_MAKE_ELEMENT":

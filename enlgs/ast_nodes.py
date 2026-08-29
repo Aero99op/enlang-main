@@ -327,6 +327,25 @@ class PreventDefaultNode(ASTNode):
     pass
 
 @dataclass
+class ListAddNode(ASTNode):
+    """Represents adding/pushing an item to an array: add X to list / push X to list."""
+    item: str
+    target: str
+
+@dataclass
+class ListRemoveAtNode(ASTNode):
+    """Represents removing an item at an index from an array: remove item at idx from list."""
+    index: str
+    target: str
+
+@dataclass
+class ListInsertNode(ASTNode):
+    """Represents inserting an item at an index into an array: insert X at idx in list."""
+    item: str
+    index: str
+    target: str
+
+@dataclass
 class ScriptNode(ASTNode):
     """Root AST Node representing the compiled script."""
     body: List[ASTNode] = field(default_factory=list)

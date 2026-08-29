@@ -6,7 +6,7 @@ document enlgf:
 
     body:
         # ── Global Navigation Bar ─────────────────────────────────────────────
-        header class "anime-header":
+        header class "anime-header" id "main-navbar":
             div class "nav-container":
                 div class "brand-logo" id "btn-nav-brand":
                     span "//" class "logo-slash"

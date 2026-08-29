@@ -56,11 +56,12 @@ HINT_REGISTRY: Dict[str, str] = {
     "set style": "DOM_SET_STYLE",
     "refresh": "DOM_REFRESH",
 
-    # ── General Variable Assignments ──
+    # ── General Variable & Index Assignments ──
     "set": "ASSIGN_VAR",
     "assign": "ASSIGN_VAR",
     "change": "ASSIGN_VAR",
     "update": "ASSIGN_VAR",
+    "put": "PUT_INTO",
     "increase": "COMPOUND_ADD",
     "decrease": "COMPOUND_SUB",
     "multiply": "COMPOUND_MUL",
@@ -131,13 +132,18 @@ HINT_REGISTRY: Dict[str, str] = {
     "for": "LOOP_FOR",
     "while": "LOOP_WHILE",
 
-    # ── Functional Array Pipelines ──
+    # ── Functional Array Pipelines & List Operations ──
     "filter": "ARRAY_FILTER",
     "map": "ARRAY_MAP",
     "reduce": "ARRAY_REDUCE",
     "find in": "ARRAY_FIND",
     "find": "ARRAY_FIND",
     "sort": "ARRAY_SORT",
+    "add": "LIST_ADD",
+    "push": "LIST_ADD",
+    "insert": "LIST_INSERT",
+    "remove": "LIST_REMOVE",
+    "delete from": "LIST_DELETE_FROM",
 
     # ── TypeScript Shapes & Type Contracts ──
     "shape": "SHAPE_DEF",

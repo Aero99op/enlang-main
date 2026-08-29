@@ -9,23 +9,18 @@ let activeMatchIdx = 0;
 
 let editingTeamName = "";
 
+let tempTeamScores = [ ];
+
 let currentUser = { name : "Kiryu_FF" , uid : "77489210" , role : "Organizer" , loggedIn : true };
 
 const tournamentsDb = [ { id : 1 , title : "VORTEX GRANDMASTERS CHAMPIONSHIP" , game : "Free Fire MAX" , format : "SQUAD (BR)" , maps : "Bermuda, Purgatory, Kalahari, Alpine" , slots : 12 , prize : "₹25,000" , status : "LIVE" , statusClass : "live" , killMultiplier : 1 , placementPoints : { "1" : 12 , "2" : 9 , "3" : 8 , "4" : 7 , "5" : 6 , "6" : 5 , "7" : 4 , "8" : 3 , "9" : 2 , "10" : 1 , "11" : 0 , "12" : 0 } , teams : [ { slot : 1 , name : "Shadow Ninjas" , tag : "SNE" , captain : "Kiryu_FF" , players : [ { name : "Kiryu_FF" , uid : "77489210" , role : "IGL (In-Game Leader)" } , { name : "Zen_99" , uid : "77489211" , role : "Entry Fragger / Rusher" } , { name : "Taro_X" , uid : "77489212" , role : "Support / Healer" } , { name : "Ken" , uid : "77489213" , role : "Sniper / Marksman" } ] } , { slot : 2 , name : "Aero Esports" , tag : "AERO" , captain : "Aero_Alpha" , players : [ { name : "Aero_Alpha" , uid : "66120101" , role : "IGL (In-Game Leader)" } , { name : "Aero_Sniper" , uid : "66120102" , role : "Sniper / Marksman" } , { name : "Aero_Ghost" , uid : "66120103" , role : "Entry Fragger / Rusher" } , { name : "Rex" , uid : "66120104" , role : "Support / Healer" } ] } , { slot : 3 , name : "Titan Squad" , tag : "TITAN" , captain : "Titan_Max" , players : [ { name : "Titan_Max" , uid : "5510101" , role : "IGL (In-Game Leader)" } , { name : "Titan_Bolt" , uid : "5510102" , role : "Entry Fragger / Rusher" } , { name : "Titan_Frost" , uid : "5510103" , role : "Support / Healer" } , { name : "Spike" , uid : "5510104" , role : "Sniper / Marksman" } ] } , { slot : 4 , name : "Nova Gaming" , tag : "NOVA" , captain : "Nova_Flash" , players : [ { name : "Nova_Flash" , uid : "4419010" , role : "IGL (In-Game Leader)" } , { name : "Nova_Strike" , uid : "4419011" , role : "Entry Fragger / Rusher" } , { name : "Nova_Viper" , uid : "4419012" , role : "Support / Healer" } ] } , { slot : 5 , name : "Phoenix Esports" , tag : "PHX" , captain : "Phx_Flame" , players : [ { name : "Phx_Flame" , uid : "3310001" , role : "IGL (In-Game Leader)" } , { name : "Phx_Blaze" , uid : "3310002" , role : "Entry Fragger / Rusher" } , { name : "Spark" , uid : "3310003" , role : "Support / Healer" } ] } , { slot : 6 , name : "GodLike Elite" , tag : "GDL" , captain : "God_Zeus" , players : [ { name : "God_Zeus" , uid : "2218001" , role : "IGL (In-Game Leader)" } , { name : "God_Thor" , uid : "2218002" , role : "Entry Fragger / Rusher" } , { name : "Ares" , uid : "2218003" , role : "Support / Healer" } ] } ] , matches : [ { id : 1 , title : "Match 1 - Bermuda Battle" , map : "Bermuda" , time : "8:00 PM IST" , roomId : "8849201" , roomPass : "VORTEX77" , status : "COMPLETED" , scores : [ { team : "Shadow Ninjas" , place : 1 , kills : 9 , bonus : 0 , penalty : 0 } , { team : "Aero Esports" , place : 2 , kills : 8 , bonus : 0 , penalty : 0 } , { team : "Titan Squad" , place : 3 , kills : 6 , bonus : 0 , penalty : 0 } , { team : "Nova Gaming" , place : 4 , kills : 5 , bonus : 0 , penalty : 0 } , { team : "Phoenix Esports" , place : 5 , kills : 4 , bonus : 0 , penalty : 0 } , { team : "GodLike Elite" , place : 6 , kills : 3 , bonus : 0 , penalty : 0 } ] } , { id : 2 , title : "Match 2 - Purgatory Clash" , map : "Purgatory" , time : "8:40 PM IST" , roomId : "8849202" , roomPass : "VORTEX88" , status : "LIVE" , scores : [ { team : "Aero Esports" , place : 1 , kills : 11 , bonus : 0 , penalty : 0 } , { team : "Shadow Ninjas" , place : 2 , kills : 7 , bonus : 0 , penalty : 0 } , { team : "Nova Gaming" , place : 3 , kills : 6 , bonus : 0 , penalty : 0 } , { team : "Titan Squad" , place : 4 , kills : 4 , bonus : 0 , penalty : 0 } , { team : "GodLike Elite" , place : 5 , kills : 3 , bonus : 0 , penalty : 0 } , { team : "Phoenix Esports" , place : 6 , kills : 2 , bonus : 0 , penalty : 0 } ] } , { id : 3 , title : "Match 3 - Kalahari Desert" , map : "Kalahari" , time : "9:20 PM IST" , roomId : "8849203" , roomPass : "VORTEX99" , status : "SCHEDULED" , scores : [ ] } ] , checkpoints : [ { title : "Initial Baseline (Before Match 1)" , timestamp : "8:00 PM IST" , standings : [ { team : "Shadow Ninjas" , played : 0 , wwcd : 0 , kills : 0 , killPts : 0 , placePts : 0 , totalPts : 0 } , { team : "Aero Esports" , played : 0 , wwcd : 0 , kills : 0 , killPts : 0 , placePts : 0 , totalPts : 0 } ] } , { title : "Post Match 1 Standings" , timestamp : "8:35 PM IST" , standings : [ { team : "Shadow Ninjas" , played : 1 , wwcd : 1 , kills : 9 , killPts : 9 , placePts : 12 , totalPts : 21 } , { team : "Aero Esports" , played : 1 , wwcd : 0 , kills : 8 , killPts : 8 , placePts : 9 , totalPts : 17 } , { team : "Titan Squad" , played : 1 , wwcd : 0 , kills : 6 , killPts : 6 , placePts : 8 , totalPts : 14 } ] } ] } , { id : 2 , title : "AERO PRO LEAGUE SEASON 4" , game : "Free Fire MAX" , format : "SQUAD (BR)" , maps : "Purgatory, Alpine, NexTerra" , slots : 12 , prize : "₹10,000" , status : "LIVE" , statusClass : "live" , killMultiplier : 1 , placementPoints : { "1" : 12 , "2" : 9 , "3" : 8 , "4" : 7 , "5" : 6 , "6" : 5 , "7" : 4 , "8" : 3 , "9" : 2 , "10" : 1 , "11" : 0 , "12" : 0 } , teams : [ { slot : 1 , name : "Aero Esports" , tag : "AERO" , captain : "Aero_Alpha" , players : [ { name : "Aero_Alpha" , uid : "66120101" , role : "IGL" } , { name : "Aero_Sniper" , uid : "66120102" , role : "Sniper" } ] } , { slot : 2 , name : "Dark Hunters" , tag : "DHK" , captain : "Hunter_07" , players : [ { name : "Hunter_07" , uid : "119001" , role : "IGL" } , { name : "Hunter_Wolf" , uid : "119002" , role : "Rusher" } ] } ] , matches : [ { id : 1 , title : "Match 1 - Purgatory" , map : "Purgatory" , time : "7:00 PM IST" , roomId : "9910441" , roomPass : "AERO99" , status : "COMPLETED" , scores : [ ] } ] , checkpoints : [ ] } , { id : 3 , title : "MIDNIGHT CLASH SCRIMS" , game : "Free Fire MAX" , format : "SQUAD (BR)" , maps : "Kalahari, Alpine" , slots : 12 , prize : "₹5,000" , status : "UPCOMING" , statusClass : "open" , killMultiplier : 1 , placementPoints : { "1" : 12 , "2" : 9 , "3" : 8 , "4" : 7 , "5" : 6 , "6" : 5 , "7" : 4 , "8" : 3 , "9" : 2 , "10" : 1 , "11" : 0 , "12" : 0 } , teams : [ ] , matches : [ ] , checkpoints : [ ] } ];
 
 function showToast(message) {
-  let container = document.getElementById ( "toast-container" );
-  if (container != null) {
-    let toast = document.createElement ( "div" );
-    toast.className = "toast-item";
-    toast.innerText = message;
-    container.appendChild ( toast );
-    setTimeout(function() {
-      if (toast.parentNode != null) {
-        toast.parentNode.removeChild ( toast );
-      }
-    }, 3000);
-  }
+  (document.getElementById("toast-container") || document.querySelector("toast-container")).innerHTML = "<div class='toast-item'>" + message + "</div>";
+  (document.getElementById("toast-container") || document.querySelector("toast-container")).style.display = 'block';
+  setTimeout(function() {
+    (document.getElementById("toast-container") || document.querySelector("toast-container")).style.display = 'none';
+  }, 3000);
 }
 
 function getActiveTourney() {
@@ -39,147 +34,128 @@ function getActiveTourney() {
 
 function switchView(targetId) {
   currentView = targetId;
-  let allSections = document.querySelectorAll ( ".view-section" );
-  for (const sec of allSections) {
-    sec.classList.remove ( "active" );
-    sec.style.display = "none";
-  }
-  let targetSec = document.getElementById ( targetId );
-  if (targetSec != null) {
-    targetSec.classList.add ( "active" );
-    targetSec.style.display = "block";
-  }
-  let navLinks = document.querySelectorAll ( ".nav-link" );
-  for (const lnk of navLinks) {
-    lnk.classList.remove ( "active" );
-  }
+  (document.getElementById("view-landing") || document.querySelector("view-landing")).style.display = 'none';
+  (document.getElementById("view-create") || document.querySelector("view-create")).style.display = 'none';
+  (document.getElementById("view-manage") || document.querySelector("view-manage")).style.display = 'none';
+  (document.getElementById("view-workspace") || document.querySelector("view-workspace")).style.display = 'none';
+  (document.getElementById("nav-landing") || document.querySelector("nav-landing")).classList.remove('active');
+  (document.getElementById("nav-create") || document.querySelector("nav-create")).classList.remove('active');
+  (document.getElementById("nav-manage") || document.querySelector("nav-manage")).classList.remove('active');
   if (targetId == "view-landing") {
-    let l1 = document.getElementById ( "nav-landing" );
-    if (l1 != null) {
-      l1.classList.add ( "active" );
-    }
+    (document.getElementById("view-landing") || document.querySelector("view-landing")).style.display = 'block';
+    (document.getElementById("view-landing") || document.querySelector("view-landing")).classList.add('active');
+    (document.getElementById("nav-landing") || document.querySelector("nav-landing")).classList.add('active');
   }
   if (targetId == "view-create") {
-    let l2 = document.getElementById ( "nav-create" );
-    if (l2 != null) {
-      l2.classList.add ( "active" );
-    }
+    (document.getElementById("view-create") || document.querySelector("view-create")).style.display = 'block';
+    (document.getElementById("view-create") || document.querySelector("view-create")).classList.add('active');
+    (document.getElementById("nav-create") || document.querySelector("nav-create")).classList.add('active');
   }
   if (targetId == "view-manage") {
-    let l3 = document.getElementById ( "nav-manage" );
-    if (l3 != null) {
-      l3.classList.add ( "active" );
-    }
+    (document.getElementById("view-manage") || document.querySelector("view-manage")).style.display = 'block';
+    (document.getElementById("view-manage") || document.querySelector("view-manage")).classList.add('active');
+    (document.getElementById("nav-manage") || document.querySelector("nav-manage")).classList.add('active');
   }
-  window.scrollTo ( 0 , 0 );
+  if (targetId == "view-workspace") {
+    (document.getElementById("view-workspace") || document.querySelector("view-workspace")).style.display = 'block';
+    (document.getElementById("view-workspace") || document.querySelector("view-workspace")).classList.add('active');
+  }
+  (document.getElementById("main-navbar") || document.querySelector("main-navbar")).scrollIntoView({ behavior: 'smooth' });
 }
 
 function switchWsTab(panelId) {
   currentWsTab = panelId;
-  let allPanels = document.querySelectorAll ( ".ws-panel" );
-  for (const p of allPanels) {
-    p.classList.remove ( "active" );
-    p.style.display = "none";
-  }
-  let targetPanel = document.getElementById ( panelId );
-  if (targetPanel != null) {
-    targetPanel.classList.add ( "active" );
-    targetPanel.style.display = "block";
-  }
-  let allTabs = document.querySelectorAll ( ".ws-tab" );
-  for (const tb of allTabs) {
-    tb.classList.remove ( "active" );
-  }
+  (document.getElementById("panel-ws-overview") || document.querySelector("panel-ws-overview")).style.display = 'none';
+  (document.getElementById("panel-ws-teams") || document.querySelector("panel-ws-teams")).style.display = 'none';
+  (document.getElementById("panel-ws-matches") || document.querySelector("panel-ws-matches")).style.display = 'none';
+  (document.getElementById("panel-ws-match-standings") || document.querySelector("panel-ws-match-standings")).style.display = 'none';
+  (document.getElementById("panel-ws-overall-standings") || document.querySelector("panel-ws-overall-standings")).style.display = 'none';
+  (document.getElementById("panel-ws-points-rules") || document.querySelector("panel-ws-points-rules")).style.display = 'none';
+  (document.getElementById("panel-ws-exports") || document.querySelector("panel-ws-exports")).style.display = 'none';
+  (document.getElementById("ws-tab-overview") || document.querySelector("ws-tab-overview")).classList.remove('active');
+  (document.getElementById("ws-tab-teams") || document.querySelector("ws-tab-teams")).classList.remove('active');
+  (document.getElementById("ws-tab-matches") || document.querySelector("ws-tab-matches")).classList.remove('active');
+  (document.getElementById("ws-tab-match-standings") || document.querySelector("ws-tab-match-standings")).classList.remove('active');
+  (document.getElementById("ws-tab-overall-standings") || document.querySelector("ws-tab-overall-standings")).classList.remove('active');
+  (document.getElementById("ws-tab-points-rules") || document.querySelector("ws-tab-points-rules")).classList.remove('active');
+  (document.getElementById("ws-tab-exports") || document.querySelector("ws-tab-exports")).classList.remove('active');
   if (panelId == "panel-ws-overview") {
-    let t1 = document.getElementById ( "ws-tab-overview" );
-    if (t1 != null) {
-      t1.classList.add ( "active" );
-    }
+    (document.getElementById("panel-ws-overview") || document.querySelector("panel-ws-overview")).style.display = 'block';
+    (document.getElementById("panel-ws-overview") || document.querySelector("panel-ws-overview")).classList.add('active');
+    (document.getElementById("ws-tab-overview") || document.querySelector("ws-tab-overview")).classList.add('active');
   }
   if (panelId == "panel-ws-teams") {
-    let t2 = document.getElementById ( "ws-tab-teams" );
-    if (t2 != null) {
-      t2.classList.add ( "active" );
-    }
+    (document.getElementById("panel-ws-teams") || document.querySelector("panel-ws-teams")).style.display = 'block';
+    (document.getElementById("panel-ws-teams") || document.querySelector("panel-ws-teams")).classList.add('active');
+    (document.getElementById("ws-tab-teams") || document.querySelector("ws-tab-teams")).classList.add('active');
   }
   if (panelId == "panel-ws-matches") {
-    let t3 = document.getElementById ( "ws-tab-matches" );
-    if (t3 != null) {
-      t3.classList.add ( "active" );
-    }
+    (document.getElementById("panel-ws-matches") || document.querySelector("panel-ws-matches")).style.display = 'block';
+    (document.getElementById("panel-ws-matches") || document.querySelector("panel-ws-matches")).classList.add('active');
+    (document.getElementById("ws-tab-matches") || document.querySelector("ws-tab-matches")).classList.add('active');
   }
   if (panelId == "panel-ws-match-standings") {
-    let t4 = document.getElementById ( "ws-tab-match-standings" );
-    if (t4 != null) {
-      t4.classList.add ( "active" );
-    }
+    (document.getElementById("panel-ws-match-standings") || document.querySelector("panel-ws-match-standings")).style.display = 'block';
+    (document.getElementById("panel-ws-match-standings") || document.querySelector("panel-ws-match-standings")).classList.add('active');
+    (document.getElementById("ws-tab-match-standings") || document.querySelector("ws-tab-match-standings")).classList.add('active');
   }
   if (panelId == "panel-ws-overall-standings") {
-    let t5 = document.getElementById ( "ws-tab-overall-standings" );
-    if (t5 != null) {
-      t5.classList.add ( "active" );
-    }
+    (document.getElementById("panel-ws-overall-standings") || document.querySelector("panel-ws-overall-standings")).style.display = 'block';
+    (document.getElementById("panel-ws-overall-standings") || document.querySelector("panel-ws-overall-standings")).classList.add('active');
+    (document.getElementById("ws-tab-overall-standings") || document.querySelector("ws-tab-overall-standings")).classList.add('active');
   }
   if (panelId == "panel-ws-points-rules") {
-    let t6 = document.getElementById ( "ws-tab-points-rules" );
-    if (t6 != null) {
-      t6.classList.add ( "active" );
-    }
+    (document.getElementById("panel-ws-points-rules") || document.querySelector("panel-ws-points-rules")).style.display = 'block';
+    (document.getElementById("panel-ws-points-rules") || document.querySelector("panel-ws-points-rules")).classList.add('active');
+    (document.getElementById("ws-tab-points-rules") || document.querySelector("ws-tab-points-rules")).classList.add('active');
   }
   if (panelId == "panel-ws-exports") {
-    let t7 = document.getElementById ( "ws-tab-exports" );
-    if (t7 != null) {
-      t7.classList.add ( "active" );
-    }
+    (document.getElementById("panel-ws-exports") || document.querySelector("panel-ws-exports")).style.display = 'block';
+    (document.getElementById("panel-ws-exports") || document.querySelector("panel-ws-exports")).classList.add('active');
+    (document.getElementById("ws-tab-exports") || document.querySelector("ws-tab-exports")).classList.add('active');
   }
 }
 
 function renderLandingFeatured() {
-  let grid = document.getElementById ( "landing-tourney-grid" );
-  if (grid != null) {
-    let htmlBuffer = "";
-    for (const tourney of tournamentsDb) {
-      htmlBuffer = htmlBuffer + "<div class='tourney-card-item' onclick='window.vortexOpenWorkspace(" + tourney.id + ")'>";
-      htmlBuffer = htmlBuffer + "<div class='card-top-row'>";
-      htmlBuffer = htmlBuffer + "<span class='badge-tag " + tourney.statusClass + "'>" + tourney.status + "</span>";
-      htmlBuffer = htmlBuffer + "<span class='badge-tag open'>" + tourney.format + "</span>";
-      htmlBuffer = htmlBuffer + "</div>";
-      htmlBuffer = htmlBuffer + "<div class='t-card-title'>" + tourney.title + "</div>";
-      htmlBuffer = htmlBuffer + "<div class='t-card-meta'>Game: " + tourney.game + " • Maps: " + tourney.maps + "</div>";
-      htmlBuffer = htmlBuffer + "<div class='t-card-metrics'>";
-      htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>PRIZE POOL</span><span class='tm-val highlight'>" + tourney.prize + "</span></div>";
-      htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>SQUADS</span><span class='tm-val'>" + tourney.teams.length + " / " + tourney.slots + "</span></div>";
-      htmlBuffer = htmlBuffer + "</div>";
-      htmlBuffer = htmlBuffer + "<button class='btn-action-primary' style='width:100%;'>OPEN WORKSPACE ➔</button>";
-      htmlBuffer = htmlBuffer + "</div>";
-    }
-    grid.innerHTML = htmlBuffer;
+  let htmlBuffer = "";
+  for (const tourney of tournamentsDb) {
+    htmlBuffer = htmlBuffer + "<div class='tourney-card-item' onclick='window.vortexOpenWorkspace(" + tourney.id + ")'>";
+    htmlBuffer = htmlBuffer + "<div class='card-top-row'>";
+    htmlBuffer = htmlBuffer + "<span class='badge-tag " + tourney.statusClass + "'>" + tourney.status + "</span>";
+    htmlBuffer = htmlBuffer + "<span class='badge-tag open'>" + tourney.format + "</span>";
+    htmlBuffer = htmlBuffer + "</div>";
+    htmlBuffer = htmlBuffer + "<div class='t-card-title'>" + tourney.title + "</div>";
+    htmlBuffer = htmlBuffer + "<div class='t-card-meta'>Game: " + tourney.game + " • Maps: " + tourney.maps + "</div>";
+    htmlBuffer = htmlBuffer + "<div class='t-card-metrics'>";
+    htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>PRIZE POOL</span><span class='tm-val highlight'>" + tourney.prize + "</span></div>";
+    htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>SQUADS</span><span class='tm-val'>" + tourney.teams.length + " / " + tourney.slots + "</span></div>";
+    htmlBuffer = htmlBuffer + "</div>";
+    htmlBuffer = htmlBuffer + "<button class='btn-action-primary' style='width:100%;'>OPEN WORKSPACE ➔</button>";
+    htmlBuffer = htmlBuffer + "</div>";
   }
+  (document.getElementById("landing-tourney-grid") || document.querySelector("landing-tourney-grid")).innerHTML = htmlBuffer;
 }
 
 function renderManageList() {
-  let grid = document.getElementById ( "manage-tournaments-grid" );
-  if (grid != null) {
-    let htmlBuffer = "";
-    for (const tourney of tournamentsDb) {
-      htmlBuffer = htmlBuffer + "<div class='tourney-card-item' onclick='window.vortexOpenWorkspace(" + tourney.id + ")'>";
-      htmlBuffer = htmlBuffer + "<div class='card-top-row'>";
-      htmlBuffer = htmlBuffer + "<span class='badge-tag " + tourney.statusClass + "'>" + tourney.status + "</span>";
-      htmlBuffer = htmlBuffer + "<span class='badge-tag open'>" + tourney.game + "</span>";
-      htmlBuffer = htmlBuffer + "</div>";
-      htmlBuffer = htmlBuffer + "<div class='t-card-title'>" + tourney.title + "</div>";
-      htmlBuffer = htmlBuffer + "<div class='t-card-meta'>Format: " + tourney.format + " • Maps: " + tourney.maps + "</div>";
-      htmlBuffer = htmlBuffer + "<div class='t-card-metrics'>";
-      htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>PRIZE POOL</span><span class='tm-val highlight'>" + tourney.prize + "</span></div>";
-      htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>SQUADS REGISTERED</span><span class='tm-val'>" + tourney.teams.length + " / " + tourney.slots + "</span></div>";
-      htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>MATCHES</span><span class='tm-val'>" + tourney.matches.length + " Scheduled</span></div>";
-      htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>CHECKPOINTS</span><span class='tm-val'>" + tourney.checkpoints.length + " Saved</span></div>";
-      htmlBuffer = htmlBuffer + "</div>";
-      htmlBuffer = htmlBuffer + "<button class='btn-action-primary' style='width:100%;'>ENTER ORGANIZER WORKSPACE ➔</button>";
-      htmlBuffer = htmlBuffer + "</div>";
-    }
-    grid.innerHTML = htmlBuffer;
+  let htmlBuffer = "";
+  for (const tourney of tournamentsDb) {
+    htmlBuffer = htmlBuffer + "<div class='tourney-card-item' onclick='window.vortexOpenWorkspace(" + tourney.id + ")'>";
+    htmlBuffer = htmlBuffer + "<div class='card-top-row'>";
+    htmlBuffer = htmlBuffer + "<span class='badge-tag " + tourney.statusClass + "'>" + tourney.status + "</span>";
+    htmlBuffer = htmlBuffer + "<span class='badge-tag open'>" + tourney.game + "</span>";
+    htmlBuffer = htmlBuffer + "</div>";
+    htmlBuffer = htmlBuffer + "<div class='t-card-title'>" + tourney.title + "</div>";
+    htmlBuffer = htmlBuffer + "<div class='t-card-meta'>Format: " + tourney.format + " • Maps: " + tourney.maps + "</div>";
+    htmlBuffer = htmlBuffer + "<div class='t-card-metrics'>";
+    htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>PRIZE POOL</span><span class='tm-val highlight'>" + tourney.prize + "</span></div>";
+    htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>SQUADS REGISTERED</span><span class='tm-val'>" + tourney.teams.length + " / " + tourney.slots + "</span></div>";
+    htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>MATCHES</span><span class='tm-val'>" + tourney.matches.length + " Scheduled</span></div>";
+    htmlBuffer = htmlBuffer + "<div class='t-metric'><span class='tm-label'>CHECKPOINTS</span><span class='tm-val'>" + tourney.checkpoints.length + " Saved</span></div>";
+    htmlBuffer = htmlBuffer + "</div>";
+    htmlBuffer = htmlBuffer + "<button class='btn-action-primary' style='width:100%;'>ENTER ORGANIZER WORKSPACE ➔</button>";
+    htmlBuffer = htmlBuffer + "</div>";
   }
+  (document.getElementById("manage-tournaments-grid") || document.querySelector("manage-tournaments-grid")).innerHTML = htmlBuffer;
 }
 
 function openWorkspaceWithId(tourneyId) {
@@ -191,18 +167,9 @@ function openWorkspaceWithId(tourneyId) {
     }
   }
   if (activeT != null) {
-    let titleEl = document.getElementById ( "ws-tourney-title" );
-    if (titleEl != null) {
-      titleEl.innerText = activeT.title;
-    }
-    let metaEl = document.getElementById ( "ws-game-meta" );
-    if (metaEl != null) {
-      metaEl.innerText = activeT.game + " • " + activeT.format + " • Prize: " + activeT.prize + " • Maps: " + activeT.maps;
-    }
-    let statusBadge = document.getElementById ( "ws-status-badge" );
-    if (statusBadge != null) {
-      statusBadge.innerText = activeT.status;
-    }
+    (document.getElementById("ws-tourney-title") || document.querySelector("ws-tourney-title")).textContent = activeT.title;
+    (document.getElementById("ws-game-meta") || document.querySelector("ws-game-meta")).textContent = activeT.game + " • " + activeT.format + " • Prize: " + activeT.prize + " • Maps: " + activeT.maps;
+    (document.getElementById("ws-status-badge") || document.querySelector("ws-status-badge")).textContent = activeT.status;
     renderWorkspaceOverview();
     renderWorkspaceTeams();
     renderWorkspaceMatches();
@@ -217,57 +184,53 @@ function openWorkspaceWithId(tourneyId) {
 function renderWorkspaceOverview() {
   let activeT = getActiveTourney ( );
   if (activeT != null) {
-    document.getElementById ( "stat-total-teams" ) .innerText = activeT.teams.length + " / " + activeT.slots;
+    (document.getElementById("stat-total-teams") || document.querySelector("stat-total-teams")).textContent = activeT.teams.length + " / " + activeT.slots;
     let completedMatches = 0;
     for (const m of activeT.matches) {
       if (m.status == "COMPLETED") {
         completedMatches = completedMatches + 1;
       }
     }
-    document.getElementById ( "stat-matches-played" ) .innerText = completedMatches + " / " + activeT.matches.length;
-    document.getElementById ( "stat-prize-pool" ) .innerText = activeT.prize;
-    let overviewBody = document.getElementById ( "ws-overview-table-body" );
-    if (overviewBody != null) {
-      let overallList = computeOverallStandings ( activeT );
-      if (overallList.length > 0) {
-        document.getElementById ( "stat-table-leader" ) .innerText = overallList [ 0 ] .team + " (" + overallList [ 0 ] .totalPts + " PTS)";
-      }
-      let htmlBuffer = "";
-      let rank = 1;
-      for (const row of overallList) {
-        let rankClass = "rank-badge";
-        if (rank == 1) {
-          rankClass = "rank-badge rank-1";
-        }
-        if (rank == 2) {
-          rankClass = "rank-badge rank-2";
-        }
-        if (rank == 3) {
-          rankClass = "rank-badge rank-3";
-        }
-        htmlBuffer = htmlBuffer + "<tr>";
-        htmlBuffer = htmlBuffer + "<td><span class='" + rankClass + "'>#" + rank + "</span></td>";
-        htmlBuffer = htmlBuffer + "<td><strong>" + row.team + "</strong></td>";
-        htmlBuffer = htmlBuffer + "<td>" + row.played + "</td>";
-        htmlBuffer = htmlBuffer + "<td>" + row.wwcd + "</td>";
-        htmlBuffer = htmlBuffer + "<td>" + row.killPts + "</td>";
-        htmlBuffer = htmlBuffer + "<td>" + row.placePts + "</td>";
-        htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill'>" + row.totalPts + " PTS</span></td>";
-        htmlBuffer = htmlBuffer + "<td style='text-align:right;'><button class='btn-secondary-sm' style='padding:3px 8px; font-size:11px;' onclick='window.vortexOpenTeamMatchesModal(\"" + row.team + "\")'>✏️ EDIT MATCHES</button></td>";
-        htmlBuffer = htmlBuffer + "</tr>";
-        rank = rank + 1;
-      }
-      overviewBody.innerHTML = htmlBuffer;
+    (document.getElementById("stat-matches-played") || document.querySelector("stat-matches-played")).textContent = completedMatches + " / " + activeT.matches.length;
+    (document.getElementById("stat-prize-pool") || document.querySelector("stat-prize-pool")).textContent = activeT.prize;
+    let overallList = computeOverallStandings ( activeT );
+    if (overallList.length > 0) {
+      (document.getElementById("stat-table-leader") || document.querySelector("stat-table-leader")).textContent = overallList [ 0 ] .team + " (" + overallList [ 0 ] .totalPts + " PTS)";
     }
+    let htmlBuffer = "";
+    let rank = 1;
+    for (const row of overallList) {
+      let rankClass = "rank-badge";
+      if (rank == 1) {
+        rankClass = "rank-badge rank-1";
+      }
+      if (rank == 2) {
+        rankClass = "rank-badge rank-2";
+      }
+      if (rank == 3) {
+        rankClass = "rank-badge rank-3";
+      }
+      htmlBuffer = htmlBuffer + "<tr>";
+      htmlBuffer = htmlBuffer + "<td><span class='" + rankClass + "'>#" + rank + "</span></td>";
+      htmlBuffer = htmlBuffer + "<td><strong>" + row.team + "</strong></td>";
+      htmlBuffer = htmlBuffer + "<td>" + row.played + "</td>";
+      htmlBuffer = htmlBuffer + "<td>" + row.wwcd + "</td>";
+      htmlBuffer = htmlBuffer + "<td>" + row.killPts + "</td>";
+      htmlBuffer = htmlBuffer + "<td>" + row.placePts + "</td>";
+      htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill'>" + row.totalPts + " PTS</span></td>";
+      htmlBuffer = htmlBuffer + "<td style='text-align:right;'><button class='btn-secondary-sm' style='padding:3px 8px; font-size:11px;' onclick='window.vortexOpenTeamMatchesModal(\"" + row.team + "\")'>✏️ EDIT MATCHES</button></td>";
+      htmlBuffer = htmlBuffer + "</tr>";
+      rank = rank + 1;
+    }
+    (document.getElementById("ws-overview-table-body") || document.querySelector("ws-overview-table-body")).innerHTML = htmlBuffer;
   }
 }
 
 function renderWorkspaceTeams() {
   let activeT = getActiveTourney ( );
-  let container = document.getElementById ( "ws-teams-container" );
-  if (activeT != null && container != null) {
+  if (activeT != null) {
     if (activeT.teams.length == 0) {
-      container.innerHTML = "<div style='padding:32px; text-align:center; color:#64748b;'>No squads registered yet. Click '+ ADD NEW TEAM' to register squad slots.</div>";
+      (document.getElementById("ws-teams-container") || document.querySelector("ws-teams-container")).innerHTML = "<div style='padding:32px; text-align:center; color:#64748b;'>No squads registered yet. Click '+ ADD NEW TEAM' to register squad slots.</div>";
       return 0;
     }
     let htmlBuffer = "";
@@ -313,16 +276,15 @@ function renderWorkspaceTeams() {
       htmlBuffer = htmlBuffer + "</tbody></table></div></div>";
       tIdx = tIdx + 1;
     }
-    container.innerHTML = htmlBuffer;
+    (document.getElementById("ws-teams-container") || document.querySelector("ws-teams-container")).innerHTML = htmlBuffer;
   }
 }
 
 function renderWorkspaceMatches() {
   let activeT = getActiveTourney ( );
-  let grid = document.getElementById ( "ws-matches-grid" );
-  if (activeT != null && grid != null) {
+  if (activeT != null) {
     if (activeT.matches.length == 0) {
-      grid.innerHTML = "<div style='padding:32px; text-align:center; color:#64748b;'>No matches scheduled yet. Click '+ SCHEDULE NEW MATCH' to create brackets.</div>";
+      (document.getElementById("ws-matches-grid") || document.querySelector("ws-matches-grid")).innerHTML = "<div style='padding:32px; text-align:center; color:#64748b;'>No matches scheduled yet. Click '+ SCHEDULE NEW MATCH' to create brackets.</div>";
       return 0;
     }
     let htmlBuffer = "";
@@ -348,31 +310,28 @@ function renderWorkspaceMatches() {
       htmlBuffer = htmlBuffer + "<button class='btn-secondary-sm' style='width:100%;' onclick='window.vortexToggleMatchStatus(" + matchItem.id + ")'>TOGGLE STATUS (SCHEDULED / LIVE / DONE)</button>";
       htmlBuffer = htmlBuffer + "</div>";
     }
-    grid.innerHTML = htmlBuffer;
+    (document.getElementById("ws-matches-grid") || document.querySelector("ws-matches-grid")).innerHTML = htmlBuffer;
   }
 }
 
 function renderWorkspaceMatchStandings() {
   let activeT = getActiveTourney ( );
   if (activeT != null) {
-    let selectEl = document.getElementById ( "ws-match-select-dropdown" );
-    if (selectEl != null) {
-      let optBuffer = "";
-      let mIdx = 0;
-      for (const m of activeT.matches) {
-        let selectedAttr = "";
-        if (mIdx == activeMatchIdx) {
-          selectedAttr = " selected";
-        }
-        optBuffer = optBuffer + "<option value='" + mIdx + "'" + selectedAttr + ">" + m.title + " (" + m.status + ")</option>";
-        mIdx = mIdx + 1;
+    let optBuffer = "";
+    let mIdx = 0;
+    for (const m of activeT.matches) {
+      let selectedAttr = "";
+      if (mIdx == activeMatchIdx) {
+        selectedAttr = " selected";
       }
-      selectEl.innerHTML = optBuffer;
+      optBuffer = optBuffer + "<option value='" + mIdx + "'" + selectedAttr + ">" + m.title + " (" + m.status + ")</option>";
+      mIdx = mIdx + 1;
     }
+    (document.getElementById("ws-match-select-dropdown") || document.querySelector("ws-match-select-dropdown")).innerHTML = optBuffer;
     let activeMatch = activeT.matches [ activeMatchIdx ];
     if (activeMatch != undefined) {
-      document.getElementById ( "ws-active-match-title" ) .innerText = activeMatch.title;
-      document.getElementById ( "ws-active-match-status" ) .innerText = activeMatch.status;
+      (document.getElementById("ws-active-match-title") || document.querySelector("ws-active-match-title")).textContent = activeMatch.title;
+      (document.getElementById("ws-active-match-status") || document.querySelector("ws-active-match-status")).textContent = activeMatch.status;
       if (activeMatch.scores.length == 0) {
         let initRank = 1;
         for (const teamItem of activeT.teams) {
@@ -380,37 +339,34 @@ function renderWorkspaceMatchStandings() {
           initRank = initRank + 1;
         }
       }
-      let tbody = document.getElementById ( "ws-match-standings-tbody" );
-      if (tbody != null) {
-        let htmlBuffer = "";
-        let sIdx = 0;
-        for (const scoreRow of activeMatch.scores) {
-          let pKey = String ( scoreRow.place );
-          let placePts = 0;
-          if (activeT.placementPoints [ pKey ] != undefined) {
-            placePts = activeT.placementPoints [ pKey ];
-          }
-          let killPts = Number ( scoreRow.kills ) * Number ( activeT.killMultiplier );
-          let totalPts = placePts + killPts + Number ( scoreRow.bonus ) - Number ( scoreRow.penalty );
-          htmlBuffer = htmlBuffer + "<tr>";
-          htmlBuffer = htmlBuffer + "<td><strong class='rank-badge'>#" + ( sIdx + 1 ) + "</strong></td>";
-          htmlBuffer = htmlBuffer + "<td><strong>" + scoreRow.team + "</strong></td>";
-          htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='1' max='12' value='" + scoreRow.place + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"place\", this.value)'></td>";
-          htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='0' max='50' value='" + scoreRow.kills + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"kills\", this.value)'></td>";
-          htmlBuffer = htmlBuffer + "<td>" + killPts + "</td>";
-          htmlBuffer = htmlBuffer + "<td>" + placePts + "</td>";
-          htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='0' max='20' value='" + scoreRow.bonus + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"bonus\", this.value)'></td>";
-          htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='0' max='20' value='" + scoreRow.penalty + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"penalty\", this.value)'></td>";
-          htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill'>" + totalPts + " PTS</span></td>";
-          htmlBuffer = htmlBuffer + "<td>";
-          htmlBuffer = htmlBuffer + "<button class='btn-secondary-sm' style='padding:2px 6px; margin-right:4px; font-size:10px;' onclick='window.vortexOpenTeamMatchesModal(\"" + scoreRow.team + "\")'>ALL MATCHES</button>";
-          htmlBuffer = htmlBuffer + "<button class='btn-row-del' onclick='window.vortexDeleteMatchRow(" + sIdx + ")'>DEL</button>";
-          htmlBuffer = htmlBuffer + "</td>";
-          htmlBuffer = htmlBuffer + "</tr>";
-          sIdx = sIdx + 1;
+      let htmlBuffer = "";
+      let sIdx = 0;
+      for (const scoreRow of activeMatch.scores) {
+        let pKey = String ( scoreRow.place );
+        let placePts = 0;
+        if (activeT.placementPoints [ pKey ] != undefined) {
+          placePts = activeT.placementPoints [ pKey ];
         }
-        tbody.innerHTML = htmlBuffer;
+        let killPts = Number ( scoreRow.kills ) * Number ( activeT.killMultiplier );
+        let totalPts = placePts + killPts + Number ( scoreRow.bonus ) - Number ( scoreRow.penalty );
+        htmlBuffer = htmlBuffer + "<tr>";
+        htmlBuffer = htmlBuffer + "<td><strong class='rank-badge'>#" + ( sIdx + 1 ) + "</strong></td>";
+        htmlBuffer = htmlBuffer + "<td><strong>" + scoreRow.team + "</strong></td>";
+        htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='1' max='12' value='" + scoreRow.place + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"place\", this.value)'></td>";
+        htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='0' max='50' value='" + scoreRow.kills + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"kills\", this.value)'></td>";
+        htmlBuffer = htmlBuffer + "<td>" + killPts + "</td>";
+        htmlBuffer = htmlBuffer + "<td>" + placePts + "</td>";
+        htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='0' max='20' value='" + scoreRow.bonus + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"bonus\", this.value)'></td>";
+        htmlBuffer = htmlBuffer + "<td><input class='table-edit-input' type='number' min='0' max='20' value='" + scoreRow.penalty + "' onchange='window.vortexUpdateMatchScore(" + sIdx + ", \"penalty\", this.value)'></td>";
+        htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill'>" + totalPts + " PTS</span></td>";
+        htmlBuffer = htmlBuffer + "<td>";
+        htmlBuffer = htmlBuffer + "<button class='btn-secondary-sm' style='padding:2px 6px; margin-right:4px; font-size:10px;' onclick='window.vortexOpenTeamMatchesModal(\"" + scoreRow.team + "\")'>ALL MATCHES</button>";
+        htmlBuffer = htmlBuffer + "<button class='btn-row-del' onclick='window.vortexDeleteMatchRow(" + sIdx + ")'>DEL</button>";
+        htmlBuffer = htmlBuffer + "</td>";
+        htmlBuffer = htmlBuffer + "</tr>";
+        sIdx = sIdx + 1;
       }
+      (document.getElementById("ws-match-standings-tbody") || document.querySelector("ws-match-standings-tbody")).innerHTML = htmlBuffer;
     }
   }
 }
@@ -418,13 +374,13 @@ function renderWorkspaceMatchStandings() {
 function computeOverallStandings(activeT) {
   let teamMap = { };
   for (const teamItem of activeT.teams) {
-    teamMap[teamItem.name] = { team: teamItem.name, played: 0, wwcd: 0, kills: 0, killPts: 0, placePts: 0, totalPts: 0 }
+    teamMap [ teamItem.name ] = { team : teamItem.name , played : 0 , wwcd : 0 , kills : 0 , killPts : 0 , placePts : 0 , totalPts : 0 };
   }
   for (const m of activeT.matches) {
     if (m.status == "COMPLETED" || m.status == "LIVE") {
       for (const sc of m.scores) {
         if (teamMap [ sc.team ] == undefined) {
-          teamMap[sc.team] = { team: sc.team, played: 0, wwcd: 0, kills: 0, killPts: 0, placePts: 0, totalPts: 0 }
+          teamMap [ sc.team ] = { team : sc.team , played : 0 , wwcd : 0 , kills : 0 , killPts : 0 , placePts : 0 , totalPts : 0 };
         }
         let record = teamMap [ sc.team ];
         record.played = record.played + 1;
@@ -446,7 +402,7 @@ function computeOverallStandings(activeT) {
   }
   let resultList = [ ];
   for (const k of Object.keys ( teamMap )) {
-    resultList.push ( teamMap [ k ] );
+    resultList.push(teamMap [ k ]);
   }
   resultList.sort ( function ( itemA , itemB ) { return itemB.totalPts - itemA.totalPts } );
   return resultList;
@@ -454,8 +410,7 @@ function computeOverallStandings(activeT) {
 
 function renderWorkspaceOverallStandings() {
   let activeT = getActiveTourney ( );
-  let tbody = document.getElementById ( "ws-overall-standings-tbody" );
-  if (activeT != null && tbody != null) {
+  if (activeT != null) {
     let overallList = computeOverallStandings ( activeT );
     let htmlBuffer = "";
     let rank = 1;
@@ -483,16 +438,16 @@ function renderWorkspaceOverallStandings() {
       htmlBuffer = htmlBuffer + "</tr>";
       rank = rank + 1;
     }
-    tbody.innerHTML = htmlBuffer;
+    (document.getElementById("ws-overall-standings-tbody") || document.querySelector("ws-overall-standings-tbody")).innerHTML = htmlBuffer;
   }
 }
 
 function openTeamMatchesModal(targetTeam) {
   editingTeamName = targetTeam;
+  tempTeamScores = [ ];
   let activeT = getActiveTourney ( );
-  let tbody = document.getElementById ( "modal-team-matches-tbody" );
-  if (activeT != null && tbody != null) {
-    document.getElementById ( "modal-team-matches-title" ) .innerText = "EDIT ALL MATCH SCORES — " + targetTeam;
+  if (activeT != null) {
+    (document.getElementById("modal-team-matches-title") || document.querySelector("modal-team-matches-title")).textContent = "EDIT ALL MATCH SCORES — " + targetTeam;
     let htmlBuffer = "";
     let mIdx = 0;
     for (const m of activeT.matches) {
@@ -508,6 +463,7 @@ function openTeamMatchesModal(targetTeam) {
           penaltyVal = Number ( sc.penalty );
         }
       }
+      tempTeamScores.push ( { place : placeVal , kills : killsVal , bonus : bonusVal , penalty : penaltyVal } );
       let pKey = String ( placeVal );
       let placePts = 0;
       if (activeT.placementPoints [ pKey ] != undefined) {
@@ -525,21 +481,29 @@ function openTeamMatchesModal(targetTeam) {
       htmlBuffer = htmlBuffer + "<tr>";
       htmlBuffer = htmlBuffer + "<td><strong>" + m.title + "</strong><br><span style='font-size:11px; color:#64748b;'>Map: " + m.map + "</span></td>";
       htmlBuffer = htmlBuffer + "<td><span class='badge-tag " + statusBadge + "'>" + m.status + "</span></td>";
-      htmlBuffer = htmlBuffer + "<td><input type='number' min='1' max='12' class='table-edit-input' id='modal-m-place-" + mIdx + "' value='" + placeVal + "' oninput='window.vortexCalcTeamModalLive()'></td>";
-      htmlBuffer = htmlBuffer + "<td><input type='number' min='0' max='50' class='table-edit-input' id='modal-m-kills-" + mIdx + "' value='" + killsVal + "' oninput='window.vortexCalcTeamModalLive()'></td>";
-      htmlBuffer = htmlBuffer + "<td><input type='number' min='0' max='20' class='table-edit-input' id='modal-m-bonus-" + mIdx + "' value='" + bonusVal + "' oninput='window.vortexCalcTeamModalLive()'></td>";
-      htmlBuffer = htmlBuffer + "<td><input type='number' min='0' max='20' class='table-edit-input' id='modal-m-penalty-" + mIdx + "' value='" + penaltyVal + "' oninput='window.vortexCalcTeamModalLive()'></td>";
+      htmlBuffer = htmlBuffer + "<td><input type='number' min='1' max='12' class='table-edit-input' value='" + placeVal + "' oninput='window.vortexUpdateTeamScore(" + mIdx + ", \"place\", this.value)'></td>";
+      htmlBuffer = htmlBuffer + "<td><input type='number' min='0' max='50' class='table-edit-input' value='" + killsVal + "' oninput='window.vortexUpdateTeamScore(" + mIdx + ", \"kills\", this.value)'></td>";
+      htmlBuffer = htmlBuffer + "<td><input type='number' min='0' max='20' class='table-edit-input' value='" + bonusVal + "' oninput='window.vortexUpdateTeamScore(" + mIdx + ", \"bonus\", this.value)'></td>";
+      htmlBuffer = htmlBuffer + "<td><input type='number' min='0' max='20' class='table-edit-input' value='" + penaltyVal + "' oninput='window.vortexUpdateTeamScore(" + mIdx + ", \"penalty\", this.value)'></td>";
       htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill' id='modal-m-pts-" + mIdx + "'>" + totalMatchPts + " PTS</span></td>";
       htmlBuffer = htmlBuffer + "</tr>";
       mIdx = mIdx + 1;
     }
-    tbody.innerHTML = htmlBuffer;
-    calcTeamModalLive();
-    document.getElementById ( "modal-team-matches-edit" ) .classList.add ( "show" );
+    (document.getElementById("modal-team-matches-tbody") || document.querySelector("modal-team-matches-tbody")).innerHTML = htmlBuffer;
+    refreshTeamModalSummary();
+    (document.getElementById("modal-team-matches-edit") || document.querySelector("modal-team-matches-edit")).classList.add('show');
   }
 }
 
-function calcTeamModalLive() {
+function updateTeamModalScore(mIdx, field, val) {
+  if (tempTeamScores [ mIdx ] != undefined) {
+    let targetScore = tempTeamScores [ mIdx ];
+    targetScore[field] = Number(val)
+    refreshTeamModalSummary();
+  }
+}
+
+function refreshTeamModalSummary() {
   let activeT = getActiveTourney ( );
   if (activeT != null) {
     let cumPlayed = 0;
@@ -548,49 +512,36 @@ function calcTeamModalLive() {
     let cumKillPts = 0;
     let cumPlacePts = 0;
     let cumTotalPts = 0;
-    let mIdx = 0;
-    for (const m of activeT.matches) {
-      let pEl = document.getElementById ( "modal-m-place-" + mIdx );
-      let kEl = document.getElementById ( "modal-m-kills-" + mIdx );
-      let bEl = document.getElementById ( "modal-m-bonus-" + mIdx );
-      let penEl = document.getElementById ( "modal-m-penalty-" + mIdx );
-      let ptsEl = document.getElementById ( "modal-m-pts-" + mIdx );
-      if (pEl != null && kEl != null) {
-        let pVal = Number ( pEl.value );
-        let kVal = Number ( kEl.value );
-        let bVal = Number ( bEl.value );
-        let penVal = Number ( penEl.value );
-        let pKey = String ( pVal );
-        let placePts = 0;
-        if (activeT.placementPoints [ pKey ] != undefined) {
-          placePts = activeT.placementPoints [ pKey ];
-        }
-        let killPts = kVal * Number ( activeT.killMultiplier );
-        let rowTotal = placePts + killPts + bVal - penVal;
-        if (ptsEl != null) {
-          ptsEl.innerText = rowTotal + " PTS";
-        }
-        cumPlayed = cumPlayed + 1;
-        if (pVal == 1) {
-          cumWwcd = cumWwcd + 1;
-        }
-        cumKills = cumKills + kVal;
-        cumKillPts = cumKillPts + killPts;
-        cumPlacePts = cumPlacePts + placePts;
-        cumTotalPts = cumTotalPts + rowTotal;
+    let idx = 0;
+    for (const sc of tempTeamScores) {
+      let pKey = String ( sc.place );
+      let placePts = 0;
+      if (activeT.placementPoints [ pKey ] != undefined) {
+        placePts = activeT.placementPoints [ pKey ];
       }
-      mIdx = mIdx + 1;
+      let killPts = Number ( sc.kills ) * Number ( activeT.killMultiplier );
+      let rowTotal = placePts + killPts + Number ( sc.bonus ) - Number ( sc.penalty );
+      let rowEl = document.getElementById ( "modal-m-pts-" + idx );
+      if (rowEl != null) {
+        rowEl.textContent = rowTotal + " PTS";
+      }
+      cumPlayed = cumPlayed + 1;
+      if (Number ( sc.place ) == 1) {
+        cumWwcd = cumWwcd + 1;
+      }
+      cumKills = cumKills + Number ( sc.kills );
+      cumKillPts = cumKillPts + killPts;
+      cumPlacePts = cumPlacePts + placePts;
+      cumTotalPts = cumTotalPts + rowTotal;
+      idx = idx + 1;
     }
-    let summaryEl = document.getElementById ( "team-modal-stats-summary" );
-    if (summaryEl != null) {
-      let sumHtml = "";
-      sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>MATCHES</span><span class='tm-stat-val'>" + cumPlayed + " / " + activeT.matches.length + "</span></div>";
-      sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>BOOYAH (WWCD)</span><span class='tm-stat-val highlight'>" + cumWwcd + "</span></div>";
-      sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>TOTAL KILLS</span><span class='tm-stat-val'>" + cumKills + " (" + cumKillPts + " PTS)</span></div>";
-      sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>PLACEMENT PTS</span><span class='tm-stat-val'>" + cumPlacePts + " PTS</span></div>";
-      sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>NEW OVERALL TOTAL</span><span class='tm-stat-val super'>" + cumTotalPts + " PTS</span></div>";
-      summaryEl.innerHTML = sumHtml;
-    }
+    let sumHtml = "";
+    sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>MATCHES</span><span class='tm-stat-val'>" + cumPlayed + " / " + activeT.matches.length + "</span></div>";
+    sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>BOOYAH (WWCD)</span><span class='tm-stat-val highlight'>" + cumWwcd + "</span></div>";
+    sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>TOTAL KILLS</span><span class='tm-stat-val'>" + cumKills + " (" + cumKillPts + " PTS)</span></div>";
+    sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>PLACEMENT PTS</span><span class='tm-stat-val'>" + cumPlacePts + " PTS</span></div>";
+    sumHtml = sumHtml + "<div class='tm-stat-box'><span class='tm-stat-lbl'>NEW OVERALL TOTAL</span><span class='tm-stat-val super'>" + cumTotalPts + " PTS</span></div>";
+    (document.getElementById("team-modal-stats-summary") || document.querySelector("team-modal-stats-summary")).innerHTML = sumHtml;
   }
 }
 
@@ -598,34 +549,26 @@ function saveTeamAllMatches() {
   let activeT = getActiveTourney ( );
   if (activeT != null && editingTeamName != "") {
     let mIdx = 0;
-    for (const m of activeT.matches) {
-      let pEl = document.getElementById ( "modal-m-place-" + mIdx );
-      let kEl = document.getElementById ( "modal-m-kills-" + mIdx );
-      let bEl = document.getElementById ( "modal-m-bonus-" + mIdx );
-      let penEl = document.getElementById ( "modal-m-penalty-" + mIdx );
-      if (pEl != null && kEl != null) {
-        let pVal = Number ( pEl.value );
-        let kVal = Number ( kEl.value );
-        let bVal = Number ( bEl.value );
-        let penVal = Number ( penEl.value );
+    for (const sc of tempTeamScores) {
+      if (activeT.matches [ mIdx ] != undefined) {
         let found = false;
-        for (const sc of m.scores) {
-          if (sc.team == editingTeamName) {
-            sc.place = pVal;
-            sc.kills = kVal;
-            sc.bonus = bVal;
-            sc.penalty = penVal;
+        for (const matchScore of activeT.matches [ mIdx ] .scores) {
+          if (matchScore.team == editingTeamName) {
+            matchScore.place = sc.place;
+            matchScore.kills = sc.kills;
+            matchScore.bonus = sc.bonus;
+            matchScore.penalty = sc.penalty;
             found = true;
           }
         }
         if (found == false) {
-          m.scores.push ( { team : editingTeamName , place : pVal , kills : kVal , bonus : bVal , penalty : penVal } );
+          activeT.matches[mIdx].scores.push({ team: editingTeamName, place: sc.place, kills: sc.kills, bonus: sc.bonus, penalty: sc.penalty })
         }
-        m.scores.sort ( function ( itemA , itemB ) { return itemA.place - itemB.place } );
+        activeT.matches[mIdx].scores.sort(function(itemA, itemB) { return itemA.place - itemB.place; })
       }
       mIdx = mIdx + 1;
     }
-    document.getElementById ( "modal-team-matches-edit" ) .classList.remove ( "show" );
+    (document.getElementById("modal-team-matches-edit") || document.querySelector("modal-team-matches-edit")).classList.remove('show');
     renderWorkspaceOverview();
     renderWorkspaceMatches();
     renderWorkspaceMatchStandings();
@@ -636,9 +579,8 @@ function saveTeamAllMatches() {
 
 function renderWorkspacePointRules() {
   let activeT = getActiveTourney ( );
-  let grid = document.getElementById ( "ws-rules-pts-grid" );
-  if (activeT != null && grid != null) {
-    document.getElementById ( "ws-rules-kill-pts" ) .value = activeT.killMultiplier;
+  if (activeT != null) {
+    (document.getElementById("ws-rules-kill-pts") || document.querySelector("ws-rules-kill-pts")).value = activeT.killMultiplier;
     let htmlBuffer = "";
     for (const r of [ 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 ]) {
       let val = 0;
@@ -650,7 +592,7 @@ function renderWorkspacePointRules() {
       htmlBuffer = htmlBuffer + "<input type='number' class='pt-input' id='ws-pt-rank-" + r + "' value='" + val + "'>";
       htmlBuffer = htmlBuffer + "</div>";
     }
-    grid.innerHTML = htmlBuffer;
+    (document.getElementById("ws-rules-pts-grid") || document.querySelector("ws-rules-pts-grid")).innerHTML = htmlBuffer;
   }
 }
 
@@ -670,10 +612,9 @@ function createStandingsCheckpoint(customTitle) {
 
 function renderRevertModalList() {
   let activeT = getActiveTourney ( );
-  let list = document.getElementById ( "revert-checkpoints-list" );
-  if (activeT != null && list != null) {
+  if (activeT != null) {
     if (activeT.checkpoints.length == 0) {
-      list.innerHTML = "<div style='color:#64748b; text-align:center; padding:16px;'>No checkpoints recorded yet for this tournament.</div>";
+      (document.getElementById("revert-checkpoints-list") || document.querySelector("revert-checkpoints-list")).innerHTML = "<div style='color:#64748b; text-align:center; padding:16px;'>No checkpoints recorded yet for this tournament.</div>";
       return 0;
     }
     let htmlBuffer = "";
@@ -687,7 +628,7 @@ function renderRevertModalList() {
       htmlBuffer = htmlBuffer + "</div>";
       cIdx = cIdx + 1;
     }
-    list.innerHTML = htmlBuffer;
+    (document.getElementById("revert-checkpoints-list") || document.querySelector("revert-checkpoints-list")).innerHTML = htmlBuffer;
   }
 }
 
@@ -702,13 +643,13 @@ function downloadTournamentCSV() {
       rank = rank + 1;
     }
     let blob = new Blob ( [ csvContent ] , { type : "text/csv;charset=utf-8;" } );
-    let link = document.createElement ( "a" );
-    let url = URL.createObjectURL ( blob );
-    link.setAttribute ( "href" , url );
-    link.setAttribute ( "download" , activeT.title.replaceAll ( " " , "_" ) + "_Standings.csv" );
-    document.body.appendChild ( link );
-    link.click ( );
-    document.body.removeChild ( link );
+    let blobUrl = URL.createObjectURL ( blob );
+    let downloadHtml = "<a id='csv-temp-download' href='" + blobUrl + "' download='" + activeT.title.replaceAll ( " " , "_" ) + "_Standings.csv' style='display:none;'></a>";
+    (document.getElementById("toast-container") || document.querySelector("toast-container")).innerHTML = downloadHtml;
+    let dlLink = (document.getElementById("csv-temp-download") || document.querySelector("csv-temp-download"));
+    if (dlLink != null) {
+      dlLink.click ( );
+    }
     showToast("📥 Full Tournament CSV Downloaded!");
   }
 }
@@ -726,7 +667,7 @@ function copyTextLeaderboardReport() {
       rank = rank + 1;
     }
     report = report + "n═══════════════════════════════════════nGenerated via Vortex Esports OS";
-    navigator.clipboard.writeText ( report );
+    navigator.clipboard.writeText(report);
     showToast("📋 Formatted Text Report copied to clipboard!");
   }
 }
@@ -735,13 +676,13 @@ function editTeamModal(teamIdx) {
   let activeT = getActiveTourney ( );
   if (activeT != null && activeT.teams [ teamIdx ] != undefined) {
     let sq = activeT.teams [ teamIdx ];
-    document.getElementById ( "edit-team-idx" ) .value = teamIdx;
-    document.getElementById ( "team-input-slot" ) .value = sq.slot;
-    document.getElementById ( "team-input-tag" ) .value = sq.tag;
-    document.getElementById ( "team-input-name" ) .value = sq.name;
-    document.getElementById ( "team-input-captain" ) .value = sq.captain;
-    document.getElementById ( "modal-team-title" ) .innerText = "EDIT SQUAD DETAILS";
-    document.getElementById ( "modal-team-edit" ) .classList.add ( "show" );
+    (document.getElementById("edit-team-idx") || document.querySelector("edit-team-idx")).value = teamIdx;
+    (document.getElementById("team-input-slot") || document.querySelector("team-input-slot")).value = sq.slot;
+    (document.getElementById("team-input-tag") || document.querySelector("team-input-tag")).value = sq.tag;
+    (document.getElementById("team-input-name") || document.querySelector("team-input-name")).value = sq.name;
+    (document.getElementById("team-input-captain") || document.querySelector("team-input-captain")).value = sq.captain;
+    (document.getElementById("modal-team-title") || document.querySelector("modal-team-title")).textContent = "EDIT SQUAD DETAILS";
+    (document.getElementById("modal-team-edit") || document.querySelector("modal-team-edit")).classList.add('show');
   }
 }
 
@@ -759,12 +700,12 @@ function deleteTeam(teamIdx) {
 }
 
 function openAddPlayerModal(teamIdx) {
-  document.getElementById ( "edit-player-team-idx" ) .value = teamIdx;
-  document.getElementById ( "edit-player-idx" ) .value = "-1";
-  document.getElementById ( "player-input-name" ) .value = "";
-  document.getElementById ( "player-input-uid" ) .value = "";
-  document.getElementById ( "modal-player-title" ) .innerText = "ADD PLAYER TO SQUAD";
-  document.getElementById ( "modal-player-edit" ) .classList.add ( "show" );
+  (document.getElementById("edit-player-team-idx") || document.querySelector("edit-player-team-idx")).value = teamIdx;
+  (document.getElementById("edit-player-idx") || document.querySelector("edit-player-idx")).value = "-1";
+  (document.getElementById("player-input-name") || document.querySelector("player-input-name")).value = "";
+  (document.getElementById("player-input-uid") || document.querySelector("player-input-uid")).value = "";
+  (document.getElementById("modal-player-title") || document.querySelector("modal-player-title")).textContent = "ADD PLAYER TO SQUAD";
+  (document.getElementById("modal-player-edit") || document.querySelector("modal-player-edit")).classList.add('show');
 }
 
 function editPlayerModal(teamIdx, playerIdx) {
@@ -772,13 +713,13 @@ function editPlayerModal(teamIdx, playerIdx) {
   if (activeT != null && activeT.teams [ teamIdx ] != undefined) {
     let p = activeT.teams [ teamIdx ] .players [ playerIdx ];
     if (p != undefined) {
-      document.getElementById ( "edit-player-team-idx" ) .value = teamIdx;
-      document.getElementById ( "edit-player-idx" ) .value = playerIdx;
-      document.getElementById ( "player-input-name" ) .value = p.name;
-      document.getElementById ( "player-input-uid" ) .value = p.uid;
-      document.getElementById ( "player-input-role" ) .value = p.role;
-      document.getElementById ( "modal-player-title" ) .innerText = "EDIT PLAYER ROSTER";
-      document.getElementById ( "modal-player-edit" ) .classList.add ( "show" );
+      (document.getElementById("edit-player-team-idx") || document.querySelector("edit-player-team-idx")).value = teamIdx;
+      (document.getElementById("edit-player-idx") || document.querySelector("edit-player-idx")).value = playerIdx;
+      (document.getElementById("player-input-name") || document.querySelector("player-input-name")).value = p.name;
+      (document.getElementById("player-input-uid") || document.querySelector("player-input-uid")).value = p.uid;
+      (document.getElementById("player-input-role") || document.querySelector("player-input-role")).value = p.role;
+      (document.getElementById("modal-player-title") || document.querySelector("modal-player-title")).textContent = "EDIT PLAYER ROSTER";
+      (document.getElementById("modal-player-edit") || document.querySelector("modal-player-edit")).classList.add('show');
     }
   }
 }
@@ -846,27 +787,23 @@ function applyRevert(checkpointIdx) {
   let activeT = getActiveTourney ( );
   if (activeT != null && activeT.checkpoints [ checkpointIdx ] != undefined) {
     let cp = activeT.checkpoints [ checkpointIdx ];
-    let tbody = document.getElementById ( "ws-overall-standings-tbody" );
-    if (tbody != null) {
-      let htmlBuffer = "";
-      let rank = 1;
-      for (const row of cp.standings) {
-        htmlBuffer = htmlBuffer + "<tr>";
-        htmlBuffer = htmlBuffer + "<td><strong class='rank-badge'>#" + rank + "</strong></td>";
-        htmlBuffer = htmlBuffer + "<td><strong>" + row.team + "</strong></td>";
-        htmlBuffer = htmlBuffer + "<td>" + row.played + "</td>";
-        htmlBuffer = htmlBuffer + "<td>" + row.wwcd + "</td>";
-        htmlBuffer = htmlBuffer + "<td>" + row.kills + "</td>";
-        htmlBuffer = htmlBuffer + "<td>" + row.killPts + "</td>";
-        htmlBuffer = htmlBuffer + "<td>" + row.placePts + "</td>";
-        htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill'>" + row.totalPts + " PTS</span></td>";
-        htmlBuffer = htmlBuffer + "<td style='text-align:right;'><button class='btn-action-primary-sm' style='padding:4px 10px; font-size:11px;' onclick='window.vortexOpenTeamMatchesModal(\"" + row.team + "\")'>✏️ EDIT ALL MATCHES</button></td>";
-        htmlBuffer = htmlBuffer + "</tr>";
-        rank = rank + 1;
-      }
-      tbody.innerHTML = htmlBuffer;
+    let htmlBuffer = "";
+    let rank = 1;
+    for (const row of cp.standings) {
+      htmlBuffer = htmlBuffer + "<tr>";
+      htmlBuffer = htmlBuffer + "<td><strong class='rank-badge'>#" + rank + "</strong></td>";
+      htmlBuffer = htmlBuffer + "<td><strong>" + row.team + "</strong></td>";
+      htmlBuffer = htmlBuffer + "<td>" + row.played + "</td>";
+      htmlBuffer = htmlBuffer + "<td>" + row.wwcd + "</td>";
+      htmlBuffer = htmlBuffer + "<td>" + row.kills + "</td>";
+      htmlBuffer = htmlBuffer + "<td>" + row.killPts + "</td>";
+      htmlBuffer = htmlBuffer + "<td>" + row.placePts + "</td>";
+      htmlBuffer = htmlBuffer + "<td><span class='total-pts-pill'>" + row.totalPts + " PTS</span></td>";
+      htmlBuffer = htmlBuffer + "</tr>";
+      rank = rank + 1;
     }
-    document.getElementById ( "modal-revert-standings" ) .classList.remove ( "show" );
+    (document.getElementById("ws-overall-standings-tbody") || document.querySelector("ws-overall-standings-tbody")).innerHTML = htmlBuffer;
+    (document.getElementById("modal-revert-standings") || document.querySelector("modal-revert-standings")).classList.remove('show');
     showToast("⏪ Successfully reverted standings to: " + cp.title);
   }
 }
@@ -893,7 +830,7 @@ window.vortexApplyRevert = function ( idx ) { applyRevert ( idx ) };
 
 window.vortexOpenTeamMatchesModal = function ( team ) { openTeamMatchesModal ( team ) };
 
-window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
+window.vortexUpdateTeamScore = function ( mIdx , fld , val ) { updateTeamModalScore ( mIdx , fld , val ) };
 
 (function() {
   const targetEl = (document.getElementById("btn-nav-brand") || document.querySelector("btn-nav-brand"));
@@ -989,7 +926,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("card-act-auth") || document.querySelector("card-act-auth"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-auth" ) .classList.add ( "show" );
+      (document.getElementById("modal-auth") || document.querySelector("modal-auth")).classList.add('show');
     });
   }
 })();
@@ -998,7 +935,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-open-auth") || document.querySelector("btn-open-auth"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-auth" ) .classList.add ( "show" );
+      (document.getElementById("modal-auth") || document.querySelector("modal-auth")).classList.add('show');
     });
   }
 })();
@@ -1007,7 +944,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-close-auth-modal") || document.querySelector("btn-close-auth-modal"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-auth" ) .classList.remove ( "show" );
+      (document.getElementById("modal-auth") || document.querySelector("modal-auth")).classList.remove('show');
     });
   }
 })();
@@ -1016,7 +953,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-cancel-auth") || document.querySelector("btn-cancel-auth"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-auth" ) .classList.remove ( "show" );
+      (document.getElementById("modal-auth") || document.querySelector("modal-auth")).classList.remove('show');
     });
   }
 })();
@@ -1025,17 +962,17 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-confirm-auth") || document.querySelector("btn-confirm-auth"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      let uname = document.getElementById ( "auth-username" ) .value;
-      let uidVal = document.getElementById ( "auth-uid" ) .value;
-      let roleVal = document.getElementById ( "auth-role" ) .value;
+      let uname = (document.getElementById("auth-username") || document.querySelector("auth-username")).value;
+      let uidVal = (document.getElementById("auth-uid") || document.querySelector("auth-uid")).value;
+      let roleVal = (document.getElementById("auth-role") || document.querySelector("auth-role")).value;
       currentUser.name = uname;
       currentUser.uid = uidVal;
       currentUser.role = roleVal;
       currentUser.loggedIn = true;
-      document.getElementById ( "display-user-name" ) .innerText = uname + " (" + roleVal + ")";
-      document.getElementById ( "user-profile-badge" ) .style.display = "flex";
-      document.getElementById ( "btn-open-auth" ) .style.display = "none";
-      document.getElementById ( "modal-auth" ) .classList.remove ( "show" );
+      (document.getElementById("display-user-name") || document.querySelector("display-user-name")).textContent = uname + " (" + roleVal + ")";
+      (document.getElementById("user-profile-badge") || document.querySelector("user-profile-badge")).style['display'] = "flex";
+      (document.getElementById("btn-open-auth") || document.querySelector("btn-open-auth")).style.display = 'none';
+      (document.getElementById("modal-auth") || document.querySelector("modal-auth")).classList.remove('show');
       showToast("🛡️ Authenticated as " + uname + " [" + roleVal + "]!");
     });
   }
@@ -1046,8 +983,8 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
       currentUser.loggedIn = false;
-      document.getElementById ( "user-profile-badge" ) .style.display = "none";
-      document.getElementById ( "btn-open-auth" ) .style.display = "inline-block";
+      (document.getElementById("user-profile-badge") || document.querySelector("user-profile-badge")).style.display = 'none';
+      (document.getElementById("btn-open-auth") || document.querySelector("btn-open-auth")).style['display'] = "inline-block";
       showToast("Logged out successfully.");
     });
   }
@@ -1130,12 +1067,12 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
       switchWsTab("panel-ws-teams");
-      document.getElementById ( "edit-team-idx" ) .value = "-1";
-      document.getElementById ( "team-input-slot" ) .value = "7";
-      document.getElementById ( "team-input-tag" ) .value = "";
-      document.getElementById ( "team-input-name" ) .value = "";
-      document.getElementById ( "team-input-captain" ) .value = "";
-      document.getElementById ( "modal-team-edit" ) .classList.add ( "show" );
+      (document.getElementById("edit-team-idx") || document.querySelector("edit-team-idx")).value = "-1";
+      (document.getElementById("team-input-slot") || document.querySelector("team-input-slot")).value = "7";
+      (document.getElementById("team-input-tag") || document.querySelector("team-input-tag")).value = "";
+      (document.getElementById("team-input-name") || document.querySelector("team-input-name")).value = "";
+      (document.getElementById("team-input-captain") || document.querySelector("team-input-captain")).value = "";
+      (document.getElementById("modal-team-edit") || document.querySelector("modal-team-edit")).classList.add('show');
     });
   }
 })();
@@ -1145,7 +1082,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
       switchWsTab("panel-ws-matches");
-      document.getElementById ( "modal-match-edit" ) .classList.add ( "show" );
+      (document.getElementById("modal-match-edit") || document.querySelector("modal-match-edit")).classList.add('show');
     });
   }
 })();
@@ -1190,13 +1127,13 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-open-add-team-modal") || document.querySelector("btn-open-add-team-modal"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "edit-team-idx" ) .value = "-1";
-      document.getElementById ( "team-input-slot" ) .value = String ( tournamentsDb [ 0 ] .teams.length + 1 );
-      document.getElementById ( "team-input-tag" ) .value = "";
-      document.getElementById ( "team-input-name" ) .value = "";
-      document.getElementById ( "team-input-captain" ) .value = "";
-      document.getElementById ( "modal-team-title" ) .innerText = "ADD NEW SQUAD";
-      document.getElementById ( "modal-team-edit" ) .classList.add ( "show" );
+      (document.getElementById("edit-team-idx") || document.querySelector("edit-team-idx")).value = "-1";
+      (document.getElementById("team-input-slot") || document.querySelector("team-input-slot")).value = String ( tournamentsDb [ 0 ] .teams.length + 1 );
+      (document.getElementById("team-input-tag") || document.querySelector("team-input-tag")).value = "";
+      (document.getElementById("team-input-name") || document.querySelector("team-input-name")).value = "";
+      (document.getElementById("team-input-captain") || document.querySelector("team-input-captain")).value = "";
+      (document.getElementById("modal-team-title") || document.querySelector("modal-team-title")).textContent = "ADD NEW SQUAD";
+      (document.getElementById("modal-team-edit") || document.querySelector("modal-team-edit")).classList.add('show');
     });
   }
 })();
@@ -1205,7 +1142,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-close-team-modal") || document.querySelector("btn-close-team-modal"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-team-edit" ) .classList.remove ( "show" );
+      (document.getElementById("modal-team-edit") || document.querySelector("modal-team-edit")).classList.remove('show');
     });
   }
 })();
@@ -1214,7 +1151,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-cancel-team") || document.querySelector("btn-cancel-team"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-team-edit" ) .classList.remove ( "show" );
+      (document.getElementById("modal-team-edit") || document.querySelector("modal-team-edit")).classList.remove('show');
     });
   }
 })();
@@ -1224,11 +1161,11 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
       let activeT = getActiveTourney ( );
-      let editIdx = Number ( document.getElementById ( "edit-team-idx" ) .value );
-      let slotVal = Number ( document.getElementById ( "team-input-slot" ) .value );
-      let tagVal = document.getElementById ( "team-input-tag" ) .value;
-      let nameVal = document.getElementById ( "team-input-name" ) .value;
-      let capVal = document.getElementById ( "team-input-captain" ) .value;
+      let editIdx = Number ( (document.getElementById("edit-team-idx") || document.querySelector("edit-team-idx")).value );
+      let slotVal = Number ( (document.getElementById("team-input-slot") || document.querySelector("team-input-slot")).value );
+      let tagVal = (document.getElementById("team-input-tag") || document.querySelector("team-input-tag")).value;
+      let nameVal = (document.getElementById("team-input-name") || document.querySelector("team-input-name")).value;
+      let capVal = (document.getElementById("team-input-captain") || document.querySelector("team-input-captain")).value;
       if (nameVal == "") {
         nameVal = "Alpha Wolves";
       }
@@ -1240,10 +1177,10 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
       }
       if (activeT != null) {
         if (editIdx >= 0) {
-          activeT.teams[editIdx].slot = slotVal
-          activeT.teams[editIdx].tag = tagVal
-          activeT.teams[editIdx].name = nameVal
-          activeT.teams[editIdx].captain = capVal
+          activeT.teams [ editIdx ] .slot = slotVal;
+          activeT.teams [ editIdx ] .tag = tagVal;
+          activeT.teams [ editIdx ] .name = nameVal;
+          activeT.teams [ editIdx ] .captain = capVal;
           showToast("✓ Squad " + nameVal + " updated!");
         }
         else {
@@ -1254,7 +1191,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
         renderWorkspaceTeams();
         renderWorkspaceMatchStandings();
         renderWorkspaceOverallStandings();
-        document.getElementById ( "modal-team-edit" ) .classList.remove ( "show" );
+        (document.getElementById("modal-team-edit") || document.querySelector("modal-team-edit")).classList.remove('show');
       }
     });
   }
@@ -1264,7 +1201,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-close-player-modal") || document.querySelector("btn-close-player-modal"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-player-edit" ) .classList.remove ( "show" );
+      (document.getElementById("modal-player-edit") || document.querySelector("modal-player-edit")).classList.remove('show');
     });
   }
 })();
@@ -1273,7 +1210,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-cancel-player") || document.querySelector("btn-cancel-player"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-player-edit" ) .classList.remove ( "show" );
+      (document.getElementById("modal-player-edit") || document.querySelector("modal-player-edit")).classList.remove('show');
     });
   }
 })();
@@ -1283,11 +1220,11 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
       let activeT = getActiveTourney ( );
-      let tIdx = Number ( document.getElementById ( "edit-player-team-idx" ) .value );
-      let pIdx = Number ( document.getElementById ( "edit-player-idx" ) .value );
-      let pName = document.getElementById ( "player-input-name" ) .value;
-      let pUid = document.getElementById ( "player-input-uid" ) .value;
-      let pRole = document.getElementById ( "player-input-role" ) .value;
+      let tIdx = Number ( (document.getElementById("edit-player-team-idx") || document.querySelector("edit-player-team-idx")).value );
+      let pIdx = Number ( (document.getElementById("edit-player-idx") || document.querySelector("edit-player-idx")).value );
+      let pName = (document.getElementById("player-input-name") || document.querySelector("player-input-name")).value;
+      let pUid = (document.getElementById("player-input-uid") || document.querySelector("player-input-uid")).value;
+      let pRole = (document.getElementById("player-input-role") || document.querySelector("player-input-role")).value;
       if (pName == "") {
         pName = "Striker_99";
       }
@@ -1296,9 +1233,9 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
       }
       if (activeT != null && activeT.teams [ tIdx ] != undefined) {
         if (pIdx >= 0) {
-          activeT.teams[tIdx].players[pIdx].name = pName
-          activeT.teams[tIdx].players[pIdx].uid = pUid
-          activeT.teams[tIdx].players[pIdx].role = pRole
+          activeT.teams [ tIdx ] .players [ pIdx ] .name = pName;
+          activeT.teams [ tIdx ] .players [ pIdx ] .uid = pUid;
+          activeT.teams [ tIdx ] .players [ pIdx ] .role = pRole;
           showToast("✓ Player " + pName + " updated!");
         }
         else {
@@ -1306,7 +1243,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
           showToast("✓ Added " + pName + " to " + activeT.teams [ tIdx ] .name + " roster!");
         }
         renderWorkspaceTeams();
-        document.getElementById ( "modal-player-edit" ) .classList.remove ( "show" );
+        (document.getElementById("modal-player-edit") || document.querySelector("modal-player-edit")).classList.remove('show');
       }
     });
   }
@@ -1316,7 +1253,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-open-add-match-modal") || document.querySelector("btn-open-add-match-modal"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-match-edit" ) .classList.add ( "show" );
+      (document.getElementById("modal-match-edit") || document.querySelector("modal-match-edit")).classList.add('show');
     });
   }
 })();
@@ -1325,7 +1262,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-close-match-modal") || document.querySelector("btn-close-match-modal"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-match-edit" ) .classList.remove ( "show" );
+      (document.getElementById("modal-match-edit") || document.querySelector("modal-match-edit")).classList.remove('show');
     });
   }
 })();
@@ -1334,7 +1271,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-cancel-match") || document.querySelector("btn-cancel-match"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-match-edit" ) .classList.remove ( "show" );
+      (document.getElementById("modal-match-edit") || document.querySelector("modal-match-edit")).classList.remove('show');
     });
   }
 })();
@@ -1344,11 +1281,11 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
       let activeT = getActiveTourney ( );
-      let mTitle = document.getElementById ( "match-input-title" ) .value;
-      let mMap = document.getElementById ( "match-input-map" ) .value;
-      let mTime = document.getElementById ( "match-input-time" ) .value;
-      let mRoomId = document.getElementById ( "match-input-room-id" ) .value;
-      let mPass = document.getElementById ( "match-input-room-pass" ) .value;
+      let mTitle = (document.getElementById("match-input-title") || document.querySelector("match-input-title")).value;
+      let mMap = (document.getElementById("match-input-map") || document.querySelector("match-input-map")).value;
+      let mTime = (document.getElementById("match-input-time") || document.querySelector("match-input-time")).value;
+      let mRoomId = (document.getElementById("match-input-room-id") || document.querySelector("match-input-room-id")).value;
+      let mPass = (document.getElementById("match-input-room-pass") || document.querySelector("match-input-room-pass")).value;
       if (mTitle == "") {
         mTitle = "Match " + ( activeT.matches.length + 1 ) + " - " + mMap;
       }
@@ -1363,7 +1300,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
         renderWorkspaceOverview();
         renderWorkspaceMatches();
         renderWorkspaceMatchStandings();
-        document.getElementById ( "modal-match-edit" ) .classList.remove ( "show" );
+        (document.getElementById("modal-match-edit") || document.querySelector("modal-match-edit")).classList.remove('show');
         showToast("🎮 Custom Match scheduled & Room ID " + mRoomId + " generated!");
       }
     });
@@ -1374,7 +1311,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-close-team-matches-modal") || document.querySelector("btn-close-team-matches-modal"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-team-matches-edit" ) .classList.remove ( "show" );
+      (document.getElementById("modal-team-matches-edit") || document.querySelector("modal-team-matches-edit")).classList.remove('show');
     });
   }
 })();
@@ -1383,7 +1320,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-cancel-team-matches") || document.querySelector("btn-cancel-team-matches"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-team-matches-edit" ) .classList.remove ( "show" );
+      (document.getElementById("modal-team-matches-edit") || document.querySelector("modal-team-matches-edit")).classList.remove('show');
     });
   }
 })();
@@ -1414,7 +1351,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
     targetEl.addEventListener('click', function(event) {
       let activeT = getActiveTourney ( );
       if (activeT != null && activeT.matches [ activeMatchIdx ] != undefined) {
-        activeT.matches[activeMatchIdx].status = "COMPLETED"
+        activeT.matches [ activeMatchIdx ] .status = "COMPLETED";
         createStandingsCheckpoint(( "Snapshot After " + activeT.matches [ activeMatchIdx ] .title ));
         renderWorkspaceOverview();
         renderWorkspaceMatches();
@@ -1440,7 +1377,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
       renderRevertModalList();
-      document.getElementById ( "modal-revert-standings" ) .classList.add ( "show" );
+      (document.getElementById("modal-revert-standings") || document.querySelector("modal-revert-standings")).classList.add('show');
     });
   }
 })();
@@ -1449,7 +1386,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-close-revert-modal") || document.querySelector("btn-close-revert-modal"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-revert-standings" ) .classList.remove ( "show" );
+      (document.getElementById("modal-revert-standings") || document.querySelector("modal-revert-standings")).classList.remove('show');
     });
   }
 })();
@@ -1458,7 +1395,7 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-cancel-revert") || document.querySelector("btn-cancel-revert"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      document.getElementById ( "modal-revert-standings" ) .classList.remove ( "show" );
+      (document.getElementById("modal-revert-standings") || document.querySelector("modal-revert-standings")).classList.remove('show');
     });
   }
 })();
@@ -1469,13 +1406,8 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
     targetEl.addEventListener('click', function(event) {
       let activeT = getActiveTourney ( );
       if (activeT != null) {
-        activeT.killMultiplier = Number ( document.getElementById ( "ws-rules-kill-pts" ) .value );
-        for (const r of [ 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 ]) {
-          let el = document.getElementById ( "ws-pt-rank-" + r );
-          if (el != null) {
-            activeT.placementPoints[String(r)] = Number(el.value)
-          }
-        }
+        activeT.killMultiplier = Number ( (document.getElementById("ws-rules-kill-pts") || document.querySelector("ws-rules-kill-pts")).value );
+        activeT.placementPoints = { "1" : Number ( (document.getElementById("ws-pt-rank-1") || document.querySelector("ws-pt-rank-1")).value ) , "2" : Number ( (document.getElementById("ws-pt-rank-2") || document.querySelector("ws-pt-rank-2")).value ) , "3" : Number ( (document.getElementById("ws-pt-rank-3") || document.querySelector("ws-pt-rank-3")).value ) , "4" : Number ( (document.getElementById("ws-pt-rank-4") || document.querySelector("ws-pt-rank-4")).value ) , "5" : Number ( (document.getElementById("ws-pt-rank-5") || document.querySelector("ws-pt-rank-5")).value ) , "6" : Number ( (document.getElementById("ws-pt-rank-6") || document.querySelector("ws-pt-rank-6")).value ) , "7" : Number ( (document.getElementById("ws-pt-rank-7") || document.querySelector("ws-pt-rank-7")).value ) , "8" : Number ( (document.getElementById("ws-pt-rank-8") || document.querySelector("ws-pt-rank-8")).value ) , "9" : Number ( (document.getElementById("ws-pt-rank-9") || document.querySelector("ws-pt-rank-9")).value ) , "10" : Number ( (document.getElementById("ws-pt-rank-10") || document.querySelector("ws-pt-rank-10")).value ) , "11" : Number ( (document.getElementById("ws-pt-rank-11") || document.querySelector("ws-pt-rank-11")).value ) , "12" : Number ( (document.getElementById("ws-pt-rank-12") || document.querySelector("ws-pt-rank-12")).value ) };
         renderWorkspaceOverview();
         renderWorkspaceMatchStandings();
         renderWorkspaceOverallStandings();
@@ -1489,13 +1421,14 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
   const targetEl = (document.getElementById("btn-submit-create-tourney") || document.querySelector("btn-submit-create-tourney"));
   if (targetEl != null) {
     targetEl.addEventListener('click', function(event) {
-      let tTitle = document.getElementById ( "new-tourney-title" ) .value;
-      let tGame = document.getElementById ( "new-tourney-game" ) .value;
-      let tFormat = document.getElementById ( "new-tourney-format" ) .value;
-      let tSlots = Number ( document.getElementById ( "new-tourney-slots" ) .value );
-      let tPrize = document.getElementById ( "new-tourney-prize" ) .value;
-      let tMaps = document.getElementById ( "new-tourney-maps" ) .value;
-      let tKillMultiplier = Number ( document.getElementById ( "new-pts-kill" ) .value );
+      let tTitle = (document.getElementById("new-tourney-title") || document.querySelector("new-tourney-title")).value;
+      let tGame = (document.getElementById("new-tourney-game") || document.querySelector("new-tourney-game")).value;
+      let tFormat = (document.getElementById("new-tourney-format") || document.querySelector("new-tourney-format")).value;
+      let tSlots = Number ( (document.getElementById("new-tourney-slots") || document.querySelector("new-tourney-slots")).value );
+      let tPrize = (document.getElementById("new-tourney-prize") || document.querySelector("new-tourney-prize")).value;
+      let tMaps = (document.getElementById("new-tourney-maps") || document.querySelector("new-tourney-maps")).value;
+      let tKillMultiplier = Number ( (document.getElementById("new-pts-kill") || document.querySelector("new-pts-kill")).value );
+      let customPlacementMap = { "1" : Number ( (document.getElementById("pt-rank-1") || document.querySelector("pt-rank-1")).value ) , "2" : Number ( (document.getElementById("pt-rank-2") || document.querySelector("pt-rank-2")).value ) , "3" : Number ( (document.getElementById("pt-rank-3") || document.querySelector("pt-rank-3")).value ) , "4" : Number ( (document.getElementById("pt-rank-4") || document.querySelector("pt-rank-4")).value ) , "5" : Number ( (document.getElementById("pt-rank-5") || document.querySelector("pt-rank-5")).value ) , "6" : Number ( (document.getElementById("pt-rank-6") || document.querySelector("pt-rank-6")).value ) , "7" : Number ( (document.getElementById("pt-rank-7") || document.querySelector("pt-rank-7")).value ) , "8" : Number ( (document.getElementById("pt-rank-8") || document.querySelector("pt-rank-8")).value ) , "9" : Number ( (document.getElementById("pt-rank-9") || document.querySelector("pt-rank-9")).value ) , "10" : Number ( (document.getElementById("pt-rank-10") || document.querySelector("pt-rank-10")).value ) , "11" : Number ( (document.getElementById("pt-rank-11") || document.querySelector("pt-rank-11")).value ) , "12" : Number ( (document.getElementById("pt-rank-12") || document.querySelector("pt-rank-12")).value ) };
       if (tTitle == "") {
         tTitle = "VORTEX CLASH TOURNAMENT S1";
       }
@@ -1504,16 +1437,6 @@ window.vortexCalcTeamModalLive = function ( ) { calcTeamModalLive ( ) };
       }
       if (tMaps == "") {
         tMaps = "Bermuda, Purgatory, Kalahari";
-      }
-      let customPlacementMap = { };
-      for (const r of [ 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 ]) {
-        let ptEl = document.getElementById ( "pt-rank-" + r );
-        if (ptEl != null) {
-          customPlacementMap[String(r)] = Number(ptEl.value)
-        }
-        else {
-          customPlacementMap[String(r)] = 0
-        }
       }
       let newId = tournamentsDb.length + 1;
       let newTourney = { id : newId , title : tTitle , game : tGame , format : tFormat , maps : tMaps , slots : tSlots , prize : tPrize , status : "LIVE" , statusClass : "live" , killMultiplier : tKillMultiplier , placementPoints : customPlacementMap , teams : [ { slot : 1 , name : "Shadow Ninjas" , tag : "SNE" , captain : "Kiryu_FF" , players : [ { name : "Kiryu_FF" , uid : "77489210" , role : "IGL" } , { name : "Zen_99" , uid : "77489211" , role : "Rusher" } ] } , { slot : 2 , name : "Aero Esports" , tag : "AERO" , captain : "Aero_Alpha" , players : [ { name : "Aero_Alpha" , uid : "66120101" , role : "IGL" } , { name : "Aero_Sniper" , uid : "66120102" , role : "Sniper" } ] } ] , matches : [ { id : 1 , title : "Match 1 - " + tMaps.split ( "," ) [ 0 ] , map : tMaps.split ( "," ) [ 0 ] , time : "8:00 PM IST" , roomId : String ( Math.floor ( 1000000 + Math.random ( ) * 9000000 ) ) , roomPass : "VORTEX2026" , status : "SCHEDULED" , scores : [ ] } ] , checkpoints : [ ] };
