@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "EnLang Core (.enlg)",
+  "scopeName": "source.enlg",
+  "patterns": [
+    {
+      "name": "comment.line.number-sign.enlang",
+      "match": "(#|//).*$"
+    },
+    {
+      "name": "string.quoted.double.enlang",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [{ "name": "constant.character.escape.enlang", "match": "\\\\." }]
+    },
+    {
+      "name": "string.quoted.single.enlang",
+      "begin": "'",
+      "end": "'",
+      "patterns": [{ "name": "constant.character.escape.enlang", "match": "\\\\." }]
+    },
+    {
+      "name": "constant.numeric.enlang",
+      "match": "\\b[0-9]+(\\.[0-9]+)?\\b"
+    },
+    {
+      "name": "keyword.declaration.enlang",
+      "match": "\\b(create|define|let|set|put|update|as|to|into|to do|action|function|class|blueprint)\\b"
+    },
+    {
+      "name": "keyword.control.enlang",
+      "match": "\\b(if|else if|else|repeat|times|while|for each|for every|for|in|return|yield|try|catch|finally)\\b"
+    },
+    {
+      "name": "support.function.enlang",
+      "match": "\\b(show|log|print|display|warn|error|alert)\\b"
+    },
+    {
+      "name": "keyword.operator.enlang",
+      "match": "\\b(is|is not|equals|is greater than|is less than|and|or|not)\\b|(\\+|\\-|\\*|\\/|=|==|!=|>|<|>=|<=)"
+    },
+    {
+      "name": "storage.type.enlang",
+      "match": "\\b(true|false|null|text|number|boolean|list|map|array|object)\\b"
+    }
+  ]
+}

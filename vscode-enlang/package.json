@@ -1,0 +1,169 @@
+{
+  "name": "enlang-official",
+  "displayName": "EnLang — Universal Natural English Full-Stack Language",
+  "description": "Official VS Code extension for EnLang: Rich Syntax Highlighting, Snippets, Diagnostics & AI Assistant for .enlg, .enlgf, .enlgd, .enlgs, and .enlgm files.",
+  "version": "1.0.3",
+  "publisher": "Enlang1234",
+  "license": "MIT",
+  "homepage": "https://github.com/Aero99op/enlang",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Aero99op/enlang.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Aero99op/enlang/issues"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters",
+    "Formatters",
+    "AI"
+  ],
+  "keywords": [
+    "enlang",
+    "enlg",
+    "enlgf",
+    "enlgd",
+    "enlgs",
+    "enlgm",
+    "natural-english",
+    "transpiler",
+    "syntax-highlighting"
+  ],
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:enlang",
+    "onLanguage:enlangf",
+    "onLanguage:enlangd",
+    "onLanguage:enlgs",
+    "onLanguage:enlgm"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "enlang",
+        "aliases": ["EnLang Core", "enlang", "enlg"],
+        "extensions": [".enlg"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "enlangf",
+        "aliases": ["EnLang Markup", "enlangf"],
+        "extensions": [".enlgf"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "enlangd",
+        "aliases": ["EnLang Design", "enlangd"],
+        "extensions": [".enlgd"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "enlgs",
+        "aliases": ["EnLang Script", "enlgs"],
+        "extensions": [".enlgs"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "enlgm",
+        "aliases": ["EnLang Mobile", "enlgm"],
+        "extensions": [".enlgm"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "enlang",
+        "scopeName": "source.enlg",
+        "path": "./syntaxes/enlang.tmLanguage.json"
+      },
+      {
+        "language": "enlangf",
+        "scopeName": "source.enlgf",
+        "path": "./syntaxes/enlangf.tmLanguage.json"
+      },
+      {
+        "language": "enlangd",
+        "scopeName": "source.enlgd",
+        "path": "./syntaxes/enlangd.tmLanguage.json"
+      },
+      {
+        "language": "enlgs",
+        "scopeName": "source.enlgs",
+        "path": "./syntaxes/enlgs.tmLanguage.json"
+      },
+      {
+        "language": "enlgm",
+        "scopeName": "source.enlgm",
+        "path": "./syntaxes/enlgm.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "enlang",
+        "path": "./snippets/enlang.code-snippets"
+      },
+      {
+        "language": "enlangf",
+        "path": "./snippets/enlang.code-snippets"
+      },
+      {
+        "language": "enlangd",
+        "path": "./snippets/enlang.code-snippets"
+      },
+      {
+        "language": "enlgs",
+        "path": "./snippets/enlang.code-snippets"
+      },
+      {
+        "language": "enlgm",
+        "path": "./snippets/enlang.code-snippets"
+      }
+    ],
+    "commands": [
+      {
+        "command": "enlang.runFile",
+        "title": "EnLang: Run Current File",
+        "category": "EnLang"
+      },
+      {
+        "command": "enlang.buildFile",
+        "title": "EnLang: Build Current File",
+        "category": "EnLang"
+      },
+      {
+        "command": "enlang.checkFile",
+        "title": "EnLang: Check Syntax / Lint File",
+        "category": "EnLang"
+      },
+      {
+        "command": "enlang.askAI",
+        "title": "EnLang: Ask EnLang AI Assistant",
+        "category": "EnLang"
+      },
+      {
+        "command": "enlang.startRepl",
+        "title": "EnLang: Launch Interactive REPL",
+        "category": "EnLang"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "enlang.runFile",
+        "key": "ctrl+f5",
+        "mac": "cmd+f5",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "enlang.checkFile",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c",
+        "when": "editorTextFocus"
+      }
+    ]
+  }
+}

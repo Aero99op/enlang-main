@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "EnLang Design (.enlgd)",
+  "scopeName": "source.enlgd",
+  "patterns": [
+    {
+      "name": "comment.line.number-sign.enlgd",
+      "match": "#.*$"
+    },
+    {
+      "name": "constant.other.color.rgb-value.enlgd",
+      "match": "#[0-9a-fA-F]{3,8}\\b"
+    },
+    {
+      "name": "string.quoted.double.enlgd",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [{ "name": "constant.character.escape.enlgd", "match": "\\\\." }]
+    },
+    {
+      "name": "string.quoted.single.enlgd",
+      "begin": "'",
+      "end": "'",
+      "patterns": [{ "name": "constant.character.escape.enlgd", "match": "\\\\." }]
+    },
+    {
+      "name": "constant.numeric.css.enlgd",
+      "match": "\\b[0-9]+(\\.[0-9]+)?(px|rem|em|%|vh|vw|ms|s|deg|fr)\\b"
+    },
+    {
+      "name": "entity.other.attribute-name.class.css.enlgd",
+      "match": "(\\.[a-zA-Z0-9_\\-]+|#[a-zA-Z0-9_\\-]+|:[a-zA-Z\\-]+|::[a-zA-Z\\-]+)"
+    },
+    {
+      "name": "support.type.property-name.css.enlgd",
+      "match": "\\b(background|background-color|background-image|color|display|padding|padding-top|padding-bottom|padding-left|padding-right|margin|margin-top|margin-bottom|margin-left|margin-right|border|border-radius|border-top|border-bottom|border-left|border-right|font-size|font-family|font-weight|font-style|width|height|min-width|max-width|min-height|max-height|backdrop-filter|box-shadow|text-shadow|flex|flex-direction|flex-wrap|justify-content|align-items|align-self|gap|row-gap|column-gap|grid|grid-template-columns|grid-template-rows|grid-gap|position|top|left|right|bottom|z-index|opacity|transform|transition|animation|cursor|overflow|overflow-x|overflow-y|text-align|text-decoration|text-transform|letter-spacing|line-height|box-sizing|outline|user-select)\\b"
+    }
+  ]
+}

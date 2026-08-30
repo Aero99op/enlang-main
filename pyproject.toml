@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enlang"
+version = "1.0.3"
+authors = [
+    { name = "Spandan Prayas Patra", email = "spandanpatra1234@gmail.com" }
+]
+description = "The Universal Natural English Programming Language & Full-Stack Engine"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Compilers",
+]
+
+[project.scripts]
+enlang = "enlg.cli:main"
+enlg = "enlg.cli:main"

@@ -1,0 +1,11 @@
+include README.md
+include LICENSE
+include pyproject.toml
+recursive-include enlg *.py *.md
+recursive-include enlgf *.py *.md *.html
+recursive-include enlgd *.py *.md *.css
+recursive-include enlgs *.py *.md *.js
+recursive-include enlgm *.py *.md *.dart
+recursive-include enlang *.py *.md
+recursive-include enlg/vscode *.vsix
+recursive-include vscode-enlang *

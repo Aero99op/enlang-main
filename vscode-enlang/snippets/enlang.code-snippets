@@ -1,0 +1,72 @@
+{
+  "EnLang Web Page": {
+    "prefix": "enlg-page",
+    "body": [
+      "page:",
+      "    head:",
+      "        title \"${1:App Title}\"",
+      "    body:",
+      "        header class \"main-navbar\":",
+      "            h1 \"${2:BRAND LOGO}\"",
+      "            button \"${3:ACTION}\" id \"btn-${4:action}\"",
+      "        main class \"main-container\":",
+      "            section class \"hero-section\":",
+      "                h2 \"${5:Welcome}\"",
+      "                p \"${6:Description}\"",
+      "                $0"
+    ],
+    "description": "Scaffold a complete .enlgf web page"
+  },
+  "EnLang Script Block": {
+    "prefix": "enlg-script",
+    "body": [
+      "in script:",
+      "    create ${1:stateVar} as ${2:0}",
+      "",
+      "    when \"${3:btn-submit}\" is clicked:",
+      "        put ${4:newValue} into ${5:target}",
+      "        set text of \"${6:display-id}\" to ${7:\"Updated!\"}",
+      "        add class \"active\" to \"${6:display-id}\"",
+      "        $0"
+    ],
+    "description": "Scaffold a modern .enlgs client script"
+  },
+  "EnLang Event Listener": {
+    "prefix": "enlg-when",
+    "body": [
+      "when \"${1:btn-id}\" is clicked:",
+      "    $0"
+    ],
+    "description": "Event listener statement in .enlgs"
+  },
+  "EnLang Natural Put": {
+    "prefix": "enlg-put",
+    "body": [
+      "put ${1:data} into ${2:target}[${3:key}]"
+    ],
+    "description": "Natural dictionary/array assignment"
+  },
+  "EnLang Mobile App": {
+    "prefix": "enlg-mobile",
+    "body": [
+      "in mobile:",
+      "    use flutter \"material\"",
+      "    use package \"google_fonts\"",
+      "",
+      "    app \"${1:MyApp}\":",
+      "        theme dark",
+      "        accent color \"${2:#00f2fe}\"",
+      "        home screen ${3:HomeScreen}",
+      "",
+      "    screen ${3:HomeScreen}:",
+      "        app bar:",
+      "            title \"${4:Title}\"",
+      "        body:",
+      "            scroll:",
+      "                column centered:",
+      "                    text \"${5:Hello World}\" size 20, bold",
+      "                    $0"
+    ],
+    "description": "Scaffold a modern .enlgm mobile screen"
+  }
+}

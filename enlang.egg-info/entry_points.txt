@@ -1,0 +1,3 @@
+[console_scripts]
+enlang = enlg.cli:main
+enlg = enlg.cli:main

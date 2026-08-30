@@ -1,2 +1,5 @@
 @echo off
-python -m enlg %*
+setlocal
+set "PYTHONPATH=%~dp0;%PYTHONPATH%"
+python -m enlg.cli %*
+endlocal

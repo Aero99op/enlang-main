@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "EnLang Markup (.enlgf)",
+  "scopeName": "source.enlgf",
+  "patterns": [
+    {
+      "name": "comment.line.number-sign.enlgf",
+      "match": "#.*$"
+    },
+    {
+      "name": "string.quoted.double.enlgf",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [{ "name": "constant.character.escape.enlgf", "match": "\\\\." }]
+    },
+    {
+      "name": "string.quoted.single.enlgf",
+      "begin": "'",
+      "end": "'",
+      "patterns": [{ "name": "constant.character.escape.enlgf", "match": "\\\\." }]
+    },
+    {
+      "name": "entity.name.tag.enlgf",
+      "match": "\\b(page|head|title|body|header|nav|main|section|article|aside|footer|div|span|h1|h2|h3|h4|h5|h6|p|button|input|textarea|select|option|form|label|table|thead|tbody|tfoot|tr|th|td|ul|ol|li|img|canvas|svg|path|circle|iframe|audio|video)\\b"
+    },
+    {
+      "name": "entity.other.attribute-name.enlgf",
+      "match": "\\b(class|id|style|type|src|href|placeholder|value|name|target|rel|alt|width|height|rows|cols|disabled|readonly|required|checked|selected|autocomplete|autofocus)\\b"
+    }
+  ]
+}
