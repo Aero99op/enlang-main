@@ -1,0 +1,23 @@
+# Two Sum solution using a map
+function twoSum with nums, target:
+    create hashmap as {}
+    create index as 0
+    create n as length of nums
+
+    while index < n:
+        create current as nums[index]
+        create complement as target - current
+
+        if complement in hashmap:
+            return [hashmap[complement], index]
+
+        set hashmap[current] to index
+        set index to index + 1
+
+    return []
+
+create numbers as [2, 7, 11, 15]
+create targetVal as 9
+
+create result as call twoSum with numbers, targetVal
+print "Result indices: " + result

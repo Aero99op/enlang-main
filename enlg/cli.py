@@ -21,7 +21,7 @@ from enlg.runtime.vm import VirtualMachine
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-VERSION = "1.0.7"
+VERSION = "1.0.11"
 PYPI_PACKAGE_NAME = "enlang"
 ENLANG_HOME = Path.home() / ".enlang"
 VERSIONS_DIR = ENLANG_HOME / "versions"

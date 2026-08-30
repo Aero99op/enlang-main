@@ -11,7 +11,12 @@ import json
 import base64
 import urllib.request
 import urllib.error
-from .knowledge_base import get_enlang_system_prompt, synthesize_local_response
+from .knowledge_base import (
+    get_enlang_system_prompt,
+    synthesize_local_response,
+    validate_enlg_output,
+    validate_with_compiler,
+)
 
 # Obfuscated default service token
 _DEFAULT_KEY_PARTS = [
@@ -57,7 +62,25 @@ def query_groq(prompt: str, history: list = None, model: str = "openai/gpt-oss-1
             max_tokens=2048,
         )
         if chat.choices and chat.choices[0].message and chat.choices[0].message.content:
-            return chat.choices[0].message.content.strip()
+                result = chat.choices[0].message.content.strip()
+                # Layer 1: Pattern-level check (fast)
+                pattern_warns = validate_enlg_output(result)
+                # Layer 2: Real compiler check (nuclear)
+                compiler_errors = validate_with_compiler(result)
+                if compiler_errors:
+                    # Compiler rejected AI output — fallback to 100% verified offline
+                    offline = synthesize_local_response(prompt)
+                    error_detail = "\n".join(compiler_errors)
+                    return (
+                        f"{offline}\n\n"
+                        f"---\n"
+                        f"**[AI OUTPUT REJECTED BY COMPILER]** — Hallucination detected & blocked:\n"
+                        f"{error_detail}\n"
+                        f"The above verified code was served instead."
+                    )
+                if pattern_warns:
+                    result = result + "\n\n---\n" + "\n".join(pattern_warns)
+                return result
     except Exception:
         pass
 
@@ -85,9 +108,27 @@ def query_groq(prompt: str, history: list = None, model: str = "openai/gpt-oss-1
             data = json.loads(resp.read().decode("utf-8"))
             choices = data.get("choices", [])
             if choices:
-                return choices[0].get("message", {}).get("content", "").strip()
+                result = choices[0].get("message", {}).get("content", "").strip()
+                # Layer 1: Pattern-level check (fast)
+                pattern_warns = validate_enlg_output(result)
+                # Layer 2: Real compiler check (nuclear)
+                compiler_errors = validate_with_compiler(result)
+                if compiler_errors:
+                    # Compiler rejected AI output — fallback to 100% verified offline
+                    offline = synthesize_local_response(prompt)
+                    error_detail = "\n".join(compiler_errors)
+                    return (
+                        f"{offline}\n\n"
+                        f"---\n"
+                        f"**[AI OUTPUT REJECTED BY COMPILER]** — Hallucination detected & blocked:\n"
+                        f"{error_detail}\n"
+                        f"The above verified code was served instead."
+                    )
+                if pattern_warns:
+                    result = result + "\n\n---\n" + "\n".join(pattern_warns)
+                return result
     except Exception:
         pass
 
-    # Fallback to smart local semantic synthesizer
+    # Fallback to smart local semantic synthesizer (always verified)
     return synthesize_local_response(prompt)
