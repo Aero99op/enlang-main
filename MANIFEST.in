@@ -6,6 +6,7 @@ recursive-include enlgf *.py *.md *.html
 recursive-include enlgd *.py *.md *.css
 recursive-include enlgs *.py *.md *.js
 recursive-include enlgm *.py *.md *.dart
+recursive-include enlgdb *.py *.md
 recursive-include enlang *.py *.md
 recursive-include enlg/vscode *.vsix
 recursive-include vscode-enlang *

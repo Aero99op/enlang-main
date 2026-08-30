@@ -6,6 +6,7 @@ Performs static analysis and grammar verification across all Enlang sub-language
 - .enlgd (Design & stylesheets)
 - .enlgs (Client-side reactive scripting)
 - .enlgm (Mobile flutter application)
+- .enlgdb (Natural English SQL & Database)
 """
 
 import os
@@ -71,6 +72,10 @@ def check_file(filepath: str) -> Tuple[bool, List[str], int]:
             tokens = ENLGMLexer(content).tokenize()
             ast = ENLGMParser(tokens).parse()
             ENLGMEmitter(ast).emit()
+
+        elif file_lower.endswith((".enlgdb", ".sql")):
+            from enlgdb.compiler import compile_enlgdb_source
+            compile_enlgdb_source(content)
 
         elif file_lower.endswith(".py"):
             import ast

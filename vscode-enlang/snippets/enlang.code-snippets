@@ -68,5 +68,33 @@
       "                    $0"
     ],
     "description": "Scaffold a modern .enlgm mobile screen"
+  },
+  "EnLang Database Table": {
+    "prefix": "enlg-table",
+    "body": [
+      "type enlgdb",
+      "",
+      "create table \"${1:users}\" with:",
+      "    id as integer primary key autoincrement",
+      "    ${2:username} as text not null unique",
+      "    ${3:email} as text not null",
+      "    ${4:created_at} as timestamp default current_timestamp",
+      "    $0"
+    ],
+    "description": "Scaffold a modern .enlgdb database table"
+  },
+  "EnLang Database Query": {
+    "prefix": "enlg-select",
+    "body": [
+      "select all from \"${1:users}\" where ${2:rating} >= ${3:1000} order by ${2:rating} descending limit ${4:20}"
+    ],
+    "description": "Natural select query in .enlgdb"
+  },
+  "EnLang Safe Drop Table": {
+    "prefix": "enlg-safe-drop",
+    "body": [
+      "drop table \"${1:users}\" confirm \"DROP_${1/(.*)/${1:/upcase}/}\""
+    ],
+    "description": "Safe guarded table drop in .enlgdb"
   }
 }

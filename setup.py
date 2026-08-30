@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="enlang",
-    version="1.0.3",
+    version="1.0.7",
     author="Spandan Prayas Patra",
     author_email="spandanpatra1234@gmail.com",
     description="The Universal Natural English Programming Language & Full-Stack Engine",

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "EnLang Database",
+  "scopeName": "source.enlgdb",
+  "patterns": [
+    {
+      "name": "comment.line.double-dash.enlgdb",
+      "match": "--.*$"
+    },
+    {
+      "name": "comment.line.number-sign.enlgdb",
+      "match": "#.*$"
+    },
+    {
+      "name": "string.quoted.double.enlgdb",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.enlgdb",
+          "match": "\\\\."
+        }
+      ]
+    },
+    {
+      "name": "string.quoted.single.enlgdb",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "name": "constant.character.escape.enlgdb",
+          "match": "\\\\."
+        }
+      ]
+    },
+    {
+      "name": "keyword.control.header.enlgdb",
+      "match": "\\b(type)\\s+(enlgdb)\\b"
+    },
+    {
+      "name": "keyword.control.safety.confirm.enlgdb",
+      "match": "\\b(confirm|confirmed)\\b"
+    },
+    {
+      "name": "keyword.control.ddl.enlgdb",
+      "match": "\\b(create|database|databases|use|show|tables|table|with|alter|add|drop|truncate|column|index)\\b"
+    },
+    {
+      "name": "keyword.control.dml.enlgdb",
+      "match": "\\b(select|all|from|where|order|by|ascending|asc|descending|desc|limit|offset|update|set|delete|insert|into|values|join|inner|left|right|on|distinct)\\b"
+    },
+    {
+      "name": "storage.type.enlgdb",
+      "match": "\\b(integer|int|text|string|varchar|real|float|double|boolean|bool|timestamp|datetime|blob|json)\\b"
+    },
+    {
+      "name": "storage.modifier.constraint.enlgdb",
+      "match": "\\b(primary|key|autoincrement|not|null|unique|default|references|as)\\b"
+    },
+    {
+      "name": "support.function.aggregate.enlgdb",
+      "match": "\\b(count|sum|avg|min|max)\\b"
+    },
+    {
+      "name": "constant.language.boolean.enlgdb",
+      "match": "\\b(true|false|null|none|CURRENT_TIMESTAMP)\\b"
+    },
+    {
+      "name": "keyword.operator.logical.enlgdb",
+      "match": "\\b(and|or|is|like|in|between)\\b"
+    },
+    {
+      "name": "constant.numeric.enlgdb",
+      "match": "\\b\\d+(\\.\\d+)?\\b"
+    },
+    {
+      "name": "keyword.operator.comparison.enlgdb",
+      "match": "(==|!=|<=|>=|<|>|=)"
+    }
+  ]
+}

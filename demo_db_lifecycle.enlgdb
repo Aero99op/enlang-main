@@ -1,0 +1,27 @@
+type enlgdb
+
+-- 1. Create a New Database
+create database "gaming_hub"
+
+-- 2. Show All Available Databases
+show databases
+
+-- 3. Switch to and Use the Target Database
+use database "gaming_hub"
+
+-- 4. Create Tables Inside the Active Database
+create table "tournaments" with:
+    id as integer primary key autoincrement
+    title as text not null
+    prize_pool as real default 50000.0
+
+-- 5. Show All Tables in Active Database
+show tables
+
+-- 6. Insert Data into Active Database
+insert into "tournaments" values:
+    title: "Enlang Grand Masters 2026"
+    prize_pool: 100000.0
+
+-- 7. Query the Table
+select all from "tournaments"

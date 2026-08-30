@@ -156,13 +156,52 @@ THE 5 ENLANG SUB-LANGUAGES & FORMAL SYNTAX RULES:
                           when tapped:
                               go to StandingsScreen
 
+--------------------------------------------------------------------------------
+6. .enlgdb (Natural English Database & SQL -> SQLite / PostgreSQL / ANSI SQL)
+--------------------------------------------------------------------------------
+- Starts with mandatory domain header: type enlgdb
+- Schema Creation:
+  type enlgdb
+  create table "users" with:
+      id as integer primary key autoincrement
+      username as text not null unique
+      email as text not null
+      rating as real default 1000.0
+      is_active as boolean default true
+      created_at as timestamp default current_timestamp
+
+- Insert Records:
+  insert into "users" values:
+      username: "ShadowNinja"
+      email: "ninja@esports.gg"
+      rating: 1500.0
+      is_active: true
+
+- Select & Queries:
+  select all from "users" where rating >= 1200 and is_active is true order by rating descending limit 20
+  select id, username, rating from "users" where email like "%@esports.gg"
+  select count(id), avg(rating) from "users" where is_active is true
+
+- Joins:
+  select users.username, teams.name from "users" join "teams" on users.team_id is teams.id
+
+- Updates:
+  update "users" set rating = rating + 50 where id is 1
+
+- Safe Destructive Operations (MANDATORY confirmed OR confirm KEYWORD):
+  drop table temp_logs from table1 confirmed
+  drop table temp_logs confirmed
+  drop column email from users confirmed
+  delete all from users confirmed
+  truncate table logs confirmed
+
 ================================================================================
 YOUR CONVERSATIONAL & CODING GUIDELINES:
 ================================================================================
 1. 100% Core Files Based: Only use official Enlang syntax constructs.
 2. Conversational Excellence: Explain concepts clearly in a friendly, helpful manner (supporting both English and Hinglish naturally).
-3. Clean Code Output: Always provide well-formatted code blocks with the correct language tag (```enlg, ```enlgf, ```enlgd, ```enlgs, ```enlgm).
-4. Zero Raw JS/HTML: Use pure Enlang natural constructs (e.g. put ... into, when ... is clicked:, show element, page:) instead of raw JS/HTML injections.
+3. Clean Code Output: Always provide well-formatted code blocks with the correct language tag (```enlg, ```enlgf, ```enlgd, ```enlgs, ```enlgm, ```enlgdb).
+4. Zero Raw JS/HTML/SQL: Use pure Enlang natural constructs (e.g. put ... into, when ... is clicked:, show element, type enlgdb, drop table temp_logs confirmed) instead of raw injections.
 '''
 
 def synthesize_local_response(prompt: str) -> str:
@@ -173,14 +212,52 @@ def synthesize_local_response(prompt: str) -> str:
     if p_lower in ("hi", "hello", "hey", "namaste", "hola", "yo", "kya haal", "kaise ho", "help"):
         return """Hello! 👋 I am your Enlang AI Assistant.
 
-I can help you build full-stack apps in natural English using Enlang:
+I can help you build full-stack apps and databases in natural English using Enlang:
 - **Backend & Logic**: `.enlg`
 - **Web UI & Markup**: `.enlgf`
 - **Styles & Layout**: `.enlgd`
 - **Client Scripting & Reactivity**: `.enlgs`
-- **Mobile Apps**: `.enlgm`
+- **Mobile Apps (Flutter)**: `.enlgm`
+- **Database & SQL**: `.enlgdb`
 
 What would you like to build or understand today?"""
+
+    # Database / enlgdb / SQL specific queries
+    if any(k in p_lower for k in ("db", "database", "sql", "table", "enlgdb", "schema", "query", "drop table", "select")):
+        return """### 🗄️ Enlang Database (`.enlgdb`) Guide & Code
+
+In Enlang, database schemas and SQL queries are written in clean, human-readable English starting with `type enlgdb`:
+
+```enlgdb
+type enlgdb
+
+-- 1. Create Tables with Constraints
+create table "users" with:
+    id as integer primary key autoincrement
+    username as text not null unique
+    email as text not null
+    rating as real default 1000.0
+    is_active as boolean default true
+
+-- 2. Insert Data
+insert into "users" values:
+    username: "ShadowNinja"
+    email: "ninja@esports.gg"
+    rating: 1540.5
+    is_active: true
+
+-- 3. Query Records
+select all from "users" where rating >= 1200 and is_active is true order by rating descending limit 10
+
+-- 4. Safe Destructive Actions (Mandatory 'confirmed' keyword)
+drop table temp_logs confirmed
+delete all from old_logs confirmed
+```
+
+**Commands:**
+- Run directly on SQLite: `enlang run database.enlgdb`
+- Translate to standard SQL: `enlang build database.enlgdb --out schema.sql`
+- Check syntax: `enlang check database.enlgdb`"""
 
     # General / Code fallback
     return """### 💡 Enlang Core Guidance

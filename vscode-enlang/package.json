@@ -2,7 +2,7 @@
   "name": "enlang-official",
   "displayName": "EnLang — Universal Natural English Full-Stack Language",
   "description": "Official VS Code extension for EnLang: Rich Syntax Highlighting, Snippets, Diagnostics & AI Assistant for .enlg, .enlgf, .enlgd, .enlgs, and .enlgm files.",
-  "version": "1.0.3",
+  "version": "1.0.7",
   "publisher": "Enlang1234",
   "license": "MIT",
   "homepage": "https://github.com/Aero99op/enlang",
@@ -73,6 +73,12 @@
         "aliases": ["EnLang Mobile", "enlgm"],
         "extensions": [".enlgm"],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "enlgdb",
+        "aliases": ["EnLang Database", "enlgdb"],
+        "extensions": [".enlgdb"],
+        "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
@@ -100,6 +106,11 @@
         "language": "enlgm",
         "scopeName": "source.enlgm",
         "path": "./syntaxes/enlgm.tmLanguage.json"
+      },
+      {
+        "language": "enlgdb",
+        "scopeName": "source.enlgdb",
+        "path": "./syntaxes/enlgdb.tmLanguage.json"
       }
     ],
     "snippets": [
@@ -121,6 +132,10 @@
       },
       {
         "language": "enlgm",
+        "path": "./snippets/enlang.code-snippets"
+      },
+      {
+        "language": "enlgdb",
         "path": "./snippets/enlang.code-snippets"
       }
     ],

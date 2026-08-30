@@ -21,7 +21,7 @@ from enlg.runtime.vm import VirtualMachine
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-VERSION = "1.0.3"
+VERSION = "1.0.7"
 PYPI_PACKAGE_NAME = "enlang"
 ENLANG_HOME = Path.home() / ".enlang"
 VERSIONS_DIR = ENLANG_HOME / "versions"
@@ -157,12 +157,13 @@ def cmd_install_extension(args):
 
     if installed_count > 0:
         print("----------------------------------------------------------------")
-        print("  🎉 Extension installed! All 5 Enlang domains are now active:")
-        print("     - .enlg  (Backend & VM)")
-        print("     - .enlgf (Web Frontend Markup)")
-        print("     - .enlgd (CSS & Design DSL)")
-        print("     - .enlgs (Client Reactive Scripting)")
-        print("     - .enlgm (Flutter Mobile DSL)")
+        print("  🎉 Extension installed! All 6 Enlang domains are now active:")
+        print("     - .enlg   (Backend & VM)")
+        print("     - .enlgf  (Web Frontend Markup)")
+        print("     - .enlgd  (CSS & Design DSL)")
+        print("     - .enlgs  (Client Reactive Scripting)")
+        print("     - .enlgm  (Flutter Mobile DSL)")
+        print("     - .enlgdb (Natural English SQL & Database)")
         print("================================================================")
     else:
         print("  [MANUAL INSTALLATION]:")
@@ -322,6 +323,9 @@ def main():
             dart_file = build_enlgm_file(args.file)
             print(f"[enlgm] Running Flutter application...")
             subprocess.run(["flutter", "run"])
+        elif file_lower.endswith(".enlgdb"):
+            from enlgdb.compiler import run_enlgdb_file
+            run_enlgdb_file(args.file)
         elif file_lower.endswith(".js"):
             import subprocess
             subprocess.run(["node", args.file])
@@ -338,6 +342,9 @@ def main():
         if file_lower.endswith(".enlg"):
             from enlg.compiler.py_transpiler import build_enlg_file
             build_enlg_file(args.file, output_path=args.out)
+        elif file_lower.endswith(".enlgdb"):
+            from enlgdb.compiler import build_enlgdb_file
+            build_enlgdb_file(args.file, output_path=args.out)
         elif file_lower.endswith(".enlgd"):
             from enlgd.compiler import build_enlgd_file
             build_enlgd_file(args.file, output_path=args.out)
@@ -359,7 +366,7 @@ def main():
                 f.write(html)
             print(f"[enlgf] Built HTML: {out_file}")
         else:
-            print(f"Error: Unknown build file type '{args.file}'. Expected .enlg, .enlgd, .enlgs, .enlgm, or .enlgf", file=sys.stderr)
+            print(f"Error: Unknown build file type '{args.file}'. Expected .enlg, .enlgdb, .enlgd, .enlgs, .enlgm, or .enlgf", file=sys.stderr)
             sys.exit(1)
             
     elif args.command == "check":

@@ -1,0 +1,48 @@
+type enlgdb
+
+-- 1. Create Esports Players Table
+create table "players" with:
+    id as integer primary key autoincrement
+    username as text not null unique
+    team as text not null
+    rating as real default 1000.0
+    kills as integer default 0
+    is_mvp as boolean default false
+
+-- 2. Insert Player Records
+insert into "players" values:
+    username: "ShadowNinja"
+    team: "Vortex Gaming"
+    rating: 1540.5
+    kills: 42
+    is_mvp: true
+
+insert into "players" values:
+    username: "Specter"
+    team: "Phoenix Squad"
+    rating: 1420.0
+    kills: 36
+    is_mvp: false
+
+insert into "players" values:
+    username: "CyberPulse"
+    team: "Vortex Gaming"
+    rating: 1610.2
+    kills: 55
+    is_mvp: true
+
+-- 3. Query All MVP Players
+select all from "players" where is_mvp is true order by rating descending
+
+-- 4. Query Team Kill Leaders
+select username, team, kills, rating from "players" where kills >= 40 order by kills descending limit 5
+
+-- 5. Safe Update Statement
+update "players" set rating = rating + 25.0 where username is "Specter"
+
+-- 6. Safe Guarded Table Drop Demonstration (Will safely drop temp table)
+create table "temp_logs" with:
+    id as integer primary key autoincrement
+    message as text not null
+
+drop table temp_logs confirmed

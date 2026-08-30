@@ -57,6 +57,7 @@ files_to_pack = [
     "syntaxes/enlangd.tmLanguage.json",
     "syntaxes/enlgs.tmLanguage.json",
     "syntaxes/enlgm.tmLanguage.json",
+    "syntaxes/enlgdb.tmLanguage.json",
     "snippets/enlang.code-snippets"
 ]
 

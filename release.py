@@ -56,6 +56,12 @@ def main():
     vsix_path = f"vscode-enlang/enlang-{new_ver}.vsix"
     if os.path.exists(vsix_path):
         print(f"  [SUCCESS] Packaged: {vsix_path}")
+        # Copy to enlg/vscode to bundle with PyPI package
+        import shutil
+        os.makedirs("enlg/vscode", exist_ok=True)
+        shutil.copy(vsix_path, "enlg/vscode/enlang-extension.vsix")
+        shutil.copy(vsix_path, f"enlg/vscode/enlang-{new_ver}.vsix")
+        print("  [BUNDLED] Copied VSIX to enlg/vscode/ for 1-command installer")
         print("\n3. Installing updated VSIX in VS Code...")
         subprocess.run(["code.cmd", "--install-extension", vsix_path, "--force"], shell=True)
 

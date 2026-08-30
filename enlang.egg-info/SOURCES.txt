@@ -58,6 +58,10 @@ enlg/tests/test_lexer.py
 enlg/tests/test_parser.py
 enlg/tests/test_vm.py
 enlg/vscode/enlang-1.0.2.vsix
+enlg/vscode/enlang-1.0.4.vsix
+enlg/vscode/enlang-1.0.5.vsix
+enlg/vscode/enlang-1.0.6.vsix
+enlg/vscode/enlang-1.0.7.vsix
 enlg/vscode/enlang-extension.vsix
 enlgd/__init__.py
 enlgd/ast_nodes.py
@@ -66,6 +70,15 @@ enlgd/emitter.py
 enlgd/lexer.py
 enlgd/parser.py
 enlgd/tokens.py
+enlgdb/__init__.py
+enlgdb/ast_nodes.py
+enlgdb/compiler.py
+enlgdb/emitter.py
+enlgdb/engine.py
+enlgdb/lexer.py
+enlgdb/parser.py
+enlgdb/tokens.py
+enlgdb/tests/test_enlgdb.py
 enlgf/__init__.py
 enlgf/ast_nodes.py
 enlgf/emitter.py
@@ -95,6 +108,10 @@ vscode-enlang/enlang-1.0.0.vsix
 vscode-enlang/enlang-1.0.1.vsix
 vscode-enlang/enlang-1.0.2.vsix
 vscode-enlang/enlang-1.0.3.vsix
+vscode-enlang/enlang-1.0.4.vsix
+vscode-enlang/enlang-1.0.5.vsix
+vscode-enlang/enlang-1.0.6.vsix
+vscode-enlang/enlang-1.0.7.vsix
 vscode-enlang/extension.js
 vscode-enlang/language-configuration.json
 vscode-enlang/package.json
@@ -102,5 +119,6 @@ vscode-enlang/snippets/enlang.code-snippets
 vscode-enlang/syntaxes/enlang.tmLanguage.json
 vscode-enlang/syntaxes/enlangd.tmLanguage.json
 vscode-enlang/syntaxes/enlangf.tmLanguage.json
+vscode-enlang/syntaxes/enlgdb.tmLanguage.json
 vscode-enlang/syntaxes/enlgm.tmLanguage.json
 vscode-enlang/syntaxes/enlgs.tmLanguage.json
