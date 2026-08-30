@@ -71,6 +71,48 @@ class BlockParser:
                 
                 # Let SlotParser handle the condition, and pass the body_block
                 stmt_node = SlotParser.parse_with_body(locked_stmt, body_block)
+
+                # Check if this IfNode is followed by an else block
+                if isinstance(stmt_node, IfNode):
+                    peek_pos = pos
+                    while peek_pos < len(tokens) and tokens[peek_pos].type in (TokenType.NEWLINE, TokenType.DEDENT):
+                        peek_pos += 1
+
+                    next_line_tokens = []
+                    scan_pos = peek_pos
+                    while scan_pos < len(tokens) and tokens[scan_pos].type not in (TokenType.NEWLINE, TokenType.EOF):
+                        next_line_tokens.append(tokens[scan_pos])
+                        scan_pos += 1
+
+                    if next_line_tokens and next_line_tokens[-1].type == TokenType.SYMBOL and next_line_tokens[-1].value == ":":
+                        check_line = next_line_tokens[:-1]
+                        try:
+                            next_locked = IntentDiscoveryEngine.process_statement(check_line)
+                            if next_locked.intent_id == "COND_ELSE":
+                                pos = scan_pos
+                                if pos < len(tokens) and tokens[pos].type == TokenType.NEWLINE:
+                                    pos += 1
+                                if pos < len(tokens) and tokens[pos].type == TokenType.INDENT:
+                                    pos += 1
+                                    else_block_tokens = []
+                                    else_indent = 1
+                                    while pos < len(tokens):
+                                        t = tokens[pos]
+                                        if t.type == TokenType.INDENT:
+                                            else_indent += 1
+                                        elif t.type == TokenType.DEDENT:
+                                            else_indent -= 1
+                                            if else_indent == 0:
+                                                pos += 1
+                                                break
+                                        else_block_tokens.append(t)
+                                        pos += 1
+
+                                    else_body_block = BlockParser.parse(else_block_tokens)
+                                    stmt_node.else_body = else_body_block
+                        except Exception:
+                            pass
+
                 statements.append(stmt_node)
             else:
                 stmt_node = SlotParser.parse(locked_stmt)

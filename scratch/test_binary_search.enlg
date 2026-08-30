@@ -1,0 +1,17 @@
+# Natural Binary Search in Enlang
+function binarySearch with arr, target:
+    declare low = 0
+    declare high = call length with arr - 1
+    while low <= high:
+        declare mid = (low + high) // 2
+        if arr[mid] == target:
+            return mid
+        if arr[mid] < target:
+            set low = mid + 1
+        else:
+            set high = mid - 1
+    return -1
+
+declare nums = [10, 20, 30, 40, 50, 60, 70]
+declare idx = call binarySearch with nums, 40
+print "40 found at index: " + idx

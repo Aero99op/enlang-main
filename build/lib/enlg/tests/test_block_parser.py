@@ -36,6 +36,17 @@ class TestBlockParser(unittest.TestCase):
         self.assertEqual(len(if_node.body.statements), 2)
         self.assertIsInstance(if_node.body.statements[0], VariableDeclNode)
 
+    def test_if_else_block(self):
+        source = 'if flag:\n    declare y = 50\nelse:\n    declare y = 100'
+        ast = self._parse(source)
+        self.assertEqual(len(ast.statements), 1)
+        if_node = ast.statements[0]
+        self.assertIsInstance(if_node, IfNode)
+        self.assertIsNotNone(if_node.else_body)
+        self.assertEqual(len(if_node.else_body.statements), 1)
+        self.assertEqual(if_node.else_body.statements[0].identifier, "y")
+
+
     def test_while_block(self):
         source = 'while true:\n    declare count = 1'
         ast = self._parse(source)

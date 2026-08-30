@@ -546,241 +546,14 @@ You are an expert. Give perfect, tested, verified Enlang code every single time.
 
 
 def synthesize_local_response(prompt: str) -> str:
-    """Fail-safe offline synthesizer when Groq is unreachable.
-    Uses keyword matching to return pre-verified, tested code."""
-    p = prompt.lower().strip()
+    """Invoked only when offline or Groq API network connection fails."""
+    return f"""[OFFLINE / CONNECTION ERROR]
+Enlang AI could not connect to the cloud inference engine.
+Please check your internet connection or verify your GROQ_API_KEY.
 
-    # Greeting
-    if any(w in p for w in ("hi", "hello", "hey", "namaste", "help", "kya", "kaise")):
-        return """Hello! Main Enlang AI hoon — aapka personal Enlang programming guide!
+Your query: "{prompt}"
+"""
 
-Main aapko in cheezein mein help kar sakta hoon:
-- **Backend Logic**: `.enlg` — algorithms, functions, loops, OOP
-- **Frontend Web**: `.enlgf` — HTML5 markup
-- **Design/CSS**: `.enlgd` — responsive styling
-- **Reactive Scripting**: `.enlgs` — DOM events and interactions
-- **Mobile Apps**: `.enlgm` — Flutter/Dart generation
-- **Database**: `.enlgdb` — natural English SQL
-
-Kya banana chahte ho? Poochho! 🚀"""
-
-    # Prime number
-    if "prime" in p:
-        return VERIFIED_EXAMPLES["prime"] + """
-
-**How it works:**
-1. `function isPrime with n:` — function define karta hai jo `n` input leta hai.
-2. `if n <= 1: return false` — 0 aur 1 prime nahi hote.
-3. `while i * i <= n:` — sirf square root tak loop chalta hai (O(√n) time).
-4. `if n % i == 0: return false` — agar divisible hai toh prime nahi.
-5. Loop ke baad `return true` — koi divisor nahi mila, toh prime hai."""
-
-    # Factorial
-    if "factorial" in p:
-        return VERIFIED_EXAMPLES["factorial"] + """
-
-**How it works:**
-1. Base case: `if n <= 1: return 1`
-2. Recursive step: `return n * call factorial with n - 1`
-3. `call factorial with 5` → 5×4×3×2×1 = **120**"""
-
-    # Fibonacci
-    if "fibonacci" in p or "fib" in p:
-        return VERIFIED_EXAMPLES["fibonacci"] + """
-
-**How it works:**
-1. `declare a = 0, b = 1` — pehle do Fibonacci numbers.
-2. Loop mein: print `a`, phir `a = b`, `b = a+b`.
-3. `call fibonacci with 10` → pehle 10 numbers print karta hai."""
-
-    # Palindrome
-    if "palindrome" in p:
-        return VERIFIED_EXAMPLES["palindrome"] + """
-
-**How it works:**
-1. Two-pointer approach: `left` = 0, `right` = last index.
-2. Compare `s[left]` and `s[right]` — agar match nahi, palindrome nahi.
-3. Move pointers inward until they meet."""
-
-    # Reverse string
-    if "reverse" in p and ("string" in p or "str" in p or "word" in p):
-        return VERIFIED_EXAMPLES["reverse_string"] + """
-
-**How it works:**
-1. Last index se start karo, end tak loop karo.
-2. Har character ko `reversed` string mein add karo.
-3. Return karo reversed string."""
-
-    # Sorting
-    if "sort" in p or "bubble" in p:
-        return VERIFIED_EXAMPLES["bubble_sort"] + """
-
-**How it works:**
-1. Outer loop: n passes karta hai.
-2. Inner loop: adjacent elements compare karta hai.
-3. Agar `arr[j] > arr[j+1]`, swap karo.
-4. Har pass ke baad sabse bada element end mein aa jata hai."""
-
-    # Sum / Array operations
-    if "sum" in p and "array" in p:
-        return VERIFIED_EXAMPLES["sum_array"] + """
-
-**How it works:**
-1. `declare total = 0` — accumulator start karo.
-2. Loop through array, har element ko total mein add karo.
-3. Return total."""
-
-    # Max / Min
-    if "max" in p or "maximum" in p or "largest" in p:
-        return VERIFIED_EXAMPLES["find_max"] + """
-
-**How it works:**
-1. Pehle element ko max maan lo.
-2. Baaki elements compare karo.
-3. Agar koi bada mila, update karo."""
-
-    # Search
-    if "search" in p or "find" in p:
-        return VERIFIED_EXAMPLES["linear_search"] + """
-
-**How it works:**
-1. `declare idx = 0` — start from beginning.
-2. Har element check karo target ke sath.
-3. Agar match mila, index return karo.
-4. Nahi mila toh -1 return karo."""
-
-    # Database / SQL
-    if any(k in p for k in ("db", "database", "sql", "table", "enlgdb", "schema", "query", "insert", "select", "drop")):
-        return VERIFIED_EXAMPLES["database"] + """
-
-**Key Rules:**
-- `type enlgdb` — MANDATORY first line.
-- `create table "name" with:` — table schema.
-- `insert into "name" values:` — data insert.
-- `select ... from "name" where ...` — query data.
-- Destructive ops need `confirmed`: `drop table name confirmed`."""
-
-    # Class / OOP
-    if any(k in p for k in ("class", "object", "oop", "inherit")):
-        return VERIFIED_EXAMPLES["class"] + """
-
-**How it works:**
-1. `class Animal:` — blueprint define karta hai.
-2. `declare name = "Unknown"` — default properties.
-3. `function init with ...:` — constructor.
-4. `new Animal with "Dog", "Woof"` — instance create karta hai."""
-
-    # Two sum (hash map pattern)
-    if "two sum" in p or ("two" in p and "sum" in p):
-        return """### Two Sum using Dictionary in Enlang
-
-```enlg
-# Two Sum - Find indices of two numbers that add to target
-function twoSum with nums, target:
-    declare seen = {}
-    declare idx = 0
-    declare n = call length with nums
-    while idx < n:
-        declare current = nums[idx]
-        declare complement = target - current
-        if complement in seen:
-            return [seen[complement], idx]
-        set seen[current] = idx
-        set idx = idx + 1
-    return []
-
-declare numbers = [2, 7, 11, 15]
-declare target = 9
-declare result = call twoSum with numbers, target
-print "Indices: " + result
-```
-
-**How it works:**
-1. `seen = {}` — dictionary/hashmap for O(1) lookup.
-2. For each number, check if `target - current` is already seen.
-3. If yes, return both indices. Time: O(n)."""
-
-    # Frontend / HTML / .enlgf
-    if any(k in p for k in ("frontend", "enlgf", "html", "webpage", "web page", "page", "navbar", "header", "button", "markup")):
-        return VERIFIED_EXAMPLES["frontend"] + """
-
-**Key .enlgf Rules:**
-- `page "Title":` — root element (generates full HTML5 document).
-- Indentation = nesting. NO closing tags needed.
-- `header class "name":` → `<header class="name">`
-- `button "Text" id "btn-id"` → `<button id="btn-id">Text</button>`
-- `h1 "text"`, `h2 "text"`, `p "text"` — direct text elements."""
-
-    # Design / CSS / .enlgd
-    if any(k in p for k in ("design", "enlgd", "css", "style", "color", "background", "font", "layout", "flex", "grid", "padding", "margin", "responsive")):
-        return VERIFIED_EXAMPLES["design"] + """
-
-**Key .enlgd Rules:**
-- `design system:` — root block.
-- `body:` / `.classname:` / `#id:` — CSS selectors, indented.
-- `property: "value"` — NO semicolons, NO curly braces.
-- Use quoted string values: `background: "#080c14"`.
-- All standard CSS properties are supported."""
-
-    # Scripting / JS / .enlgs
-    if any(k in p for k in ("script", "enlgs", "click", "event", "reactive", "dom", "javascript", "js", "button click", "on click", "fetch", "show", "hide")):
-        return VERIFIED_EXAMPLES["scripting"] + """
-
-**Key .enlgs Rules:**
-- `in script:` — mandatory domain declaration.
-- `create <var> as <value>` — reactive variable.
-- `when "element-id" is clicked:` — event listener.
-- `set text of "id" to value` — DOM text setter.
-- `show element "id"` / `hide element "id"` — visibility.
-- `add class "name" to "id"` — class manipulation.
-- `fetch data from "/api/route" into "id"` — data fetching.
-- `on page load:` — DOMContentLoaded equivalent."""
-
-    # Mobile / Flutter / .enlgm
-    if any(k in p for k in ("mobile", "enlgm", "flutter", "app", "screen", "android", "ios", "button tapped", "navigation", "scaffold")):
-        return VERIFIED_EXAMPLES["mobile"] + """
-
-**Key .enlgm Rules:**
-- `mobile app "AppName":` — root. Generates complete Flutter project.
-- `screen <ScreenName>:` — each screen = StatelessWidget.
-- `app bar:` — AppBar with title and actions.
-- `body:` → scaffold body.
-- `scroll:` → SingleChildScrollView.
-- `column centered:` → Column(mainAxisAlignment: center).
-- `card:` → Material Card widget.
-- `button "TEXT" filled:` / `button "TEXT" outlined:` — ElevatedButton / OutlinedButton.
-- `when tapped: go to <Screen>` — Navigator.push."""
-
-    # Default fallback
-
-    return """### Enlang Quick Reference Guide
-
-**Variable Declaration:**
-```enlg
-declare name = "Spandan"
-create count as 0
-```
-
-**Function Definition & Call:**
-```enlg
-function greet with person:
-    print "Hello, " + person
-
-call greet with "Spandan"
-```
-
-**Loop & Condition:**
-```enlg
-declare i = 1
-while i <= 5:
-    if i == 3:
-        print "Three!"
-    else:
-        print i
-    set i = i + 1
-```
-
-Aur koi specific problem batao — main exact working code dunga! 🚀"""
 
 
 def validate_enlg_output(code: str) -> list:
@@ -810,11 +583,9 @@ def validate_enlg_output(code: str) -> list:
     return warnings
 
 
-def extract_enlg_blocks(ai_output: str) -> list:
-    """Extracts raw .enlg code blocks from AI response text.
-    Returns list of (block_code, start_fence) tuples.
-    Only extracts .enlg blocks (not .enlgf, .enlgd, .enlgs, .enlgm, .enlgdb —
-    those have their own compilers we don't call here).
+def extract_code_blocks(ai_output: str) -> list:
+    """Extracts all code blocks and their domain languages from AI response.
+    Returns list of (domain_tag, code_str) tuples.
     """
     blocks = []
     lines = ai_output.split("\n")
@@ -826,13 +597,13 @@ def extract_enlg_blocks(ai_output: str) -> list:
         stripped = line.strip()
         if stripped.startswith("```") and not in_block:
             fence_lang = stripped[3:].strip().lower()
-            if fence_lang in ("enlg", ""):
-                # Only capture pure .enlg blocks
-                in_block = True
-                current_block = []
+            if not fence_lang:
+                fence_lang = "enlg"
+            in_block = True
+            current_block = []
         elif stripped == "```" and in_block:
             if current_block:
-                blocks.append("\n".join(current_block))
+                blocks.append((fence_lang, "\n".join(current_block)))
             in_block = False
             current_block = []
             fence_lang = ""
@@ -844,46 +615,68 @@ def extract_enlg_blocks(ai_output: str) -> list:
 
 def validate_with_compiler(ai_output: str) -> list:
     """
-    NUCLEAR VALIDATOR — Passes every .enlg code block from AI output
-    through the REAL Enlang compiler pipeline:
-        Lexer → BlockParser → CIRGenerator
-
-    This catches ALL hallucinations — not just banned patterns.
-    Any code that isn't valid Enlang WILL fail here.
-
-    Core compiler files are READ (imported), not EDITED.
+    UNIVERSAL MULTI-DOMAIN COMPILER VALIDATOR:
+    Dynamically tests code blocks against their REAL domain compiler AST:
+    - .enlg   -> Backend Logic (Lexer -> BlockParser -> CIRGenerator)
+    - .enlgdb -> Natural SQL Database (enlgdb.parser.Parser)
+    - .enlgf  -> Frontend HTML Markup (enlgf.parser.ENLEGFPParser)
+    - .enlgd  -> Design/CSS DSL (enlgd.parser.ENLGDParser)
+    - .enlgs  -> Reactive Scripting (enlgs.parser.ENLGSParser)
+    - .enlgm  -> Mobile Flutter DSL (enlgm.parser.ENLGMParser)
+    
+    ZERO HARDCODING: Tests whatever code the LLM dynamically generates.
     """
     compile_errors = []
+    blocks = extract_code_blocks(ai_output)
 
-    try:
-        # Import core compiler pipeline (READ-ONLY — zero edits)
-        from enlg.lexer.lexer import Lexer
-        from enlg.parser.block_parser import BlockParser
-        from enlg.compiler.generator import CIRGenerator
-    except ImportError:
-        # If compiler not available (e.g. edge case), skip validation silently
-        return []
+    for i, (domain, block_code) in enumerate(blocks, 1):
+        clean_code = block_code.strip()
+        if not clean_code:
+            continue
 
-    blocks = extract_enlg_blocks(ai_output)
+        block_label = f"Block #{i} [.{domain}]"
 
-    for i, block_code in enumerate(blocks, 1):
-        block_num = f"Code Block #{i}"
         try:
-            # Step 1: Lex — catches unknown tokens, bad characters
-            tokens = Lexer(block_code).tokenize()
+            if domain in ("enlg", ""):
+                from enlg.lexer.lexer import Lexer
+                from enlg.parser.block_parser import BlockParser
+                from enlg.compiler.generator import CIRGenerator
+                tokens = Lexer(clean_code).tokenize()
+                ast = BlockParser.parse(tokens)
+                CIRGenerator().generate(ast)
 
-            # Step 2: Parse — catches intent/syntax errors (e.g. 'def', 'to do', etc.)
-            ast = BlockParser.parse(tokens)
+            elif domain == "enlgdb":
+                from enlgdb.lexer import Lexer as DBLexer
+                from enlgdb.parser import Parser as DBParser
+                tokens = DBLexer(clean_code).tokenize()
+                DBParser(tokens).parse()
 
-            # Step 3: CIR Generate — catches semantic issues (missing returns, etc.)
-            CIRGenerator().generate(ast)
+            elif domain == "enlgf":
+                from enlgf.lexer import ENLGFLexer
+                from enlgf.parser import ENLEGFPParser
+                tokens = ENLGFLexer(clean_code).tokenize()
+                ENLEGFPParser(tokens).parse()
 
-            # All 3 steps passed — this block is VALID Enlang
+            elif domain == "enlgd":
+                from enlgd.lexer import ENLGDLexer
+                from enlgd.parser import ENLGDParser
+                tokens = ENLGDLexer(clean_code).tokenize()
+                ENLGDParser(tokens).parse()
+
+            elif domain == "enlgs":
+                from enlgs.lexer import ENLGSLexer
+                from enlgs.parser import ENLGSParser
+                tokens = ENLGSLexer(clean_code).tokenize()
+                ENLGSParser(tokens).parse()
+
+            elif domain == "enlgm":
+                from enlgm.lexer import ENLGMLexer
+                from enlgm.parser import ENLGMParser
+                tokens = ENLGMLexer(clean_code).tokenize()
+                ENLGMParser(tokens).parse()
+
         except Exception as e:
-            error_msg = str(e)
-            compile_errors.append(
-                f"[COMPILER REJECT] {block_num}: {error_msg}\n"
-                f"  -> AI generated invalid Enlang. Replace with correct syntax."
-            )
+            compile_errors.append(f"[COMPILER ERROR] {block_label}: {str(e)}")
 
     return compile_errors
+

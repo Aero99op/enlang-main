@@ -2,7 +2,7 @@
   "name": "enlang-official",
   "displayName": "EnLang — Universal Natural English Full-Stack Language",
   "description": "Official VS Code extension for EnLang: Rich Syntax Highlighting, Snippets, Diagnostics & AI Assistant for .enlg, .enlgf, .enlgd, .enlgs, and .enlgm files.",
-  "version": "1.0.11",
+  "version": "1.0.14",
   "publisher": "Enlang1234",
   "license": "MIT",
   "homepage": "https://github.com/Aero99op/enlang",

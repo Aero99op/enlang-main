@@ -331,8 +331,8 @@ class VirtualMachine:
                     right_c = _to_num(right)
 
                     if op == "+":
-                        if isinstance(left_c, str) and isinstance(right_c, str):
-                            res = left_c + right_c
+                        if isinstance(left_c, str) or isinstance(right_c, str):
+                            res = str(left_c) + str(right_c)
                         else:
                             res = left_c + right_c
                     elif op == "-":

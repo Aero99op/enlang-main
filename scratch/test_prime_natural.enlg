@@ -1,0 +1,16 @@
+# Natural Prime Check in Enlang (Natural syntax)
+function isPrime with n:
+    if n <= 1:
+        return false
+    declare i = 2
+    while i * i <= n:
+        if n % i == 0:
+            return false
+        set i = i + 1
+    return true
+
+declare num = 29
+if call isPrime with num:
+    print num + " is a prime number!"
+else:
+    print num + " is NOT a prime number!"

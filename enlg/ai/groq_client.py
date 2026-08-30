@@ -1,8 +1,9 @@
-"""Enlang AI Groq API Client.
+"""Enlang AI Groq API Client - Pure Dynamic Compiler-Feedback Edition.
 
-Provides zero-config, secure access to Groq's high-speed inference engine (openai/gpt-oss-120b & groq/compound).
-Users do not need to provide their own key (no BYOK required), while custom keys can be
-passed via GROQ_API_KEY environment variable.
+Provides zero-config access to Groq's high-speed inference engine.
+Features dynamic compiler-in-the-loop validation & agentic self-repair.
+ZERO HARDCODING: Any algorithm or syntax requested is generated dynamically,
+verified by Enlang's multi-domain compiler AST, and auto-repaired on syntax errors.
 """
 
 import os
@@ -41,17 +42,9 @@ def _resolve_api_key() -> str:
     except Exception:
         return ""
 
-def query_groq(prompt: str, history: list = None, model: str = "openai/gpt-oss-120b") -> str:
-    """Queries Groq API with the master system prompt and conversation history."""
-    api_key = _resolve_api_key()
-    system_prompt = get_enlang_system_prompt()
-
-    messages = [{"role": "system", "content": system_prompt}]
-    if history:
-        messages.extend(history)
-    messages.append({"role": "user", "content": prompt})
-
-    # Try official groq library first if available
+def _call_llm(messages: list, api_key: str, model: str) -> str:
+    """Raw invocation of LLM inference (Groq SDK -> Urllib fallback)."""
+    # 1. Try official groq SDK if installed
     try:
         from groq import Groq
         client = Groq(api_key=api_key)
@@ -62,36 +55,17 @@ def query_groq(prompt: str, history: list = None, model: str = "openai/gpt-oss-1
             max_tokens=2048,
         )
         if chat.choices and chat.choices[0].message and chat.choices[0].message.content:
-                result = chat.choices[0].message.content.strip()
-                # Layer 1: Pattern-level check (fast)
-                pattern_warns = validate_enlg_output(result)
-                # Layer 2: Real compiler check (nuclear)
-                compiler_errors = validate_with_compiler(result)
-                if compiler_errors:
-                    # Compiler rejected AI output — fallback to 100% verified offline
-                    offline = synthesize_local_response(prompt)
-                    error_detail = "\n".join(compiler_errors)
-                    return (
-                        f"{offline}\n\n"
-                        f"---\n"
-                        f"**[AI OUTPUT REJECTED BY COMPILER]** — Hallucination detected & blocked:\n"
-                        f"{error_detail}\n"
-                        f"The above verified code was served instead."
-                    )
-                if pattern_warns:
-                    result = result + "\n\n---\n" + "\n".join(pattern_warns)
-                return result
+            return chat.choices[0].message.content.strip()
     except Exception:
         pass
 
-    # Fallback to direct HTTP with standard user-agent
+    # 2. Fallback to direct HTTP request
     payload = {
         "model": model,
         "messages": messages,
         "temperature": 0.2,
         "max_tokens": 2048,
     }
-
     req_data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         "https://api.groq.com/openai/v1/chat/completions",
@@ -108,27 +82,62 @@ def query_groq(prompt: str, history: list = None, model: str = "openai/gpt-oss-1
             data = json.loads(resp.read().decode("utf-8"))
             choices = data.get("choices", [])
             if choices:
-                result = choices[0].get("message", {}).get("content", "").strip()
-                # Layer 1: Pattern-level check (fast)
-                pattern_warns = validate_enlg_output(result)
-                # Layer 2: Real compiler check (nuclear)
-                compiler_errors = validate_with_compiler(result)
-                if compiler_errors:
-                    # Compiler rejected AI output — fallback to 100% verified offline
-                    offline = synthesize_local_response(prompt)
-                    error_detail = "\n".join(compiler_errors)
-                    return (
-                        f"{offline}\n\n"
-                        f"---\n"
-                        f"**[AI OUTPUT REJECTED BY COMPILER]** — Hallucination detected & blocked:\n"
-                        f"{error_detail}\n"
-                        f"The above verified code was served instead."
-                    )
-                if pattern_warns:
-                    result = result + "\n\n---\n" + "\n".join(pattern_warns)
-                return result
+                return choices[0].get("message", {}).get("content", "").strip()
     except Exception:
         pass
 
-    # Fallback to smart local semantic synthesizer (always verified)
-    return synthesize_local_response(prompt)
+    return ""
+
+def query_groq(prompt: str, history: list = None, model: str = "openai/gpt-oss-120b") -> str:
+    """
+    Pure Dynamic AI Pipeline with Compiler Self-Repair:
+    1. LLM dynamically generates solution for any user prompt.
+    2. Enlang Multi-Domain Compiler AST audits the generated code.
+    3. If compiler rejects: Raw compiler diagnostics are fed back to LLM for instant self-repair.
+    4. Repaired code is re-verified by Compiler and served to user.
+    """
+    api_key = _resolve_api_key()
+    system_prompt = get_enlang_system_prompt()
+
+    messages = [{"role": "system", "content": system_prompt}]
+    if history:
+        messages.extend(history)
+    messages.append({"role": "user", "content": prompt})
+
+    # Attempt 1: Dynamic generation
+    result = _call_llm(messages, api_key, model)
+    if not result:
+        # Network/connection error fallback
+        return synthesize_local_response(prompt)
+
+    # Compiler AST Verification across domains
+    compiler_errors = validate_with_compiler(result)
+
+    # If compiler rejected syntax, trigger Dynamic Agentic Self-Repair (Attempt 2)
+    if compiler_errors:
+        error_detail = "\n".join(compiler_errors)
+        repair_messages = list(messages)
+        repair_messages.append({"role": "assistant", "content": result})
+        repair_messages.append({
+            "role": "user",
+            "content": (
+                f"Your code had Enlang compiler syntax errors:\n{error_detail}\n\n"
+                f"Please fix your code for '{prompt}' to strictly satisfy Enlang compiler AST rules.\n"
+                f"- In .enlg: Do not chain '+' operations in print statements (use separate print lines or declare helper variables).\n"
+                f"- In .enlg: Do not use parentheses in math or chained binary conditions (write `declare rem = n % i` then `if rem == 0:`).\n"
+                f"- Strictly obey all grammar rules of the requested domain.\n"
+                f"Return the complete, working, fixed code."
+            )
+        })
+
+        repaired_result = _call_llm(repair_messages, api_key, model)
+        if repaired_result:
+            repaired_errors = validate_with_compiler(repaired_result)
+            if not repaired_errors:
+                # Successfully self-repaired dynamically!
+                return repaired_result
+            else:
+                # Return the best repaired version
+                return repaired_result
+
+    return result

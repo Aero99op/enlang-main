@@ -37,10 +37,7 @@ class SlotParser:
                 raise SyntaxError("E1003", "If/Else If statement requires an indented block.")
             return SlotParser._parse_if(tokens, body)
         elif intent == "COND_ELSE":
-            if not body:
-                raise SyntaxError("E1003", "Else statement requires an indented block.")
-            from enlg.ast.nodes import BooleanNode, IfNode
-            return IfNode(condition=BooleanNode(True), body=body)
+            raise SyntaxError("E1003", "Else statement must directly follow an if block.")
         elif intent in ("LOOP_WHILE", "LOOP_REPEAT"):
             if not body:
                 raise SyntaxError("E1003", "Loop statement requires an indented block.")
