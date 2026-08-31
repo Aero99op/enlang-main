@@ -58,6 +58,10 @@ class ENLGSLexer:
             if not stripped_line:
                 continue
 
+            # Support and skip standard domain type header (e.g. 'type enlgs')
+            if stripped_line.lower().startswith("type ") and stripped_line.lower().split()[1].rstrip(":") in ("enlgs", "script", "js"):
+                continue
+
             # Compute indentation
             indent_length = len(line_no_comment) - len(line_no_comment.lstrip())
 

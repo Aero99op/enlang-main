@@ -33,6 +33,9 @@ class Token:
 # Master English Hint Registry for .enlgm (sorted longest-phrase first)
 MOBILE_HINT_REGISTRY: Dict[str, str] = {
     # ── Architecture Identifier (Mandatory First Line) ──
+    "type enlgm": "MOBILE_DOMAIN",
+    "type mobile": "MOBILE_DOMAIN",
+    "type flutter": "MOBILE_DOMAIN",
     "in mobile": "MOBILE_DOMAIN",
     "mobile app": "MOBILE_DOMAIN",
     "enlgm mobile": "MOBILE_DOMAIN",

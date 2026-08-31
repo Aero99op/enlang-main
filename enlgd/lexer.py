@@ -44,6 +44,11 @@ class ENLGDLexer:
             if not line_no_comment.strip():
                 continue
 
+            raw_line = line_no_comment.lstrip()
+            # Support and skip standard domain type header (e.g. 'type enlgd')
+            if raw_line.lower().startswith("type ") and raw_line.lower().split()[1].rstrip(":") in ("enlgd", "design", "css", "styles", "style"):
+                continue
+
             # Compute indentation
             indent_length = len(line_no_comment) - len(line_no_comment.lstrip())
 

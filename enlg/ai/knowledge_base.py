@@ -1,4 +1,4 @@
-"""Enlang AI Knowledge Base - NUCLEAR FAIL-PROOF EDITION.
+"""Enlang AI Knowledge Base - MASTER FAIL-PROOF EDITION (v1.1.0).
 
 This is the single source of truth for ALL Enlang syntax rules.
 The AI must NEVER deviate from this specification.
@@ -17,7 +17,7 @@ BANNED_PATTERNS = [
     ("True", ".enlg: Use lowercase 'true' — not Python 'True'"),
     ("False", ".enlg: Use lowercase 'false' — not Python 'False'"),
     ("None", ".enlg: Use 'null' — not Python 'None'"),
-    ("elif ", ".enlg: No 'elif' — use 'else:' with nested 'if' for chaining"),
+    ("elif ", ".enlg: No 'elif' in core .enlg — use 'else:' with nested 'if'"),
     # .enlg — parenthesis-style function calls BANNED
     ("isPrime(", ".enlg: Use 'call isPrime with <args>'"),
     ("twoSum(", ".enlg: Use 'call twoSum with <args>'"),
@@ -25,15 +25,14 @@ BANNED_PATTERNS = [
     ("fibonacci(", ".enlg: Use 'call fibonacci with <args>'"),
 
     # ---- .enlgdb (Database) BANNED ----
-    ("create table", ".enlgdb: MUST start file with 'type enlgdb' on line 1"),
     ("drop table", ".enlgdb: MUST end with 'confirmed' — e.g. 'drop table name confirmed'"),
     ("delete all", ".enlgdb: MUST end with 'confirmed' — e.g. 'delete all from name confirmed'"),
     ("truncate table", ".enlgdb: MUST end with 'confirmed' — e.g. 'truncate table name confirmed'"),
 
     # ---- .enlgf (Frontend Markup) BANNED ----
     ("<div", ".enlgf: No raw HTML tags — use indented keyword syntax: 'div class \"name\":'"),
-    ("<html", ".enlgf: No raw HTML — use 'page:' as root element"),
-    ("<body", ".enlgf: No raw HTML — use 'body:' inside 'page:'"),
+    ("<html", ".enlgf: No raw HTML — use 'document enlgf:' as root element"),
+    ("<body", ".enlgf: No raw HTML — use 'body:' inside 'document enlgf:'"),
     ("</", ".enlgf: No closing tags — Enlang frontend is indentation-based, NO closing tags"),
 
     # ---- .enlgd (Design/CSS) BANNED ----
@@ -59,6 +58,8 @@ BANNED_PATTERNS = [
 # ============================================================
 VERIFIED_EXAMPLES = {
     "prime": """```enlg
+type enlg
+
 # Prime Number Check in Enlang - O(sqrt(n)) Time
 function isPrime with n:
     if n <= 1:
@@ -71,21 +72,28 @@ function isPrime with n:
     return true
 
 declare number = 29
-call isPrime with number
+if call isPrime with number:
+    print number + " is prime!"
+else:
+    print number + " is NOT prime!"
 ```""",
 
     "factorial": """```enlg
+type enlg
+
 # Factorial using Recursion
 function factorial with n:
     if n <= 1:
         return 1
-    return n * call factorial with n - 1
+    return n * call factorial with (n - 1)
 
 declare result = call factorial with 5
 print "Factorial of 5 is: " + result
 ```""",
 
     "fibonacci": """```enlg
+type enlg
+
 # Fibonacci - Print first N numbers
 function fibonacci with n:
     declare a = 0
@@ -102,6 +110,8 @@ call fibonacci with 10
 ```""",
 
     "palindrome": """```enlg
+type enlg
+
 # Check if a String is a Palindrome
 function isPalindrome with s:
     declare left = 0
@@ -121,22 +131,9 @@ else:
     print word + " is NOT a palindrome"
 ```""",
 
-    "reverse_string": """```enlg
-# Reverse a String
-function reverseStr with s:
-    declare reversed = ""
-    declare idx = call length with s - 1
-    while idx >= 0:
-        set reversed = reversed + s[idx]
-        set idx = idx - 1
-    return reversed
-
-declare word = "hello"
-declare result = call reverseStr with word
-print "Reversed: " + result
-```""",
-
     "bubble_sort": """```enlg
+type enlg
+
 # Bubble Sort Algorithm
 function bubbleSort with arr:
     declare n = call length with arr
@@ -144,66 +141,40 @@ function bubbleSort with arr:
     while i < n:
         declare j = 0
         while j < n - i - 1:
-            if arr[j] > arr[j + 1]:
+            declare next_j = j + 1
+            if arr[j] > arr[next_j]:
                 declare temp = arr[j]
-                set arr[j] = arr[j + 1]
-                set arr[j + 1] = temp
+                set arr[j] = arr[next_j]
+                set arr[next_j] = temp
             set j = j + 1
         set i = i + 1
     return arr
 
 declare nums = [64, 34, 25, 12, 22, 11, 90]
 declare sorted = call bubbleSort with nums
-print sorted
+print "Sorted list: " + sorted
 ```""",
 
-    "sum_array": """```enlg
-# Sum of Array Elements
-function sumArray with arr:
-    declare total = 0
-    declare idx = 0
-    declare n = call length with arr
-    while idx < n:
-        set total = total + arr[idx]
-        set idx = idx + 1
-    return total
+    "binary_search": """```enlg
+type enlg
 
-declare numbers = [10, 20, 30, 40, 50]
-declare result = call sumArray with numbers
-print "Sum: " + result
-```""",
-
-    "find_max": """```enlg
-# Find Maximum Element in Array
-function findMax with arr:
-    declare maxVal = arr[0]
-    declare idx = 1
-    declare n = call length with arr
-    while idx < n:
-        if arr[idx] > maxVal:
-            set maxVal = arr[idx]
-        set idx = idx + 1
-    return maxVal
-
-declare nums = [3, 7, 1, 9, 4, 6]
-declare max_num = call findMax with nums
-print "Maximum: " + max_num
-```""",
-
-    "linear_search": """```enlg
-# Linear Search
-function linearSearch with arr, target:
-    declare idx = 0
-    declare n = call length with arr
-    while idx < n:
-        if arr[idx] == target:
-            return idx
-        set idx = idx + 1
+# Binary Search in Sorted Array
+function binarySearch with arr, target:
+    declare low = 0
+    declare high = call length with arr - 1
+    while low <= high:
+        declare mid = (low + high) // 2
+        if arr[mid] == target:
+            return mid
+        if arr[mid] < target:
+            set low = mid + 1
+        else:
+            set high = mid - 1
     return -1
 
-declare nums = [10, 20, 30, 40, 50]
-declare found = call linearSearch with nums, 30
-print "Found at index: " + found
+declare dataset = [10, 20, 30, 40, 50, 60, 70]
+declare idx = call binarySearch with dataset, 40
+print "Index of 40: " + idx
 ```""",
 
     "database": """```enlgdb
@@ -229,203 +200,130 @@ update "students" set grade = "A+" where marks >= 95
 drop table temp_data confirmed
 ```""",
 
-    "class": """```enlg
-# Object-Oriented Programming with Classes
-class Animal:
-    declare name = "Unknown"
-    declare sound = "..."
-
-    function init with animal_name, animal_sound:
-        set name = animal_name
-        set sound = animal_sound
-
-    function speak with:
-        print name + " says: " + sound
-
-new Animal with "Dog", "Woof"
-```""",
-
-    # ---- .enlgf (Frontend Markup) ----
     "frontend": """```enlgf
-page "Esports Hub":
-    head:
-        title "Esports Hub - Live Standings"
-        link rel "stylesheet" href "styles.enlgd"
+type enlgf
 
-    body:
+document enlgf:
+    head:
+        title "Esports Arena - Live Championship"
+        connect design styles.enlgd
+        connect script app.enlgs
+
+    body class "dark-theme":
         header class "main-navbar":
             div class "brand-logo":
-                h1 "ESPORTS HUB"
-            nav class "nav-links":
-                a "Home" href "#home"
-                a "Standings" href "#standings"
-                a "Players" href "#players"
+                heading 1 "ESPORTS ARENA"
             button "SIGN IN" id "btn-signin" class "btn-primary"
 
         main class "container" id "main-content":
             section class "hero":
-                h2 "Live Tournament Standings"
-                p "Real-time results from all active tournaments"
-                button "VIEW ALL" id "btn-view-all" class "btn-cta"
-
-            section class "standings-grid" id "standings-section":
-                div class "card" id "card-1":
-                    h3 "Group Stage"
-                    div class "score-display" id "score-display"
-
-        footer class "site-footer":
-            p "Powered by Enlang"
+                heading 2 "Live Tournament Standings"
+                paragraph "Real-time results from all active brackets."
+                button "JOIN QUEUE" id "btn-join" class "btn-cta"
 ```""",
 
-    # ---- .enlgd (Design/CSS) ----
     "design": """```enlgd
-design system:
-    body:
-        background: "#080c14"
-        color: "#f0f4ff"
-        font-family: "'Inter', sans-serif"
-        margin: "0"
-        padding: "0"
+type enlgd
 
-    .main-navbar:
-        background: "rgba(10, 15, 30, 0.95)"
-        backdrop-filter: "blur(16px)"
-        border-bottom: "1px solid rgba(255,255,255,0.08)"
-        padding: "16px 32px"
-        display: "flex"
-        justify-content: "space-between"
-        align-items: "center"
-        position: "sticky"
-        top: "0"
-        z-index: "1000"
+define color "primary" as "#6366f1"
+define color "dark-bg" as "#090d16"
 
-    h1:
-        color: "#7c3aed"
-        font-size: "1.8rem"
-        font-weight: "800"
-        letter-spacing: "2px"
+for "body" apply:
+    background: "#090d16"
+    color: "#f8fafc"
+    font-family: "Outfit, sans-serif"
+    margin: "0"
+    padding: "0"
+end
 
-    .btn-primary:
-        background: "linear-gradient(135deg, #7c3aed, #3b82f6)"
-        color: "#ffffff"
-        border: "none"
-        padding: "10px 24px"
-        border-radius: "8px"
-        cursor: "pointer"
-        font-weight: "600"
+for ".main-navbar" apply:
+    background: "rgba(15, 23, 42, 0.95)"
+    padding: "16px 32px"
+    display: "flex"
+    justify-content: "space-between"
+    align-items: "center"
+end
 
-    .card:
-        background: "rgba(255,255,255,0.04)"
-        border: "1px solid rgba(255,255,255,0.1)"
-        border-radius: "16px"
-        padding: "24px"
-        backdrop-filter: "blur(8px)"
+when ".btn-cta" is hovered apply:
+    transform: "scale(1.05)"
+    opacity: 0.95
+end
 ```""",
 
-    # ---- .enlgs (Reactive Scripting) ----
     "scripting": """```enlgs
+type enlgs
+
 in script:
-    create score as 0
+    create score as 100
     create isLoggedIn as false
 
     when "btn-signin" is clicked:
-        set isLoggedIn to true
-        set text of "btn-signin" to "Welcome!"
-        show element "main-content"
-        hide element "signin-modal"
+        set isLoggedIn = true
+        refresh "btn-signin" with "Welcome!"
 
-    when "btn-view-all" is clicked:
-        show element "standings-section"
-        set text of "score-display" to score
-        add class "active" to "standings-section"
-
-    when "input-search" is changed:
-        create query as value of "input-search"
-        set text of "search-results" to query
-
-    on page load:
-        set text of "score-display" to "Loading..."
-        fetch data from "/api/standings" into "score-display"
+    when "btn-join" is clicked:
+        set score = score + 25
+        refresh "main-content" with "Active Score: " + score
 ```""",
 
-    # ---- .enlgm (Mobile Flutter) ----
     "mobile": """```enlgm
-mobile app "EsportsHub":
-    theme:
-        primary: "#7c3aed"
-        background: "#080c14"
-        text: "#f0f4ff"
-        font: "Inter"
+type enlgm
+
+in mobile:
+    use flutter "material"
+    use package "google_fonts"
+
+    app "ArenaApp":
+        theme dark
+        accent color "#6366f1"
+        home screen HomeScreen
 
     screen HomeScreen:
         app bar:
-            title "Esports Hub"
-            action icon "notifications"
-
+            title "Esports Mobile Arena"
         body:
             scroll:
                 column centered:
-                    spacer height 20
-                    text "Live Standings" size 28 bold color "#7c3aed"
-                    spacer height 16
-
-                    card:
-                        text "Group Stage - Day 2" size 18 bold
-                        spacer height 8
-                        text "8 Teams Remaining" size 14 color "#94a3b8"
-                        spacer height 16
-                        button "VIEW BRACKET" filled color "#7c3aed":
-                            when tapped:
-                                go to BracketScreen
-
-                    spacer height 20
-                    button "ALL STANDINGS" outlined:
+                    text "Live Standings" size 24, bold
+                    button "Join Tournament":
                         when tapped:
                             go to StandingsScreen
-
-    screen StandingsScreen:
-        app bar:
-            title "Standings"
-            back button
-
-        body:
-            list "standings" scrollable:
-                item for each team:
-                    row:
-                        text team.rank bold
-                        spacer width 16
-                        text team.name size 16
-                        spacer expand
-                        text team.score color "#7c3aed" bold
-```""",
+```"""
 }
 
 
 def get_enlang_system_prompt() -> str:
-    """Constructs the nuclear fail-proof master system prompt."""
+    """Constructs the master system prompt with mandatory 'type <extension>' headers."""
 
-    # Build the verified examples section
     examples_text = "\n\n".join([
         f"## VERIFIED WORKING EXAMPLE: {k.upper()}\n{v}"
         for k, v in VERIFIED_EXAMPLES.items()
     ])
 
-    return f'''You are the Official Enlang Master AI Compiler Specialist.
+    return f'''You are the Official Enlang Master AI Compiler Specialist (v1.1.0).
 You ONLY write Enlang code. You NEVER write Python, Java, or C syntax in Enlang code blocks.
 
 ================================================================================
-ENLANG LANGUAGE SPECIFICATION (ABSOLUTE LAWS — NEVER BREAK THESE):
+ENLANG ABSOLUTE LAWS (NEVER BREAK THESE):
 ================================================================================
+
+---LAW 0: MANDATORY 'type <extension>' LINE 1 SIGNATURE---
+Every Enlang code file and markdown block MUST start with its exact dialect header on Line 1:
+- .enlg   (Core Logic)      -> MUST START WITH: type enlg
+- .enlgdb (Database SQL)    -> MUST START WITH: type enlgdb
+- .enlgf  (Frontend HTML)   -> MUST START WITH: type enlgf
+- .enlgd  (Design CSS)      -> MUST START WITH: type enlgd
+- .enlgs  (Reactive Script) -> MUST START WITH: type enlgs
+- .enlgm  (Flutter Mobile)  -> MUST START WITH: type enlgm
 
 ---LAW 1: FUNCTION DEFINITIONS---
 CORRECT:
   function <name> with <param1>, <param2>:
       <body>
 
-WRONG (NEVER USE):
-  def <name>:               # This is Python, BANNED
+WRONG (BANNED):
+  def <name>:               # Python BANNED
   to do <name>:             # BANNED
-  action <name>:            # BANNED
   func <name>:              # BANNED
 
 ---LAW 2: FUNCTION CALLS---
@@ -433,98 +331,51 @@ CORRECT:
   call <name> with <arg1>, <arg2>
   declare result = call <name> with <arg>
 
-WRONG (NEVER USE):
-  <name>(<arg>)             # Parenthesis-style calls are BANNED
-  <name> <arg>              # Without 'call' keyword is BANNED
+WRONG (BANNED):
+  <name>(<arg>)             # Parenthesis calls are BANNED in statements
 
----LAW 3: VARIABLE DECLARATION---
+---LAW 3: VARIABLE DECLARATIONS & ASSIGNMENTS---
 CORRECT:
   declare x = 10
-  create x as 10
-  initialize x as 0
+  set x = x + 1
+  set x = 20
 
-WRONG (NEVER USE):
+WRONG (BANNED):
   let x = 10                # BANNED
   var x = 10                # BANNED
   int x = 10                # BANNED
 
----LAW 4: VARIABLE MUTATION (AFTER FIRST DECLARATION)---
+---LAW 4: OUTPUT DISPLAY---
 CORRECT:
-  set x = x + 1
-  set x = 20
+  print "Hello World"
+  print "Result: " + result
 
-WRONG (NEVER USE):
-  x = x + 1                 # BANNED (no 'set' keyword)
-  let x = x + 1             # BANNED
+WRONG (BANNED):
+  print("Hello World")      # Parentheses in print BANNED
 
----LAW 5: CONDITIONALS---
+---LAW 5: CONDITIONALS (IF / ELSE)---
 CORRECT:
   if <condition>:
       <body>
   else:
       <body>
 
-WRONG (NEVER USE):
-  elif <condition>:          # Use 'else:' with nested 'if' for chains
-
----LAW 6: PRINT OUTPUT---
+---LAW 6: LOOPS---
 CORRECT:
-  print "Hello World"
-  print "Value: " + x
-
-WRONG (NEVER USE):
-  print("Hello")             # Parentheses are BANNED
-  show "text"                # BANNED in .enlg (only in .enlgf domain)
-
----LAW 7: LOOPS---
-CORRECT while loop:
   while <condition>:
       <body>
-      set counter = counter + 1
+      set i = i + 1
 
-CORRECT repeat loop:
-  repeat 5 times:
-      print "Hello"
+---LAW 7: BOOLEAN LITERALS---
+  true                      # lowercase (NOT True)
+  false                     # lowercase (NOT False)
+  null                      # lowercase (NOT None)
 
-WRONG (NEVER USE):
-  for i in range(10):       # Python-style BANNED
-  for i = 0; i < 10; i++:  # C-style BANNED
-
----LAW 8: RETURN STATEMENTS---
-CORRECT:
-  return <value>
-  return true
-  return false
-
----LAW 9: BOOLEAN LITERALS---
-  true                      # NOT True (capital T is Python, BANNED)
-  false                     # NOT False (capital F is Python, BANNED)
-  null                      # NOT None (Python BANNED)
-
----LAW 10: PYTHON INTEROP (LEGITIMATE USAGE ONLY)---
-CORRECT (when you need standard library math, etc.):
-  import math
-  native math.sqrt with 144
-  native math.floor with 3.7
-
-WRONG:
-  import math; result = math.sqrt(144)   # Direct Python syntax BANNED
-
----LAW 11: .enlgdb RULES---
-MANDATORY: First line of EVERY .enlgdb file MUST be: type enlgdb
-MANDATORY: Destructive operations MUST end with 'confirmed':
+---LAW 8: DATABASE DESTRUCTIVE OPERATIONS---
+MANDATORY: Destructive operations in .enlgdb MUST end with 'confirmed':
   drop table <name> confirmed
   delete all from <table> confirmed
   truncate table <name> confirmed
-
----LAW 12: CODE BLOCK FORMATTING---
-ALWAYS wrap Enlang code in correct markdown fences:
-  ```enlg      (for .enlg backend)
-  ```enlgf     (for .enlgf frontend)
-  ```enlgd     (for .enlgd design/CSS)
-  ```enlgs     (for .enlgs reactive scripting)
-  ```enlgm     (for .enlgm mobile)
-  ```enlgdb    (for .enlgdb database)
 
 ================================================================================
 100% VERIFIED WORKING CODE EXAMPLES (USE THESE AS REFERENCE):
@@ -536,12 +387,9 @@ ALWAYS wrap Enlang code in correct markdown fences:
 RESPONSE FORMAT RULES:
 ================================================================================
 1. Start with a brief explanation in Hinglish (mix of Hindi + English).
-2. Write the Enlang code block with correct fence.
+2. Write the Enlang code block starting with 'type <extension>' on line 1.
 3. Add step-by-step "How it works" explanation.
-4. If the user asks for something outside Enlang capability, clearly say so.
-5. NEVER apologize for syntax errors — just give perfect code the first time.
-
-You are an expert. Give perfect, tested, verified Enlang code every single time.
+4. NEVER apologize for syntax errors — output verified code the first time.
 '''
 
 
@@ -555,38 +403,26 @@ Your query: "{prompt}"
 """
 
 
-
 def validate_enlg_output(code: str) -> list:
-    """Scans AI output for banned patterns and returns list of warnings.
-    Called BEFORE showing response to user — ensures clean output.
-    """
+    """Scans AI output for banned patterns and returns list of warnings."""
     warnings = []
     for pattern, hint in BANNED_PATTERNS:
-        # Only check inside code blocks to avoid false positives in explanations
         in_code_block = False
         for line in code.split("\n"):
             if line.strip().startswith("```"):
                 in_code_block = not in_code_block
             if in_code_block and pattern in line:
-                # Exception: 'create table' is OK if 'type enlgdb' is in the full code
-                if pattern == "create table" and "type enlgdb" in code:
-                    continue
-                # Exception: 'drop table' / 'delete all' / 'truncate' is OK if 'confirmed' is on same line
                 if pattern in ("drop table", "delete all", "truncate table"):
                     if "confirmed" in line:
                         continue
-                # Exception: 'print(' could appear in explanation text
                 if pattern == "print(" and not line.strip().startswith("print"):
                     continue
-                warnings.append(f"[AI SYNTAX WARNING] Detected '{pattern}' — {hint}")
-                break
+                warnings.append(f"[BANNED SYNTAX] Line: '{line.strip()}' -> {hint}")
     return warnings
 
 
 def extract_code_blocks(ai_output: str) -> list:
-    """Extracts all code blocks and their domain languages from AI response.
-    Returns list of (domain_tag, code_str) tuples.
-    """
+    """Extracts all code blocks and auto-detects domain from 'type <extension>' header."""
     blocks = []
     lines = ai_output.split("\n")
     in_block = False
@@ -603,7 +439,16 @@ def extract_code_blocks(ai_output: str) -> list:
             current_block = []
         elif stripped == "```" and in_block:
             if current_block:
-                blocks.append((fence_lang, "\n".join(current_block)))
+                block_str = "\n".join(current_block)
+                # Auto-detect domain from 'type <extension>' on line 1
+                first_line = current_block[0].strip().lower()
+                if first_line.startswith("type "):
+                    parts = first_line.split()
+                    if len(parts) > 1:
+                        hdr_domain = parts[1].rstrip(":")
+                        if hdr_domain in ("enlg", "enlgdb", "enlgf", "enlgd", "enlgs", "enlgm"):
+                            fence_lang = hdr_domain
+                blocks.append((fence_lang, block_str))
             in_block = False
             current_block = []
             fence_lang = ""
@@ -623,8 +468,6 @@ def validate_with_compiler(ai_output: str) -> list:
     - .enlgd  -> Design/CSS DSL (enlgd.parser.ENLGDParser)
     - .enlgs  -> Reactive Scripting (enlgs.parser.ENLGSParser)
     - .enlgm  -> Mobile Flutter DSL (enlgm.parser.ENLGMParser)
-    
-    ZERO HARDCODING: Tests whatever code the LLM dynamically generates.
     """
     compile_errors = []
     blocks = extract_code_blocks(ai_output)
@@ -679,4 +522,3 @@ def validate_with_compiler(ai_output: str) -> list:
             compile_errors.append(f"[COMPILER ERROR] {block_label}: {str(e)}")
 
     return compile_errors
-

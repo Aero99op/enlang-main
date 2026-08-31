@@ -1,54 +1,76 @@
 {
+  "EnLang Core Program": {
+    "prefix": "enlg-core",
+    "body": [
+      "type enlg",
+      "",
+      "declare ${1:num} = ${2:10}",
+      "print \"Value: \" + ${1:num}",
+      "$0"
+    ],
+    "description": "Scaffold a core .enlg logic file with 'type enlg' header"
+  },
   "EnLang Web Page": {
     "prefix": "enlg-page",
     "body": [
-      "page:",
+      "type enlgf",
+      "",
+      "document enlgf:",
       "    head:",
       "        title \"${1:App Title}\"",
       "    body:",
       "        header class \"main-navbar\":",
-      "            h1 \"${2:BRAND LOGO}\"",
+      "            heading 1 \"${2:BRAND LOGO}\"",
       "            button \"${3:ACTION}\" id \"btn-${4:action}\"",
       "        main class \"main-container\":",
       "            section class \"hero-section\":",
-      "                h2 \"${5:Welcome}\"",
-      "                p \"${6:Description}\"",
+      "                heading 2 \"${5:Welcome}\"",
+      "                paragraph \"${6:Description}\"",
       "                $0"
     ],
-    "description": "Scaffold a complete .enlgf web page"
+    "description": "Scaffold a complete .enlgf web page with 'type enlgf' header"
+  },
+  "EnLang Design Stylesheet": {
+    "prefix": "enlg-design",
+    "body": [
+      "type enlgd",
+      "",
+      "define color \"primary\" as \"${1:#6366f1}\"",
+      "",
+      "for \"${2:body}\" apply:",
+      "    background: \"${3:#090d16}\"",
+      "    color: \"${4:#f8fafc}\"",
+      "    font-family: \"${5:Outfit, sans-serif}\"",
+      "end",
+      "",
+      "when \"${6:.btn-action}\" is hovered apply:",
+      "    transform: \"scale(1.05)\"",
+      "    opacity: 0.95",
+      "end",
+      "$0"
+    ],
+    "description": "Scaffold an .enlgd design stylesheet with 'type enlgd' header"
   },
   "EnLang Script Block": {
     "prefix": "enlg-script",
     "body": [
+      "type enlgs",
+      "",
       "in script:",
       "    create ${1:stateVar} as ${2:0}",
       "",
       "    when \"${3:btn-submit}\" is clicked:",
-      "        put ${4:newValue} into ${5:target}",
-      "        set text of \"${6:display-id}\" to ${7:\"Updated!\"}",
-      "        add class \"active\" to \"${6:display-id}\"",
+      "        set ${1:stateVar} = ${1:stateVar} + 1",
+      "        refresh \"${4:display-id}\" with \"Updated: \" + ${1:stateVar}",
       "        $0"
     ],
-    "description": "Scaffold a modern .enlgs client script"
-  },
-  "EnLang Event Listener": {
-    "prefix": "enlg-when",
-    "body": [
-      "when \"${1:btn-id}\" is clicked:",
-      "    $0"
-    ],
-    "description": "Event listener statement in .enlgs"
-  },
-  "EnLang Natural Put": {
-    "prefix": "enlg-put",
-    "body": [
-      "put ${1:data} into ${2:target}[${3:key}]"
-    ],
-    "description": "Natural dictionary/array assignment"
+    "description": "Scaffold a modern .enlgs client script with 'type enlgs' header"
   },
   "EnLang Mobile App": {
     "prefix": "enlg-mobile",
     "body": [
+      "type enlgm",
+      "",
       "in mobile:",
       "    use flutter \"material\"",
       "    use package \"google_fonts\"",
@@ -67,7 +89,7 @@
       "                    text \"${5:Hello World}\" size 20, bold",
       "                    $0"
     ],
-    "description": "Scaffold a modern .enlgm mobile screen"
+    "description": "Scaffold a modern .enlgm mobile screen with 'type enlgm' header"
   },
   "EnLang Database Table": {
     "prefix": "enlg-table",
@@ -81,7 +103,7 @@
       "    ${4:created_at} as timestamp default current_timestamp",
       "    $0"
     ],
-    "description": "Scaffold a modern .enlgdb database table"
+    "description": "Scaffold a modern .enlgdb database table with 'type enlgdb' header"
   },
   "EnLang Database Query": {
     "prefix": "enlg-select",

@@ -33,12 +33,15 @@ class BlockParser:
             if not line_tokens:
                 continue
                 
-            # Check if this line ends with a colon indicating a block follows
             expects_block = False
             if line_tokens[-1].type == TokenType.SYMBOL and line_tokens[-1].value == ":":
                 expects_block = True
                 line_tokens = line_tokens[:-1] # Remove colon
-                
+
+            # Check for standard domain header: "type enlg" or "type core"
+            if len(line_tokens) >= 2 and line_tokens[0].value.lower() == "type" and line_tokens[1].value.lower() in ("enlg", "core", "logic", "script"):
+                continue
+
             # Lock Intent
             locked_stmt = IntentDiscoveryEngine.process_statement(line_tokens)
             

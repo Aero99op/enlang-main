@@ -118,30 +118,40 @@ class ENLGMParser:
     def parse(self) -> MobileRootNode:
         self._consume_newlines()
 
-        # Mandatory architecture root check
+        has_type_header = False
         first_tok = self._peek()
-        if not first_tok or first_tok.type != ENLGMTokenType.HINT or first_tok.value != "MOBILE_DOMAIN":
-            raise SyntaxError("Enlang Mobile files must begin with 'in mobile:' as the first statement.")
-
-        self._consume() # Consume 'in mobile'
-        if self._match(ENLGMTokenType.SYMBOL, ":"):
+        if first_tok and first_tok.type == ENLGMTokenType.HINT and first_tok.value == "TYPE_HEADER":
+            has_type_header = True
             self._consume()
-        self._consume_newlines()
+            self._consume_newlines()
 
-        # Parse mobile root body
-        if self._match(ENLGMTokenType.INDENT):
-            self._consume()
-            while not (self._match(ENLGMTokenType.DEDENT) or self._match(ENLGMTokenType.EOF)):
-                self._consume_newlines()
-                if self._match(ENLGMTokenType.DEDENT) or self._match(ENLGMTokenType.EOF):
-                    break
-                stmt = self._parse_top_level_statement()
-                if stmt:
-                    self._add_top_level_node(stmt)
-                self._consume_newlines()
-            if self._match(ENLGMTokenType.DEDENT):
+        first_tok = self._peek()
+        if first_tok and first_tok.type == ENLGMTokenType.HINT and first_tok.value == "MOBILE_DOMAIN":
+            self._consume() # Consume 'in mobile'
+            if self._match(ENLGMTokenType.SYMBOL, ":"):
                 self._consume()
-        else:
+            self._consume_newlines()
+
+            if self._match(ENLGMTokenType.INDENT):
+                self._consume()
+                while not (self._match(ENLGMTokenType.DEDENT) or self._match(ENLGMTokenType.EOF)):
+                    self._consume_newlines()
+                    if self._match(ENLGMTokenType.DEDENT) or self._match(ENLGMTokenType.EOF):
+                        break
+                    stmt = self._parse_top_level_statement()
+                    if stmt:
+                        self._add_top_level_node(stmt)
+                if self._match(ENLGMTokenType.DEDENT):
+                    self._consume()
+            else:
+                while not self._match(ENLGMTokenType.EOF):
+                    self._consume_newlines()
+                    if self._match(ENLGMTokenType.EOF):
+                        break
+                    stmt = self._parse_top_level_statement()
+                    if stmt:
+                        self._add_top_level_node(stmt)
+        elif has_type_header:
             while not self._match(ENLGMTokenType.EOF):
                 self._consume_newlines()
                 if self._match(ENLGMTokenType.EOF):
@@ -149,7 +159,8 @@ class ENLGMParser:
                 stmt = self._parse_top_level_statement()
                 if stmt:
                     self._add_top_level_node(stmt)
-                self._consume_newlines()
+        else:
+            raise SyntaxError("Enlang Mobile files must begin with 'type enlgm' or 'in mobile:' as the first statement.")
 
         return self.root
 

@@ -32,6 +32,9 @@ class Token:
 # Hint-Word Registry: Maps natural English hints & phrases to canonical Intent IDs
 HINT_REGISTRY: Dict[str, str] = {
     # ── Domain Declarations ──
+    "type enlgs": "DOMAIN_DECL",
+    "type script": "DOMAIN_DECL",
+    "type js": "DOMAIN_DECL",
     "in script": "DOMAIN_DECL",
     "script enlgs": "DOMAIN_DECL",
     "start script": "DOMAIN_DECL",

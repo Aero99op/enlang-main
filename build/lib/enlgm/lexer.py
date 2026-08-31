@@ -54,6 +54,11 @@ class ENLGMLexer:
             if not stripped_line:
                 continue
 
+            # Support standard domain type header (e.g. 'type enlgm')
+            if stripped_line.lower().startswith("type ") and stripped_line.lower().split()[1].rstrip(":") in ("enlgm", "mobile", "flutter"):
+                self.tokens.append(Token(ENLGMTokenType.HINT, "TYPE_HEADER", self.line_num, 1, raw_text=stripped_line))
+                continue
+
             # Compute indentation
             indent_length = len(line_no_comment) - len(line_no_comment.lstrip())
 
@@ -69,12 +74,16 @@ class ENLGMLexer:
             self._tokenize_line(raw_line, stripped_line, sorted_hints)
             self.tokens.append(Token(ENLGMTokenType.NEWLINE, "\n", self.line_num, len(line), raw_text=stripped_line))
 
-        # Unwind remaining indents at EOF
+        # Unwind indents at EOF
         while len(self.indent_stack) > 1:
             self.indent_stack.pop()
-            self.tokens.append(Token(ENLGMTokenType.DEDENT, "", self.line_num, 1))
+            self.tokens.append(Token(ENLGMTokenType.DEDENT, "", self.line_num, 1, raw_text=""))
 
-        self.tokens.append(Token(ENLGMTokenType.EOF, "", self.line_num, 1))
+        self.tokens.append(Token(ENLGMTokenType.EOF, "", self.line_num, 1, raw_text=""))
+        try:
+            self.tokens.has_type_header = self.has_type_header
+        except AttributeError:
+            pass
         return self.tokens
 
     def _tokenize_line(self, line: str, original_stripped: str, sorted_hints: List[str]):
