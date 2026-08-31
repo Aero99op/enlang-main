@@ -910,21 +910,31 @@ init3D();
 
 function showToast(message) {
   (document.getElementById("toast-alert") || document.querySelector("toast-alert")).textContent = message;
-  (document.getElementById("toast-alert") || document.querySelector("toast-alert")).style.display = '';
+  (document.getElementById("toast-alert") || document.querySelector("toast-alert")).style.display = 'block';
   setTimeout(function() {
     (document.getElementById("toast-alert") || document.querySelector("toast-alert")).style.display = 'none';
   }, 3000);
 }
 
-(document.getElementById("btn-copy-phone") || document.querySelector("btn-copy-phone")).addEventListener('click', function(event) {
-  navigator.clipboard.writeText("8260350182");
-  showToast("📞 Phone number copied: 8260350182");
-});
+(function() {
+  const targetEl = (document.getElementById("btn-copy-phone") || document.querySelector("btn-copy-phone"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      navigator.clipboard.writeText("8260350182");
+      showToast("📞 Phone number copied: 8260350182");
+    });
+  }
+})();
 
-(document.getElementById("btn-copy-email") || document.querySelector("btn-copy-email")).addEventListener('click', function(event) {
-  navigator.clipboard.writeText("prayaskumarsahoo45@gmail.com");
-  showToast("✉️ Email copied: prayaskumarsahoo45@gmail.com");
-});
+(function() {
+  const targetEl = (document.getElementById("btn-copy-email") || document.querySelector("btn-copy-email"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      navigator.clipboard.writeText("prayaskumarsahoo45@gmail.com");
+      showToast("✉️ Email copied: prayaskumarsahoo45@gmail.com");
+    });
+  }
+})();
 
 const codeSnippets = [ "// [1] Booting Spring Boot 3.2.0 Microservice..." , "@RestController @RequestMapping(\"/api/v1/lms\")npublic class CourseEnrollmentController {n    @Autowired private EnrollmentService service;n    @PostMapping(\"/enroll\")n    public ResponseEntity<ApiResponse> enrollStudent(@Valid @RequestBody StudentDTO dto) {n        return ResponseEntity.ok(service.processEnrollment(dto));n    }n}" , "// [2] Connecting Oracle & MySQL Production Clusters...n[DB POOL] HikariCP initialized (10 active connections, latency 1.2ms)n[AUTH] Spring Security JWT Filter Chain Active [200 OK]" , "// [3] Running Payroll Calculation Engine...n[PAYROLL ENGINE] Tax brackets calculated. Stored procedure executed successfully.nStatus: ALL SYSTEMS OPERATIONAL (Java 21 Virtual Threads Enabled)" ];
 
@@ -934,29 +944,39 @@ function advanceTerminal() {
   showToast("💻 Loaded Backend Module [" + ( terminalStep + 1 ) + "/4]");
 }
 
-(document.getElementById("btn-term-next") || document.querySelector("btn-term-next")).addEventListener('click', function(event) {
-  advanceTerminal();
-});
+(function() {
+  const targetEl = (document.getElementById("btn-term-next") || document.querySelector("btn-term-next"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      advanceTerminal();
+    });
+  }
+})();
 
-(document.getElementById("contact-form") || document.querySelector("contact-form")).addEventListener('submit', function(event) {
-  if (typeof event !== 'undefined' && event.preventDefault) event.preventDefault();
-  let senderName = (document.getElementById("contact-name") || document.querySelector("contact-name")).value;
-  let senderEmail = (document.getElementById("contact-email") || document.querySelector("contact-email")).value;
-  let senderMsg = (document.getElementById("contact-message") || document.querySelector("contact-message")).value;
-  if (senderName == "") {
-    alert("Please enter your name");
-    return;
+(function() {
+  const targetEl = (document.getElementById("contact-form") || document.querySelector("contact-form"));
+  if (targetEl != null) {
+    targetEl.addEventListener('submit', function(event) {
+      if (typeof event !== 'undefined' && event.preventDefault) event.preventDefault();
+      let senderName = (document.getElementById("contact-name") || document.querySelector("contact-name")).value;
+      let senderEmail = (document.getElementById("contact-email") || document.querySelector("contact-email")).value;
+      let senderMsg = (document.getElementById("contact-message") || document.querySelector("contact-message")).value;
+      if (senderName == "") {
+        alert("Please enter your name");
+        return;
+      }
+      if (senderEmail == "") {
+        alert("Please enter your email");
+        return;
+      }
+      showToast("🚀 Message sent! Thanks " + senderName + ", Prayas will reply soon.");
+      (document.getElementById("contact-status") || document.querySelector("contact-status")).textContent = "✅ Inquiry submitted successfully. Thank you!";
+      (document.getElementById("contact-name") || document.querySelector("contact-name")).value = "";
+      (document.getElementById("contact-email") || document.querySelector("contact-email")).value = "";
+      (document.getElementById("contact-message") || document.querySelector("contact-message")).value = "";
+    });
   }
-  if (senderEmail == "") {
-    alert("Please enter your email");
-    return;
-  }
-  showToast("🚀 Message sent! Thanks " + senderName + ", Prayas will reply soon.");
-  (document.getElementById("contact-status") || document.querySelector("contact-status")).textContent = "✅ Inquiry submitted successfully. Thank you!";
-  (document.getElementById("contact-name") || document.querySelector("contact-name")).value = "";
-  (document.getElementById("contact-email") || document.querySelector("contact-email")).value = "";
-  (document.getElementById("contact-message") || document.querySelector("contact-message")).value = "";
-});
+})();
 
 setInterval(function() {
   (document.getElementById("live-clock") || document.querySelector("live-clock")).textContent = "Engine Active • Asia/Kolkata • " + new Date ( ) .toLocaleTimeString ( );

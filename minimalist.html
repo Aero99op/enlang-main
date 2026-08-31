@@ -577,7 +577,7 @@ const quotes = [ "\"Simplicity is the prerequisite for reliability.\" — Edsger
 
 function showToast(message) {
   (document.getElementById("toast-banner") || document.querySelector("toast-banner")).textContent = message;
-  (document.getElementById("toast-banner") || document.querySelector("toast-banner")).style.display = '';
+  (document.getElementById("toast-banner") || document.querySelector("toast-banner")).style.display = 'block';
   setTimeout(function() {
     (document.getElementById("toast-banner") || document.querySelector("toast-banner")).style.display = 'none';
   }, 3000);
@@ -607,58 +607,88 @@ setInterval(function() {
   }
 }, 1000);
 
-(document.getElementById("btn-timer-start") || document.querySelector("btn-timer-start")).addEventListener('click', function(event) {
-  isTimerActive = true;
-  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "✦ Deep focus immersion in progress";
-  showToast("▶ Focus timer started: " + currentMode);
-});
+(function() {
+  const targetEl = (document.getElementById("btn-timer-start") || document.querySelector("btn-timer-start"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      isTimerActive = true;
+      (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "✦ Deep focus immersion in progress";
+      showToast("▶ Focus timer started: " + currentMode);
+    });
+  }
+})();
 
-(document.getElementById("btn-timer-pause") || document.querySelector("btn-timer-pause")).addEventListener('click', function(event) {
-  isTimerActive = false;
-  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "⏸ Paused • Take a deep breath";
-  showToast("⏸ Focus session paused");
-});
+(function() {
+  const targetEl = (document.getElementById("btn-timer-pause") || document.querySelector("btn-timer-pause"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      isTimerActive = false;
+      (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "⏸ Paused • Take a deep breath";
+      showToast("⏸ Focus session paused");
+    });
+  }
+})();
 
-(document.getElementById("btn-timer-reset") || document.querySelector("btn-timer-reset")).addEventListener('click', function(event) {
-  isTimerActive = false;
-  timerRemaining = timerTotalSeconds;
-  updateTimerDisplay();
-  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "Ready to immerse";
-  showToast("↺ Timer reset to " + ( timerTotalSeconds / 60 ) + "m");
-});
+(function() {
+  const targetEl = (document.getElementById("btn-timer-reset") || document.querySelector("btn-timer-reset"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      isTimerActive = false;
+      timerRemaining = timerTotalSeconds;
+      updateTimerDisplay();
+      (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "Ready to immerse";
+      showToast("↺ Timer reset to " + ( timerTotalSeconds / 60 ) + "m");
+    });
+  }
+})();
 
-(document.getElementById("btn-preset-25") || document.querySelector("btn-preset-25")).addEventListener('click', function(event) {
-  isTimerActive = false;
-  timerTotalSeconds = 1500;
-  timerRemaining = 1500;
-  currentMode = "FOCUS MODE";
-  (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "FOCUS (25m)";
-  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "Ready for 25m focus";
-  updateTimerDisplay();
-  showToast("Switched to 25m Focus preset");
-});
+(function() {
+  const targetEl = (document.getElementById("btn-preset-25") || document.querySelector("btn-preset-25"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      isTimerActive = false;
+      timerTotalSeconds = 1500;
+      timerRemaining = 1500;
+      currentMode = "FOCUS MODE";
+      (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "FOCUS (25m)";
+      (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "Ready for 25m focus";
+      updateTimerDisplay();
+      showToast("Switched to 25m Focus preset");
+    });
+  }
+})();
 
-(document.getElementById("btn-preset-5") || document.querySelector("btn-preset-5")).addEventListener('click', function(event) {
-  isTimerActive = false;
-  timerTotalSeconds = 300;
-  timerRemaining = 300;
-  currentMode = "ZEN BREATH";
-  (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "BREATH (5m)";
-  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "5m Mindful breathing";
-  updateTimerDisplay();
-  showToast("Switched to 5m Zen Breath preset");
-});
+(function() {
+  const targetEl = (document.getElementById("btn-preset-5") || document.querySelector("btn-preset-5"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      isTimerActive = false;
+      timerTotalSeconds = 300;
+      timerRemaining = 300;
+      currentMode = "ZEN BREATH";
+      (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "BREATH (5m)";
+      (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "5m Mindful breathing";
+      updateTimerDisplay();
+      showToast("Switched to 5m Zen Breath preset");
+    });
+  }
+})();
 
-(document.getElementById("btn-preset-50") || document.querySelector("btn-preset-50")).addEventListener('click', function(event) {
-  isTimerActive = false;
-  timerTotalSeconds = 3000;
-  timerRemaining = 3000;
-  currentMode = "FLOW STATE";
-  (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "FLOW (50m)";
-  (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "50m Uninterrupted flow";
-  updateTimerDisplay();
-  showToast("Switched to 50m Flow State preset");
-});
+(function() {
+  const targetEl = (document.getElementById("btn-preset-50") || document.querySelector("btn-preset-50"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      isTimerActive = false;
+      timerTotalSeconds = 3000;
+      timerRemaining = 3000;
+      currentMode = "FLOW STATE";
+      (document.getElementById("timer-mode-tag") || document.querySelector("timer-mode-tag")).textContent = "FLOW (50m)";
+      (document.getElementById("timer-status") || document.querySelector("timer-status")).textContent = "50m Uninterrupted flow";
+      updateTimerDisplay();
+      showToast("Switched to 50m Flow State preset");
+    });
+  }
+})();
 
 function addNewTask() {
   let taskText = (document.getElementById("new-task-input") || document.querySelector("new-task-input")).value;
@@ -677,15 +707,25 @@ function addNewTask() {
   }
 }
 
-(document.getElementById("btn-add-task") || document.querySelector("btn-add-task")).addEventListener('click', function(event) {
-  addNewTask();
-});
+(function() {
+  const targetEl = (document.getElementById("btn-add-task") || document.querySelector("btn-add-task"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      addNewTask();
+    });
+  }
+})();
 
-(document.getElementById("scratchpad") || document.querySelector("scratchpad")).addEventListener('click', function(event) {
-  let noteText = (document.getElementById("scratchpad") || document.querySelector("scratchpad")).value;
-  localStorage.setItem ( "aura_scratchpad" , noteText );
-  (document.getElementById("note-saved-status") || document.querySelector("note-saved-status")).textContent = "Saved (" + noteText.length + " chars)";
-});
+(function() {
+  const targetEl = (document.getElementById("scratchpad") || document.querySelector("scratchpad"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let noteText = (document.getElementById("scratchpad") || document.querySelector("scratchpad")).value;
+      localStorage.setItem ( "aura_scratchpad" , noteText );
+      (document.getElementById("note-saved-status") || document.querySelector("note-saved-status")).textContent = "Saved (" + noteText.length + " chars)";
+    });
+  }
+})();
 
 let savedNote = localStorage.getItem ( "aura_scratchpad" );
 
@@ -693,99 +733,134 @@ if (savedNote != null) {
   (document.getElementById("scratchpad") || document.querySelector("scratchpad")).value = savedNote;
 }
 
-(document.getElementById("btn-next-quote") || document.querySelector("btn-next-quote")).addEventListener('click', function(event) {
-  quoteIndex = ( quoteIndex + 1 ) % quotes.length;
-  (document.getElementById("quote-text") || document.querySelector("quote-text")).textContent = quotes [ quoteIndex ];
-  showToast("✦ New Wisdom Reflection");
-});
+(function() {
+  const targetEl = (document.getElementById("btn-next-quote") || document.querySelector("btn-next-quote"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      quoteIndex = ( quoteIndex + 1 ) % quotes.length;
+      (document.getElementById("quote-text") || document.querySelector("quote-text")).textContent = quotes [ quoteIndex ];
+      showToast("✦ New Wisdom Reflection");
+    });
+  }
+})();
 
-(document.getElementById("btn-sound-1") || document.querySelector("btn-sound-1")).addEventListener('click', function(event) {
-  let btn = document.getElementById ( "btn-sound-1" );
-  if (btn.innerText == "Play") {
-    btn.innerText = "Playing";
-    btn.style.background = "#38bdf8";
-    btn.style.color = "#09090b";
-    showToast("🌧️ Gentle Rain ambient audio active");
+(function() {
+  const targetEl = (document.getElementById("btn-sound-1") || document.querySelector("btn-sound-1"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let btn = document.getElementById ( "btn-sound-1" );
+      if (btn.innerText == "Play") {
+        btn.innerText = "Playing";
+        btn.style.background = "#38bdf8";
+        btn.style.color = "#09090b";
+        showToast("🌧️ Gentle Rain ambient audio active");
+      }
+      else {
+        btn.innerText = "Play";
+        btn.style.background = "rgba(255, 255, 255, 0.06)";
+        btn.style.color = "#ffffff";
+      }
+    });
   }
-  else {
-    btn.innerText = "Play";
-    btn.style.background = "rgba(255, 255, 255, 0.06)";
-    btn.style.color = "#ffffff";
-  }
-});
+})();
 
-(document.getElementById("btn-sound-2") || document.querySelector("btn-sound-2")).addEventListener('click', function(event) {
-  let btn = document.getElementById ( "btn-sound-2" );
-  if (btn.innerText == "Play") {
-    btn.innerText = "Playing";
-    btn.style.background = "#38bdf8";
-    btn.style.color = "#09090b";
-    showToast("🪐 Deep Space drone active");
+(function() {
+  const targetEl = (document.getElementById("btn-sound-2") || document.querySelector("btn-sound-2"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let btn = document.getElementById ( "btn-sound-2" );
+      if (btn.innerText == "Play") {
+        btn.innerText = "Playing";
+        btn.style.background = "#38bdf8";
+        btn.style.color = "#09090b";
+        showToast("🪐 Deep Space drone active");
+      }
+      else {
+        btn.innerText = "Play";
+        btn.style.background = "rgba(255, 255, 255, 0.06)";
+        btn.style.color = "#ffffff";
+      }
+    });
   }
-  else {
-    btn.innerText = "Play";
-    btn.style.background = "rgba(255, 255, 255, 0.06)";
-    btn.style.color = "#ffffff";
-  }
-});
+})();
 
-(document.getElementById("btn-sound-3") || document.querySelector("btn-sound-3")).addEventListener('click', function(event) {
-  let btn = document.getElementById ( "btn-sound-3" );
-  if (btn.innerText == "Play") {
-    btn.innerText = "Playing";
-    btn.style.background = "#38bdf8";
-    btn.style.color = "#09090b";
-    showToast("☕ Kyoto Cafe background active");
+(function() {
+  const targetEl = (document.getElementById("btn-sound-3") || document.querySelector("btn-sound-3"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let btn = document.getElementById ( "btn-sound-3" );
+      if (btn.innerText == "Play") {
+        btn.innerText = "Playing";
+        btn.style.background = "#38bdf8";
+        btn.style.color = "#09090b";
+        showToast("☕ Kyoto Cafe background active");
+      }
+      else {
+        btn.innerText = "Play";
+        btn.style.background = "rgba(255, 255, 255, 0.06)";
+        btn.style.color = "#ffffff";
+      }
+    });
   }
-  else {
-    btn.innerText = "Play";
-    btn.style.background = "rgba(255, 255, 255, 0.06)";
-    btn.style.color = "#ffffff";
-  }
-});
+})();
 
-(document.getElementById("btn-sound-4") || document.querySelector("btn-sound-4")).addEventListener('click', function(event) {
-  let btn = document.getElementById ( "btn-sound-4" );
-  if (btn.innerText == "Play") {
-    btn.innerText = "Playing";
-    btn.style.background = "#38bdf8";
-    btn.style.color = "#09090b";
-    showToast("🌊 Ocean Waves ambient active");
+(function() {
+  const targetEl = (document.getElementById("btn-sound-4") || document.querySelector("btn-sound-4"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let btn = document.getElementById ( "btn-sound-4" );
+      if (btn.innerText == "Play") {
+        btn.innerText = "Playing";
+        btn.style.background = "#38bdf8";
+        btn.style.color = "#09090b";
+        showToast("🌊 Ocean Waves ambient active");
+      }
+      else {
+        btn.innerText = "Play";
+        btn.style.background = "rgba(255, 255, 255, 0.06)";
+        btn.style.color = "#ffffff";
+      }
+    });
   }
-  else {
-    btn.innerText = "Play";
-    btn.style.background = "rgba(255, 255, 255, 0.06)";
-    btn.style.color = "#ffffff";
-  }
-});
+})();
 
-(document.getElementById("btn-theme") || document.querySelector("btn-theme")).addEventListener('click', function(event) {
-  let bodyEl = document.body;
-  let btnTheme = document.getElementById ( "btn-theme" );
-  if (btnTheme.innerText == "☾ Dark") {
-    btnTheme.innerText = "☼ Light";
-    bodyEl.style.background = "#f4f4f5";
-    bodyEl.style.color = "#09090b";
-    showToast("Switched to Light Paper theme");
+(function() {
+  const targetEl = (document.getElementById("btn-theme") || document.querySelector("btn-theme"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      let bodyEl = document.body;
+      let btnTheme = document.getElementById ( "btn-theme" );
+      if (btnTheme.innerText == "☾ Dark") {
+        btnTheme.innerText = "☼ Light";
+        bodyEl.style.background = "#f4f4f5";
+        bodyEl.style.color = "#09090b";
+        showToast("Switched to Light Paper theme");
+      }
+      else {
+        btnTheme.innerText = "☾ Dark";
+        bodyEl.style.background = "#09090b";
+        bodyEl.style.color = "#ffffff";
+        showToast("Switched to OLED Dark theme");
+      }
+    });
   }
-  else {
-    btnTheme.innerText = "☾ Dark";
-    bodyEl.style.background = "#09090b";
-    bodyEl.style.color = "#ffffff";
-    showToast("Switched to OLED Dark theme");
-  }
-});
+})();
 
-(document.getElementById("btn-fullscreen") || document.querySelector("btn-fullscreen")).addEventListener('click', function(event) {
-  if (document.fullscreenElement == null) {
-    document.documentElement.requestFullscreen ( );
-    showToast("Entered Fullscreen Focus Mode");
+(function() {
+  const targetEl = (document.getElementById("btn-fullscreen") || document.querySelector("btn-fullscreen"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      if (document.fullscreenElement == null) {
+        document.documentElement.requestFullscreen ( );
+        showToast("Entered Fullscreen Focus Mode");
+      }
+      else {
+        document.exitFullscreen ( );
+        showToast("Exited Fullscreen");
+      }
+    });
   }
-  else {
-    document.exitFullscreen ( );
-    showToast("Exited Fullscreen");
-  }
-});
+})();
     </script>
   </body>
 </html>

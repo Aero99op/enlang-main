@@ -157,8 +157,9 @@ body {
   margin-bottom: 16px;
 }
     </style>
+    
   </head>
-  <body class="dark-theme">
+  <body>
     <div class="container">
       <nav class="navbar">
         <div class="logo">⚡ Enlang FullStack</div>
@@ -167,46 +168,52 @@ body {
         </div>
       </nav>
       <header class="hero">
-        <span id="counter-badge" class="badge">Optimal Level ✨</span>
+        <span class="badge" id="counter-badge">Optimal Level ✨</span>
         <h1 class="hero-title">Natural Language Web Engine</h1>
         <p class="hero-desc">Built 100% in English using .enlgf (Structure), .enlgd (Style), and .enlgs (Interactivity).</p>
       </header>
       <main class="grid">
         <section class="card">
           <h3>⚡ Interactive Counter</h3>
-          <p style="color: #94a3b8; margin-bottom: 16px;">Reactive state updates compiled from natural English commands.</p>
+          <p style="color: #94a3b8">Reactive state updates compiled from natural English commands.</p>
           <div id="counter-val" class="counter-box">0</div>
-          <div style="text-align: center;">
-            <button id="btn-dec" class="btn-outline" style="margin-right: 8px;">− Decrement</button>
-            <button id="btn-inc" class="btn" style="margin-right: 8px;">+ Increment</button>
+          <div style="text-align: center">
+            <button id="btn-dec" class="btn-outline">− Decrement</button>
+            <button id="btn-inc" class="btn">+ Increment</button>
             <button id="btn-reset" class="btn-outline">Reset</button>
           </div>
         </section>
         <section class="card">
           <h3>📝 Quick Task Creator</h3>
-          <p style="color: #94a3b8; margin-bottom: 16px;">Dynamic form handling and instant DOM mutation.</p>
+          <p style="color: #94a3b8">Dynamic form handling and instant DOM mutation.</p>
           <form id="task-form">
-            <input type="text" id="task-input" class="input-field" placeholder="Enter task name..." />
-            <button type="submit" class="btn" style="width: 100%;">Add Task</button>
+            <input type="text" id="task-input" class="input-field" placeholder="Enter task name...">
+            <input type="submit" class="btn" width="100">
           </form>
-          <p id="task-status" style="color: #94a3b8; margin-top: 16px; font-size: 13px;">No tasks added yet</p>
-          <p style="font-weight: bold; margin-top: 8px;">Total Tasks: <span id="task-count" style="color: #38bdf8;">0</span></p>
+          <p id="task-status" style="color: #94a3b8; font-size: 13px">No tasks added yet</p>
+          <p style="font-weight: bold">
+            Total Tasks: 
+            <span id="task-count" style="color: #38bdf8">0</span>
+          </p>
         </section>
         <section class="card">
           <h3>🌐 Cloud API Integration</h3>
-          <p style="color: #94a3b8; margin-bottom: 16px;">Asynchronous network requests handled with zero boilerplates.</p>
-          <button id="api-btn" class="btn" style="width: 100%; margin-bottom: 16px;">Fetch Live API Data</button>
-          <p id="api-status" style="color: #94a3b8; font-size: 13px;">Ready to request...</p>
+          <p style="color: #94a3b8">Asynchronous network requests handled with zero boilerplates.</p>
+          <button id="api-btn" class="btn" width="100">Fetch Live API Data</button>
+          <p id="api-status" style="color: #94a3b8; font-size: 13px">Ready to request...</p>
         </section>
       </main>
-      <footer style="text-align: center; padding: 40px 0; border-top: 1px solid rgba(255,255,255,0.08);">
-        <p style="color: #64748b; font-size: 14px;">Enlang Ecosystem — Powered by Pure English Architecture</p>
-        <p id="live-clock" style="color: #38bdf8; font-size: 12px;">Engine Active</p>
+      <footer style="text-align: center; padding: 40px 0">
+        1px solid rgba(255,255,255,0.08)
+        <p style="color: #64748b; font-size: 14px">Enlang Ecosystem — Powered by Pure English Architecture</p>
+        <p id="live-clock" style="color: #38bdf8; font-size: 12px">Engine Active</p>
       </footer>
     </div>
     <script>
 let count = 0;
+
 let isDarkMode = true;
+
 let totalTasks = 0;
 
 console.log("⚡ Enlang Full-Stack Engine initialized successfully");
@@ -242,57 +249,74 @@ function toggleTheme() {
   }
 }
 
-(document.getElementById("theme-btn") || document.querySelector("theme-btn")).addEventListener('click', function(event) {
-  toggleTheme();
-});
-
-(document.getElementById("btn-inc") || document.querySelector("btn-inc")).addEventListener('click', function(event) {
-  count += 1;
-  updateCounterDisplay();
-});
-
-(document.getElementById("btn-dec") || document.querySelector("btn-dec")).addEventListener('click', function(event) {
-  count -= 1;
-  updateCounterDisplay();
-});
-
-(document.getElementById("btn-reset") || document.querySelector("btn-reset")).addEventListener('click', function(event) {
-  count = 0;
-  updateCounterDisplay();
-});
-
-(document.getElementById("task-form") || document.querySelector("task-form")).addEventListener('submit', function(event) {
-  if (typeof event !== 'undefined' && event.preventDefault) event.preventDefault();
-  let taskName = (document.getElementById("task-input") || document.querySelector("task-input")).value;
-  if (taskName == "") {
-    alert("Please enter a task name!");
-    return;
+(function() {
+  const targetEl = (document.getElementById("theme-btn") || document.querySelector("theme-btn"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      toggleTheme();
+    });
   }
-  totalTasks += 1;
-  (document.getElementById("task-count") || document.querySelector("task-count")).textContent = totalTasks;
-  (document.getElementById("task-status") || document.querySelector("task-status")).textContent = "Added: " + taskName;
-  (document.getElementById("task-input") || document.querySelector("task-input")).value = "";
-});
+})();
 
-(document.getElementById("api-btn") || document.querySelector("api-btn")).addEventListener('click', function(event) {
-  (document.getElementById("api-status") || document.querySelector("api-status")).textContent = "📡 Fetching live post from API...";
-  (async function() {
-    try {
-      const response = await fetch('https://jsonplaceholder.typicode.com/posts/1');
-      const data = await response.json();
-      (document.getElementById("api-status") || document.querySelector("api-status")).textContent = "✅ Received: " + data.title;
+(function() {
+  const targetEl = (document.getElementById("btn-inc") || document.querySelector("btn-inc"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      count += 1;
+      updateCounterDisplay();
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-dec") || document.querySelector("btn-dec"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      count -= 1;
+      updateCounterDisplay();
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("btn-reset") || document.querySelector("btn-reset"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      count = 0;
+      updateCounterDisplay();
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("task-form") || document.querySelector("task-form"));
+  if (targetEl != null) {
+    targetEl.addEventListener('submit', function(event) {
+      if (typeof event !== 'undefined' && event.preventDefault) event.preventDefault();
+      let taskName = (document.getElementById("task-input") || document.querySelector("task-input")).value;
+      if (taskName == "") {
+        alert("Please enter a task name!");
+        return;
+      }
+      totalTasks += 1;
+      (document.getElementById("task-count") || document.querySelector("task-count")).textContent = totalTasks;
+      (document.getElementById("task-status") || document.querySelector("task-status")).textContent = "Added: " + taskName;
+      (document.getElementById("task-input") || document.querySelector("task-input")).value = "";
+    });
+  }
+})();
+
+(function() {
+  const targetEl = (document.getElementById("api-btn") || document.querySelector("api-btn"));
+  if (targetEl != null) {
+    targetEl.addEventListener('click', function(event) {
+      (document.getElementById("api-status") || document.querySelector("api-status")).textContent = "📡 Fetching live post from API...";
+      fetch data from "https://jsonplaceholder.typicode.com/posts/1":
+      set text of "api-status" to "✅ Received: " + data.title
       console.log("API Response Title: " + data.title);
-    } catch (err) {
-      console.error('Fetch error:', err);
-    }
-  })();
-});
-
-setInterval(function() {
-  (document.getElementById("live-clock") || document.querySelector("live-clock")).textContent = "Engine Active • " + new Date().toLocaleTimeString();
-}, 1000);
-
-console.log("Natural English Scripting (.enlgs) is 100% active!");
+    });
+  }
+})();
     </script>
   </body>
 </html>
