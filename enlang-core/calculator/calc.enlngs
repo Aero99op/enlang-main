@@ -1,0 +1,86 @@
+type enlngs
+
+# ==============================================================
+#   ENLNGS SCIENTIFIC CALCULATOR REACTIVE ENGINE (calc.enlngs)
+#   100% Pure Natural English Reactive State & Math Dispatcher
+# ==============================================================
+
+# 1. State Signals
+create a state_current_expression of "0"
+create a state_memory_ans of 0
+create a state_angle_mode of "DEG"
+create a state_is_new_entry of true
+create a state_theme of "light"
+
+# 2. Key Action Dispatchers
+function appendDigit with digit_char:
+    if state_is_new_entry is true:
+        set state_current_expression = digit_char
+        set state_is_new_entry = false
+    else:
+        set state_current_expression = state_current_expression + digit_char
+    update "main_readout" with text state_current_expression
+    return true
+
+function appendOperator with op_symbol:
+    set state_current_expression = state_current_expression + " " + op_symbol + " "
+    set state_is_new_entry = false
+    update "main_readout" with text state_current_expression
+    return true
+
+function clearAll:
+    set state_current_expression = "0"
+    set state_is_new_entry = true
+    update "main_readout" with text "0"
+    return true
+
+function deleteLastChar:
+    declare str_len = call length with state_current_expression
+    if str_len is at most 1:
+        call clearAll
+    else:
+        set state_current_expression = state_current_expression[0 to str_len - 1]
+        update "main_readout" with text state_current_expression
+    return true
+
+function applyScientificFunction with func_name:
+    if func_name is equal to "sin":
+        display "Calculating sin(" + state_current_expression + ")"
+    elif func_name is equal to "cos":
+        display "Calculating cos(" + state_current_expression + ")"
+    elif func_name is equal to "tan":
+        display "Calculating tan(" + state_current_expression + ")"
+    elif func_name is equal to "sqrt":
+        display "Calculating sqrt(" + state_current_expression + ")"
+    elif func_name is equal to "log":
+        display "Calculating log(" + state_current_expression + ")"
+    elif func_name is equal to "ln":
+        display "Calculating ln(" + state_current_expression + ")"
+    elif func_name is equal to "square":
+        display "Calculating square(" + state_current_expression + ")"
+    elif func_name is equal to "reciprocal":
+        display "Calculating 1/(" + state_current_expression + ")"
+    return true
+
+function evaluateEquals:
+    display "Evaluating Expression: " + state_current_expression
+    set state_is_new_entry = true
+    return true
+
+# 3. Event Listener Registrations
+on click of "btn_ac":
+    call clearAll
+
+on click of "btn_del":
+    call deleteLastChar
+
+on click of "btn_equals":
+    call evaluateEquals
+
+on click of "btn_rad":
+    set state_angle_mode = "RAD"
+    update "mode_indicator" with text "RAD"
+
+on click of "btn_deg":
+    set state_angle_mode = "DEG"
+    update "mode_indicator" with text "DEG"

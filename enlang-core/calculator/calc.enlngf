@@ -1,0 +1,114 @@
+type enlngf
+
+# ==============================================================
+#   ENLNGF SCIENTIFIC CALCULATOR UI STRUCTURE (calc.enlngf)
+#   100% Pure Natural English Frontend Architecture
+# ==============================================================
+
+create application "Scientific Calculator" with container "calculator_app":
+
+    # 1. Top Header Bar
+    create header "calc_header":
+        add title "Scientific Calculator" with id "app_title"
+        create action_group "header_actions":
+            add button "🌙 Dark" with id "btn_theme_toggle"
+            add button "🔄 Reset" with id "btn_reset"
+            add button "☰ Menu" with id "btn_menu"
+
+    # 2. Display Viewport
+    create container "calc_screen_container":
+        create screen "display_viewport":
+            add badge "DEG" with id "mode_indicator"
+            add readout "0" with id "main_readout"
+
+    # 3. Keypad Matrix Grid
+    create grid "keypad_matrix":
+        # Row 1
+        create row "row_1":
+            add button "2nd" with id "btn_2nd" and class "btn_function_active"
+            add button "rad" with id "btn_rad" and class "btn_function"
+            add button "deg" with id "btn_deg" and class "btn_function"
+            add button "sin" with id "btn_sin" and class "btn_function"
+            add button "cos" with id "btn_cos" and class "btn_function"
+            add button "tan" with id "btn_tan" and class "btn_function"
+            add button "^" with id "btn_pow" and class "btn_function"
+            add button "log" with id "btn_log" and class "btn_function"
+            add button "ln" with id "btn_ln" and class "btn_function"
+            add button "(" with id "btn_paren_open" and class "btn_function"
+            add button ")" with id "btn_paren_close" and class "btn_function"
+            add button "%" with id "btn_percent" and class "btn_function"
+            add button "AC" with id "btn_ac" and class "btn_danger"
+
+        # Row 2
+        create row "row_2":
+            add button "1/x" with id "btn_recip" and class "btn_function"
+            add button "x²" with id "btn_sqr" and class "btn_function"
+            add button "x³" with id "btn_cube" and class "btn_function"
+            add button "xʸ" with id "btn_x_pow_y" and class "btn_function"
+            add button "eˣ" with id "btn_exp_x" and class "btn_function"
+            add button "10ˣ" with id "btn_10_pow_x" and class "btn_function"
+            add button "√" with id "btn_sqrt" and class "btn_function"
+            add button "∛x" with id "btn_cbrt" and class "btn_function"
+            add button "log₁₀" with id "btn_log10" and class "btn_function"
+            add button "!" with id "btn_fact" and class "btn_function"
+            add button "," with id "btn_comma" and class "btn_function"
+            add button "DEL" with id "btn_del" and class "btn_danger"
+
+        # Row 3
+        create row "row_3":
+            add button "π" with id "btn_pi" and class "btn_function"
+            add button "e" with id "btn_e" and class "btn_function"
+            add button "sin⁻¹" with id "btn_asin" and class "btn_function"
+            add button "cos⁻¹" with id "btn_acos" and class "btn_function"
+            add button "tan⁻¹" with id "btn_atan" and class "btn_function"
+            add button "sinh" with id "btn_sinh" and class "btn_function"
+            add button "cosh" with id "btn_cosh" and class "btn_function"
+            add button "tanh" with id "btn_tanh" and class "btn_function"
+            add button "|x|" with id "btn_abs" and class "btn_function"
+            add button "Exp" with id "btn_exp" and class "btn_function"
+            add button "Mod" with id "btn_mod" and class "btn_function"
+            add button "÷" with id "btn_div" and class "btn_operator"
+
+        # Row 4
+        create row "row_4":
+            add button "nPr" with id "btn_npr" and class "btn_function"
+            add button "nCr" with id "btn_ncr" and class "btn_function"
+            add button "(" with id "btn_paren_open_2" and class "btn_function"
+            add button ")" with id "btn_paren_close_2" and class "btn_function"
+            add button "7" with id "btn_7" and class "btn_digit"
+            add button "8" with id "btn_8" and class "btn_digit"
+            add button "9" with id "btn_9" and class "btn_digit"
+            add button "±" with id "btn_neg" and class "btn_function"
+            add button "×" with id "btn_mul" and class "btn_operator"
+
+        # Row 5
+        create row "row_5":
+            add button "√x" with id "btn_sqrt_x" and class "btn_function"
+            add button "∛x" with id "btn_cbrt_x" and class "btn_function"
+            add button "x!" with id "btn_fact_x" and class "btn_function"
+            add button "[" with id "btn_bracket" and class "btn_function"
+            add button "4" with id "btn_4" and class "btn_digit"
+            add button "5" with id "btn_5" and class "btn_digit"
+            add button "6" with id "btn_6" and class "btn_digit"
+            add button "−" with id "btn_sub" and class "btn_operator"
+            add button "−" with id "btn_sub_2" and class "btn_operator"
+
+        # Row 6
+        create row "row_6":
+            add button "Rec" with id "btn_rec" and class "btn_function"
+            add button "Pol" with id "btn_pol" and class "btn_function"
+            add button "GCD" with id "btn_gcd" and class "btn_function"
+            add button "LCM" with id "btn_lcm" and class "btn_function"
+            add button "1" with id "btn_1" and class "btn_digit"
+            add button "2" with id "btn_2" and class "btn_digit"
+            add button "3" with id "btn_3" and class "btn_digit"
+            add button "+" with id "btn_add" and class "btn_operator"
+            add button "+" with id "btn_add_2" and class "btn_operator"
+
+        # Row 7
+        create row "row_7":
+            add button "Ans" with id "btn_ans" and class "btn_wide_utility"
+            add button "History" with id "btn_history" and class "btn_wide_utility"
+            add button "0" with id "btn_0" and class "btn_wide_digit"
+            add button "." with id "btn_dot" and class "btn_digit"
+            add button "=" with id "btn_equals" and class "btn_primary_action"

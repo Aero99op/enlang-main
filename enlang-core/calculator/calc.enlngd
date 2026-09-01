@@ -1,0 +1,115 @@
+type enlngd
+
+# ==============================================================
+#   ENLNGD SCIENTIFIC CALCULATOR DESIGN SYSTEM (calc.enlngd)
+#   100% Pure Natural English Design & Styling System
+# ==============================================================
+
+define theme "ScientificCalculatorClassic":
+    set global background to "#f1f5f9"
+    set font family to "Inter, system-ui, -apple-system, sans-serif"
+
+    define component "calculator_app":
+        set max width to 960 pixels with margin "40px auto"
+        set background to "#ffffff"
+        set border radius to 16 pixels
+        set padding to 24 pixels
+        set border to "1px solid #e2e8f0"
+        set shadow to "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)"
+
+    define component "calc_header":
+        set display to flex with align center and space between
+        set margin bottom to 16 pixels
+
+    define component "app_title":
+        set font size to 22 pixels with font weight 800
+        set text color to "#0f172a"
+        set letter spacing to "-0.5px"
+
+    define component "header_actions":
+        set display to flex with gap 16 pixels
+        set font size to 14 pixels with font weight 500
+        set text color to "#334155"
+        set cursor to pointer
+
+    # LCD Green Display Screen
+    define component "display_viewport":
+        set background to "#ebf2ea"
+        set border to "1px solid #cbd5e1"
+        set border radius to 10 pixels
+        set padding to "14px 24px"
+        set min height to 120 pixels
+        set display to flex with direction column and space between
+        set margin bottom to 20 pixels
+
+    define component "mode_indicator":
+        set font size to 13 pixels with font weight 600
+        set text color to "#334155"
+        set font family to "JetBrains Mono, monospace"
+
+    define component "main_readout":
+        set font size to 52 pixels with font weight 700
+        set text color to "#0f172a"
+        set text align to right
+        set font family to "JetBrains Mono, monospace"
+        set line height to 1
+
+    # Keypad Grid Matrix
+    define component "keypad_matrix":
+        set display to flex with direction column and gap 10 pixels
+
+    define component "row":
+        set display to grid with gap 8 pixels
+        set width to 100 percent
+
+    # Button Base Specs
+    define component "button":
+        set height to 50 pixels
+        set border radius to 8 pixels
+        set border to "1px solid #e2e8f0"
+        set font size to 15 pixels with font weight 600
+        set cursor to pointer
+        set display to flex with align center and justify center
+        set transition to "all 0.15s ease"
+        set user select to none
+
+    # Function Buttons (White/Light Slate)
+    define component "btn_function":
+        set background to "#ffffff"
+        set text color to "#1e293b"
+        set hover effect to "background #f8fafc and border-color #cbd5e1"
+
+    define component "btn_function_active":
+        set background to "#ffffff"
+        set text color to "#2563eb" with font weight 700
+
+    # Digits (Bold Numbers)
+    define component "btn_digit":
+        set background to "#ffffff"
+        set text color to "#0f172a"
+        set font size to 20 pixels with font weight 600
+        set hover effect to "background #f1f5f9"
+
+    # Danger Buttons (AC / DEL in Light Red)
+    define component "btn_danger":
+        set background to "#fee2e2"
+        set text color to "#dc2626" with font weight 700
+        set border to "1px solid #fecaca"
+        set hover effect to "background #fca5a5 and color #b91c1c"
+
+    # Operators (÷, ×, −, + in Soft Purple/Lavender)
+    define component "btn_operator":
+        set background to "#ede9fe"
+        set text color to "#1e293b"
+        set font size to 20 pixels with font weight 600
+        set border to "1px solid #ddd6fe"
+        set hover effect to "background #ddd6fe"
+
+    # Primary Action (= in Bright Electric Blue)
+    define component "btn_primary_action":
+        set background to "#2563eb"
+        set text color to "#ffffff"
+        set font size to 24 pixels with font weight 700
+        set border to "none"
+        set shadow to "0 4px 12px rgba(37, 99, 235, 0.3)"
+        set hover effect to "background #1d4ed8 and transform translateY(-1px)"
