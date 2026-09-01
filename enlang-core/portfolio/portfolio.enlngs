@@ -1,0 +1,29 @@
+type enlngs
+
+# ==============================================================
+#   SPANDAN PRAYAS PATRA - REACTIVE SCRIPT ENGINE (portfolio.enlngs)
+#   100% Pure Natural English Reactive State & Signal Dispatcher
+# ==============================================================
+
+# 1. State Store
+create a state_active_filter of "ALL"
+create a state_messages_transmitted of 0
+create a state_is_nav_open of false
+
+# 2. Event Handlers & Signals
+on click of "btn_explore_projects":
+    display "Signal Dispatched: Smooth scroll to section 'projects_section'"
+    trigger scroll to "projects_section"
+
+on click of "btn_open_transmission":
+    display "Signal Dispatched: Smooth scroll to section 'contact_section'"
+    trigger scroll to "contact_section"
+
+on click of "btn_nav_connect":
+    display "Signal Dispatched: Triggering quick contact dialog"
+    trigger modal "Transmission Channel Active: Email Spandan at spandanpatra1234@gmail.com or Call +91 78480 33183"
+
+on submit of "transmission_form":
+    set state_messages_transmitted = state_messages_transmitted + 1
+    display "Transmission Dispatched: Total messages sent = " + state_messages_transmitted
+    trigger toast "Message Transmitted Successfully! Spandan will review your transmission shortly."

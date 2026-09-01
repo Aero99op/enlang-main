@@ -1,0 +1,117 @@
+type enlngd
+
+# ==============================================================
+#   SPANDAN PRAYAS PATRA - DESIGN SYSTEM (portfolio.enlngd)
+#   100% Pure Natural English Design & Styling System
+# ==============================================================
+
+define theme "SpandanCyberpunkObsidian":
+    set global background to "#07070e" with gradient "radial from #12102e at top center to #07070e"
+    set text color to "#f8fafc"
+    set font family to "Plus Jakarta Sans, Inter, sans-serif"
+
+    # Navigation Bar
+    define component "main_navbar":
+        set display to flex with align center and space between
+        set padding to "20px 48px"
+        set background to "rgba(10, 10, 20, 0.75)" with backdrop blur 20 pixels
+        set border bottom to "1px solid rgba(255, 255, 255, 0.08)"
+        set position to sticky at top 0 with z-index 1000
+
+    define component "brand_logo":
+        set font size to 24 pixels with font weight 800
+        set letter spacing to "-1px"
+        set text gradient to "linear from #ffffff to #818cf8"
+
+    define component "nav_links_menu":
+        set display to flex with gap 32 pixels
+        set font size to 15 pixels with font weight 500
+        set text color to "#94a3b8"
+        set hover color to "#ffffff"
+
+    # Hero Showcase
+    define component "hero_section":
+        set padding to "100px 24px 80px"
+        set max width to 1150 pixels with margin "0 auto"
+        set text align to center
+
+    define component "hero_status_badge":
+        set display to inline-flex with align center and gap 8 pixels
+        set padding to "8px 20px"
+        set background to "rgba(99, 102, 241, 0.12)"
+        set border to "1px solid rgba(99, 102, 241, 0.4)"
+        set border radius to 9999 pixels
+        set font size to 13 pixels with font weight 700
+        set text color to "#a5b4fc"
+        set margin bottom to 28 pixels
+
+    define component "hero_main_title":
+        set font size to 58 pixels with font weight 800
+        set line height to 1.15
+        set letter spacing to "-2px"
+        set text gradient to "linear from #ffffff via #e0e7ff to #818cf8"
+        set margin bottom to 24 pixels
+
+    define component "hero_bio_subtitle":
+        set font size to 20 pixels with line height 1.6
+        set text color to "#94a3b8"
+        set max width to 760 pixels with margin "0 auto 40px"
+
+    define component "hero_cta_row":
+        set display to flex with justify center and gap 16 pixels
+        set margin bottom to 60 pixels
+
+    # Cards & Metrics Grids
+    define component "card":
+        set background to "rgba(255, 255, 255, 0.03)" with backdrop blur 16 pixels
+        set border to "1px solid rgba(255, 255, 255, 0.08)"
+        set border radius to 20 pixels
+        set padding to 32 pixels
+        set transition to "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
+        set hover effect to "transform translateY(-6px) and border-color rgba(99, 102, 241, 0.5) and shadow 0 20px 40px -15px rgba(0, 0, 0, 0.7)"
+
+    define component "projects_showcase_grid":
+        set display to grid with columns 3 and gap 24 pixels
+        set max width to 1150 pixels with margin "40px auto 80px"
+
+    define component "skills_grid":
+        set display to grid with columns 3 and gap 24 pixels
+        set max width to 1150 pixels with margin "40px auto 80px"
+
+    define component "interests_grid":
+        set display to grid with columns 5 and gap 16 pixels
+        set max width to 1150 pixels with margin "40px auto 80px"
+
+    # Contact Form & Transmissions
+    define component "contact_section":
+        set max width to 1150 pixels with margin "60px auto 100px"
+        set padding to "0 24px"
+
+    define component "transmission_form":
+        set background to "rgba(15, 15, 28, 0.7)" with backdrop blur 20 pixels
+        set border to "1px solid rgba(99, 102, 241, 0.3)"
+        set border radius to 24 pixels
+        set padding to 40 pixels
+        set box shadow to "0 25px 50px -12px rgba(0, 0, 0, 0.6)"
+
+    define component "input_field":
+        set width to 100 percent
+        set height to 48 pixels
+        set background to "rgba(255, 255, 255, 0.04)"
+        set border to "1px solid rgba(255, 255, 255, 0.1)"
+        set border radius to 10 pixels
+        set padding to "0 16px"
+        set text color to "#ffffff"
+        set font size to 15 pixels
+
+    # Button Base
+    define component "button":
+        set display to inline-flex with align center and justify center
+        set padding to "14px 28px"
+        set font size to 15 pixels with font weight 600
+        set border radius to 12 pixels
+        set cursor to pointer
+        set transition to "all 0.25s ease"
+        set primary background to "linear from #6366f1 to #4f46e5"
+        set shadow to "0 10px 25px -5px rgba(99, 102, 241, 0.5)"
+        set hover effect to "translateY -2px and shadow 0 15px 35px -5px rgba(99, 102, 241, 0.7)"

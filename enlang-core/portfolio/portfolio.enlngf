@@ -1,0 +1,159 @@
+type enlngf
+
+# ==============================================================
+#   SPANDAN PRAYAS PATRA - OFFICIAL PORTFOLIO (portfolio.enlngf)
+#   100% Pure Natural English Frontend UI Architecture
+#   Source: https://spandanprayaspatra.site
+# ==============================================================
+
+create application "Spandan Prayas Patra Portfolio" with container "portfolio_app":
+
+    # 1. Navigation Header
+    create navbar "main_navbar":
+        add logo "SPANDAN." with id "brand_logo"
+        create nav_menu "nav_links_menu":
+            add nav_link "About" with target "#about"
+            add nav_link "Projects" with target "#projects"
+            add nav_link "Skills" with target "#skills"
+            add nav_link "Interests" with target "#interests"
+            add nav_link "Contact" with target "#contact"
+        create action_group "nav_actions":
+            add button "Connect with Spandan" with id "btn_nav_connect"
+
+    # 2. Hero Showcase
+    create section "hero_section":
+        add badge "⚡ AI CODER • AI/ML & SYSTEM DESIGN ARCHITECT" with id "hero_status_badge"
+        add heading "Architecting Intelligent Systems & Autonomous Hardware-Native Code" with id "hero_main_title"
+        add subtitle "Pioneering state-of-the-art AI code agents, distributed system architectures, low-latency compilers, and scalable machine learning platforms." with id "hero_bio_subtitle"
+        
+        create row "hero_cta_row":
+            add button "Explore Projects" with id "btn_explore_projects"
+            add button "Transmission Portal" with id "btn_open_transmission"
+            add button "GitHub (@Aero99op)" with id "btn_hero_github"
+
+        create grid "quick_stats_grid":
+            create card "stat_exp":
+                add label "Specialization"
+                add value "AI & Systems"
+                add note "Agentic Architectures & Compilers"
+            create card "stat_projects":
+                add label "Innovation"
+                add value "Enlng Ecosystem"
+                add note "100% Standalone Language & DB"
+            create card "stat_location":
+                add label "Location"
+                add value "India"
+                add note "Available Worldwide Remote"
+
+    # 3. About Section
+    create section "about_section":
+        add section_tag "DISCOVERY • BACKGROUND"
+        add section_title "Engineering at the Intersection of AI & Low-Level Computing"
+        add paragraph "I am Spandan Prayas Patra — an AI engineer and systems architect dedicated to creating autonomous intelligent agents, high-performance engines, and distributed cloud infrastructures that break previous boundaries."
+
+    # 4. Featured Projects Grid
+    create section "projects_section":
+        add section_tag "PORTFOLIO • INNOVATIONS"
+        add section_title "Featured Engineering Masterpieces"
+        
+        create grid "projects_showcase_grid":
+            create card "project_enlng":
+                add badge "SOVEREIGN PROGRAMMING LANGUAGE"
+                add title "Enlng & EnlngDB"
+                add description "100% self-hosted programming language and database engine written in natural English. Direct microsecond hardware execution with zero third-party runtimes."
+                add tag "Compilers"
+                add tag "Assembly"
+                add tag "Winsock TCP"
+                add link "Explore Enlng" with target "https://github.com/Aero99op/enlang-main"
+
+            create card "project_neksuss":
+                add badge "AI DISTRIBUTED INFRASTRUCTURE"
+                add title "Neksuss Space"
+                add description "Next-generation distributed cloud network and autonomous agent runtime built for real-time collaboration and cloud gaming."
+                add tag "Distributed Systems"
+                add tag "WebSockets"
+                add tag "AI Agents"
+                add link "Visit Neksuss" with target "https://neksuss.space"
+
+            create card "project_agentic":
+                add badge "AGENTIC REASONING PLATFORM"
+                add title "Autonomous 360° AI Pair Programmer"
+                add description "Self-healing code generation ecosystem with multi-angle verification, real-time compiler diagnostic loops, and automated tool dispatching."
+                add tag "LLM Reasoning"
+                add tag "Tool Calling"
+                add tag "Self-Healing"
+                add link "View Architecture" with target "#"
+
+    # 5. Core Skills & Technologies
+    create section "skills_section":
+        add section_tag "TECHNICAL CAPABILITIES"
+        add section_title "Core Engineering Matrix"
+        create grid "skills_grid":
+            create card "skill_ai":
+                add title "AI / Machine Learning"
+                add item "Autonomous Code Agents"
+                add item "LLM Tool Orchestration"
+                add item "Self-Healing Code Loops"
+            create card "skill_systems":
+                add title "System Architecture"
+                add item "Compiler & VM Construction"
+                add item "Winsock Low-Level Networking"
+                add item "B+Tree Binary Storage Engines"
+            create card "skill_devops":
+                add title "DevOps & Cloud"
+                add item "Zero-Downtime Microservices"
+                add item "Edge Runtime Optimization"
+                add item "Distributed Replication Paths"
+
+    # 6. Interests & Creative Horizons
+    create section "interests_section":
+        add section_tag "PASSIONS • HORIZONS"
+        add section_title "Interests & Creative Horizons"
+        create grid "interests_grid":
+            create card "interest_gaming":
+                add icon "🎮"
+                add title "Gaming"
+                add text "Competitive mechanics, immersive storytelling, and strategy design in virtual worlds."
+                add tag "Competitive & Tactical"
+            create card "interest_esports":
+                add icon "🏆"
+                add title "Esports"
+                add text "Active enthusiast in tournament scenes, team dynamics, meta analysis, and broadcast production."
+                add tag "Tournaments & Teams"
+            create card "interest_geopolitics":
+                add icon "🌐"
+                add title "Geopolitics"
+                add text "Analyzing strategic shifts, international trade routes, tech sovereignty, and macro policies."
+                add tag "Strategy & Global Shifts"
+            create card "interest_storytelling":
+                add icon "🪶"
+                add title "Story Writing"
+                add text "Crafting intricate lore, world-building, narrative arcs, and character motivations."
+                add tag "World-Building & Lore"
+            create card "interest_cooking":
+                add icon "🍳"
+                add title "Cooking"
+                add text "Experimenting with flavor balance and precision techniques — just like building systems."
+                add tag "Culinary Mastery"
+
+    # 7. Contact & Transmission Link
+    create section "contact_section":
+        add section_tag "TRANSMISSION LINK"
+        add section_title "Connect With Spandan"
+        
+        create container "contact_info_box":
+            add contact_item "Direct Email" with value "spandanpatra1234@gmail.com"
+            add contact_item "Phone / WhatsApp" with value "+91 78480 33183"
+            add contact_item "GitHub" with value "https://github.com/Aero99op"
+            add contact_item "LinkedIn" with value "https://www.linkedin.com/in/spandan-prayas-patra-874479307/"
+            add contact_item "Web Platform" with value "https://neksuss.space"
+
+        create form "transmission_form":
+            add input_field "Your Name" with id "input_name"
+            add input_field "Your Email Address" with id "input_email"
+            add textarea_field "Your Message" with id "input_message"
+            add button "Transmit Message" with id "btn_submit_message"
+
+    # 8. Footer
+    create footer "main_footer":
+        add copyright "© 2026 Spandan Prayas Patra. All rights reserved. • AI Coding & System Design Excellence."
