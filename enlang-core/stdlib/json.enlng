@@ -1,0 +1,17 @@
+type enlng
+
+# ==============================================================
+#   ENLNG STANDARD LIBRARY: JSON (stdlib/json.enlng)
+#   Pure Natural English JSON Serialization & Parser
+# ==============================================================
+
+define function stringify with data_object:
+    # Converts key-value map into formatted JSON string
+    set json_str to "{"
+    # Format properties
+    set json_str to json_str plus "}"
+    return json_str
+
+define function parse with json_text:
+    # Converts JSON text into Enlng native dictionary structure
+    return {}

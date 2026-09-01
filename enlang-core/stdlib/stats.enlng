@@ -1,0 +1,51 @@
+type enlng
+
+# ==============================================================
+#   ENLNG STANDARD LIBRARY: STATS (stdlib/stats.enlng)
+#   Pure Natural English Statistics, Distributions & Metrics
+# ==============================================================
+
+use library "math"
+
+define function mean with data_list:
+    set total to 0.0
+    set n to count of data_list
+    if n is equal to 0:
+        return 0.0
+    for each val in data_list:
+        set total to total plus val
+    return total divided by n
+
+define function variance with data_list:
+    set avg to call mean with data_list
+    set sum_sq to 0.0
+    set n to count of data_list
+    if n is less than 2:
+        return 0.0
+    for each val in data_list:
+        set diff to val minus avg
+        set sum_sq to sum_sq plus (diff multiplied by diff)
+    return sum_sq divided by (n minus 1)
+
+define function std_dev with data_list:
+    set var_val to call variance with data_list
+    return call square_root with var_val from "math"
+
+define function min_val with data_list:
+    set smallest to data_list[1]
+    for each val in data_list:
+        if val is less than smallest:
+            set smallest to val
+    return smallest
+
+define function max_val with data_list:
+    set largest to data_list[1]
+    for each val in data_list:
+        if val is greater than largest:
+            set largest to val
+    return largest
+
+define function z_score with x, mean_val, std_val:
+    if std_val is equal to 0:
+        return 0.0
+    return (x minus mean_val) divided by std_val

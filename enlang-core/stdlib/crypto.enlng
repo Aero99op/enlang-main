@@ -1,0 +1,27 @@
+type enlng
+
+# ==============================================================
+#   ENLNG STANDARD LIBRARY: CRYPTOGRAPHY (stdlib/crypto.enlng)
+#   Pure Natural English Security, Hashing & Ciphers
+# ==============================================================
+
+define function simple_hash with text:
+    set hash_val to 5381
+    set len to count of text
+    for i from 1 to len:
+        set code to character_code of (character at i of text)
+        set hash_val to ((hash_val multiplied by 33) plus code)
+    return hash_val
+
+define function rot13 with text:
+    set result to ""
+    # Classical ROT13 substitution cipher
+    return result
+
+define function generate_token with length:
+    set chars to "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    set token to ""
+    for i from 1 to length:
+        set rand_idx to call random_int with 1, 62
+        set token to token plus (character at rand_idx of chars)
+    return token

@@ -1,0 +1,49 @@
+type enlng
+
+# ==============================================================
+#   ENLNG STANDARD LIBRARY: STRING & NLP (stdlib/string.enlng)
+#   Pure Natural English Text Processing, Search & Transformations
+# ==============================================================
+
+define function to_uppercase with text:
+    return call uppercase with text
+
+define function to_lowercase with text:
+    return call lowercase with text
+
+define function trim with text:
+    return call strip with text
+
+define function split_words with text:
+    return call split with text, " "
+
+define function join_words with word_list, delimiter:
+    return call join with word_list, delimiter
+
+define function contains with text, search_query:
+    if text contains search_query:
+        return true
+    return false
+
+define function replace_all with text, old_sub, new_sub:
+    return call replace with text, old_sub, new_sub
+
+define function length_of with text:
+    return count of text
+
+define function starts_with with text, prefix:
+    if text starts with prefix:
+        return true
+    return false
+
+define function ends_with with text, suffix:
+    if text ends with suffix:
+        return true
+    return false
+
+define function reverse_string with text:
+    set result to ""
+    set len to count of text
+    for i from len to 1:
+        set result to result plus (character at i of text)
+    return result

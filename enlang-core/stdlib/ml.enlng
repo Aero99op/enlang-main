@@ -1,0 +1,51 @@
+type enlng
+
+# ==============================================================
+#   ENLNG STANDARD LIBRARY: MACHINE LEARNING (stdlib/ml.enlng)
+#   Pure Natural English Machine Learning & Optimization Engine
+# ==============================================================
+
+use library "math"
+use library "stats"
+
+# 1. Linear Regression (Least Squares Method: y = m*x + c)
+define function fit_linear_regression with x_train, y_train:
+    set x_mean to call mean with x_train from "stats"
+    set y_mean to call mean with y_train from "stats"
+    
+    set numerator to 0.0
+    set denominator to 0.0
+    set n to count of x_train
+    
+    for i from 1 to n:
+        set x_diff to x_train[i] minus x_mean
+        set y_diff to y_train[i] minus y_mean
+        set numerator to numerator plus (x_diff multiplied by y_diff)
+        set denominator to denominator plus (x_diff multiplied by x_diff)
+        
+    set slope_m to numerator divided by denominator
+    set intercept_c to y_mean minus (slope_m multiplied by x_mean)
+    
+    return { "slope": slope_m, "intercept": intercept_c }
+
+define function predict_linear with model, x_new:
+    return (model["slope"] multiplied by x_new) plus model["intercept"]
+
+# 2. Activation Functions
+define function sigmoid with z:
+    set exp_val to call exp with (0.0 minus z) from "math"
+    return 1.0 divided by (1.0 plus exp_val)
+
+define function relu with z:
+    if z is greater than 0:
+        return z
+    return 0.0
+
+# 3. Loss Functions
+define function mean_squared_error with y_true, y_pred:
+    set total_sq_err to 0.0
+    set n to count of y_true
+    for i from 1 to n:
+        set diff to y_true[i] minus y_pred[i]
+        set total_sq_err to total_sq_err plus (diff multiplied by diff)
+    return total_sq_err divided by n

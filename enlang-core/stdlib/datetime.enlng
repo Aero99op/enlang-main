@@ -1,0 +1,30 @@
+type enlng
+
+# ==============================================================
+#   ENLNG STANDARD LIBRARY: DATETIME (stdlib/datetime.enlng)
+#   Pure Natural English Date & Time Management
+# ==============================================================
+
+define function current_year:
+    return 2026
+
+define function is_leap_year with year:
+    if (year modulo 400) is equal to 0:
+        return true
+    if (year modulo 100) is equal to 0:
+        return false
+    if (year modulo 4) is equal to 0:
+        return true
+    return false
+
+define function days_in_month with month, year:
+    if month is equal to 2:
+        if call is_leap_year with year:
+            return 29
+        return 28
+    if month is in [4, 6, 9, 11]:
+        return 30
+    return 31
+
+define function format_timestamp with day, month, year, hours, minutes:
+    return year + "-" + month + "-" + day + " " + hours + ":" + minutes

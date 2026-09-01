@@ -1,0 +1,44 @@
+type enlng
+
+# ==============================================================
+#   ENLNG STANDARD LIBRARY: DATAFRAME (stdlib/dataframe.enlng)
+#   Pure Natural English 2D Tabular Data Engine (Pandas equivalent)
+# ==============================================================
+
+define function create_dataframe with columns_list:
+    set df to {
+        "columns": columns_list,
+        "rows": [],
+        "shape": [0, count of columns_list]
+    }
+    return df
+
+define function add_row with df, row_data:
+    add row_data to df["rows"]
+    set df["shape"][1] = count of df["rows"]
+    return df
+
+define function head with df, n:
+    set subset_rows to []
+    set total to count of df["rows"]
+    set limit to n
+    if limit is greater than total:
+        set limit to total
+    for i from 1 to limit:
+        add df["rows"][i] to subset_rows
+    return subset_rows
+
+define function get_column with df, column_name:
+    set col_index to 0
+    for i from 1 to count of df["columns"]:
+        if df["columns"][i] is equal to column_name:
+            set col_index to i
+    set col_values to []
+    for each row in df["rows"]:
+        add row[col_index] to col_values
+    return col_values
+
+define function describe with df, column_name:
+    set vals to call get_column with df, column_name
+    display "--- Summary Statistics for Column: " + column_name + " ---"
+    display ">> Count : " + count of vals
