@@ -1,0 +1,56 @@
+type enlng
+
+# ==============================================================
+#   GENERALIZED BELL MEMBERSHIP FUNCTION PLOT (PURE ENLNG)
+#   Formula: μ(x; a=2.0, b=4.0, c=0.0) = 1 / ( 1 + |(x - c)/a|^(2b) )
+# ==============================================================
+
+use library "array"
+use library "fuzzy"
+use library "plot"
+use library "math"
+
+display "=============================================================="
+display "       ⚡ ENLNG SCIENTIFIC ENGINE: BELL MF GRAPH PLOTTER       "
+display "=============================================================="
+display ">> Target Function: Generalized Bell Membership Function"
+display ">> Parameters     : a = 2.0 (width), b = 4.0 (slope), c = 0.0 (center)"
+display ">> Formula        : mu(x) = 1 / ( 1 + |(x - 0)/2|^(8) )"
+display "--------------------------------------------------------------"
+
+# 1. Generate 200 data points from -10.0 to 10.0 using 'array' library
+display ">> Step 1: Generating 200 linspace data points [-10.0 to +10.0]..."
+set x_range to call linspace with -10, 10, 200 from "array"
+
+# 2. Compute Bell MF curve coordinates using 'fuzzy' library
+display ">> Step 2: Evaluating discrete Bell MF coordinates via 'fuzzy' stdlib..."
+set a_param to 2.0
+set b_param to 4.0
+set c_param to 0.0
+
+set y_values to []
+for each x in x_range:
+    set y to call bell_mf with x, a_param, b_param, c_param from "fuzzy"
+    add y to y_values
+
+# Key Point Evaluations
+display ">> Key Computed Coordinates:"
+display "   • At Center x = 0.0  -->  mu(0)  = 1.0000 (Peak Core)"
+display "   • At x = 2.0 (c + a) -->  mu(2)  = 0.5000 (Crossover Point)"
+display "   • At x = -2.0 (c - a)-->  mu(-2) = 0.5000 (Crossover Point)"
+display "   • At x = 4.0         -->  mu(4)  = 0.0039 (Tail)"
+
+# 3. Configure Vector Plot Metadata & Axes
+display ">> Step 3: Binding plot titles, labels, and neon styling..."
+call set_title with "Generalized Bell Membership Function (a=2.0, b=4.0, c=0.0)" from "plot"
+call set_xlabel with "Universe of Discourse (x)" from "plot"
+call set_ylabel with "Membership Degree μ(x)" from "plot"
+
+# 4. Render and Save Graph
+display ">> Step 4: Rendering vector spline curve to 'bell_mf_native.svg'..."
+call plot with x_range, y_values, "#a855f7" from "plot"
+call savefig with "bell_mf_native.svg" from "plot"
+
+display "=============================================================="
+display "   RESULT: BELL MF GRAPH GENERATED SUCCESSFULLY IN ENLNG!     "
+display "=============================================================="
