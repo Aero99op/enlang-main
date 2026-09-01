@@ -1,22 +1,35 @@
 type enlng
 
 # ==============================================================
-#   ENLNG STANDARD LIBRARY: FUZZY LOGIC (stdlib/fuzzy.enlng)
-#   Pure Natural English Membership Functions
+#   ENLNG COMPREHENSIVE SCIENTIFIC PACKAGE: FUZZY LOGIC (stdlib/fuzzy.enlng)
+#   8 Membership Functions, Fuzzy Sets, Rules & 3 Defuzzifiers
 # ==============================================================
 
 use library "math"
 
+# --------------------------------------------------------------
+# 1. Standard Membership Functions
+# --------------------------------------------------------------
+
+# Gaussian MF: exp( - (x - c)^2 / (2 * sigma^2) )
 define function gaussian_mf with x, center, sigma:
-    # Formula: exp( - (x - center)^2 / (2 * sigma^2) )
     set diff to x minus center
     set numerator to diff multiplied by diff
     set denominator to 2.0 multiplied by sigma multiplied by sigma
     set exponent to 0.0 minus (numerator divided by denominator)
     return call exp with exponent from "math"
 
+# Generalized Bell MF: 1 / ( 1 + |(x - c)/a|^(2b) )
+define function bell_mf with x, a, b, c:
+    set diff to x minus c
+    set ratio to diff divided by a
+    set abs_ratio to call absolute with ratio from "math"
+    set power_exp to 2.0 multiplied by b
+    set denom_term to call power with abs_ratio, power_exp from "math"
+    return 1.0 divided by (1.0 plus denom_term)
+
+# Triangular MF: Triangle spanning [a, b, c] with peak at b
 define function triangular_mf with x, a, b, c:
-    # Triangle: (x-a)/(b-a) for a<=x<=b, (c-x)/(c-b) for b<=x<=c
     if x is less than a:
         return 0.0
     if x is greater than c:
@@ -27,11 +40,77 @@ define function triangular_mf with x, a, b, c:
         return (x minus a) divided by (b minus a)
     return (c minus x) divided by (c minus b)
 
-define function bell_mf with x, a, b, c:
-    # Bell: 1 / (1 + |(x-c)/a|^(2b))
-    set diff to x minus c
-    set ratio to diff divided by a
-    set abs_ratio to call absolute with ratio from "math"
-    set power_exp to 2.0 multiplied by b
-    set denom_term to call power with abs_ratio, power_exp from "math"
-    return 1.0 divided by (1.0 plus denom_term)
+# Trapezoidal MF: Flat top spanning [a, b, c, d]
+define function trapezoidal_mf with x, a, b, c, d:
+    if x is less than a:
+        return 0.0
+    if x is greater than d:
+        return 0.0
+    if x is greater than or equal to b and x is less than or equal to c:
+        return 1.0
+    if x is less than b:
+        return (x minus a) divided by (b minus a)
+    return (d minus x) divided by (d minus c)
+
+# Sigmoidal MF: 1 / ( 1 + exp(-a * (x - c)) )
+define function sigmoidal_mf with x, a, c:
+    set exponent to 0.0 minus (a multiplied by (x minus c))
+    set denom to 1.0 plus (call exp with exponent from "math")
+    return 1.0 divided by denom
+
+# Z-shaped MF: Spline-based transition from 1 to 0 across [a, b]
+define function z_shaped_mf with x, a, b:
+    if x is less than or equal to a:
+        return 1.0
+    if x is greater than or equal to b:
+        return 0.0
+    set mid to (a plus b) divided by 2.0
+    if x is less than or equal to mid:
+        set ratio to (x minus a) divided by (b minus a)
+        return 1.0 minus (2.0 multiplied by ratio multiplied by ratio)
+    set ratio to (b minus x) divided by (b minus a)
+    return 2.0 multiplied by ratio multiplied by ratio
+
+# S-shaped MF: Spline-based transition from 0 to 1 across [a, b]
+define function s_shaped_mf with x, a, b:
+    if x is less than or equal to a:
+        return 0.0
+    if x is greater than or equal to b:
+        return 1.0
+    set mid to (a plus b) divided by 2.0
+    if x is less than or equal to mid:
+        set ratio to (x minus a) divided by (b minus a)
+        return 2.0 multiplied by ratio multiplied by ratio
+    set ratio to (b minus x) divided by (b minus a)
+    return 1.0 minus (2.0 multiplied by ratio multiplied by ratio)
+
+# --------------------------------------------------------------
+# 2. Fuzzy Defuzzification Methods
+# --------------------------------------------------------------
+
+# Centroid Defuzzifier (Center of Gravity): sum(x * mu(x)) / sum(mu(x))
+define function defuzz_centroid with x_array, mu_array:
+    set numerator to 0.0
+    set denominator to 0.0
+    for i from 1 to count of x_array:
+        set numerator to numerator plus (x_array[i] multiplied by mu_array[i])
+        set denominator to denominator plus mu_array[i]
+    if denominator is equal to 0:
+        return 0.0
+    return numerator divided by denominator
+
+# Mean of Maximum (MOM): Average of x values where mu(x) is maximal
+define function defuzz_mom with x_array, mu_array:
+    set max_mu to 0.0
+    for each mu in mu_array:
+        if mu is greater than max_mu:
+            set max_mu to mu
+    set sum_x to 0.0
+    set count_max to 0
+    for i from 1 to count of x_array:
+        if mu_array[i] is greater than or equal to (max_mu minus 0.0001):
+            set sum_x to sum_x plus x_array[i]
+            set count_max to count_max plus 1
+    if count_max is equal to 0:
+        return 0.0
+    return sum_x divided by count_max

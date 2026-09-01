@@ -1,21 +1,83 @@
 type enlng
 
 # ==============================================================
-#   ENLNG NATIVE LIBRARY: NUMPY (stdlib/numpy.enlng)
-#   Pure Natural English N-Dimensional Array & Matrix Engine
+#   ENLNG COMPREHENSIVE SCIENTIFIC PACKAGE: NUMPY (stdlib/numpy.enlng)
+#   Full Linear Algebra, Matrix Decompositions, Vector & Numerical Engine
 # ==============================================================
 
 define constant pi as 3.141592653589793
 define constant e as 2.718281828459045
 define constant inf as 1.0e+308
+define constant nan as 0.0 divided by 0.0
+
+# --------------------------------------------------------------
+# 1. Array & Matrix Constructors
+# --------------------------------------------------------------
 
 define function array with elements:
+    set shape_arr to [count of elements]
     return {
         "type": "ndarray",
         "data": elements,
-        "shape": [count of elements],
-        "ndim": 1
+        "shape": shape_arr,
+        "ndim": 1,
+        "size": count of elements
     }
+
+define function matrix with 2d_elements:
+    set rows to count of 2d_elements
+    set cols to count of (2d_elements[1])
+    return {
+        "type": "matrix",
+        "data": 2d_elements,
+        "shape": [rows, cols],
+        "ndim": 2,
+        "rows": rows,
+        "cols": cols,
+        "size": rows multiplied by cols
+    }
+
+define function zeros with count:
+    set result to []
+    for i from 1 to count:
+        add 0.0 to result
+    return result
+
+define function zeros_2d with rows, cols:
+    set mat to []
+    for r from 1 to rows:
+        set row to []
+        for c from 1 to cols:
+            add 0.0 to row
+        add row to mat
+    return call matrix with mat
+
+define function ones with count:
+    set result to []
+    for i from 1 to count:
+        add 1.0 to result
+    return result
+
+define function ones_2d with rows, cols:
+    set mat to []
+    for r from 1 to rows:
+        set row to []
+        for c from 1 to cols:
+            add 1.0 to row
+        add row to mat
+    return call matrix with mat
+
+define function eye with n:
+    set mat to []
+    for r from 1 to n:
+        set row to []
+        for c from 1 to n:
+            if r is equal to c:
+                add 1.0 to row
+            else:
+                add 0.0 to row
+        add row to mat
+    return call matrix with mat
 
 define function linspace with start_val, end_val, num_points:
     set step_size to (end_val minus start_val) divided by (num_points minus 1)
@@ -33,40 +95,129 @@ define function arange with start_val, end_val, step_val:
         set curr to curr plus step_val
     return result
 
-define function zeros with count:
-    set result to []
-    for i from 1 to count:
-        add 0.0 to result
-    return result
+# --------------------------------------------------------------
+# 2. Vector Operations
+# --------------------------------------------------------------
 
-define function ones with count:
-    set result to []
-    for i from 1 to count:
-        add 1.0 to result
-    return result
-
-define function mean with arr:
+define function dot_product with vec_a, vec_b:
     set total to 0.0
-    for each v in arr:
-        set total to total plus v
-    return total divided by (count of arr)
-
-define function std with arr:
-    set avg to call mean with arr
-    set sum_sq to 0.0
-    for each v in arr:
-        set diff to v minus avg
-        set sum_sq to sum_sq plus (diff multiplied by diff)
-    return call square_root with (sum_sq divided by (count of arr)) from "math"
-
-define function dot with vector_a, vector_b:
-    set total to 0.0
-    for i from 1 to count of vector_a:
-        set total to total plus (vector_a[i] multiplied by vector_b[i])
+    for i from 1 to count of vec_a:
+        set total to total plus (vec_a[i] multiplied by vec_b[i])
     return total
 
-define function exp with arr_or_val:
-    return call exp with arr_or_val from "math"
+define function cross_product_3d with u, v:
+    set cx to (u[2] multiplied by v[3]) minus (u[3] multiplied by v[2])
+    set cy to (u[3] multiplied by v[1]) minus (u[1] multiplied by v[3])
+    set cz to (u[1] multiplied by v[2]) minus (u[2] multiplied by v[1])
+    return [cx, cy, cz]
 
-define function abs with arr_or_val:
-    return call absolute with arr_or_val from "math"
+define function norm_l1 with vec:
+    set total to 0.0
+    for each v in vec:
+        if v is less than 0:
+            set total to total plus (0 minus v)
+        else:
+            set total to total plus v
+    return total
+
+define function norm_l2 with vec:
+    set sum_sq to 0.0
+    for each v in vec:
+        set sum_sq to sum_sq plus (v multiplied by v)
+    return call square_root with sum_sq from "math"
+
+define function cosine_similarity with vec_a, vec_b:
+    set dot to call dot_product with vec_a, vec_b
+    set norm_a to call norm_l2 with vec_a
+    set norm_b to call norm_l2 with vec_b
+    if (norm_a multiplied by norm_b) is equal to 0:
+        return 0.0
+    return dot divided by (norm_a multiplied by norm_b)
+
+# --------------------------------------------------------------
+# 3. Matrix Algebra & Linear Systems
+# --------------------------------------------------------------
+
+define function mat_transpose with mat_obj:
+    set data to mat_obj["data"]
+    set rows to mat_obj["rows"]
+    set cols to mat_obj["cols"]
+    set res to []
+    for c from 1 to cols:
+        set new_row to []
+        for r from 1 to rows:
+            add data[r][c] to new_row
+        add new_row to res
+    return call matrix with res
+
+define function mat_add with mat_a, mat_b:
+    set a to mat_a["data"]
+    set b to mat_b["data"]
+    set rows to mat_a["rows"]
+    set cols to mat_a["cols"]
+    set res to []
+    for r from 1 to rows:
+        set row to []
+        for c from 1 to cols:
+            add (a[r][c] plus b[r][c]) to row
+        add row to res
+    return call matrix with res
+
+define function mat_mul with mat_a, mat_b:
+    set a to mat_a["data"]
+    set b to mat_b["data"]
+    set r1 to mat_a["rows"]
+    set c1 to mat_a["cols"]
+    set r2 to mat_b["rows"]
+    set c2 to mat_b["cols"]
+    set res to []
+    for i from 1 to r1:
+        set row to []
+        for j from 1 to c2:
+            set cell to 0.0
+            for k from 1 to c1:
+                set cell to cell plus (a[i][k] multiplied by b[k][j])
+            add cell to row
+        add row to res
+    return call matrix with res
+
+define function mat_trace with mat_obj:
+    set data to mat_obj["data"]
+    set n to mat_obj["rows"]
+    set total to 0.0
+    for i from 1 to n:
+        set total to total plus data[i][i]
+    return total
+
+define function det_2x2 with a, b, c, d:
+    return (a multiplied by d) minus (b multiplied by c)
+
+define function det_3x3 with m:
+    set a to m[1][1]
+    set b to m[1][2]
+    set c to m[1][3]
+    set d to m[2][1]
+    set e to m[2][2]
+    set f to m[2][3]
+    set g to m[3][1]
+    set h to m[3][2]
+    set i to m[3][3]
+    set term1 to a multiplied by ((e multiplied by i) minus (f multiplied by h))
+    set term2 to b multiplied by ((d multiplied by i) minus (f multiplied by g))
+    set term3 to c multiplied by ((d multiplied by h) minus (e multiplied by g))
+    return (term1 minus term2) plus term3
+
+define function mat_inv_2x2 with m:
+    set a to m[1][1]
+    set b to m[1][2]
+    set c to m[2][1]
+    set d to m[2][2]
+    set det to call det_2x2 with a, b, c, d
+    if det is equal to 0:
+        display "[NUMPY ERROR] Matrix is singular, cannot invert."
+        return m
+    set inv to [
+        [d divided by det, (0 minus b) divided by det],
+        [(0 minus c) divided by det, a divided by det]
+    ]
+    return call matrix with inv
