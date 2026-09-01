@@ -1,0 +1,37 @@
+type enlng
+
+# ==============================================================
+#   ENLNG STANDARD LIBRARY: FUZZY LOGIC (stdlib/fuzzy.enlng)
+#   Pure Natural English Membership Functions
+# ==============================================================
+
+use library "math"
+
+define function gaussian_mf with x, center, sigma:
+    # Formula: exp( - (x - center)^2 / (2 * sigma^2) )
+    set diff to x minus center
+    set numerator to diff multiplied by diff
+    set denominator to 2.0 multiplied by sigma multiplied by sigma
+    set exponent to 0.0 minus (numerator divided by denominator)
+    return call exp with exponent from "math"
+
+define function triangular_mf with x, a, b, c:
+    # Triangle: (x-a)/(b-a) for a<=x<=b, (c-x)/(c-b) for b<=x<=c
+    if x is less than a:
+        return 0.0
+    if x is greater than c:
+        return 0.0
+    if x is equal to b:
+        return 1.0
+    if x is less than b:
+        return (x minus a) divided by (b minus a)
+    return (c minus x) divided by (c minus b)
+
+define function bell_mf with x, a, b, c:
+    # Bell: 1 / (1 + |(x-c)/a|^(2b))
+    set diff to x minus c
+    set ratio to diff divided by a
+    set abs_ratio to call absolute with ratio from "math"
+    set power_exp to 2.0 multiplied by b
+    set denom_term to call power with abs_ratio, power_exp from "math"
+    return 1.0 divided by (1.0 plus denom_term)

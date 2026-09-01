@@ -1,0 +1,26 @@
+type enlng
+
+# ==============================================================
+#   ENLNG STANDARD LIBRARY: ARRAY / NUMERICAL (stdlib/array.enlng)
+#   Pure Natural English Array Generation & Numerical Methods
+# ==============================================================
+
+define function linspace with start_val, end_val, num_points:
+    set step_size to (end_val minus start_val) divided by (num_points minus 1)
+    set result_array to []
+    for index from 0 to (num_points minus 1):
+        set current_val to start_val plus (index multiplied by step_size)
+        add current_val to result_array
+    return result_array
+
+define function zeros with count:
+    set result_array to []
+    for index from 1 to count:
+        add 0.0 to result_array
+    return result_array
+
+define function ones with count:
+    set result_array to []
+    for index from 1 to count:
+        add 1.0 to result_array
+    return result_array

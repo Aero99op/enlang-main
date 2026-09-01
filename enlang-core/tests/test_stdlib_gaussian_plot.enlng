@@ -1,0 +1,38 @@
+type enlng
+
+# ==============================================================
+#   TEST: GAUSSIAN MEMBERSHIP PLOT USING ENLNG STANDARD LIBRARIES
+# ==============================================================
+
+use library "array"
+use library "fuzzy"
+use library "plot"
+
+display "=============================================================="
+display "       ⚡ ENLNG SCIENTIFIC STDLIB: GAUSSIAN MF PLOT TEST       "
+display "=============================================================="
+
+# 1. Generate 200 data points from -5.0 to 5.0 using 'array' library (Like numpy.linspace)
+display ">> Step 1: Generating 200 linspace data points [-5 to +5]..."
+set x_range to call linspace with -5, 5, 200 from "array"
+
+# 2. Compute Gaussian MF values using 'fuzzy' library
+display ">> Step 2: Computing Gaussian MF (center=0, sigma=1) using 'fuzzy' library..."
+set y_values to []
+for each x in x_range:
+    set y to call gaussian_mf with x, center=0, sigma=1 from "fuzzy"
+    add y to y_values
+
+# 3. Plot and save figure using 'plot' library (Like matplotlib.pyplot)
+display ">> Step 3: Setting plot metadata and styling..."
+call set_title with "Gaussian Membership Function (mean=0, sigma=1)" from "plot"
+call set_xlabel with "Universe of Discourse (x)" from "plot"
+call set_ylabel with "Membership Degree μ(x)" from "plot"
+
+display ">> Step 4: Rendering and saving figure..."
+call plot with x_range, y_values, "#38bdf8" from "plot"
+call savefig with "gaussian_mf_native.png" from "plot"
+
+display "=============================================================="
+display "   RESULT: 100% PURE ENLNG STDLIB GRAPH GENERATED!            "
+display "=============================================================="

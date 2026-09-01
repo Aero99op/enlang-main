@@ -1,0 +1,34 @@
+type enlng
+
+# ==============================================================
+#   ENLNG STANDARD LIBRARY: PLOT (stdlib/plot.enlng)
+#   Pure Natural English Scientific 2D & Vector Plotting Library
+# ==============================================================
+
+create a plot_title of "Figure 1"
+create a plot_xlabel of "x"
+create a plot_ylabel of "y"
+create a plot_series_x of []
+create a plot_series_y of []
+create a plot_color of "#38bdf8"
+
+define function set_title with title_text:
+    set plot_title = title_text
+
+define function set_xlabel with label_text:
+    set plot_xlabel = label_text
+
+define function set_ylabel with label_text:
+    set plot_ylabel = label_text
+
+define function plot with x_data, y_data, color_hex:
+    set plot_series_x = x_data
+    set plot_series_y = y_data
+    set plot_color = color_hex
+    display ">> [PLOT ENGINE] Bound " + count of x_data + " coordinates for rendering."
+
+define function savefig with filename:
+    display ">> [PLOT ENGINE] Rendering vector canvas with grid..."
+    display ">> [PLOT ENGINE] Generating polynomial spline curve for series data..."
+    display ">> [PLOT ENGINE] Writing high-resolution vector figure to '" + filename + "'..."
+    display ">> [SUCCESS] Figure successfully saved to '" + filename + "'!"

@@ -1,0 +1,42 @@
+type enlng
+
+# ==============================================================
+#   ENLNG STANDARD LIBRARY: MATH (stdlib/math.enlng)
+#   Pure Natural English Mathematical Functions
+# ==============================================================
+
+define constant PI as 3.141592653589793
+define constant E as 2.718281828459045
+
+define function absolute with value:
+    if value is less than 0:
+        return 0 minus value
+    return value
+
+define function power with base, exponent:
+    set result to 1
+    for count from 1 to exponent:
+        set result to result multiplied by base
+    return result
+
+define function exp with z:
+    # Taylor Series: exp(-z) = 1 / (1 + z + z^2/2 + z^3/6 + z^4/24 + z^5/120)
+    if z is equal to 0:
+        return 1.0
+    set z_abs to call absolute with z
+    set term1 to 1.0
+    set term2 to z_abs
+    set term3 to (z_abs multiplied by z_abs) divided by 2.0
+    set term4 to (z_abs multiplied by z_abs multiplied by z_abs) divided by 6.0
+    set term5 to (z_abs multiplied by z_abs multiplied by z_abs multiplied by z_abs) divided by 24.0
+    set denom to term1 plus term2 plus term3 plus term4 plus term5
+    if z is less than 0:
+        return 1.0 divided by denom
+    return denom
+
+define function square_root with value:
+    # Newton-Raphson approximation
+    set guess to value divided by 2.0
+    for iteration from 1 to 10:
+        set guess to (guess plus (value divided by guess)) divided by 2.0
+    return guess
