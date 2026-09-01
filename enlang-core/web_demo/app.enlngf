@@ -1,0 +1,51 @@
+type enlngf
+
+# ==============================================================
+#   ENLNGF FRONTEND STRUCTURE (web_demo/app.enlngf)
+#   Zero HTML, Zero React - 100% Pure Natural English!
+# ==============================================================
+
+create page "Enlng Native Web Studio":
+    add navbar with id "main_nav":
+        add logo "⚡ Enlng Native Engine"
+        add nav_link "Architecture" with target "#architecture"
+        add nav_link "Benchmarks" with target "#benchmarks"
+        add nav_link "Database" with target "#database"
+        add button "Live Demo" with id "btn_nav_demo"
+
+    create container "hero_container":
+        add badge "🚀 100% STANDALONE NATIVE ECOSYSTEM" with id "hero_badge"
+        add title "Natural English Software Built Directly on Hardware" with id "hero_heading"
+        add subtitle "Zero Python dependencies. Zero C source files. Direct microsecond machine execution with enlng.exe." with id "hero_desc"
+        
+        create row "cta_buttons_row":
+            add button "Run 1M Benchmark" with id "btn_benchmark"
+            add button "Explore EnlngDB" with id "btn_explore_db"
+
+    create container "stats_container":
+        create card "stat_card_1":
+            add label "Execution Speed"
+            add value "< 0.04s"
+            add note "1,000,000 Loop Iterations"
+
+        create card "stat_card_2":
+            add label "Binary Size"
+            add value "131 KB"
+            add note "Standalone Standalone Engine"
+
+        create card "stat_card_3":
+            add label "Python Dependency"
+            add value "0.0%"
+            add note "Pure Native Machine Code"
+
+    create container "interactive_demo_section":
+        add title "Interactive Native State & Signal Engine"
+        add subtitle "Test reactive state changes powered by enlngs"
+        
+        create card "counter_card":
+            add label "Reactive Live Counter:" with id "counter_display"
+            create row "counter_actions":
+                add button "➕ Increment Count" with id "btn_increment"
+                add button "➖ Decrement Count" with id "btn_decrement"
+                add button "⚡ Run Hardware Benchmark" with id "btn_run_benchmark"
+            add note "Clicking buttons triggers pure enlngs reactive signal dispatches in real-time." with id "counter_log"

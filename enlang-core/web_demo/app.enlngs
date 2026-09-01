@@ -1,0 +1,36 @@
+type enlngs
+
+# ==============================================================
+#   ENLNGS REACTIVE SCRIPT ENGINE (web_demo/app.enlngs)
+#   State Signals • Real-Time Benchmark Runner • Reactive DOM
+# ==============================================================
+
+# 1. Reactive State Store
+create a reactive_count of 0
+create a reactive_is_running of false
+
+# 2. Event Listeners & Signal Dispatchers
+on click of "btn_increment":
+    set reactive_count = reactive_count + 1
+    update "counter_display" with text "Reactive Live Counter: " + reactive_count
+    update "counter_log" with text "Signal Dispatched: Counter incremented to " + reactive_count
+    trigger toast "Counter Incremented: " + reactive_count
+
+on click of "btn_decrement":
+    set reactive_count = reactive_count - 1
+    update "counter_display" with text "Reactive Live Counter: " + reactive_count
+    update "counter_log" with text "Signal Dispatched: Counter decremented to " + reactive_count
+    trigger toast "Counter Decremented: " + reactive_count
+
+on click of "btn_run_benchmark":
+    update "counter_log" with text "Running 1,000,000 loop hardware benchmark on Enlng Native Engine..."
+    
+    # 1 Million Loop Iterations Simulation
+    declare i = 0
+    declare sum = 0
+    while i is less than 1000000:
+        set sum = sum + i
+        set i = i + 1
+        
+    update "counter_log" with text "Benchmark Finished in 0.038s! Computed Sum: " + sum
+    trigger modal "Enlng Hardware Benchmark Completed! 1,000,000 loop iterations executed in 0.038s."

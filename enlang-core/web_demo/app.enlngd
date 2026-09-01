@@ -1,0 +1,68 @@
+type enlngd
+
+# ==============================================================
+#   ENLNGD DESIGN SYSTEM (web_demo/app.enlngd)
+#   Cyberpunk Obsidian Glassmorphism • Modern Typography
+# ==============================================================
+
+define theme "CyberpunkObsidian":
+    set global background to "#07070f" with gradient "radial from #181236 at top center to #07070f"
+    set text color to "#f8fafc"
+    set font family to "Inter, -apple-system, sans-serif"
+
+    define component "main_nav":
+        set display to flex with align center and space between
+        set padding to "18px 48px"
+        set background to "rgba(15, 15, 28, 0.7)" with backdrop blur 20 pixels
+        set border bottom to "1px solid rgba(255, 255, 255, 0.08)"
+        set position to sticky at top 0 with z-index 100
+
+    define component "hero_container":
+        set text align to center
+        set padding to "80px 24px 60px 24px"
+        set max width to 1100 pixels with margin "0 auto"
+
+    define component "hero_badge":
+        set display to inline-block with padding "8px 20px"
+        set background to "rgba(99, 102, 241, 0.15)"
+        set border to "1px solid rgba(99, 102, 241, 0.4)"
+        set border radius to 9999 pixels
+        set font size to 13 pixels with font weight 600
+        set text color to "#a5b4fc"
+        set margin bottom to 24 pixels
+
+    define component "hero_heading":
+        set font size to 54 pixels with font weight 800
+        set line height to 1.15
+        set text gradient to "linear from #ffffff via #e0e7ff to #818cf8"
+        set margin bottom to 20 pixels
+
+    define component "hero_desc":
+        set font size to 19 pixels with font weight 400
+        set text color to "#94a3b8"
+        set max width to 720 pixels with margin "0 auto 40px auto"
+        set line height to 1.6
+
+    define component "stats_container":
+        set display to grid with columns 3 and gap 24 pixels
+        set max width to 1100 pixels with margin "0 auto 80px auto"
+        set padding to "0 24px"
+
+    define component "card":
+        set background to "rgba(255, 255, 255, 0.03)" with backdrop blur 16 pixels
+        set border to "1px solid rgba(255, 255, 255, 0.08)"
+        set border radius to 20 pixels
+        set padding to 32 pixels
+        set transition to "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
+        set hover effect to "scale 1.02 and border-color #6366f1"
+
+    define component "button":
+        set display to inline-flex with align center and justify center
+        set padding to "14px 28px"
+        set font size to 15 pixels with font weight 600
+        set border radius to 12 pixels
+        set cursor to pointer
+        set transition to "all 0.25s ease"
+        set primary background to "linear from #6366f1 to #4f46e5"
+        set shadow to "0 10px 25px -5px rgba(99, 102, 241, 0.5)"
+        set hover effect to "translateY -2px and shadow 0 15px 35px -5px rgba(99, 102, 241, 0.7)"
