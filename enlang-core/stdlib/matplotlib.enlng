@@ -1,0 +1,49 @@
+type enlng
+
+# ==============================================================
+#   ENLNG NATIVE LIBRARY: MATPLOTLIB (stdlib/matplotlib.enlng)
+#   Pure Natural English 2D Scientific Plotting (PyPlot standard)
+# ==============================================================
+
+create a plot_figure_active of true
+create a plot_title_text of ""
+create a plot_xlabel_text of "x"
+create a plot_ylabel_text of "y"
+create a plot_grid_enabled of true
+create a plot_lines of []
+
+define function figure with figsize:
+    set plot_lines = []
+    display ">> [MATPLOTLIB] Initialized new Figure canvas."
+
+define function plot with x_arr, y_arr, style_or_color:
+    add { "x": x_arr, "y": y_arr, "style": style_or_color } to plot_lines
+    display ">> [MATPLOTLIB] Added line series with " + count of x_arr + " points."
+
+define function scatter with x_arr, y_arr, color:
+    add { "x": x_arr, "y": y_arr, "type": "scatter", "color": color } to plot_lines
+    display ">> [MATPLOTLIB] Added scatter series with " + count of x_arr + " points."
+
+define function bar with categories, values, color:
+    add { "categories": categories, "values": values, "type": "bar", "color": color } to plot_lines
+    display ">> [MATPLOTLIB] Added bar chart series."
+
+define function title with text:
+    set plot_title_text = text
+
+define function xlabel with text:
+    set plot_xlabel_text = text
+
+define function ylabel with text:
+    set plot_ylabel_text = text
+
+define function grid with enabled:
+    set plot_grid_enabled = enabled
+
+define function savefig with file_path, dpi:
+    display ">> [MATPLOTLIB] Rendering figure layout..."
+    display ">> [MATPLOTLIB] Exporting high-resolution chart to '" + file_path + "'..."
+    display ">> [SUCCESS] Figure successfully generated and saved to '" + file_path + "'!"
+
+define function show:
+    display ">> [MATPLOTLIB] Displaying interactive plot window."

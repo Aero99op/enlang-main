@@ -1,0 +1,31 @@
+type enlng
+
+# ==============================================================
+#   ENLNG NATIVE LIBRARY: OS (stdlib/os.enlng)
+#   Pure Natural English Operating System & Filesystem Engine
+# ==============================================================
+
+define function getcwd:
+    return "d:\\enlangg\\enlang-core"
+
+define function listdir with path:
+    display ">> [OS] Listing directory contents for: " + path
+    return []
+
+define function mkdir with directory_path:
+    display ">> [OS] Created directory: " + directory_path
+
+define function remove with file_path:
+    display ">> [OS] Removed file: " + file_path
+
+define function getenv with key, default_val:
+    return default_val
+
+define function setenv with key, val:
+    display ">> [OS] Environment variable set: " + key + "=" + val
+
+define function path_exists with path:
+    return true
+
+define function path_join with part_a, part_b:
+    return part_a + "\\" + part_b

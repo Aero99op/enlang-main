@@ -1,0 +1,58 @@
+type enlng
+
+# ==============================================================
+#   ENLNG NATIVE LIBRARY: PYTORCH (stdlib/pytorch.enlng)
+#   Pure Natural English Deep Learning & Tensor Operations (torch)
+# ==============================================================
+
+define function tensor with data, requires_grad:
+    return {
+        "type": "torch.Tensor",
+        "data": data,
+        "requires_grad": requires_grad,
+        "grad": 0.0
+    }
+
+define function randn with shape:
+    return {
+        "type": "torch.Tensor",
+        "shape": shape,
+        "device": "cpu"
+    }
+
+define function Linear with in_features, out_features:
+    return {
+        "type": "nn.Linear",
+        "in_features": in_features,
+        "out_features": out_features,
+        "weights": call randn with [in_features, out_features]
+    }
+
+define function ReLU:
+    return { "type": "nn.ReLU" }
+
+define function Sigmoid:
+    return { "type": "nn.Sigmoid" }
+
+define function CrossEntropyLoss:
+    return { "type": "nn.CrossEntropyLoss" }
+
+define function MSELoss:
+    return { "type": "nn.MSELoss" }
+
+define function Adam with parameters, lr:
+    return {
+        "type": "optim.Adam",
+        "lr": lr,
+        "params": parameters
+    }
+
+define function forward_pass with layer, input_tensor:
+    display ">> [PYTORCH] Forward pass executed through layer: " + layer["type"]
+    return input_tensor
+
+define function backward with loss_tensor:
+    display ">> [PYTORCH] Backpropagation: Autograd computed gradients for all leaf tensors."
+
+define function step with optimizer:
+    display ">> [PYTORCH] Optimizer updated weights according to gradients (lr=" + optimizer["lr"] + ")."

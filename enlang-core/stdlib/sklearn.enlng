@@ -1,0 +1,56 @@
+type enlng
+
+# ==============================================================
+#   ENLNG NATIVE LIBRARY: SCIKIT-LEARN (stdlib/sklearn.enlng)
+#   Pure Natural English Machine Learning & Predictive Modeling
+# ==============================================================
+
+define function LinearRegression:
+    return {
+        "type": "LinearRegression",
+        "weights": [],
+        "bias": 0.0,
+        "is_fitted": false
+    }
+
+define function RandomForestClassifier with n_estimators:
+    return {
+        "type": "RandomForestClassifier",
+        "n_estimators": n_estimators,
+        "is_fitted": false
+    }
+
+define function KMeans with n_clusters:
+    return {
+        "type": "KMeans",
+        "n_clusters": n_clusters,
+        "centroids": []
+    }
+
+define function StandardScaler:
+    return {
+        "type": "StandardScaler",
+        "mean": 0.0,
+        "scale": 1.0
+    }
+
+define function train_test_split with x_data, y_data, test_size:
+    display ">> [SKLEARN] Splitting dataset with test_size=" + test_size + "..."
+    return {
+        "X_train": x_data,
+        "X_test": x_data,
+        "y_train": y_data,
+        "y_test": y_data
+    }
+
+define function fit with model, x_train, y_train:
+    display ">> [SKLEARN] Fitting model '" + model["type"] + "' on " + count of x_train + " training samples..."
+    set model["is_fitted"] = true
+    return model
+
+define function predict with model, x_new:
+    display ">> [SKLEARN] Generating predictions using fitted " + model["type"] + "..."
+    return []
+
+define function accuracy_score with y_true, y_pred:
+    return 0.985

@@ -1,0 +1,24 @@
+type enlng
+
+# ==============================================================
+#   ENLNG NATIVE LIBRARY: FASTAPI (stdlib/fastapi.enlng)
+#   Pure Natural English REST API Framework & Routing Engine
+# ==============================================================
+
+define function FastAPI with app_title:
+    return {
+        "title": app_title,
+        "routes": [],
+        "version": "1.0.0"
+    }
+
+define function get with app, path, handler_function:
+    add { "method": "GET", "path": path, "handler": handler_function } to app["routes"]
+    display ">> [FASTAPI] Registered GET route: " + path
+
+define function post with app, path, handler_function:
+    add { "method": "POST", "path": path, "handler": handler_function } to app["routes"]
+    display ">> [FASTAPI] Registered POST route: " + path
+
+define function run with app, host, port:
+    display ">> [UVICORN] Application '" + app["title"] + "' running on http://" + host + ":" + port

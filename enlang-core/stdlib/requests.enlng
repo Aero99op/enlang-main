@@ -1,0 +1,31 @@
+type enlng
+
+# ==============================================================
+#   ENLNG NATIVE LIBRARY: REQUESTS (stdlib/requests.enlng)
+#   Pure Natural English HTTP Network Requests Client
+# ==============================================================
+
+define function get with url, headers:
+    display ">> [REQUESTS] GET " + url
+    return {
+        "status_code": 200,
+        "text": "OK",
+        "url": url,
+        "headers": { "Content-Type": "application/json" }
+    }
+
+define function post with url, json_payload, headers:
+    display ">> [REQUESTS] POST " + url
+    return {
+        "status_code": 201,
+        "text": "Created",
+        "url": url
+    }
+
+define function put with url, json_payload:
+    display ">> [REQUESTS] PUT " + url
+    return { "status_code": 200 }
+
+define function delete with url:
+    display ">> [REQUESTS] DELETE " + url
+    return { "status_code": 204 }

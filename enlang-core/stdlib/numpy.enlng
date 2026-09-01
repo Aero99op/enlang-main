@@ -1,0 +1,72 @@
+type enlng
+
+# ==============================================================
+#   ENLNG NATIVE LIBRARY: NUMPY (stdlib/numpy.enlng)
+#   Pure Natural English N-Dimensional Array & Matrix Engine
+# ==============================================================
+
+define constant pi as 3.141592653589793
+define constant e as 2.718281828459045
+define constant inf as 1.0e+308
+
+define function array with elements:
+    return {
+        "type": "ndarray",
+        "data": elements,
+        "shape": [count of elements],
+        "ndim": 1
+    }
+
+define function linspace with start_val, end_val, num_points:
+    set step_size to (end_val minus start_val) divided by (num_points minus 1)
+    set result to []
+    for i from 0 to (num_points minus 1):
+        set val to start_val plus (i multiplied by step_size)
+        add val to result
+    return result
+
+define function arange with start_val, end_val, step_val:
+    set result to []
+    set curr to start_val
+    while curr is less than end_val:
+        add curr to result
+        set curr to curr plus step_val
+    return result
+
+define function zeros with count:
+    set result to []
+    for i from 1 to count:
+        add 0.0 to result
+    return result
+
+define function ones with count:
+    set result to []
+    for i from 1 to count:
+        add 1.0 to result
+    return result
+
+define function mean with arr:
+    set total to 0.0
+    for each v in arr:
+        set total to total plus v
+    return total divided by (count of arr)
+
+define function std with arr:
+    set avg to call mean with arr
+    set sum_sq to 0.0
+    for each v in arr:
+        set diff to v minus avg
+        set sum_sq to sum_sq plus (diff multiplied by diff)
+    return call square_root with (sum_sq divided by (count of arr)) from "math"
+
+define function dot with vector_a, vector_b:
+    set total to 0.0
+    for i from 1 to count of vector_a:
+        set total to total plus (vector_a[i] multiplied by vector_b[i])
+    return total
+
+define function exp with arr_or_val:
+    return call exp with arr_or_val from "math"
+
+define function abs with arr_or_val:
+    return call absolute with arr_or_val from "math"

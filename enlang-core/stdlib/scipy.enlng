@@ -1,0 +1,36 @@
+type enlng
+
+# ==============================================================
+#   ENLNG NATIVE LIBRARY: SCIPY (stdlib/scipy.enlng)
+#   Pure Natural English Scientific Computing, Integrals & Solvers
+# ==============================================================
+
+use library "numpy"
+use library "math"
+
+define function integrate_quad with func_name, lower_limit, upper_limit, num_steps:
+    set step to (upper_limit minus lower_limit) divided by num_steps
+    set total_area to 0.0
+    for i from 0 to (num_steps minus 1):
+        set x_mid to lower_limit plus (i multiplied by step) plus (step divided by 2.0)
+        set y to call func_name with x_mid
+        set total_area to total_area plus (y multiplied by step)
+    return total_area
+
+define function optimize_minimize with loss_fn, initial_guess, learning_rate, epochs:
+    set current_x to initial_guess
+    for epoch from 1 to epochs:
+        set gradient to (call loss_fn with (current_x plus 0.0001)) minus (call loss_fn with current_x)
+        set gradient to gradient divided by 0.0001
+        set current_x to current_x minus (learning_rate multiplied by gradient)
+    return {
+        "optimal_x": current_x,
+        "min_value": call loss_fn with current_x
+    }
+
+define function norm_pdf with x, mean_val, std_val:
+    set variance_2 to 2.0 multiplied by std_val multiplied by std_val
+    set diff to x minus mean_val
+    set exponent to 0.0 minus ((diff multiplied by diff) divided by variance_2)
+    set coeff to 1.0 divided by (call square_root with (2.0 multiplied by PI multiplied by (std_val multiplied by std_val)) from "math")
+    return coeff multiplied by (call exp with exponent from "math")

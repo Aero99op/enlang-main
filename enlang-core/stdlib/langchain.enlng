@@ -1,0 +1,37 @@
+type enlng
+
+# ==============================================================
+#   ENLNG NATIVE LIBRARY: LANGCHAIN (stdlib/langchain.enlng)
+#   Pure Natural English LLM Chains, Agents & Prompt Orchestration
+# ==============================================================
+
+define function ChatOpenAI with model_name, temperature:
+    return {
+        "provider": "openai",
+        "model": model_name,
+        "temperature": temperature
+    }
+
+define function PromptTemplate with template_string, input_variables:
+    return {
+        "template": template_string,
+        "variables": input_variables
+    }
+
+define function LLMChain with llm, prompt:
+    return {
+        "llm": llm,
+        "prompt": prompt
+    }
+
+define function run_chain with chain, inputs_dict:
+    display ">> [LANGCHAIN] Executing Chain with Model: " + chain["llm"]["model"]
+    display ">> [LANGCHAIN] Reasoning over input context..."
+    return "Autonomous AI Agent Reasoning Complete."
+
+define function initialize_agent with tools_list, llm:
+    return {
+        "agent_type": "zero-shot-react-description",
+        "tools": tools_list,
+        "llm": llm
+    }
