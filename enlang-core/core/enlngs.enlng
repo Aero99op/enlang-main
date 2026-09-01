@@ -1,0 +1,44 @@
+type enlng
+
+# ==============================================================
+#   ENLNGS NATIVE REACTIVE SCRIPT ENGINE (core/enlngs.enlng)
+#   Written 100% in Enlng - State Signals & Event Dispatching
+# ==============================================================
+
+display "=============================================================="
+display "       ENLNGS NATIVE REACTIVE SCRIPT ENGINE                   "
+display "=============================================================="
+
+# 1. State Store Simulation
+create a state_clicks of 0
+create a state_is_modal_open of false
+create a state_theme of "dark"
+
+# 2. Event Dispatcher
+function dispatchUserEvent with event_type, target_element_id:
+    display "Event Triggered: [" + event_type + "] on Element ID: '" + target_element_id + "'"
+    
+    if target_element_id is equal to "btn_explore":
+        set state_clicks = state_clicks + 1
+        display "Action Executed: Smoothly scrolling to section 'Projects'"
+        display "Reactive State Updated: Total exploration clicks = " + state_clicks
+        return true
+
+    if target_element_id is equal to "btn_contact":
+        set state_is_modal_open = true
+        display "Action Executed: Opening Contact Modal Window"
+        display "Reactive State Updated: Modal Open = true"
+        return true
+
+    return false
+
+# 3. Simulate Interactive User Actions
+display "Simulating User Click 1: Clicking 'Explore 100% Native Projects'..."
+declare evt1 = call dispatchUserEvent with "CLICK", "btn_explore"
+
+display "Simulating User Click 2: Clicking 'Contact Me'..."
+declare evt2 = call dispatchUserEvent with "CLICK", "btn_contact"
+
+display "=============================================================="
+display "   ENLNGS REACTIVE SCRIPT DISPATCHED SUCCESSFULLY!            "
+display "=============================================================="

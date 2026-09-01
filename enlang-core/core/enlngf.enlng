@@ -1,0 +1,48 @@
+type enlng
+
+# ==============================================================
+#   ENLNGF NATIVE FRONTEND COMPONENT ENGINE (core/enlngf.enlng)
+#   Written 100% in Enlng - Pure Natural English UI Architecture
+# ==============================================================
+
+display "=============================================================="
+display "       ENLNGF NATIVE FRONTEND COMPONENT ENGINE                "
+display "=============================================================="
+
+# 1. UI Element Type Matcher
+function getComponentType with tag_name:
+    if tag_name is equal to "title":
+        return "HEADING_H1"
+    if tag_name is equal to "subtitle":
+        return "HEADING_H2"
+    if tag_name is equal to "paragraph":
+        return "TEXT_BLOCK"
+    if tag_name is equal to "button":
+        return "INTERACTIVE_BUTTON"
+    if tag_name is equal to "input":
+        return "INPUT_FIELD"
+    if tag_name is equal to "card":
+        return "CONTAINER_CARD"
+    if tag_name is equal to "grid":
+        return "LAYOUT_GRID"
+    if tag_name is equal to "navbar":
+        return "NAVIGATION_BAR"
+    return "GENERIC_CONTAINER"
+
+# 2. Component Registration & Tree Builder
+function renderComponent with comp_type, label, target_id:
+    declare element_code = call getComponentType with comp_type
+    display "UI Rendered: [" + element_code + "] Label: '" + label + "' (ID: " + target_id + ")"
+    return true
+
+# 3. Simulate Building a World-Class Fullstack Page
+display "Building Frontend Structure for 'HeroSection'..."
+declare c1 = call renderComponent with "navbar", "Enlng Web Studio", "nav_header"
+declare c2 = call renderComponent with "title", "Hi, I am Bibhu", "hero_title"
+declare c3 = call renderComponent with "subtitle", "Lead Enlng Systems Architect", "hero_sub"
+declare c4 = call renderComponent with "button", "Explore 100% Native Projects", "btn_explore"
+declare c5 = call renderComponent with "button", "Contact Me", "btn_contact"
+
+display "=============================================================="
+display "   ENLNGF FRONTEND COMPONENT TREE BUILT SUCCESSFULLY!         "
+display "=============================================================="
