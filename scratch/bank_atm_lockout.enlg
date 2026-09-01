@@ -1,0 +1,27 @@
+type enlg
+
+create a balance of 85000
+create a real_pin of 9999
+create a failed_attempts of 0
+create a max_attempts of 3
+create an is_locked of false
+
+create an attempt1 of 1111
+if attempt1 is not equal to real_pin:
+    set failed_attempts = failed_attempts + 1
+    display "Attempt 1 failed. Unauthorized PIN."
+
+create an attempt2 of 2222
+if attempt2 is not equal to real_pin:
+    set failed_attempts = failed_attempts + 1
+    display "Attempt 2 failed. Unauthorized PIN."
+
+create an attempt3 of 3333
+if attempt3 is not equal to real_pin:
+    set failed_attempts = failed_attempts + 1
+    display "Attempt 3 failed. Unauthorized PIN."
+
+if failed_attempts is at least max_attempts:
+    set is_locked = true
+    display "Security alert: 3 failed attempts reached."
+    display "Card blocked and account locked."

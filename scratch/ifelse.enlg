@@ -1,0 +1,8 @@
+type enlg
+
+create a score of 78
+
+if score is greater than 50:
+    display the message "High"
+else:
+    display the message "Low"

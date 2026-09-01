@@ -1,0 +1,86 @@
+type enlng
+
+# ==============================================================
+#      ENLNG PURE NATIVE PARSER (core/parser.enlng)
+#      Written 100% in Enlng - Zero External Languages!
+# ==============================================================
+
+function isSilencedConnector with word:
+    if word is equal to "a":
+        return true
+    if word is equal to "an":
+        return true
+    if word is equal to "the":
+        return true
+    if word is equal to "of":
+        return true
+    if word is equal to "as":
+        return true
+    if word is equal to "to":
+        return true
+    if word is equal to "with":
+        return true
+    if word is equal to "into":
+        return true
+    return false
+
+function matchCopulaOperator with phrase:
+    # 6-Word & 4-Word Phrases
+    if phrase is equal to "is greater than or equal to":
+        return ">="
+    if phrase is equal to "is less than or equal to":
+        return "<="
+    if phrase is equal to "greater than or equal":
+        return ">="
+    if phrase is equal to "less than or equal":
+        return "<="
+    if phrase is equal to "is not equal to":
+        return "!="
+
+    # 3-Word Phrases
+    if phrase is equal to "is greater than":
+        return ">"
+    if phrase is equal to "is less than":
+        return "<"
+    if phrase is equal to "is equal to":
+        return "=="
+    if phrase is equal to "is at least":
+        return ">="
+    if phrase is equal to "is at most":
+        return "<="
+    if phrase is equal to "is not equal":
+        return "!="
+
+    # 2-Word & 1-Word Operators
+    if phrase is equal to "greater than":
+        return ">"
+    if phrase is equal to "less than":
+        return "<"
+    if phrase is equal to "at least":
+        return ">="
+    if phrase is equal to "at most":
+        return "<="
+    if phrase is equal to "is not":
+        return "!="
+    if phrase is equal to "exceeds":
+        return ">"
+    if phrase is equal to "reaches":
+        return ">="
+    if phrase is equal to "matches":
+        return "=="
+    if phrase is equal to "is":
+        return "=="
+    if phrase is equal to "plus":
+        return "+"
+    if phrase is equal to "minus":
+        return "-"
+    if phrase is equal to "times":
+        return "*"
+    if phrase is equal to "divided":
+        return "/"
+
+    return "UNKNOWN"
+
+function parseDeclarationSlot with var_name, connector, value_expr:
+    display "Slot Parsed: Target Variable '" + var_name + "' initialized to " + value_expr
+    return true

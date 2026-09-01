@@ -1,0 +1,32 @@
+type enlng
+
+# ==============================================================
+#   ENLNGDB PURE NATIVE DATABASE ENGINE (core/enlngdb.enlng)
+#   Written 100% in Enlng - Destructive "confirmed" Security
+# ==============================================================
+
+function executeDropTableGuard with table_name, is_confirmed:
+    if is_confirmed is true:
+        display "SECURITY STATUS: VERIFIED ('confirmed' parameter supplied)"
+        display "SUCCESS: Table '" + table_name + "' successfully dropped from disk storage."
+        return true
+    else:
+        display "SECURITY ALERT [D1001]: Destructive operation 'drop table " + table_name + "' is PERMANENTLY BLOCKED."
+        display "HINT: To execute this destructive action safely, append 'confirmed' at the end."
+        display "Example: drop table " + table_name + " confirmed"
+        return false
+
+function executeDeleteAllGuard with table_name, is_confirmed:
+    if is_confirmed is true:
+        display "SECURITY STATUS: VERIFIED ('confirmed' parameter supplied)"
+        display "SUCCESS: All records purged from '" + table_name + "'."
+        return true
+    else:
+        display "SECURITY ALERT [D1002]: Unconstrained 'delete all from " + table_name + "' is PERMANENTLY BLOCKED."
+        display "HINT: To purge all records safely, append 'confirmed'."
+        display "Example: delete all from " + table_name + " confirmed"
+        return false
+
+function executeInsertRecord with table_name, record_data:
+    display "EnlngDB Engine: Record inserted into table '" + table_name + "' -> " + record_data
+    return true

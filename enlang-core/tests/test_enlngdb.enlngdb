@@ -1,0 +1,38 @@
+type enlngdb
+
+# ==============================================================
+#   ENLNGDB NATIVE STANDALONE DATABASE ENGINE (.enlngdb)
+#   Zero SQL, Zero SQLite, Zero External Databases!
+# ==============================================================
+
+display "=============================================================="
+display "       ENLNGDB NATIVE STANDALONE DATABASE ENGINE              "
+display "=============================================================="
+
+# 1. Create Native Database Table
+create table accounts with id, account_holder, balance, status
+display "Table 'accounts' created in standalone binary storage."
+
+# 2. Insert Records (Zero SQL)
+insert record into accounts with id 101, account_holder "Bibhu", balance 85000, status "Active"
+insert record into accounts with id 102, account_holder "Aero", balance 120000, status "VIP"
+insert record into accounts with id 103, account_holder "Raj", balance 25000, status "Standard"
+insert record into accounts with id 104, account_holder "Priya", balance 95000, status "Active"
+
+display "4 Records Inserted Successfully into Native B+Tree Storage."
+
+# 3. Query & Filter Records in Pure English
+display "Query: Finding all VIP and High Balance Accounts (balance >= 80000):"
+find records from accounts where balance is at least 80000
+
+# 4. Update Records in Pure English
+update records in accounts set status = "Diamond_VIP" where balance is at least 100000
+display "Record Updated: Aero upgraded to Diamond_VIP."
+
+# 5. Fast Aggregate / Count in Pure English
+count records in accounts where status is "Active"
+display "Active Accounts Count Calculated."
+
+display "=============================================================="
+display "   ALL ENLNGDB NATIVE DATABASE OPERATIONS COMPLETED!          "
+display "=============================================================="

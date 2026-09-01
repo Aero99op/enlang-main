@@ -377,6 +377,18 @@ MANDATORY: Destructive operations in .enlgdb MUST end with 'confirmed':
   delete all from <table> confirmed
   truncate table <name> confirmed
 
+---LAW 9: UNIVERSAL ENGLISH CONNECTORS & THE 'is' COPULA BRIDGE---
+- CONNECTORS SILENCING: Filler articles and prepositions (`a`, `an`, `the`, `of`, `to`, `into`, `as`) are natural glue:
+    create a score of 78
+    display the message "High"
+- THE 'is' COPULA BRIDGE: `is` is preserved across all 6 domains:
+    Comparisons: if score is greater than 50:, if count is at least 10:, if status is equal to "active":
+    Design (.enlgd): when "#btn" is hovered apply:, when ".input" is focused apply:
+    Scripting (.enlgs): when "btn-submit" is clicked:, when form is submitted:
+    Mobile (.enlgm): when button is tapped:, when card is long pressed:
+    Database (.enlgdb): where email is not null, where total is at least 1000
+- QUOTED STRINGS BOUNDARY LAW: Any human sentence or data enclosed in `"..."` (`"the watch is good"`, `"Aero is a boy"`) is strictly raw text and 100% immune from syntax parsing.
+
 ================================================================================
 100% VERIFIED WORKING CODE EXAMPLES (USE THESE AS REFERENCE):
 ================================================================================

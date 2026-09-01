@@ -210,19 +210,41 @@ class SlotParser:
         identifier: Optional[str] = None
         expr_tokens: List[Token] = []
         
+        SILENT_ARTICLES = {"a", "an", "the"}
+        SILENT_CONNECTORS = {"as", "of", "to", "is", "with", "be"}
+
         # Flexibly find the identifier and the expression part
         for t in tokens:
             if t.type == TokenType.SYMBOL and t.value == "=":
                 continue # Skip explicit equals
                 
-            if identifier is None and t.type == TokenType.IDENTIFIER:
-                identifier = t.value
+            if identifier is None:
+                if t.type == TokenType.IDENTIFIER and t.value.lower() in SILENT_ARTICLES:
+                    continue # Skip leading article
+                if t.type == TokenType.IDENTIFIER and t.value.lower() not in SILENT_CONNECTORS:
+                    identifier = t.value
+                    continue
+                else:
+                    expr_tokens.append(t)
             else:
                 expr_tokens.append(t)
                 
         if identifier is None:
             raise SyntaxError("E1003", "Missing identifier in variable declaration.")
             
+        # Strip leading/trailing connectors from expression tokens (e.g. 'of 78' -> '78', 'to' -> stripped)
+        while expr_tokens and (
+            (expr_tokens[0].type == TokenType.SYMBOL and expr_tokens[0].value == "=") or
+            (expr_tokens[0].type == TokenType.IDENTIFIER and expr_tokens[0].value.lower() in SILENT_CONNECTORS)
+        ):
+            expr_tokens.pop(0)
+
+        while expr_tokens and (
+            (expr_tokens[-1].type == TokenType.SYMBOL and expr_tokens[-1].value == "=") or
+            (expr_tokens[-1].type == TokenType.IDENTIFIER and expr_tokens[-1].value.lower() in SILENT_CONNECTORS)
+        ):
+            expr_tokens.pop()
+
         expr_node = None
         if expr_tokens:
             expr_node = ExpressionParser.parse(expr_tokens)
@@ -263,9 +285,17 @@ class SlotParser:
                 expr_tokens.append(t)
                 
         if identifier is None:
-            raise SyntaxError("E1003", "Missing target identifier in assignment.")
+            raise SyntaxError("E1003", "Missing target identifier for assignment.")
+            
+        # Strip leading connectors from assignment expression (e.g. 'set score to 50' -> '50')
+        while expr_tokens and (
+            (expr_tokens[0].type == TokenType.SYMBOL and expr_tokens[0].value == "=") or
+            (expr_tokens[0].type == TokenType.IDENTIFIER and expr_tokens[0].value.lower() in ("to", "as", "is", "with", "equals"))
+        ):
+            expr_tokens.pop(0)
+
         if not expr_tokens:
-            raise SyntaxError("E1003", "Missing value in assignment.")
+            raise SyntaxError("E1003", "Missing value in assignment expression.")
             
         rhs_node = ExpressionParser.parse(expr_tokens)
         if found_compound_op:
@@ -280,7 +310,12 @@ class SlotParser:
         if not tokens:
             raise SyntaxError("E1003", "Missing expression for output statement.")
             
-        expr_node = ExpressionParser.parse(tokens)
+        SILENT_OUTPUT_GLUE = {"the", "a", "message", "text", "result"}
+        clean_tokens = list(tokens)
+        while len(clean_tokens) > 1 and clean_tokens[0].type == TokenType.IDENTIFIER and clean_tokens[0].value.lower() in SILENT_OUTPUT_GLUE:
+            clean_tokens.pop(0)
+
+        expr_node = ExpressionParser.parse(clean_tokens)
         return OutputNode(expression=expr_node)
 
     @staticmethod

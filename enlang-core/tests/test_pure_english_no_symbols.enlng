@@ -1,0 +1,44 @@
+type enlng
+
+# ==============================================================
+#   100% PURE NATURAL ENGLISH ENLNG (ZERO SYMBOLS!)
+#   No +, no -, no *, no /, no ==, no !=, no >, no <, no =
+# ==============================================================
+
+create a balance of 50000
+create a deposit of 20000
+create a withdrawal of 15000
+create a daily_limit of 40000
+
+display "Initial Account Balance:"
+display balance
+
+# Natural Math: 'plus', 'minus' instead of + and -
+set balance to balance plus deposit
+display "Balance after deposit:"
+display balance
+
+set balance to balance minus withdrawal
+display "Balance after withdrawal:"
+display balance
+
+# Natural Comparisons: 'is greater than', 'is at least', 'is equal to'
+if withdrawal is greater than daily_limit:
+    display "Alert: Daily limit exceeded"
+elif balance is at least 50000:
+    display "Status: Premium Account Verified"
+else:
+    display "Status: Standard Account"
+
+# Natural Loop: 'is at most' instead of <=
+create a count of 1
+create a total_interest of 0
+
+while count is at most 3:
+    set total_interest to total_interest plus 500
+    set count to count plus 1
+
+display "Total Interest Earned:"
+display total_interest
+
+display "100% Zero Symbols Natural English Program Executed Successfully!"

@@ -1,0 +1,12 @@
+type enlng
+
+display "Starting 1,000,000 loop speed benchmark in Native Enlng Core..."
+
+declare i = 0
+declare sum = 0
+
+while i is less than 1000000:
+    set sum = sum + i
+    set i = i + 1
+
+display "Benchmark Finished! Final sum of 1M iterations: " + sum

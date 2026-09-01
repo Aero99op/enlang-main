@@ -19,8 +19,9 @@ PRECEDENCE_MAP = {
     "or": 1, "||": 1,
     "and": 2, "&&": 2,
     "==": 3, "!=": 3, "<": 3, "<=": 3, ">": 3, ">=": 3,
-    "is": 3, "is not": 3, "equals": 3, "equal": 3, "not equal": 3,
+    "is": 3, "is not": 3, "equals": 3, "equal": 3, "matches": 3, "not equal": 3,
     "greater than": 3, "less than": 3, "greater than or equal to": 3, "less than or equal to": 3,
+    "exceeds": 3, "reaches": 3, "above": 3, "below": 3, "at least": 3, "at most": 3,
     "|": 4, "^": 4,
     "&": 5,
     "<<": 6, ">>": 6,
@@ -61,23 +62,63 @@ class ExpressionParser:
 
         # 2. Multi-word and single-word English Operators
         if t0.type == TokenType.IDENTIFIER:
-            # Check 4-word operators: "greater than or equal", "less than or equal"
+            # Check 6-word phrase: "is greater than or equal to", "is less than or equal to"
+            if len(tokens) >= 6:
+                w6 = " ".join([tokens[i].value.lower() for i in range(6)])
+                if w6 in ("is greater than or equal to",):
+                    return ">=", PRECEDENCE_MAP[">="], 6
+                elif w6 in ("is less than or equal to",):
+                    return "<=", PRECEDENCE_MAP["<="], 6
+
+            # Check 5-word phrase: "is greater than or equal", "greater than or equal to"
+            if len(tokens) >= 5:
+                w5 = " ".join([tokens[i].value.lower() for i in range(5)])
+                if w5 in ("is greater than or equal", "greater than or equal to"):
+                    return ">=", PRECEDENCE_MAP[">="], 5
+                elif w5 in ("is less than or equal", "less than or equal to"):
+                    return "<=", PRECEDENCE_MAP["<="], 5
+
+            # Check 4-word phrase: "greater than or equal", "less than or equal", "is not equal to"
             if len(tokens) >= 4:
                 w4 = " ".join([tokens[i].value.lower() for i in range(4)])
-                if w4 in ("greater than or equal to", "greater than or equal"):
+                if w4 in ("greater than or equal",):
                     return ">=", PRECEDENCE_MAP[">="], 4
-                elif w4 in ("less than or equal to", "less than or equal"):
+                elif w4 in ("less than or equal",):
                     return "<=", PRECEDENCE_MAP["<="], 4
+                elif w4 in ("is not equal to",):
+                    return "!=", PRECEDENCE_MAP["!="], 4
 
-            # Check 2-word operators
+            # Check 3-word phrase: "is greater than", "is less than", "is equal to", "is at least"
+            if len(tokens) >= 3:
+                w3 = " ".join([tokens[i].value.lower() for i in range(3)])
+                if w3 in ("is greater than", "is above"):
+                    return ">", PRECEDENCE_MAP[">"], 3
+                elif w3 in ("is less than", "is below", "is under"):
+                    return "<", PRECEDENCE_MAP["<"], 3
+                elif w3 in ("is at least",):
+                    return ">=", PRECEDENCE_MAP[">="], 3
+                elif w3 in ("is at most", "is up to"):
+                    return "<=", PRECEDENCE_MAP["<="], 3
+                elif w3 in ("is not equal", "not equal to"):
+                    return "!=", PRECEDENCE_MAP["!="], 3
+                elif w3 in ("is equal to", "is same as"):
+                    return "==", PRECEDENCE_MAP["=="], 3
+
+            # Check 2-word operators: "greater than", "less than", "at least", "at most"
             if len(tokens) >= 2:
                 w2 = f"{val0} {tokens[1].value.lower()}"
-                if w2 in ("is not", "not equal"):
+                if w2 in ("is not", "not equal", "differs from"):
                     return "!=", PRECEDENCE_MAP["!="], 2
-                elif w2 == "greater than":
+                elif w2 in ("greater than", "is above"):
                     return ">", PRECEDENCE_MAP[">"], 2
-                elif w2 == "less than":
+                elif w2 in ("less than", "is below", "is under"):
                     return "<", PRECEDENCE_MAP["<"], 2
+                elif w2 in ("at least",):
+                    return ">=", PRECEDENCE_MAP[">="], 2
+                elif w2 in ("at most", "up to"):
+                    return "<=", PRECEDENCE_MAP["<="], 2
+                elif w2 in ("equal to", "equals to", "same as"):
+                    return "==", PRECEDENCE_MAP["=="], 2
                 elif w2 == "integer divided":
                     return "//", PRECEDENCE_MAP["//"], 2
                 elif w2 == "left shift":
@@ -108,7 +149,13 @@ class ExpressionParser:
                 return "&&", PRECEDENCE_MAP["and"], 1
             elif val0 in ("or",):
                 return "||", PRECEDENCE_MAP["or"], 1
-            elif val0 in ("is", "equals", "equal"):
+            elif val0 in ("exceeds", "above"):
+                return ">", PRECEDENCE_MAP[">"], 1
+            elif val0 in ("below", "under"):
+                return "<", PRECEDENCE_MAP["<"], 1
+            elif val0 in ("reaches",):
+                return ">=", PRECEDENCE_MAP[">="], 1
+            elif val0 in ("is", "equals", "equal", "matches"):
                 return "==", PRECEDENCE_MAP["=="], 1
 
         return None, None, 0

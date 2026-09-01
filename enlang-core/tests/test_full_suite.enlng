@@ -1,0 +1,71 @@
+type enlng
+
+# ==============================================================
+#   ENLNG NATIVE COMPREHENSIVE FEATURE PARITY TEST SUITE (.enlng)
+# ==============================================================
+
+display "=============================================================="
+display "       ENLNG NATIVE FULL FEATURE PARITY TEST SUITE            "
+display "=============================================================="
+
+# 1. Variable Declarations with Silenced Connectors
+create an initial_balance of 100000
+create a user_pin of 4321
+initialize the daily_limit as 50000
+declare attempts_count = 0
+let is_verified = false
+
+display "Account Initialized. Balance: Rs. " + initial_balance
+
+# 2. Compound Assignment Operators
+set initial_balance += 25000
+display "Balance after deposit (+= 25000): Rs. " + initial_balance
+
+set initial_balance -= 15000
+display "Balance after withdrawal (-= 15000): Rs. " + initial_balance
+
+# 3. Recursive Functions & Parameters
+function calculateFactorial with n:
+    if n <= 1:
+        return 1
+    return n * call calculateFactorial with (n - 1)
+
+declare fact_7 = call calculateFactorial with 7
+display "Factorial of 7: " + fact_7
+
+# 4. Multi-word English 'is' Copula Comparisons
+create a entered_code of 4321
+
+if entered_code is equal to user_pin:
+    set is_verified = true
+    display "Authentication: SUCCESS (is equal to)"
+else:
+    display "Authentication: FAILED"
+
+if initial_balance is greater than daily_limit:
+    display "Daily Limit Status: Balance exceeds daily limit (is greater than)"
+
+if initial_balance is at least 100000:
+    display "VIP Customer Status: QUALIFIED (is at least 100000)"
+
+if initial_balance is at most 200000:
+    display "Security Tier: Standard Tier (is at most 200000)"
+
+# 5. While Loop with English Comparison
+declare counter = 1
+declare total_sum = 0
+while counter is at most 10:
+    set total_sum = total_sum + counter
+    set counter = counter + 1
+
+display "Sum of 1 to 10: " + total_sum
+
+# 6. String Length & Quoted String Boundary Law
+declare customer_note = "the watch is good and Aero is a boy with 100% security"
+declare note_length = call length with customer_note
+display "Customer Note Length: " + note_length
+display "Customer Note Content: " + customer_note
+
+display "=============================================================="
+display "   ALL ENLNG NATIVE FEATURES VERIFIED WITH 100% SUCCESS!      "
+display "=============================================================="

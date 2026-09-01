@@ -1,0 +1,95 @@
+type enlng
+
+# ==============================================================
+#      ENLNG PURE NATIVE LEXER (core/lexer.enlng)
+#      Written 100% in Enlng - Zero External Languages!
+# ==============================================================
+
+function isDigit with char:
+    if char is at least "0":
+        if char is at most "9":
+            return true
+    return false
+
+function isAlpha with char:
+    if char is at least "a":
+        if char is at most "z":
+            return true
+    if char is at least "A":
+        if char is at most "Z":
+            return true
+    if char is equal to "_":
+        return true
+    return false
+
+function tokenizeText with source_code:
+    declare tokens_count = 0
+    declare code_length = call length with source_code
+    declare idx = 0
+    declare current_line = 1
+
+    display "Tokenizing source of length " + code_length + " characters..."
+
+    while idx is less than code_length:
+        declare ch = source_code[idx]
+
+        # Handle Newlines & Line Tracking
+        if ch is equal to "\n":
+            set current_line = current_line + 1
+            set idx = idx + 1
+        elif ch is equal to " ":
+            set idx = idx + 1
+        elif ch is equal to "\t":
+            set idx = idx + 1
+        elif ch is equal to "\r":
+            set idx = idx + 1
+
+        # Skip Comments (#)
+        elif ch is equal to "#":
+            while idx is less than code_length:
+                if source_code[idx] is equal to "\n":
+                    set idx = idx + 1
+                    set current_line = current_line + 1
+                    return tokens_count
+                set idx = idx + 1
+
+        # Quoted String Boundary Law ("...")
+        elif ch is equal to "\"":
+            set idx = idx + 1
+            declare str_val = ""
+            while idx is less than code_length:
+                if source_code[idx] is equal to "\"":
+                    set idx = idx + 1
+                    set tokens_count = tokens_count + 1
+                    return tokens_count
+                set str_val = str_val + source_code[idx]
+                set idx = idx + 1
+
+        # Number Literals
+        elif call isDigit with ch:
+            declare num_val = ""
+            while idx is less than code_length:
+                if call isDigit with source_code[idx]:
+                    set num_val = num_val + source_code[idx]
+                    set idx = idx + 1
+                else:
+                    set tokens_count = tokens_count + 1
+                    return tokens_count
+
+        # Identifiers & Keywords
+        elif call isAlpha with ch:
+            declare ident_val = ""
+            while idx is less than code_length:
+                if call isAlpha with source_code[idx]:
+                    set ident_val = ident_val + source_code[idx]
+                    set idx = idx + 1
+                elif call isDigit with source_code[idx]:
+                    set ident_val = ident_val + source_code[idx]
+                    set idx = idx + 1
+                else:
+                    set tokens_count = tokens_count + 1
+                    return tokens_count
+        else:
+            set idx = idx + 1
+
+    return tokens_count

@@ -1,0 +1,33 @@
+type enlngdb
+
+# ==============================================================
+#   ENLNGDB SUPABASE-STYLE INTERACTIVE SCRIPT (banking.enlngdb)
+#   Flexible • Hint-Based • Destructive-Safe • Live Re-runnable
+# ==============================================================
+
+# 1. Schema Definition (Safe Re-run with 'if not exists')
+create table if not exists accounts with id, holder, balance, tier, status
+create table if not exists audit_log with log_id, account_id, action, amount, timestamp
+
+# 2. Data Ingestion / Upsert
+insert record into accounts with id 101, holder "Bibhu", balance 85000, tier "Gold", status "Active"
+insert record into accounts with id 102, holder "Aero", balance 150000, tier "Platinum", status "VIP"
+insert record into accounts with id 103, holder "Raj", balance 25000, tier "Silver", status "Standard"
+insert record into accounts with id 104, holder "Priya", balance 95000, tier "Gold", status "Active"
+
+# 3. Flexible Natural Query (Supabase / Studio Tabular Output)
+display "--- LIVE QUERY 1: VIP & Gold Accounts (Balance >= 80,000) ---"
+find records from accounts where balance is at least 80000 order by balance descending
+
+# 4. Targeted Safe Update with Where Clause
+update records in accounts set tier = "Diamond_VIP" where balance is at least 100000
+
+display "--- LIVE QUERY 2: Updated Platinum & Diamond Tiers ---"
+find records from accounts where tier is "Diamond_VIP"
+
+# 5. Destructive Operation with Safety Guard
+# Unsafe delete without where is blocked! Safe delete with targeted where clause:
+delete records from accounts where status is "Closed"
+
+display "--- LIVE QUERY 3: Summary Total Accounts ---"
+count records in accounts where status is "Active"

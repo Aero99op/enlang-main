@@ -35,17 +35,7 @@ class IntentDiscoveryEngine:
                 if val in INTENT_REGISTRY:
                     if not candidate_hints:
                         candidate_hints.append((val, token))
-                    else:
-                        # Subsequent keywords (e.g., 'call', 'native') belong to the expression!
-                        remaining_tokens.append(token)
-                    continue
-                elif val in CONNECTORS:
-                    if val in ("from", "using"):
-                        remaining_tokens.append(token)
                         continue
-                    # Drop filler connectors from AST
-                    continue
-                    
             remaining_tokens.append(token)
             
         # Pass 2: Enforce fail-closed intent locking

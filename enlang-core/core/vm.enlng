@@ -1,0 +1,35 @@
+type enlng
+
+# ==============================================================
+#      ENLNG PURE NATIVE VIRTUAL MACHINE (core/vm.enlng)
+#      Written 100% in Enlng - Zero External Languages!
+# ==============================================================
+
+function executeBinaryOp with left, op, right:
+    if op is equal to "+":
+        return left + right
+    if op is equal to "-":
+        return left - right
+    if op is equal to "*":
+        return left * right
+    if op is equal to "/":
+        return left / right
+    if op is equal to "%":
+        return left % right
+    if op is equal to "==":
+        return left is equal to right
+    if op is equal to "!=":
+        return left is not equal to right
+    if op is equal to ">":
+        return left is greater than right
+    if op is equal to ">=":
+        return left is at least right
+    if op is equal to "<":
+        return left is less than right
+    if op is equal to "<=":
+        return left is at most right
+    return 0
+
+function runVirtualMachine with opcodes_count:
+    display "VM Status: Ready. Executing " + opcodes_count + " native instructions."
+    return true

@@ -20,6 +20,7 @@ class Lexer:
         # Domain Header
         "type": TokenType.TYPE,
         "enlgdb": TokenType.ENLGDB,
+        "enlngdb": TokenType.ENLGDB,
 
         # DDL
         "create": TokenType.CREATE,
