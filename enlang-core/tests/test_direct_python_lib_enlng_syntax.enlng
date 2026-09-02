@@ -1,0 +1,42 @@
+type enlng
+
+# ==============================================================
+#   TEST: CALLING REAL PYTHON LIBRARIES IN PURE ENLNG SYNTAX!
+# ==============================================================
+
+import numpy
+import matplotlib.pyplot
+
+display "=============================================================="
+display "       ⚡ CALLING REAL PYTHON LIBRARIES IN ENLNG SYNTAX        "
+display "=============================================================="
+
+# 1. Calling real Python NumPy's linspace function in Enlng syntax:
+declare x = call linspace with -10, 10, 200 from numpy
+
+# 2. Bell MF parameters
+declare a_val = 2.0
+declare b_val = 4.0
+declare c_val = 0.0
+
+# 3. Calculate Gaussian & Bell curves
+declare diff = x - c_val
+declare ratio = diff / a_val
+declare abs_ratio = call abs with ratio from numpy
+declare power_val = 2 * b_val
+declare denom_term = call power with abs_ratio, power_val from numpy
+declare denom = 1 + denom_term
+declare y = 1 / denom
+
+# 4. Calling real Python Matplotlib functions in pure Enlng syntax:
+call plot with x, y, "m" from matplotlib.pyplot
+call title with "Bell MF Plotted using Real Python NumPy & Matplotlib via Enlng Syntax" from matplotlib.pyplot
+call xlabel with "x (Discourse)" from matplotlib.pyplot
+call ylabel with "Degree of Membership" from matplotlib.pyplot
+call grid with true from matplotlib.pyplot
+
+# 5. Saving real PNG image directly to disk
+call savefig with "bell_mf_real_python_via_enlng.png" from matplotlib.pyplot
+
+display ">> [SUCCESS] Real Python Libraries executed with 100% pure Enlng syntax!"
+display "=============================================================="
