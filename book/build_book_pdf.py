@@ -1035,116 +1035,52 @@ def generate_full_unique_chapter(styles, ch_data):
     story.append(Paragraph(ch_desc, styles['ChapterSubHeading']))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#0284c7"), spaceBefore=4, spaceAfter=14))
 
-    # Section 1: Historical Perspective & Cognitive Linguistics
-    story.append(Paragraph("1.1 Historical Perspective & Cognitive Linguistics", styles['BookH1']))
+    # Section 1: Conceptual Foundations & Linguistic Architecture
+    story.append(Paragraph("1. Conceptual Foundations & Architecture", styles['BookH1']))
     story.append(Paragraph(ch_text1, styles['BookBodyLead']))
     story.append(Paragraph(
-        f"The emergence of {ch_title.lower()} marks a decisive break from the historical constraints of computer science. "
-        "For over five decades, programming language designers operated under the tacit assumption that human thought must conform to the syntax trees of compiler parsers. "
-        "In the early era of computing, the mechanical limitations of punch cards, magnetic drums, and 8-bit teletypes justified terse symbols like ';', '{', and '&'. "
-        "However, as cognitive neuroscience has advanced, researchers have proven that cognitive bandwidth is heavily consumed by translation penalties. "
-        "When an engineer reads non-natural, punctuation-dense code, the brain must first transliterate symbols into natural language thoughts before reasoning about business logic.",
+        f"In conventional programming environments, implementing {ch_title.lower()} frequently forces developers to adopt "
+        "cryptic operator sequences and terse symbolic abbreviations. Enlng eliminates this cognitive friction by grounding the construct "
+        "in natural language clausal syntax, allowing developers to state intentions directly and unambiguously.",
         styles['BookBody']
     ))
-    story.append(Paragraph(
-        "Enlng resolves this dilemma by grounding its lexical tokens directly in human English prose. "
-        f"In {ch_title.lower()}, syntactic constructs align with standard grammatical clauses: active verbs, substantive nouns, and directional prepositions. "
-        "This alignment reduces visual fatigue, dramatically lowers bug rates during code reviews, and democratizes software verification across cross-disciplinary teams.",
-        styles['BookBody']
-    ))
+    story.append(Spacer(1, 8))
 
-    # Section 2: Formal Grammar Production Rules & EBNF
-    story.append(Paragraph("1.2 Formal Grammar Production Rules (EBNF)", styles['BookH1']))
+    # Section 2: Canonical Syntax & Working Implementation
+    story.append(Paragraph("2. Canonical Syntax & Implementation", styles['BookH1']))
     story.append(Paragraph(
-        "Natural readability in Enlng is backed by rigorous mathematical formalism. "
-        f"The lexical rules governing {ch_title.lower()} are specified in formal Extended Backus-Naur Form (EBNF). "
-        "The recursive-descent parser processes these production rules deterministically without backtracking:",
-        styles['BookBody']
-    ))
-    ebnf_spec = (
-        f"# Formal EBNF Production Grammar: {ch_title}\n"
-        f"Chapter_{ch_num}_Statement  ::= ClauseVerb ClauseNoun Preposition Expression ';'?\n"
-        "ClauseVerb             ::= 'create' | 'set' | 'declare' | 'define' | 'call'\n"
-        "ClauseNoun             ::= 'variable' | 'function' | 'constant' | Identifier\n"
-        "Preposition            ::= 'of' | 'as' | 'to' | 'with' | 'from' | 'in'\n"
-        "Expression             ::= Literal | BinaryOp | FunctionInvocation\n"
-    )
-    story.append(make_code_box(ebnf_spec))
-    story.append(Spacer(1, 10))
-
-    # Section 3: Canonical Syntax & Working Implementation
-    story.append(Paragraph("1.3 Canonical Syntax & Implementation Walkthrough", styles['BookH1']))
-    story.append(Paragraph(
-        f"Below is the canonical implementation illustrating {ch_title.lower()} within a sovereign script. "
-        "Notice how every line forms a complete, self-documenting English sentence that clearly communicates intent:",
+        f"Below is the canonical implementation demonstrating {ch_title.lower()} within an autonomous Enlng program. "
+        "Every statement follows pure natural prose without arbitrary punctuation:",
         styles['BookBody']
     ))
     story.append(make_code_box(ch_code1))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
     story.append(make_callout(call_t1, call_m1, call_k1))
     story.append(Spacer(1, 10))
 
-    # Section 4: Physical Memory Layout & C-ABI Representation
-    story.append(Paragraph("1.4 Physical Memory Layout & C-ABI Representation", styles['BookH1']))
+    # Section 3: Rule-Based Syntax Flexibility & Synonym Multi-Phrasing
+    story.append(Paragraph("3. Rule-Based Syntax Flexibility & Synonym Multi-Phrasing", styles['BookH1']))
     story.append(Paragraph(
-        "A critical strength of Enlng is that natural English syntax does not incur a memory footprint penalty. "
-        f"At runtime, data structures associated with {ch_title.lower()} are laid out contiguously in RAM. "
-        "The enlangg.exe compiler maps variables to 64-bit aligned C-structs, adhering strictly to the System V and Microsoft x86-64 calling conventions. "
-        "Primitive scalar values reside directly in hardware registers or stack frames, while composite structures use contiguous heap buffers with deterministic lifetime management.",
-        styles['BookBody']
-    ))
-    story.append(Paragraph(
-        "Because Enlng avoids tracing garbage collection, memory consumption is predictable and constant. "
-        "There are no background sweeping cycles, no generational heap fragmentation, and zero Stop-The-World latency spikes.",
-        styles['BookBody']
-    ))
-
-    # Section 5: The 'hint' Keyword System & Optimization Pragmas
-    story.append(Paragraph("1.5 The 'hint' Keyword System & Compiler Directives", styles['BookH1']))
-    story.append(Paragraph(
-        f"Within {ch_title.lower()}, the 'hint' keyword enables developers to supply advisory contracts directly to the compiler optimizer. "
-        "Rather than cluttering source logic with verbose type annotations or esoteric compiler pragmas, Enlng isolates optimizations into clean 'hint' clauses. "
-        "The compiler verifies these contracts during the static semantic pass:",
-        styles['BookBody']
-    ))
-    hint_sample = (
-        f"# Compiler Optimization Pragmas for {ch_title}\n"
-        "hint purity: pure\n"
-        "hint inline: true\n"
-        "hint memory: stack\n"
-        f"hint description: \"High-frequency sovereign contract for {ch_title}\"\n"
-        f"define function process_chapter_{ch_num}_data with input_val, modifier_val:\n"
-        "    hint type: number\n"
-        "    create a intermediate_result of input_val multiplied by modifier_val\n"
-        "    return intermediate_result\n"
-    )
-    story.append(make_code_box(hint_sample))
-    story.append(Spacer(1, 10))
-    story.append(make_callout(
-        f"Optimizer Contract for Chapter {ch_num}",
-        "When 'hint purity: pure' is asserted, the compiler guarantees referential transparency, enabling common subexpression elimination across loop iterations.",
-        "HINT"
-    ))
-    story.append(Spacer(1, 10))
-
-    # Section 6: Rule-Based Syntax Flexibility
-    story.append(Paragraph("1.6 Rule-Based Syntax Flexibility: Synonyms & Multi-Phrasing", styles['BookH1']))
-    story.append(Paragraph(
-        "Enlng's rule-based grammar parser supports natural linguistic variation. "
-        f"The table below details the canonical and synonymous phrasings available when implementing {ch_title.lower()}:",
+        "A cornerstone of the Enlng language specification is rule-based grammatical flexibility. "
+        "The compiler's recursive-descent parser normalizes multiple natural phrasings into identical Abstract Syntax Tree nodes, "
+        "ensuring developers can express concepts naturally without sacrificing machine determinism:",
         styles['BookBody']
     ))
     syn_data = [
-        [Paragraph("<b>Grammatical Intent</b>", styles['BookH3']),
-         Paragraph("<b>Canonical Form</b>", styles['BookH3']),
-         Paragraph("<b>Colloquial Synonym</b>", styles['BookH3']),
-         Paragraph("<b>Imperative Synonym</b>", styles['BookH3'])],
-        [Paragraph("Primary Construct", styles['BookBody']),
+        [Paragraph("<b>Grammatical Style</b>", styles['BookH3']),
+         Paragraph("<b>Natural English Phrasing</b>", styles['BookH3']),
+         Paragraph("<b>Parser Semantic Target</b>", styles['BookH3'])],
+        [Paragraph("Canonical Form", styles['BookBody']),
          Paragraph(f"<code>{syn_p}</code>", styles['BookBody']),
+         Paragraph("Primary EBNF Production", styles['BookBody'])],
+        [Paragraph("Colloquial Synonym", styles['BookBody']),
          Paragraph(f"<code>{syn_b}</code>", styles['BookBody']),
-         Paragraph(f"<code>{syn_c}</code>", styles['BookBody'])],
+         Paragraph("Synonym Rule Normalization", styles['BookBody'])],
+        [Paragraph("Imperative / Compact", styles['BookBody']),
+         Paragraph(f"<code>{syn_c}</code>", styles['BookBody']),
+         Paragraph("Direct Keyword Equivalence", styles['BookBody'])],
     ]
-    t_syn = Table(syn_data, colWidths=[118, 126, 126, 128])
+    t_syn = Table(syn_data, colWidths=[130, 200, 168])
     t_syn.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
@@ -1156,80 +1092,8 @@ def generate_full_unique_chapter(styles, ch_data):
     story.append(t_syn)
     story.append(Spacer(1, 10))
 
-    # Section 7: Advanced Enterprise Architectural Pattern
-    story.append(Paragraph("1.7 Advanced Enterprise Architecture Pattern", styles['BookH1']))
-    story.append(Paragraph(
-        f"In mission-critical distributed systems, {ch_title.lower()} must integrate with defensive error checking, "
-        "structured logging, and robust state isolation. Below is an enterprise-grade architectural implementation:",
-        styles['BookBody']
-    ))
-    adv_code = (
-        f"# Enterprise Pattern for {ch_title}\n"
-        "use library \"log\"\n"
-        "use library \"test\"\n\n"
-        f"define function execute_enterprise_{ch_num}_pipeline with transaction_id, payload_map:\n"
-        "    hint type: map\n"
-        "    # Defensive Precondition Check\n"
-        "    if payload_map is equal to null:\n"
-        f"        call warn with \"Null payload rejected in Chapter {ch_num}\" from \"log\"\n"
-        "        return {\"status\": \"REJECTED\", \"error_code\": 400}\n"
-        "        \n"
-        "    call info with \"Processing pipeline transaction: \" + transaction_id from \"log\"\n"
-        "    return {\"status\": \"COMMITTED\", \"tx\": transaction_id, \"verified\": true}\n"
-    )
-    story.append(make_code_box(adv_code))
-    story.append(Spacer(1, 10))
-
-    # Section 8: Low-Level OS Integration & Hardware Mechanics
-    story.append(Paragraph("1.8 Low-Level OS Integration & Hardware Mechanics", styles['BookH1']))
-    story.append(Paragraph(
-        "Underneath Enlng's elegant prose lies a high-performance C execution runtime. "
-        f"When enlangg.exe evaluates {ch_title.lower()}, instructions are compiled into direct machine operations. "
-        "On x86-64 platforms, mathematical expressions leverage AVX2/AVX-512 SIMD vector pipelines. "
-        "On ARM64 platforms (such as modern Apple Silicon and Android flagships), operations map to NEON registers. "
-        "Because Enlng relies on standard C-ABI calling conventions, function dispatch latency is measured in single-digit nanoseconds.",
-        styles['BookBody']
-    ))
-
-    # Section 9: Defensive Invariants, Edge Cases & Precondition Checks
-    story.append(Paragraph("1.9 Defensive Invariants & Edge Case Hardening", styles['BookH1']))
-    story.append(Paragraph(
-        f"A robust engineering practice requires anticipating edge cases. In {ch_title.lower()}, developers must verify boundary conditions. "
-        "Enlng enforces strict runtime contracts: numerical overflow is handled via standard IEEE 754 infinity propagation, "
-        "null dereferences trigger immediate descriptive diagnostics, and collection accesses outside valid bounds are trapped safely.",
-        styles['BookBody']
-    ))
-    story.append(make_callout(
-        f"Safety Invariant for Chapter {ch_num}",
-        f"Ensure all inputs to {ch_title.lower()} are validated at the module boundary. Never allow unverified external data to bypass guard clauses.",
-        "WARNING"
-    ))
-    story.append(Spacer(1, 10))
-
-    # Section 10: Anti-Patterns & Common Pitfalls
-    story.append(Paragraph("1.10 Architectural Anti-Patterns & Refactoring Guide", styles['BookH1']))
-    story.append(Paragraph(
-        f"Developers transitioning from punctuation-heavy languages often introduce anti-patterns when implementing {ch_title.lower()}. "
-        "The most frequent defect is nesting clauses unnecessarily or using cryptic single-letter identifiers. "
-        "Below is a refactoring comparison demonstrating the transition from anti-pattern to idiomatic sovereign prose:",
-        styles['BookBody']
-    ))
-    anti_code = (
-        f"# Anti-Pattern vs Idiomatic Refactoring: {ch_title}\n\n"
-        "# ❌ ANTI-PATTERN: Cryptic and redundant punctuation\n"
-        "# set x = (((data_a + data_b) * 2) / 10)\n\n"
-        "# ✅ IDIOMATIC SOVEREIGN PROSE: Clean clausal flow\n"
-        "hint type: number\n"
-        "create a combined_sum of data_a plus data_b\n"
-        "create a scaled_factor of combined_sum multiplied by 2.0\n"
-        "create a final_metric of scaled_factor divided by 10.0\n"
-        "display \">> Verified metric: \" + final_metric\n"
-    )
-    story.append(make_code_box(anti_code))
-    story.append(Spacer(1, 10))
-
-    # Section 11: Hardware Telemetry, Microbenchmarks & Algorithmic Complexity
-    story.append(Paragraph(f"1.11 {tab_title}", styles['BookH1']))
+    # Section 4: Technical Specifications & Performance Matrix
+    story.append(Paragraph(f"4. {tab_title}", styles['BookH1']))
     bench_data = [
         [Paragraph(f"<b>{h1}</b>", styles['BookH3']),
          Paragraph(f"<b>{h2}</b>", styles['BookH3']),
@@ -1249,200 +1113,15 @@ def generate_full_unique_chapter(styles, ch_data):
         ('RIGHTPADDING', (0,0), (-1,-1), 6),
     ]))
     story.append(t_bench)
-    story.append(Spacer(1, 10))
-
-    # Section 12: Laboratory Challenges & Review Exercises
-    story.append(Paragraph("1.12 Laboratory Challenges & Review Exercises", styles['BookH1']))
-    story.append(Paragraph(
-        f"To solidify your mastery of {ch_title.lower()}, complete the following laboratory exercises. "
-        "These exercises test theoretical understanding, syntactic fluency, and defensive engineering practices:",
-        styles['BookBody']
-    ))
-    story.append(Paragraph(f"<b>Exercise {ch_num}.1 (Conceptual):</b> Explain how {ch_title.lower()} eliminates cognitive load compared to traditional C-family syntax.", styles['BookBullet']))
-    story.append(Paragraph(f"<b>Exercise {ch_num}.2 (Syntactic):</b> Write an idiomatic Enlng code snippet demonstrating the primary canonical form and two synonymous forms.", styles['BookBullet']))
-    story.append(Paragraph(f"<b>Exercise {ch_num}.3 (Optimization):</b> How does the 'hint' pragma alter machine instruction generation during low-level compilation in enlangg.exe?", styles['BookBullet']))
-    story.append(Paragraph(f"<b>Exercise {ch_num}.4 (Defensive):</b> Construct a defensive guard clause protecting against invalid state propagation in this domain.", styles['BookBullet']))
-    story.append(Paragraph(f"<b>Exercise {ch_num}.5 (Complexity):</b> Analyze the memory allocation and time complexity bounds of {ch_title.lower()} under worst-case inputs.", styles['BookBullet']))
-    story.append(Spacer(1, 10))
-
-    # Section 13: Laboratory Worked Solutions
-    story.append(Paragraph("1.13 Laboratory Worked Solutions & Implementations", styles['BookH1']))
-    story.append(Paragraph(
-        "Below are the authoritative reference solutions for the laboratory challenges presented in Section 1.12. "
-        "Review these implementations to verify your understanding of idiomatic sovereign Enlng standards:",
-        styles['BookBody']
-    ))
-    lab_solution_code = (
-        f"# Authoritative Reference Solutions: Chapter {ch_num}\n"
-        "use library \"test\"\n\n"
-        f"# Solution to Exercise {ch_num}.2: Multi-Phrasing Idiom\n"
-        "hint purity: pure\n"
-        f"define function solve_chapter_{ch_num}_challenge with input_dataset:\n"
-        "    hint type: array\n"
-        "    create a accumulator of 0.0\n"
-        "    for each data_point in input_dataset:\n"
-        "        if data_point is not equal to null:\n"
-        "            set accumulator to accumulator plus data_point\n"
-        "    return accumulator\n\n"
-        "# Verification Suite\n"
-        "create a sample_data of [10.5, 20.0, 30.5]\n"
-        f"create a total to call solve_chapter_{ch_num}_challenge with sample_data\n"
-        f"call assert_equal with total, 61.0, \"Chapter {ch_num} Lab Test\" from \"test\"\n"
-        "display \">> Lab solution verified within sovereign tolerances: \" + total\n"
-    )
-    story.append(make_code_box(lab_solution_code))
-    story.append(Spacer(1, 10))
-
-    # Section 14: Token Stream & AST Disassembly Analysis
-    story.append(Paragraph("1.14 Token Stream & AST Disassembly Analysis", styles['BookH1']))
-    story.append(Paragraph(
-        f"To understand how enlangg.exe transforms human-readable English into machine instructions for {ch_title.lower()}, "
-        "we examine the internal token stream and Abstract Syntax Tree (AST) node representations generated during the semantic pass. "
-        "The lexer emits a sequential array of 32-bit token descriptors:",
-        styles['BookBody']
-    ))
-    ast_disasm = (
-        f"# AST Disassembly Dump for Chapter {ch_num} Construct\n"
-        "TOKEN_STREAM:\n"
-        f"  [0001] KEYWORD_VERB       'create'           (Line: 1, Col: 1)\n"
-        f"  [0002] KEYWORD_NOUN       'variable'         (Line: 1, Col: 8)\n"
-        f"  [0003] IDENTIFIER         'ch_{ch_num}_target'      (Line: 1, Col: 17)\n"
-        f"  [0004] PREPOSITION        'of'               (Line: 1, Col: 25)\n"
-        f"  [0005] LITERAL_NUMERIC    '100.0'            (Line: 1, Col: 28)\n"
-        "AST_NODE_HIERARCHY:\n"
-        f"  -> NodeVarDecl (Symbol: 'ch_{ch_num}_target', Scope: LOCAL_FRAME_0)\n"
-        "     |-- TypeHint: HINT_FLOAT64_IEEE (Register: XMM0)\n"
-        "     |-- ValueExpr: ConstFloat(100.00000000000000)\n"
-        "     +-- Lifetime: STACK_BOUND_AUTO_DROP\n"
-    )
-    story.append(make_code_box(ast_disasm))
-    story.append(Spacer(1, 10))
-
-    # Section 15: System Architecture Case Study: Enterprise High-Availability
-    story.append(Paragraph("1.15 Enterprise System Architecture Case Study", styles['BookH1']))
-    story.append(Paragraph(
-        f"In large-scale production financial platforms, {ch_title.lower()} is integrated within high-availability transaction pipelines. "
-        "The following architecture demonstrates an atomic ledger settlement process with two-phase locking and distributed telemetry:",
-        styles['BookBody']
-    ))
-    enterprise_case_code = (
-        f"# Mission-Critical Banking Pipeline: Chapter {ch_num}\n"
-        "use library \"crypto\"\n"
-        "use library \"log\"\n\n"
-        f"define function execute_mission_critical_{ch_num}_audit with ledger_id, balance_entry:\n"
-        "    hint type: map\n"
-        "    hint memory: stack\n"
-        "    # Stage 1: Check Invariants\n"
-        "    if balance_entry[\"amount\"] is less than 0.0:\n"
-        f"        call error with \"Negative entry rejected in Chapter {ch_num}\" from \"log\"\n"
-        "        return {\"settled\": false, \"audit\": \"ILLEGAL_NEGATIVE_VALUE\"}\n"
-        "        \n"
-        "    # Stage 2: Generate Cryptographic Checksum\n"
-        "    create a tx_hash to call djb2_hash with (ledger_id plus \":\" plus balance_entry[\"amount\"]) from \"crypto\"\n"
-        "    call info with \"Transaction signed with hash: \" + tx_hash from \"log\"\n"
-        "    \n"
-        "    # Stage 3: Atomic State Commit\n"
-        "    return {\"settled\": true, \"ledger\": ledger_id, \"checksum\": tx_hash}\n"
-    )
-    story.append(make_code_box(enterprise_case_code))
-    story.append(Spacer(1, 10))
-
-    # Section 16: Formal Invariant & Mathematical Proofs
-    story.append(Paragraph("1.16 Formal Mathematical Invariants & Correctness Proofs", styles['BookH1']))
-    story.append(Paragraph(
-        f"We formally establish the correctness of {ch_title.lower()} using Hoare Logic and axiomatic semantics. "
-        "Let P represent the precondition before statement execution, S represent the clausal transformation, and Q represent the postcondition: "
-        "<br/><br/>"
-        "<b>Axiom 1 (Precondition Verification):</b> &forall; x &isin; D, P(x) &rArr; (x &ne; null &and; x &isin; ValidDomain)<br/>"
-        "<b>Axiom 2 (Clausal Transition):</b> {P} S {Q} holds if and only if the execution of S preserves state consistency without memory leaks.<br/>"
-        "<b>Axiom 3 (Loop Invariant):</b> For every iteration k &isin; [0, N], Invariant(k) &and; Condition(k) &rArr; Invariant(k+1).",
-        styles['BookBody']
-    ))
-    story.append(make_callout(
-        f"Mathematical Correctness Guarantee for Chapter {ch_num}",
-        f"The operational semantics of {ch_title.lower()} have been mathematically verified to prevent state corruption across arbitrary thread interleavings.",
-        "ARCH"
-    ))
-    story.append(Spacer(1, 10))
-
-    # Section 17: Diagnostic Error Codes & Compiler Resolution Table
-    story.append(Paragraph("1.17 Diagnostic Error Codes & Troubleshooting Reference", styles['BookH1']))
-    story.append(Paragraph(
-        "When compilation or runtime faults occur, enlangg.exe produces structured, descriptive diagnostics. "
-        f"The table below lists the primary diagnostic codes associated with {ch_title.lower()} along with their resolution strategies:",
-        styles['BookBody']
-    ))
-    diag_data = [
-        [Paragraph("<b>Error Code</b>", styles['BookH3']),
-         Paragraph("<b>Diagnostic Condition</b>", styles['BookH3']),
-         Paragraph("<b>Root Cause</b>", styles['BookH3']),
-         Paragraph("<b>Recommended Resolution</b>", styles['BookH3'])],
-        [Paragraph(f"E{ch_num:03d}-01", styles['BookBody']),
-         Paragraph("Type Mismatch", styles['BookBody']),
-         Paragraph("Supplied type conflicts with hint contract", styles['BookBody']),
-         Paragraph("Cast or update hint to match actual data type", styles['BookBody'])],
-        [Paragraph(f"E{ch_num:03d}-02", styles['BookBody']),
-         Paragraph("Unbounded Resource", styles['BookBody']),
-         Paragraph("Operation exceeded maximum allocated stack frame", styles['BookBody']),
-         Paragraph("Apply 'hint memory: heap' or introduce guard clause", styles['BookBody'])],
-        [Paragraph(f"E{ch_num:03d}-03", styles['BookBody']),
-         Paragraph("Clausal Syntax Error", styles['BookBody']),
-         Paragraph("Missing required preposition (with, from, to)", styles['BookBody']),
-         Paragraph("Verify clausal syntax against Chapter EBNF specification", styles['BookBody'])],
-    ]
-    t_diag = Table(diag_data, colWidths=[80, 120, 140, 158])
-    t_diag.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
-        ('TOPPADDING', (0,0), (-1,-1), 5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-        ('LEFTPADDING', (0,0), (-1,-1), 6),
-        ('RIGHTPADDING', (0,0), (-1,-1), 6),
-    ]))
-    story.append(t_diag)
     story.append(Spacer(1, 14))
 
-    # Section 18: End-to-End Verification Program
-    story.append(Paragraph("1.18 End-to-End Verification Script & Execution Blueprint", styles['BookH1']))
+    # Section 5: The 'hint' Keyword Integration
+    story.append(Paragraph("5. Compiler Optimization & The 'hint' Keyword", styles['BookH1']))
     story.append(Paragraph(
-        f"The following script represents the complete, self-contained, and runnable test program for Chapter {ch_num}. "
-        f"You can execute this script directly using the sovereign compiler: <code>enlangg run test_chapter_{ch_num}.enlng</code>. "
-        "It exercises the primary canonical syntax, verified contracts, defensive preconditions, and assertions in a unified flow:",
-        styles['BookBody']
-    ))
-    e2e_code = (
-        f"# ==============================================================\n"
-        f"#   ENLANGG CANONICAL SUITE: CHAPTER {ch_num} ({ch_title.upper()})\n"
-        f"# ==============================================================\n\n"
-        "type enlng\n"
-        "use library \"test\"\n"
-        "use library \"time\"\n"
-        "use library \"sys\"\n\n"
-        f"call describe with \"Chapter {ch_num} Full Verification Suite\" from \"test\"\n"
-        "create a suite_timer to call Stopwatch from \"time\"\n\n"
-        "# 1. Static Contract & Pragma Verification\n"
-        "hint type: number\n"
-        "hint memory: stack\n"
-        f"create a ch_{ch_num}_anchor of 100.0\n\n"
-        "# 2. Clausal Expression & Synonym Evaluation\n"
-        f"create a ch_{ch_num}_result of {ch_code1.splitlines()[-1] if ch_code1 else 'ch_' + str(ch_num) + '_anchor'}\n\n"
-        "# 3. Assertion & Telemetry Check\n"
-        f"call assert_true with (ch_{ch_num}_anchor is greater than 0.0), \"Anchor Bound Check\" from \"test\"\n"
-        "create a duration_ms to call elapsed_millis with suite_timer from \"time\"\n"
-        f"display \">> Chapter {ch_num} end-to-end verification passed in \" + duration_ms + \" ms\"\n"
-        "call print_test_summary from \"test\"\n"
-    )
-    story.append(make_code_box(e2e_code))
-    story.append(Spacer(1, 14))
-
-    # Section 19: Summary
-    story.append(Paragraph("1.19 Chapter Summary & Master Takeaways", styles['BookH1']))
-    story.append(Paragraph(
-        f"In this chapter, we conducted an exhaustive investigation of {ch_title}. "
-        "We analyzed its cognitive linguistics foundations, formal EBNF grammar, physical memory layout in RAM, "
-        "the 'hint' keyword optimizer integration, rule-based synonym flexibility, enterprise design patterns, "
-        "and formal mathematical proofs. By internalizing these sovereign principles, you write software that is "
-        "both mathematically rigorous and effortlessly readable by human beings.",
+        f"In performance-critical scenarios, {ch_title.lower()} integrates seamlessly with Enlng's 'hint' pragma engine. "
+        "By annotating statements with directives such as <code>hint type</code>, <code>hint inline</code>, or <code>hint memory: stack</code>, "
+        "developers provide advisory contracts that allow enlangg.exe to generate optimized machine instructions, "
+        "eliminating runtime tag checks and unneeded heap allocations without compromising readability.",
         styles['BookBody']
     ))
     story.append(Spacer(1, 14))
@@ -1682,50 +1361,19 @@ def generate_part_treatise_story(styles, part_entry):
     story.append(Spacer(1, 14))
     story.append(PageBreak())
 
-    story.append(Paragraph(f"<b>{part_roman}: Enterprise Architecture</b>", styles['ChapterNum']))
-    story.append(Paragraph("IV. The Sovereign Engineering Covenant", styles['BookH1']))
+    # IV. The Sovereign Engineering Covenant & Formal Guarantees
+    story.append(Spacer(1, 10))
+    story.append(Paragraph("<b>IV. The Sovereign Engineering Covenant</b>", styles['BookH2']))
     story.append(Paragraph(
         f"As you study and implement the specifications contained within {part_roman}, remember that software architecture is a moral act. "
         "Code that cannot be read is code that cannot be trusted. By upholding the sovereign principles of clarity, determinism, and performance, "
         "you help build a resilient digital civilization founded on truth and human empowerment.",
         styles['BookBody']
     ))
-    story.append(Spacer(1, 10))
-
-    story.append(Paragraph(f"V. Enterprise Architectural Blueprint: {part_title}", styles['BookH1']))
-    story.append(Paragraph(
-        f"To illustrate the systemic integration of {part_title}, consider an enterprise high-throughput financial routing node. "
-        "The architecture decouples network packet ingestion, clausal validation, and state persistence into isolated, lock-free stages:",
-        styles['BookBody']
-    ))
-    part_case_code = (
-        f"# Enterprise Architectural Blueprint: {part_roman}\n"
-        "use library \"sys\"\n"
-        "use library \"time\"\n"
-        "use library \"log\"\n\n"
-        f"define function execute_{part_roman.lower().replace(' ', '_')}_enterprise_subsystem with telemetry_stream:\n"
-        "    hint purity: pure\n"
-        "    hint memory: stack\n"
-        "    create a timer to call Stopwatch from \"time\"\n"
-        "    for each packet in telemetry_stream:\n"
-        "        if packet[\"valid\"] is equal to true:\n"
-        "            call info with \"Verified packet: \" + packet[\"id\"] from \"log\"\n"
-        "    create a duration to call elapsed_millis with timer from \"time\"\n"
-        "    return {\"status\": \"PROCESSED\", \"duration_ms\": duration}\n"
-    )
-    story.append(make_code_box(part_case_code))
-    story.append(Spacer(1, 10))
-
-    story.append(Paragraph("VI. Formal Invariant Contracts & Execution Guarantees", styles['BookH1']))
-    story.append(Paragraph(
-        f"Every component operating within the domain of {part_roman} adheres to strict mathematical invariants. "
-        "Memory buffers are bounded by compile-time allocation limits, stack frames are guaranteed to unwind cleanly without leaks, "
-        "and concurrent tasks communicate strictly through synchronized memory boundaries or message-passing pipes.",
-        styles['BookBody']
-    ))
+    story.append(Spacer(1, 8))
     story.append(make_callout(
-        f"Invariant Guarantee: {part_roman}",
-        f"All state transitions within {part_title} are deterministic, verified at compile-time, and execute without garbage collection pauses.",
+        f"Sovereign Invariant Contract: {part_roman}",
+        f"All state transitions within {part_title} are deterministic, verified at compile-time, and execute with zero garbage collection pauses.",
         "ARCH"
     ))
     story.append(Spacer(1, 14))
@@ -2119,7 +1767,7 @@ def generate_all_appendices(styles):
 
 def build_master_book_pdf(output_pdf_path):
     print("==============================================================")
-    print("  ⚡ COMPILING 'ENLANGG: THE ENLNG' (500+ PAGE MASTER BOOK)  ")
+    print("  ⚡ COMPILING 'ENLANGG: THE ENLNG' (CANONICAL DEFINITIVE EDITION)  ")
     print("  100% UNIQUE CONTENT, ZERO REPETITIONS, AUTHORITATIVE SPEC   ")
     print("==============================================================")
 
