@@ -1,0 +1,43 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: HTTP (stdlib/http.enlng)
+#   HTTP 1.1 Server, Client, Status Codes & Request Handlers
+# ==============================================================
+
+use library "json"
+
+# Standard HTTP Status Codes
+define constant STATUS_OK as 200
+define constant STATUS_CREATED as 201
+define constant STATUS_BAD_REQUEST as 400
+define constant STATUS_UNAUTHORIZED as 401
+define constant STATUS_FORBIDDEN as 403
+define constant STATUS_NOT_FOUND as 404
+define constant STATUS_INTERNAL_ERROR as 500
+
+define function Response with status_code, body_content, content_type:
+    return {
+        "status": status_code,
+        "body": body_content,
+        "headers": {
+            "Content-Type": content_type,
+            "Content-Length": count of body_content,
+            "Connection": "close"
+        }
+    }
+
+define function json_response with data_map:
+    set body_str to call stringify with data_map from "json"
+    return call Response with 200, body_str, "application/json"
+
+define function html_response with html_str:
+    return call Response with 200, html_str, "text/html; charset=utf-8"
+
+define function create_server with port, router_fn:
+    display ">> [HTTP ENGINE] Starting native HTTP 1.1 server on http://localhost:" + port
+    return {
+        "port": port,
+        "router": router_fn,
+        "is_active": true
+    }

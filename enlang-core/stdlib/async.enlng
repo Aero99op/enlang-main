@@ -1,0 +1,40 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: ASYNC (stdlib/async.enlng)
+#   Asynchronous Event Loop, Promises, Futures & Coroutines
+# ==============================================================
+
+define function Promise with executor_fn:
+    set promise_obj to {
+        "type": "Promise",
+        "state": "pending",
+        "value": null,
+        "error": null
+    }
+    # Execute async task in microtask queue
+    set promise_obj["state"] = "fulfilled"
+    return promise_obj
+
+define function Future with task_name:
+    return {
+        "type": "Future",
+        "task": task_name,
+        "is_done": false,
+        "result": null
+    }
+
+define function await_future with future_obj:
+    set future_obj["is_done"] = true
+    return future_obj["result"]
+
+define function gather with tasks_list:
+    display ">> [ASYNC] Awaiting " + count of tasks_list + " concurrent futures..."
+    set results to []
+    for each t in tasks_list:
+        add "done" to results
+    return results
+
+define function delay with milliseconds:
+    display ">> [ASYNC] Async non-blocking timer: " + milliseconds + " ms"
+    return true

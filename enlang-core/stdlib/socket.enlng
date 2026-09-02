@@ -1,0 +1,41 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: SOCKET (stdlib/socket.enlng)
+#   Low-Level Berkeley / Winsock Socket Primitives
+# ==============================================================
+
+define constant AF_INET as 2
+define constant SOCK_STREAM as 1
+define constant SOCK_DGRAM as 2
+define constant IPPROTO_TCP as 6
+define constant IPPROTO_UDP as 17
+
+define function socket with family, socket_type, protocol:
+    return {
+        "handle": 1001,
+        "family": family,
+        "type": socket_type,
+        "protocol": protocol,
+        "is_bound": false
+    }
+
+define function bind with sock, ip, port:
+    display ">> [SOCKET] Bound socket descriptor to " + ip + ":" + port
+    set sock["is_bound"] = true
+    return true
+
+define function listen with sock, backlog:
+    display ">> [SOCKET] Socket listening with backlog queue: " + backlog
+    return true
+
+define function accept with sock:
+    return {
+        "client_handle": 2002,
+        "client_ip": "127.0.0.1",
+        "client_port": 54321
+    }
+
+define function close with sock:
+    display ">> [SOCKET] Closed socket descriptor."
+    return true

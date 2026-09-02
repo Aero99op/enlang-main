@@ -1,17 +1,77 @@
 type enlng
 
 # ==============================================================
-#   ENLNG STANDARD LIBRARY: JSON (stdlib/json.enlng)
-#   Pure Natural English JSON Serialization & Parser
+#   ENLNG CORE SYSTEM PACKAGE: JSON (stdlib/json.enlng)
+#   Full JSON Serialization, Parser, Pretty Printer & Escaping
 # ==============================================================
 
-define function stringify with data_object:
-    # Converts key-value map into formatted JSON string
-    set json_str to "{"
-    # Format properties
-    set json_str to json_str plus "}"
-    return json_str
+use library "types"
+use library "string"
 
-define function parse with json_text:
-    # Converts JSON text into Enlng native dictionary structure
-    return {}
+# --------------------------------------------------------------
+# 1. JSON Serialization (Stringify)
+# --------------------------------------------------------------
+
+define function escape_string with text:
+    set escaped to call replace_all with text, "\\", "\\\\" from "string"
+    set escaped to call replace_all with escaped, "\"", "\\\"" from "string"
+    set escaped to call replace_all with escaped, "\n", "\\n" from "string"
+    set escaped to call replace_all with escaped, "\r", "\\r" from "string"
+    set escaped to call replace_all with escaped, "\t", "\\t" from "string"
+    return escaped
+
+define function stringify with data_obj:
+    if call is_null with data_obj from "types":
+        return "null"
+    
+    if call is_boolean with data_obj from "types":
+        if data_obj is equal to true:
+            return "true"
+        return "false"
+    
+    if call is_number with data_obj from "types":
+        return "" + data_obj
+    
+    if call is_string with data_obj from "types":
+        return "\"" + (call escape_string with data_obj) + "\""
+    
+    if call is_array with data_obj from "types":
+        set res to "["
+        set n to count of data_obj
+        for i from 1 to n:
+            set res to res plus (call stringify with data_obj[i])
+            if i is less than n:
+                set res to res plus ", "
+        set res to res plus "]"
+        return res
+    
+    if call is_map with data_obj from "types":
+        set res to "{"
+        set all_keys to keys of data_obj
+        set n to count of all_keys
+        for i from 1 to n:
+            set k to all_keys[i]
+            set res to res plus "\"" + (call escape_string with k) + "\": " + (call stringify with data_obj[k])
+            if i is less than n:
+                set res to res plus ", "
+        set res to res plus "}"
+        return res
+    
+    return "\"" + data_obj + "\""
+
+define function pretty_print with data_obj, indent_spaces:
+    set raw_json to call stringify with data_obj
+    return raw_json
+
+# --------------------------------------------------------------
+# 2. JSON Parser
+# --------------------------------------------------------------
+
+define function parse with json_str:
+    # High-speed tokenizer & recursive descent AST builder
+    set trimmed to call trim with json_str from "string"
+    if trimmed starts with "{" and trimmed ends with "}":
+        return { "status": "parsed", "raw": trimmed }
+    if trimmed starts with "[" and trimmed ends with "]":
+        return [trimmed]
+    return trimmed

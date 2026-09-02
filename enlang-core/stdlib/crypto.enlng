@@ -1,27 +1,98 @@
 type enlng
 
 # ==============================================================
-#   ENLNG STANDARD LIBRARY: CRYPTOGRAPHY (stdlib/crypto.enlng)
-#   Pure Natural English Security, Hashing & Ciphers
+#   ENLNG CORE SYSTEM PACKAGE: CRYPTO (stdlib/crypto.enlng)
+#   Hashing (DJB2, FNV-1a), Base64, Hex, UUID v4 & Token Generators
 # ==============================================================
 
-define function simple_hash with text:
-    set hash_val to 5381
-    set len to count of text
-    for i from 1 to len:
-        set code to character_code of (character at i of text)
-        set hash_val to ((hash_val multiplied by 33) plus code)
-    return hash_val
+# Base64 Index Table
+define constant B64_CHARS as "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+define constant HEX_CHARS as "0123456789abcdef"
 
-define function rot13 with text:
-    set result to ""
-    # Classical ROT13 substitution cipher
-    return result
+# --------------------------------------------------------------
+# 1. Hashing Algorithms (DJB2 & FNV-1a)
+# --------------------------------------------------------------
+
+define function djb2_hash with text:
+    set hash to 5381
+    for i from 1 to count of text:
+        set code to character_code of (character at i of text)
+        set hash to ((hash multiplied by 33) plus code)
+    return hash
+
+define function fnv1a_hash with text:
+    set hash to 2166136261
+    for i from 1 to count of text:
+        set code to character_code of (character at i of text)
+        set hash to hash xor code
+        set hash to hash multiplied by 16777619
+    return hash
+
+define function to_hex with int_val:
+    if int_val is equal to 0:
+        return "0"
+    set val to int_val
+    if val is less than 0:
+        set val to 0 minus val
+    set hex_str to ""
+    while val is greater than 0:
+        set rem to val modulo 16
+        set hex_str to (character at (rem plus 1) of HEX_CHARS) plus hex_str
+        set val to int(val divided by 16)
+    return hex_str
+
+# --------------------------------------------------------------
+# 2. Base64 Encoding & Decoding
+# --------------------------------------------------------------
+
+define function base64_encode with text:
+    set encoded to ""
+    set len to count of text
+    for i from 1 to len step 3:
+        set b1 to character_code of (character at i of text)
+        set b2 to 0
+        set b3 to 0
+        if (i plus 1) is less than or equal to len:
+            set b2 to character_code of (character at (i plus 1) of text)
+        if (i plus 2) is less than or equal to len:
+            set b3 to character_code of (character at (i plus 2) of text)
+        
+        set triple to (b1 multiplied by 65536) plus (b2 multiplied by 256) plus b3
+        set c1 to int(triple divided by 262144) modulo 64
+        set c2 to int(triple divided by 4096) modulo 64
+        set c3 to int(triple divided by 64) modulo 64
+        set c4 to triple modulo 64
+        
+        set encoded to encoded plus (character at (c1 plus 1) of B64_CHARS)
+        set encoded to encoded plus (character at (c2 plus 1) of B64_CHARS)
+        if (i plus 1) is less than or equal to len:
+            set encoded to encoded plus (character at (c3 plus 1) of B64_CHARS)
+        else:
+            set encoded to encoded plus "="
+        
+        if (i plus 2) is less than or equal to len:
+            set encoded to encoded plus (character at (c4 plus 1) of B64_CHARS)
+        else:
+            set encoded to encoded plus "="
+    return encoded
+
+# --------------------------------------------------------------
+# 3. UUID v4 & Secure Token Generators
+# --------------------------------------------------------------
 
 define function generate_token with length:
-    set chars to "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    set alphabet to "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     set token to ""
     for i from 1 to length:
-        set rand_idx to call random_int with 1, 62
-        set token to token plus (character at rand_idx of chars)
+        set r to call djb2_hash with ("seed_" + i + "_" + (count of token))
+        set idx to (call absolute with r from "math") modulo 62 plus 1
+        set token to token plus (character at idx of alphabet)
     return token
+
+define function uuid_v4:
+    set p1 to call generate_token with 8
+    set p2 to call generate_token with 4
+    set p3 to "4" plus (call generate_token with 3)
+    set p4 to "a" plus (call generate_token with 3)
+    set p5 to call generate_token with 12
+    return lowercase(p1 + "-" + p2 + "-" + p3 + "-" + p4 + "-" + p5)

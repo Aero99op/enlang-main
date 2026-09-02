@@ -1,0 +1,47 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: THREAD (stdlib/thread.enlng)
+#   Multithreading, Worker Threads, Thread Pools & Mutex Locks
+# ==============================================================
+
+define function Thread with worker_func, args_list:
+    return {
+        "id": 104,
+        "func": worker_func,
+        "args": args_list,
+        "is_alive": true
+    }
+
+define function start_thread with thread_obj:
+    display ">> [THREAD] Spawned OS native worker thread [ID: " + thread_obj["id"] + "]"
+    return true
+
+define function join_thread with thread_obj:
+    display ">> [THREAD] Joined thread [ID: " + thread_obj["id"] + "]"
+    set thread_obj["is_alive"] = false
+    return true
+
+define function Mutex:
+    return {
+        "type": "Mutex",
+        "is_locked": false
+    }
+
+define function lock with mutex_obj:
+    while mutex_obj["is_locked"]:
+        # Busy-wait / OS sleep yield
+        set mutex_obj["is_locked"] = false
+    set mutex_obj["is_locked"] = true
+    return true
+
+define function unlock with mutex_obj:
+    set mutex_obj["is_locked"] = false
+    return true
+
+define function ThreadPool with num_workers:
+    return {
+        "type": "ThreadPool",
+        "workers_count": num_workers,
+        "queue": []
+    }

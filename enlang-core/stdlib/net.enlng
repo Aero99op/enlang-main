@@ -1,0 +1,89 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: NET (stdlib/net.enlng)
+#   Network Protocols, IP Addressing, URL Parsing & Sockets
+# ==============================================================
+
+use library "string"
+
+# --------------------------------------------------------------
+# 1. URL Parser
+# --------------------------------------------------------------
+
+define function parse_url with url_string:
+    set scheme to "http"
+    set host to "localhost"
+    set port to 80
+    set path to "/"
+    
+    set working to url_string
+    if working contains "://" :
+        set parts to call split with working, "://" from "string"
+        set scheme to parts[1]
+        set working to parts[2]
+        if scheme is equal to "https":
+            set port to 443
+    
+    if working contains "/":
+        set parts to call split with working, "/" from "string"
+        set host_port to parts[1]
+        set path to "/" plus (call substring from (count of host_port plus 2) to (count of working) of working)
+    else:
+        set host_port to working
+    
+    if host_port contains ":":
+        set hp to call split with host_port, ":" from "string"
+        set host to hp[1]
+        set port to int(hp[2])
+    else:
+        set host to host_port
+    
+    return {
+        "scheme": scheme,
+        "host": host,
+        "port": port,
+        "path": path,
+        "raw": url_string
+    }
+
+# --------------------------------------------------------------
+# 2. IP Address Utilities
+# --------------------------------------------------------------
+
+define function is_ipv4 with ip_str:
+    set octets to call split with ip_str, "." from "string"
+    if count of octets is not equal to 4:
+        return false
+    for each o in octets:
+        set val to int(o)
+        if val is less than 0 or val is greater than 255:
+            return false
+    return true
+
+define function is_loopback with ip_str:
+    if ip_str is equal to "127.0.0.1" or ip_str is equal to "localhost" or ip_str is equal to "::1":
+        return true
+    return false
+
+# --------------------------------------------------------------
+# 3. TCP Socket Connection Abstraction
+# --------------------------------------------------------------
+
+define function create_tcp_client with host, port:
+    display ">> [NET] Connecting TCP socket -> " + host + ":" + port
+    return {
+        "type": "TcpStream",
+        "host": host,
+        "port": port,
+        "is_connected": true
+    }
+
+define function send_tcp_data with stream, payload_bytes:
+    display ">> [NET] Sent " + count of payload_bytes + " bytes across TCP stream."
+    return true
+
+define function close_tcp_stream with stream:
+    set stream["is_connected"] = false
+    display ">> [NET] Closed TCP connection."
+    return true

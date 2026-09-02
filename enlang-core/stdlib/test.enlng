@@ -1,0 +1,41 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: TEST (stdlib/test.enlng)
+#   Unit Testing Framework, Test Suites & Assertions Engine
+# ==============================================================
+
+use library "types"
+
+create a total_tests of 0
+create a passed_tests of 0
+create a failed_tests of 0
+
+define function describe with suite_name:
+    display "\n🧪 [TEST SUITE] " + suite_name
+    display "--------------------------------------------------------------"
+
+define function assert_equal with actual, expected, test_label:
+    set total_tests = total_tests plus 1
+    if (call deep_equals with actual, expected from "types"):
+        set passed_tests = passed_tests plus 1
+        display "   ✅ PASS: " + test_label
+        return true
+    else:
+        set failed_tests = failed_tests plus 1
+        display "   ❌ FAIL: " + test_label + " (Expected: " + expected + ", Got: " + actual + ")"
+        return false
+
+define function assert_true with condition, test_label:
+    return call assert_equal with condition, true, test_label
+
+define function assert_false with condition, test_label:
+    return call assert_equal with condition, false, test_label
+
+define function assert_null with value, test_label:
+    return call assert_equal with (call is_null with value from "types"), true, test_label
+
+define function print_test_summary:
+    display "=============================================================="
+    display "📊 Test Summary: " + passed_tests + " Passed, " + failed_tests + " Failed (" + total_tests + " Total)"
+    display "=============================================================="
