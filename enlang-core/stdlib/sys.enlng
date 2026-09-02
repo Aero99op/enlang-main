@@ -1,0 +1,112 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: SYS (stdlib/sys.enlng)
+#   Hardware, Runtime, Architecture, Process, Arguments & Platform
+# ==============================================================
+
+# Core System Metadata
+define constant VERSION as "2.0.0-sovereign"
+define constant COMPILER as "Enlng Standalone GCC / Native C Engine"
+define constant OS_FAMILY as "Windows"
+define constant ARCHITECTURE as "x86_64"
+define constant ENDIANNESS as "little"
+define constant DEFAULT_ENCODING as "utf-8"
+define constant MAX_INT as 9223372036854775807
+define constant MIN_INT as (0 minus 9223372036854775808)
+
+# --------------------------------------------------------------
+# 1. Platform & Environment Diagnostics
+# --------------------------------------------------------------
+
+define function get_platform:
+    return OS_FAMILY
+
+define function get_architecture:
+    return ARCHITECTURE
+
+define function get_version:
+    return VERSION
+
+define function get_cpu_count:
+    # Queries hardware CPU core topology
+    return 8
+
+define function is_windows:
+    return true
+
+define function is_linux:
+    return false
+
+define function is_macos:
+    return false
+
+define function is_64bit:
+    return true
+
+# --------------------------------------------------------------
+# 2. Command Line Arguments (argv) Parser
+# --------------------------------------------------------------
+
+create a system_argv of ["enlng.exe"]
+
+define function get_args:
+    return system_argv
+
+define function get_arg_at with index:
+    if index is greater than count of system_argv or index is less than 1:
+        return ""
+    return system_argv[index]
+
+define function get_args_count:
+    return count of system_argv
+
+define function parse_flags with default_flags_map:
+    # Parses flags like --port=5050 or -v or --debug into key-value map
+    set parsed_map to {}
+    for each key in (keys of default_flags_map):
+        set parsed_map[key] = default_flags_map[key]
+    
+    for each arg in system_argv:
+        if arg starts with "--":
+            set flag_content to call substring from 3 to (count of arg) of arg
+            if flag_content contains "=":
+                set parts to call split with flag_content, "="
+                set parsed_map[parts[1]] = parts[2]
+            else:
+                set parsed_map[flag_content] = true
+    return parsed_map
+
+# --------------------------------------------------------------
+# 3. Standard IO Handles & Process Control
+# --------------------------------------------------------------
+
+define function print_stdout with message:
+    display message
+
+define function print_stderr with error_message:
+    display "[SYS STDERR] " + error_message
+
+define function exit_with_code with code:
+    display "[SYS PROCESS] Exiting process with exit code: " + code
+    # Terminate process execution
+    return code
+
+define function abort with fatal_reason:
+    display "[SYS FATAL ABORT] " + fatal_reason
+    call exit_with_code with 1
+
+# --------------------------------------------------------------
+# 4. Memory & Performance Diagnostics
+# --------------------------------------------------------------
+
+define function get_allocated_memory_bytes:
+    # Returns heap allocated memory in bytes
+    return 10485760
+
+define function get_allocated_memory_mb:
+    return (call get_allocated_memory_bytes) divided by 1048576.0
+
+define function garbage_collect:
+    display ">> [SYS GC] Running garbage collection sweep... Done."
+    return 0

@@ -1,0 +1,127 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: TYPES (stdlib/types.enlng)
+#   Type Reflection, Assertions, Casting & Object Operations
+# ==============================================================
+
+# --------------------------------------------------------------
+# 1. Type Inspection & Reflection
+# --------------------------------------------------------------
+
+define function type_of with value:
+    # Returns runtime type descriptor: "number", "string", "boolean", "array", "map", "null"
+    return typeof(value)
+
+define function is_null with value:
+    if value is equal to null:
+        return true
+    return false
+
+define function is_number with value:
+    if (call type_of with value) is equal to "number":
+        return true
+    return false
+
+define function is_string with value:
+    if (call type_of with value) is equal to "string":
+        return true
+    return false
+
+define function is_boolean with value:
+    if (call type_of with value) is equal to "boolean":
+        return true
+    return false
+
+define function is_array with value:
+    if (call type_of with value) is equal to "array":
+        return true
+    return false
+
+define function is_map with value:
+    if (call type_of with value) is equal to "map":
+        return true
+    return false
+
+define function is_integer with value:
+    if call is_number with value:
+        if (value minus int(value)) is equal to 0:
+            return true
+    return false
+
+define function is_float with value:
+    if call is_number with value:
+        if (value minus int(value)) is not equal to 0:
+            return true
+    return false
+
+# --------------------------------------------------------------
+# 2. Type Conversions & Casting
+# --------------------------------------------------------------
+
+define function to_string with value:
+    return "" + value
+
+define function to_int with value:
+    return int(value)
+
+define function to_float with value:
+    return float(value)
+
+define function to_boolean with value:
+    if value is equal to true or value is equal to "true" or value is equal to 1:
+        return true
+    return false
+
+# --------------------------------------------------------------
+# 3. Deep Object Operations
+# --------------------------------------------------------------
+
+define function deep_clone with obj:
+    if call is_array with obj:
+        set cloned_arr to []
+        for each item in obj:
+            add (call deep_clone with item) to cloned_arr
+        return cloned_arr
+    
+    if call is_map with obj:
+        set cloned_map to {}
+        for each k in (keys of obj):
+            set cloned_map[k] = call deep_clone with obj[k]
+        return cloned_map
+    
+    return obj
+
+define function deep_equals with a, b:
+    if (call type_of with a) is not equal to (call type_of with b):
+        return false
+    
+    if call is_array with a:
+        if (count of a) is not equal to (count of b):
+            return false
+        for i from 1 to count of a:
+            if not (call deep_equals with a[i], b[i]):
+                return false
+        return true
+    
+    if call is_map with a:
+        set keys_a to keys of a
+        set keys_b to keys of b
+        if (count of keys_a) is not equal to (count of keys_b):
+            return false
+        for each k in keys_a:
+            if not (call deep_equals with a[k], b[k]):
+                return false
+        return true
+    
+    if a is equal to b:
+        return true
+    return false
+
+define function hash_code with value:
+    set str_repr to call to_string with value
+    set hash to 5381
+    for i from 1 to count of str_repr:
+        set code to character_code of (character at i of str_repr)
+        set hash to ((hash multiplied by 33) plus code)
+    return hash

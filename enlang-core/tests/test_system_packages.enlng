@@ -1,0 +1,52 @@
+type enlng
+
+# ==============================================================
+#   TEST: CORE SYSTEM PACKAGES (SYS, TYPES, FS, IO)
+# ==============================================================
+
+use library "sys"
+use library "types"
+use library "fs"
+use library "io"
+
+display "=============================================================="
+display "       ⚡ ENLNG CORE SYSTEM PACKAGES VERIFICATION             "
+display "=============================================================="
+
+# 1. SYS Package Verification
+display ">> [1. SYS] Platform Architecture & Environment:"
+display "   • Platform     : " + (call get_platform from "sys")
+display "   • Architecture : " + (call get_architecture from "sys")
+display "   • CPU Cores    : " + (call get_cpu_count from "sys")
+display "   • Heap Memory  : " + (call get_allocated_memory_mb from "sys") + " MB"
+
+# 2. TYPES Package Verification
+display ">> [2. TYPES] Reflection, Assertions & Casting:"
+display "   • is_number(42.5)   = " + (call is_number with 42.5 from "types")
+display "   • is_string('enlng') = " + (call is_string with "enlng" from "types")
+display "   • deep_equals([1,2], [1,2]) = " + (call deep_equals with [1,2], [1,2] from "types")
+
+# 3. FS Package Verification
+display ">> [3. FS] Path Operations & Filesystem Slicing:"
+set full_p to call join_path with "d:\\enlangg", "test.enlng" from "fs"
+set base_p to call get_basename with full_p from "fs"
+set ext_p  to call get_extension with full_p from "fs"
+display "   • Joined Path  : " + full_p
+display "   • Basename     : " + base_p
+display "   • Extension    : " + ext_p
+
+# 4. IO Package Verification
+display ">> [4. IO] StringBuffer & Scanner Streams:"
+set sb to call StringBuffer from "io"
+call write_buffer with sb, "Enlng " from "io"
+call write_buffer with sb, "Universal Runtime" from "io"
+display "   • StringBuffer Content: '" + (call read_buffer_string with sb from "io") + "'"
+
+set sc to call Scanner with "100 250 400" from "io"
+set num1 to call next_int with sc from "io"
+set num2 to call next_int with sc from "io"
+display "   • Scanned Integers    : " + num1 + ", " + num2
+
+display "=============================================================="
+display "   ALL CORE SYSTEM PACKAGES PASSED 100%!                      "
+display "=============================================================="

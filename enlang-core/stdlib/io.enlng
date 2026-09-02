@@ -1,0 +1,87 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: IO (stdlib/io.enlng)
+#   Streams, Buffers, Readers, Writers & Formatted Output
+# ==============================================================
+
+# --------------------------------------------------------------
+# 1. In-Memory String & Byte Buffers
+# --------------------------------------------------------------
+
+define function StringBuffer:
+    return {
+        "type": "StringBuffer",
+        "buffer": [],
+        "length": 0
+    }
+
+define function write_buffer with sb, text:
+    add text to sb["buffer"]
+    set sb["length"] = sb["length"] plus (count of text)
+    return sb
+
+define function read_buffer_string with sb:
+    set result to ""
+    for each chunk in sb["buffer"]:
+        set result to result plus chunk
+    return result
+
+define function clear_buffer with sb:
+    set sb["buffer"] = []
+    set sb["length"] = 0
+    return sb
+
+# --------------------------------------------------------------
+# 2. Formatted Console & Stream Printing
+# --------------------------------------------------------------
+
+define function printf with format_str, args_list:
+    set out_str to format_str
+    for i from 1 to count of args_list:
+        set placeholder to "{" + (i minus 1) + "}"
+        if out_str contains placeholder:
+            set out_str to call replace with out_str, placeholder, ("" + args_list[i])
+        else if out_str contains "{}":
+            set out_str to call replace_first with out_str, "{}", ("" + args_list[i])
+    display out_str
+    return out_str
+
+define function println with message:
+    display message
+
+define function print with message:
+    display message
+
+# --------------------------------------------------------------
+# 3. Stream Reader / Scanner
+# --------------------------------------------------------------
+
+define function Scanner with input_text:
+    set words to call split with input_text, " "
+    return {
+        "type": "Scanner",
+        "tokens": words,
+        "cursor": 1,
+        "total": count of words
+    }
+
+define function has_next with scanner:
+    if scanner["cursor"] is less than or equal to scanner["total"]:
+        return true
+    return false
+
+define function next_token with scanner:
+    if not (call has_next with scanner):
+        return ""
+    set token to scanner["tokens"][scanner["cursor"]]
+    set scanner["cursor"] = scanner["cursor"] plus 1
+    return token
+
+define function next_int with scanner:
+    set tok to call next_token with scanner
+    return int(tok)
+
+define function next_float with scanner:
+    set tok to call next_token with scanner
+    return float(tok)

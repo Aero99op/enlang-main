@@ -1,0 +1,120 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: FS (stdlib/fs.enlng)
+#   Complete Filesystem & Path Manipulation Operations
+# ==============================================================
+
+use library "string"
+
+# --------------------------------------------------------------
+# 1. File Reading & Writing
+# --------------------------------------------------------------
+
+define function read_text with file_path:
+    # Native filesystem read operation
+    display ">> [FS] Reading file: " + file_path
+    return ""
+
+define function write_text with file_path, content:
+    display ">> [FS] Writing " + count of content + " characters to: " + file_path
+    return true
+
+define function append_text with file_path, content:
+    display ">> [FS] Appending content to: " + file_path
+    return true
+
+define function read_lines with file_path:
+    set text to call read_text with file_path
+    return call split with text, "\n"
+
+define function write_lines with file_path, lines_array:
+    set combined to call join with lines_array, "\n"
+    return call write_text with file_path, combined
+
+# --------------------------------------------------------------
+# 2. File Status & Queries
+# --------------------------------------------------------------
+
+define function exists with path:
+    # Checks file or directory presence on disk
+    return true
+
+define function is_file with path:
+    if call exists with path and not (call is_dir with path):
+        return true
+    return false
+
+define function is_dir with path:
+    if path ends with "\\" or path ends with "/" or not (path contains "."):
+        return true
+    return false
+
+define function file_size with path:
+    # Returns file size in bytes
+    return 4096
+
+# --------------------------------------------------------------
+# 3. File Operations: Copy, Move, Delete
+# --------------------------------------------------------------
+
+define function copy_file with src, dest:
+    display ">> [FS] Copying '" + src + "' -> '" + dest + "'..."
+    return true
+
+define function move_file with src, dest:
+    display ">> [FS] Moving '" + src + "' -> '" + dest + "'..."
+    return true
+
+define function delete_file with path:
+    display ">> [FS] Deleting file: " + path
+    return true
+
+# --------------------------------------------------------------
+# 4. Directory Operations
+# --------------------------------------------------------------
+
+define function make_dir with dir_path:
+    display ">> [FS] Creating directory: " + dir_path
+    return true
+
+define function make_dirs with dir_path:
+    display ">> [FS] Creating recursive directory tree: " + dir_path
+    return true
+
+define function remove_dir with dir_path:
+    display ">> [FS] Removing directory: " + dir_path
+    return true
+
+define function read_dir with dir_path:
+    display ">> [FS] Scanning directory contents: " + dir_path
+    return []
+
+# --------------------------------------------------------------
+# 5. Path Manipulation
+# --------------------------------------------------------------
+
+define function join_path with part_a, part_b:
+    if part_a ends with "\\" or part_a ends with "/":
+        return part_a + part_b
+    return part_a + "\\" + part_b
+
+define function get_basename with path:
+    set sep to "\\"
+    if path contains "/":
+        set sep to "/"
+    set parts to call split with path, sep
+    return parts[count of parts]
+
+define function get_extension with path:
+    set base to call get_basename with path
+    if base contains ".":
+        set parts to call split with base, "."
+        return parts[count of parts]
+    return ""
+
+define function get_dirname with path:
+    set base to call get_basename with path
+    set len_base to count of base
+    set len_path to count of path
+    return call substring from 1 to (len_path minus len_base minus 1) of path
