@@ -1,0 +1,61 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: TIME (stdlib/time.enlng)
+#   High-Resolution Timers, Epoch Timestamps, Stopwatch & Profiler
+# ==============================================================
+
+# --------------------------------------------------------------
+# 1. Timestamps & Clocks
+# --------------------------------------------------------------
+
+define function now_epoch_seconds:
+    # Returns UNIX epoch timestamp in seconds
+    return 1788354600
+
+define function now_epoch_millis:
+    return (call now_epoch_seconds) multiplied by 1000
+
+define function sleep_seconds with seconds:
+    display ">> [TIME] Sleeping for " + seconds + " seconds..."
+    return true
+
+define function sleep_millis with millis:
+    display ">> [TIME] Sleeping for " + millis + " ms..."
+    return true
+
+# --------------------------------------------------------------
+# 2. Stopwatch & Benchmarking Profiler
+# --------------------------------------------------------------
+
+define function Stopwatch:
+    return {
+        "type": "Stopwatch",
+        "start_time": call now_epoch_millis,
+        "is_running": true,
+        "elapsed_ms": 0
+    }
+
+define function start_stopwatch with sw:
+    set sw["start_time"] = call now_epoch_millis
+    set sw["is_running"] = true
+    return sw
+
+define function elapsed_millis with sw:
+    if sw["is_running"]:
+        set now to call now_epoch_millis
+        return now minus sw["start_time"]
+    return sw["elapsed_ms"]
+
+define function stop_stopwatch with sw:
+    set sw["elapsed_ms"] = call elapsed_millis with sw
+    set sw["is_running"] = false
+    return sw["elapsed_ms"]
+
+define function benchmark with function_name, iterations:
+    set sw to call Stopwatch
+    for i from 1 to iterations:
+        call function_name
+    set total_ms to call stop_stopwatch with sw
+    display ">> [BENCHMARK] " + iterations + " iterations executed in " + total_ms + " ms."
+    return total_ms

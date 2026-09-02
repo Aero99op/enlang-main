@@ -1,35 +1,111 @@
 type enlng
 
 # ==============================================================
-#   ENLNG STANDARD LIBRARY: STRING & NLP (stdlib/string.enlng)
-#   Pure Natural English Text Processing, Search & Transformations
+#   ENLNG CORE SYSTEM PACKAGE: STRING (stdlib/string.enlng)
+#   Comprehensive Unicode, Text Processing, Padding, Splitting & Slicing
 # ==============================================================
 
-define function to_uppercase with text:
-    return call uppercase with text
+# --------------------------------------------------------------
+# 1. Case Conversions & Unicode Transformations
+# --------------------------------------------------------------
 
-define function to_lowercase with text:
-    return call lowercase with text
+define function to_upper with text:
+    return uppercase(text)
+
+define function to_lower with text:
+    return lowercase(text)
+
+define function capitalize with text:
+    if count of text is equal to 0:
+        return ""
+    set first_char to uppercase(character at 1 of text)
+    if count of text is equal to 1:
+        return first_char
+    set rest to call substring from 2 to (count of text) of text
+    return first_char plus lowercase(rest)
+
+define function title_case with text:
+    set words to call split with text, " "
+    set capitalized_words to []
+    for each w in words:
+        add (call capitalize with w) to capitalized_words
+    return call join with capitalized_words, " "
+
+# --------------------------------------------------------------
+# 2. Whitespace & Character Trimming
+# --------------------------------------------------------------
 
 define function trim with text:
-    return call strip with text
+    return strip(text)
 
-define function split_words with text:
-    return call split with text, " "
+define function trim_left with text:
+    set len to count of text
+    set start_idx to 1
+    while start_idx is less than or equal to len and (character at start_idx of text) is equal to " ":
+        set start_idx to start_idx plus 1
+    return call substring from start_idx to len of text
 
-define function join_words with word_list, delimiter:
-    return call join with word_list, delimiter
+define function trim_right with text:
+    set len to count of text
+    set end_idx to len
+    while end_idx is greater than or equal to 1 and (character at end_idx of text) is equal to " ":
+        set end_idx to end_idx minus 1
+    return call substring from 1 to end_idx of text
 
-define function contains with text, search_query:
-    if text contains search_query:
+# --------------------------------------------------------------
+# 3. Padding, Alignment & Slicing
+# --------------------------------------------------------------
+
+define function pad_left with text, target_len, pad_char:
+    set current_len to count of text
+    if current_len is greater than or equal to target_len:
+        return text
+    set diff to target_len minus current_len
+    set padding to ""
+    for i from 1 to diff:
+        set padding to padding plus pad_char
+    return padding plus text
+
+define function pad_right with text, target_len, pad_char:
+    set current_len to count of text
+    if current_len is greater than or equal to target_len:
+        return text
+    set diff to target_len minus current_len
+    set padding to ""
+    for i from 1 to diff:
+        set padding to padding plus pad_char
+    return text plus padding
+
+define function pad_center with text, target_len, pad_char:
+    set current_len to count of text
+    if current_len is greater than or equal to target_len:
+        return text
+    set total_pad to target_len minus current_len
+    set left_pad_len to int(total_pad divided by 2)
+    set right_pad_len to total_pad minus left_pad_len
+    set left_pad to ""
+    for i from 1 to left_pad_len:
+        set left_pad to left_pad plus pad_char
+    set right_pad to ""
+    for i from 1 to right_pad_len:
+        set right_pad to right_pad plus pad_char
+    return left_pad plus text plus right_pad
+
+define function reverse with text:
+    set result to ""
+    set len to count of text
+    for i from len to 1:
+        set result to result plus (character at i of text)
+    return result
+
+# --------------------------------------------------------------
+# 4. Search, Substrings & Mutations
+# --------------------------------------------------------------
+
+define function contains with text, query_str:
+    if text contains query_str:
         return true
     return false
-
-define function replace_all with text, old_sub, new_sub:
-    return call replace with text, old_sub, new_sub
-
-define function length_of with text:
-    return count of text
 
 define function starts_with with text, prefix:
     if text starts with prefix:
@@ -41,9 +117,35 @@ define function ends_with with text, suffix:
         return true
     return false
 
-define function reverse_string with text:
-    set result to ""
-    set len to count of text
-    for i from len to 1:
-        set result to result plus (character at i of text)
-    return result
+define function index_of with text, query_str:
+    set len_text to count of text
+    set len_q to count of query_str
+    if len_q is greater than len_text:
+        return (0 minus 1)
+    for i from 1 to ((len_text minus len_q) plus 1):
+        set sub to call substring from i to ((i plus len_q) minus 1) of text
+        if sub is equal to query_str:
+            return i
+    return (0 minus 1)
+
+define function replace_all with text, old_sub, new_sub:
+    return replace(text, old_sub, new_sub)
+
+define function split with text, delimiter:
+    return split(text, delimiter)
+
+define function join with string_list, delimiter:
+    set res to ""
+    set n to count of string_list
+    for i from 1 to n:
+        set res to res plus string_list[i]
+        if i is less than n:
+            set res to res plus delimiter
+    return res
+
+define function count_occurrences with text, target_char:
+    set occurrences to 0
+    for i from 1 to count of text:
+        if (character at i of text) is equal to target_char:
+            set occurrences to occurrences plus 1
+    return occurrences

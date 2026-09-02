@@ -1,0 +1,41 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: LOG (stdlib/log.enlng)
+#   Structured Logging Engine, Log Levels, Timestamps & Formatter
+# ==============================================================
+
+# Log Level Constants
+define constant LEVEL_DEBUG as 1
+define constant LEVEL_INFO as 2
+define constant LEVEL_WARN as 3
+define constant LEVEL_ERROR as 4
+define constant LEVEL_FATAL as 5
+
+create a current_log_level of 2
+
+define function set_level with level_int:
+    set current_log_level = level_int
+
+define function format_log with level_str, message:
+    return "[" + level_str + "] " + message
+
+define function debug with message:
+    if current_log_level is less than or equal to LEVEL_DEBUG:
+        display call format_log with "DEBUG", message
+
+define function info with message:
+    if current_log_level is less than or equal to LEVEL_INFO:
+        display call format_log with "INFO ", message
+
+define function warn with message:
+    if current_log_level is less than or equal to LEVEL_WARN:
+        display call format_log with "WARN ", message
+
+define function error with message:
+    if current_log_level is less than or equal to LEVEL_ERROR:
+        display call format_log with "ERROR", message
+
+define function fatal with message:
+    if current_log_level is less than or equal to LEVEL_FATAL:
+        display call format_log with "FATAL", message

@@ -1,0 +1,106 @@
+type enlng
+
+# ==============================================================
+#   ENLNG CORE SYSTEM PACKAGE: REGEX (stdlib/regex.enlng)
+#   Pattern Matching, Token Extraction & Regular Expressions
+# ==============================================================
+
+use library "string"
+
+# --------------------------------------------------------------
+# 1. Character Class Helpers
+# --------------------------------------------------------------
+
+define function is_digit with ch:
+    set code to character_code of ch
+    if code is greater than or equal to 48 and code is less than or equal to 57:
+        return true
+    return false
+
+define function is_alpha with ch:
+    set code to character_code of ch
+    if (code is greater than or equal to 65 and code is less than or equal to 90) or (code is greater than or equal to 97 and code is less than or equal to 122):
+        return true
+    return false
+
+define function is_alphanumeric with ch:
+    if (call is_digit with ch) or (call is_alpha with ch) or ch is equal to "_":
+        return true
+    return false
+
+define function is_whitespace with ch:
+    if ch is equal to " " or ch is equal to "\t" or ch is equal to "\n" or ch is equal to "\r":
+        return true
+    return false
+
+# --------------------------------------------------------------
+# 2. Pattern Matcher Engine
+# --------------------------------------------------------------
+
+define function match_char with pattern_char, text_char:
+    if pattern_char is equal to ".":
+        return true
+    if pattern_char is equal to "\\d":
+        return call is_digit with text_char
+    if pattern_char is equal to "\\w":
+        return call is_alphanumeric with text_char
+    if pattern_char is equal to "\\s":
+        return call is_whitespace with text_char
+    if pattern_char is equal to text_char:
+        return true
+    return false
+
+define function is_match with pattern, text:
+    # Anchor matching: ^ and $
+    if pattern starts with "^" and pattern ends with "$":
+        set core_pattern to call substring from 2 to (count of pattern minus 1) of pattern
+        if count of core_pattern is not equal to count of text:
+            return false
+        for i from 1 to count of text:
+            if not (call match_char with (character at i of core_pattern), (character at i of text)):
+                return false
+        return true
+    
+    # Substring / Simple wildcard search
+    if pattern is equal to ".*" or pattern is equal to "":
+        return true
+    
+    return call contains with text, pattern from "string"
+
+define function find_all_digits with text:
+    set digits to []
+    set current_num to ""
+    for i from 1 to count of text:
+        set ch to character at i of text
+        if call is_digit with ch:
+            set current_num to current_num plus ch
+        else:
+            if count of current_num is greater than 0:
+                add current_num to digits
+                set current_num to ""
+    if count of current_num is greater than 0:
+        add current_num to digits
+    return digits
+
+define function find_all_words with text:
+    set words to []
+    set current_word to ""
+    for i from 1 to count of text:
+        set ch to character at i of text
+        if call is_alphanumeric with ch:
+            set current_word to current_word plus ch
+        else:
+            if count of current_word is greater than 0:
+                add current_word to words
+                set current_word to ""
+    if count of current_word is greater than 0:
+        add current_word to words
+    return words
+
+define function extract_emails with text:
+    set words to call find_all_words with text
+    set emails to []
+    for each w in words:
+        if w contains "@" and w contains ".":
+            add w to emails
+    return emails
