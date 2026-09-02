@@ -1,0 +1,22 @@
+type enlngf
+
+# ==============================================================
+#   MANGA SKETCH GAUSSIAN PLOTTER (manga_plot.enlngf)
+# ==============================================================
+
+use theme "manga_plot.enlngd"
+
+create application "Manga Scientific Canvas":
+    create panel "comic_panel":
+        create header "screentone_header":
+            add title "⚡ GAUSSIAN MF // SHONEN EDITION ⚡"
+            add badge "action_badge" with text "ゴゴゴ MENACING ゴゴゴ"
+
+        create container "viewport_box":
+            add speech_bubble "Formula: μ(x) = exp( - (x - c)² / 2σ² ) !!"
+            add viewport "manga_canvas" with id "canvas_manga"
+
+        create controls "control_strip":
+            add slider "Center Position (c)" with min 10 and max 90 and default 50 with id "slider_c"
+            add slider "Spread Width (σ)" with min 2 and max 30 and default 10 with id "slider_s"
+            add button "💥 EXPLOSION PLOT" with id "btn_plot"

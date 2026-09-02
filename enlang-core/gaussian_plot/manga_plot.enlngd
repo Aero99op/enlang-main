@@ -1,0 +1,49 @@
+type enlngd
+
+# ==============================================================
+#   MANGA / ANIME SKETCH THEME (manga_plot.enlngd)
+#   Hand-drawn Ink, Halftone Screentones, Comic Panels & Speedlines
+# ==============================================================
+
+define theme "MangaSketchArt":
+    set global background to "#f4f0ea"
+    set text color to "#111827"
+    set font family to "'Comic Neue', 'Bangers', 'Impact', cursive, sans-serif"
+
+    define component "comic_panel":
+        set background to "#ffffff"
+        set border to "3.5px solid #111827"
+        set border radius to "4px 18px 4px 16px"
+        set box shadow to "8px 8px 0px #111827"
+        set padding to 24 pixels
+        set filter to "contrast(120%)"
+
+    define component "screentone_header":
+        set background to "radial-gradient(#111827 15%, transparent 16%) 0 0 / 8px 8px"
+        set color to "#ffffff"
+        set border to "3px solid #111827"
+        set text shadow to "3px 3px 0px #111827"
+        set transform to "rotate(-1deg)"
+
+    define component "manga_canvas":
+        set background to "#faf8f5"
+        set border to "3px solid #111827"
+        set stroke color to "#111827"
+        set stroke width to 4 pixels
+        set stroke dasharray to "none"
+        set box shadow to "inset 0 0 0 2px #ffffff, 6px 6px 0px #111827"
+
+    define component "action_badge":
+        set background to "#fef08a"
+        set color to "#111827"
+        set border to "2.5px solid #111827"
+        set font weight to "900"
+        set transform to "rotate(2deg)"
+        set box shadow to "4px 4px 0px #111827"
+
+    define component "speech_bubble":
+        set background to "#ffffff"
+        set border to "2.5px solid #111827"
+        set border radius to 20 pixels
+        set padding to "8px 16px"
+        set box shadow to "3px 3px 0px #111827"
