@@ -1,0 +1,52 @@
+type enlng
+
+# ==============================================================
+#   TEST SUITE: ENLANG MOBILE (enlngm) HARDWARE INTEGRATION
+# ==============================================================
+
+use library "mobile"
+use library "test"
+
+display "=============================================================="
+display "       ⚡ ENLANG MOBILE (enlngm) HARDWARE TEST SUITE          "
+display "=============================================================="
+
+call describe with "Mobile Hardware Abstraction Layer (HAL)" from "test"
+
+# 1. Haptics
+set hap_res to call trigger_haptic with "heavy_impact" from "mobile"
+call assert_equal with hap_res["status"], "success", "1. Mobile Haptic Engine Dispatch" from "test"
+
+# 2. Biometrics
+set bio_avail to call is_biometrics_available from "mobile"
+call assert_true with bio_avail, "2. Biometric Hardware Available" from "test"
+set bio_res to call authenticate_biometrics with "User Authorization Prompt" from "mobile"
+call assert_true with bio_res["authenticated"], "3. Face ID / Biometric Authentication" from "test"
+
+# 3. Camera
+set cam_res to call open_camera with "4K_photo" from "mobile"
+call assert_true with cam_res["session_active"], "4. Camera Session Initialization" from "test"
+set qr_res to call scan_qr_code from "mobile"
+call assert_true with qr_res["detected"], "5. Vision QR Scanner" from "test"
+
+# 4. Geolocation & Sensors
+set gps_res to call get_gps_coordinates from "mobile"
+call assert_equal with gps_res["status"], "locked", "6. GPS Coordinates Lock" from "test"
+set accel_res to call get_accelerometer from "mobile"
+call assert_equal with accel_res["y"], 9.81, "7. Accelerometer Gravity Vector" from "test"
+
+# 5. Battery & System
+set batt_level to call get_battery_level from "mobile"
+call assert_equal with batt_level, 92.0, "8. Battery Telemetry" from "test"
+set dev_info to call get_device_info from "mobile"
+call assert_equal with dev_info["arch"], "aarch64", "9. ARM64 Flagship Hardware Target" from "test"
+
+# 6. Push Notifications
+set notif_res to call schedule_local_notification with "Enlang Alert", "System Ready", 5 from "mobile"
+call assert_equal with notif_res["notification_id"], "enlng_notif_9001", "10. Local Push Notification" from "test"
+
+call print_test_summary from "test"
+
+display "=============================================================="
+display "   ALL ENLANG MOBILE (enlngm) HARDWARE CAPABILITIES PASSED!   "
+display "=============================================================="

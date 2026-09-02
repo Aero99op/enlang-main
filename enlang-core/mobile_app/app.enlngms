@@ -1,0 +1,41 @@
+type enlngms
+
+# ==============================================================
+#   ENLANG MOBILE REACTIVE SCRIPT: app.enlngms
+#   Hardware Event Signals, Haptics, Camera & Biometric Triggers
+# ==============================================================
+
+use library "mobile"
+
+create a state_authenticated of false
+create a state_battery_level of 92
+create a state_haptic_counter of 0
+
+on tap of "tile_camera":
+    trigger haptic with "light_impact" from "mobile"
+    call open_camera with "scanner" from "mobile"
+    trigger toast "Camera Viewfinder Active"
+
+on tap of "tile_biometrics":
+    trigger haptic with "medium_impact" from "mobile"
+    set auth_result to call authenticate_biometrics with "Scan Face ID to verify identity" from "mobile"
+    if auth_result["authenticated"] is equal to true:
+        set state_authenticated to true
+        trigger toast "✅ Biometrics Verified Successfully!"
+    else:
+        trigger toast "❌ Authentication Denied"
+
+on tap of "tile_gps":
+    trigger haptic with "selection" from "mobile"
+    set coords to call get_gps_coordinates from "mobile"
+    trigger toast "GPS Locked: Lat " + coords["latitude"] + ", Lon " + coords["longitude"]
+
+on tap of "tile_haptics":
+    set state_haptic_counter = state_haptic_counter plus 1
+    trigger haptic with "heavy_impact" from "mobile"
+    trigger toast "Haptic Wave Dispatched (#" + state_haptic_counter + ")"
+
+on device shake:
+    trigger haptic with "warning" from "mobile"
+    display ">> [GESTURE] Device Shaken! Quick Diagnostics Triggered."
+    trigger toast "⚡ Shake Gesture Detected!"

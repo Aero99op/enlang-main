@@ -1,0 +1,65 @@
+type enlngmf
+
+# ==============================================================
+#   ENLANG MOBILE FRONTEND UI TREE: app.enlngmf
+#   Declarative Mobile Screens, AppBars, Action Grid & Tabs
+# ==============================================================
+
+use theme "app.enlngmd"
+
+create mobile application "Enlang Sovereign Mobile Studio":
+    create screen "HomeScreen" with route "/":
+        create native_appbar "mobile_appbar":
+            add icon "phone_iphone" with color "#38bdf8"
+            add title "ENLANG MOBILE" with subtitle "ARM64 Sovereign HAL"
+            add action_button "battery_full" with label "92%" with id "btn_battery"
+
+        create scrollable_container with padding 18:
+            create hero_card "hero_card":
+                add badge "HARDWARE ACCELERATED" with color "#38bdf8"
+                add heading "Zero-Dependency Native Mobile"
+                add description "Direct Android NDK & iOS Apple Metal C-ABI. No Flutter, No Dart, No Swift overhead."
+
+            create section_title "NATIVE HARDWARE CONTROLS":
+                add subtitle "Direct Device API Bindings"
+
+            create grid_layout with columns 2 and gap 12:
+                create tile "action_tile" with id "tile_camera":
+                    add icon "photo_camera" with color "#38bdf8"
+                    add label "48MP Camera"
+                    add status "Ready / 4K 60FPS"
+
+                create tile "action_tile" with id "tile_biometrics":
+                    add icon "fingerprint" with color "#a855f7"
+                    add label "Face/Touch ID"
+                    add status "Biometrics Active"
+
+                create tile "action_tile" with id "tile_gps":
+                    add icon "my_location" with color "#10b981"
+                    add label "GPS Location"
+                    add status "37.77° N, 122.41° W"
+
+                create tile "action_tile" with id "tile_haptics":
+                    add icon "vibration" with color "#f59e0b"
+                    add label "Haptic Engine"
+                    add status "Tap to Vibrate"
+
+            create section_title "LIVE SENSOR TELEMETRY":
+                add subtitle "6-Axis Motion & Thermal State"
+
+            create horizontal_layout with gap 12:
+                create card "sensor_card":
+                    add label "ACCELEROMETER"
+                    add value "9.81 m/s² (1G)"
+                    add subvalue "X: 0.02 | Y: 9.81 | Z: 0.15"
+
+                create card "sensor_card":
+                    add label "GYROSCOPE"
+                    add value "1.25 rad/s"
+                    add subvalue "Pitch: 0.01 | Roll: -0.04"
+
+        create bottom_navigation_bar "bottom_nav_bar":
+            add tab "Home" with icon "home" with active true with id "tab_home"
+            add tab "Vision" with icon "qr_code_scanner" with id "tab_vision"
+            add tab "Sensors" with icon "sensors" with id "tab_sensors"
+            add tab "Settings" with icon "tune" with id "tab_settings"

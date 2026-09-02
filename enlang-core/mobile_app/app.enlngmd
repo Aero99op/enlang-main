@@ -1,0 +1,59 @@
+type enlngmd
+
+# ==============================================================
+#   ENLANG MOBILE DESIGN SYSTEM: app.enlngmd
+#   Adaptive OLED Dark Theme, Dynamic Island & Haptic Tokens
+# ==============================================================
+
+define theme "SovereignMobileDark":
+    set global background to "#000000"
+    set surface background to "#121826"
+    set text primary to "#f8fafc"
+    set text secondary to "#94a3b8"
+    set brand accent to "#38bdf8"
+    set brand purple to "#a855f7"
+    set brand emerald to "#10b981"
+    set font family to "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', sans-serif"
+
+    define safe_area:
+        set top inset to 59 pixels
+        set bottom inset to 34 pixels
+        set dynamic island width to 126 pixels
+        set dynamic island height to 37 pixels
+        set dynamic island border radius to 20 pixels
+
+    define component "mobile_appbar":
+        set background to "rgba(18, 24, 38, 0.85)"
+        set backdrop blur to 24 pixels
+        set border bottom to "1px solid rgba(255, 255, 255, 0.08)"
+        set height to 56 pixels
+        set padding horizontal to 20 pixels
+
+    define component "hero_card":
+        set background to "linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(168, 85, 247, 0.15))"
+        set border to "1px solid rgba(56, 189, 248, 0.3)"
+        set border radius to 24 pixels
+        set padding to 20 pixels
+        set box shadow to "0 12px 30px -8px rgba(56, 189, 248, 0.25)"
+
+    define component "action_tile":
+        set background to "#182234"
+        set border to "1px solid #1e293b"
+        set border radius to 18 pixels
+        set padding to 16 pixels
+        set haptic feedback on touch to "light_impact"
+        set active scale to 0.96
+
+    define component "sensor_card":
+        set background to "#111722"
+        set border to "1px solid #1e293b"
+        set border radius to 16 pixels
+        set padding to 14 pixels
+
+    define component "bottom_nav_bar":
+        set background to "rgba(10, 14, 23, 0.92)"
+        set backdrop blur to 28 pixels
+        set border top to "1px solid rgba(255, 255, 255, 0.08)"
+        set height to 84 pixels
+        set active tab color to "#38bdf8"
+        set inactive tab color to "#64748b"
