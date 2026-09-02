@@ -1,0 +1,23 @@
+type enlng
+
+# ==============================================================
+#   TEST: ZERO-ARGUMENT FUNCTION CALL IN ENLNG SYNTAX
+# ==============================================================
+
+import numpy
+import matplotlib.pyplot
+
+display ">> Testing zero-argument function calls in Enlng syntax..."
+
+declare x = call linspace with -5, 5, 100 from numpy
+declare y = x * x
+
+call plot with x, y from matplotlib.pyplot
+call title with "Zero-Arg Function Call Test" from matplotlib.pyplot
+
+# Calling grid with 0 arguments:
+call grid from matplotlib.pyplot
+
+call savefig with "zero_arg_grid_test.png" from matplotlib.pyplot
+
+display ">> [SUCCESS] 'call grid from matplotlib.pyplot' executed cleanly!"
