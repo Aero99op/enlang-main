@@ -1,51 +1,261 @@
 type enlng
 
 # ==============================================================
-#   ENLNG STANDARD LIBRARY: STATS (stdlib/stats.enlng)
-#   Pure Natural English Statistics, Distributions & Metrics
+#   ENLNG CORE ESSENTIAL PACKAGE: STATS (stdlib/stats.enlng)
+#   Comprehensive Descriptive, Inferential & Probability Statistics
 # ==============================================================
 
 use library "math"
+
+# --------------------------------------------------------------
+# 1. Measures of Central Tendency
+# --------------------------------------------------------------
 
 define function mean with data_list:
     set total to 0.0
     set n to count of data_list
     if n is equal to 0:
         return 0.0
-    for each val in data_list:
-        set total to total plus val
+    for each v in data_list:
+        set total to total plus v
     return total divided by n
+
+define function weighted_mean with data_list, weights:
+    set num to 0.0
+    set den to 0.0
+    for i from 1 to count of data_list:
+        set num to num plus (data_list[i] multiplied by weights[i])
+        set den to den plus weights[i]
+    if den is equal to 0:
+        return 0.0
+    return num divided by den
+
+define function geometric_mean with data_list:
+    set log_sum to 0.0
+    set n to count of data_list
+    for each v in data_list:
+        if v is less than or equal to 0:
+            display "[STATS ERROR] Geometric mean requires positive values."
+            return 0.0
+        set log_sum to log_sum plus (call log_e with v from "math")
+    return call exp with (log_sum divided by n) from "math"
+
+define function harmonic_mean with data_list:
+    set sum_inv to 0.0
+    set n to count of data_list
+    for each v in data_list:
+        if v is equal to 0:
+            display "[STATS ERROR] Harmonic mean undefined for zero."
+            return 0.0
+        set sum_inv to sum_inv plus (1.0 divided by v)
+    return n divided by sum_inv
+
+define function sort_array with arr:
+    # Stable in-place/copy bubble/insertion sort
+    set sorted_list to []
+    for each item in arr:
+        add item to sorted_list
+    set n to count of sorted_list
+    for i from 1 to n:
+        for j from 1 to (n minus i):
+            if sorted_list[j] is greater than sorted_list[j plus 1]:
+                set temp to sorted_list[j]
+                set sorted_list[j] = sorted_list[j plus 1]
+                set sorted_list[j plus 1] = temp
+    return sorted_list
+
+define function median with data_list:
+    set s to call sort_array with data_list
+    set n to count of s
+    if n is equal to 0:
+        return 0.0
+    if (n modulo 2) is equal to 1:
+        set mid to int((n plus 1) divided by 2)
+        return s[mid]
+    set mid1 to int(n divided by 2)
+    set mid2 to mid1 plus 1
+    return (s[mid1] plus s[mid2]) divided by 2.0
+
+define function mode with data_list:
+    set max_freq to 0
+    set mode_val to data_list[1]
+    for i from 1 to count of data_list:
+        set target to data_list[i]
+        set freq to 0
+        for each v in data_list:
+            if v is equal to target:
+                set freq to freq plus 1
+        if freq is greater than max_freq:
+            set max_freq to freq
+            set mode_val to target
+    return mode_val
+
+# --------------------------------------------------------------
+# 2. Measures of Dispersion & Spread
+# --------------------------------------------------------------
 
 define function variance with data_list:
     set avg to call mean with data_list
-    set sum_sq to 0.0
     set n to count of data_list
     if n is less than 2:
         return 0.0
-    for each val in data_list:
-        set diff to val minus avg
+    set sum_sq to 0.0
+    for each v in data_list:
+        set diff to v minus avg
         set sum_sq to sum_sq plus (diff multiplied by diff)
     return sum_sq divided by (n minus 1)
 
 define function std_dev with data_list:
-    set var_val to call variance with data_list
-    return call square_root with var_val from "math"
+    set v to call variance with data_list
+    return call square_root with v from "math"
 
-define function min_val with data_list:
-    set smallest to data_list[1]
-    for each val in data_list:
-        if val is less than smallest:
-            set smallest to val
-    return smallest
+define function mean_absolute_deviation with data_list:
+    set avg to call mean with data_list
+    set sum_abs to 0.0
+    set n to count of data_list
+    for each v in data_list:
+        set sum_abs to sum_abs plus (call absolute with (v minus avg) from "math")
+    return sum_abs divided by n
 
-define function max_val with data_list:
-    set largest to data_list[1]
-    for each val in data_list:
-        if val is greater than largest:
-            set largest to val
-    return largest
+define function range_val with data_list:
+    set min_item to data_list[1]
+    set max_item to data_list[1]
+    for each v in data_list:
+        if v is less than min_item:
+            set min_item to v
+        if v is greater than max_item:
+            set max_item to v
+    return max_item minus min_item
+
+define function percentile with data_list, p:
+    set s to call sort_array with data_list
+    set n to count of s
+    if n is equal to 0:
+        return 0.0
+    set rank to (p divided by 100.0) multiplied by (n minus 1) plus 1.0
+    set k to int(rank)
+    set d to rank minus k
+    if k is greater than or equal to n:
+        return s[n]
+    if k is less than or equal to 1:
+        return s[1]
+    return s[k] plus (d multiplied by (s[k plus 1] minus s[k]))
+
+define function iqr with data_list:
+    set q1 to call percentile with data_list, 25.0
+    set q3 to call percentile with data_list, 75.0
+    return q3 minus q1
+
+# --------------------------------------------------------------
+# 3. Shape & Standardized Scores
+# --------------------------------------------------------------
+
+define function skewness with data_list:
+    set avg to call mean with data_list
+    set s to call std_dev with data_list
+    set n to count of data_list
+    if s is equal to 0 or n is less than 3:
+        return 0.0
+    set sum_cubes to 0.0
+    for each v in data_list:
+        set z to (v minus avg) divided by s
+        set sum_cubes to sum_cubes plus (z multiplied by z multiplied by z)
+    set factor to n divided by ((n minus 1) multiplied by (n minus 2))
+    return factor multiplied by sum_cubes
+
+define function kurtosis with data_list:
+    set avg to call mean with data_list
+    set s to call std_dev with data_list
+    set n to count of data_list
+    if s is equal to 0 or n is less than 4:
+        return 0.0
+    set sum_quads to 0.0
+    for each v in data_list:
+        set z to (v minus avg) divided by s
+        set sum_quads to sum_quads plus (z multiplied by z multiplied by z multiplied by z)
+    return (sum_quads divided by n) minus 3.0
 
 define function z_score with x, mean_val, std_val:
     if std_val is equal to 0:
         return 0.0
     return (x minus mean_val) divided by std_val
+
+define function min_max_scale with data_list:
+    set min_item to data_list[1]
+    set max_item to data_list[1]
+    for each v in data_list:
+        if v is less than min_item:
+            set min_item to v
+        if v is greater than max_item:
+            set max_item to v
+    set diff to max_item minus min_item
+    set scaled to []
+    for each v in data_list:
+        if diff is equal to 0:
+            add 0.0 to scaled
+        else:
+            add ((v minus min_item) divided by diff) to scaled
+    return scaled
+
+# --------------------------------------------------------------
+# 4. Correlation & Covariance
+# --------------------------------------------------------------
+
+define function covariance with x_list, y_list:
+    set mean_x to call mean with x_list
+    set mean_y to call mean with y_list
+    set n to count of x_list
+    if n is less than 2:
+        return 0.0
+    set sum_prod to 0.0
+    for i from 1 to n:
+        set sum_prod to sum_prod plus ((x_list[i] minus mean_x) multiplied by (y_list[i] minus mean_y))
+    return sum_prod divided by (n minus 1)
+
+define function pearson_correlation with x_list, y_list:
+    set cov to call covariance with x_list, y_list
+    set std_x to call std_dev with x_list
+    set std_y to call std_dev with y_list
+    if (std_x multiplied by std_y) is equal to 0:
+        return 0.0
+    return cov divided by (std_x multiplied by std_y)
+
+# --------------------------------------------------------------
+# 5. Theoretical Probability Distributions
+# --------------------------------------------------------------
+
+define function normal_pdf with x, mu, sigma:
+    set variance_2 to 2.0 multiplied by sigma multiplied by sigma
+    set diff to x minus mu
+    set exponent to 0.0 minus ((diff multiplied by diff) divided by variance_2)
+    set coeff to 1.0 divided by (sigma multiplied by (call square_root with (2.0 multiplied by PI) from "math"))
+    return coeff multiplied by (call exp with exponent from "math")
+
+define function normal_cdf with x, mu, sigma:
+    # CDF via erf: 0.5 * (1 + erf((x - mu) / (sigma * sqrt(2))))
+    set z to (x minus mu) divided by (sigma multiplied by SQRT2 from "math")
+    set erf_val to call erf with z from "math"
+    return 0.5 multiplied by (1.0 plus erf_val)
+
+define function uniform_pdf with x, a, b:
+    if x is greater than or equal to a and x is less than or equal to b:
+        return 1.0 divided by (b minus a)
+    return 0.0
+
+define function exponential_pdf with x, lambda_rate:
+    if x is less than 0:
+        return 0.0
+    set exponent to 0.0 minus (lambda_rate multiplied by x)
+    return lambda_rate multiplied by (call exp with exponent from "math")
+
+define function binomial_pmf with k, n, p:
+    set comb to call nCr with n, k from "math"
+    set p_k to call power with p, k from "math"
+    set q_nk to call power with (1.0 minus p), (n minus k) from "math"
+    return comb multiplied by p_k multiplied by q_nk
+
+define function poisson_pmf with k, lambda_param:
+    set exp_neg to call exp with (0.0 minus lambda_param) from "math"
+    set lambda_k to call power with lambda_param, k from "math"
+    set fact_k to call factorial with k from "math"
+    return (exp_neg multiplied by lambda_k) divided by fact_k

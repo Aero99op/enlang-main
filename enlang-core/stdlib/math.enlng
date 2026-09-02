@@ -1,42 +1,259 @@
 type enlng
 
 # ==============================================================
-#   ENLNG STANDARD LIBRARY: MATH (stdlib/math.enlng)
-#   Pure Natural English Mathematical Functions
+#   ENLNG CORE ESSENTIAL PACKAGE: MATH (stdlib/math.enlng)
+#   Production-Grade Numerical Mathematics, Trig, Calculus & Stats
 # ==============================================================
 
+# Fundamental Mathematical Constants
 define constant PI as 3.141592653589793
+define constant TAU as 6.283185307179586
 define constant E as 2.718281828459045
+define constant GOLDEN_RATIO as 1.618033988749895
+define constant SQRT2 as 1.4142135623730951
+define constant LN2 as 0.6931471805599453
+define constant LN10 as 2.302585092994046
+
+# --------------------------------------------------------------
+# 1. Basic Arithmetic & Utility Functions
+# --------------------------------------------------------------
 
 define function absolute with value:
     if value is less than 0:
         return 0 minus value
     return value
 
-define function power with base, exponent:
-    set result to 1
-    for count from 1 to exponent:
-        set result to result multiplied by base
-    return result
+define function sign with value:
+    if value is greater than 0:
+        return 1
+    if value is less than 0:
+        return 0 minus 1
+    return 0
 
-define function exp with z:
-    # Taylor Series: exp(-z) = 1 / (1 + z + z^2/2 + z^3/6 + z^4/24 + z^5/120)
-    if z is equal to 0:
+define function clamp with val, min_bound, max_bound:
+    if val is less than min_bound:
+        return min_bound
+    if val is greater than max_bound:
+        return max_bound
+    return val
+
+define function lerp with start_val, end_val, t:
+    return start_val plus (t multiplied by (end_val minus start_val))
+
+define function floor with x:
+    set int_part to int(x)
+    if x is less than 0 and (x minus int_part) is not equal to 0:
+        return int_part minus 1
+    return int_part
+
+define function ceil with x:
+    set int_part to int(x)
+    if x is greater than 0 and (x minus int_part) is not equal to 0:
+        return int_part plus 1
+    return int_part
+
+define function round with x:
+    set int_part to int(x)
+    set frac to x minus int_part
+    if frac is greater than or equal to 0.5:
+        return int_part plus 1
+    if frac is less than or equal to (0 minus 0.5):
+        return int_part minus 1
+    return int_part
+
+# --------------------------------------------------------------
+# 2. Powers, Roots & Logarithms
+# --------------------------------------------------------------
+
+define function power with base, exponent:
+    if exponent is equal to 0:
         return 1.0
-    set z_abs to call absolute with z
-    set term1 to 1.0
-    set term2 to z_abs
-    set term3 to (z_abs multiplied by z_abs) divided by 2.0
-    set term4 to (z_abs multiplied by z_abs multiplied by z_abs) divided by 6.0
-    set term5 to (z_abs multiplied by z_abs multiplied by z_abs multiplied by z_abs) divided by 24.0
-    set denom to term1 plus term2 plus term3 plus term4 plus term5
-    if z is less than 0:
-        return 1.0 divided by denom
-    return denom
+    if base is equal to 0:
+        return 0.0
+    if exponent is less than 0:
+        return 1.0 divided by (call power with base, (0 minus exponent))
+    
+    # Integer power optimization
+    if (exponent minus int(exponent)) is equal to 0:
+        set result to 1.0
+        set cur_base to base
+        set cur_exp to int(exponent)
+        while cur_exp is greater than 0:
+            if (cur_exp modulo 2) is equal to 1:
+                set result to result multiplied by cur_base
+            set cur_base to cur_base multiplied by cur_base
+            set cur_exp to int(cur_exp divided by 2)
+        return result
+    
+    # Fractional Power: x^y = exp(y * ln(x))
+    set ln_base to call log_e with base
+    return call exp with (exponent multiplied by ln_base)
 
 define function square_root with value:
-    # Newton-Raphson approximation
+    if value is less than 0:
+        display "[MATH ERROR] Cannot compute square root of negative number."
+        return 0.0
+    if value is equal to 0:
+        return 0.0
+    
+    # Newton-Raphson iteration: x_{k+1} = 0.5 * (x_k + S / x_k)
     set guess to value divided by 2.0
-    for iteration from 1 to 10:
-        set guess to (guess plus (value divided by guess)) divided by 2.0
+    for iter from 1 to 20:
+        set guess to 0.5 multiplied by (guess plus (value divided by guess))
     return guess
+
+define function hypot with a, b:
+    return call square_root with ((a multiplied by a) plus (b multiplied by b))
+
+define function exp with z:
+    # High-precision Taylor Series: exp(z) = sum(z^k / k!)
+    if z is equal to 0:
+        return 1.0
+    
+    set is_neg to false
+    set val to z
+    if z is less than 0:
+        set is_neg to true
+        set val to 0 minus z
+    
+    set sum to 1.0
+    set term to 1.0
+    for k from 1 to 35:
+        set term to term multiplied by (val divided by k)
+        set sum to sum plus term
+    
+    if is_neg:
+        return 1.0 divided by sum
+    return sum
+
+define function log_e with x:
+    # High-precision Natural Logarithm: ln(x) using Halley / Area Hyperbolic Tangent
+    if x is less than or equal to 0:
+        display "[MATH ERROR] Domain error in log_e."
+        return 0.0
+    
+    # Argument reduction: x = m * 2^k
+    set m to x
+    set k to 0
+    while m is greater than 1.5:
+        set m to m divided by 2.0
+        set k to k plus 1
+    while m is less than 0.75:
+        set m to m multiplied by 2.0
+        set k to k minus 1
+    
+    # Series for ln((1+y)/(1-y)) where y = (m-1)/(m+1)
+    set y to (m minus 1.0) divided by (m plus 1.0)
+    set y2 to y multiplied by y
+    set sum to y
+    set y_pow to y
+    for n from 1 to 25:
+        set denom to 2.0 multiplied by n plus 1.0
+        set y_pow to y_pow multiplied by y2
+        set sum to sum plus (y_pow divided by denom)
+    
+    set ln_m to 2.0 multiplied by sum
+    return ln_m plus (k multiplied by LN2)
+
+define function log10 with x:
+    return (call log_e with x) divided by LN10
+
+define function log2 with x:
+    return (call log_e with x) divided by LN2
+
+# --------------------------------------------------------------
+# 3. Trigonometry & Hyperbolic Functions
+# --------------------------------------------------------------
+
+define function sin with rad:
+    # Range reduction to [-PI, PI]
+    set x to rad modulo TAU
+    if x is greater than PI:
+        set x to x minus TAU
+    if x is less than (0 minus PI):
+        set x to x plus TAU
+    
+    set sum to x
+    set term to x
+    set x2 to x multiplied by x
+    for n from 1 to 15:
+        set denom to (2.0 multiplied by n) multiplied by (2.0 multiplied by n plus 1.0)
+        set term to (0 minus term) multiplied by (x2 divided by denom)
+        set sum to sum plus term
+    return sum
+
+define function cos with rad:
+    # cos(x) = sin(x + PI/2)
+    return call sin with (rad plus (PI divided by 2.0))
+
+define function tan with rad:
+    set c to call cos with rad
+    if c is equal to 0:
+        return 1.0e+308
+    return (call sin with rad) divided by c
+
+define function sinh with x:
+    return ((call exp with x) minus (call exp with (0 minus x))) divided by 2.0
+
+define function cosh with x:
+    return ((call exp with x) plus (call exp with (0 minus x))) divided by 2.0
+
+define function tanh with x:
+    set e_pos to call exp with x
+    set e_neg to call exp with (0 minus x)
+    return (e_pos minus e_neg) divided by (e_pos plus e_neg)
+
+define function deg_to_rad with deg:
+    return deg multiplied by (PI divided by 180.0)
+
+define function rad_to_deg with rad:
+    return rad multiplied by (180.0 divided by PI)
+
+# --------------------------------------------------------------
+# 4. Combinatorics, Number Theory & Special Functions
+# --------------------------------------------------------------
+
+define function factorial with n:
+    if n is less than or equal to 1:
+        return 1.0
+    set res to 1.0
+    for i from 2 to n:
+        set res to res multiplied by i
+    return res
+
+define function nPr with n, r:
+    if r is greater than n or r is less than 0:
+        return 0.0
+    return (call factorial with n) divided by (call factorial with (n minus r))
+
+define function nCr with n, r:
+    if r is greater than n or r is less than 0:
+        return 0.0
+    return (call factorial with n) divided by ((call factorial with r) multiplied by (call factorial with (n minus r)))
+
+define function gcd with a, b:
+    set x to call absolute with a
+    set y to call absolute with b
+    while y is not equal to 0:
+        set temp to y
+        set y to x modulo y
+        set x to temp
+    return x
+
+define function lcm with a, b:
+    if a is equal to 0 or b is equal to 0:
+        return 0
+    set prod to (call absolute with a) multiplied by (call absolute with b)
+    return prod divided by (call gcd with a, b)
+
+# Error Function erf(x) via Taylor approximation
+define function erf with x:
+    set sum to x
+    set term to x
+    set x2 to x multiplied by x
+    for n from 1 to 20:
+        set denom to (2.0 multiplied by n plus 1.0)
+        set term to (0 minus term) multiplied by ((x2 multiplied by (2.0 multiplied by n minus 1.0)) divided by (n multiplied by denom))
+        set sum to sum plus term
+    set coeff to 2.0 divided by (call square_root with PI)
+    return coeff multiplied by sum

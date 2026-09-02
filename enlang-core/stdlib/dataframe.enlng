@@ -1,44 +1,173 @@
 type enlng
 
 # ==============================================================
-#   ENLNG STANDARD LIBRARY: DATAFRAME (stdlib/dataframe.enlng)
-#   Pure Natural English 2D Tabular Data Engine (Pandas equivalent)
+#   ENLNG CORE ESSENTIAL PACKAGE: DATAFRAME (stdlib/dataframe.enlng)
+#   Tabular Data Structure, GroupBy, Filtering & Analytics
 # ==============================================================
 
-define function create_dataframe with columns_list:
-    set df to {
-        "columns": columns_list,
-        "rows": [],
-        "shape": [0, count of columns_list]
-    }
-    return df
+use library "stats"
 
-define function add_row with df, row_data:
-    add row_data to df["rows"]
-    set df["shape"][1] = count of df["rows"]
-    return df
+# --------------------------------------------------------------
+# 1. DataFrame Constructor
+# --------------------------------------------------------------
+
+define function DataFrame with columns_list, rows_list:
+    return {
+        "type": "DataFrame",
+        "columns": columns_list,
+        "rows": rows_list,
+        "num_rows": count of rows_list,
+        "num_cols": count of columns_list
+    }
+
+define function get_column_index with df, col_name:
+    for i from 1 to count of df["columns"]:
+        if df["columns"][i] is equal to col_name:
+            return i
+    return 0
+
+define function get_column_values with df, col_name:
+    set col_idx to call get_column_index with df, col_name
+    if col_idx is equal to 0:
+        display "[DATAFRAME ERROR] Column '" + col_name + "' not found."
+        return []
+    set values to []
+    for each row in df["rows"]:
+        add row[col_idx] to values
+    return values
+
+# --------------------------------------------------------------
+# 2. Querying, Slicing & Filtering
+# --------------------------------------------------------------
 
 define function head with df, n:
     set subset_rows to []
-    set total to count of df["rows"]
     set limit to n
-    if limit is greater than total:
-        set limit to total
+    if limit is greater than df["num_rows"]:
+        set limit to df["num_rows"]
     for i from 1 to limit:
         add df["rows"][i] to subset_rows
-    return subset_rows
+    return call DataFrame with df["columns"], subset_rows
 
-define function get_column with df, column_name:
-    set col_index to 0
-    for i from 1 to count of df["columns"]:
-        if df["columns"][i] is equal to column_name:
-            set col_index to i
-    set col_values to []
+define function tail with df, n:
+    set subset_rows to []
+    set start_idx to (df["num_rows"] minus n) plus 1
+    if start_idx is less than 1:
+        set start_idx to 1
+    for i from start_idx to df["num_rows"]:
+        add df["rows"][i] to subset_rows
+    return call DataFrame with df["columns"], subset_rows
+
+define function filter_greater_than with df, col_name, threshold:
+    set col_idx to call get_column_index with df, col_name
+    set filtered_rows to []
     for each row in df["rows"]:
-        add row[col_index] to col_values
-    return col_values
+        if row[col_idx] is greater than threshold:
+            add row to filtered_rows
+    return call DataFrame with df["columns"], filtered_rows
 
-define function describe with df, column_name:
-    set vals to call get_column with df, column_name
-    display "--- Summary Statistics for Column: " + column_name + " ---"
-    display ">> Count : " + count of vals
+define function filter_equals with df, col_name, target_value:
+    set col_idx to call get_column_index with df, col_name
+    set filtered_rows to []
+    for each row in df["rows"]:
+        if row[col_idx] is equal to target_value:
+            add row to filtered_rows
+    return call DataFrame with df["columns"], filtered_rows
+
+define function select_columns with df, target_cols:
+    set indices to []
+    for each col in target_cols:
+        add (call get_column_index with df, col) to indices
+    set new_rows to []
+    for each row in df["rows"]:
+        set new_row to []
+        for each idx in indices:
+            add row[idx] to new_row
+        add new_row to new_rows
+    return call DataFrame with target_cols, new_rows
+
+# --------------------------------------------------------------
+# 3. Column Transformations & Mutations
+# --------------------------------------------------------------
+
+define function add_column with df, new_col_name, col_values:
+    set new_cols to []
+    for each c in df["columns"]:
+        add c to new_cols
+    add new_col_name to new_cols
+    
+    set new_rows to []
+    for i from 1 to df["num_rows"]:
+        set row to []
+        for each cell in df["rows"][i]:
+            add cell to row
+        add col_values[i] to row
+        add row to new_rows
+    return call DataFrame with new_cols, new_rows
+
+define function drop_column with df, col_name:
+    set drop_idx to call get_column_index with df, col_name
+    set new_cols to []
+    for i from 1 to count of df["columns"]:
+        if i is not equal to drop_idx:
+            add df["columns"][i] to new_cols
+    set new_rows to []
+    for each row in df["rows"]:
+        set new_row to []
+        for i from 1 to count of row:
+            if i is not equal to drop_idx:
+                add row[i] to new_row
+        add new_row to new_rows
+    return call DataFrame with new_cols, new_rows
+
+# --------------------------------------------------------------
+# 4. Aggregations & GroupBy
+# --------------------------------------------------------------
+
+define function column_sum with df, col_name:
+    set vals to call get_column_values with df, col_name
+    set total to 0.0
+    for each v in vals:
+        set total to total plus v
+    return total
+
+define function column_mean with df, col_name:
+    set vals to call get_column_values with df, col_name
+    return call mean with vals from "stats"
+
+define function column_min with df, col_name:
+    set vals to call get_column_values with df, col_name
+    set min_v to vals[1]
+    for each v in vals:
+        if v is less than min_v:
+            set min_v to v
+    return min_v
+
+define function column_max with df, col_name:
+    set vals to call get_column_values with df, col_name
+    set max_v to vals[1]
+    for each v in vals:
+        if v is greater than max_v:
+            set max_v to v
+    return max_v
+
+define function groupby_count with df, group_col:
+    set group_idx to call get_column_index with df, group_col
+    set unique_keys to []
+    set counts to []
+    for each row in df["rows"]:
+        set key to row[group_idx]
+        set found_idx to 0
+        for i from 1 to count of unique_keys:
+            if unique_keys[i] is equal to key:
+                set found_idx to i
+        if found_idx is equal to 0:
+            add key to unique_keys
+            add 1 to counts
+        else:
+            set counts[found_idx] = counts[found_idx] plus 1
+    
+    set res_rows to []
+    for i from 1 to count of unique_keys:
+        add [unique_keys[i], counts[i]] to res_rows
+    return call DataFrame with [group_col, "count"], res_rows

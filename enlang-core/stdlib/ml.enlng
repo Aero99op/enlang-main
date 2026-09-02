@@ -1,51 +1,250 @@
 type enlng
 
 # ==============================================================
-#   ENLNG STANDARD LIBRARY: MACHINE LEARNING (stdlib/ml.enlng)
-#   Pure Natural English Machine Learning & Optimization Engine
+#   ENLNG CORE ESSENTIAL PACKAGE: ML (stdlib/ml.enlng)
+#   Full Machine Learning Algorithms, Preprocessing & Metrics
 # ==============================================================
 
 use library "math"
 use library "stats"
+use library "numpy"
 
-# 1. Linear Regression (Least Squares Method: y = m*x + c)
+# --------------------------------------------------------------
+# 1. Regression Models
+# --------------------------------------------------------------
+
 define function fit_linear_regression with x_train, y_train:
     set x_mean to call mean with x_train from "stats"
     set y_mean to call mean with y_train from "stats"
-    
-    set numerator to 0.0
-    set denominator to 0.0
     set n to count of x_train
     
+    set num to 0.0
+    set den to 0.0
     for i from 1 to n:
-        set x_diff to x_train[i] minus x_mean
-        set y_diff to y_train[i] minus y_mean
-        set numerator to numerator plus (x_diff multiplied by y_diff)
-        set denominator to denominator plus (x_diff multiplied by x_diff)
-        
-    set slope_m to numerator divided by denominator
-    set intercept_c to y_mean minus (slope_m multiplied by x_mean)
+        set dx to x_train[i] minus x_mean
+        set dy to y_train[i] minus y_mean
+        set num to num plus (dx multiplied by dy)
+        set den to den plus (dx multiplied by dx)
     
-    return { "slope": slope_m, "intercept": intercept_c }
+    set slope to num divided by den
+    set intercept to y_mean minus (slope multiplied by x_mean)
+    return {
+        "type": "LinearRegression",
+        "slope": slope,
+        "intercept": intercept,
+        "is_fitted": true
+    }
 
-define function predict_linear with model, x_new:
+define function fit_ridge_regression with x_train, y_train, alpha_l2:
+    set x_mean to call mean with x_train from "stats"
+    set y_mean to call mean with y_train from "stats"
+    set n to count of x_train
+    
+    set num to 0.0
+    set den to alpha_l2
+    for i from 1 to n:
+        set dx to x_train[i] minus x_mean
+        set dy to y_train[i] minus y_mean
+        set num to num plus (dx multiplied by dy)
+        set den to den plus (dx multiplied by dx)
+    
+    set slope to num divided by den
+    set intercept to y_mean minus (slope multiplied by x_mean)
+    return {
+        "type": "RidgeRegression",
+        "slope": slope,
+        "intercept": intercept,
+        "alpha": alpha_l2,
+        "is_fitted": true
+    }
+
+define function predict_regression with model, x_new:
     return (model["slope"] multiplied by x_new) plus model["intercept"]
 
-# 2. Activation Functions
+# --------------------------------------------------------------
+# 2. Classification Models
+# --------------------------------------------------------------
+
 define function sigmoid with z:
     set exp_val to call exp with (0.0 minus z) from "math"
     return 1.0 divided by (1.0 plus exp_val)
 
-define function relu with z:
-    if z is greater than 0:
-        return z
-    return 0.0
+define function fit_logistic_regression with x_train, y_train, learning_rate, epochs:
+    set w to 0.0
+    set b to 0.0
+    set n to count of x_train
+    
+    for epoch from 1 to epochs:
+        set dw to 0.0
+        set db to 0.0
+        for i from 1 to n:
+            set z to (w multiplied by x_train[i]) plus b
+            set y_hat to call sigmoid with z
+            set err to y_hat minus y_train[i]
+            set dw to dw plus (err multiplied by x_train[i])
+            set db to db plus err
+        set w to w minus (learning_rate multiplied by (dw divided by n))
+        set b to b minus (learning_rate multiplied by (db divided by n))
+    
+    return {
+        "type": "LogisticRegression",
+        "weight": w,
+        "bias": b,
+        "is_fitted": true
+    }
 
-# 3. Loss Functions
+define function predict_proba_logistic with model, x_new:
+    set z to (model["weight"] multiplied by x_new) plus model["bias"]
+    return call sigmoid with z
+
+define function predict_logistic with model, x_new, threshold:
+    set proba to call predict_proba_logistic with model, x_new
+    if proba is greater than or equal to threshold:
+        return 1
+    return 0
+
+define function knn_classify with x_train, y_train, x_query, k_neighbors:
+    set distances to []
+    for i from 1 to count of x_train:
+        set dist to call absolute with (x_train[i] minus x_query) from "math"
+        add { "distance": dist, "label": y_train[i] } to distances
+    
+    # Sort distances
+    set n to count of distances
+    for i from 1 to n:
+        for j from 1 to (n minus i):
+            if distances[j]["distance"] is greater than distances[j plus 1]["distance"]:
+                set temp to distances[j]
+                set distances[j] = distances[j plus 1]
+                set distances[j plus 1] = temp
+    
+    # Majority voting over k neighbors
+    set votes_1 to 0
+    set votes_0 to 0
+    for i from 1 to k_neighbors:
+        if distances[i]["label"] is equal to 1:
+            set votes_1 to votes_1 plus 1
+        else:
+            set votes_0 to votes_0 plus 1
+    
+    if votes_1 is greater than votes_0:
+        return 1
+    return 0
+
+# --------------------------------------------------------------
+# 3. Clustering (K-Means)
+# --------------------------------------------------------------
+
+define function fit_kmeans with data_1d, k_clusters, max_iters:
+    set centroids to []
+    set step to (count of data_1d) divided by k_clusters
+    for i from 1 to k_clusters:
+        set idx to int((i minus 0.5) multiplied by step) plus 1
+        add data_1d[idx] to centroids
+    
+    for iter from 1 to max_iters:
+        set clusters to []
+        for i from 1 to k_clusters:
+            add [] to clusters
+        
+        # Assignment Step
+        for each x in data_1d:
+            set min_d to 1.0e+308
+            set best_k to 1
+            for k from 1 to k_clusters:
+                set d to call absolute with (x minus centroids[k]) from "math"
+                if d is less than min_d:
+                    set min_d to d
+                    set best_k to k
+            add x to clusters[best_k]
+        
+        # Update Step
+        for k from 1 to k_clusters:
+            if (count of clusters[k]) is greater than 0:
+                set centroids[k] = call mean with clusters[k] from "stats"
+    
+    return {
+        "type": "KMeans",
+        "k": k_clusters,
+        "centroids": centroids
+    }
+
+# --------------------------------------------------------------
+# 4. Evaluation Metrics
+# --------------------------------------------------------------
+
 define function mean_squared_error with y_true, y_pred:
-    set total_sq_err to 0.0
+    set total_err to 0.0
     set n to count of y_true
     for i from 1 to n:
         set diff to y_true[i] minus y_pred[i]
-        set total_sq_err to total_sq_err plus (diff multiplied by diff)
-    return total_sq_err divided by n
+        set total_err to total_err plus (diff multiplied by diff)
+    return total_err divided by n
+
+define function root_mean_squared_error with y_true, y_pred:
+    return call square_root with (call mean_squared_error with y_true, y_pred) from "math"
+
+define function mean_absolute_error with y_true, y_pred:
+    set total_err to 0.0
+    set n to count of y_true
+    for i from 1 to n:
+        set diff to call absolute with (y_true[i] minus y_pred[i]) from "math"
+        set total_err to total_err plus diff
+    return total_err divided by n
+
+define function r2_score with y_true, y_pred:
+    set y_mean to call mean with y_true from "stats"
+    set ss_res to 0.0
+    set ss_tot to 0.0
+    for i from 1 to count of y_true:
+        set diff_res to y_true[i] minus y_pred[i]
+        set diff_tot to y_true[i] minus y_mean
+        set ss_res to ss_res plus (diff_res multiplied by diff_res)
+        set ss_tot to ss_tot plus (diff_tot multiplied by diff_tot)
+    if ss_tot is equal to 0:
+        return 1.0
+    return 1.0 minus (ss_res divided by ss_tot)
+
+define function confusion_matrix with y_true, y_pred:
+    set tp to 0
+    set fp to 0
+    set tn to 0
+    set fn to 0
+    for i from 1 to count of y_true:
+        if y_true[i] is equal to 1 and y_pred[i] is equal to 1:
+            set tp to tp plus 1
+        if y_true[i] is equal to 0 and y_pred[i] is equal to 1:
+            set fp to fp plus 1
+        if y_true[i] is equal to 0 and y_pred[i] is equal to 0:
+            set tn to tn plus 1
+        if y_true[i] is equal to 1 and y_pred[i] is equal to 0:
+            set fn to fn plus 1
+    return { "TP": tp, "FP": fp, "TN": tn, "FN": fn }
+
+define function accuracy_score with y_true, y_pred:
+    set cm to call confusion_matrix with y_true, y_pred
+    set total to cm["TP"] plus cm["FP"] plus cm["TN"] plus cm["FN"]
+    if total is equal to 0:
+        return 0.0
+    return (cm["TP"] plus cm["TN"]) divided by total
+
+define function precision_score with y_true, y_pred:
+    set cm to call confusion_matrix with y_true, y_pred
+    set denom to cm["TP"] plus cm["FP"]
+    if denom is equal to 0:
+        return 0.0
+    return cm["TP"] divided by denom
+
+define function recall_score with y_true, y_pred:
+    set cm to call confusion_matrix with y_true, y_pred
+    set denom to cm["TP"] plus cm["FN"]
+    if denom is equal to 0:
+        return 0.0
+    return cm["TP"] divided by denom
+
+define function f1_score with y_true, y_pred:
+    set p to call precision_score with y_true, y_pred
+    set r to call recall_score with y_true, y_pred
+    if (p plus r) is equal to 0:
+        return 0.0
+    return (2.0 multiplied by (p multiplied by r)) divided by (p plus r)
