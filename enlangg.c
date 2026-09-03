@@ -68,7 +68,7 @@ const char* EMBEDDED_RUNNER =
 "        expr = re.sub(r'\\bdivided by\\b', '/', expr)\n"
 "        expr = re.sub(r'\\bplus\\b', '+', expr)\n"
 "        expr = re.sub(r'\\bminus\\b', '-', expr)\n"
-"        expr = re.sub(r'\\bmodulo\\b', '%', expr)\n"
+"        expr = re.sub(r'\\b(mod|modulo|modulus|modulous|modoulous)\\b', '%', expr)\n"
 "        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)\\s+from\\s+\"([^\"]+)\"', r'\\3.\\1(\\2)', expr)\n"
 "        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\s+from\\s+\"([^\"]+)\"', r'\\2.\\1()', expr)\n"
 "        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)(?=[,\\):]|$)', r'\\1(\\2)', expr)\n"

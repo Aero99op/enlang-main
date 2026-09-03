@@ -2,10 +2,11 @@ type enlng
 
 create a num of 1
 
-while num is at most 100:
+while num<=100:
     if num is equal to 100:
-        display "100 (Final Number)"
+        display "100"
     else:
         display num
     set num to num plus 1
+
 

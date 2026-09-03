@@ -1,0 +1,8 @@
+type enlng
+
+create a num of 7
+
+if num mod 2 is equal to 0:
+    display "even"
+else:
+    display "odd"
