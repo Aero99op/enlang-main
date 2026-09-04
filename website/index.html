@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.0.2" />
+  <link rel="stylesheet" href="style.css?v=5.0.3" />
 </head>
 <body>
 
@@ -29,11 +29,12 @@
         <a href="#playground" class="nav-link">Playground</a>
         <a href="#domains" class="nav-link">Domains</a>
         <a href="#book" class="nav-link">Book</a>
-        <a href="https://github.com/Aero99op/enlang-main" target="_blank" class="nav-btn-github" rel="noopener">
-          <svg class="gh-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        <a href="#book" class="nav-btn-action">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
           </svg>
-          <span>GitHub</span>
+          <span>Official Book</span>
         </a>
       </nav>
     </div>
@@ -76,7 +77,7 @@
           </div>
           <div class="installer-body">
             <span class="prompt-symbol">$</span>
-            <code id="installerCode">powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Aero99op/enlang-main/main/install.ps1 | iex"</code>
+            <code id="installerCode">powershell -ExecutionPolicy ByPass -c "irm https://enlangg.vercel.app/install.ps1 | iex"</code>
           </div>
           <div class="installer-features">
             <span class="feature-item">
@@ -209,19 +210,68 @@ else:
       </div>
     </section>
 
-    <!-- Definitive Specification Book Section -->
+    <!-- Definitive Specification Book Section (Interactive 3D Animated) -->
     <section class="book-section" id="book">
       <div class="container book-container">
-        <div class="book-card-graphic">
-          <div class="book-cover">
-            <div class="book-spine"></div>
-            <div class="book-front">
-              <div class="book-badge">MASTER SPECIFICATION</div>
-              <h3 class="book-title">ENLANGG:<br>THE ENLNG</h3>
-              <p class="book-author">Definitive Manual & Reference</p>
-              <div class="book-pages-pill">193 Master Pages</div>
+        <!-- Interactive 3D Animated Book Stage -->
+        <div class="book-stage" id="bookStage" title="Click or hover to open 3D preview">
+          <div class="book-3d" id="book3D">
+            <!-- Spine -->
+            <div class="book-spine">
+              <span class="spine-title">ENLANGG: THE ENLNG</span>
+              <span class="spine-pages">193 PAGES</span>
+            </div>
+
+            <!-- Paper Block Thickness (Realistic 3D Stack) -->
+            <div class="page-edge-right"></div>
+            <div class="page-edge-top"></div>
+            <div class="page-edge-bottom"></div>
+
+            <!-- Back Cover -->
+            <div class="book-back-cover"></div>
+
+            <!-- Inside Page (Chapter 1 Content) -->
+            <div class="book-inside-page">
+              <div class="page-header">
+                <span class="page-ch">CHAPTER 1</span>
+                <span class="page-num">p. 1 / 193</span>
+              </div>
+              <h4 class="page-title">The Sovereign Philosophy</h4>
+              <p class="page-excerpt">
+                Enlng dissolves artificial symbol barriers. Natural English grammar translates directly to high-throughput machine bytecode.
+              </p>
+              <div class="page-code-snippet">
+                <span class="code-kw">type</span> <span class="code-val">enlng</span><br>
+                <span class="code-kw">create</span> <span class="code-id">n</span> <span class="code-kw">of</span> <span class="code-num">10</span><br>
+                <span class="code-kw">while</span> <span class="code-id">count</span> <span class="code-op">is less than</span> <span class="code-id">n</span>:<br>
+                &nbsp;&nbsp;<span class="code-kw">display</span> <span class="code-id">first</span>
+              </div>
+              <div class="page-seal">
+                <span class="seal-icon">✦</span>
+                <span class="seal-text">Universal Spec Edition</span>
+              </div>
+            </div>
+
+            <!-- Front Cover (Opens in 3D on hover/click) -->
+            <div class="book-front-cover" id="bookFrontCover">
+              <div class="cover-foil-shimmer"></div>
+              <div class="cover-header">
+                <span class="book-badge">MASTER SPECIFICATION</span>
+                <span class="cover-seal">⚡</span>
+              </div>
+              <div class="cover-center">
+                <h3 class="book-title">ENLANGG:<br>THE ENLNG</h3>
+                <div class="title-divider"></div>
+                <p class="book-author">Definitive Manual & Reference</p>
+              </div>
+              <div class="cover-footer">
+                <span class="book-pages-pill">193 Master Pages</span>
+                <span class="open-hint">Hover / Tap to Open →</span>
+              </div>
             </div>
           </div>
+          <!-- Realistic Floating Drop Shadow -->
+          <div class="book-ground-shadow"></div>
         </div>
 
         <div class="book-info">
@@ -239,9 +289,27 @@ else:
               </svg>
               <span>Download PDF Book (420 KB)</span>
             </a>
-            <a href="https://github.com/Aero99op/enlang-main" target="_blank" class="secondary-btn" rel="noopener">
-              <span>View Source on GitHub</span>
-            </a>
+            <button type="button" class="secondary-btn" id="previewBookBtn">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span>Interactive 3D Preview</span>
+            </button>
+          </div>
+          <div class="book-meta-grid">
+            <div class="meta-item">
+              <span class="meta-val">193</span>
+              <span class="meta-lbl">Master Pages</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-val">6</span>
+              <span class="meta-lbl">Isolated Domains</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-val">100%</span>
+              <span class="meta-lbl">Python Parity</span>
+            </div>
           </div>
         </div>
       </div>
@@ -257,15 +325,15 @@ else:
         <span class="footer-copy">© 2026 Aero99op. Open source under MIT License.</span>
       </div>
       <div class="footer-links">
-        <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener">GitHub</a>
         <a href="#install">Install</a>
         <a href="#playground">Playground</a>
         <a href="#domains">Domains</a>
         <a href="#book">Specification Book</a>
+        <a href="enlangg_the_enlng.pdf" download>Download PDF</a>
       </div>
     </div>
   </footer>
 
-  <script src="app.js?v=5.0.2"></script>
+  <script src="app.js?v=5.0.3"></script>
 </body>
 </html>

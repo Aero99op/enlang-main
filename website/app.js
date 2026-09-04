@@ -6,13 +6,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initInstallerTabs();
   initPlayground();
   initDomainTabs();
+  initAnimatedBook();
 });
 
 // --- 1. Multi-OS Installer Tabs & Clipboard Copy ---
 const INSTALL_COMMANDS = {
-  powershell: 'powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Aero99op/enlang-main/main/install.ps1 | iex"',
-  cmd: 'curl -fsSL https://raw.githubusercontent.com/Aero99op/enlang-main/main/install.cmd -o install.cmd && install.cmd',
-  bash: 'curl -fsSL https://raw.githubusercontent.com/Aero99op/enlang-main/main/install.sh | bash'
+  powershell: 'powershell -ExecutionPolicy ByPass -c "irm https://enlangg.vercel.app/install.ps1 | iex"',
+  cmd: 'curl -fsSL https://enlangg.vercel.app/install.cmd -o install.cmd && install.cmd',
+  bash: 'curl -fsSL https://enlangg.vercel.app/install.sh | bash'
 };
 
 function initInstallerTabs() {
@@ -560,3 +561,34 @@ function initDomainTabs() {
     });
   });
 }
+
+// --- 4. Interactive 3D Animated Book ---
+function initAnimatedBook() {
+  const bookStage = document.getElementById('bookStage');
+  const previewBtn = document.getElementById('previewBookBtn');
+  const hintText = document.querySelector('.open-hint');
+
+  if (!bookStage) return;
+
+  const toggleBook = (e) => {
+    if (e && e.target && e.target.closest('a')) return;
+    bookStage.classList.toggle('book-open');
+    if (hintText) {
+      if (bookStage.classList.contains('book-open')) {
+        hintText.textContent = 'Click to Close ✕';
+      } else {
+        hintText.textContent = 'Hover / Click to Open →';
+      }
+    }
+  };
+
+  bookStage.addEventListener('click', toggleBook);
+
+  if (previewBtn) {
+    previewBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      toggleBook();
+    });
+  }
+}
+

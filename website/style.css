@@ -153,24 +153,26 @@ body::before {
   color: var(--text-primary);
 }
 
-.nav-btn-github {
+.nav-btn-action {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 6px 13px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  color: #fbbf24;
   text-decoration: none;
   font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.15s ease;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
-.nav-btn-github:hover {
-  background: var(--bg-subtle);
-  border-color: var(--border-hover);
+.nav-btn-action:hover {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: #f59e0b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.2);
 }
 
 /* Hero Section */
@@ -646,43 +648,384 @@ body::before {
   color: #e4e4e7;
 }
 
-/* Definitive Specification Book Section */
+/* Definitive Specification Book Section - Interactive 3D Showcase */
 .book-section {
   padding: 60px 0 80px;
 }
 
 .book-container {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 48px;
+  grid-template-columns: 320px 1fr;
+  gap: 56px;
   align-items: center;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   padding: 48px;
+  position: relative;
+  overflow: hidden;
 }
 
-.book-card-graphic {
-  perspective: 900px;
+.book-container::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  left: -80px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.07) 0%, transparent 70%);
+  pointer-events: none;
 }
 
-.book-cover {
+/* 3D Stage & Levitation Mechanics */
+.book-stage {
+  position: relative;
+  width: 280px;
+  height: 380px;
+  margin: 0 auto;
+  perspective: 1200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.book-3d {
+  position: relative;
   width: 220px;
   height: 310px;
-  background: linear-gradient(135deg, #18181b 0%, #0d0d10 100%);
-  border: 1px solid #3f3f46;
-  border-radius: 6px 12px 12px 6px;
+  transform-style: preserve-3d;
+  transform: rotateY(-22deg) rotateX(10deg);
+  animation: bookFloat 6s ease-in-out infinite;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes bookFloat {
+  0% {
+    transform: translateY(0px) rotateY(-22deg) rotateX(10deg) rotateZ(-0.5deg);
+  }
+  50% {
+    transform: translateY(-14px) rotateY(-18deg) rotateX(7deg) rotateZ(1deg);
+  }
+  100% {
+    transform: translateY(0px) rotateY(-22deg) rotateX(10deg) rotateZ(-0.5deg);
+  }
+}
+
+/* Hover & Active Open State */
+.book-stage:hover .book-3d,
+.book-stage.book-open .book-3d {
+  animation-play-state: paused;
+  transform: translateY(-6px) rotateY(-8deg) rotateX(4deg);
+}
+
+.book-stage:hover .book-front-cover,
+.book-stage.book-open .book-front-cover {
+  transform: rotateY(-142deg);
+}
+
+/* Ground Shadow */
+.book-ground-shadow {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  width: 200px;
+  height: 24px;
+  margin-left: -100px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.35) 45%, transparent 75%);
+  border-radius: 50%;
+  filter: blur(4px);
+  animation: shadowPulse 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes shadowPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(0.82) translateY(6px);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+.book-stage:hover .book-ground-shadow,
+.book-stage.book-open .book-ground-shadow {
+  animation-play-state: paused;
+  opacity: 0.6;
+}
+
+/* Book Spine */
+.book-spine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 100%;
+  background: linear-gradient(90deg, #09090b 0%, #1c1c21 40%, #0d0d10 100%);
+  border-left: 1px solid rgba(251, 191, 36, 0.3);
+  border-top: 1px solid #27272a;
+  border-bottom: 1px solid #27272a;
+  transform-origin: left center;
+  transform: rotateY(90deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 2px;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.9);
+  z-index: 2;
+}
+
+.spine-title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #fbbf24;
+  white-space: nowrap;
+}
+
+.spine-pages {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: #71717a;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+/* 3D Paper Thickness Edges */
+.page-edge-right {
+  position: absolute;
+  top: 3px;
+  right: 0;
+  width: 30px;
+  height: calc(100% - 6px);
+  background: repeating-linear-gradient(
+    to bottom,
+    #f4f4f5 0px,
+    #e4e4e7 1px,
+    #d4d4d8 2px,
+    #a1a1aa 3px
+  );
+  transform-origin: right center;
+  transform: rotateY(-90deg);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+.page-edge-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  background: #e4e4e7;
+  transform-origin: top center;
+  transform: rotateX(90deg);
+}
+
+.page-edge-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  background: #d4d4d8;
+  transform-origin: bottom center;
+  transform: rotateX(-90deg);
+}
+
+/* Back Cover */
+.book-back-cover {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px 10px 10px 4px;
+  background: #09090b;
+  border: 1px solid #27272a;
+  transform: translateZ(-30px);
+  box-shadow: -12px 16px 36px rgba(0, 0, 0, 0.85);
+}
+
+/* Inside Page (Chapter 1 Real Excerpt) */
+.book-inside-page {
+  position: absolute;
+  inset: 3px 4px 3px 3px;
+  border-radius: 2px 8px 8px 2px;
+  background: #fafaf9;
+  color: #18181b;
+  transform: translateZ(-2px);
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: inset 3px 0 10px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e7e5e4;
+  padding-bottom: 8px;
+}
+
+.page-ch {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #b45309;
+}
+
+.page-num {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: #78716c;
+}
+
+.page-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #1c1917;
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+  line-height: 1.25;
+}
+
+.page-excerpt {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: #57534e;
+  margin: 6px 0 8px;
+}
+
+.page-code-snippet {
+  background: #18181b;
+  color: #f4f4f6;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1.45;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #27272a;
+}
+
+.code-kw {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.code-id {
+  color: #93c5fd;
+}
+
+.code-val,
+.code-num {
+  color: #34d399;
+}
+
+.code-op {
+  color: #fb7185;
+}
+
+.page-seal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed #d6d3d1;
+}
+
+.seal-icon {
+  color: #d97706;
+  font-size: 0.75rem;
+}
+
+.seal-text {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #78716c;
+  text-transform: uppercase;
+}
+
+/* Front Cover (Interactive 3D Fold) */
+.book-front-cover {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px 12px 12px 4px;
+  background: linear-gradient(135deg, #18181b 0%, #0c0c0e 65%, #141418 100%);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  box-shadow: 
+    inset 4px 0 12px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    -8px 12px 28px rgba(0, 0, 0, 0.7);
   padding: 24px 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: -8px 12px 28px -6px rgba(0, 0, 0, 0.7);
-  position: relative;
-  transition: transform 0.3s ease;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transition: transform 0.75s cubic-bezier(0.25, 1, 0.35, 1);
+  z-index: 10;
+  overflow: hidden;
 }
 
-.book-cover:hover {
-  transform: translateY(-4px) rotateY(-4deg);
+/* Metallic Shimmering Foil Effect */
+.cover-foil-shimmer {
+  position: absolute;
+  top: -100%;
+  left: -100%;
+  width: 300%;
+  height: 300%;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(251, 191, 36, 0.08) 45%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(251, 191, 36, 0.08) 55%,
+    transparent 65%
+  );
+  animation: shimmerFoil 6s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes shimmerFoil {
+  0% {
+    transform: translate(-30%, -30%);
+  }
+  40%, 100% {
+    transform: translate(30%, 30%);
+  }
+}
+
+.cover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.cover-seal {
+  font-size: 0.85rem;
+  color: #fbbf24;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.5));
 }
 
 .book-badge {
@@ -693,29 +1036,64 @@ body::before {
   color: #fbbf24;
 }
 
+.cover-center {
+  position: relative;
+  z-index: 1;
+}
+
 .book-title {
-  font-size: 1.25rem;
+  font-size: 1.32rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #f4f4f6;
   line-height: 1.2;
 }
 
+.title-divider {
+  width: 36px;
+  height: 2px;
+  background: linear-gradient(90deg, #fbbf24 0%, transparent 100%);
+  margin: 10px 0 8px;
+}
+
 .book-author {
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   color: var(--text-muted);
 }
 
+.cover-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
 .book-pages-pill {
-  align-self: flex-start;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   background: #27272a;
   color: #e4e4e7;
   padding: 3px 8px;
   border-radius: var(--radius-sm);
+  border: 1px solid #3f3f46;
 }
 
+.open-hint {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #fbbf24;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.book-stage:hover .open-hint {
+  opacity: 1;
+}
+
+/* Book Information Column */
 .book-info {
   display: flex;
   flex-direction: column;
@@ -723,7 +1101,7 @@ body::before {
 }
 
 .book-heading {
-  font-size: 1.8rem;
+  font-size: 1.85rem;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--text-primary);
@@ -741,6 +1119,43 @@ body::before {
   gap: 12px;
   margin-top: 8px;
   flex-wrap: wrap;
+}
+
+.book-actions button.secondary-btn {
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+
+/* Book Specification Metadata Grid */
+.book-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meta-val {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fbbf24;
+  letter-spacing: -0.02em;
+}
+
+.meta-lbl {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .primary-btn {
@@ -852,14 +1267,19 @@ body::before {
   .book-container {
     grid-template-columns: 1fr;
     text-align: center;
-    padding: 32px 24px;
+    padding: 36px 20px;
+    gap: 36px;
   }
-  .book-card-graphic {
-    display: flex;
-    justify-content: center;
+  .book-stage {
+    transform: scale(0.92);
+    margin: 0 auto;
   }
   .book-actions {
     justify-content: center;
+  }
+  .book-meta-grid {
+    max-width: 440px;
+    margin: 16px auto 0;
   }
 }
 
@@ -872,5 +1292,13 @@ body::before {
   }
   .nav-link {
     display: none;
+  }
+  .book-stage {
+    transform: scale(0.82);
+    margin: -10px auto;
+  }
+  .book-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 }
