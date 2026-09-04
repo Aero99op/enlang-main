@@ -1,7 +1,7 @@
 /*
- * enlng - The Dedicated Core Enlng Programming Language Compiler & Runtime
- * Domain: PURE ENLNG ONLY (Backend / Algorithms / System Logic)
- * Zero Web. Zero Mobile. Zero Domain Overlap.
+ * enlng - The Sovereign Universal General-Purpose Programming Language
+ * Domain: PURE ENLNG (Complete Python Parity + Natural English Grammar)
+ * Zero Web. Zero Mobile. 100% General-Purpose Sovereign Computing.
  */
 
 #include <stdio.h>
@@ -9,15 +9,43 @@
 #include <string.h>
 #include <windows.h>
 
-#define ENLNG_VERSION "1.0.0-pure-core"
+#define ENLNG_VERSION "2.0.0-general-purpose-master"
 
 const char* CORE_ENLNG_RUNNER = 
-"import sys, os, re\n"
+"import sys, os, re, math, time, random, json\n"
 "if hasattr(sys.stdout, 'reconfigure'):\n"
 "    sys.stdout.reconfigure(encoding='utf-8', errors='replace')\n"
-"true = True; false = False; null = None\n"
 "\n"
-"# --- Standard Library Built-ins & Test Framework ---\n"
+"# --- Primitives & Constants ---\n"
+"true = True; false = False; null = None; undefined = None\n"
+"pi = math.pi; e = math.e\n"
+"\n"
+"# --- Standard Built-in Utilities ---\n"
+"def _smart_input(prompt=''):\n"
+"    try: val = input(prompt)\n"
+"    except (EOFError, KeyboardInterrupt): return ''\n"
+"    try:\n"
+"        if '.' in val: return float(val)\n"
+"        return int(val)\n"
+"    except ValueError: return val\n"
+"\n"
+"def ask(prompt=''): return _smart_input(prompt)\n"
+"def sleep(sec): time.sleep(sec)\n"
+"def random_number(a, b): return random.randint(a, b)\n"
+"def sqrt(n): return math.sqrt(n)\n"
+"def floor(n): return math.floor(n)\n"
+"def ceil(n): return math.ceil(n)\n"
+"\n"
+"# --- Built-in File I/O ---\n"
+"def read_file(path):\n"
+"    with open(path, 'r', encoding='utf-8', errors='replace') as f: return f.read()\n"
+"def write_file(path, content):\n"
+"    with open(path, 'w', encoding='utf-8') as f: f.write(str(content))\n"
+"def append_file(path, content):\n"
+"    with open(path, 'a', encoding='utf-8') as f: f.write(str(content))\n"
+"def file_exists(path): return os.path.exists(path)\n"
+"\n"
+"# --- Test Framework ---\n"
 "class TestRunner:\n"
 "    def __init__(self):\n"
 "        self.passed = 0; self.failed = 0; self.total = 0\n"
@@ -42,15 +70,7 @@ const char* CORE_ENLNG_RUNNER =
 "        print('=' * 60)\n"
 "test_runner = TestRunner()\n"
 "\n"
-"def _smart_input(prompt=''):\n"
-"    try: val = input(prompt)\n"
-"    except (EOFError, KeyboardInterrupt): return ''\n"
-"    try:\n"
-"        if '.' in val: return float(val)\n"
-"        return int(val)\n"
-"    except ValueError: return val\n"
-"def ask(prompt=''): return _smart_input(prompt)\n"
-"\n"
+"# --- Universal Enlng Compiler Engine ---\n"
 "def transpile_line(line):\n"
 "    indent_len = len(line) - len(line.lstrip(' '))\n"
 "    indent = line[:indent_len]\n"
@@ -87,6 +107,7 @@ const char* CORE_ENLNG_RUNNER =
 "        expr = re.sub(r'\\bplus\\b', '+', expr)\n"
 "        expr = re.sub(r'\\bminus\\b', '-', expr)\n"
 "        expr = re.sub(r'\\b(mod|modulo|modulus|modulous|modoulous)\\b', '%', expr)\n"
+"        expr = re.sub(r'\\b([a-zA-Z0-9_\\[\\]]+)\\s+contains\\s+(.*)', r'(\\2 in \\1)', expr)\n"
 "        expr = re.sub(r'\\b(?:ask\\s+user\\s+with|ask\\s+with|ask)\\s+\"([^\"]*)\"', r'_smart_input(\"\\1\")', expr)\n"
 "        expr = re.sub(r'\\b(?:input\\s+with|input)\\s+\"([^\"]*)\"', r'_smart_input(\"\\1\")', expr)\n"
 "        expr = re.sub(r'\\bread\\s+from\\s+user\\s+with\\s+\"([^\"]*)\"', r'_smart_input(\"\\1\")', expr)\n"
@@ -97,10 +118,46 @@ const char* CORE_ENLNG_RUNNER =
 "        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\s+from\\s+\"([^\"]+)\"', r'\\2.\\1()', expr)\n"
 "        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)(?=[,\\):]|$)', r'\\1(\\2)', expr)\n"
 "        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\b', r'\\1()', expr)\n"
-"        expr = re.sub(r'\\bcount of\\s+([a-zA-Z0-9_\\[\\]\"\\']+)', r'len(\\1)', expr)\n"
-"        expr = re.sub(r'(\"[^\"]*\")\\s*\\+\\s*([a-zA-Z0-9_\\[\\]]+)', r'\\1 + str(\\2)', expr)\n"
-"        expr = re.sub(r'([a-zA-Z0-9_\\[\\]]+)\\s*\\+\\s*(\"[^\"]*\")', r'str(\\1) + \\2', expr)\n"
+"        expr = re.sub(r'\\b(?:count\\s+of|length\\s+of)\\s+([a-zA-Z0-9_\\[\\]\"\\'\\(\\)]+)', r'len(\\1)', expr)\n"
 "        return expr\n"
+"\n"
+"    # 1. Loop controls: break / continue / pass\n"
+"    if re.match(r'^(?:break|stop\\s+loop|exit\\s+loop)$', trimmed, re.I): return f'{indent}break'\n"
+"    if re.match(r'^(?:continue|skip\\s+iteration|next\\s+iteration)$', trimmed, re.I): return f'{indent}continue'\n"
+"    if re.match(r'^(?:pass|do\\s+nothing)$', trimmed, re.I): return f'{indent}pass'\n"
+"\n"
+"    # 2. Return statements: return / give back\n"
+"    m = re.match(r'^(?:return|give\\s+back)(?:\\s+(.*))?$', trimmed, re.I)\n"
+"    if m:\n"
+"        val = m.group(1)\n"
+"        return f'{indent}return {fix_expr(val)}' if val else f'{indent}return'\n"
+"\n"
+"    # 3. Exception handling: try / catch / finally / raise\n"
+"    if re.match(r'^(?:try|attempt):$', trimmed, re.I): return f'{indent}try:'\n"
+"    m = re.match(r'^(?:catch|rescue|except)(?:\\s+as\\s+|\\s+)([a-zA-Z0-9_]+):$', trimmed, re.I)\n"
+"    if m: return f'{indent}except Exception as {m.group(1)}:'\n"
+"    if re.match(r'^(?:catch|rescue|except):$', trimmed, re.I): return f'{indent}except Exception:'\n"
+"    if re.match(r'^finally:$', trimmed, re.I): return f'{indent}finally:'\n"
+"    m = re.match(r'^(?:raise|throw)\\s+(.*)$', trimmed, re.I)\n"
+"    if m: return f'{indent}raise Exception({fix_expr(m.group(1))})'\n"
+"\n"
+"    # 4. List mutations: add X to Y / remove X from Y\n"
+"    m = re.match(r'^add\\s+(.*?)\\s+to\\s+([a-zA-Z0-9_\\[\\]\\.]+)$', trimmed, re.I)\n"
+"    if m: return f'{indent}{m.group(2)}.append({fix_expr(m.group(1))})'\n"
+"    m = re.match(r'^remove\\s+(.*?)\\s+from\\s+([a-zA-Z0-9_\\[\\]\\.]+)$', trimmed, re.I)\n"
+"    if m: return f'{indent}{m.group(2)}.remove({fix_expr(m.group(1))})'\n"
+"\n"
+"    # 5. OOP: Class & Methods\n"
+"    m = re.match(r'^(?:define\\s+class|class)\\s+([a-zA-Z0-9_]+)(?:\\s+(?:inherits\\s+from|extends)\\s+([a-zA-Z0-9_]+))?:$', trimmed, re.I)\n"
+"    if m:\n"
+"        cname, base = m.group(1), m.group(2)\n"
+"        return f'{indent}class {cname}({base}):' if base else f'{indent}class {cname}:'\n"
+"    m = re.match(r'^(?:method|define\\s+method)\\s+([a-zA-Z0-9_]+)(?:\\s+with\\s+(.*?))?:$', trimmed, re.I)\n"
+"    if m:\n"
+"        mname, params = m.group(1), m.group(2) or ''\n"
+"        return f'{indent}def {mname}(self, {params}):' if params else f'{indent}def {mname}(self):'\n"
+"\n"
+"    # 6. Universal Hint Keyword Discovery for 'ask'\n"
 "    if re.search(r'\\b(?:ask|asking)\\b', trimmed, re.I) and not re.match(r'^(?:create|declare|initialize|let|set|if|while|for|define|display|show)\\b', trimmed, re.I):\n"
 "        _pm = re.search(r'\"([^\"]*)\"', trimmed)\n"
 "        _p = _pm.group(1) if _pm else ''\n"
@@ -110,21 +167,34 @@ const char* CORE_ENLNG_RUNNER =
 "        _vars = [t for t in _cl.split() if t.lower() not in _fill and re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', t)]\n"
 "        if _vars: return f'{indent}{_vars[0]} = _smart_input(\"{_p}\")'\n"
 "        return f'{indent}_smart_input(\"{_p}\")'\n"
+"\n"
+"    # 7. Variable Declarations\n"
 "    m = re.match(r'^(?:create\\s+(?:a\\s+|an\\s+|the\\s+)?|declare\\s+|initialize\\s+(?:the\\s+)?|let\\s+)([a-zA-Z0-9_]+)\\s+(?:of|as|to|=)\\s+(.*)$', trimmed)\n"
 "    if m: return f'{indent}{m.group(1)} = {fix_expr(m.group(2))}'\n"
+"\n"
+"    # 8. Variable Assignments\n"
 "    m = re.match(r'^set\\s+([a-zA-Z0-9_\\[\\]\"\\.]+)\\s+(?:to|=)\\s+(.*)$', trimmed)\n"
 "    if m: return f'{indent}{m.group(1)} = {fix_expr(m.group(2))}'\n"
 "    m = re.match(r'^set\\s+([a-zA-Z0-9_\\[\\]\"\\.]+)\\s*(\\+=|-=|\\*=|/=|%=)\\s*(.*)$', trimmed)\n"
 "    if m: return f'{indent}{m.group(1)} {m.group(2)} {fix_expr(m.group(3))}'\n"
+"\n"
+"    # 9. Output Display\n"
 "    m = re.match(r'^(?:display|show|output|print)\\s+(.*)$', trimmed)\n"
-"    if m: return f'{indent}print({fix_expr(m.group(1))})'\n"
+"    if m:\n"
+"        _v = fix_expr(m.group(1))\n"
+"        _ch = []; _iq = False; _qc = ''; _bd = 0; _pd = 0\n"
+"        for _c in _v:\n"
+"            if not _iq and _c in ('\"', \"'\"): _iq = True; _qc = _c; _ch.append(_c)\n"
+"            elif _iq and _c == _qc: _iq = False; _ch.append(_c)\n"
+"            elif not _iq and _c in ('(', '['): _pd += (_c == '('); _bd += (_c == '['); _ch.append(_c)\n"
+"            elif not _iq and _c in (')', ']'): _pd -= (_c == ')'); _bd -= (_c == ']'); _ch.append(_c)\n"
+"            elif not _iq and _bd == 0 and _pd == 0 and _c == '+': _ch.append(',')\n"
+"            else: _ch.append(_c)\n"
+"        return f'{indent}print({\"\".join(_ch)}, sep=\"\")'\n"
+"\n"
+"    # 10. Loops\n"
 "    m = re.match(r'^(?:while|repeat\\s+while)\\s+(.*?):$', trimmed)\n"
 "    if m: return f'{indent}while {fix_expr(m.group(1))}:'\n"
-"    m = re.match(r'^if\\s+(.*?):$', trimmed)\n"
-"    if m: return f'{indent}if {fix_expr(m.group(1))}:'\n"
-"    m = re.match(r'^(?:else\\s+if|elif)\\s+(.*?):$', trimmed)\n"
-"    if m: return f'{indent}elif {fix_expr(m.group(1))}:'\n"
-"    if trimmed == 'else:': return f'{indent}else:'\n"
 "    m = re.match(r'^for\\s+(?:each|every|all)\\s+([a-zA-Z0-9_]+)\\s+in\\s+(.*?):$', trimmed)\n"
 "    if m: return f'{indent}for {m.group(1)} in {fix_expr(m.group(2))}:'\n"
 "    m = re.match(r'^for\\s+([a-zA-Z0-9_]+)\\s+from\\s+(.*?)\\s+to\\s+(.*?)(?:\\s+by\\s+(.*?))?:$', trimmed)\n"
@@ -132,10 +202,22 @@ const char* CORE_ENLNG_RUNNER =
 "        v, s, e, st = m.group(1), m.group(2), m.group(3), m.group(4)\n"
 "        if st: return f'{indent}for {v} in range({fix_expr(s)}, ({fix_expr(e)}) + 1, {fix_expr(st)}):'\n"
 "        return f'{indent}for {v} in range({fix_expr(s)}, ({fix_expr(e)}) + 1):'\n"
-"    m = re.match(r'^(?:define\\s+function|function)\\s+([a-zA-Z0-9_]+)(?:\\s+with\\s+(.*?))?:$', trimmed)\n"
+"\n"
+"    # 11. Conditionals\n"
+"    m = re.match(r'^if\\s+(.*?):$', trimmed)\n"
+"    if m: return f'{indent}if {fix_expr(m.group(1))}:'\n"
+"    m = re.match(r'^(?:else\\s+if|elif)\\s+(.*?):$', trimmed)\n"
+"    if m: return f'{indent}elif {fix_expr(m.group(1))}:'\n"
+"    if trimmed == 'else:': return f'{indent}else:'\n"
+"\n"
+"    # 12. Functions\n"
+"    m = re.match(r'^(?:define\\s+function|function|def)\\s+([a-zA-Z0-9_]+)(?:\\s+with\\s+(.*?))?:$', trimmed)\n"
 "    if m: return f'{indent}def {m.group(1)}({m.group(2) or \"\"}):'\n"
-"    m = re.match(r'^use\\s+library\\s+\"([^\"]+)\"', trimmed)\n"
-"    if m: return f'{indent}# [MODULE: {m.group(1)}]'\n"
+"\n"
+"    # 13. Modules & Libraries\n"
+"    m = re.match(r'^(?:use\\s+library|import)\\s+\"?([a-zA-Z0-9_]+)\"?', trimmed)\n"
+"    if m: return f'{indent}import {m.group(1)}'\n"
+"\n"
 "    return f'{indent}{fix_expr(trimmed)}'\n"
 "\n"
 "if len(sys.argv) > 1:\n"
@@ -152,11 +234,11 @@ const char* CORE_ENLNG_RUNNER =
 
 void print_help() {
     printf("Enlng Sovereign Programming Language Compiler & Runtime v%s\n", ENLNG_VERSION);
-    printf("Dedicated compiler for domain: 'enlng' (pure core language)\n\n");
+    printf("Full General-Purpose Language (Complete Python Parity + Natural English Grammar)\n\n");
     printf("Usage:\n");
-    printf("  enlng run <file.enlng>    Execute a sovereign enlng script\n");
-    printf("  enlng <file.enlng>        Direct script execution\n");
-    printf("  enlng --version           Display compiler version\n");
+    printf("  enlng run <file.enlng>    Compile and execute enlng script\n");
+    printf("  enlng <file.enlng>        Direct execution\n");
+    printf("  enlng --version           Show version\n");
 }
 
 int run_enlng_file(const char* filepath) {
@@ -187,7 +269,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
-        printf("enlng version %s (Sovereign Core)\n", ENLNG_VERSION);
+        printf("enlng version %s (General Purpose)\n", ENLNG_VERSION);
         return 0;
     }
 
