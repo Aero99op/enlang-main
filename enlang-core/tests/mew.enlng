@@ -1,0 +1,13 @@
+type enlng
+
+create a word of "madam"
+create a reversed of ""
+create a i of 0
+
+while i less than length of word:
+   set reversed to word[i] plus reversed 
+   set i to i plus 1
+if word is equal to reversed:
+    display "palindrome"
+else:
+    display "not palindrome"

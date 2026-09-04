@@ -1,0 +1,15 @@
+type enlng
+
+create a n of 10
+create a first of 0
+create a second of 1
+create a count of 0
+
+display "fibonacci series"
+
+while count is less than n:
+    display first
+    create a next of first plus second
+    set first to second
+    set second to next
+    set count to count plus 1
