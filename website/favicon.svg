@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#09090b" stroke="#23232b" stroke-width="1"/>
+  <defs>
+    <linearGradient id="favGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="50%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0.5, 0.5)">
+    <!-- Top Beam -->
+    <polygon points="15,6 25,11.5 21,14 11,8.5" fill="#FFFFFF"/>
+    <polyline points="11,8.5 15,6 25,11.5 21,14" fill="none" stroke="url(#favGold)" stroke-width="1.2" stroke-linejoin="round"/>
+    
+    <!-- Spine -->
+    <polygon points="6,11.5 11,8.5 11,23.5 6,20.5" fill="#CBD5E1"/>
+    <polyline points="11,8.5 6,11.5 6,20.5 11,23.5" fill="none" stroke="url(#favGold)" stroke-width="1.2" stroke-linejoin="round"/>
+    
+    <!-- Center Cantilever -->
+    <polygon points="8,17 20,11 22,13 11,19.5" fill="#E2E8F0"/>
+    <polyline points="8,17 20,11 22,13 11,19.5" fill="none" stroke="url(#favGold)" stroke-width="1.2" stroke-linejoin="round"/>
+    
+    <!-- Bottom Beam -->
+    <polygon points="6,20.5 15,26 24,20.5 21,18.5 15,22.5 6,17.5" fill="#94A3B8"/>
+    <polyline points="6,20.5 15,26 24,20.5" fill="none" stroke="url(#favGold)" stroke-width="1.2" stroke-linejoin="round"/>
+  </g>
+</svg>

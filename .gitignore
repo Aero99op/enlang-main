@@ -1,8 +1,19 @@
-# Python bytecode & cache
+# Python bytecode & distribution artifacts
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Binary datasets & ML model artifacts (store separately or via releases)
+*.pkl
+*.db
+*.sqlite
+*.sqlite3
+*.csv
 
 # Environments & IDEs
 .venv/
@@ -10,14 +21,17 @@ env/
 venv/
 .idea/
 .vscode/
+*.swp
+*.swo
 
-# Agent & temporary files
+# Temporary runtime files & scratchpads
 .agents/
 .gemini/
 *.log
-
-# Generated test images (optional artifacts)
-*.png
-
-# Temporary scratch directory
 scratch/
+
+# Loose test output images in root
+/*.png
+
+# Local deployment bundles
+.vercel/

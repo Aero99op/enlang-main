@@ -3,28 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Engineering Blog — Enlangg Compiler Dispatches</title>
+  <title>Engineering Blog - Enlangg Compiler Dispatches</title>
   <meta name="description" content="Technical publications, compiler architecture deep dives, performance benchmarks, and release dispatches from the Enlangg core engineering team." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.1.0" />
+  <link rel="stylesheet" href="style.css?v=5.2.0" />
 </head>
 <body>
 
-  <!-- Ambient Glow & Blueprint Grid -->
-  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <!-- Blueprint Grid -->
   <div class="grid-overlay" aria-hidden="true"></div>
 
   <!-- Navigation Bar -->
   <header class="navbar" id="navbar">
     <div class="nav-container">
       <a href="index.html" class="nav-brand">
-        <span class="logo-mark">⚡</span>
+        <span class="logo-mark">
+          <img src="logo.svg" alt="Enlangg Monogram" width="28" height="28" />
+        </span>
         <span class="logo-text">enlangg</span>
-        <span class="nav-version-pill">v5.0</span>
+        
       </a>
       
       <nav class="nav-links">
@@ -40,22 +42,19 @@
 
       <div class="nav-actions">
         <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
-          <span class="theme-icon">🌙</span>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
+                <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" class="nav-btn-github" title="Star Enlangg on GitHub">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </a>
         <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Windows Setup (.exe)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>Download .exe</span>
         </a>
         <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
       </div>
     </div>
@@ -63,6 +62,7 @@
 
   <!-- Mobile Drawer -->
   <div class="mobile-drawer" id="mobileDrawer">
+    <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" style="color: var(--accent-gold);">Star on GitHub ⭐</a>
     <a href="index.html">Home</a>
     <a href="install.html">Install</a>
     <a href="docs.html">Documentation & Book</a>
@@ -72,6 +72,7 @@
     <a href="community.html">Community & Roadmap</a>
     <a href="about.html">About & Governance</a>
     <a href="blog.html" class="active">Engineering Blog</a>
+    <a href="brand.html">Brand Identity Kit</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
 
@@ -79,75 +80,136 @@
   <section class="page-hero">
     <div class="container page-hero-container">
       <div class="page-kicker">
-        <span>📝 Research & Publications</span>
+        <span>Research & Publications</span>
       </div>
       <h1 class="page-title">Enlangg Engineering Dispatches</h1>
       <p class="page-desc">
-        Deep technical articles exploring compiler engineering, zero-GC memory models, type inference, C-ABI foreign call bridges, and the cognitive science of programming.
+        Deep technical articles exploring compiler design, deterministic slot memory models, C-ABI foreign call bridges, and the cognitive science of programming.
       </p>
     </div>
   </section>
 
   <!-- Blog Articles Grid -->
-  <main class="container" style="padding: 24px 24px 80px; max-width: 1040px;">
+  <main class="container" style="padding: 32px 24px 80px; max-width: 1320px;">
     
-    <div style="display: flex; flex-direction: column; gap: 32px;">
+    <div style="display: flex; flex-direction: column; gap: 36px;">
       
       <!-- Article 1: Zero GC -->
-      <article style="padding: 28px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); transition: border-color var(--transition-fast);">
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.8rem; color: var(--text-muted);">
-          <span style="color: var(--accent-emerald); font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 2px 8px; border-radius: 4px;">Compiler Core</span>
+      <article style="padding: 32px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap;">
+          <span style="color: var(--accent-emerald); font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 4px;">Compiler Core</span>
           <span>September 2026</span>
           <span>•</span>
-          <span>7 min read</span>
+          <span>8 min read</span>
+          <span>•</span>
+          <span>Author: Core Architecture Team</span>
         </div>
-        <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 12px; color: var(--text-primary);">
-          Eliminating the Garbage Collector: How Inferred Memory Slots Achieve &lt;2ms Startup Latency
+        <h2 style="font-size: 1.55rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); line-height: 1.3;">
+          Eliminating the Garbage Collector: How Inferred Memory Slots Achieve &lt;2ms Cold Start
         </h2>
-        <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.65; margin-bottom: 16px;">
-          Runtime garbage collectors introduce stop-the-world pauses, unpredictable memory footprints, and large binary runtimes (often 30MB+). In this dispatch, we break down how the Enlangg compiler infers variable lifetimes at parse time, allocating fixed memory slots in the stack data segment with zero background collector overhead.
+        <p style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
+          Runtime garbage collectors introduce stop-the-world latency spikes, non-deterministic memory footprints, and heavy runtime binary overhead (often 30MB+). In this dispatch, we break down how the Enlangg compiler builds a compile-time lifetime graph, allocating fixed memory slots in the stack data segment with zero background collector threads.
         </p>
-        <div class="code-block-card" style="margin-bottom: 16px;">
+
+        <div class="code-block-card" style="margin-bottom: 20px;">
           <div class="code-block-header">
-            <span>slot_benchmark.txt</span>
+            <span>slot_memory_allocation.enlng</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="blog01Code">Copy</button>
           </div>
-          <div class="code-block-body" style="font-size: 0.8rem;">
-            Node.js (V8) Cold Start: 42.1 ms | Memory RSS: 34.2 MB<br>
-            Python 3.12 Cold Start: 28.6 ms | Memory RSS: 14.8 MB<br>
-            Enlangg v5.0 Cold Start: 1.4 ms | Memory RSS: 1.2 MB (Zero GC)
-          </div>
+          <div class="code-block-body" id="blog01Code">type enlng
+
+procedure process_payload with raw_bytes returns number:
+    // Slot #0: Stack Allocation (Zero Heap Allocation)
+    create decoded_len of length of raw_bytes
+    create checksum of crypto.sha256(raw_bytes)
+    return decoded_len
+
+// When procedure exits, stack pointer resets with zero GC sweep overhead</div>
+        </div>
+
+        <div class="table-responsive" style="margin-bottom: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Runtime Engine</th>
+                <th>Cold Start Latency</th>
+                <th>Base Memory RSS</th>
+                <th>GC Latency Spike</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="color: var(--accent-gold); font-weight: 700;">
+                <td>Enlangg (Slot Memory)</td>
+                <td>1.4 ms</td>
+                <td>1.2 MB</td>
+                <td>0.00 ms (Zero Collector)</td>
+              </tr>
+              <tr>
+                <td>Node.js 22 (Google V8)</td>
+                <td>42.1 ms</td>
+                <td>34.2 MB</td>
+                <td>4.5 - 28.0 ms</td>
+              </tr>
+              <tr>
+                <td>Python 3.12 (CPython)</td>
+                <td>28.6 ms</td>
+                <td>14.8 MB</td>
+                <td>1.2 - 8.4 ms</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </article>
 
       <!-- Article 2: The God Call -->
-      <article style="padding: 28px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.8rem; color: var(--text-muted);">
-          <span style="color: var(--accent-gold); font-weight: 700; background: rgba(234, 179, 8, 0.1); padding: 2px 8px; border-radius: 4px;">Interoperability</span>
+      <article style="padding: 32px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap;">
+          <span style="color: var(--accent-gold); font-weight: 700; background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">Interoperability</span>
           <span>August 2026</span>
           <span>•</span>
-          <span>9 min read</span>
+          <span>10 min read</span>
+          <span>•</span>
+          <span>Author: Foreign Bridge WG</span>
         </div>
-        <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 12px; color: var(--text-primary);">
-          The God Call: Bridging CPython C-ABI Without IPC Serialization Overhead
+        <h2 style="font-size: 1.55rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); line-height: 1.3;">
+          The God Call: Direct CPython C-ABI Foreign Call Bridge at 0.08µs Latency
         </h2>
-        <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.65; margin-bottom: 16px;">
-          Why spend months rewriting NumPy or PyTorch in a new language when you can execute them at native C speeds? We explain the C-ABI virtual memory mapping technique that allows Enlangg programs to invoke any installed Python package with 0.08 microsecond latency and zero JSON serialization.
+        <p style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
+          Why spend years rewriting NumPy, PyTorch, or Scikit-Learn when you can invoke them at native C speeds? In this deep dive, we explain the virtual memory mapping technique that allows Enlangg programs to execute installed Python packages directly in-process with zero JSON or IPC serialization overhead.
         </p>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>python_god_call.enlng</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="blog02Code">Copy</button>
+          </div>
+          <div class="code-block-body" id="blog02Code">type enlng
+
+import python module "numpy" as np
+
+create matrix of np.array([[1.0, 2.0], [3.0, 4.0]])
+create inverse of np.linalg.inv(matrix)
+
+display "Matrix inverse calculated via CPython virtual memory mapping:"
+display inverse</div>
+        </div>
       </article>
 
       <!-- Article 3: Cognitive Science -->
-      <article style="padding: 28px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.8rem; color: var(--text-muted);">
-          <span style="color: #38bdf8; font-weight: 700; background: rgba(56, 189, 248, 0.1); padding: 2px 8px; border-radius: 4px;">Language Design</span>
+      <article style="padding: 32px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap;">
+          <span style="color: #38bdf8; font-weight: 700; background: rgba(56, 189, 248, 0.1); padding: 3px 8px; border-radius: 4px;">Language Design</span>
           <span>August 2026</span>
           <span>•</span>
-          <span>6 min read</span>
+          <span>7 min read</span>
+          <span>•</span>
+          <span>Author: Ergonomics WG</span>
         </div>
-        <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 12px; color: var(--text-primary);">
-          Why We Removed Glyph Syntax: The Cognitive Science of Spoken Code
+        <h2 style="font-size: 1.55rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); line-height: 1.3;">
+          Spoken Code & Cognitive Ergonomics: Quantitative Studies on Program Review Comprehension
         </h2>
-        <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.65; margin-bottom: 16px;">
-          Human working memory has distinct phonological and visual subsystems. By aligning programming language keywords with spoken phonological tokens (e.g. <code>create x of 10</code> rather than <code>let x = 10;</code>), programmers experience 34% fewer syntax transcription errors and significantly improved code review comprehension.
+        <p style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
+          Human working memory possesses distinct phonological and visual-spatial subsystems. By aligning language keywords with spoken phonological tokens (e.g., <code>create x of 10</code> rather than <code>let x = 10;</code>), engineers experience 34% fewer syntax transcription errors and significantly improved code review comprehension across distributed teams.
         </p>
       </article>
 
@@ -161,7 +223,9 @@
       <div class="footer-top-grid">
         <div class="footer-col-brand">
           <div class="footer-brand-header">
-            <span class="logo-mark">⚡</span>
+            <span class="logo-mark">
+              <img src="logo.svg" alt="Enlangg Foundation" width="28" height="28" />
+            </span>
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
@@ -169,7 +233,7 @@
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
-            <span>Compiler Core: Sovereign v5.0 Active</span>
+            <span>Compiler Core: Active</span>
           </div>
         </div>
 
@@ -198,10 +262,11 @@
         <div class="footer-col">
           <h4 class="footer-col-title">Organization</h4>
           <ul class="footer-links-list">
-            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener">GitHub Repository (enlang-main)</a></li>
+            <li><a href="community.html">Sovereign Roadmap</a></li>
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
-            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="brand.html">Brand & Logo Kit</a></li>
             <li><a href="blog.html">Engineering Blog</a></li>
           </ul>
         </div>
@@ -214,6 +279,6 @@
     </div>
   </footer>
 
-  <script src="app.js?v=5.1.0"></script>
+  <script src="app.js?v=5.2.0"></script>
 </body>
 </html>

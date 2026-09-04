@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c0c11"/>
+      <stop offset="50%" stop-color="#14141c"/>
+      <stop offset="100%" stop-color="#08080b"/>
+    </linearGradient>
+    <radialGradient id="playGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1280" height="720" fill="url(#bg)"/>
+
+  <!-- Precision Blueprint Grid -->
+  <g stroke="rgba(255,255,255,0.03)" stroke-width="1">
+    <line x1="0" y1="90" x2="1280" y2="90"/>
+    <line x1="0" y1="180" x2="1280" y2="180"/>
+    <line x1="0" y1="270" x2="1280" y2="270"/>
+    <line x1="0" y1="360" x2="1280" y2="360"/>
+    <line x1="0" y1="450" x2="1280" y2="450"/>
+    <line x1="0" y1="540" x2="1280" y2="540"/>
+    <line x1="0" y1="630" x2="1280" y2="630"/>
+    <line x1="160" y1="0" x2="160" y2="720"/>
+    <line x1="320" y1="0" x2="320" y2="720"/>
+    <line x1="480" y1="0" x2="480" y2="720"/>
+    <line x1="640" y1="0" x2="640" y2="720"/>
+    <line x1="800" y1="0" x2="800" y2="720"/>
+    <line x1="960" y1="0" x2="960" y2="720"/>
+    <line x1="1120" y1="0" x2="1120" y2="720"/>
+  </g>
+
+  <!-- Top Badges -->
+  <g transform="translate(60, 60)">
+    <rect width="180" height="32" rx="16" fill="rgba(168, 85, 247, 0.12)" stroke="rgba(168, 85, 247, 0.3)" stroke-width="1"/>
+    <text x="24" y="21" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700" fill="#c084fc">NotebookLM Video</text>
+    <circle cx="14" cy="16" r="4" fill="#a855f7"/>
+  </g>
+
+  <!-- Central Play Button with Aura -->
+  <circle cx="640" cy="340" r="80" fill="url(#playGlow)"/>
+  <circle cx="640" cy="340" r="46" fill="#181822" stroke="#fbbf24" stroke-width="2"/>
+  <polygon points="633,322 657,340 633,358" fill="#fbbf24"/>
+
+  <!-- Title & Subtitle in Poster -->
+  <text x="640" y="440" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="28" font-weight="800" fill="#f4f4f7" letter-spacing="-0.5">Enlangg Topic Video Briefing</text>
+  <text x="640" y="475" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="16" font-weight="500" fill="#a1a1aa">Click to play video or inspect runnable code workbench below</text>
+
+  <!-- Bottom Brand Mark -->
+  <g transform="translate(60, 640)">
+    <text x="0" y="0" font-family="'JetBrains Mono', monospace" font-size="14" font-weight="600" fill="#71717a">ENLANGG // NOTEBOOKLM MASTERCLASS</text>
+  </g>
+</svg>

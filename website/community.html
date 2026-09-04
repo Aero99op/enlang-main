@@ -3,28 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Community & Sovereign Roadmap — Enlangg Ecosystem</title>
-  <meta name="description" content="Explore the 20-Phase Sovereign Roadmap, RFC governance, and open contribution guidelines for Enlangg development." />
+  <title>Community, Roadmap & Governance - Enlangg Organization</title>
+  <meta name="description" content="Democratic RFC governance, working groups, 20-phase execution roadmap, and contributor onboarding for the Enlangg language." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.1.0" />
+  <link rel="stylesheet" href="style.css?v=5.2.0" />
 </head>
 <body>
 
-  <!-- Ambient Glow & Blueprint Grid -->
-  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <!-- Blueprint Grid -->
   <div class="grid-overlay" aria-hidden="true"></div>
 
   <!-- Navigation Bar -->
   <header class="navbar" id="navbar">
     <div class="nav-container">
       <a href="index.html" class="nav-brand">
-        <span class="logo-mark">⚡</span>
+        <span class="logo-mark">
+          <img src="logo.svg" alt="Enlangg Monogram" width="28" height="28" />
+        </span>
         <span class="logo-text">enlangg</span>
-        <span class="nav-version-pill">v5.0</span>
+        
       </a>
       
       <nav class="nav-links">
@@ -40,22 +42,19 @@
 
       <div class="nav-actions">
         <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
-          <span class="theme-icon">🌙</span>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
+                <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" class="nav-btn-github" title="Star Enlangg on GitHub">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </a>
         <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Windows Setup (.exe)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>Download .exe</span>
         </a>
         <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
       </div>
     </div>
@@ -63,15 +62,17 @@
 
   <!-- Mobile Drawer -->
   <div class="mobile-drawer" id="mobileDrawer">
+    <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" style="color: var(--accent-gold);">Star on GitHub ⭐</a>
     <a href="index.html">Home</a>
     <a href="install.html">Install</a>
     <a href="docs.html">Documentation & Book</a>
     <a href="playground.html">Playground IDE</a>
     <a href="learn.html">Tutorials & Learn</a>
     <a href="library.html">Standard Library & Python Interop</a>
-    <a href="community.html" class="active">Community & Roadmap</a>
+    <a href="community.html" class="active">Community & Governance</a>
     <a href="about.html">About & Governance</a>
     <a href="blog.html">Engineering Blog</a>
+    <a href="brand.html">Brand Identity Kit</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
 
@@ -79,42 +80,43 @@
   <section class="page-hero">
     <div class="container page-hero-container">
       <div class="page-kicker">
-        <span>🌐 Global Ecosystem & Governance</span>
+        <span>Global Ecosystem & Governance</span>
       </div>
-      <h1 class="page-title">Community & The 20-Phase Sovereign Roadmap</h1>
+      <h1 class="page-title">Community, RFC Governance & Roadmap</h1>
       <p class="page-desc">
-        Transparent engineering milestones, democratic RFC governance, and architectural contribution standards for the next decade of sovereign language design.
+        Transparent engineering milestones, working groups, democratic RFC proposals, and local contributor onboarding for the next decade of sovereign language design.
       </p>
     </div>
   </section>
 
-  <!-- Roadmap Section -->
-  <main class="container" style="padding: 24px 24px 80px; max-width: 1040px;">
+  <!-- Main Content Layout -->
+  <main class="container" style="padding: 32px 24px 80px; max-width: 1320px;">
     
-    <div class="docs-article-section" style="margin-bottom: 50px;">
+    <!-- 20-Phase Roadmap -->
+    <div class="docs-article-section" style="margin-bottom: 48px;">
       <h2 class="docs-h2">The 20-Phase Sovereign Execution Roadmap</h2>
       <p class="docs-p">
-        Every evolutionary step of Enlangg follows an unyielding engineering trajectory towards complete self-hosting bootstrapping, mathematical verification, and zero foreign dependencies.
+        Every milestone in Enlangg represents a verifiable engineering target towards self-hosting compilation, formal verification, and zero third-party dependencies.
       </p>
 
       <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 24px;">
         
         <!-- Phases 1-5 -->
-        <div style="padding: 20px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid var(--accent-emerald);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h3 style="font-size: 1.1rem; font-weight: 700;">Phases 01 – 05: The Grammar Core & Slot Memory</h3>
-            <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 9999px;">Completed ✓</span>
+        <div style="padding: 22px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid var(--accent-emerald);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Phases 01 - 05: The Grammar Core & Slot Memory</h3>
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1); padding: 3px 10px; border-radius: 9999px;">Completed</span>
           </div>
           <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0; line-height: 1.6;">
-            Formalization of spoken English syntax, replacement of symbol glyphs with unambiguous English phrases, deterministic slot parser, zero-GC model, and canonical C99 transpiler engine.
+            Formalization of spoken English syntax, replacement of symbol glyphs with unambiguous English clauses, deterministic stack slot parser, zero-GC lifetime analysis, and canonical ISO C99 emission engine.
           </p>
         </div>
 
         <!-- Phases 6-10 -->
-        <div style="padding: 20px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid var(--accent-emerald);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h3 style="font-size: 1.1rem; font-weight: 700;">Phases 06 – 10: Multi-Domain Isolation Architecture</h3>
-            <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 9999px;">Completed ✓</span>
+        <div style="padding: 22px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid var(--accent-emerald);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Phases 06 - 10: Multi-Domain Isolation Architecture</h3>
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1); padding: 3px 10px; border-radius: 9999px;">Completed</span>
           </div>
           <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0; line-height: 1.6;">
             Architectural separation of system tiers into dedicated formal domain extensions (.enlng, .enlngf, .enlngs, .enlngd, .enlngm, .enlngdb). Universal full-stack compilation pipeline.
@@ -122,10 +124,10 @@
         </div>
 
         <!-- Phases 11-15 -->
-        <div style="padding: 20px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid var(--accent-gold);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h3 style="font-size: 1.1rem; font-weight: 700;">Phases 11 – 15: C-ABI Python Bridge & Distribution Toolchain</h3>
-            <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 9999px;">Release v5.0 Live ★</span>
+        <div style="padding: 22px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid var(--accent-gold);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Phases 11 - 15: C-ABI Python Bridge & Distribution Toolchain</h3>
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 10px; border-radius: 9999px;">Stable Release</span>
           </div>
           <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0; line-height: 1.6;">
             Zero-overhead C-ABI Python God Call, standalone 1-click Windows installer (enlangg-setup.exe), 193-page canonical specification book, and sovereign Vercel self-hosted binary mirrors.
@@ -133,10 +135,10 @@
         </div>
 
         <!-- Phases 16-20 -->
-        <div style="padding: 20px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid #38bdf8;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h3 style="font-size: 1.1rem; font-weight: 700;">Phases 16 – 20: LLVM IR Core, Formal Verification & Self-Hosting</h3>
-            <span style="font-size: 0.75rem; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 3px 8px; border-radius: 9999px;">Active Workstream ⚡</span>
+        <div style="padding: 22px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid #38bdf8;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Phases 16 - 20: LLVM IR Core, Formal Verification & Self-Hosting</h3>
+            <span style="font-size: 0.75rem; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 3px 10px; border-radius: 9999px;">Active Workstream</span>
           </div>
           <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0; line-height: 1.6;">
             Direct LLVM backend emitting native machine code without C compiler middleman, Hoare-logic formal verification proving memory safety at compile time, and 100% self-hosting compiler written in Enlangg.
@@ -146,27 +148,80 @@
       </div>
     </div>
 
-    <!-- Contributing Guidelines -->
-    <div class="docs-article-section" id="contribute">
-      <h2 class="docs-h2">Contributing to Enlangg</h2>
+    <!-- Working Groups -->
+    <div class="docs-article-section" style="margin-bottom: 48px;">
+      <h2 class="docs-h2">Working Groups (WGs)</h2>
       <p class="docs-p">
-        We welcome language engineers, documentation authors, and runtime developers. Because Enlangg upholds strict sovereignty standards, all contributions must respect the following core axioms:
+        Similar to the Python Steering Council and Node.js Technical Steering Committee (TSC), Enlangg is stewarded by specialized working groups:
       </p>
 
-      <div class="docs-callout">
-        <span class="docs-callout-title">The Three Sovereign Rules of Contribution</span>
-        <ol style="margin: 8px 0 0 16px; padding: 0; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7;">
-          <li><strong>Zero Cryptic Symbols:</strong> Never introduce operators or syntax requiring non-English symbols (e.g., <code>&amp;&amp;</code>, <code>||</code>, <code>!=</code>). All grammar must remain natural English phrases.</li>
-          <li><strong>Zero Runtime Dependencies:</strong> Core runtime and compiler must compile cleanly with any ANSI C99+ compiler without external third-party libraries.</li>
-          <li><strong>Deterministic Performance:</strong> All core algorithms must satisfy strict execution limits with zero runtime garbage collection pauses.</li>
-        </ol>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 20px;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); padding: 20px;">
+          <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; color: var(--accent-gold);">Core Compiler WG</h3>
+          <p style="font-size: 0.86rem; color: var(--text-secondary); margin: 0; line-height: 1.55;">
+            Maintains the lexical tokenizer, slot allocator, and C99 emission pipeline. Oversees performance benchmarks and LLVM integration.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); padding: 20px;">
+          <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; color: var(--accent-emerald);">Standard Library WG</h3>
+          <p style="font-size: 0.86rem; color: var(--text-secondary); margin: 0; line-height: 1.55;">
+            Maintains built-in modules (I/O, Math, String, Collections, Network, Crypto) and expands Python C-ABI foreign call bridges.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); padding: 20px;">
+          <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; color: #38bdf8;">Toolchain & IDE WG</h3>
+          <p style="font-size: 0.86rem; color: var(--text-secondary); margin: 0; line-height: 1.55;">
+            Builds developer ergonomics: VS Code syntax highlighter extension, Language Server Protocol (LSP), and the in-browser sandbox.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); padding: 20px;">
+          <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; color: #a78bfa;">Documentation & Book WG</h3>
+          <p style="font-size: 0.86rem; color: var(--text-secondary); margin: 0; line-height: 1.55;">
+            Authors tutorials, curriculum tracks, language specification chapters, and the canonical 193-page PDF reference book.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contributor Onboarding Guide -->
+    <div class="docs-article-section" id="contribute" style="margin-bottom: 48px;">
+      <h2 class="docs-h2">Developer Contribution Guide</h2>
+      <p class="docs-p">
+        Want to contribute to the compiler or standard library? The codebase has zero external build dependencies:
+      </p>
+
+      <div class="code-block-card" style="margin-bottom: 20px;">
+        <div class="code-block-header">
+          <span>Local Compiler Setup & Test Suite Execution</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-target="contribCmd">Copy</button>
+        </div>
+        <div class="code-block-body" id="contribCmd"># 1. Clone repository
+git clone https://github.com/enlangg/enlangg.git
+cd enlangg
+
+# 2. Build local compiler binary with GCC or Clang
+gcc -O3 website/enlng.c -o enlng
+
+# 3. Run built-in regression test suite
+./enlng run enlang-core/tests/fibonacci.enlng
+./enlng run enlang-core/tests/mew.enlng</div>
       </div>
 
-      <h3 class="docs-h3" style="margin-top: 24px;">The RFC (Request for Comments) Lifecycle</h3>
+      <h3 class="docs-h3">The RFC (Request for Comments) Proposal Process</h3>
       <p class="docs-p">
-        Architectural modifications, syntax additions, or standard library extensions must be proposed via an official RFC document specifying grammar BNF, compilation semantics, and memory footprints.
+        Any modification to language grammar or standard library signatures must follow the RFC lifecycle:
       </p>
+      <ol style="margin-left: 20px; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7;">
+        <li><strong>Draft Stage:</strong> Author an RFC markdown document outlining motivation, grammar BNF, memory impact, and example Enlangg code.</li>
+        <li><strong>Working Group Review:</strong> The Core Compiler WG reviews the proposal against the Sovereign Invariants (zero cryptic symbols, zero GC).</li>
+        <li><strong>Experimental Implementation:</strong> Implement syntax parsing behind an experimental CLI flag (<code>--experimental-rfc-N</code>).</li>
+        <li><strong>Formal Standardization:</strong> Merge into the official specification and release in next minor version.</li>
+      </ol>
     </div>
+
   </main>
 
   <!-- Universal Foundation Multi-Column Footer -->
@@ -175,7 +230,9 @@
       <div class="footer-top-grid">
         <div class="footer-col-brand">
           <div class="footer-brand-header">
-            <span class="logo-mark">⚡</span>
+            <span class="logo-mark">
+              <img src="logo.svg" alt="Enlangg Foundation" width="28" height="28" />
+            </span>
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
@@ -183,7 +240,7 @@
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
-            <span>Compiler Core: Sovereign v5.0 Active</span>
+            <span>Compiler Core: Active</span>
           </div>
         </div>
 
@@ -212,10 +269,11 @@
         <div class="footer-col">
           <h4 class="footer-col-title">Organization</h4>
           <ul class="footer-links-list">
-            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener">GitHub Repository (enlang-main)</a></li>
+            <li><a href="community.html">Sovereign Roadmap</a></li>
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
-            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="brand.html">Brand & Logo Kit</a></li>
             <li><a href="blog.html">Engineering Blog</a></li>
           </ul>
         </div>
@@ -228,6 +286,6 @@
     </div>
   </footer>
 
-  <script src="app.js?v=5.1.0"></script>
+  <script src="app.js?v=5.2.0"></script>
 </body>
 </html>

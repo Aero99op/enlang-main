@@ -3,28 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Standard Library & Python Interop — Enlangg API Reference</title>
-  <meta name="description" content="Comprehensive API reference for the Enlangg v5.0 standard library and zero-serialization Python God Call C-ABI bridge." />
+  <title>Universal Standard Library Reference - Enlangg</title>
+  <meta name="description" content="Complete API reference for Enlangg standard modules: I/O, Math, Strings, Collections, Cryptography, Networking, and the C-ABI Python God Call." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.1.0" />
+  <link rel="stylesheet" href="style.css?v=5.2.0" />
 </head>
 <body>
 
-  <!-- Ambient Glow & Blueprint Grid -->
-  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <!-- Blueprint Grid -->
   <div class="grid-overlay" aria-hidden="true"></div>
 
   <!-- Navigation Bar -->
   <header class="navbar" id="navbar">
     <div class="nav-container">
       <a href="index.html" class="nav-brand">
-        <span class="logo-mark">⚡</span>
+        <span class="logo-mark">
+          <img src="logo.svg" alt="Enlangg Monogram" width="28" height="28" />
+        </span>
         <span class="logo-text">enlangg</span>
-        <span class="nav-version-pill">v5.0</span>
+        
       </a>
       
       <nav class="nav-links">
@@ -40,22 +42,19 @@
 
       <div class="nav-actions">
         <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
-          <span class="theme-icon">🌙</span>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
+                <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" class="nav-btn-github" title="Star Enlangg on GitHub">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </a>
         <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Windows Setup (.exe)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>Download .exe</span>
         </a>
         <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
       </div>
     </div>
@@ -63,6 +62,7 @@
 
   <!-- Mobile Drawer -->
   <div class="mobile-drawer" id="mobileDrawer">
+    <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" style="color: var(--accent-gold);">Star on GitHub ⭐</a>
     <a href="index.html">Home</a>
     <a href="install.html">Install</a>
     <a href="docs.html">Documentation & Book</a>
@@ -72,6 +72,7 @@
     <a href="community.html">Community & Roadmap</a>
     <a href="about.html">About & Governance</a>
     <a href="blog.html">Engineering Blog</a>
+    <a href="brand.html">Brand Identity Kit</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
 
@@ -79,159 +80,309 @@
   <section class="page-hero">
     <div class="container page-hero-container">
       <div class="page-kicker">
-        <span>📦 Universal Standard Library</span>
+        <span>Universal Standard Library</span>
       </div>
       <h1 class="page-title">Standard Library & The Python God Call</h1>
       <p class="page-desc">
-        Explore built-in zero-overhead modules for arithmetic, string manipulation, cryptosystems, and native zero-serialization Python interoperability.
+        Explore built-in zero-overhead modules for I/O, mathematical analysis, string manipulation, data structures, cryptosystems, and direct C-ABI foreign call bridging.
       </p>
     </div>
   </section>
 
   <!-- Main Library Explorer -->
-  <main class="container" style="padding: 24px 24px 80px;">
+  <main class="container" style="padding: 24px 24px 80px; max-width: 1340px;">
+    
     <!-- Filter and Search Header -->
-    <div class="lib-controls-bar">
-      <input type="text" id="libSearchInput" class="lib-search-input" placeholder="Search functions, methods, or modules (e.g., sqrt, sha256, run_py)..." />
-      <div class="module-pills-row">
-        <button type="button" class="mod-pill active" data-filter="all">All Modules</button>
-        <button type="button" class="mod-pill" data-filter="math">std.math</button>
-        <button type="button" class="mod-pill" data-filter="string">std.string</button>
-        <button type="button" class="mod-pill" data-filter="io">std.io</button>
-        <button type="button" class="mod-pill" data-filter="crypto">std.crypto</button>
-        <button type="button" class="mod-pill" data-filter="python">python.bridge</button>
+    <div class="lib-controls-bar" style="margin-bottom: 24px;">
+      <input type="text" id="libSearchInput" class="lib-search-input" placeholder="Search functions, methods, or modules (e.g. sqrt, sha256, read_file, http_get)..." />
+      
+      <!-- Responsive Module Chip Bar -->
+      <div class="chip-bar-scrollable" style="margin-top: 14px;">
+        <button type="button" class="chip-btn mod-pill active" data-filter="all">All Modules (24)</button>
+        <button type="button" class="chip-btn mod-pill" data-filter="io">std.io</button>
+        <button type="button" class="chip-btn mod-pill" data-filter="math">std.math</button>
+        <button type="button" class="chip-btn mod-pill" data-filter="string">std.string</button>
+        <button type="button" class="chip-btn mod-pill" data-filter="collections">std.collections</button>
+        <button type="button" class="chip-btn mod-pill" data-filter="network">std.network</button>
+        <button type="button" class="chip-btn mod-pill" data-filter="crypto">std.crypto</button>
+        <button type="button" class="chip-btn mod-pill" data-filter="python">python.bridge</button>
+        <button type="button" class="chip-btn mod-pill" data-filter="system">std.system</button>
       </div>
     </div>
 
     <!-- API Cards Grid -->
-    <div class="api-cards-grid">
-      <!-- Card 1: Math Square Root -->
+    <div class="api-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+      
+      <!-- MODULE: std.io -->
+      <div class="api-card" data-module="io">
+        <div class="api-card-header">
+          <span class="api-name">file.read(path)</span>
+          <span class="api-mod-badge">std.io</span>
+        </div>
+        <p class="api-desc">
+          Reads the entire contents of a UTF-8 text file into a fixed stack memory buffer. Raises E008 if file not found.
+        </p>
+        <div class="api-code-snippet">
+          <code>create contents of file.read("config.json")<br>display "Loaded: ", length of contents, " bytes"</code>
+        </div>
+      </div>
+
+      <div class="api-card" data-module="io">
+        <div class="api-card-header">
+          <span class="api-name">file.write(path, data)</span>
+          <span class="api-mod-badge">std.io</span>
+        </div>
+        <p class="api-desc">
+          Atomically creates or overwrites target file with the specified string data. Flushes OS buffer synchronously.
+        </p>
+        <div class="api-code-snippet">
+          <code>call file.write with "output.txt", "Sovereign build complete"</code>
+        </div>
+      </div>
+
+      <div class="api-card" data-module="io">
+        <div class="api-card-header">
+          <span class="api-name">io.read_line()</span>
+          <span class="api-mod-badge">std.io</span>
+        </div>
+        <p class="api-desc">
+          Reads a single line of text from standard input (stdin) up to newline terminator with zero trailing whitespace.
+        </p>
+        <div class="api-code-snippet">
+          <code>display "Enter username: "<br>create name of io.read_line()</code>
+        </div>
+      </div>
+
+      <!-- MODULE: std.math -->
       <div class="api-card" data-module="math">
         <div class="api-card-header">
           <span class="api-name">math.sqrt(number)</span>
           <span class="api-mod-badge">std.math</span>
         </div>
         <p class="api-desc">
-          Computes the IEEE-754 double precision square root of a non-negative number using optimized CPU SIMD instructions.
+          Computes the IEEE-754 double precision square root using native CPU vector FPU instructions in O(1) time.
         </p>
         <div class="api-code-snippet">
-          <code>create root of call math.sqrt with 144 // Result: 12.0</code>
+          <code>create root of math.sqrt(144) // 12.0</code>
         </div>
       </div>
 
-      <!-- Card 2: String Reverse -->
+      <div class="api-card" data-module="math">
+        <div class="api-card-header">
+          <span class="api-name">math.pow(base, exponent)</span>
+          <span class="api-mod-badge">std.math</span>
+        </div>
+        <p class="api-desc">
+          Calculates base raised to the power exponent with double-precision accuracy across integer and fractional powers.
+        </p>
+        <div class="api-code-snippet">
+          <code>create val of math.pow(2, 10) // 1024</code>
+        </div>
+      </div>
+
+      <div class="api-card" data-module="math">
+        <div class="api-card-header">
+          <span class="api-name">math.random(min, max)</span>
+          <span class="api-mod-badge">std.math</span>
+        </div>
+        <p class="api-desc">
+          Generates a cryptographically seeded pseudo-random integer in the inclusive range [min, max].
+        </p>
+        <div class="api-code-snippet">
+          <code>create dice of math.random(1, 6)</code>
+        </div>
+      </div>
+
+      <!-- MODULE: std.string -->
       <div class="api-card" data-module="string">
         <div class="api-card-header">
-          <span class="api-name">string.reverse(text)</span>
+          <span class="api-name">string.split(text, delimiter)</span>
           <span class="api-mod-badge">std.string</span>
         </div>
         <p class="api-desc">
-          Reverses an arbitrary UTF-8 encoded string in-place with zero heap allocations, preserving grapheme cluster boundaries.
+          Partitions a string into a list of substrings separated by the specified delimiter string in O(N) linear time.
         </p>
         <div class="api-code-snippet">
-          <code>create reversed of call string.reverse with "racecar"</code>
+          <code>create words of string.split("enlangg is fast", " ")</code>
         </div>
       </div>
 
-      <!-- Card 3: Cryptographic Hash -->
+      <div class="api-card" data-module="string">
+        <div class="api-card-header">
+          <span class="api-name">string.replace(text, find, replace)</span>
+          <span class="api-mod-badge">std.string</span>
+        </div>
+        <p class="api-desc">
+          Replaces all occurrences of pattern string with target string, returning a newly allocated stack string slot.
+        </p>
+        <div class="api-code-snippet">
+          <code>create clean of string.replace("foo-bar", "-", "_")</code>
+        </div>
+      </div>
+
+      <div class="api-card" data-module="string">
+        <div class="api-card-header">
+          <span class="api-name">string.trim(text)</span>
+          <span class="api-mod-badge">std.string</span>
+        </div>
+        <p class="api-desc">
+          Strips leading and trailing ASCII whitespace (spaces, tabs, newlines) without altering interior text.
+        </p>
+        <div class="api-code-snippet">
+          <code>create clean of string.trim("   hello world   ")</code>
+        </div>
+      </div>
+
+      <!-- MODULE: std.collections -->
+      <div class="api-card" data-module="collections">
+        <div class="api-card-header">
+          <span class="api-name">list.append(list, item)</span>
+          <span class="api-mod-badge">std.collections</span>
+        </div>
+        <p class="api-desc">
+          Appends an element to the end of a dynamic array list with amortized O(1) constant time allocation.
+        </p>
+        <div class="api-code-snippet">
+          <code>create items of []<br>call list.append with items, "first"<br>call list.append with items, "second"</code>
+        </div>
+      </div>
+
+      <div class="api-card" data-module="collections">
+        <div class="api-card-header">
+          <span class="api-name">map.get(map, key, default)</span>
+          <span class="api-mod-badge">std.collections</span>
+        </div>
+        <p class="api-desc">
+          Retrieves value associated with key from Robin Hood hash table in O(1) average lookup time.
+        </p>
+        <div class="api-code-snippet">
+          <code>create user of { "name": "Ada", "role": "Engineer" }<br>create role of map.get(user, "role", "Guest")</code>
+        </div>
+      </div>
+
+      <!-- MODULE: std.network -->
+      <div class="api-card" data-module="network">
+        <div class="api-card-header">
+          <span class="api-name">http.get(url)</span>
+          <span class="api-mod-badge">std.network</span>
+        </div>
+        <p class="api-desc">
+          Dispatches a non-blocking HTTPS GET request via system TLS sockets and returns status code, headers, and body.
+        </p>
+        <div class="api-code-snippet">
+          <code>create res of http.get("https://api.github.com/zen")<br>display "Response: ", res.body</code>
+        </div>
+      </div>
+
+      <div class="api-card" data-module="network">
+        <div class="api-card-header">
+          <span class="api-name">http.serve(port, handler)</span>
+          <span class="api-mod-badge">std.network</span>
+        </div>
+        <p class="api-desc">
+          Launches a multi-threaded POSIX/WinSock HTTP micro-daemon listening on the specified port.
+        </p>
+        <div class="api-code-snippet">
+          <code>listen on port 8080:<br>    on request: respond with "Hello from Enlangg"</code>
+        </div>
+      </div>
+
+      <!-- MODULE: std.crypto -->
       <div class="api-card" data-module="crypto">
         <div class="api-card-header">
           <span class="api-name">crypto.sha256(data)</span>
           <span class="api-mod-badge">std.crypto</span>
         </div>
         <p class="api-desc">
-          Generates an authentic NIST FIPS 180-4 256-bit cryptographic digest formatted as a lowercase 64-character hexadecimal string.
+          Generates an authentic NIST FIPS 180-4 256-bit cryptographic digest as a 64-character lowercase hexadecimal string.
         </p>
         <div class="api-code-snippet">
-          <code>create digest of call crypto.sha256 with "sovereign"</code>
+          <code>create hash of crypto.sha256("sovereign_token")</code>
         </div>
       </div>
 
-      <!-- Card 4: File IO Read -->
-      <div class="api-card" data-module="io">
+      <div class="api-card" data-module="crypto">
         <div class="api-card-header">
-          <span class="api-name">file.read_all(path)</span>
-          <span class="api-mod-badge">std.io</span>
+          <span class="api-name">crypto.hmac(key, message)</span>
+          <span class="api-mod-badge">std.crypto</span>
         </div>
         <p class="api-desc">
-          Reads the entire contents of a filesystem file into an inferred memory buffer using memory-mapped I/O (mmap).
+          Computes a keyed-hash message authentication code (HMAC-SHA256) for verifying data integrity and API signatures.
         </p>
         <div class="api-code-snippet">
-          <code>create contents of call file.read_all with "config.enlng"</code>
+          <code>create signature of crypto.hmac("secret_key", "payload")</code>
         </div>
       </div>
 
-      <!-- Card 5: Python God Call -->
+      <!-- MODULE: python.bridge -->
       <div class="api-card" data-module="python">
         <div class="api-card-header">
-          <span class="api-name">call run_py with "target", args</span>
-          <span class="api-mod-badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; border-color: rgba(234, 179, 8, 0.3);">python.bridge</span>
+          <span class="api-name">python.import(module_name)</span>
+          <span class="api-mod-badge">python.bridge</span>
         </div>
         <p class="api-desc">
-          Direct zero-serialization C-ABI foreign call into the Python runtime. Invokes standard library or external PyPI packages (NumPy, PyTorch, SciPy).
+          Loads an installed CPython package (NumPy, PyTorch, Pandas) directly into virtual memory via C-ABI foreign call bridge.
         </p>
         <div class="api-code-snippet">
-          <code>declare len = call run_py with "builtins len", "Enlangg"</code>
+          <code>create torch of python.import("torch")<br>create tensor of torch.randn([3, 3])</code>
         </div>
       </div>
 
-      <!-- Card 6: Matrix Multiplier -->
-      <div class="api-card" data-module="math">
+      <div class="api-card" data-module="python">
         <div class="api-card-header">
-          <span class="api-name">matrix.multiply(A, B)</span>
-          <span class="api-mod-badge">std.math</span>
+          <span class="api-name">python.eval(code_str)</span>
+          <span class="api-mod-badge">python.bridge</span>
         </div>
         <p class="api-desc">
-          Performs BLAS-grade matrix multiplication using cache-friendly tiling and AVX2 vector registers.
+          Executes arbitrary Python code within the shared virtual memory context, returning native C types back to Enlangg slots.
         </p>
         <div class="api-code-snippet">
-          <code>create C of call matrix.multiply with matrixA, matrixB</code>
+          <code>create result of python.eval("2 ** 32 - 1")</code>
         </div>
       </div>
+
+      <!-- MODULE: std.system -->
+      <div class="api-card" data-module="system">
+        <div class="api-card-header">
+          <span class="api-name">system.argv()</span>
+          <span class="api-mod-badge">std.system</span>
+        </div>
+        <p class="api-desc">
+          Returns the full array of command line arguments passed to the executable upon process invocation.
+        </p>
+        <div class="api-code-snippet">
+          <code>create args of system.argv()<br>display "Program invoked with ", length of args, " flags"</code>
+        </div>
+      </div>
+
+      <div class="api-card" data-module="system">
+        <div class="api-card-header">
+          <span class="api-name">system.time_ms()</span>
+          <span class="api-mod-badge">std.system</span>
+        </div>
+        <p class="api-desc">
+          Returns current high-resolution monotonic UNIX timestamp in milliseconds since epoch (useful for precision micro-benchmarks).
+        </p>
+        <div class="api-code-snippet">
+          <code>create start of system.time_ms()<br>// run workload<br>create elapsed of system.time_ms() minus start</code>
+        </div>
+      </div>
+
+      <div class="api-card" data-module="system">
+        <div class="api-card-header">
+          <span class="api-name">system.get_env(key)</span>
+          <span class="api-mod-badge">std.system</span>
+        </div>
+        <p class="api-desc">
+          Reads the specified environment variable from the operating system session. Returns empty string if unset.
+        </p>
+        <div class="api-code-snippet">
+          <code>create port of system.get_env("PORT")</code>
+        </div>
+      </div>
+
     </div>
 
-    <!-- The God Call Technical Deep Dive -->
-    <div class="checksum-panel" id="python-interop" style="margin-top: 60px;">
-      <span class="method-badge">Architectural Whitepaper</span>
-      <h3 class="checksum-title" style="font-size: 1.4rem;">The God Call: Zero-Overhead Python Bridge</h3>
-      <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px;">
-        Traditional multi-language bridges rely on slow inter-process communication (IPC), JSON serialization, or sockets that introduce massive latency overhead (15-50ms per call). Enlangg implements <strong>The God Call</strong>: a direct C-ABI binding that shares the active process virtual memory table with CPython.
-      </p>
-
-      <div class="code-block-card">
-        <div class="code-block-header">
-          <span>god_call_cpython_binding.enlng</span>
-          <button type="button" class="copy-code-btn terminal-btn" data-target="deepPyCode">Copy</button>
-        </div>
-        <div class="code-block-body" id="deepPyCode">
-type enlng
-import python.bridge
-
-display "=== Executing SciPy Scientific Optimization via God Call ==="
-
-// Pass memory pointers directly across C-ABI boundary
-declare result = call run_py with "scipy.optimize minimize", "objective_func", 1.0
-
-display "Converged Minimum Value:"
-display result
-        </div>
-      </div>
-
-      <div style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
-        <div style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md);">
-          <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-gold);">0.08 µs</div>
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">C-ABI Memory Call Overhead</div>
-        </div>
-        <div style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md);">
-          <div style="font-size: 1.3rem; font-weight: 800; color: #38bdf8;">Zero Copy</div>
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Raw Pointer Value Passing</div>
-        </div>
-        <div style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md);">
-          <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-emerald);">100% Native</div>
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Full Compatibility with PyPI</div>
-        </div>
-      </div>
-    </div>
   </main>
 
   <!-- Universal Foundation Multi-Column Footer -->
@@ -240,7 +391,9 @@ display result
       <div class="footer-top-grid">
         <div class="footer-col-brand">
           <div class="footer-brand-header">
-            <span class="logo-mark">⚡</span>
+            <span class="logo-mark">
+              <img src="logo.svg" alt="Enlangg Foundation" width="28" height="28" />
+            </span>
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
@@ -248,7 +401,7 @@ display result
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
-            <span>Compiler Core: Sovereign v5.0 Active</span>
+            <span>Compiler Core: Active</span>
           </div>
         </div>
 
@@ -277,10 +430,11 @@ display result
         <div class="footer-col">
           <h4 class="footer-col-title">Organization</h4>
           <ul class="footer-links-list">
-            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener">GitHub Repository (enlang-main)</a></li>
+            <li><a href="community.html">Sovereign Roadmap</a></li>
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
-            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="brand.html">Brand & Logo Kit</a></li>
             <li><a href="blog.html">Engineering Blog</a></li>
           </ul>
         </div>
@@ -293,6 +447,6 @@ display result
     </div>
   </footer>
 
-  <script src="app.js?v=5.1.0"></script>
+  <script src="app.js?v=5.2.0"></script>
 </body>
 </html>

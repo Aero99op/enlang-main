@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initUniversalCopyButtons();
   initDocsToc();
   initLibrarySearch();
+  initCurriculumSidebar();
 });
 
 // --- 1. Multi-OS Installer Tabs & Clipboard Copy ---
@@ -46,7 +47,7 @@ function initInstallerTabs() {
       try {
         await navigator.clipboard.writeText(textToCopy);
         copyBtn.classList.add('copied');
-        copyBtnText.textContent = 'Copied! ✓';
+        copyBtnText.textContent = 'Copied!';
         setTimeout(() => {
           copyBtn.classList.remove('copied');
           copyBtnText.textContent = 'Copy';
@@ -869,14 +870,14 @@ function initAnimatedBook() {
     if (autoFlipInterval) {
       clearInterval(autoFlipInterval);
       autoFlipInterval = null;
-      if (autoFlipText) autoFlipText.textContent = '▶ Auto-Flip Pages';
+      if (autoFlipText) autoFlipText.textContent = 'Auto-Flip Pages';
       if (autoFlipBtn) autoFlipBtn.classList.remove('active');
     } else {
       if (!bookStage.classList.contains('book-open')) {
         bookStage.classList.add('book-open');
         updateCoverButton(true);
       }
-      if (autoFlipText) autoFlipText.textContent = '⏸ Pause Flip';
+      if (autoFlipText) autoFlipText.textContent = 'Pause Flip';
       if (autoFlipBtn) autoFlipBtn.classList.add('active');
       autoFlipInterval = setInterval(() => {
         setPage(currentPageIndex + 1);
@@ -894,10 +895,10 @@ function initAnimatedBook() {
   // --- 3. Cover Open / Close Toggle ---
   function updateCoverButton(isOpen) {
     if (coverBtnText) {
-      coverBtnText.textContent = isOpen ? '📕 Close Cover' : '📖 Open Book';
+      coverBtnText.textContent = isOpen ? 'Close Book' : 'Open Book';
     }
     if (openHint) {
-      openHint.textContent = isOpen ? 'Click to Close ✕' : 'Click / Tap to Open →';
+      openHint.textContent = isOpen ? 'Click to Close' : 'Click to Open →';
     }
   }
 
@@ -1157,11 +1158,15 @@ function initThemeToggle() {
 }
 
 function updateThemeIcons(theme) {
-  const icons = document.querySelectorAll('.theme-icon');
-  icons.forEach(icon => {
-    icon.textContent = theme === 'light' ? '🌙' : '☀️';
-    icon.setAttribute('title', theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
-  });
+  const moonIcons = document.querySelectorAll('.theme-icon-moon');
+  const sunIcons = document.querySelectorAll('.theme-icon-sun');
+  if (theme === 'light') {
+    moonIcons.forEach(i => i.style.display = 'block');
+    sunIcons.forEach(i => i.style.display = 'none');
+  } else {
+    moonIcons.forEach(i => i.style.display = 'none');
+    sunIcons.forEach(i => i.style.display = 'block');
+  }
 }
 
 // --- 7. Highlight Active Navigation Link ---
@@ -1182,25 +1187,42 @@ function highlightActiveNav() {
   });
 }
 
-// --- 8. Mobile Menu Drawer ---
 function initMobileMenu() {
   const toggleBtn = document.getElementById('mobileMenuToggle');
   const drawer = document.getElementById('mobileDrawer');
   if (!toggleBtn || !drawer) return;
 
-  toggleBtn.addEventListener('click', () => {
-    drawer.classList.toggle('open');
+  function setDrawer(open) {
+    if (open) {
+      drawer.classList.add('open');
+      toggleBtn.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+    } else {
+      drawer.classList.remove('open');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
+  }
+
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     const isOpen = drawer.classList.contains('open');
-    toggleBtn.setAttribute('aria-expanded', isOpen);
+    setDrawer(!isOpen);
   });
 
   // Close drawer on link click
   const drawerLinks = drawer.querySelectorAll('a');
   drawerLinks.forEach(link => {
     link.addEventListener('click', () => {
-      drawer.classList.remove('open');
-      toggleBtn.setAttribute('aria-expanded', 'false');
+      setDrawer(false);
     });
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawer.classList.contains('open')) {
+      setDrawer(false);
+    }
   });
 }
 
@@ -1217,7 +1239,7 @@ function initUniversalCopyButtons() {
       try {
         await navigator.clipboard.writeText(codeText);
         const originalText = btn.textContent;
-        btn.textContent = 'Copied! ✓';
+        btn.textContent = 'Copied!';
         btn.classList.add('copied');
         setTimeout(() => {
           btn.textContent = originalText;
@@ -1294,3 +1316,35 @@ function initLibrarySearch() {
     });
   });
 }
+
+// --- 12. Learn Curriculum Sidebar Active Link Observer ---
+function initCurriculumSidebar() {
+  const curriculumLinks = document.querySelectorAll('.curriculum-item-link');
+  const sections = document.querySelectorAll('.topic-lesson-section');
+  if (curriculumLinks.length === 0 || sections.length === 0) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.getAttribute('id');
+        curriculumLinks.forEach(link => {
+          if (link.getAttribute('href') === `#${id}`) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-15% 0px -65% 0px' });
+
+  sections.forEach(section => observer.observe(section));
+
+  curriculumLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      curriculumLinks.forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+    });
+  });
+}
+

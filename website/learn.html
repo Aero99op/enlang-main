@@ -3,35 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Learn Enlangg — Step-by-Step Interactive Curriculum</title>
-  <meta name="description" content="Master natural English programming from scratch. Structured tracks covering spoken variables, conditional logic, loops, multi-domain web apps, and Python interop." />
+  <title>Learn Enlangg - Video Course & Practical Curriculum</title>
+  <meta name="description" content="Step-by-step video masterclass for Enlangg powered by NotebookLM briefings, runnable code workbenches, and architectural syntax breakdowns." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.1.0" />
+  <link rel="stylesheet" href="style.css?v=5.2.0" />
 </head>
 <body>
 
-  <!-- Ambient Glow & Blueprint Grid -->
-  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <!-- Blueprint Grid -->
   <div class="grid-overlay" aria-hidden="true"></div>
 
   <!-- Navigation Bar -->
   <header class="navbar" id="navbar">
     <div class="nav-container">
       <a href="index.html" class="nav-brand">
-        <span class="logo-mark">⚡</span>
+        <span class="logo-mark">
+          <img src="logo.svg" alt="Enlangg Monogram" width="28" height="28" />
+        </span>
         <span class="logo-text">enlangg</span>
-        <span class="nav-version-pill">v5.0</span>
       </a>
       
       <nav class="nav-links">
         <a href="install.html" class="nav-link">Install</a>
         <a href="docs.html" class="nav-link">Docs & Book</a>
         <a href="playground.html" class="nav-link">Playground</a>
-        <a href="learn.html" class="nav-link active">Tutorials</a>
+        <a href="learn.html" class="nav-link active">Learn & Videos</a>
         <a href="library.html" class="nav-link">Library & Python</a>
         <a href="community.html" class="nav-link">Community</a>
         <a href="about.html" class="nav-link">About</a>
@@ -40,22 +41,19 @@
 
       <div class="nav-actions">
         <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
-          <span class="theme-icon">🌙</span>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
+                <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" class="nav-btn-github" title="Star Enlangg on GitHub">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </a>
         <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Windows Setup (.exe)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>Download .exe</span>
         </a>
         <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
       </div>
     </div>
@@ -63,15 +61,17 @@
 
   <!-- Mobile Drawer -->
   <div class="mobile-drawer" id="mobileDrawer">
+    <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" style="color: var(--accent-gold);">Star on GitHub ⭐</a>
     <a href="index.html">Home</a>
     <a href="install.html">Install</a>
     <a href="docs.html">Documentation & Book</a>
     <a href="playground.html">Playground IDE</a>
-    <a href="learn.html" class="active">Tutorials & Learn</a>
+    <a href="learn.html" class="active">Learn & Videos</a>
     <a href="library.html">Standard Library & Python Interop</a>
     <a href="community.html">Community & Roadmap</a>
     <a href="about.html">About & Governance</a>
     <a href="blog.html">Engineering Blog</a>
+    <a href="brand.html">Brand Identity Kit</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
 
@@ -79,176 +79,797 @@
   <section class="page-hero">
     <div class="container page-hero-container">
       <div class="page-kicker">
-        <span>🎓 Progressive Curriculum</span>
+        <span>Curriculum & Video Portal</span>
       </div>
-      <h1 class="page-title">Learn Enlangg from Fundamentals to Systems</h1>
+      <h1 class="page-title">Learn Enlangg with Video Briefings</h1>
       <p class="page-desc">
-        A step-by-step masterclass designed for developers, educators, and language enthusiasts. Progress from the Hello World milestone to full-stack domain development.
+        A comprehensive masterclass pairing NotebookLM AI video explanations with copyable code workbenches, syntax mechanics, and direct links to run in the in-browser compiler.
       </p>
     </div>
   </section>
 
-  <!-- Tutorial Tracks Layout -->
-  <main class="container" style="padding: 24px 24px 80px; max-width: 1080px;">
+  <!-- Desktop Master-Detail Video Workbench Layout -->
+  <div class="learn-portal-container">
     
-    <!-- Track 1: First Program -->
-    <section class="docs-article-section" style="margin-bottom: 48px;">
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-        <span class="method-badge" style="margin-bottom: 0;">Lesson 01</span>
-        <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated: 5 mins</span>
-      </div>
-      <h2 class="docs-h2">Your First Enlangg Program: The Sovereign Declaration</h2>
-      <p class="docs-p">
-        Every Enlangg source file begins with an explicit type header that instructs the compiler which grammar engine to invoke. For general computational logic, we use <code>type enlng</code>.
-      </p>
-
-      <div class="code-block-card">
-        <div class="code-block-header">
-          <span>lesson01_hello.enlng</span>
-          <button type="button" class="copy-code-btn terminal-btn" data-target="lesson01Code">Copy</button>
+    <!-- Left Sticky Curriculum Sidebar (Desktop) -->
+    <aside class="curriculum-sidebar">
+      <div class="curriculum-header">
+        <div class="curriculum-title">
+          <span>Course Modules</span>
+          <span class="curriculum-badge">8 Topics</span>
         </div>
-        <div class="code-block-body" id="lesson01Code">
-type enlng
-
-// Printing to standard output
-display "Hello, Sovereign World!"
-display "Welcome to the zero-symbol English programming ecosystem."
-        </div>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 6px;">
+          Select a topic to jump directly to its video briefing and code workbench:
+        </p>
       </div>
 
-      <div style="margin-top: 14px;">
-        <a href="playground.html" class="secondary-btn" style="padding: 8px 16px; font-size: 0.82rem;">
-          <span>Run this in Playground ↗</span>
+      <ul class="curriculum-list">
+        <li>
+          <a href="#track1" class="curriculum-item-link active">
+            <div class="curriculum-item-top">
+              <span class="curriculum-track-num">TOPIC 01</span>
+              <span class="curriculum-video-duration">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                03:45
+              </span>
+            </div>
+            <div class="curriculum-item-title">First Program & The Declaration</div>
+          </a>
+        </li>
+
+        <li>
+          <a href="#track2" class="curriculum-item-link">
+            <div class="curriculum-item-top">
+              <span class="curriculum-track-num">TOPIC 02</span>
+              <span class="curriculum-video-duration">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                04:30
+              </span>
+            </div>
+            <div class="curriculum-item-title">Memory Slots & Spoken Variables</div>
+          </a>
+        </li>
+
+        <li>
+          <a href="#track3" class="curriculum-item-link">
+            <div class="curriculum-item-top">
+              <span class="curriculum-track-num">TOPIC 03</span>
+              <span class="curriculum-video-duration">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                05:15
+              </span>
+            </div>
+            <div class="curriculum-item-title">Spoken Math & Arithmetic</div>
+          </a>
+        </li>
+
+        <li>
+          <a href="#track4" class="curriculum-item-link">
+            <div class="curriculum-item-top">
+              <span class="curriculum-track-num">TOPIC 04</span>
+              <span class="curriculum-video-duration">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                06:00
+              </span>
+            </div>
+            <div class="curriculum-item-title">Decision Logic & Branching</div>
+          </a>
+        </li>
+
+        <li>
+          <a href="#track5" class="curriculum-item-link">
+            <div class="curriculum-item-top">
+              <span class="curriculum-track-num">TOPIC 05</span>
+              <span class="curriculum-video-duration">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                05:40
+              </span>
+            </div>
+            <div class="curriculum-item-title">Loops & Bounded Iteration</div>
+          </a>
+        </li>
+
+        <li>
+          <a href="#track6" class="curriculum-item-link">
+            <div class="curriculum-item-top">
+              <span class="curriculum-track-num">TOPIC 06</span>
+              <span class="curriculum-video-duration">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                07:15
+              </span>
+            </div>
+            <div class="curriculum-item-title">Procedures & Stack Returns</div>
+          </a>
+        </li>
+
+        <li>
+          <a href="#track7" class="curriculum-item-link">
+            <div class="curriculum-item-top">
+              <span class="curriculum-track-num">TOPIC 07</span>
+              <span class="curriculum-video-duration">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                06:50
+              </span>
+            </div>
+            <div class="curriculum-item-title">Lists & Hash Maps</div>
+          </a>
+        </li>
+
+        <li>
+          <a href="#track8" class="curriculum-item-link">
+            <div class="curriculum-item-top">
+              <span class="curriculum-track-num">TOPIC 08</span>
+              <span class="curriculum-video-duration">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                08:10
+              </span>
+            </div>
+            <div class="curriculum-item-title">Python God Call & C-ABI</div>
+          </a>
+        </li>
+      </ul>
+
+      <div style="padding-top: 14px; border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 8px;">
+        <a href="playground.html" class="btn btn-secondary" style="font-size: 0.8rem; justify-content: center; padding: 8px 12px;">
+          <span>Open Sandbox IDE</span>
+        </a>
+        <a href="enlangg_the_enlng.pdf" download class="btn btn-secondary" style="font-size: 0.8rem; justify-content: center; padding: 8px 12px;">
+          <span>Download 193p Book</span>
         </a>
       </div>
-    </section>
+    </aside>
 
-    <!-- Track 2: Variables & Spoken Arithmetic -->
-    <section class="docs-article-section" style="margin-bottom: 48px;">
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-        <span class="method-badge" style="margin-bottom: 0;">Lesson 02</span>
-        <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated: 8 mins</span>
-      </div>
-      <h2 class="docs-h2">Spoken Variables & Arithmetic Operations</h2>
-      <p class="docs-p">
-        Forget cryptic operators like <code>*</code>, <code>/</code>, or <code>%</code>. Enlangg uses the exact spoken English phrases for calculations:
-      </p>
-
-      <div class="code-block-card">
-        <div class="code-block-header">
-          <span>lesson02_math.enlng</span>
-          <button type="button" class="copy-code-btn terminal-btn" data-target="lesson02Code">Copy</button>
+    <!-- Main Content Area: Video Theater & Code Studio -->
+    <main class="learn-main-stage">
+      
+      <!-- TOPIC 01: First Program -->
+      <section class="topic-lesson-section" id="track1">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 01</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 4 mins · Video: 03:45</span>
         </div>
-        <div class="code-block-body" id="lesson02Code">
-type enlng
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">1. Your First Program: The Natural Declaration</h2>
+        <p class="docs-p" style="margin-bottom: 20px;">
+          Every Enlangg program starts with a domain declaration statement (<code>type enlng</code>). Watch the NotebookLM video briefing below to understand how the compiler tokenizes natural English sentences directly into native C assembly.
+        </p>
 
-create apples of 15
-create friends of 3
+        <!-- Video Player Card -->
+        <div class="video-player-card">
+          <div class="video-player-header">
+            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Video Briefing: Natural Syntax & Hello World</span>
+            <span class="video-source-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              NotebookLM Video
+            </span>
+          </div>
 
-create apples_per_friend of apples divided by friends
-create remainder of apples modulo friends
+          <div class="video-frame-wrap">
+            <video controls preload="metadata" poster="video_poster.svg" id="video-topic1">
+              <source src="videos/01_hello_world.mp4" type="video/mp4">
+              <!-- Video Fallback Container -->
+              <div class="video-placeholder-overlay">
+                <div class="video-placeholder-icon">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div class="video-placeholder-title">NotebookLM Video: First Program & English Syntax</div>
+                <p class="video-placeholder-hint">
+                  Drop your NotebookLM video file into <code>website/videos/01_hello_world.mp4</code> or replace this tag with your video embed iframe.
+                </p>
+              </div>
+            </video>
+          </div>
 
-display "Each friend receives:"
-display apples_per_friend
-display "Remaining in basket:"
-display remainder
+          <div class="video-caption-bar">
+            <span>Resolution: 1080p · Natural Voice Synthesis</span>
+            <span>Source: <code>website/videos/01_hello_world.mp4</code></span>
+          </div>
         </div>
-      </div>
-    </section>
 
-    <!-- Track 3: Conditionals -->
-    <section class="docs-article-section" style="margin-bottom: 48px;">
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-        <span class="method-badge" style="margin-bottom: 0;">Lesson 03</span>
-        <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated: 10 mins</span>
-      </div>
-      <h2 class="docs-h2">Branching Sentences: If, Otherwise If, and Otherwise</h2>
-      <p class="docs-p">
-        In Enlangg, conditional structures use natural conversational logic clauses:
-      </p>
+        <!-- Code Studio & Workbench -->
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>01_hello_world.enlng</span>
+            <div style="display: flex; gap: 8px;">
+              <a href="playground.html" class="terminal-btn" style="text-decoration: none;">Run in Sandbox</a>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="track01Code">Copy Code</button>
+            </div>
+          </div>
+          <div class="code-block-body" id="track01Code">type enlng
 
-      <div class="code-block-card">
-        <div class="code-block-header">
-          <span>lesson03_conditions.enlng</span>
-          <button type="button" class="copy-code-btn terminal-btn" data-target="lesson03Code">Copy</button>
+// Print to standard console output
+display "Hello, Sovereign World!"
+display "Enlangg compiles natural English to bare-metal C machine code."</div>
         </div>
-        <div class="code-block-body" id="lesson03Code">
-type enlng
 
-create user_age of 21
-create has_id of 1
+        <!-- Key Takeaways from NotebookLM -->
+        <div class="lesson-takeaways-card">
+          <div class="lesson-takeaways-title">Key Architectural Insights</div>
+          <ul class="lesson-takeaways-list">
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span><code>type enlng</code> activates the general-purpose native compiler tier.</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span><code>display &lt;expr&gt;</code> prints to stdout with zero format string vulnerabilities and no required imports of <code>stdio.h</code> or <code>fmt</code>.</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Zero semicolons, zero header files, and zero boilerplate functions needed to execute code.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
 
-if user_age is greater than or equal to 18 and has_id is equal to 1:
-    display "Access granted: Verified adult citizen."
+      <!-- TOPIC 02: Memory Slots & Spoken Variables -->
+      <section class="topic-lesson-section" id="track2">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 02</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 5 mins · Video: 04:30</span>
+        </div>
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">2. Deterministic Memory Slots & Inferred Types</h2>
+        <p class="docs-p" style="margin-bottom: 20px;">
+          Unlike garbage-collected languages that pause for heap compaction, Enlangg allocates variables into deterministic stack slots at compile time.
+        </p>
+
+        <!-- Video Player Card -->
+        <div class="video-player-card">
+          <div class="video-player-header">
+            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Video Briefing: Memory Slot Invariants</span>
+            <span class="video-source-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              NotebookLM Video
+            </span>
+          </div>
+
+          <div class="video-frame-wrap">
+            <video controls preload="metadata" poster="video_poster.svg" id="video-topic2">
+              <source src="videos/02_memory_slots.mp4" type="video/mp4">
+              <div class="video-placeholder-overlay">
+                <div class="video-placeholder-icon">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div class="video-placeholder-title">NotebookLM Video: Memory Slots & Type Inference</div>
+                <p class="video-placeholder-hint">
+                  Drop your NotebookLM video file into <code>website/videos/02_memory_slots.mp4</code> or replace this tag with your video embed iframe.
+                </p>
+              </div>
+            </video>
+          </div>
+
+          <div class="video-caption-bar">
+            <span>Resolution: 1080p · Natural Voice Synthesis</span>
+            <span>Source: <code>website/videos/02_memory_slots.mp4</code></span>
+          </div>
+        </div>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>02_memory_slots.enlng</span>
+            <div style="display: flex; gap: 8px;">
+              <a href="playground.html" class="terminal-btn" style="text-decoration: none;">Run in Sandbox</a>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="track02Code">Copy Code</button>
+            </div>
+          </div>
+          <div class="code-block-body" id="track02Code">type enlng
+
+// Create allocates slot 0 in the local stack frame
+create server_port of 8080
+create server_name of "Primary Gateway"
+create is_active of true
+
+// Mutate existing slot value with 'set'
+set server_port to 9000
+
+display "Server: ", server_name
+display "Port: ", server_port
+display "Status Active: ", is_active</div>
+        </div>
+
+        <div class="lesson-takeaways-card">
+          <div class="lesson-takeaways-title">Key Architectural Insights</div>
+          <ul class="lesson-takeaways-list">
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span><code>create &lt;id&gt; of &lt;val&gt;</code> declares a new variable and locks its type into the stack slot layout.</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span><code>set &lt;id&gt; to &lt;val&gt;</code> mutates an existing slot without re-allocating memory.</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Zero dynamic pointers are exposed, eliminating use-after-free and dangling pointer bugs by construction.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- TOPIC 03: Spoken Math & Arithmetic -->
+      <section class="topic-lesson-section" id="track3">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 03</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 6 mins · Video: 05:15</span>
+        </div>
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">3. Spoken Math & Arithmetic Operations</h2>
+        <p class="docs-p" style="margin-bottom: 20px;">
+          Mathematical calculations read like conversational English clauses: <code>plus</code>, <code>minus</code>, <code>multiplied by</code>, and <code>divided by</code>.
+        </p>
+
+        <!-- Video Player Card -->
+        <div class="video-player-card">
+          <div class="video-player-header">
+            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Video Briefing: Spoken Arithmetic Engine</span>
+            <span class="video-source-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              NotebookLM Video
+            </span>
+          </div>
+
+          <div class="video-frame-wrap">
+            <video controls preload="metadata" poster="video_poster.svg" id="video-topic3">
+              <source src="videos/03_spoken_math.mp4" type="video/mp4">
+              <div class="video-placeholder-overlay">
+                <div class="video-placeholder-icon">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div class="video-placeholder-title">NotebookLM Video: Spoken Math Expressions</div>
+                <p class="video-placeholder-hint">
+                  Drop your NotebookLM video file into <code>website/videos/03_spoken_math.mp4</code> or replace this tag with your video embed iframe.
+                </p>
+              </div>
+            </video>
+          </div>
+
+          <div class="video-caption-bar">
+            <span>Resolution: 1080p · Natural Voice Synthesis</span>
+            <span>Source: <code>website/videos/03_spoken_math.mp4</code></span>
+          </div>
+        </div>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>03_spoken_math.enlng</span>
+            <div style="display: flex; gap: 8px;">
+              <a href="playground.html" class="terminal-btn" style="text-decoration: none;">Run in Sandbox</a>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="track03Code">Copy Code</button>
+            </div>
+          </div>
+          <div class="code-block-body" id="track03Code">type enlng
+
+create base_salary of 65000
+create bonus of 12000
+create tax_rate of 0.18
+
+create gross_pay of base_salary plus bonus
+create deductions of gross_pay multiplied by tax_rate
+create net_pay of gross_pay minus deductions
+
+display "Gross Compensation: ", gross_pay
+display "Estimated Tax: ", deductions
+display "Net Take-Home: ", net_pay</div>
+        </div>
+
+        <div class="lesson-takeaways-card">
+          <div class="lesson-takeaways-title">Key Architectural Insights</div>
+          <ul class="lesson-takeaways-list">
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>English operators compile directly to single-instruction CPU math (e.g. <code>fadd</code>, <code>fmul</code>).</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>No operator precedence ambiguity; expressions parse strictly from left-to-right unless grouped with parentheses.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- TOPIC 04: Decision Logic & Branching -->
+      <section class="topic-lesson-section" id="track4">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 04</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 7 mins · Video: 06:00</span>
+        </div>
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">4. Decision Logic: Spoken Branching & Fallbacks</h2>
+        <p class="docs-p" style="margin-bottom: 20px;">
+          Replace cryptic symbols like <code>&amp;&amp;</code>, <code>||</code>, and <code>===</code> with readable English conditional clauses.
+        </p>
+
+        <!-- Video Player Card -->
+        <div class="video-player-card">
+          <div class="video-player-header">
+            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Video Briefing: Spoken Branching Rules</span>
+            <span class="video-source-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              NotebookLM Video
+            </span>
+          </div>
+
+          <div class="video-frame-wrap">
+            <video controls preload="metadata" poster="video_poster.svg" id="video-topic4">
+              <source src="videos/04_logic_branching.mp4" type="video/mp4">
+              <div class="video-placeholder-overlay">
+                <div class="video-placeholder-icon">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div class="video-placeholder-title">NotebookLM Video: Decision Logic & Conditions</div>
+                <p class="video-placeholder-hint">
+                  Drop your NotebookLM video file into <code>website/videos/04_logic_branching.mp4</code> or replace this tag with your video embed iframe.
+                </p>
+              </div>
+            </video>
+          </div>
+
+          <div class="video-caption-bar">
+            <span>Resolution: 1080p · Natural Voice Synthesis</span>
+            <span>Source: <code>website/videos/04_logic_branching.mp4</code></span>
+          </div>
+        </div>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>04_conditionals.enlng</span>
+            <div style="display: flex; gap: 8px;">
+              <a href="playground.html" class="terminal-btn" style="text-decoration: none;">Run in Sandbox</a>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="track04Code">Copy Code</button>
+            </div>
+          </div>
+          <div class="code-block-body" id="track04Code">type enlng
+
+create user_age of 22
+create has_verified_id of true
+
+if user_age is greater than or equal to 21 and has_verified_id is equal to true:
+    display "Access Authorized: Primary Production System"
+otherwise if user_age is greater than 16:
+    display "Access Restricted: Observer Access Only"
 otherwise:
-    display "Access denied: Verification threshold not satisfied."
+    display "Access Denied: Age verification requirement not met"</div>
         </div>
-      </div>
-    </section>
 
-    <!-- Track 4: Iteration & Algorithms -->
-    <section class="docs-article-section" style="margin-bottom: 48px;">
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-        <span class="method-badge" style="margin-bottom: 0;">Lesson 04</span>
-        <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated: 12 mins</span>
-      </div>
-      <h2 class="docs-h2">Iterative Execution: While Loops & State Evolution</h2>
-      <p class="docs-p">
-        Enlangg loops use <code>while &lt;condition&gt;:</code> syntax with clean 4-space indentation. Variables evolve through deterministic slot assignment:
-      </p>
-
-      <div class="code-block-card">
-        <div class="code-block-header">
-          <span>lesson04_loop.enlng</span>
-          <button type="button" class="copy-code-btn terminal-btn" data-target="lesson04Code">Copy</button>
+        <div class="lesson-takeaways-card">
+          <div class="lesson-takeaways-title">Key Architectural Insights</div>
+          <ul class="lesson-takeaways-list">
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Use <code>is greater than</code>, <code>is less than</code>, and <code>is equal to</code> for unambiguous comparisons.</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Branches are bounded by clean 4-space indentation; no curly bracket noise required.</span>
+            </li>
+          </ul>
         </div>
-        <div class="code-block-body" id="lesson04Code">
-type enlng
+      </section>
 
-create limit of 10
-create sum of 0
-create i of 1
-
-while i is less than or equal to limit:
-    create sum of sum plus i
-    create i of i plus 1
-
-display "Sum of integers from 1 to 10 is:"
-display sum
+      <!-- TOPIC 05: Loops & Bounded Iteration -->
+      <section class="topic-lesson-section" id="track5">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 05</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 6 mins · Video: 05:40</span>
         </div>
-      </div>
-    </section>
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">5. Loops: While, Until & Bounded Iteration</h2>
+        <p class="docs-p" style="margin-bottom: 20px;">
+          Eliminate off-by-one errors with clear iterative primitives: <code>while</code> loops and deterministic <code>repeat &lt;N&gt; times</code> blocks.
+        </p>
 
-    <!-- Track 5: Multi-Domain Web App -->
-    <section class="docs-article-section">
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-        <span class="method-badge" style="margin-bottom: 0;">Lesson 05</span>
-        <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated: 15 mins</span>
-      </div>
-      <h2 class="docs-h2">Full-Stack Unification: Connecting .enlngf and .enlngs</h2>
-      <p class="docs-p">
-        Build a complete client-server application without writing a single line of HTML or CSS:
-      </p>
+        <!-- Video Player Card -->
+        <div class="video-player-card">
+          <div class="video-player-header">
+            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Video Briefing: Iteration Primitives</span>
+            <span class="video-source-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              NotebookLM Video
+            </span>
+          </div>
 
-      <div class="code-block-card">
-        <div class="code-block-header">
-          <span>app.enlngf</span>
-          <button type="button" class="copy-code-btn terminal-btn" data-target="lesson05Code">Copy</button>
+          <div class="video-frame-wrap">
+            <video controls preload="metadata" poster="video_poster.svg" id="video-topic5">
+              <source src="videos/05_loops_iteration.mp4" type="video/mp4">
+              <div class="video-placeholder-overlay">
+                <div class="video-placeholder-icon">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div class="video-placeholder-title">NotebookLM Video: Loops & Bounded Execution</div>
+                <p class="video-placeholder-hint">
+                  Drop your NotebookLM video file into <code>website/videos/05_loops_iteration.mp4</code> or replace this tag with your video embed iframe.
+                </p>
+              </div>
+            </video>
+          </div>
+
+          <div class="video-caption-bar">
+            <span>Resolution: 1080p · Natural Voice Synthesis</span>
+            <span>Source: <code>website/videos/05_loops_iteration.mp4</code></span>
+          </div>
         </div>
-        <div class="code-block-body" id="lesson05Code">
-type enlngf
 
-create title of "Sovereign Analytics Portal"
-create heading of "Real-Time Transaction Feed"
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>05_loops.enlng</span>
+            <div style="display: flex; gap: 8px;">
+              <a href="playground.html" class="terminal-btn" style="text-decoration: none;">Run in Sandbox</a>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="track05Code">Copy Code</button>
+            </div>
+          </div>
+          <div class="code-block-body" id="track05Code">type enlng
 
-create button of "Refresh Telemetry"
-on click button:
-    call server endpoint "/api/telemetry"
+// 1. Spoken while loop
+create countdown of 5
+while countdown is greater than 0:
+    display "T-Minus: ", countdown
+    set countdown to countdown minus 1
+
+display "Ignition sequence complete!"
+
+// 2. Deterministic bounded repeat loop
+create accumulator of 0
+repeat 4 times:
+    set accumulator to accumulator plus 25
+
+display "Bounded accumulator result: ", accumulator</div>
         </div>
-      </div>
-    </section>
 
-  </main>
+        <div class="lesson-takeaways-card">
+          <div class="lesson-takeaways-title">Key Architectural Insights</div>
+          <ul class="lesson-takeaways-list">
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span><code>repeat &lt;N&gt; times</code> compiles down to an unrolled or register-counter loop with zero bounds checking penalty.</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Infinite loop safeguards check state invariants at each iteration boundary.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- TOPIC 06: Procedures & Scopes -->
+      <section class="topic-lesson-section" id="track6">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 06</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 8 mins · Video: 07:15</span>
+        </div>
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">6. Procedures, Scopes & Stack Returns</h2>
+        <p class="docs-p" style="margin-bottom: 20px;">
+          Package your business algorithms into reusable procedures with zero heap allocation overhead. Function frames execute strictly on the stack.
+        </p>
+
+        <!-- Video Player Card -->
+        <div class="video-player-card">
+          <div class="video-player-header">
+            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Video Briefing: Procedure Stack Frames</span>
+            <span class="video-source-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              NotebookLM Video
+            </span>
+          </div>
+
+          <div class="video-frame-wrap">
+            <video controls preload="metadata" poster="video_poster.svg" id="video-topic6">
+              <source src="videos/06_procedures.mp4" type="video/mp4">
+              <div class="video-placeholder-overlay">
+                <div class="video-placeholder-icon">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div class="video-placeholder-title">NotebookLM Video: Procedures & Scope Isolation</div>
+                <p class="video-placeholder-hint">
+                  Drop your NotebookLM video file into <code>website/videos/06_procedures.mp4</code> or replace this tag with your video embed iframe.
+                </p>
+              </div>
+            </video>
+          </div>
+
+          <div class="video-caption-bar">
+            <span>Resolution: 1080p · Natural Voice Synthesis</span>
+            <span>Source: <code>website/videos/06_procedures.mp4</code></span>
+          </div>
+        </div>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>06_procedures.enlng</span>
+            <div style="display: flex; gap: 8px;">
+              <a href="playground.html" class="terminal-btn" style="text-decoration: none;">Run in Sandbox</a>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="track06Code">Copy Code</button>
+            </div>
+          </div>
+          <div class="code-block-body" id="track06Code">type enlng
+
+procedure compute_compound_interest with principal, rate, times_per_year, years returns number:
+    create r_over_n of rate divided by times_per_year
+    create base of 1 plus r_over_n
+    create exponent of times_per_year multiplied by years
+    create factor of math.pow(base, exponent)
+    return principal multiplied by factor
+
+create investment of compute_compound_interest(10000, 0.07, 12, 10)
+display "Projected 10-Year Portfolio Value: ", investment</div>
+        </div>
+
+        <div class="lesson-takeaways-card">
+          <div class="lesson-takeaways-title">Key Architectural Insights</div>
+          <ul class="lesson-takeaways-list">
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Procedures declare parameters with natural English: <code>with &lt;args&gt; returns &lt;type&gt;</code>.</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Every procedure is compiled with standard C-calling conventions (cdecl/fastcall).</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- TOPIC 07: Lists & Hash Maps -->
+      <section class="topic-lesson-section" id="track7">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 07</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 8 mins · Video: 06:50</span>
+        </div>
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">7. Structured Data: Contiguous Lists & Hash Maps</h2>
+        <p class="docs-p" style="margin-bottom: 20px;">
+          Work with dynamic collections using clean bracket notation. Enlangg implements fast contiguous vectors and Robin Hood hash maps natively.
+        </p>
+
+        <!-- Video Player Card -->
+        <div class="video-player-card">
+          <div class="video-player-header">
+            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Video Briefing: Collections Architecture</span>
+            <span class="video-source-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              NotebookLM Video
+            </span>
+          </div>
+
+          <div class="video-frame-wrap">
+            <video controls preload="metadata" poster="video_poster.svg" id="video-topic7">
+              <source src="videos/07_data_structures.mp4" type="video/mp4">
+              <div class="video-placeholder-overlay">
+                <div class="video-placeholder-icon">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div class="video-placeholder-title">NotebookLM Video: Lists & Hash Maps</div>
+                <p class="video-placeholder-hint">
+                  Drop your NotebookLM video file into <code>website/videos/07_data_structures.mp4</code> or replace this tag with your video embed iframe.
+                </p>
+              </div>
+            </video>
+          </div>
+
+          <div class="video-caption-bar">
+            <span>Resolution: 1080p · Natural Voice Synthesis</span>
+            <span>Source: <code>website/videos/07_data_structures.mp4</code></span>
+          </div>
+        </div>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>07_data_structures.enlng</span>
+            <div style="display: flex; gap: 8px;">
+              <a href="playground.html" class="terminal-btn" style="text-decoration: none;">Run in Sandbox</a>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="track07Code">Copy Code</button>
+            </div>
+          </div>
+          <div class="code-block-body" id="track07Code">type enlng
+
+// Contiguous dynamic lists
+create fruits of ["Apple", "Orange", "Banana"]
+call list.append with fruits, "Mango"
+
+display "Total fruits in inventory: ", length of fruits
+display "First item: ", fruits[0]
+
+// Key-value hash maps
+create telemetry of {
+    "node_id": "us-east-1a",
+    "cpu_load": 0.42,
+    "active_conns": 1280
+}
+
+display "Node ID: ", telemetry["node_id"]
+display "Current CPU: ", telemetry["cpu_load"]</div>
+        </div>
+
+        <div class="lesson-takeaways-card">
+          <div class="lesson-takeaways-title">Key Architectural Insights</div>
+          <ul class="lesson-takeaways-list">
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Lists feature contiguous memory layout with amortized O(1) appends.</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Dictionaries use cache-friendly hash tables with open addressing.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- TOPIC 08: Python God Call & C-ABI -->
+      <section class="topic-lesson-section" id="track8">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 08</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 10 mins · Video: 08:10</span>
+        </div>
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">8. The Python God Call & C-ABI Interoperability</h2>
+        <p class="docs-p" style="margin-bottom: 20px;">
+          Leverage the vast Python and C ecosystem without rewriting libraries. Invoke PyTorch, NumPy, or native OS functions directly via zero-overhead memory bridging.
+        </p>
+
+        <!-- Video Player Card -->
+        <div class="video-player-card">
+          <div class="video-player-header">
+            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Video Briefing: Python & C-ABI Interop</span>
+            <span class="video-source-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              NotebookLM Video
+            </span>
+          </div>
+
+          <div class="video-frame-wrap">
+            <video controls preload="metadata" poster="video_poster.svg" id="video-topic8">
+              <source src="videos/08_python_god_call.mp4" type="video/mp4">
+              <div class="video-placeholder-overlay">
+                <div class="video-placeholder-icon">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div class="video-placeholder-title">NotebookLM Video: The Python God Call & C FFI</div>
+                <p class="video-placeholder-hint">
+                  Drop your NotebookLM video file into <code>website/videos/08_python_god_call.mp4</code> or replace this tag with your video embed iframe.
+                </p>
+              </div>
+            </video>
+          </div>
+
+          <div class="video-caption-bar">
+            <span>Resolution: 1080p · Natural Voice Synthesis</span>
+            <span>Source: <code>website/videos/08_python_god_call.mp4</code></span>
+          </div>
+        </div>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>08_python_god_call.enlng</span>
+            <div style="display: flex; gap: 8px;">
+              <a href="playground.html" class="terminal-btn" style="text-decoration: none;">Run in Sandbox</a>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="track08Code">Copy Code</button>
+            </div>
+          </div>
+          <div class="code-block-body" id="track08Code">type enlng
+
+// Bridge directly into Python 3.10+ runtime via C-ABI
+import python module "math" as py_math
+import python module "statistics" as stats
+
+create dataset of [12.4, 15.8, 11.2, 19.5, 14.1]
+create mean_val of stats.mean(dataset)
+create stdev_val of stats.stdev(dataset)
+
+display "Calculated Mean: ", mean_val
+display "Standard Deviation: ", stdev_val</div>
+        </div>
+
+        <div class="lesson-takeaways-card">
+          <div class="lesson-takeaways-title">Key Architectural Insights</div>
+          <ul class="lesson-takeaways-list">
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Foreign calls pass native C-struct pointers across the FFI boundary with zero serialization overhead.</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Enables seamless execution of AI/ML workflows while keeping the core application in bare-metal compiled code.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+    </main>
+  </div>
 
   <!-- Universal Foundation Multi-Column Footer -->
   <footer class="footer">
@@ -256,7 +877,9 @@ on click button:
       <div class="footer-top-grid">
         <div class="footer-col-brand">
           <div class="footer-brand-header">
-            <span class="logo-mark">⚡</span>
+            <span class="logo-mark">
+              <img src="logo.svg" alt="Enlangg Foundation" width="28" height="28" />
+            </span>
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
@@ -264,7 +887,7 @@ on click button:
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
-            <span>Compiler Core: Sovereign v5.0 Active</span>
+            <span>Compiler Core: Active</span>
           </div>
         </div>
 
@@ -284,7 +907,7 @@ on click button:
           <ul class="footer-links-list">
             <li><a href="install.html">Installation Center</a></li>
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
-            <li><a href="learn.html">Tutorials & Curriculum</a></li>
+            <li><a href="learn.html">Tutorials & Videos</a></li>
             <li><a href="library.html">Standard Library API</a></li>
             <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
           </ul>
@@ -293,10 +916,11 @@ on click button:
         <div class="footer-col">
           <h4 class="footer-col-title">Organization</h4>
           <ul class="footer-links-list">
-            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener">GitHub Repository (enlang-main)</a></li>
+            <li><a href="community.html">Sovereign Roadmap</a></li>
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
-            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="brand.html">Brand & Logo Kit</a></li>
             <li><a href="blog.html">Engineering Blog</a></li>
           </ul>
         </div>
@@ -309,6 +933,6 @@ on click button:
     </div>
   </footer>
 
-  <script src="app.js?v=5.1.0"></script>
+  <script src="app.js?v=5.2.0"></script>
 </body>
 </html>

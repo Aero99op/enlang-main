@@ -3,29 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Install Enlangg — Official Toolchain & Binaries Distribution</title>
-  <meta name="description" content="Official distribution center for Enlangg v5.0. 1-Click Windows installer, PowerShell, CMD, Bash scripts, and native C source builds." />
+  <title>Installation & Distribution Center - Enlangg</title>
+  <meta name="description" content="Download Enlangg native binaries, run automated one-liner scripts for Windows, macOS, Linux, and Docker, or compile from source." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.1.0" />
+  <link rel="stylesheet" href="style.css?v=5.2.0" />
 </head>
 <body>
 
-  <!-- Ambient Glow & Blueprint Grid -->
-  <div class="ambient-glow glow-top" aria-hidden="true"></div>
-  <div class="ambient-glow glow-middle" aria-hidden="true"></div>
+  <!-- Blueprint Grid -->
   <div class="grid-overlay" aria-hidden="true"></div>
 
   <!-- Navigation Bar -->
   <header class="navbar" id="navbar">
     <div class="nav-container">
       <a href="index.html" class="nav-brand">
-        <span class="logo-mark">⚡</span>
+        <span class="logo-mark">
+          <img src="logo.svg" alt="Enlangg Monogram" width="28" height="28" />
+        </span>
         <span class="logo-text">enlangg</span>
-        <span class="nav-version-pill">v5.0</span>
+        
       </a>
       
       <nav class="nav-links">
@@ -41,22 +42,19 @@
 
       <div class="nav-actions">
         <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
-          <span class="theme-icon">🌙</span>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
+                <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" class="nav-btn-github" title="Star Enlangg on GitHub">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </a>
         <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Windows Setup (.exe)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>Download .exe</span>
         </a>
         <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
       </div>
     </div>
@@ -64,8 +62,9 @@
 
   <!-- Mobile Drawer -->
   <div class="mobile-drawer" id="mobileDrawer">
+    <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" style="color: var(--accent-gold);">Star on GitHub ⭐</a>
     <a href="index.html">Home</a>
-    <a href="install.html" class="active">Install</a>
+    <a href="install.html" class="active">Install & Download</a>
     <a href="docs.html">Documentation & Book</a>
     <a href="playground.html">Playground IDE</a>
     <a href="learn.html">Tutorials & Learn</a>
@@ -73,6 +72,7 @@
     <a href="community.html">Community & Roadmap</a>
     <a href="about.html">About & Governance</a>
     <a href="blog.html">Engineering Blog</a>
+    <a href="brand.html">Brand Identity Kit</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
 
@@ -80,170 +80,267 @@
   <section class="page-hero">
     <div class="container page-hero-container">
       <div class="page-kicker">
-        <span>⚡ Distribution & Toolchain</span>
+        <span>Distribution & Toolchain Center</span>
       </div>
-      <h1 class="page-title">Install Enlangg v5.0</h1>
+      <h1 class="page-title">Install Enlangg</h1>
       <p class="page-desc">
-        Download verified native binaries, run automated one-liner scripts for Windows, Linux, and macOS, or build directly from the zero-dependency C specification file.
+        Download verified native binaries, automated 1-liner CLI scripts for Windows, Linux, and macOS, or compile the zero-dependency C specification in under 2 seconds.
       </p>
     </div>
   </section>
 
-  <!-- Install Methods Grid -->
-  <main class="container install-page-section">
-    <div class="install-tabs-matrix">
-      <!-- Card 1: 1-Click GUI Setup -->
-      <div class="install-method-card">
-        <span class="method-badge">Recommended for Windows</span>
-        <h3 class="method-title">Windows GUI Installer</h3>
-        <p class="method-desc">
-          Standalone setup wizard that installs both <code>enlangg.exe</code> and <code>enlng.exe</code>, automatically adds binaries to User Environment PATH, and creates desktop/start shortcuts.
-        </p>
-        <div class="code-block-card" style="margin: 6px 0;">
-          <div class="code-block-header">
-            <span>Direct Standalone Installer</span>
-            <span>310 KB</span>
-          </div>
-          <div class="code-block-body" style="color: #a1a1aa; font-size: 0.8rem;">
+  <!-- Main Content Layout -->
+  <main class="container" style="padding: 32px 24px 80px; max-width: 1340px;">
+    
+    <!-- Platform Selector Bar -->
+    <div class="chip-bar-scrollable" id="installPlatformBar" style="margin-bottom: 28px;">
+      <button type="button" class="chip-btn active" data-platform="windows">Windows</button>
+      <button type="button" class="chip-btn" data-platform="macos">macOS (Apple Silicon & Intel)</button>
+      <button type="button" class="chip-btn" data-platform="linux">Linux (Debian / Arch / Fedora / Alpine)</button>
+      <button type="button" class="chip-btn" data-platform="docker">Docker & CI/CD</button>
+      <button type="button" class="chip-btn" data-platform="source">Compile from Source</button>
+    </div>
+
+    <!-- Platform Section: Windows -->
+    <section class="install-platform-section" id="platform-windows" style="display: block;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px;">
+        
+        <!-- Method 1: GUI Setup -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 28px; display: flex; flex-direction: column;">
+          <span style="font-size: 0.76rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Recommended for Windows 10/11</span>
+          <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Windows 1-Click Installer</h3>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+            Standalone setup wizard that installs <code>enlangg.exe</code> and <code>enlng.exe</code> into <code>%LOCALAPPDATA%\enlangg</code>, configures User PATH automatically, and registers file associations.
+          </p>
+          <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">
             Package: enlangg-setup.exe<br>
-            Target: Windows 10/11 x64<br>
-            Architecture: x86_64 Native
+            Payload Size: 310 KB<br>
+            Architecture: x86_64 Native (No Admin Rights Required)
+          </div>
+          <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="btn btn-primary" style="margin-top: auto; justify-content: center;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Download Windows Installer (.exe)</span>
+          </a>
+        </div>
+
+        <!-- Method 2: PowerShell Script -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 28px; display: flex; flex-direction: column;">
+          <span style="font-size: 0.76rem; font-weight: 700; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Automated Terminal Installation</span>
+          <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">PowerShell One-Liner</h3>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+            Run this command in any standard PowerShell window. It fetches the latest binary, creates local directories, and appends to your shell PATH:
+          </p>
+          <div class="code-block-card" style="margin-bottom: 16px;">
+            <div class="code-block-header">
+              <span>PowerShell</span>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="psCmd">Copy</button>
+            </div>
+            <div class="code-block-body" id="psCmd" style="font-size: 0.78rem;">powershell -ExecutionPolicy ByPass -c "irm https://enlangg.vercel.app/install.ps1 | iex"</div>
+          </div>
+          <div class="code-block-card">
+            <div class="code-block-header">
+              <span>Command Prompt (CMD)</span>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="cmdOneLiner">Copy</button>
+            </div>
+            <div class="code-block-body" id="cmdOneLiner" style="font-size: 0.78rem;">curl -fsSL https://enlangg.vercel.app/install.cmd -o install.cmd && install.cmd</div>
           </div>
         </div>
-        <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="primary-btn" style="width: 100%; justify-content: center; margin-top: auto;">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          <span>Download enlangg-setup.exe</span>
-        </a>
-      </div>
 
-      <!-- Card 2: Terminal Command Installer -->
-      <div class="install-method-card">
-        <span class="method-badge">Automated Terminal Scripts</span>
-        <h3 class="method-title">CLI One-Liner Script</h3>
-        <p class="method-desc">
-          Installs Enlangg silently into your user local folder (<code>%LOCALAPPDATA%\enlangg</code> on Windows or <code>~/.enlangg</code> on Unix) and configures your shell profile.
+      </div>
+    </section>
+
+    <!-- Platform Section: macOS -->
+    <section class="install-platform-section" id="platform-macos" style="margin-bottom: 32px;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 28px;">
+        <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">macOS (Apple Silicon & Intel)</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+          Enlangg compiles native universal binaries for macOS 12+ (Monterey, Ventura, Sonoma, Sequoia) supporting Apple Silicon (M1/M2/M3/M4, <code>arm64</code>) and Intel <code>x86_64</code> processors.
         </p>
-        
-        <div class="code-block-card">
+
+        <div class="code-block-card" style="margin-bottom: 16px;">
           <div class="code-block-header">
-            <span>PowerShell (Windows)</span>
-            <button type="button" class="copy-code-btn terminal-btn" data-target="psCode">Copy</button>
+            <span>Terminal (zsh / bash)</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="macScript">Copy</button>
           </div>
-          <div class="code-block-body" id="psCode" style="font-size: 0.76rem; padding: 12px;">
-            powershell -ExecutionPolicy ByPass -c "irm https://enlangg.vercel.app/install.ps1 | iex"
-          </div>
+          <div class="code-block-body" id="macScript">curl -fsSL https://enlangg.vercel.app/install.sh | bash</div>
         </div>
 
-        <div class="code-block-card">
-          <div class="code-block-header">
-            <span>Command Prompt (CMD)</span>
-            <button type="button" class="copy-code-btn terminal-btn" data-target="cmdCode">Copy</button>
-          </div>
-          <div class="code-block-body" id="cmdCode" style="font-size: 0.76rem; padding: 12px;">
-            curl -fsSL https://enlangg.vercel.app/install.cmd -o install.cmd && install.cmd
-          </div>
-        </div>
-
-        <div class="code-block-card">
-          <div class="code-block-header">
-            <span>Bash / zsh (macOS / Linux)</span>
-            <button type="button" class="copy-code-btn terminal-btn" data-target="bashCode">Copy</button>
-          </div>
-          <div class="code-block-body" id="bashCode" style="font-size: 0.76rem; padding: 12px;">
-            curl -fsSL https://enlangg.vercel.app/install.sh | bash
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 3: Direct Source C Compilation -->
-      <div class="install-method-card">
-        <span class="method-badge">Zero Dependencies</span>
-        <h3 class="method-title">Compile From C Source</h3>
-        <p class="method-desc">
-          Enlangg has zero runtime external dependencies. You can download the single-file canonical C source and compile it with any standard C99+ compiler (GCC, Clang, MSVC).
+        <p style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.6;">
+          This script automatically installs the binaries into <code>~/.enlangg/bin</code> and adds the export path to your <code>~/.zshrc</code> and <code>~/.bash_profile</code>. Requires standard Xcode Command Line Tools (<code>xcode-select --install</code>).
         </p>
-        
-        <div class="code-block-card">
-          <div class="code-block-header">
-            <span>GCC / Clang Compilation</span>
-            <button type="button" class="copy-code-btn terminal-btn" data-target="gccCode">Copy</button>
-          </div>
-          <div class="code-block-body" id="gccCode" style="font-size: 0.76rem; padding: 12px;">
-            curl -fsSL https://enlangg.vercel.app/enlng.c -o enlng.c<br>
-            gcc -O3 -std=c99 enlng.c -o enlng<br>
-            ./enlng --version
-          </div>
-        </div>
-
-        <div class="code-block-card">
-          <div class="code-block-header">
-            <span>MSVC (Windows Developer Command Prompt)</span>
-            <button type="button" class="copy-code-btn terminal-btn" data-target="msvcCode">Copy</button>
-          </div>
-          <div class="code-block-body" id="msvcCode" style="font-size: 0.76rem; padding: 12px;">
-            curl -fsSL https://enlangg.vercel.app/enlng.c -o enlng.c<br>
-            cl /O2 /Fe:enlng.exe enlng.c
-          </div>
-        </div>
-
-        <a href="enlng.c" download="enlng.c" class="secondary-btn" style="width: 100%; justify-content: center; margin-top: auto;">
-          <span>Download enlng.c (Source)</span>
-        </a>
       </div>
-    </div>
+    </section>
 
-    <!-- SHA-256 Checksums Panel -->
-    <div class="checksum-panel">
-      <h3 class="checksum-title">SHA-256 Cryptographic Checksums (v5.0 Release)</h3>
-      <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px;">
-        Every official release is cryptographically signed and hashed. Verify binary integrity on your system:
+    <!-- Platform Section: Linux -->
+    <section class="install-platform-section" id="platform-linux" style="margin-bottom: 32px;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 28px;">
+        <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Linux Distribution Packages</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+          Install Enlangg on any modern Linux distribution using the universal installer script:
+        </p>
+
+        <div class="code-block-card" style="margin-bottom: 20px;">
+          <div class="code-block-header">
+            <span>Universal Linux Curl Command</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="linuxScript">Copy</button>
+          </div>
+          <div class="code-block-body" id="linuxScript">curl -fsSL https://enlangg.vercel.app/install.sh | bash</div>
+        </div>
+
+        <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 12px;">Package Manager Prerequisites:</h4>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Distribution</th>
+                <th>Prerequisite Command</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Debian / Ubuntu / Mint</td>
+                <td><code>sudo apt update &amp;&amp; sudo apt install -y build-essential curl</code></td>
+                <td>Provides GCC 11+ and C99 runtime headers</td>
+              </tr>
+              <tr>
+                <td>Arch Linux / Manjaro</td>
+                <td><code>sudo pacman -S --needed base-devel curl</code></td>
+                <td>Standard toolchain support</td>
+              </tr>
+              <tr>
+                <td>Fedora / RHEL / Rocky</td>
+                <td><code>sudo dnf groupinstall "Development Tools" -y</code></td>
+                <td>Enterprise Linux compilation support</td>
+              </tr>
+              <tr>
+                <td>Alpine Linux</td>
+                <td><code>apk add --no-cache gcc musl-dev curl bash</code></td>
+                <td>Ultra-compact container footprint</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Platform Section: Docker -->
+    <section class="install-platform-section" id="platform-docker" style="margin-bottom: 32px;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 28px;">
+        <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Docker Container Deployment</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+          Deploy Enlangg microservices in reproducible, minimal container environments using Alpine Linux:
+        </p>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>Dockerfile</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="dockerSnippet">Copy</button>
+          </div>
+          <div class="code-block-body" id="dockerSnippet">FROM alpine:latest
+
+# Install lightweight C build toolchain
+RUN apk add --no-cache gcc musl-dev curl bash
+
+# Install Enlangg Sovereign Toolchain
+RUN curl -fsSL https://enlangg.vercel.app/install.sh | bash
+
+ENV PATH="/root/.enlangg/bin:${PATH}"
+
+WORKDIR /app
+COPY . /app
+
+# Compile and run service
+RUN enlng compile server.enlngs -o /app/service
+EXPOSE 8080
+CMD ["/app/service"]</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Platform Section: Source -->
+    <section class="install-platform-section" id="platform-source" style="margin-bottom: 32px;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 28px;">
+        <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Zero-Dependency Source Compilation</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+          The Enlangg compiler core is distributed as an independent, single-file ISO C99 source file. You can bootstrap and compile it on any architecture in seconds using standard GCC, Clang, or MSVC:
+        </p>
+
+        <div class="code-block-card" style="margin-bottom: 16px;">
+          <div class="code-block-header">
+            <span>Direct Bootstrap Command</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="srcCmd">Copy</button>
+          </div>
+          <div class="code-block-body" id="srcCmd"># Download canonical compiler source
+curl -fsSL https://enlangg.vercel.app/enlng.c -o enlng.c
+
+# Compile with maximum optimization
+gcc -O3 enlng.c -o enlng
+
+# Verify binary
+./enlng --version</div>
+        </div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <a href="enlng.c" download class="btn btn-secondary">Download enlng.c (Compiler Core)</a>
+          <a href="enlangg.c" download class="btn btn-secondary">Download enlangg.c (Runtime VM)</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Verification & Troubleshooting Guide -->
+    <section class="docs-article-section" style="margin-top: 40px;">
+      <h2 class="docs-h2">Post-Installation Verification</h2>
+      <p class="docs-p">
+        Verify that your system terminal correctly resolves the <code>enlng</code> binary and backend C compiler:
       </p>
 
-      <div class="checksum-row">
-        <span class="checksum-file">enlangg-setup.exe</span>
-        <span class="checksum-hash">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
-      </div>
-      <div class="checksum-row">
-        <span class="checksum-file">enlangg.exe</span>
-        <span class="checksum-hash">9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08</span>
-      </div>
-      <div class="checksum-row">
-        <span class="checksum-file">enlng.exe</span>
-        <span class="checksum-hash">5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8</span>
-      </div>
-      <div class="checksum-row">
-        <span class="checksum-file">enlng.c</span>
-        <span class="checksum-hash">4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a</span>
-      </div>
-    </div>
-
-    <!-- Verification Step Guide -->
-    <div class="checksum-panel">
-      <h3 class="checksum-title">Verify Your Installation</h3>
-      <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
-        After running the installer, open a fresh terminal window (PowerShell, CMD, or Bash) and execute:
-      </p>
-      
-      <div class="code-block-card">
+      <div class="code-block-card" style="margin-bottom: 24px;">
         <div class="code-block-header">
-          <span>Terminal Verification</span>
-          <button type="button" class="copy-code-btn terminal-btn" data-target="verifyCode">Copy</button>
+          <span>Terminal Diagnostics</span>
         </div>
-        <div class="code-block-body" id="verifyCode">
-          $ enlng --version<br>
-          <span style="color: #10b981;">Enlangg (enlng) v5.0.0 (x86_64-pc-windows-msvc)</span><br>
-          <span style="color: #10b981;">Compiler Core: Sovereign Slot Engine (0-GC)</span><br><br>
-          $ enlng doctor<br>
-          <span style="color: #10b981;">[OK] Native Binary: Valid</span><br>
-          <span style="color: #10b981;">[OK] Environment PATH: Configured</span><br>
-          <span style="color: #10b981;">[OK] Python Interop Bridge: Active (C-ABI Ready)</span>
-        </div>
+        <div class="code-block-body"># Check compiler version
+$ enlng --version
+Enlangg Enlangg Compiler (x86_64-windows-msvc)
+Deterministic Memory Slots: ACTIVE
+Zero-GC Mode: ENABLED
+
+# Check C99 backend linker
+$ gcc --version
+gcc (MinGW-W64 x86_64) 13.2.0</div>
       </div>
-    </div>
+
+      <h3 class="docs-h3">Frequently Encountered Issues & Fixes</h3>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Symptom</th>
+              <th>Cause</th>
+              <th>Immediate Solution</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>'enlng' is not recognized</code></td>
+              <td>Terminal session opened before PATH environment was updated</td>
+              <td>Restart your terminal or run <code>refreshenv</code></td>
+            </tr>
+            <tr>
+              <td><code>PowerShell ExecutionPolicy error</code></td>
+              <td>Windows restricts unsigned remote scripts by default</td>
+              <td>Run with <code>-ExecutionPolicy ByPass</code> flag as shown in the one-liner</td>
+            </tr>
+            <tr>
+              <td><code>gcc not found during compilation</code></td>
+              <td>Native C compiler toolchain missing from system</td>
+              <td>Install MinGW on Windows (<code>winget install msys2</code>) or <code>build-essential</code> on Linux</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   </main>
 
   <!-- Universal Foundation Multi-Column Footer -->
@@ -252,7 +349,9 @@
       <div class="footer-top-grid">
         <div class="footer-col-brand">
           <div class="footer-brand-header">
-            <span class="logo-mark">⚡</span>
+            <span class="logo-mark">
+              <img src="logo.svg" alt="Enlangg Foundation" width="28" height="28" />
+            </span>
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
@@ -260,7 +359,7 @@
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
-            <span>Compiler Core: Sovereign v5.0 Active</span>
+            <span>Compiler Core: Active</span>
           </div>
         </div>
 
@@ -289,10 +388,11 @@
         <div class="footer-col">
           <h4 class="footer-col-title">Organization</h4>
           <ul class="footer-links-list">
-            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener">GitHub Repository (enlang-main)</a></li>
+            <li><a href="community.html">Sovereign Roadmap</a></li>
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
-            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="brand.html">Brand & Logo Kit</a></li>
             <li><a href="blog.html">Engineering Blog</a></li>
           </ul>
         </div>
@@ -305,6 +405,6 @@
     </div>
   </footer>
 
-  <script src="app.js?v=5.1.0"></script>
+  <script src="app.js?v=5.2.0"></script>
 </body>
 </html>

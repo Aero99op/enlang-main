@@ -208,7 +208,7 @@ if ($Silent) {
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="v5.0.0 Sovereign Master" FontSize="11" Foreground="#475569" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="0" Text="Enlangg Native Toolchain" FontSize="11" Foreground="#475569" VerticalAlignment="Center"/>
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button x:Name="BtnCancel" Content="Cancel" Width="90" Height="36" Margin="0,0,10,0"/>
                 <Button x:Name="BtnInstall" Content="Install Now" Width="120" Height="36" Background="#00F0FF" Foreground="#000000" BorderThickness="0"/>

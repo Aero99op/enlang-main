@@ -3,28 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Playground — In-Browser Enlangg IDE & VM</title>
-  <meta name="description" content="Official interactive in-browser IDE for Enlangg. Write and execute natural English code directly in your browser with zero server latency." />
+  <title>Playground & In-Browser Compiler Sandbox - Enlangg</title>
+  <meta name="description" content="Compile, inspect, and evaluate Enlangg programs client-side with zero latency. Live C99 transpilation and memory slot inspection." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.1.0" />
+  <link rel="stylesheet" href="style.css?v=5.2.0" />
 </head>
 <body>
 
-  <!-- Ambient Glow & Blueprint Grid -->
-  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <!-- Blueprint Grid -->
   <div class="grid-overlay" aria-hidden="true"></div>
 
   <!-- Navigation Bar -->
   <header class="navbar" id="navbar">
     <div class="nav-container">
       <a href="index.html" class="nav-brand">
-        <span class="logo-mark">⚡</span>
+        <span class="logo-mark">
+          <img src="logo.svg" alt="Enlangg Monogram" width="28" height="28" />
+        </span>
         <span class="logo-text">enlangg</span>
-        <span class="nav-version-pill">v5.0</span>
+        
       </a>
       
       <nav class="nav-links">
@@ -40,22 +42,19 @@
 
       <div class="nav-actions">
         <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
-          <span class="theme-icon">🌙</span>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
+                <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" class="nav-btn-github" title="Star Enlangg on GitHub">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </a>
         <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Windows Setup (.exe)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>Download .exe</span>
         </a>
         <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
       </div>
     </div>
@@ -63,112 +62,133 @@
 
   <!-- Mobile Drawer -->
   <div class="mobile-drawer" id="mobileDrawer">
+    <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener" style="color: var(--accent-gold);">Star on GitHub ⭐</a>
     <a href="index.html">Home</a>
     <a href="install.html">Install</a>
     <a href="docs.html">Documentation & Book</a>
-    <a href="playground.html" class="active">Playground IDE</a>
+    <a href="playground.html" class="active">Playground IDE Sandbox</a>
     <a href="learn.html">Tutorials & Learn</a>
     <a href="library.html">Standard Library & Python Interop</a>
     <a href="community.html">Community & Roadmap</a>
     <a href="about.html">About & Governance</a>
     <a href="blog.html">Engineering Blog</a>
+    <a href="brand.html">Brand Identity Kit</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
 
   <!-- Page Hero Header -->
-  <section class="page-hero" style="padding: 36px 0 28px;">
+  <section class="page-hero" style="padding: 32px 0 24px;">
     <div class="container page-hero-container">
       <div class="page-kicker">
-        <span>⚡ In-Browser Execution Environment</span>
+        <span>In-Browser Execution Environment</span>
       </div>
       <h1 class="page-title">Enlangg Playground & Sandbox</h1>
-      <p class="page-desc" style="font-size: 0.98rem; max-width: 800px;">
+      <p class="page-desc" style="max-width: 800px;">
         Compile and evaluate Enlangg programs client-side with zero network latency. Inspect memory slots, spoken syntax parsing, and simulated C transpilation in real-time.
       </p>
     </div>
   </section>
 
   <!-- Full-Screen Interactive Playground Window -->
-  <main class="container" style="padding: 32px 24px 70px;">
-    <div class="playground-window">
+  <main class="container" style="padding: 20px 24px 60px;">
+    
+    <!-- Template Chips Bar -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Select Template:</div>
+      <div class="chip-bar-scrollable">
+        <button type="button" class="chip-btn preset-btn active" data-preset="fibonacci">Fibonacci Series</button>
+        <button type="button" class="chip-btn preset-btn" data-preset="factorial">Factorial</button>
+        <button type="button" class="chip-btn preset-btn" data-preset="palindrome">Palindrome Check</button>
+        <button type="button" class="chip-btn preset-btn" data-preset="even_odd">Even / Odd Filter</button>
+        <button type="button" class="chip-btn preset-btn" data-preset="smart_input">Spoken String Formatter</button>
+      </div>
+    </div>
+
+    <!-- Playground Window Card -->
+    <div class="playground-window" style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); overflow: hidden;">
+      
       <!-- Toolbar -->
-      <div class="playground-toolbar">
-        <div class="presets-group">
-          <span class="toolbar-label">Load Template:</span>
-          <button type="button" class="preset-btn active" data-preset="fibonacci">Fibonacci</button>
-          <button type="button" class="preset-btn" data-preset="factorial">Factorial</button>
-          <button type="button" class="preset-btn" data-preset="palindrome">Palindrome</button>
-          <button type="button" class="preset-btn" data-preset="counter">Loop Counter</button>
-          <button type="button" class="preset-btn" data-preset="pythonBridge">Python God Call</button>
+      <div class="playground-toolbar" style="padding: 12px 18px; background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent-gold); font-weight: 700;">sandbox.enlng</span>
+          <span style="font-size: 0.74rem; color: var(--text-muted);">Enlangg Compiler</span>
         </div>
 
-        <div class="toolbar-actions">
-          <button type="button" class="secondary-btn" id="clearOutputBtn" style="padding: 6px 12px; font-size: 0.78rem;">
-            <span>Clear Terminal</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button type="button" class="btn btn-secondary" id="clearOutputBtn" style="padding: 6px 12px; font-size: 0.8rem;">
+            Clear Output
           </button>
-          <button type="button" class="run-btn" id="runCodeBtn">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-            <span>Run Program</span>
-            <kbd class="shortcut-kbd">Ctrl+↵</kbd>
+          <button type="button" class="btn btn-primary" id="runCodeBtn" style="padding: 6px 14px; font-size: 0.82rem;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <span>Run Code</span>
+            <kbd style="font-size: 0.7rem; background: rgba(0,0,0,0.25); padding: 2px 5px; border-radius: 3px; margin-left: 4px;">Ctrl+↵</kbd>
           </button>
         </div>
       </div>
 
-      <!-- Editor & Terminal Grid -->
-      <div class="editor-grid" style="min-height: 520px;">
+      <!-- Editor & Output Grid -->
+      <div class="editor-grid" style="min-height: 480px;">
+        
         <!-- Left: Code Editor -->
         <div class="editor-panel">
           <div class="panel-header">
-            <div class="panel-tab">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              </svg>
-              <span>sandbox.enlng</span>
+            <div class="panel-tab active">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+              <span>Source Editor</span>
             </div>
             <div class="panel-meta-info">
-              <span id="lineColCounter">Ln 1, Col 1</span>
+              <span>Lines: <span id="editorLineCount">0</span></span>
               <span>UTF-8</span>
             </div>
           </div>
 
           <div class="editor-body-wrap">
             <div class="editor-line-numbers" id="lineNumbers"></div>
-            <textarea id="codeEditor" spellcheck="false" aria-label="Enlangg Code Editor"></textarea>
+            <textarea id="codeEditor" spellcheck="false" aria-label="Enlangg Code Editor" placeholder="Write sovereign enlng code here..."></textarea>
           </div>
         </div>
 
         <!-- Right: Terminal Output -->
         <div class="terminal-panel">
           <div class="panel-header" style="background: rgba(14, 14, 18, 0.95);">
-            <div class="panel-tab">
+            <div class="panel-tab active">
               <span class="term-status-dot"></span>
-              <span style="color: #f4f4f6;">Standard Output / Micro-VM</span>
+              <span>Execution Terminal (Micro-VM)</span>
             </div>
             <div class="terminal-actions">
-              <button type="button" class="terminal-btn" id="copyTermBtn">Copy Output</button>
+              <button type="button" class="btn btn-secondary" id="copyTermBtn" style="padding: 4px 10px; font-size: 0.74rem;">Copy</button>
             </div>
           </div>
 
           <div class="terminal-body-wrap">
-            <pre class="terminal-body" id="terminalOutput"><span class="term-dim">=== Enlangg v5.0 Browser Runtime Engine ===</span>
-<span class="term-dim">Ready for compilation. Press [Run Program] or press Ctrl+Enter.</span></pre>
+            <pre class="terminal-body" id="terminalOutput"><span class="term-dim">=== Enlangg Browser Runtime Engine ===
+Ready for execution. Press "Run Code" or hit Ctrl+Enter.</span></pre>
           </div>
         </div>
-      </div>
 
-      <!-- Status Bar -->
-      <div class="playground-statusbar">
-        <div class="status-left">
-          <span class="status-indicator"></span>
-          <span>Engine: In-Browser Lexer + Slot Evaluator (0ms Latency)</span>
-        </div>
-        <div class="status-right">
-          <span>Execution Time: <span class="status-time" id="execTime">0.00 ms</span></span>
-        </div>
       </div>
     </div>
+
+    <!-- Quick Reference Cheatsheet Bar Below Sandbox -->
+    <div style="margin-top: 24px; padding: 18px 22px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; font-size: 0.82rem;">
+      <div>
+        <div style="font-weight: 700; color: var(--accent-gold); margin-bottom: 4px;">Variable Creation</div>
+        <code style="color: var(--text-secondary);">create x of 10</code>
+      </div>
+      <div>
+        <div style="font-weight: 700; color: var(--accent-gold); margin-bottom: 4px;">Mutation</div>
+        <code style="color: var(--text-secondary);">set x to x plus 1</code>
+      </div>
+      <div>
+        <div style="font-weight: 700; color: var(--accent-gold); margin-bottom: 4px;">Conditional Logic</div>
+        <code style="color: var(--text-secondary);">if x is greater than 5:</code>
+      </div>
+      <div>
+        <div style="font-weight: 700; color: var(--accent-gold); margin-bottom: 4px;">Console Print</div>
+        <code style="color: var(--text-secondary);">display "Value: ", x</code>
+      </div>
+    </div>
+
   </main>
 
   <!-- Universal Foundation Multi-Column Footer -->
@@ -177,7 +197,9 @@
       <div class="footer-top-grid">
         <div class="footer-col-brand">
           <div class="footer-brand-header">
-            <span class="logo-mark">⚡</span>
+            <span class="logo-mark">
+              <img src="logo.svg" alt="Enlangg Foundation" width="28" height="28" />
+            </span>
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
@@ -185,7 +207,7 @@
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
-            <span>Compiler Core: Sovereign v5.0 Active</span>
+            <span>Compiler Core: Active</span>
           </div>
         </div>
 
@@ -214,10 +236,11 @@
         <div class="footer-col">
           <h4 class="footer-col-title">Organization</h4>
           <ul class="footer-links-list">
-            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener">GitHub Repository (enlang-main)</a></li>
+            <li><a href="community.html">Sovereign Roadmap</a></li>
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
-            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="brand.html">Brand & Logo Kit</a></li>
             <li><a href="blog.html">Engineering Blog</a></li>
           </ul>
         </div>
@@ -230,6 +253,6 @@
     </div>
   </footer>
 
-  <script src="app.js?v=5.1.0"></script>
+  <script src="app.js?v=5.2.0"></script>
 </body>
 </html>

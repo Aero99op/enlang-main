@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <!-- Sovereign Gold Metallic Gradients -->
+    <linearGradient id="goldEdge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="40%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#B45309" />
+    </linearGradient>
+    <linearGradient id="goldBright" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D97706" />
+      <stop offset="60%" stop-color="#FBBF24" />
+      <stop offset="100%" stop-color="#FEF3C7" />
+    </linearGradient>
+
+    <!-- Precision Titanium Facets -->
+    <linearGradient id="facetTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#CBD5E1" />
+    </linearGradient>
+    <linearGradient id="facetFront" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#F1F5F9" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </linearGradient>
+    <linearGradient id="facetSide" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#1E293B" />
+    </linearGradient>
+    <linearGradient id="facetDark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+
+    <!-- Drop Shadow for Enterprise Dimension -->
+    <filter id="logoShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <g filter="url(#logoShadow)">
+    <!-- 1. TOP ROOF BEAM -->
+    <!-- Top Face -->
+    <polygon points="50,11 86,32 72,40 36,19" fill="url(#facetTop)" />
+    <!-- Front Face -->
+    <polygon points="86,32 86,39 72,47 72,40" fill="url(#facetSide)" />
+    <!-- Under Face -->
+    <polygon points="72,47 50,34 36,26 36,19 72,40" fill="url(#facetDark)" />
+    <!-- Gold Trim / Accent Line -->
+    <polyline points="36,19 50,11 86,32 86,39" fill="none" stroke="url(#goldEdge)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- 2. LEFT SPINE COLUMN -->
+    <!-- Outer Left Face -->
+    <polygon points="18,30 36,19 36,78 18,67" fill="url(#facetFront)" />
+    <!-- Outer Side Face -->
+    <polygon points="18,30 24,33 24,64 18,67" fill="url(#facetSide)" />
+    <!-- Outer Gold Spine Edge -->
+    <polyline points="36,19 18,30 18,67 36,78" fill="none" stroke="url(#goldBright)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- 3. CENTER CANTILEVER BEAM -->
+    <!-- Center Top Face -->
+    <polygon points="26,53 66,35 76,41 36,59" fill="url(#facetTop)" />
+    <!-- Center Front/Under Face -->
+    <polygon points="76,41 76,48 36,66 36,59" fill="url(#facetSide)" />
+    <!-- Center Gold Border -->
+    <polyline points="26,53 66,35 76,41 76,48 36,66" fill="none" stroke="url(#goldEdge)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- 4. BOTTOM BASE BEAM -->
+    <!-- Bottom Front Face -->
+    <polygon points="18,67 50,85 84,65 84,72 50,92 18,74" fill="url(#facetFront)" />
+    <!-- Bottom Top/Inner Face -->
+    <polygon points="36,78 50,86 70,74 70,68 50,80 36,72" fill="url(#facetDark)" />
+    <!-- Bottom Under Face -->
+    <polygon points="18,74 50,92 84,72 84,65 50,85 18,67" fill="url(#facetSide)" />
+    <!-- Bottom Gold Trim -->
+    <polyline points="18,67 50,85 84,65 84,72 50,92 18,74 Z" fill="none" stroke="url(#goldBright)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>
