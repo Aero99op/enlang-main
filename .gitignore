@@ -18,3 +18,6 @@ venv/
 
 # Generated test images (optional artifacts)
 *.png
+
+# Temporary scratch directory
+scratch/
