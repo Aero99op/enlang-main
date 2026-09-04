@@ -1,6 +1,6 @@
 type enlng
 
-create a num of 7
+set num to 8
 
 if num mod 2 is equal to 0:
     display "even"

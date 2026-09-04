@@ -1,0 +1,8 @@
+type enlng
+
+create a num of ask "Enter a number: "
+
+if num mod 2 is equal to 0:
+    display num + " is even"
+else:
+    display num + " is odd"
