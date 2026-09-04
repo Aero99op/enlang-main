@@ -12,20 +12,13 @@ if not exist "%SRC_DIR%" (
     exit /b 1
 )
 
-echo [1/3] Preparing clean deployment bundle...
-if exist "%TMP_DEPLOY%" rmdir /S /Q "%TMP_DEPLOY%" 2>nul
-mkdir "%TMP_DEPLOY%"
-xcopy /E /Y /I /Q "%SRC_DIR%" "%TMP_DEPLOY%" >nul
+echo [1/2] Navigating to website directory...
+pushd "%SRC_DIR%"
 
-echo [2/3] Uploading and deploying to Vercel Production...
-pushd "%TMP_DEPLOY%"
+echo [2/2] Uploading and deploying to Vercel Production...
 call npx --yes vercel --prod --yes
 set DEPLOY_EXIT=%ERRORLEVEL%
 popd
-
-echo [3/3] Cleaning up temporary workspace...
-timeout /t 1 /nobreak >nul
-rmdir /S /Q "%TMP_DEPLOY%" 2>nul
 
 if %DEPLOY_EXIT% EQU 0 (
     echo ===================================================
