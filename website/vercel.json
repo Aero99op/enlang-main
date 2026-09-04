@@ -93,19 +93,6 @@
       ]
     },
     {
-      "source": "/(.*\\.exe)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/octet-stream"
-        },
-        {
-          "key": "Content-Disposition",
-          "value": "attachment"
-        }
-      ]
-    },
-    {
       "source": "/(install.ps1|install.cmd|install.sh)",
       "headers": [
         {
