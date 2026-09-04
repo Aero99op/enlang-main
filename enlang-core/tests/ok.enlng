@@ -1,0 +1,11 @@
+set number_input to ask "enter the number"
+
+square = number_input * number_input
+
+if number_input %2 == 0:
+    status="even"
+else:
+    status="odd"
+
+display "the square of",number_input,"is",square
+display "the number",number_input,"is",status
