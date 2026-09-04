@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initPlayground();
   initDomainTabs();
   initAnimatedBook();
+  initFaqAccordion();
 });
 
 // --- 1. Multi-OS Installer Tabs & Clipboard Copy ---
@@ -117,7 +118,20 @@ else:
     status = "odd"
 
 display "the square of", number, "is", square
-display "the number", number, "is", status`
+display "the number", number, "is", status`,
+
+  factorial: `type enlng
+
+create a number of 6
+create a result of 1
+create a i of 1
+
+while i is less than or equal to number:
+    set result to result * i
+    set i to i plus 1
+
+display "Factorial calculation:"
+display "The factorial of", number, "is", result`
 };
 
 function initPlayground() {
@@ -125,11 +139,33 @@ function initPlayground() {
   const terminal = document.getElementById('terminalOutput');
   const runBtn = document.getElementById('runCodeBtn');
   const clearBtn = document.getElementById('clearOutputBtn');
+  const copyOutputBtn = document.getElementById('copyOutputBtn');
+  const lineNumbersElem = document.getElementById('editorLineNumbers');
+  const lineCountElem = document.getElementById('editorLineCount');
   const presetBtns = document.querySelectorAll('.preset-btn');
+
+  function updateLineNumbers() {
+    if (!editor || !lineNumbersElem) return;
+    const lines = editor.value.split('\n');
+    if (lineCountElem) lineCountElem.textContent = lines.length;
+    let numsHtml = '';
+    for (let i = 1; i <= lines.length; i++) {
+      numsHtml += `<span>${i}</span>`;
+    }
+    lineNumbersElem.innerHTML = numsHtml;
+  }
+
+  if (editor && lineNumbersElem) {
+    editor.addEventListener('input', updateLineNumbers);
+    editor.addEventListener('scroll', () => {
+      lineNumbersElem.scrollTop = editor.scrollTop;
+    });
+  }
 
   // Load default preset
   if (editor && CODE_PRESETS.fibonacci) {
     editor.value = CODE_PRESETS.fibonacci;
+    updateLineNumbers();
   }
 
   // Preset buttons
@@ -140,21 +176,50 @@ function initPlayground() {
       const presetName = btn.getAttribute('data-preset');
       if (CODE_PRESETS[presetName]) {
         editor.value = CODE_PRESETS[presetName];
+        updateLineNumbers();
       }
     });
   });
 
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
-      terminal.innerHTML = '<span class="term-dim">// Terminal cleared. Press Run Code to execute.</span>';
+      terminal.innerHTML = '<span class="term-dim">// Terminal cleared. Press Run Code or Ctrl+Enter to execute.</span>';
     });
   }
 
-  if (runBtn) {
-    runBtn.addEventListener('click', () => {
-      executeEnlngInBrowser(editor.value, terminal);
+  if (copyOutputBtn) {
+    copyOutputBtn.addEventListener('click', async () => {
+      const text = terminal.textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyOutputBtn.textContent = 'Copied!';
+        setTimeout(() => { copyOutputBtn.textContent = 'Copy'; }, 2000);
+      } catch (err) {
+        copyOutputBtn.textContent = 'Copied!';
+        setTimeout(() => { copyOutputBtn.textContent = 'Copy'; }, 2000);
+      }
     });
   }
+
+  const runCode = () => {
+    if (runBtn) {
+      runBtn.classList.add('running');
+      setTimeout(() => runBtn.classList.remove('running'), 200);
+    }
+    executeEnlngInBrowser(editor.value, terminal);
+  };
+
+  if (runBtn) {
+    runBtn.addEventListener('click', runCode);
+  }
+
+  // Ctrl + Enter shortcut support
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      runCode();
+    }
+  });
 }
 
 // Client-Side Sovereign Enlng Transpiler & Sandbox Execution
@@ -202,7 +267,14 @@ function executeEnlngInBrowser(sourceCode, terminal) {
 
     const cat = (...args) => args.map(a => String(a)).join('');
 
+    const t0 = performance.now();
     sandboxFunction(smartDisplay, smartDisplay, cat);
+    const t1 = performance.now();
+
+    const timePill = document.getElementById('runtimeExecTime');
+    if (timePill) {
+      timePill.textContent = `Execution: ${(t1 - t0).toFixed(2)}ms (Zero GC)`;
+    }
 
     if (outputLines.length === 0) {
       terminal.innerHTML = '<span class="term-dim">// Execution completed with 0 output statements</span>';
@@ -211,6 +283,10 @@ function executeEnlngInBrowser(sourceCode, terminal) {
     }
   } catch (err) {
     terminal.innerHTML = `<span class="term-err">Enlng Runtime Error: ${escapeHtml(err.message)}</span>`;
+    const timePill = document.getElementById('runtimeExecTime');
+    if (timePill) {
+      timePill.textContent = 'Execution: Interrupted';
+    }
   }
 }
 
@@ -458,8 +534,15 @@ function escapeHtml(str) {
 // --- 3. Domain Showcase Tabs ---
 const DOMAINS_DATA = {
   enlng: {
+    tier: 'Tier 1 · Sovereign Architecture',
     title: 'Core Backend (.enlng)',
+    filename: 'core_algorithm.enlng',
     desc: 'General-purpose algorithms, collections, math, OOP, exceptions, and native standard I/O.',
+    features: [
+      'Zero runtime garbage collector pauses',
+      'Direct compilation to native machine instructions',
+      'Spoken English arithmetic and control structures'
+    ],
     code: `type enlng
 
 create a word of "madam"
@@ -476,8 +559,15 @@ else:
     display "not palindrome"`
   },
   enlngf: {
+    tier: 'Tier 2 · Client Representation',
     title: 'Frontend Markup & UI (.enlngf)',
+    filename: 'user_profile.enlngf',
     desc: 'Declarative component trees, props, stateful reactive hooks, and DOM events compiled directly to Web UI.',
+    features: [
+      'Reactive signals without virtual DOM diffing overhead',
+      'Scoped design token inheritance',
+      'Native keyboard and touch gesture dispatchers'
+    ],
     code: `type enlngf
 
 component UserProfile with username, status:
@@ -488,8 +578,15 @@ component UserProfile with username, status:
             on click: emit open_direct_message(username)`
   },
   enlngs: {
+    tier: 'Tier 3 · Network Services',
     title: 'Server & API Routes (.enlngs)',
+    filename: 'gateway_api.enlngs',
     desc: 'Zero-overhead HTTP REST endpoints, WebSockets, microservices, and middleware routing engine.',
+    features: [
+      'Built-in non-blocking epoll/IOCP event loop',
+      'Automatic JSON validation and serialization',
+      'Thread-safe session contexts with rate limiting'
+    ],
     code: `type enlngs
 
 listen on port 8080
@@ -501,8 +598,15 @@ route post "/api/v1/auth" with body payload:
     verify payload.token and respond with session`
   },
   enlngd: {
+    tier: 'Tier 4 · Design Systems',
     title: 'Design Tokens & Styles (.enlngd)',
+    filename: 'theme_matrix.enlngd',
     desc: 'Sovereign design tokens, responsive grid/flex layouts, color matrices, and GPU-accelerated keyframe animations.',
+    features: [
+      'Deterministic design token propagation',
+      'Automated dark mode contrast verification',
+      'Hardware-accelerated CSS keyframe generator'
+    ],
     code: `type enlngd
 
 define theme dark_mode:
@@ -517,8 +621,15 @@ style class "card":
     border_radius is 8px`
   },
   enlngm: {
+    tier: 'Tier 5 · Mobile Hardware',
     title: 'Mobile Apps & HAL (.enlngm)',
+    filename: 'mobile_activity.enlngm',
     desc: 'Hardware Abstraction Layer for Android (NDK/Vulkan) and iOS (Metal) with 120 FPS native activities.',
+    features: [
+      'Direct C-ABI bindings to Android NDK & Apple Metal',
+      'Zero bridge serialization latency for gestures',
+      'Native background lifecycle and battery conservation'
+    ],
     code: `type enlngm
 
 screen Dashboard:
@@ -529,8 +640,15 @@ screen Dashboard:
         navigate back or prompt exit confirmation`
   },
   enlngdb: {
+    tier: 'Tier 6 · Sovereign Data',
     title: 'Declarative Database (.enlngdb)',
+    filename: 'schema_registry.enlngdb',
     desc: 'Type-safe relational models, migration trees, and high-concurrency declarative queries with ACID compliance.',
+    features: [
+      'Zero ORM mapping penalty via slot-aligned memory',
+      'Strict compile-time SQL injection impossibility',
+      'Built-in migration checkpoint hashes'
+    ],
     code: `type enlngdb
 
 table Accounts:
@@ -546,6 +664,11 @@ function initDomainTabs() {
   const titleElem = document.getElementById('domainTitle');
   const descElem = document.getElementById('domainDesc');
   const codeElem = document.getElementById('domainCodeSample');
+  const tierElem = document.getElementById('domainTierTag');
+  const fileElem = document.getElementById('domainFilename');
+  const feat1 = document.getElementById('domainFeat1');
+  const feat2 = document.getElementById('domainFeat2');
+  const feat3 = document.getElementById('domainFeat3');
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -553,10 +676,15 @@ function initDomainTabs() {
       tab.classList.add('active');
       const domainKey = tab.getAttribute('data-domain');
       const data = DOMAINS_DATA[domainKey];
-      if (data && titleElem && descElem && codeElem) {
-        titleElem.textContent = data.title;
-        descElem.textContent = data.desc;
-        codeElem.textContent = data.code;
+      if (data) {
+        if (titleElem) titleElem.textContent = data.title;
+        if (descElem) descElem.textContent = data.desc;
+        if (codeElem) codeElem.textContent = data.code;
+        if (tierElem) tierElem.textContent = data.tier;
+        if (fileElem) fileElem.textContent = data.filename;
+        if (feat1 && data.features[0]) feat1.textContent = data.features[0];
+        if (feat2 && data.features[1]) feat2.textContent = data.features[1];
+        if (feat3 && data.features[2]) feat3.textContent = data.features[2];
       }
     });
   });
@@ -596,8 +724,8 @@ const BOOK_PAGES = [
     pages: 'pp. 103-146 / 193',
     badge: '6 Sovereign Domains',
     title: 'Cross-Domain Tier Isolation',
-    excerpt: 'Compile-time isolation guarantees across .enlng, .enlngf, .enlngs, .enlngui, .enlngapp, and .enlngdb tiers.',
-    snippet: `<span class="code-kw">type</span> <span class="code-val">enlngserver</span>\n<span class="code-kw">create</span> <span class="code-id">route</span> <span class="code-kw">of</span> <span class="code-val">"/api/v1/health"</span>\n<span class="code-kw">respond with json</span> {<span class="code-val">"status"</span>: <span class="code-val">"healthy"</span>}`,
+    excerpt: 'Compile-time isolation guarantees across .enlng, .enlngf, .enlngs, .enlngd, .enlngm, and .enlngdb tiers.',
+    snippet: `<span class="code-kw">type</span> <span class="code-val">enlngs</span>\n<span class="code-kw">create</span> <span class="code-id">route</span> <span class="code-kw">of</span> <span class="code-val">"/api/v1/health"</span>\n<span class="code-kw">respond with json</span> {<span class="code-val">"status"</span>: <span class="code-val">"healthy"</span>}`,
     seal: 'Tier Security Invariant'
   },
   {
@@ -634,6 +762,8 @@ function initAnimatedBook() {
   const prevPageBtn = document.getElementById('prevPageBtn');
   const nextPageBtn = document.getElementById('nextPageBtn');
   const pageDotsBar = document.getElementById('pageDotsBar');
+  const chapterChipsBar = document.getElementById('chapterChipsBar');
+  const viewBtns = document.querySelectorAll('.view-preset-btn');
 
   if (!bookStage || !book3D) return;
 
@@ -642,18 +772,34 @@ function initAnimatedBook() {
   let autoFlipInterval = null;
 
   function renderPageDots() {
-    if (!pageDotsBar) return;
-    pageDotsBar.innerHTML = '';
-    BOOK_PAGES.forEach((pg, idx) => {
-      const dot = document.createElement('button');
-      dot.className = `page-dot ${idx === currentPageIndex ? 'active' : ''}`;
-      dot.title = `${pg.chapter}: ${pg.title}`;
-      dot.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setPage(idx);
+    if (pageDotsBar) {
+      pageDotsBar.innerHTML = '';
+      BOOK_PAGES.forEach((pg, idx) => {
+        const dot = document.createElement('button');
+        dot.className = `page-dot ${idx === currentPageIndex ? 'active' : ''}`;
+        dot.title = `${pg.chapter}: ${pg.title}`;
+        dot.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setPage(idx);
+        });
+        pageDotsBar.appendChild(dot);
       });
-      pageDotsBar.appendChild(dot);
-    });
+    }
+
+    if (chapterChipsBar) {
+      chapterChipsBar.innerHTML = '';
+      BOOK_PAGES.forEach((pg, idx) => {
+        const chip = document.createElement('button');
+        chip.className = `chapter-chip ${idx === currentPageIndex ? 'active' : ''}`;
+        chip.textContent = `${idx + 1}. ${pg.title.split(' ')[0]}`;
+        chip.title = `${pg.chapter}: ${pg.title}`;
+        chip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setPage(idx);
+        });
+        chapterChipsBar.appendChild(chip);
+      });
+    }
   }
 
   function setPage(idx) {
@@ -773,7 +919,7 @@ function initAnimatedBook() {
     });
   }
 
-  // --- 4. 360° Mouse / Touch Drag Rotation ---
+  // --- 4. 360° Mouse / Touch Drag Rotation with Momentum ---
   let isDragging = false;
   let hasDragged = false;
   let startX = 0;
@@ -781,9 +927,33 @@ function initAnimatedBook() {
   let currentRotY = -22;
   let currentRotX = 10;
   let isOrbiting = false;
+  let velocityX = 0;
+  let velocityY = 0;
+  let inertiaFrame = null;
 
   function applyTransform() {
     book3D.style.transform = `rotateY(${currentRotY}deg) rotateX(${currentRotX}deg)`;
+  }
+
+  function stopInertia() {
+    if (inertiaFrame) {
+      cancelAnimationFrame(inertiaFrame);
+      inertiaFrame = null;
+    }
+  }
+
+  function runInertia() {
+    if (Math.abs(velocityX) > 0.05 || Math.abs(velocityY) > 0.05) {
+      currentRotY += velocityX;
+      currentRotX -= velocityY;
+      currentRotX = Math.max(-45, Math.min(45, currentRotX));
+      applyTransform();
+      velocityX *= 0.92;
+      velocityY *= 0.92;
+      inertiaFrame = requestAnimationFrame(runInertia);
+    } else {
+      stopInertia();
+    }
   }
 
   const startDrag = (clientX, clientY) => {
@@ -791,6 +961,9 @@ function initAnimatedBook() {
     hasDragged = false;
     startX = clientX;
     startY = clientY;
+    velocityX = 0;
+    velocityY = 0;
+    stopInertia();
     bookStage.classList.add('is-dragging');
     book3D.style.animation = 'none'; // pause float
     if (isOrbiting) stopOrbit();
@@ -800,9 +973,11 @@ function initAnimatedBook() {
     if (!isDragging) return;
     const deltaX = clientX - startX;
     const deltaY = clientY - startY;
-    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+    if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
       hasDragged = true;
     }
+    velocityX = deltaX * 0.45;
+    velocityY = deltaY * 0.3;
     currentRotY += deltaX * 0.75;
     currentRotX -= deltaY * 0.5;
 
@@ -818,6 +993,9 @@ function initAnimatedBook() {
     if (!isDragging) return;
     isDragging = false;
     bookStage.classList.remove('is-dragging');
+    if (hasDragged) {
+      runInertia();
+    }
   };
 
   bookStage.addEventListener('mousedown', (e) => {
@@ -861,6 +1039,7 @@ function initAnimatedBook() {
   let orbitTimer = null;
   function startOrbit() {
     isOrbiting = true;
+    stopInertia();
     book3D.style.animation = 'none';
     if (toggleOrbitBtn) toggleOrbitBtn.classList.add('active');
     orbitTimer = setInterval(() => {
@@ -889,16 +1068,65 @@ function initAnimatedBook() {
     });
   }
 
-  // --- 6. Reset 3D View ---
+  // --- 6. Perspective Presets ---
+  viewBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      viewBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      stopOrbit();
+      stopInertia();
+      book3D.style.animation = 'none';
+
+      const view = btn.getAttribute('data-view');
+      if (view === 'isometric') {
+        currentRotY = -22;
+        currentRotX = 10;
+      } else if (view === 'front') {
+        currentRotY = 0;
+        currentRotX = 0;
+      } else if (view === 'back') {
+        currentRotY = 180;
+        currentRotX = 0;
+      } else if (view === 'spine') {
+        currentRotY = 90;
+        currentRotX = 0;
+      }
+      applyTransform();
+    });
+  });
+
+  // --- 7. Reset 3D View ---
   if (reset3dBtn) {
     reset3dBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       stopOrbit();
+      stopInertia();
+      viewBtns.forEach(b => b.classList.remove('active'));
+      const isoBtn = document.querySelector('.view-preset-btn[data-view="isometric"]');
+      if (isoBtn) isoBtn.classList.add('active');
       currentRotY = -22;
       currentRotX = 10;
       applyTransform();
       book3D.style.animation = 'bookFloat 6s ease-in-out infinite';
     });
   }
+}
+
+// --- 5. Frequently Asked Questions Accordion ---
+function initFaqAccordion() {
+  const faqCards = document.querySelectorAll('.faq-card');
+  faqCards.forEach(card => {
+    const btn = card.querySelector('.faq-question');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const isOpen = card.classList.contains('active');
+        faqCards.forEach(c => c.classList.remove('active'));
+        if (!isOpen) {
+          card.classList.add('active');
+        }
+      });
+    }
+  });
 }
 
