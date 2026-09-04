@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentation & Canonical Book — Enlangg Specification</title>
+  <meta name="description" content="The official technical documentation and canonical specification book for Enlangg. Comprehensive reference for syntax, domains, memory model, and Python injection." />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css?v=5.1.0" />
+</head>
+<body>
+
+  <!-- Ambient Glow & Blueprint Grid -->
+  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <span class="logo-mark">⚡</span>
+        <span class="logo-text">enlangg</span>
+        <span class="nav-version-pill">v5.0</span>
+      </a>
+      
+      <nav class="nav-links">
+        <a href="install.html" class="nav-link">Install</a>
+        <a href="docs.html" class="nav-link active">Docs & Book</a>
+        <a href="playground.html" class="nav-link">Playground</a>
+        <a href="learn.html" class="nav-link">Tutorials</a>
+        <a href="library.html" class="nav-link">Library & Python</a>
+        <a href="community.html" class="nav-link">Community</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="blog.html" class="nav-link">Blog</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <a href="enlangg_the_enlng.pdf" download class="nav-btn-download" title="Download Official PDF Specification">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="12" y1="18" x2="12" y2="12"></line>
+            <line x1="9" y1="15" x2="12" y2="18"></line>
+            <line x1="15" y1="15" x2="12" y2="18"></line>
+          </svg>
+          <span>PDF Manual</span>
+        </a>
+        <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a href="docs.html" class="active">Documentation & Book</a>
+    <a href="playground.html">Playground IDE</a>
+    <a href="learn.html">Tutorials & Learn</a>
+    <a href="library.html">Standard Library & Python Interop</a>
+    <a href="community.html">Community & Roadmap</a>
+    <a href="about.html">About & Governance</a>
+    <a href="blog.html">Engineering Blog</a>
+    <a href="enlangg_the_enlng.pdf" download style="color: var(--accent-gold);">Download Canonical PDF (193 pp.)</a>
+  </div>
+
+  <!-- Page Hero Header -->
+  <section class="page-hero">
+    <div class="container page-hero-container">
+      <div class="page-kicker">
+        <span>📖 Canonical Reference Manual</span>
+      </div>
+      <h1 class="page-title">Enlangg Documentation & Specification</h1>
+      <p class="page-desc">
+        The formal language specification, architectural invariants, syntax grammar, and standard runtime reference for Enlangg v5.0.
+      </p>
+      <div class="page-actions-bar">
+        <a href="enlangg_the_enlng.pdf" download class="primary-btn">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download 193-Page Canonical PDF</span>
+        </a>
+        <a href="playground.html" class="secondary-btn">
+          <span>Open Interactive Playground</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Docs 3-Column Reader Layout -->
+  <div class="docs-page-container">
+    <!-- Left Sticky Sidebar Navigation -->
+    <aside class="docs-sidebar">
+      <div>
+        <div class="docs-nav-group-title">The Enlng Book</div>
+        <ul class="docs-nav-list">
+          <li class="docs-nav-item active"><a href="#ch1">Chapter 1: Sovereign Grammar</a></li>
+          <li class="docs-nav-item"><a href="#ch2">Chapter 2: The 6 Isolated Domains</a></li>
+          <li class="docs-nav-item"><a href="#ch3">Chapter 3: Inferred Memory Slots</a></li>
+          <li class="docs-nav-item"><a href="#ch4">Chapter 4: Spoken Control Flow</a></li>
+          <li class="docs-nav-item"><a href="#ch5">Chapter 5: Python Interop & Injection</a></li>
+          <li class="docs-nav-item"><a href="#ch6">Chapter 6: Universal Standard Library</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="docs-nav-group-title">Compiler Architecture</div>
+        <ul class="docs-nav-list">
+          <li class="docs-nav-item"><a href="#cir">Compiler IR (CIR) Model</a></li>
+          <li class="docs-nav-item"><a href="#c-abi">C-ABI & Low Overhead Linking</a></li>
+          <li class="docs-nav-item"><a href="#diagnostics">Compiler Error Diagnostic Codes</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Center Content Article -->
+    <main class="docs-content">
+      <!-- Chapter 1 -->
+      <article class="docs-article-section" id="ch1">
+        <h2 class="docs-h2">Chapter 1: Sovereign Grammar & Natural Syntax</h2>
+        <p class="docs-p">
+          Enlangg is engineered upon the fundamental premise that mathematical and logical computations should be expressible in uncompromised, natural English syntax without relying on arbitrary punctuation or cryptic operator glyphs.
+        </p>
+        
+        <div class="docs-callout">
+          <span class="docs-callout-title">Core Invariant</span>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0;">
+            All language keywords are unambiguous English tokens. Variable declarations, comparisons, and arithmetic operations resolve deterministically through an authoritative slot parser.
+          </p>
+        </div>
+
+        <h3 class="docs-h3">Spoken Arithmetic & Variable Declaration</h3>
+        <p class="docs-p">
+          In Enlangg, variables are instantiated using the <code>create &lt;identifier&gt; of &lt;expression&gt;</code> syntax. Punctuation like semicolons, curly braces, and assignment operators (<code>=</code>) are completely optional and replaced by natural spoken tokens:
+        </p>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>basic_math.enlng</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="mathCode">Copy</button>
+          </div>
+          <div class="code-block-body" id="mathCode">
+type enlng
+
+create principal of 5000
+create rate of 0.05
+create years of 3
+
+create interest of principal multiplied by rate multiplied by years
+create total of principal plus interest
+
+display "Calculated Total Balance:"
+display total
+          </div>
+        </div>
+      </article>
+
+      <!-- Chapter 2 -->
+      <article class="docs-article-section" id="ch2">
+        <h2 class="docs-h2">Chapter 2: The 6 Sovereign Domains</h2>
+        <p class="docs-p">
+          Modern application development is plagued by context-switching across disjointed languages: HTML for structure, CSS for styling, JavaScript for client logic, SQL for storage, and Python/C for systems. Enlangg unifies these under a single unified grammar with strict formal file extensions:
+        </p>
+
+        <table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.88rem; border: 1px solid var(--border-card);">
+          <thead>
+            <tr style="background: var(--bg-card); border-bottom: 1px solid var(--border-card); text-align: left;">
+              <th style="padding: 10px 14px;">Extension</th>
+              <th style="padding: 10px 14px;">Domain Tier</th>
+              <th style="padding: 10px 14px;">Target Representation</th>
+              <th style="padding: 10px 14px;">Compilation Target</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 10px 14px; font-family: var(--font-mono); color: var(--accent-gold);">.enlng</td>
+              <td style="padding: 10px 14px;">Core Logic & Math</td>
+              <td style="padding: 10px 14px;">C / Machine Code / Bytecode</td>
+              <td style="padding: 10px 14px;">Native Executable</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 10px 14px; font-family: var(--font-mono); color: #38bdf8;">.enlngf</td>
+              <td style="padding: 10px 14px;">Frontend Structural</td>
+              <td style="padding: 10px 14px;">Semantic DOM / HTML5</td>
+              <td style="padding: 10px 14px;">Browser Client</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 10px 14px; font-family: var(--font-mono); color: #34d399;">.enlngs</td>
+              <td style="padding: 10px 14px;">Server & Networking</td>
+              <td style="padding: 10px 14px;">HTTP Engine / Sockets / WS</td>
+              <td style="padding: 10px 14px;">Backend Microservice</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 10px 14px; font-family: var(--font-mono); color: #a78bfa;">.enlngd</td>
+              <td style="padding: 10px 14px;">Design & Layout</td>
+              <td style="padding: 10px 14px;">CSS3 Stylesheet Engine</td>
+              <td style="padding: 10px 14px;">Styling Sheet</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 10px 14px; font-family: var(--font-mono); color: #60a5fa;">.enlngm</td>
+              <td style="padding: 10px 14px;">Mobile Application</td>
+              <td style="padding: 10px 14px;">Native Mobile Activity Tree</td>
+              <td style="padding: 10px 14px;">Mobile App</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 14px; font-family: var(--font-mono); color: #fb7185;">.enlngdb</td>
+              <td style="padding: 10px 14px;">Database & Storage</td>
+              <td style="padding: 10px 14px;">ACID Relational Storage / SQL</td>
+              <td style="padding: 10px 14px;">Database Query Engine</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <!-- Chapter 3 -->
+      <article class="docs-article-section" id="ch3">
+        <h2 class="docs-h2">Chapter 3: Inferred Memory Slots & Zero-GC Model</h2>
+        <p class="docs-p">
+          Unlike garbage-collected languages (Java, JavaScript, Python) that suffer from unpredictable GC pauses, Enlangg allocates variables into static, inferred memory slots directly at compilation time.
+        </p>
+
+        <div class="docs-callout callout-amber">
+          <span class="docs-callout-title">Architectural Advantage</span>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0;">
+            Zero heap fragmentation, zero background collector thread overhead, and deterministically predictable <code>&lt; 2ms</code> startup execution times.
+          </p>
+        </div>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>slot_memory_allocation.enlng</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="slotCode">Copy</button>
+          </div>
+          <div class="code-block-body" id="slotCode">
+type enlng
+
+// Inferred Slot 0: Integer
+create counter of 0
+
+// Inferred Slot 1: Integer
+create upper_bound of 1000
+
+while counter is less than upper_bound:
+    create counter of counter plus 1
+
+display "Execution finished with zero GC pressure: "
+display counter
+          </div>
+        </div>
+      </article>
+
+      <!-- Chapter 4 -->
+      <article class="docs-article-section" id="ch4">
+        <h2 class="docs-h2">Chapter 4: Spoken English Control Flow</h2>
+        <p class="docs-p">
+          Branching and iterative execution in Enlangg are natural, conversational constructs. Conditional branches read like human instructions:
+        </p>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>control_flow.enlng</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="flowCode">Copy</button>
+          </div>
+          <div class="code-block-body" id="flowCode">
+type enlng
+
+create score of 88
+
+if score is greater than or equal to 90:
+    display "Grade: Outstanding (A+)"
+otherwise if score is greater than or equal to 75:
+    display "Grade: Meritorious (B)"
+otherwise:
+    display "Grade: Academic Growth Required"
+          </div>
+        </div>
+      </article>
+
+      <!-- Chapter 5 -->
+      <article class="docs-article-section" id="ch5">
+        <h2 class="docs-h2">Chapter 5: Python Interoperability & The God Call</h2>
+        <p class="docs-p">
+          Enlangg bridges directly with the Python ecosystem through a zero-serialization C-ABI foreign function bridge. You can execute NumPy, PyTorch, Scikit-Learn, or built-in standard library functions directly from Enlangg without writing wrapper glue code.
+        </p>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>python_god_call.enlng</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="pyCallCode">Copy</button>
+          </div>
+          <div class="code-block-body" id="pyCallCode">
+type enlng
+import std
+import ml
+
+display "=== The God Call: Direct Zero-Overhead Python Bridge ==="
+
+// Calling standard Python built-in 'len' directly
+declare str_length = call run_py with "builtins len", "EnlanggSovereignCompiler"
+display str_length
+
+// High-speed Machine Learning training via ML domain op
+declare classifier = NaiveBayes
+train classifier with "training_data.csv"
+evaluate classifier using "test_data.csv"
+          </div>
+        </div>
+      </article>
+
+      <!-- Chapter 6 -->
+      <article class="docs-article-section" id="ch6">
+        <h2 class="docs-h2">Chapter 6: Universal Standard Library</h2>
+        <p class="docs-p">
+          The Enlangg standard distribution includes battery-included, memory-safe modules for linear algebra, string manipulation, file streams, and cryptographic hashes. For the full API list, explore the <a href="library.html" style="color: var(--accent-gold);">Library Reference Page</a>.
+        </p>
+      </article>
+    </main>
+
+    <!-- Right Sticky Table of Contents -->
+    <aside class="docs-toc">
+      <div class="toc-title">On This Page</div>
+      <ul class="toc-list">
+        <li class="toc-item"><a href="#ch1">Sovereign Grammar</a></li>
+        <li class="toc-item"><a href="#ch2">The 6 Domains</a></li>
+        <li class="toc-item"><a href="#ch3">Memory Model</a></li>
+        <li class="toc-item"><a href="#ch4">Control Flow</a></li>
+        <li class="toc-item"><a href="#ch5">Python Injection</a></li>
+        <li class="toc-item"><a href="#ch6">Standard Library</a></li>
+      </ul>
+    </aside>
+  </div>
+
+  <!-- Universal Foundation Multi-Column Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        <div class="footer-col-brand">
+          <div class="footer-brand-header">
+            <span class="logo-mark">⚡</span>
+            <span class="logo-text">enlangg foundation</span>
+          </div>
+          <p class="footer-desc">
+            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+          </p>
+          <div class="footer-status-pill">
+            <span class="beacon-dot"></span>
+            <span>Compiler Core: Sovereign v5.0 Active</span>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Documentation</h4>
+          <ul class="footer-links-list">
+            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
+            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
+            <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Ecosystem & Tools</h4>
+          <ul class="footer-links-list">
+            <li><a href="install.html">Installation Center</a></li>
+            <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
+            <li><a href="learn.html">Tutorials & Curriculum</a></li>
+            <li><a href="library.html">Standard Library API</a></li>
+            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Organization</h4>
+          <ul class="footer-links-list">
+            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="community.html#contribute">Contributing Guidelines</a></li>
+            <li><a href="about.html">Foundation Charter</a></li>
+            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="blog.html">Engineering Blog</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom-bar">
+        <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
+        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js?v=5.1.0"></script>
+</body>
+</html>

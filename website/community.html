@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community & Sovereign Roadmap — Enlangg Ecosystem</title>
+  <meta name="description" content="Explore the 20-Phase Sovereign Roadmap, RFC governance, and open contribution guidelines for Enlangg development." />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css?v=5.1.0" />
+</head>
+<body>
+
+  <!-- Ambient Glow & Blueprint Grid -->
+  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <span class="logo-mark">⚡</span>
+        <span class="logo-text">enlangg</span>
+        <span class="nav-version-pill">v5.0</span>
+      </a>
+      
+      <nav class="nav-links">
+        <a href="install.html" class="nav-link">Install</a>
+        <a href="docs.html" class="nav-link">Docs & Book</a>
+        <a href="playground.html" class="nav-link">Playground</a>
+        <a href="learn.html" class="nav-link">Tutorials</a>
+        <a href="library.html" class="nav-link">Library & Python</a>
+        <a href="community.html" class="nav-link active">Community</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="blog.html" class="nav-link">Blog</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Windows Setup (.exe)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download .exe</span>
+        </a>
+        <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a href="docs.html">Documentation & Book</a>
+    <a href="playground.html">Playground IDE</a>
+    <a href="learn.html">Tutorials & Learn</a>
+    <a href="library.html">Standard Library & Python Interop</a>
+    <a href="community.html" class="active">Community & Roadmap</a>
+    <a href="about.html">About & Governance</a>
+    <a href="blog.html">Engineering Blog</a>
+    <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
+  </div>
+
+  <!-- Page Hero Header -->
+  <section class="page-hero">
+    <div class="container page-hero-container">
+      <div class="page-kicker">
+        <span>🌐 Global Ecosystem & Governance</span>
+      </div>
+      <h1 class="page-title">Community & The 20-Phase Sovereign Roadmap</h1>
+      <p class="page-desc">
+        Transparent engineering milestones, democratic RFC governance, and architectural contribution standards for the next decade of sovereign language design.
+      </p>
+    </div>
+  </section>
+
+  <!-- Roadmap Section -->
+  <main class="container" style="padding: 24px 24px 80px; max-width: 1040px;">
+    
+    <div class="docs-article-section" style="margin-bottom: 50px;">
+      <h2 class="docs-h2">The 20-Phase Sovereign Execution Roadmap</h2>
+      <p class="docs-p">
+        Every evolutionary step of Enlangg follows an unyielding engineering trajectory towards complete self-hosting bootstrapping, mathematical verification, and zero foreign dependencies.
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 24px;">
+        
+        <!-- Phases 1-5 -->
+        <div style="padding: 20px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid var(--accent-emerald);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Phases 01 – 05: The Grammar Core & Slot Memory</h3>
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 9999px;">Completed ✓</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0; line-height: 1.6;">
+            Formalization of spoken English syntax, replacement of symbol glyphs with unambiguous English phrases, deterministic slot parser, zero-GC model, and canonical C99 transpiler engine.
+          </p>
+        </div>
+
+        <!-- Phases 6-10 -->
+        <div style="padding: 20px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid var(--accent-emerald);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Phases 06 – 10: Multi-Domain Isolation Architecture</h3>
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 9999px;">Completed ✓</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0; line-height: 1.6;">
+            Architectural separation of system tiers into dedicated formal domain extensions (.enlng, .enlngf, .enlngs, .enlngd, .enlngm, .enlngdb). Universal full-stack compilation pipeline.
+          </p>
+        </div>
+
+        <!-- Phases 11-15 -->
+        <div style="padding: 20px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid var(--accent-gold);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Phases 11 – 15: C-ABI Python Bridge & Distribution Toolchain</h3>
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 9999px;">Release v5.0 Live ★</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0; line-height: 1.6;">
+            Zero-overhead C-ABI Python God Call, standalone 1-click Windows installer (enlangg-setup.exe), 193-page canonical specification book, and sovereign Vercel self-hosted binary mirrors.
+          </p>
+        </div>
+
+        <!-- Phases 16-20 -->
+        <div style="padding: 20px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); border-left: 4px solid #38bdf8;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Phases 16 – 20: LLVM IR Core, Formal Verification & Self-Hosting</h3>
+            <span style="font-size: 0.75rem; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 3px 8px; border-radius: 9999px;">Active Workstream ⚡</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0; line-height: 1.6;">
+            Direct LLVM backend emitting native machine code without C compiler middleman, Hoare-logic formal verification proving memory safety at compile time, and 100% self-hosting compiler written in Enlangg.
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Contributing Guidelines -->
+    <div class="docs-article-section" id="contribute">
+      <h2 class="docs-h2">Contributing to Enlangg</h2>
+      <p class="docs-p">
+        We welcome language engineers, documentation authors, and runtime developers. Because Enlangg upholds strict sovereignty standards, all contributions must respect the following core axioms:
+      </p>
+
+      <div class="docs-callout">
+        <span class="docs-callout-title">The Three Sovereign Rules of Contribution</span>
+        <ol style="margin: 8px 0 0 16px; padding: 0; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7;">
+          <li><strong>Zero Cryptic Symbols:</strong> Never introduce operators or syntax requiring non-English symbols (e.g., <code>&amp;&amp;</code>, <code>||</code>, <code>!=</code>). All grammar must remain natural English phrases.</li>
+          <li><strong>Zero Runtime Dependencies:</strong> Core runtime and compiler must compile cleanly with any ANSI C99+ compiler without external third-party libraries.</li>
+          <li><strong>Deterministic Performance:</strong> All core algorithms must satisfy strict execution limits with zero runtime garbage collection pauses.</li>
+        </ol>
+      </div>
+
+      <h3 class="docs-h3" style="margin-top: 24px;">The RFC (Request for Comments) Lifecycle</h3>
+      <p class="docs-p">
+        Architectural modifications, syntax additions, or standard library extensions must be proposed via an official RFC document specifying grammar BNF, compilation semantics, and memory footprints.
+      </p>
+    </div>
+  </main>
+
+  <!-- Universal Foundation Multi-Column Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        <div class="footer-col-brand">
+          <div class="footer-brand-header">
+            <span class="logo-mark">⚡</span>
+            <span class="logo-text">enlangg foundation</span>
+          </div>
+          <p class="footer-desc">
+            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+          </p>
+          <div class="footer-status-pill">
+            <span class="beacon-dot"></span>
+            <span>Compiler Core: Sovereign v5.0 Active</span>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Documentation</h4>
+          <ul class="footer-links-list">
+            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
+            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
+            <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Ecosystem & Tools</h4>
+          <ul class="footer-links-list">
+            <li><a href="install.html">Installation Center</a></li>
+            <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
+            <li><a href="learn.html">Tutorials & Curriculum</a></li>
+            <li><a href="library.html">Standard Library API</a></li>
+            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Organization</h4>
+          <ul class="footer-links-list">
+            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="community.html#contribute">Contributing Guidelines</a></li>
+            <li><a href="about.html">Foundation Charter</a></li>
+            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="blog.html">Engineering Blog</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom-bar">
+        <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
+        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js?v=5.1.0"></script>
+</body>
+</html>

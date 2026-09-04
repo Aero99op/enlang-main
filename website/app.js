@@ -3,11 +3,17 @@
 // =====================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+  initThemeToggle();
+  highlightActiveNav();
+  initMobileMenu();
   initInstallerTabs();
   initPlayground();
   initDomainTabs();
   initAnimatedBook();
   initFaqAccordion();
+  initUniversalCopyButtons();
+  initDocsToc();
+  initLibrarySearch();
 });
 
 // --- 1. Multi-OS Installer Tabs & Clipboard Copy ---
@@ -1130,3 +1136,161 @@ function initFaqAccordion() {
   });
 }
 
+// --- 6. Universal Light / Dark Mode System ---
+function initThemeToggle() {
+  const savedTheme = localStorage.getItem('enlangg-theme');
+  const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  const currentTheme = savedTheme || (prefersLight ? 'light' : 'dark');
+
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  updateThemeIcons(currentTheme);
+
+  const toggleBtns = document.querySelectorAll('.theme-toggle-btn');
+  toggleBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const activeTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', activeTheme);
+      localStorage.setItem('enlangg-theme', activeTheme);
+      updateThemeIcons(activeTheme);
+    });
+  });
+}
+
+function updateThemeIcons(theme) {
+  const icons = document.querySelectorAll('.theme-icon');
+  icons.forEach(icon => {
+    icon.textContent = theme === 'light' ? '🌙' : '☀️';
+    icon.setAttribute('title', theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
+  });
+}
+
+// --- 7. Highlight Active Navigation Link ---
+function highlightActiveNav() {
+  const path = window.location.pathname.toLowerCase();
+  const navLinks = document.querySelectorAll('.nav-link, .mobile-drawer a');
+  
+  navLinks.forEach(link => {
+    const href = link.getAttribute('href');
+    if (!href) return;
+    const cleanHref = href.replace('.html', '').toLowerCase();
+    const cleanPath = path.replace('.html', '').replace(/\/$/, '') || '/';
+    
+    if ((cleanPath === '/' && (href === '/' || href === 'index.html')) ||
+        (cleanPath !== '/' && cleanPath.endsWith(cleanHref))) {
+      link.classList.add('active');
+    }
+  });
+}
+
+// --- 8. Mobile Menu Drawer ---
+function initMobileMenu() {
+  const toggleBtn = document.getElementById('mobileMenuToggle');
+  const drawer = document.getElementById('mobileDrawer');
+  if (!toggleBtn || !drawer) return;
+
+  toggleBtn.addEventListener('click', () => {
+    drawer.classList.toggle('open');
+    const isOpen = drawer.classList.contains('open');
+    toggleBtn.setAttribute('aria-expanded', isOpen);
+  });
+
+  // Close drawer on link click
+  const drawerLinks = drawer.querySelectorAll('a');
+  drawerLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      drawer.classList.remove('open');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+    });
+  });
+}
+
+// --- 9. Universal Code Block Copy Buttons ---
+function initUniversalCopyButtons() {
+  const copyButtons = document.querySelectorAll('.copy-code-btn');
+  copyButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const targetId = btn.getAttribute('data-target');
+      const codeElem = targetId ? document.getElementById(targetId) : btn.closest('.code-block-card')?.querySelector('pre code, pre');
+      if (!codeElem) return;
+
+      const codeText = codeElem.innerText.trim();
+      try {
+        await navigator.clipboard.writeText(codeText);
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied! ✓';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.classList.remove('copied');
+        }, 2000);
+      } catch (err) {
+        console.warn('Clipboard write failed:', err);
+      }
+    });
+  });
+}
+
+// --- 10. Documentation Table of Contents Scroll-Spy ---
+function initDocsToc() {
+  const tocLinks = document.querySelectorAll('.toc-item a');
+  const sections = document.querySelectorAll('.docs-article-section');
+  if (tocLinks.length === 0 || sections.length === 0) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.getAttribute('id');
+        tocLinks.forEach(link => {
+          if (link.getAttribute('href') === `#${id}`) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(section => observer.observe(section));
+}
+
+// --- 11. Library Search and Module Filter ---
+function initLibrarySearch() {
+  const searchInput = document.getElementById('libSearchInput');
+  const modulePills = document.querySelectorAll('.mod-pill');
+  const apiCards = document.querySelectorAll('.api-card');
+  if (!searchInput && modulePills.length === 0) return;
+
+  let activeModule = 'all';
+
+  function filterCards() {
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    apiCards.forEach(card => {
+      const cardModule = card.getAttribute('data-module');
+      const cardText = card.textContent.toLowerCase();
+      
+      const matchesModule = activeModule === 'all' || cardModule === activeModule;
+      const matchesQuery = query === '' || cardText.includes(query);
+
+      if (matchesModule && matchesQuery) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', filterCards);
+  }
+
+  modulePills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      modulePills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeModule = pill.getAttribute('data-filter') || 'all';
+      filterCards();
+    });
+  });
+}

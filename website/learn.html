@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Learn Enlangg — Step-by-Step Interactive Curriculum</title>
+  <meta name="description" content="Master natural English programming from scratch. Structured tracks covering spoken variables, conditional logic, loops, multi-domain web apps, and Python interop." />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css?v=5.1.0" />
+</head>
+<body>
+
+  <!-- Ambient Glow & Blueprint Grid -->
+  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <span class="logo-mark">⚡</span>
+        <span class="logo-text">enlangg</span>
+        <span class="nav-version-pill">v5.0</span>
+      </a>
+      
+      <nav class="nav-links">
+        <a href="install.html" class="nav-link">Install</a>
+        <a href="docs.html" class="nav-link">Docs & Book</a>
+        <a href="playground.html" class="nav-link">Playground</a>
+        <a href="learn.html" class="nav-link active">Tutorials</a>
+        <a href="library.html" class="nav-link">Library & Python</a>
+        <a href="community.html" class="nav-link">Community</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="blog.html" class="nav-link">Blog</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Windows Setup (.exe)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download .exe</span>
+        </a>
+        <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a href="docs.html">Documentation & Book</a>
+    <a href="playground.html">Playground IDE</a>
+    <a href="learn.html" class="active">Tutorials & Learn</a>
+    <a href="library.html">Standard Library & Python Interop</a>
+    <a href="community.html">Community & Roadmap</a>
+    <a href="about.html">About & Governance</a>
+    <a href="blog.html">Engineering Blog</a>
+    <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
+  </div>
+
+  <!-- Page Hero Header -->
+  <section class="page-hero">
+    <div class="container page-hero-container">
+      <div class="page-kicker">
+        <span>🎓 Progressive Curriculum</span>
+      </div>
+      <h1 class="page-title">Learn Enlangg from Fundamentals to Systems</h1>
+      <p class="page-desc">
+        A step-by-step masterclass designed for developers, educators, and language enthusiasts. Progress from the Hello World milestone to full-stack domain development.
+      </p>
+    </div>
+  </section>
+
+  <!-- Tutorial Tracks Layout -->
+  <main class="container" style="padding: 24px 24px 80px; max-width: 1080px;">
+    
+    <!-- Track 1: First Program -->
+    <section class="docs-article-section" style="margin-bottom: 48px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <span class="method-badge" style="margin-bottom: 0;">Lesson 01</span>
+        <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated: 5 mins</span>
+      </div>
+      <h2 class="docs-h2">Your First Enlangg Program: The Sovereign Declaration</h2>
+      <p class="docs-p">
+        Every Enlangg source file begins with an explicit type header that instructs the compiler which grammar engine to invoke. For general computational logic, we use <code>type enlng</code>.
+      </p>
+
+      <div class="code-block-card">
+        <div class="code-block-header">
+          <span>lesson01_hello.enlng</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-target="lesson01Code">Copy</button>
+        </div>
+        <div class="code-block-body" id="lesson01Code">
+type enlng
+
+// Printing to standard output
+display "Hello, Sovereign World!"
+display "Welcome to the zero-symbol English programming ecosystem."
+        </div>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <a href="playground.html" class="secondary-btn" style="padding: 8px 16px; font-size: 0.82rem;">
+          <span>Run this in Playground ↗</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Track 2: Variables & Spoken Arithmetic -->
+    <section class="docs-article-section" style="margin-bottom: 48px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <span class="method-badge" style="margin-bottom: 0;">Lesson 02</span>
+        <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated: 8 mins</span>
+      </div>
+      <h2 class="docs-h2">Spoken Variables & Arithmetic Operations</h2>
+      <p class="docs-p">
+        Forget cryptic operators like <code>*</code>, <code>/</code>, or <code>%</code>. Enlangg uses the exact spoken English phrases for calculations:
+      </p>
+
+      <div class="code-block-card">
+        <div class="code-block-header">
+          <span>lesson02_math.enlng</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-target="lesson02Code">Copy</button>
+        </div>
+        <div class="code-block-body" id="lesson02Code">
+type enlng
+
+create apples of 15
+create friends of 3
+
+create apples_per_friend of apples divided by friends
+create remainder of apples modulo friends
+
+display "Each friend receives:"
+display apples_per_friend
+display "Remaining in basket:"
+display remainder
+        </div>
+      </div>
+    </section>
+
+    <!-- Track 3: Conditionals -->
+    <section class="docs-article-section" style="margin-bottom: 48px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <span class="method-badge" style="margin-bottom: 0;">Lesson 03</span>
+        <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated: 10 mins</span>
+      </div>
+      <h2 class="docs-h2">Branching Sentences: If, Otherwise If, and Otherwise</h2>
+      <p class="docs-p">
+        In Enlangg, conditional structures use natural conversational logic clauses:
+      </p>
+
+      <div class="code-block-card">
+        <div class="code-block-header">
+          <span>lesson03_conditions.enlng</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-target="lesson03Code">Copy</button>
+        </div>
+        <div class="code-block-body" id="lesson03Code">
+type enlng
+
+create user_age of 21
+create has_id of 1
+
+if user_age is greater than or equal to 18 and has_id is equal to 1:
+    display "Access granted: Verified adult citizen."
+otherwise:
+    display "Access denied: Verification threshold not satisfied."
+        </div>
+      </div>
+    </section>
+
+    <!-- Track 4: Iteration & Algorithms -->
+    <section class="docs-article-section" style="margin-bottom: 48px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <span class="method-badge" style="margin-bottom: 0;">Lesson 04</span>
+        <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated: 12 mins</span>
+      </div>
+      <h2 class="docs-h2">Iterative Execution: While Loops & State Evolution</h2>
+      <p class="docs-p">
+        Enlangg loops use <code>while &lt;condition&gt;:</code> syntax with clean 4-space indentation. Variables evolve through deterministic slot assignment:
+      </p>
+
+      <div class="code-block-card">
+        <div class="code-block-header">
+          <span>lesson04_loop.enlng</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-target="lesson04Code">Copy</button>
+        </div>
+        <div class="code-block-body" id="lesson04Code">
+type enlng
+
+create limit of 10
+create sum of 0
+create i of 1
+
+while i is less than or equal to limit:
+    create sum of sum plus i
+    create i of i plus 1
+
+display "Sum of integers from 1 to 10 is:"
+display sum
+        </div>
+      </div>
+    </section>
+
+    <!-- Track 5: Multi-Domain Web App -->
+    <section class="docs-article-section">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <span class="method-badge" style="margin-bottom: 0;">Lesson 05</span>
+        <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated: 15 mins</span>
+      </div>
+      <h2 class="docs-h2">Full-Stack Unification: Connecting .enlngf and .enlngs</h2>
+      <p class="docs-p">
+        Build a complete client-server application without writing a single line of HTML or CSS:
+      </p>
+
+      <div class="code-block-card">
+        <div class="code-block-header">
+          <span>app.enlngf</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-target="lesson05Code">Copy</button>
+        </div>
+        <div class="code-block-body" id="lesson05Code">
+type enlngf
+
+create title of "Sovereign Analytics Portal"
+create heading of "Real-Time Transaction Feed"
+
+create button of "Refresh Telemetry"
+on click button:
+    call server endpoint "/api/telemetry"
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Universal Foundation Multi-Column Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        <div class="footer-col-brand">
+          <div class="footer-brand-header">
+            <span class="logo-mark">⚡</span>
+            <span class="logo-text">enlangg foundation</span>
+          </div>
+          <p class="footer-desc">
+            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+          </p>
+          <div class="footer-status-pill">
+            <span class="beacon-dot"></span>
+            <span>Compiler Core: Sovereign v5.0 Active</span>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Documentation</h4>
+          <ul class="footer-links-list">
+            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
+            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
+            <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Ecosystem & Tools</h4>
+          <ul class="footer-links-list">
+            <li><a href="install.html">Installation Center</a></li>
+            <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
+            <li><a href="learn.html">Tutorials & Curriculum</a></li>
+            <li><a href="library.html">Standard Library API</a></li>
+            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Organization</h4>
+          <ul class="footer-links-list">
+            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="community.html#contribute">Contributing Guidelines</a></li>
+            <li><a href="about.html">Foundation Charter</a></li>
+            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="blog.html">Engineering Blog</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom-bar">
+        <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
+        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js?v=5.1.0"></script>
+</body>
+</html>

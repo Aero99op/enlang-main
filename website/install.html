@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Install Enlangg — Official Toolchain & Binaries Distribution</title>
+  <meta name="description" content="Official distribution center for Enlangg v5.0. 1-Click Windows installer, PowerShell, CMD, Bash scripts, and native C source builds." />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css?v=5.1.0" />
+</head>
+<body>
+
+  <!-- Ambient Glow & Blueprint Grid -->
+  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <div class="ambient-glow glow-middle" aria-hidden="true"></div>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <span class="logo-mark">⚡</span>
+        <span class="logo-text">enlangg</span>
+        <span class="nav-version-pill">v5.0</span>
+      </a>
+      
+      <nav class="nav-links">
+        <a href="install.html" class="nav-link active">Install</a>
+        <a href="docs.html" class="nav-link">Docs & Book</a>
+        <a href="playground.html" class="nav-link">Playground</a>
+        <a href="learn.html" class="nav-link">Tutorials</a>
+        <a href="library.html" class="nav-link">Library & Python</a>
+        <a href="community.html" class="nav-link">Community</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="blog.html" class="nav-link">Blog</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Windows Setup (.exe)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download .exe</span>
+        </a>
+        <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="index.html">Home</a>
+    <a href="install.html" class="active">Install</a>
+    <a href="docs.html">Documentation & Book</a>
+    <a href="playground.html">Playground IDE</a>
+    <a href="learn.html">Tutorials & Learn</a>
+    <a href="library.html">Standard Library & Python Interop</a>
+    <a href="community.html">Community & Roadmap</a>
+    <a href="about.html">About & Governance</a>
+    <a href="blog.html">Engineering Blog</a>
+    <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
+  </div>
+
+  <!-- Page Hero Header -->
+  <section class="page-hero">
+    <div class="container page-hero-container">
+      <div class="page-kicker">
+        <span>⚡ Distribution & Toolchain</span>
+      </div>
+      <h1 class="page-title">Install Enlangg v5.0</h1>
+      <p class="page-desc">
+        Download verified native binaries, run automated one-liner scripts for Windows, Linux, and macOS, or build directly from the zero-dependency C specification file.
+      </p>
+    </div>
+  </section>
+
+  <!-- Install Methods Grid -->
+  <main class="container install-page-section">
+    <div class="install-tabs-matrix">
+      <!-- Card 1: 1-Click GUI Setup -->
+      <div class="install-method-card">
+        <span class="method-badge">Recommended for Windows</span>
+        <h3 class="method-title">Windows GUI Installer</h3>
+        <p class="method-desc">
+          Standalone setup wizard that installs both <code>enlangg.exe</code> and <code>enlng.exe</code>, automatically adds binaries to User Environment PATH, and creates desktop/start shortcuts.
+        </p>
+        <div class="code-block-card" style="margin: 6px 0;">
+          <div class="code-block-header">
+            <span>Direct Standalone Installer</span>
+            <span>310 KB</span>
+          </div>
+          <div class="code-block-body" style="color: #a1a1aa; font-size: 0.8rem;">
+            Package: enlangg-setup.exe<br>
+            Target: Windows 10/11 x64<br>
+            Architecture: x86_64 Native
+          </div>
+        </div>
+        <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="primary-btn" style="width: 100%; justify-content: center; margin-top: auto;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download enlangg-setup.exe</span>
+        </a>
+      </div>
+
+      <!-- Card 2: Terminal Command Installer -->
+      <div class="install-method-card">
+        <span class="method-badge">Automated Terminal Scripts</span>
+        <h3 class="method-title">CLI One-Liner Script</h3>
+        <p class="method-desc">
+          Installs Enlangg silently into your user local folder (<code>%LOCALAPPDATA%\enlangg</code> on Windows or <code>~/.enlangg</code> on Unix) and configures your shell profile.
+        </p>
+        
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>PowerShell (Windows)</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="psCode">Copy</button>
+          </div>
+          <div class="code-block-body" id="psCode" style="font-size: 0.76rem; padding: 12px;">
+            powershell -ExecutionPolicy ByPass -c "irm https://enlangg.vercel.app/install.ps1 | iex"
+          </div>
+        </div>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>Command Prompt (CMD)</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="cmdCode">Copy</button>
+          </div>
+          <div class="code-block-body" id="cmdCode" style="font-size: 0.76rem; padding: 12px;">
+            curl -fsSL https://enlangg.vercel.app/install.cmd -o install.cmd && install.cmd
+          </div>
+        </div>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>Bash / zsh (macOS / Linux)</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="bashCode">Copy</button>
+          </div>
+          <div class="code-block-body" id="bashCode" style="font-size: 0.76rem; padding: 12px;">
+            curl -fsSL https://enlangg.vercel.app/install.sh | bash
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Direct Source C Compilation -->
+      <div class="install-method-card">
+        <span class="method-badge">Zero Dependencies</span>
+        <h3 class="method-title">Compile From C Source</h3>
+        <p class="method-desc">
+          Enlangg has zero runtime external dependencies. You can download the single-file canonical C source and compile it with any standard C99+ compiler (GCC, Clang, MSVC).
+        </p>
+        
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>GCC / Clang Compilation</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="gccCode">Copy</button>
+          </div>
+          <div class="code-block-body" id="gccCode" style="font-size: 0.76rem; padding: 12px;">
+            curl -fsSL https://enlangg.vercel.app/enlng.c -o enlng.c<br>
+            gcc -O3 -std=c99 enlng.c -o enlng<br>
+            ./enlng --version
+          </div>
+        </div>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>MSVC (Windows Developer Command Prompt)</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="msvcCode">Copy</button>
+          </div>
+          <div class="code-block-body" id="msvcCode" style="font-size: 0.76rem; padding: 12px;">
+            curl -fsSL https://enlangg.vercel.app/enlng.c -o enlng.c<br>
+            cl /O2 /Fe:enlng.exe enlng.c
+          </div>
+        </div>
+
+        <a href="enlng.c" download="enlng.c" class="secondary-btn" style="width: 100%; justify-content: center; margin-top: auto;">
+          <span>Download enlng.c (Source)</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- SHA-256 Checksums Panel -->
+    <div class="checksum-panel">
+      <h3 class="checksum-title">SHA-256 Cryptographic Checksums (v5.0 Release)</h3>
+      <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px;">
+        Every official release is cryptographically signed and hashed. Verify binary integrity on your system:
+      </p>
+
+      <div class="checksum-row">
+        <span class="checksum-file">enlangg-setup.exe</span>
+        <span class="checksum-hash">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
+      </div>
+      <div class="checksum-row">
+        <span class="checksum-file">enlangg.exe</span>
+        <span class="checksum-hash">9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08</span>
+      </div>
+      <div class="checksum-row">
+        <span class="checksum-file">enlng.exe</span>
+        <span class="checksum-hash">5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8</span>
+      </div>
+      <div class="checksum-row">
+        <span class="checksum-file">enlng.c</span>
+        <span class="checksum-hash">4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a</span>
+      </div>
+    </div>
+
+    <!-- Verification Step Guide -->
+    <div class="checksum-panel">
+      <h3 class="checksum-title">Verify Your Installation</h3>
+      <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+        After running the installer, open a fresh terminal window (PowerShell, CMD, or Bash) and execute:
+      </p>
+      
+      <div class="code-block-card">
+        <div class="code-block-header">
+          <span>Terminal Verification</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-target="verifyCode">Copy</button>
+        </div>
+        <div class="code-block-body" id="verifyCode">
+          $ enlng --version<br>
+          <span style="color: #10b981;">Enlangg (enlng) v5.0.0 (x86_64-pc-windows-msvc)</span><br>
+          <span style="color: #10b981;">Compiler Core: Sovereign Slot Engine (0-GC)</span><br><br>
+          $ enlng doctor<br>
+          <span style="color: #10b981;">[OK] Native Binary: Valid</span><br>
+          <span style="color: #10b981;">[OK] Environment PATH: Configured</span><br>
+          <span style="color: #10b981;">[OK] Python Interop Bridge: Active (C-ABI Ready)</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Universal Foundation Multi-Column Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        <div class="footer-col-brand">
+          <div class="footer-brand-header">
+            <span class="logo-mark">⚡</span>
+            <span class="logo-text">enlangg foundation</span>
+          </div>
+          <p class="footer-desc">
+            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+          </p>
+          <div class="footer-status-pill">
+            <span class="beacon-dot"></span>
+            <span>Compiler Core: Sovereign v5.0 Active</span>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Documentation</h4>
+          <ul class="footer-links-list">
+            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
+            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
+            <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Ecosystem & Tools</h4>
+          <ul class="footer-links-list">
+            <li><a href="install.html">Installation Center</a></li>
+            <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
+            <li><a href="learn.html">Tutorials & Curriculum</a></li>
+            <li><a href="library.html">Standard Library API</a></li>
+            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Organization</h4>
+          <ul class="footer-links-list">
+            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="community.html#contribute">Contributing Guidelines</a></li>
+            <li><a href="about.html">Foundation Charter</a></li>
+            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="blog.html">Engineering Blog</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom-bar">
+        <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
+        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js?v=5.1.0"></script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Playground — In-Browser Enlangg IDE & VM</title>
+  <meta name="description" content="Official interactive in-browser IDE for Enlangg. Write and execute natural English code directly in your browser with zero server latency." />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css?v=5.1.0" />
+</head>
+<body>
+
+  <!-- Ambient Glow & Blueprint Grid -->
+  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <span class="logo-mark">⚡</span>
+        <span class="logo-text">enlangg</span>
+        <span class="nav-version-pill">v5.0</span>
+      </a>
+      
+      <nav class="nav-links">
+        <a href="install.html" class="nav-link">Install</a>
+        <a href="docs.html" class="nav-link">Docs & Book</a>
+        <a href="playground.html" class="nav-link active">Playground</a>
+        <a href="learn.html" class="nav-link">Tutorials</a>
+        <a href="library.html" class="nav-link">Library & Python</a>
+        <a href="community.html" class="nav-link">Community</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="blog.html" class="nav-link">Blog</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Windows Setup (.exe)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download .exe</span>
+        </a>
+        <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a href="docs.html">Documentation & Book</a>
+    <a href="playground.html" class="active">Playground IDE</a>
+    <a href="learn.html">Tutorials & Learn</a>
+    <a href="library.html">Standard Library & Python Interop</a>
+    <a href="community.html">Community & Roadmap</a>
+    <a href="about.html">About & Governance</a>
+    <a href="blog.html">Engineering Blog</a>
+    <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
+  </div>
+
+  <!-- Page Hero Header -->
+  <section class="page-hero" style="padding: 36px 0 28px;">
+    <div class="container page-hero-container">
+      <div class="page-kicker">
+        <span>⚡ In-Browser Execution Environment</span>
+      </div>
+      <h1 class="page-title">Enlangg Playground & Sandbox</h1>
+      <p class="page-desc" style="font-size: 0.98rem; max-width: 800px;">
+        Compile and evaluate Enlangg programs client-side with zero network latency. Inspect memory slots, spoken syntax parsing, and simulated C transpilation in real-time.
+      </p>
+    </div>
+  </section>
+
+  <!-- Full-Screen Interactive Playground Window -->
+  <main class="container" style="padding: 32px 24px 70px;">
+    <div class="playground-window">
+      <!-- Toolbar -->
+      <div class="playground-toolbar">
+        <div class="presets-group">
+          <span class="toolbar-label">Load Template:</span>
+          <button type="button" class="preset-btn active" data-preset="fibonacci">Fibonacci</button>
+          <button type="button" class="preset-btn" data-preset="factorial">Factorial</button>
+          <button type="button" class="preset-btn" data-preset="palindrome">Palindrome</button>
+          <button type="button" class="preset-btn" data-preset="counter">Loop Counter</button>
+          <button type="button" class="preset-btn" data-preset="pythonBridge">Python God Call</button>
+        </div>
+
+        <div class="toolbar-actions">
+          <button type="button" class="secondary-btn" id="clearOutputBtn" style="padding: 6px 12px; font-size: 0.78rem;">
+            <span>Clear Terminal</span>
+          </button>
+          <button type="button" class="run-btn" id="runCodeBtn">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span>Run Program</span>
+            <kbd class="shortcut-kbd">Ctrl+↵</kbd>
+          </button>
+        </div>
+      </div>
+
+      <!-- Editor & Terminal Grid -->
+      <div class="editor-grid" style="min-height: 520px;">
+        <!-- Left: Code Editor -->
+        <div class="editor-panel">
+          <div class="panel-header">
+            <div class="panel-tab">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              </svg>
+              <span>sandbox.enlng</span>
+            </div>
+            <div class="panel-meta-info">
+              <span id="lineColCounter">Ln 1, Col 1</span>
+              <span>UTF-8</span>
+            </div>
+          </div>
+
+          <div class="editor-body-wrap">
+            <div class="editor-line-numbers" id="lineNumbers"></div>
+            <textarea id="codeEditor" spellcheck="false" aria-label="Enlangg Code Editor"></textarea>
+          </div>
+        </div>
+
+        <!-- Right: Terminal Output -->
+        <div class="terminal-panel">
+          <div class="panel-header" style="background: rgba(14, 14, 18, 0.95);">
+            <div class="panel-tab">
+              <span class="term-status-dot"></span>
+              <span style="color: #f4f4f6;">Standard Output / Micro-VM</span>
+            </div>
+            <div class="terminal-actions">
+              <button type="button" class="terminal-btn" id="copyTermBtn">Copy Output</button>
+            </div>
+          </div>
+
+          <div class="terminal-body-wrap">
+            <pre class="terminal-body" id="terminalOutput"><span class="term-dim">=== Enlangg v5.0 Browser Runtime Engine ===</span>
+<span class="term-dim">Ready for compilation. Press [Run Program] or press Ctrl+Enter.</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="playground-statusbar">
+        <div class="status-left">
+          <span class="status-indicator"></span>
+          <span>Engine: In-Browser Lexer + Slot Evaluator (0ms Latency)</span>
+        </div>
+        <div class="status-right">
+          <span>Execution Time: <span class="status-time" id="execTime">0.00 ms</span></span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Universal Foundation Multi-Column Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        <div class="footer-col-brand">
+          <div class="footer-brand-header">
+            <span class="logo-mark">⚡</span>
+            <span class="logo-text">enlangg foundation</span>
+          </div>
+          <p class="footer-desc">
+            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+          </p>
+          <div class="footer-status-pill">
+            <span class="beacon-dot"></span>
+            <span>Compiler Core: Sovereign v5.0 Active</span>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Documentation</h4>
+          <ul class="footer-links-list">
+            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
+            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
+            <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Ecosystem & Tools</h4>
+          <ul class="footer-links-list">
+            <li><a href="install.html">Installation Center</a></li>
+            <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
+            <li><a href="learn.html">Tutorials & Curriculum</a></li>
+            <li><a href="library.html">Standard Library API</a></li>
+            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Organization</h4>
+          <ul class="footer-links-list">
+            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="community.html#contribute">Contributing Guidelines</a></li>
+            <li><a href="about.html">Foundation Charter</a></li>
+            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="blog.html">Engineering Blog</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom-bar">
+        <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
+        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js?v=5.1.0"></script>
+</body>
+</html>

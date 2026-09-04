@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Standard Library & Python Interop — Enlangg API Reference</title>
+  <meta name="description" content="Comprehensive API reference for the Enlangg v5.0 standard library and zero-serialization Python God Call C-ABI bridge." />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css?v=5.1.0" />
+</head>
+<body>
+
+  <!-- Ambient Glow & Blueprint Grid -->
+  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <span class="logo-mark">⚡</span>
+        <span class="logo-text">enlangg</span>
+        <span class="nav-version-pill">v5.0</span>
+      </a>
+      
+      <nav class="nav-links">
+        <a href="install.html" class="nav-link">Install</a>
+        <a href="docs.html" class="nav-link">Docs & Book</a>
+        <a href="playground.html" class="nav-link">Playground</a>
+        <a href="learn.html" class="nav-link">Tutorials</a>
+        <a href="library.html" class="nav-link active">Library & Python</a>
+        <a href="community.html" class="nav-link">Community</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="blog.html" class="nav-link">Blog</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle-btn" aria-label="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Windows Setup (.exe)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download .exe</span>
+        </a>
+        <button type="button" class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a href="docs.html">Documentation & Book</a>
+    <a href="playground.html">Playground IDE</a>
+    <a href="learn.html">Tutorials & Learn</a>
+    <a href="library.html" class="active">Standard Library & Python Interop</a>
+    <a href="community.html">Community & Roadmap</a>
+    <a href="about.html">About & Governance</a>
+    <a href="blog.html">Engineering Blog</a>
+    <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
+  </div>
+
+  <!-- Page Hero Header -->
+  <section class="page-hero">
+    <div class="container page-hero-container">
+      <div class="page-kicker">
+        <span>📦 Universal Standard Library</span>
+      </div>
+      <h1 class="page-title">Standard Library & The Python God Call</h1>
+      <p class="page-desc">
+        Explore built-in zero-overhead modules for arithmetic, string manipulation, cryptosystems, and native zero-serialization Python interoperability.
+      </p>
+    </div>
+  </section>
+
+  <!-- Main Library Explorer -->
+  <main class="container" style="padding: 24px 24px 80px;">
+    <!-- Filter and Search Header -->
+    <div class="lib-controls-bar">
+      <input type="text" id="libSearchInput" class="lib-search-input" placeholder="Search functions, methods, or modules (e.g., sqrt, sha256, run_py)..." />
+      <div class="module-pills-row">
+        <button type="button" class="mod-pill active" data-filter="all">All Modules</button>
+        <button type="button" class="mod-pill" data-filter="math">std.math</button>
+        <button type="button" class="mod-pill" data-filter="string">std.string</button>
+        <button type="button" class="mod-pill" data-filter="io">std.io</button>
+        <button type="button" class="mod-pill" data-filter="crypto">std.crypto</button>
+        <button type="button" class="mod-pill" data-filter="python">python.bridge</button>
+      </div>
+    </div>
+
+    <!-- API Cards Grid -->
+    <div class="api-cards-grid">
+      <!-- Card 1: Math Square Root -->
+      <div class="api-card" data-module="math">
+        <div class="api-card-header">
+          <span class="api-name">math.sqrt(number)</span>
+          <span class="api-mod-badge">std.math</span>
+        </div>
+        <p class="api-desc">
+          Computes the IEEE-754 double precision square root of a non-negative number using optimized CPU SIMD instructions.
+        </p>
+        <div class="api-code-snippet">
+          <code>create root of call math.sqrt with 144 // Result: 12.0</code>
+        </div>
+      </div>
+
+      <!-- Card 2: String Reverse -->
+      <div class="api-card" data-module="string">
+        <div class="api-card-header">
+          <span class="api-name">string.reverse(text)</span>
+          <span class="api-mod-badge">std.string</span>
+        </div>
+        <p class="api-desc">
+          Reverses an arbitrary UTF-8 encoded string in-place with zero heap allocations, preserving grapheme cluster boundaries.
+        </p>
+        <div class="api-code-snippet">
+          <code>create reversed of call string.reverse with "racecar"</code>
+        </div>
+      </div>
+
+      <!-- Card 3: Cryptographic Hash -->
+      <div class="api-card" data-module="crypto">
+        <div class="api-card-header">
+          <span class="api-name">crypto.sha256(data)</span>
+          <span class="api-mod-badge">std.crypto</span>
+        </div>
+        <p class="api-desc">
+          Generates an authentic NIST FIPS 180-4 256-bit cryptographic digest formatted as a lowercase 64-character hexadecimal string.
+        </p>
+        <div class="api-code-snippet">
+          <code>create digest of call crypto.sha256 with "sovereign"</code>
+        </div>
+      </div>
+
+      <!-- Card 4: File IO Read -->
+      <div class="api-card" data-module="io">
+        <div class="api-card-header">
+          <span class="api-name">file.read_all(path)</span>
+          <span class="api-mod-badge">std.io</span>
+        </div>
+        <p class="api-desc">
+          Reads the entire contents of a filesystem file into an inferred memory buffer using memory-mapped I/O (mmap).
+        </p>
+        <div class="api-code-snippet">
+          <code>create contents of call file.read_all with "config.enlng"</code>
+        </div>
+      </div>
+
+      <!-- Card 5: Python God Call -->
+      <div class="api-card" data-module="python">
+        <div class="api-card-header">
+          <span class="api-name">call run_py with "target", args</span>
+          <span class="api-mod-badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; border-color: rgba(234, 179, 8, 0.3);">python.bridge</span>
+        </div>
+        <p class="api-desc">
+          Direct zero-serialization C-ABI foreign call into the Python runtime. Invokes standard library or external PyPI packages (NumPy, PyTorch, SciPy).
+        </p>
+        <div class="api-code-snippet">
+          <code>declare len = call run_py with "builtins len", "Enlangg"</code>
+        </div>
+      </div>
+
+      <!-- Card 6: Matrix Multiplier -->
+      <div class="api-card" data-module="math">
+        <div class="api-card-header">
+          <span class="api-name">matrix.multiply(A, B)</span>
+          <span class="api-mod-badge">std.math</span>
+        </div>
+        <p class="api-desc">
+          Performs BLAS-grade matrix multiplication using cache-friendly tiling and AVX2 vector registers.
+        </p>
+        <div class="api-code-snippet">
+          <code>create C of call matrix.multiply with matrixA, matrixB</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- The God Call Technical Deep Dive -->
+    <div class="checksum-panel" id="python-interop" style="margin-top: 60px;">
+      <span class="method-badge">Architectural Whitepaper</span>
+      <h3 class="checksum-title" style="font-size: 1.4rem;">The God Call: Zero-Overhead Python Bridge</h3>
+      <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px;">
+        Traditional multi-language bridges rely on slow inter-process communication (IPC), JSON serialization, or sockets that introduce massive latency overhead (15-50ms per call). Enlangg implements <strong>The God Call</strong>: a direct C-ABI binding that shares the active process virtual memory table with CPython.
+      </p>
+
+      <div class="code-block-card">
+        <div class="code-block-header">
+          <span>god_call_cpython_binding.enlng</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-target="deepPyCode">Copy</button>
+        </div>
+        <div class="code-block-body" id="deepPyCode">
+type enlng
+import python.bridge
+
+display "=== Executing SciPy Scientific Optimization via God Call ==="
+
+// Pass memory pointers directly across C-ABI boundary
+declare result = call run_py with "scipy.optimize minimize", "objective_func", 1.0
+
+display "Converged Minimum Value:"
+display result
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+        <div style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md);">
+          <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-gold);">0.08 µs</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">C-ABI Memory Call Overhead</div>
+        </div>
+        <div style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md);">
+          <div style="font-size: 1.3rem; font-weight: 800; color: #38bdf8;">Zero Copy</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Raw Pointer Value Passing</div>
+        </div>
+        <div style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md);">
+          <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-emerald);">100% Native</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Full Compatibility with PyPI</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Universal Foundation Multi-Column Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        <div class="footer-col-brand">
+          <div class="footer-brand-header">
+            <span class="logo-mark">⚡</span>
+            <span class="logo-text">enlangg foundation</span>
+          </div>
+          <p class="footer-desc">
+            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+          </p>
+          <div class="footer-status-pill">
+            <span class="beacon-dot"></span>
+            <span>Compiler Core: Sovereign v5.0 Active</span>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Documentation</h4>
+          <ul class="footer-links-list">
+            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
+            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
+            <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Ecosystem & Tools</h4>
+          <ul class="footer-links-list">
+            <li><a href="install.html">Installation Center</a></li>
+            <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
+            <li><a href="learn.html">Tutorials & Curriculum</a></li>
+            <li><a href="library.html">Standard Library API</a></li>
+            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Organization</h4>
+          <ul class="footer-links-list">
+            <li><a href="community.html">20-Phase Sovereign Roadmap</a></li>
+            <li><a href="community.html#contribute">Contributing Guidelines</a></li>
+            <li><a href="about.html">Foundation Charter</a></li>
+            <li><a href="about.html#compiler">Compiler Architecture</a></li>
+            <li><a href="blog.html">Engineering Blog</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom-bar">
+        <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
+        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js?v=5.1.0"></script>
+</body>
+</html>
