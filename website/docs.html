@@ -161,7 +161,7 @@
 
           <h3 class="docs-h3">Spoken Arithmetic & Variable Declaration</h3>
           <p class="docs-p">
-            Variables are instantiated using the <code>create &lt;identifier&gt; of &lt;expression&gt;</code> syntax or modified using <code>set &lt;identifier&gt; to &lt;expression&gt;</code>. Mathematical operators are expressed as natural English phrases:
+            Variables are declared and assigned using the idiomatic <code>set &lt;identifier&gt; to &lt;expression&gt;</code> syntax. Mathematical operators are expressed as natural English phrases:
           </p>
 
           <div class="code-block-card">
@@ -171,12 +171,12 @@
             </div>
             <div class="code-block-body" id="mathCode">type enlng
 
-create principal of 5000
-create rate of 0.05
-create years of 3
+set principal to 5000
+set rate to 0.05
+set years to 3
 
-create interest of principal multiplied by rate multiplied by years
-create total of principal plus interest
+set interest to principal multiplied by rate multiplied by years
+set total to principal plus interest
 
 display "Calculated Total Balance:"
 display total</div>
@@ -197,31 +197,31 @@ display total</div>
                 <tr>
                   <td><code>plus</code></td>
                   <td><code>+</code></td>
-                  <td><code>create sum of 10 plus 25</code></td>
+                  <td><code>set sum to 10 plus 25</code></td>
                   <td><code>35</code></td>
                 </tr>
                 <tr>
                   <td><code>minus</code></td>
                   <td><code>-</code></td>
-                  <td><code>create diff of 100 minus 42</code></td>
+                  <td><code>set diff to 100 minus 42</code></td>
                   <td><code>58</code></td>
                 </tr>
                 <tr>
                   <td><code>multiplied by</code></td>
                   <td><code>*</code></td>
-                  <td><code>create area of width multiplied by height</code></td>
+                  <td><code>set area to width multiplied by height</code></td>
                   <td><code>Area value</code></td>
                 </tr>
                 <tr>
                   <td><code>divided by</code></td>
                   <td><code>/</code></td>
-                  <td><code>create avg of total divided by count</code></td>
+                  <td><code>set avg to total divided by count</code></td>
                   <td><code>Floating-point quotient</code></td>
                 </tr>
                 <tr>
                   <td><code>modulo</code></td>
                   <td><code>%</code></td>
-                  <td><code>create rem of count modulo 2</code></td>
+                  <td><code>set rem to count modulo 2</code></td>
                   <td><code>Remainder</code></td>
                 </tr>
                 <tr>
@@ -229,6 +229,68 @@ display total</div>
                   <td><code>=</code></td>
                   <td><code>set count to count plus 1</code></td>
                   <td><code>Mutates variable slot</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="docs-h3">Natural English Synonyms & Keyword Flexibility</h3>
+          <p class="docs-p">
+            Because English is a living, spoken human language, people naturally express ideas in synonyms. Enlangg embraces this fluidity: while <code>set &lt;id&gt; to &lt;val&gt;</code> is our primary idiomatic standard, the compiler natively accepts equivalent spoken alternatives with zero performance cost:
+          </p>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Operation / Intent</th>
+                  <th>Canonical Standard (Recommended)</th>
+                  <th>Spoken Synonyms (Permitted)</th>
+                  <th>Compiler Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Variable Declaration</strong></td>
+                  <td><code>set x to 10</code></td>
+                  <td><code>let x = 10</code> · <code>create x as 10</code> · <code>declare x to 10</code> · <code>initialize x to 10</code></td>
+                  <td>Allocates stack slot & binds value</td>
+                </tr>
+                <tr>
+                  <td><strong>Variable Mutation</strong></td>
+                  <td><code>set x to 20</code></td>
+                  <td><code>update x to 20</code> · <code>assign x to 20</code> · <code>change x to 20</code></td>
+                  <td>Overwrites slot in-place</td>
+                </tr>
+                <tr>
+                  <td><strong>Increment / Decrement</strong></td>
+                  <td><code>increase x by 1</code></td>
+                  <td><code>decrease x by 1</code> · <code>set x to x plus 1</code></td>
+                  <td>In-place arithmetic register update</td>
+                </tr>
+                <tr>
+                  <td><strong>Standard Output</strong></td>
+                  <td><code>display "Hello"</code></td>
+                  <td><code>show "Hello"</code> · <code>output "Hello"</code> · <code>print "Hello"</code></td>
+                  <td>Flushes tokens to stdout</td>
+                </tr>
+                <tr>
+                  <td><strong>User Input</strong></td>
+                  <td><code>ask "Enter name: "</code></td>
+                  <td><code>input "..."</code> · <code>read from user with "..."</code></td>
+                  <td>Stdin capture with type coercion</td>
+                </tr>
+                <tr>
+                  <td><strong>Collection Loops</strong></td>
+                  <td><code>for each item in items:</code></td>
+                  <td><code>for every item in items:</code> · <code>for all item in items:</code></td>
+                  <td>Zero-allocation iterator traversal</td>
+                </tr>
+                <tr>
+                  <td><strong>Conditional Branching</strong></td>
+                  <td><code>if x is greater than 10:</code></td>
+                  <td><code>if x &gt; 10:</code> · <code>otherwise if ...</code> · <code>otherwise:</code></td>
+                  <td>Deterministic jump branch</td>
                 </tr>
               </tbody>
             </table>
@@ -329,8 +391,8 @@ listen on port 8080:
               <span>slot_memory_allocation.txt</span>
             </div>
             <div class="code-block-body">[Compile-Time Parse Phase]
-  |-- Clause: create user_id of 10042        -> Stack Slot #0 (Offset +0x00, 8 bytes)
-  |-- Clause: create account_bal of 950.50   -> Stack Slot #1 (Offset +0x08, 8 bytes)
+  |-- Clause: set user_id to 10042        -> Stack Slot #0 (Offset +0x00, 8 bytes)
+  |-- Clause: set account_bal to 950.50   -> Stack Slot #1 (Offset +0x08, 8 bytes)
   |-- Scope Close: Procedure Return          -> SP reset by 16 bytes (Zero GC latency)</div>
           </div>
         </article>
@@ -398,7 +460,7 @@ listen on port 8080:
             </div>
             <div class="code-block-body" id="flowCode">type enlng
 
-create score of 94
+set score to 94
 
 if score is greater than or equal to 90:
     display "Grade: Sovereign Tier A"
@@ -407,7 +469,7 @@ otherwise if score is greater than or equal to 75:
 otherwise:
     display "Grade: Tier C"
 
-create counter of 1
+set counter to 1
 while counter is less than or equal to 5:
     display "Iteration: ", counter
     set counter to counter plus 1</div>
@@ -432,13 +494,13 @@ procedure calculate_mortgage with principal, rate, term_years returns number:
     if principal is less than or equal to 0:
         signal failure "Principal must be strictly positive"
     
-    create monthly_rate of rate divided by 12
-    create months of term_years multiplied by 12
-    create payment of principal multiplied by monthly_rate
+    set monthly_rate to rate divided by 12
+    set months to term_years multiplied by 12
+    set payment to principal multiplied by monthly_rate
     return payment
 
 attempt:
-    create monthly of calculate_mortgage(250000, 0.045, 30)
+    set monthly to calculate_mortgage(250000, 0.045, 30)
     display "Monthly Payment: ", monthly
 catch failure with error_message:
     display "Calculation Error: ", error_message</div>
@@ -462,7 +524,7 @@ catch failure with error_message:
 external c function puts with text returns number
 external c function sqrt with value returns number
 
-create root of sqrt(144.0)
+set root to sqrt(144.0)
 display "Square root calculated via C-ABI: ", root</div>
           </div>
         </article>
@@ -483,9 +545,9 @@ display "Square root calculated via C-ABI: ", root</div>
 
 import python module "numpy" as np
 
-create matrix_a of np.array([[1, 2], [3, 4]])
-create matrix_b of np.array([[5, 6], [7, 8]])
-create product of np.dot(matrix_a, matrix_b)
+set matrix_a to np.array([[1, 2], [3, 4]])
+set matrix_b to np.array([[5, 6], [7, 8]])
+set product to np.dot(matrix_a, matrix_b)
 
 display "Matrix multiplication computed via CPython C-ABI:"
 display product</div>

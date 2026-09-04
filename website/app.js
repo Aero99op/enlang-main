@@ -70,25 +70,25 @@ function initInstallerTabs() {
 const CODE_PRESETS = {
   fibonacci: `type enlng
 
-create n of 10
-create first of 0
-create second of 1
-create count of 0
+set n to 10
+set first to 0
+set second to 1
+set count to 0
 
 display "--- Fibonacci Series (First 10) ---"
 
 while count is less than n:
     display first
-    create a next of first plus second
+    set next to first plus second
     set first to second
     set second to next
     set count to count plus 1`,
 
   palindrome: `type enlng
 
-create a word of "madam"
-create a reversed of ""
-create a i of 0
+set word to "madam"
+set reversed to ""
+set i to 0
 
 while i less than length of word:
     set reversed to word[i] plus reversed 
@@ -116,22 +116,22 @@ display "The total calculated price is: ", total`,
 
   even_odd: `type enlng
 
-create a number of 100
-square = number * number
+set number to 100
+set square to number * number
 
 if number % 2 is equal to 0:
-    status = "even"
+    set status to "even"
 else:
-    status = "odd"
+    set status to "odd"
 
 display "the square of", number, "is", square
 display "the number", number, "is", status`,
 
   factorial: `type enlng
 
-create a number of 6
-create a result of 1
-create a i of 1
+set number to 6
+set result to 1
+set i to 1
 
 while i is less than or equal to number:
     set result to result * i
@@ -324,6 +324,7 @@ function splitOutsideQuotes(str, delimiter) {
 
 function transpileEnlngToJS(lines) {
   const intermediateLines = [];
+  const declaredVars = new Set();
   
   for (let rawLine of lines) {
     const indentLen = rawLine.length - rawLine.trimStart().length;
@@ -344,21 +345,47 @@ function transpileEnlngToJS(lines) {
       continue;
     }
 
-    // 1. Variable Declarations (create / declare / initialize / let)
-    const createMatch = trimmed.match(/^(?:create\s+(?:a\s+|an\s+|the\s+)?|declare\s+(?:a\s+|an\s+|the\s+)?|initialize\s+(?:a\s+|an\s+|the\s+)?|let\s+)([a-zA-Z0-9_]+)\s+(?:of|as|to|=)\s+(.*)$/i);
+    // 1. Variable Declarations (create / declare / initialize / let / define)
+    const createMatch = trimmed.match(/^(?:create\s+(?:a\s+|an\s+|the\s+)?|declare\s+(?:a\s+|an\s+|the\s+)?|initialize\s+(?:a\s+|an\s+|the\s+)?|let\s+|define\s+)([a-zA-Z0-9_]+)\s+(?:of|as|to|=)\s+(.*)$/i);
     if (createMatch) {
       const varName = createMatch[1];
       const valExpr = transpileExpression(createMatch[2]);
-      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `let ${varName} = ${valExpr};` });
+      declaredVars.add(varName);
+      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${varName} = ${valExpr};` });
       continue;
     }
 
-    // 2. Variable Assignments (set / update / assign)
-    const setMatch = trimmed.match(/^(?:set|update|assign)\s+([a-zA-Z0-9_\[\]\.]+)\s+(?:to|=)\s+(.*)$/i);
+    // 2. Variable Assignments & Mutations (set / update / assign / change)
+    const setMatch = trimmed.match(/^(?:set|update|assign|change)\s+([a-zA-Z0-9_\[\]\.]+)\s+(?:to|=)\s+(.*)$/i);
     if (setMatch) {
       const target = setMatch[1];
       const valExpr = transpileExpression(setMatch[2]);
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(target)) {
+        declaredVars.add(target);
+      }
       intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${target} = ${valExpr};` });
+      continue;
+    }
+
+    // 2b. Increment / Decrement
+    const incMatch = trimmed.match(/^(?:increase)\s+([a-zA-Z0-9_\[\]\.]+)\s+by\s+(.*)$/i);
+    if (incMatch) {
+      const target = incMatch[1];
+      const valExpr = transpileExpression(incMatch[2]);
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(target)) {
+        declaredVars.add(target);
+      }
+      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${target} += ${valExpr};` });
+      continue;
+    }
+    const decMatch = trimmed.match(/^(?:decrease)\s+([a-zA-Z0-9_\[\]\.]+)\s+by\s+(.*)$/i);
+    if (decMatch) {
+      const target = decMatch[1];
+      const valExpr = transpileExpression(decMatch[2]);
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(target)) {
+        declaredVars.add(target);
+      }
+      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${target} -= ${valExpr};` });
       continue;
     }
 
@@ -367,6 +394,9 @@ function transpileEnlngToJS(lines) {
     if (directAssign) {
       const target = directAssign[1];
       const valExpr = transpileExpression(directAssign[2]);
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(target)) {
+        declaredVars.add(target);
+      }
       intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${target} = ${valExpr};` });
       continue;
     }
@@ -498,6 +528,10 @@ function transpileEnlngToJS(lines) {
     finalJS.push(' '.repeat(closedIndent) + '}');
   }
 
+  if (declaredVars.size > 0) {
+    finalJS.unshift(`var ${Array.from(declaredVars).join(', ')};`);
+  }
+
   return finalJS.join('\n');
 }
 
@@ -552,9 +586,9 @@ const DOMAINS_DATA = {
     ],
     code: `type enlng
 
-create a word of "madam"
-create a reversed of ""
-create a i of 0
+set word to "madam"
+set reversed to ""
+set i to 0
 
 while i less than length of word:
     set reversed to word[i] plus reversed 

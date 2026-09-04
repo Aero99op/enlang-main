@@ -123,7 +123,7 @@
           Reads the entire contents of a UTF-8 text file into a fixed stack memory buffer. Raises E008 if file not found.
         </p>
         <div class="api-code-snippet">
-          <code>create contents of file.read("config.json")<br>display "Loaded: ", length of contents, " bytes"</code>
+          <code>set contents to file.read("config.json")<br>display "Loaded: ", length of contents, " bytes"</code>
         </div>
       </div>
 
@@ -149,7 +149,7 @@
           Reads a single line of text from standard input (stdin) up to newline terminator with zero trailing whitespace.
         </p>
         <div class="api-code-snippet">
-          <code>display "Enter username: "<br>create name of io.read_line()</code>
+          <code>display "Enter username: "<br>set name to io.read_line()</code>
         </div>
       </div>
 
@@ -163,7 +163,7 @@
           Computes the IEEE-754 double precision square root using native CPU vector FPU instructions in O(1) time.
         </p>
         <div class="api-code-snippet">
-          <code>create root of math.sqrt(144) // 12.0</code>
+          <code>set root to math.sqrt(144) // 12.0</code>
         </div>
       </div>
 
@@ -176,7 +176,7 @@
           Calculates base raised to the power exponent with double-precision accuracy across integer and fractional powers.
         </p>
         <div class="api-code-snippet">
-          <code>create val of math.pow(2, 10) // 1024</code>
+          <code>set val to math.pow(2, 10) // 1024</code>
         </div>
       </div>
 
@@ -189,7 +189,7 @@
           Generates a cryptographically seeded pseudo-random integer in the inclusive range [min, max].
         </p>
         <div class="api-code-snippet">
-          <code>create dice of math.random(1, 6)</code>
+          <code>set dice to math.random(1, 6)</code>
         </div>
       </div>
 
@@ -203,7 +203,7 @@
           Partitions a string into a list of substrings separated by the specified delimiter string in O(N) linear time.
         </p>
         <div class="api-code-snippet">
-          <code>create words of string.split("enlangg is fast", " ")</code>
+          <code>set words to string.split("enlangg is fast", " ")</code>
         </div>
       </div>
 
@@ -216,7 +216,7 @@
           Replaces all occurrences of pattern string with target string, returning a newly allocated stack string slot.
         </p>
         <div class="api-code-snippet">
-          <code>create clean of string.replace("foo-bar", "-", "_")</code>
+          <code>set clean to string.replace("foo-bar", "-", "_")</code>
         </div>
       </div>
 
@@ -229,7 +229,7 @@
           Strips leading and trailing ASCII whitespace (spaces, tabs, newlines) without altering interior text.
         </p>
         <div class="api-code-snippet">
-          <code>create clean of string.trim("   hello world   ")</code>
+          <code>set clean to string.trim("   hello world   ")</code>
         </div>
       </div>
 
@@ -243,7 +243,7 @@
           Appends an element to the end of a dynamic array list with amortized O(1) constant time allocation.
         </p>
         <div class="api-code-snippet">
-          <code>create items of []<br>call list.append with items, "first"<br>call list.append with items, "second"</code>
+          <code>set items to []<br>call list.append with items, "first"<br>call list.append with items, "second"</code>
         </div>
       </div>
 
@@ -256,7 +256,7 @@
           Retrieves value associated with key from Robin Hood hash table in O(1) average lookup time.
         </p>
         <div class="api-code-snippet">
-          <code>create user of { "name": "Ada", "role": "Engineer" }<br>create role of map.get(user, "role", "Guest")</code>
+          <code>set user to { "name": "Ada", "role": "Engineer" }<br>set role to map.get(user, "role", "Guest")</code>
         </div>
       </div>
 
@@ -270,7 +270,7 @@
           Dispatches a non-blocking HTTPS GET request via system TLS sockets and returns status code, headers, and body.
         </p>
         <div class="api-code-snippet">
-          <code>create res of http.get("https://api.github.com/zen")<br>display "Response: ", res.body</code>
+          <code>set res to http.get("https://api.github.com/zen")<br>display "Response: ", res.body</code>
         </div>
       </div>
 
@@ -297,7 +297,7 @@
           Generates an authentic NIST FIPS 180-4 256-bit cryptographic digest as a 64-character lowercase hexadecimal string.
         </p>
         <div class="api-code-snippet">
-          <code>create hash of crypto.sha256("sovereign_token")</code>
+          <code>set hash to crypto.sha256("sovereign_token")</code>
         </div>
       </div>
 
@@ -310,7 +310,7 @@
           Computes a keyed-hash message authentication code (HMAC-SHA256) for verifying data integrity and API signatures.
         </p>
         <div class="api-code-snippet">
-          <code>create signature of crypto.hmac("secret_key", "payload")</code>
+          <code>set signature to crypto.hmac("secret_key", "payload")</code>
         </div>
       </div>
 
@@ -324,7 +324,7 @@
           Loads an installed CPython package (NumPy, PyTorch, Pandas) directly into virtual memory via C-ABI foreign call bridge.
         </p>
         <div class="api-code-snippet">
-          <code>create torch of python.import("torch")<br>create tensor of torch.randn([3, 3])</code>
+          <code>set torch to python.import("torch")<br>set tensor to torch.randn([3, 3])</code>
         </div>
       </div>
 
@@ -337,7 +337,7 @@
           Executes arbitrary Python code within the shared virtual memory context, returning native C types back to Enlangg slots.
         </p>
         <div class="api-code-snippet">
-          <code>create result of python.eval("2 ** 32 - 1")</code>
+          <code>set result to python.eval("2 ** 32 - 1")</code>
         </div>
       </div>
 
@@ -351,7 +351,7 @@
           Returns the full array of command line arguments passed to the executable upon process invocation.
         </p>
         <div class="api-code-snippet">
-          <code>create args of system.argv()<br>display "Program invoked with ", length of args, " flags"</code>
+          <code>set args to system.argv()<br>display "Program invoked with ", length of args, " flags"</code>
         </div>
       </div>
 
@@ -364,7 +364,7 @@
           Returns current high-resolution monotonic UNIX timestamp in milliseconds since epoch (useful for precision micro-benchmarks).
         </p>
         <div class="api-code-snippet">
-          <code>create start of system.time_ms()<br>// run workload<br>create elapsed of system.time_ms() minus start</code>
+          <code>set start to system.time_ms()<br>// run workload<br>set elapsed to system.time_ms() minus start</code>
         </div>
       </div>
 
@@ -377,7 +377,7 @@
           Reads the specified environment variable from the operating system session. Returns empty string if unset.
         </p>
         <div class="api-code-snippet">
-          <code>create port of system.get_env("PORT")</code>
+          <code>set port to system.get_env("PORT")</code>
         </div>
       </div>
 

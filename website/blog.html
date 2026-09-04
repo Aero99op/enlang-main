@@ -120,8 +120,8 @@
 
 procedure process_payload with raw_bytes returns number:
     // Slot #0: Stack Allocation (Zero Heap Allocation)
-    create decoded_len of length of raw_bytes
-    create checksum of crypto.sha256(raw_bytes)
+    set decoded_len to length of raw_bytes
+    set checksum to crypto.sha256(raw_bytes)
     return decoded_len
 
 // When procedure exits, stack pointer resets with zero GC sweep overhead</div>
@@ -187,8 +187,8 @@ procedure process_payload with raw_bytes returns number:
 
 import python module "numpy" as np
 
-create matrix of np.array([[1.0, 2.0], [3.0, 4.0]])
-create inverse of np.linalg.inv(matrix)
+set matrix to np.array([[1.0, 2.0], [3.0, 4.0]])
+set inverse to np.linalg.inv(matrix)
 
 display "Matrix inverse calculated via CPython virtual memory mapping:"
 display inverse</div>
@@ -209,7 +209,7 @@ display inverse</div>
           Spoken Code & Cognitive Ergonomics: Quantitative Studies on Program Review Comprehension
         </h2>
         <p style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
-          Human working memory possesses distinct phonological and visual-spatial subsystems. By aligning language keywords with spoken phonological tokens (e.g., <code>create x of 10</code> rather than <code>let x = 10;</code>), engineers experience 34% fewer syntax transcription errors and significantly improved code review comprehension across distributed teams.
+          Human working memory possesses distinct phonological and visual-spatial subsystems. By aligning language keywords with spoken phonological tokens (e.g., <code>set x to 10</code> rather than <code>let x = 10;</code>), engineers experience 34% fewer syntax transcription errors and significantly improved code review comprehension across distributed teams.
         </p>
       </article>
 

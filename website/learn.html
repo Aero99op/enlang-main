@@ -353,10 +353,10 @@ display "Enlangg compiles natural English to bare-metal C machine code."</div>
           </div>
           <div class="code-block-body" id="track02Code">type enlng
 
-// Create allocates slot 0 in the local stack frame
-create server_port of 8080
-create server_name of "Primary Gateway"
-create is_active of true
+// Set allocates slot 0 in the local stack frame
+set server_port to 8080
+set server_name to "Primary Gateway"
+set is_active to true
 
 // Mutate existing slot value with 'set'
 set server_port to 9000
@@ -371,11 +371,11 @@ display "Status Active: ", is_active</div>
           <ul class="lesson-takeaways-list">
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span><code>create &lt;id&gt; of &lt;val&gt;</code> declares a new variable and locks its type into the stack slot layout.</span>
+              <span><code>set &lt;id&gt; to &lt;val&gt;</code> is the idiomatic standard to declare and assign variables cleanly.</span>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span><code>set &lt;id&gt; to &lt;val&gt;</code> mutates an existing slot without re-allocating memory.</span>
+              <span>Enlangg also understands natural synonyms like <code>let &lt;id&gt; = &lt;val&gt;</code> or <code>create &lt;id&gt; as &lt;val&gt;</code> with zero overhead.</span>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
@@ -437,13 +437,13 @@ display "Status Active: ", is_active</div>
           </div>
           <div class="code-block-body" id="track03Code">type enlng
 
-create base_salary of 65000
-create bonus of 12000
-create tax_rate of 0.18
+set base_salary to 65000
+set bonus to 12000
+set tax_rate to 0.18
 
-create gross_pay of base_salary plus bonus
-create deductions of gross_pay multiplied by tax_rate
-create net_pay of gross_pay minus deductions
+set gross_pay to base_salary plus bonus
+set deductions to gross_pay multiplied by tax_rate
+set net_pay to gross_pay minus deductions
 
 display "Gross Compensation: ", gross_pay
 display "Estimated Tax: ", deductions
@@ -517,8 +517,8 @@ display "Net Take-Home: ", net_pay</div>
           </div>
           <div class="code-block-body" id="track04Code">type enlng
 
-create user_age of 22
-create has_verified_id of true
+set user_age to 22
+set has_verified_id to true
 
 if user_age is greater than or equal to 21 and has_verified_id is equal to true:
     display "Access Authorized: Primary Production System"
@@ -596,17 +596,17 @@ otherwise:
           <div class="code-block-body" id="track05Code">type enlng
 
 // 1. Spoken while loop
-create countdown of 5
+set countdown to 5
 while countdown is greater than 0:
     display "T-Minus: ", countdown
-    set countdown to countdown minus 1
+    decrease countdown by 1
 
 display "Ignition sequence complete!"
 
 // 2. Deterministic bounded repeat loop
-create accumulator of 0
+set accumulator to 0
 repeat 4 times:
-    set accumulator to accumulator plus 25
+    increase accumulator by 25
 
 display "Bounded accumulator result: ", accumulator</div>
         </div>
@@ -679,13 +679,13 @@ display "Bounded accumulator result: ", accumulator</div>
           <div class="code-block-body" id="track06Code">type enlng
 
 procedure compute_compound_interest with principal, rate, times_per_year, years returns number:
-    create r_over_n of rate divided by times_per_year
-    create base of 1 plus r_over_n
-    create exponent of times_per_year multiplied by years
-    create factor of math.pow(base, exponent)
+    set r_over_n to rate divided by times_per_year
+    set base to 1 plus r_over_n
+    set exponent to times_per_year multiplied by years
+    set factor to math.pow(base, exponent)
     return principal multiplied by factor
 
-create investment of compute_compound_interest(10000, 0.07, 12, 10)
+set investment to compute_compound_interest(10000, 0.07, 12, 10)
 display "Projected 10-Year Portfolio Value: ", investment</div>
         </div>
 
@@ -757,14 +757,14 @@ display "Projected 10-Year Portfolio Value: ", investment</div>
           <div class="code-block-body" id="track07Code">type enlng
 
 // Contiguous dynamic lists
-create fruits of ["Apple", "Orange", "Banana"]
+set fruits to ["Apple", "Orange", "Banana"]
 call list.append with fruits, "Mango"
 
 display "Total fruits in inventory: ", length of fruits
 display "First item: ", fruits[0]
 
 // Key-value hash maps
-create telemetry of {
+set telemetry to {
     "node_id": "us-east-1a",
     "cpu_load": 0.42,
     "active_conns": 1280
@@ -845,9 +845,9 @@ display "Current CPU: ", telemetry["cpu_load"]</div>
 import python module "math" as py_math
 import python module "statistics" as stats
 
-create dataset of [12.4, 15.8, 11.2, 19.5, 14.1]
-create mean_val of stats.mean(dataset)
-create stdev_val of stats.stdev(dataset)
+set dataset to [12.4, 15.8, 11.2, 19.5, 14.1]
+set mean_val to stats.mean(dataset)
+set stdev_val to stats.stdev(dataset)
 
 display "Calculated Mean: ", mean_val
 display "Standard Deviation: ", stdev_val</div>
