@@ -4,36 +4,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Enlangg — The Sovereign Natural English Programming Language</title>
-  <meta name="description" content="Enlangg is the sovereign universal programming language toolchain. Natural English syntax, 100% Python parity, and dedicated domains for Backend, Frontend, Server, Design, Mobile, and DB." />
+  <meta name="description" content="Enlangg is the sovereign universal programming language. Natural English syntax, 100% Python parity, and dedicated domains for Core, Frontend, Server, Design, Mobile, and DB." />
   
-  <!-- Modern Typography -->
+  <!-- Premium Modern Typography: Inter + JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Background Glow & Grid -->
-  <div class="cyber-grid"></div>
-  <div class="ambient-glow glow-1"></div>
-  <div class="ambient-glow glow-2"></div>
 
   <!-- Navigation Bar -->
   <header class="navbar">
     <div class="nav-container">
       <a href="#" class="nav-brand">
-        <span class="logo-symbol">⚡</span>
-        <span class="logo-text">enlangg<span class="dot">.</span></span>
+        <span class="logo-mark">⚡</span>
+        <span class="logo-text">enlangg</span>
+        <span class="nav-version">v5.0</span>
       </a>
       
       <nav class="nav-links">
-        <a href="#install">Install</a>
-        <a href="#playground">Playground</a>
-        <a href="#domains">Domains</a>
-        <a href="#book">Definitive Book</a>
+        <a href="#install" class="nav-link">Install</a>
+        <a href="#playground" class="nav-link">Playground</a>
+        <a href="#domains" class="nav-link">Domains</a>
+        <a href="#book" class="nav-link">Book</a>
         <a href="https://github.com/Aero99op/enlang-main" target="_blank" class="nav-btn-github" rel="noopener">
-          <svg class="gh-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+          <svg class="gh-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
             <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
           </svg>
           <span>GitHub</span>
@@ -42,34 +39,35 @@
     </div>
   </header>
 
-  <!-- Hero Section -->
+  <!-- Main Content -->
   <main>
+    <!-- Hero Section -->
     <section class="hero-section" id="install">
       <div class="container hero-content">
         <div class="badge-tag">
-          <span class="badge-pulse"></span>
-          <span>v5.0 Sovereign Universal Release</span>
+          <span class="badge-dot"></span>
+          <span>Native Standalone Toolchain · 100% Python Parity</span>
         </div>
         
         <h1 class="hero-title">
-          Code in <span class="gradient-text">Pure English</span>.<br>
-          Zero Syntax Bottlenecks.
+          Write Pure English.<br>
+          Zero Syntax Overhead.
         </h1>
         
         <p class="hero-subtitle">
-          <strong>Enlangg</strong> is a sovereign general-purpose programming language toolchain. Write conversational English code with 100% Python parity, natural operator aliases, and strict domain isolation.
+          Enlangg is a sovereign general-purpose programming language compiling natural English to native machine binaries. Strict domain isolation, instant CLI execution, zero runtime dependencies.
         </p>
 
-        <!-- 1-Click Multi-OS Installer Box -->
+        <!-- 1-Click Multi-OS Installer Terminal -->
         <div class="installer-card">
           <div class="installer-header">
             <div class="os-tabs">
-              <button class="os-tab active" data-os="powershell">Windows PowerShell</button>
-              <button class="os-tab" data-os="cmd">Command Prompt (CMD)</button>
+              <button class="os-tab active" data-os="powershell">Windows (PowerShell)</button>
+              <button class="os-tab" data-os="cmd">Windows (CMD)</button>
               <button class="os-tab" data-os="bash">Linux & macOS (Bash)</button>
             </div>
-            <button class="copy-btn" id="copyInstallerBtn" title="Copy to clipboard">
-              <svg class="copy-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="copy-btn" id="copyInstallerBtn" title="Copy command">
+              <svg class="copy-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
@@ -80,10 +78,19 @@
             <span class="prompt-symbol">$</span>
             <code id="installerCode">powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Aero99op/enlang-main/main/install.ps1 | iex"</code>
           </div>
-          <div class="installer-footer">
-            <span class="install-pill">✓ Global PATH Auto-Configured</span>
-            <span class="install-pill">✓ Zero Admin Privileges Required</span>
-            <span class="install-pill">✓ Standalone GCC Binaries</span>
+          <div class="installer-features">
+            <span class="feature-item">
+              <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              Auto-Configured PATH
+            </span>
+            <span class="feature-item">
+              <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              Zero Admin Privileges Required
+            </span>
+            <span class="feature-item">
+              <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              Standalone Native Binaries
+            </span>
           </div>
         </div>
       </div>
@@ -93,21 +100,23 @@
     <section class="playground-section" id="playground">
       <div class="container">
         <div class="section-heading">
-          <h2 class="section-title">Try Enlng in Your Browser</h2>
-          <p class="section-desc">Select an example or write natural English code below. Click <strong>Run Code</strong> to execute immediately.</p>
+          <h2 class="section-title">In-Browser Sandbox</h2>
+          <p class="section-desc">Experience natural English syntax live in your browser with zero setup.</p>
         </div>
 
-        <div class="playground-container">
+        <div class="playground-window">
           <div class="playground-toolbar">
             <div class="presets-group">
-              <span class="toolbar-label">Presets:</span>
+              <span class="toolbar-label">Preset:</span>
               <button class="preset-btn active" data-preset="fibonacci">Fibonacci</button>
               <button class="preset-btn" data-preset="palindrome">Palindrome</button>
-              <button class="preset-btn" data-preset="smart_input">Smart Display & Concat</button>
+              <button class="preset-btn" data-preset="smart_input">Smart Output</button>
               <button class="preset-btn" data-preset="even_odd">Even or Odd</button>
             </div>
             <button class="run-btn" id="runCodeBtn">
-              <span class="run-icon">▶</span>
+              <svg class="run-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
               <span>Run Code</span>
             </button>
           </div>
@@ -115,27 +124,30 @@
           <div class="editor-grid">
             <div class="editor-panel">
               <div class="panel-header">
-                <span class="panel-dot dot-red"></span>
-                <span class="panel-dot dot-yellow"></span>
-                <span class="panel-dot dot-green"></span>
-                <span class="panel-title">script.enlng</span>
+                <div class="panel-tab active">
+                  <span class="file-icon">📄</span>
+                  <span class="file-name">script.enlng</span>
+                </div>
               </div>
               <textarea id="codeEditor" spellcheck="false" placeholder="Write enlng code here..."></textarea>
             </div>
 
             <div class="terminal-panel">
               <div class="panel-header">
-                <span class="panel-title">Terminal Output</span>
+                <div class="panel-tab active">
+                  <span class="term-status-dot"></span>
+                  <span class="file-name">terminal</span>
+                </div>
                 <button class="clear-terminal-btn" id="clearOutputBtn">Clear</button>
               </div>
-              <pre id="terminalOutput" class="terminal-body"><span class="term-dim">Click "Run Code" to execute in the sovereign browser VM...</span></pre>
+              <pre id="terminalOutput" class="terminal-body"><span class="term-dim">// Press "Run Code" to execute in the browser sandbox...</span></pre>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Sovereign Domain Architecture Showcase -->
+    <!-- Strict Domain Isolation Showcase -->
     <section class="domains-section" id="domains">
       <div class="container">
         <div class="section-heading">
@@ -184,11 +196,13 @@ create a reversed of ""
 create a i of 0
 
 while i less than length of word:
-   set reversed to word[i] plus reversed 
-   set i to i plus 1
+    set reversed to word[i] plus reversed 
+    set i to i plus 1
 
 if word is equal to reversed:
-    display "palindrome"</code></pre>
+    display "The word '" + word + "' is a palindrome!"
+else:
+    display "not palindrome"</code></pre>
             </div>
           </div>
         </div>
@@ -204,21 +218,21 @@ if word is equal to reversed:
             <div class="book-front">
               <div class="book-badge">MASTER SPECIFICATION</div>
               <h3 class="book-title">ENLANGG:<br>THE ENLNG</h3>
-              <p class="book-author">Definitive Edition & Reference</p>
+              <p class="book-author">Definitive Manual & Reference</p>
               <div class="book-pages-pill">193 Master Pages</div>
             </div>
           </div>
         </div>
 
         <div class="book-info">
-          <div class="badge-tag">Complete Publication</div>
+          <div class="badge-tag">Official Publication</div>
           <h2 class="book-heading">The Definitive Manual to Sovereign Computing</h2>
           <p class="book-paragraph">
-            Read the complete, officially published 193-page master specification covering language semantics, hint-keyword slot grammars, cross-domain isolation invariants, compiler architectures, and complete reference sheets.
+            The complete 193-page architectural specification covering natural English language grammar, slot-based compiler mechanics, cross-domain isolation invariants, and standard library references.
           </p>
           <div class="book-actions">
             <a href="enlangg_the_enlng.pdf" download class="primary-btn">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -238,16 +252,16 @@ if word is equal to reversed:
   <footer class="footer">
     <div class="container footer-content">
       <div class="footer-left">
-        <span class="logo-symbol">⚡</span>
-        <span class="footer-title">Enlangg Sovereign Language</span>
-        <p class="footer-copy">© 2026 Aero99op. Open-source under MIT License.</p>
+        <span class="logo-mark">⚡</span>
+        <span class="footer-title">enlangg</span>
+        <span class="footer-copy">© 2026 Aero99op. Open source under MIT License.</span>
       </div>
       <div class="footer-links">
         <a href="https://github.com/Aero99op/enlang-main" target="_blank" rel="noopener">GitHub</a>
         <a href="#install">Install</a>
         <a href="#playground">Playground</a>
         <a href="#domains">Domains</a>
-        <a href="#book">Specification</a>
+        <a href="#book">Specification Book</a>
       </div>
     </div>
   </footer>

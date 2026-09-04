@@ -1,5 +1,5 @@
 // =====================================================================
-//   Enlangg Official Website - Interactive Engine & In-Browser Runner
+//   Enlangg Official Website - High-Performance Transpiler & VM Runner
 // =====================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -44,7 +44,6 @@ function initInstallerTabs() {
           copyBtnText.textContent = 'Copy';
         }, 2200);
       } catch (err) {
-        // Fallback for older browsers
         const ta = document.createElement('textarea');
         ta.value = textToCopy;
         document.body.appendChild(ta);
@@ -62,10 +61,10 @@ function initInstallerTabs() {
 const CODE_PRESETS = {
   fibonacci: `type enlng
 
-create a n of 10
-create a first of 0
-create a second of 1
-create a count of 0
+create n of 10
+create first of 0
+create second of 1
+create count of 0
 
 display "--- Fibonacci Series (First 10) ---"
 
@@ -83,8 +82,8 @@ create a reversed of ""
 create a i of 0
 
 while i less than length of word:
-   set reversed to word[i] plus reversed 
-   set i to i plus 1
+    set reversed to word[i] plus reversed 
+    set i to i plus 1
 
 if word is equal to reversed:
     display "The word '" + word + "' is a palindrome!"
@@ -146,7 +145,7 @@ function initPlayground() {
 
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
-      terminal.innerHTML = '<span class="term-dim">Terminal cleared. Ready to execute.</span>';
+      terminal.innerHTML = '<span class="term-dim">// Terminal cleared. Press Run Code to execute.</span>';
     });
   }
 
@@ -205,7 +204,7 @@ function executeEnlngInBrowser(sourceCode, terminal) {
     sandboxFunction(smartDisplay, smartDisplay, cat);
 
     if (outputLines.length === 0) {
-      terminal.innerHTML = '<span class="term-dim">[Execution completed with 0 output statements]</span>';
+      terminal.innerHTML = '<span class="term-dim">// Execution completed with 0 output statements</span>';
     } else {
       terminal.textContent = outputLines.join('\n');
     }
@@ -214,50 +213,129 @@ function executeEnlngInBrowser(sourceCode, terminal) {
   }
 }
 
-function transpileEnlngToJS(lines) {
-  const jsLines = [];
-  
-  for (let line of lines) {
-    const indentLen = line.length - line.trimStart().length;
-    const indent = ' '.repeat(indentLen);
-    let trimmed = line.trim();
+function splitOutsideQuotes(str, delimiter) {
+  const result = [];
+  let current = '';
+  let inSingle = false;
+  let inDouble = false;
 
-    if (!trimmed || trimmed.startsWith('#')) {
-      jsLines.push(`${indent}// ${trimmed.replace(/^#\s*/, '')}`);
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+      current += ch;
+    } else if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+      current += ch;
+    } else if (ch === delimiter && !inSingle && !inDouble) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function transpileEnlngToJS(lines) {
+  const intermediateLines = [];
+  
+  for (let rawLine of lines) {
+    const indentLen = rawLine.length - rawLine.trimStart().length;
+    let trimmed = rawLine.trim();
+
+    if (!trimmed) {
+      intermediateLines.push({ type: 'blank', indent: indentLen, code: '' });
+      continue;
+    }
+
+    if (trimmed.startsWith('#')) {
+      intermediateLines.push({ type: 'comment', indent: indentLen, code: `// ${trimmed.replace(/^#\s*/, '')}` });
       continue;
     }
 
     if (trimmed.startsWith('type ') || trimmed.startsWith('hint ')) {
-      jsLines.push(`${indent}// ${trimmed}`);
+      intermediateLines.push({ type: 'comment', indent: indentLen, code: `// ${trimmed}` });
       continue;
     }
 
-    // Replace English operators
-    trimmed = trimmed.replace(/\bis equal to\b/gi, '===');
-    trimmed = trimmed.replace(/\bis not equal to\b/gi, '!==');
-    trimmed = trimmed.replace(/\bis at least\b/gi, '>=');
-    trimmed = trimmed.replace(/\bis at most\b/gi, '<=');
-    trimmed = trimmed.replace(/\bis greater than or equal to\b/gi, '>=');
-    trimmed = trimmed.replace(/\bis less than or equal to\b/gi, '<=');
-    trimmed = trimmed.replace(/\bis greater than\b/gi, '>');
-    trimmed = trimmed.replace(/\bis less than\b/gi, '<');
-    trimmed = trimmed.replace(/\bgreater than\b/gi, '>');
-    trimmed = trimmed.replace(/\bless than\b/gi, '<');
-    trimmed = trimmed.replace(/\bequal to\b/gi, '===');
-    trimmed = trimmed.replace(/\bequals\b/gi, '===');
-    trimmed = trimmed.replace(/\bmultiplied by\b/gi, '*');
-    trimmed = trimmed.replace(/\bdivided by\b/gi, '/');
-    trimmed = trimmed.replace(/\bplus\b/gi, '+');
-    trimmed = trimmed.replace(/\bminus\b/gi, '-');
-    trimmed = trimmed.replace(/\b(mod|modulo|modulus|modulous|modoulous)\b/gi, '%');
-    trimmed = trimmed.replace(/\b(?:length of|count of)\s+([a-zA-Z0-9_\[\]]+)/gi, '$1.length');
+    // 1. Variable Declarations (create / declare / initialize / let)
+    const createMatch = trimmed.match(/^(?:create\s+(?:a\s+|an\s+|the\s+)?|declare\s+(?:a\s+|an\s+|the\s+)?|initialize\s+(?:a\s+|an\s+|the\s+)?|let\s+)([a-zA-Z0-9_]+)\s+(?:of|as|to|=)\s+(.*)$/i);
+    if (createMatch) {
+      const varName = createMatch[1];
+      const valExpr = transpileExpression(createMatch[2]);
+      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `let ${varName} = ${valExpr};` });
+      continue;
+    }
 
-    // Display statement
+    // 2. Variable Assignments (set / update / assign)
+    const setMatch = trimmed.match(/^(?:set|update|assign)\s+([a-zA-Z0-9_\[\]\.]+)\s+(?:to|=)\s+(.*)$/i);
+    if (setMatch) {
+      const target = setMatch[1];
+      const valExpr = transpileExpression(setMatch[2]);
+      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${target} = ${valExpr};` });
+      continue;
+    }
+
+    // 3. Direct assignment: a = b
+    const directAssign = trimmed.match(/^([a-zA-Z0-9_\[\]\.]+)\s*=\s*(.*)$/);
+    if (directAssign) {
+      const target = directAssign[1];
+      const valExpr = transpileExpression(directAssign[2]);
+      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${target} = ${valExpr};` });
+      continue;
+    }
+
+    // 4. Loops (while / repeat while)
+    const whileMatch = trimmed.match(/^(?:while|repeat\s+while)\s+(.*?):$/i);
+    if (whileMatch) {
+      const cond = transpileExpression(whileMatch[1]);
+      intermediateLines.push({ type: 'block_open', indent: indentLen, code: `while (${cond}) {` });
+      continue;
+    }
+
+    // 5. Conditionals (if / elif / else)
+    const ifMatch = trimmed.match(/^(?:if|when)\s+(.*?):$/i);
+    if (ifMatch) {
+      const cond = transpileExpression(ifMatch[1]);
+      intermediateLines.push({ type: 'block_open', indent: indentLen, code: `if (${cond}) {` });
+      continue;
+    }
+
+    const elifMatch = trimmed.match(/^(?:else\s+if|elif)\s+(.*?):$/i);
+    if (elifMatch) {
+      const cond = transpileExpression(elifMatch[1]);
+      intermediateLines.push({ type: 'block_mid', indent: indentLen, code: `} else if (${cond}) {` });
+      continue;
+    }
+
+    if (/^else:$/i.test(trimmed)) {
+      intermediateLines.push({ type: 'block_mid', indent: indentLen, code: `} else {` });
+      continue;
+    }
+
+    // 6. Function definitions
+    const defMatch = trimmed.match(/^(?:define|def|function)\s+([a-zA-Z0-9_]+)\s*\((.*?)\)\s*:$/i);
+    if (defMatch) {
+      intermediateLines.push({ type: 'block_open', indent: indentLen, code: `function ${defMatch[1]}(${defMatch[2]}) {` });
+      continue;
+    }
+
+    // 7. Returns
+    const retMatch = trimmed.match(/^return(?:\s+(.*))?$/i);
+    if (retMatch) {
+      const val = retMatch[1] ? transpileExpression(retMatch[1]) : '';
+      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `return ${val};` });
+      continue;
+    }
+
+    // 8. Display / Print statements
     const displayMatch = trimmed.match(/^(?:display|show|output|print)\s+(.*)$/i);
     if (displayMatch) {
       let body = displayMatch[1].trim();
       let sepArg = '';
-      
+
       if (/\b(?:without spaces?|with no spaces?|joined)\s*$/i.test(body)) {
         sepArg = ', {__sep: ""}';
         body = body.replace(/\b(?:without spaces?|with no spaces?|joined)\s*$/i, '').trim();
@@ -269,108 +347,107 @@ function transpileEnlngToJS(lines) {
         }
       }
 
-      // Convert '+' touching strings to cat(...)
-      if (body.includes('+') && (body.includes('"') || body.includes("'"))) {
-        // check string concat
-        const parts = body.split(',').map(p => {
-          if (p.includes('+')) {
-            const sumParts = p.split('+').map(x => x.trim());
-            return `cat(${sumParts.join(', ')})`;
-          }
-          return p.trim();
-        });
-        jsLines.push(`${indent}smartDisplay(${parts.join(', ')}${sepArg});`);
+      // Check for concatenation operator '+' outside string literals
+      const plusParts = splitOutsideQuotes(body, '+');
+      if (plusParts.length > 1) {
+        const catArgs = plusParts.map(p => transpileExpression(p.trim())).join(', ');
+        intermediateLines.push({ type: 'stmt', indent: indentLen, code: `smartDisplay(cat(${catArgs})${sepArg});` });
         continue;
       }
 
-      // Auto comma for comma-less space-separated tokens: "the square of" num "is" sq
+      body = transpileExpression(body);
+
+      // Auto comma for comma-less space-separated string literals and tokens
       if (!body.includes(',')) {
         body = body.replace(/("[^"]*"|'[^']*')\s+([a-zA-Z0-9_\(\[\{])/g, '$1, $2');
         body = body.replace(/([a-zA-Z0-9_\]\)\}])\s+("[^"]*"|'[^']*')/g, '$1, $2');
         body = body.replace(/("[^"]*"|'[^']*')\s+("[^"]*"|'[^']*')/g, '$1, $2');
       }
 
-      jsLines.push(`${indent}smartDisplay(${body}${sepArg});`);
+      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `smartDisplay(${body}${sepArg});` });
       continue;
     }
 
-    // Loops (while)
-    const whileMatch = trimmed.match(/^(?:while|repeat\s+while)\s+(.*?):$/i);
-    if (whileMatch) {
-      jsLines.push(`${indent}while (${whileMatch[1]}) {`);
-      continue;
-    }
-
-    // Conditionals (if / elif / else)
-    const ifMatch = trimmed.match(/^(?:if|when)\s+(.*?):$/i);
-    if (ifMatch) {
-      jsLines.push(`${indent}if (${ifMatch[1]}) {`);
-      continue;
-    }
-
-    const elifMatch = trimmed.match(/^(?:else\s+if|elif)\s+(.*?):$/i);
-    if (elifMatch) {
-      jsLines.push(`${indent}} else if (${elifMatch[1]}) {`);
-      continue;
-    }
-
-    if (/^else:$/i.test(trimmed)) {
-      jsLines.push(`${indent}} else {`);
-      continue;
-    }
-
-    // Variable Declarations (create / declare / initialize / let)
-    const createMatch = trimmed.match(/^(?:create\s+(?:a\s+|an\s+|the\s+)?|declare\s+|initialize\s+|let\s+)([a-zA-Z0-9_]+)\s+(?:of|as|to|=)\s+(.*)$/i);
-    if (createMatch) {
-      jsLines.push(`${indent}let ${createMatch[1]} = ${createMatch[2]};`);
-      continue;
-    }
-
-    // Variable Assignments (set / update / assign)
-    const setMatch = trimmed.match(/^(?:set|update|assign)\s+([a-zA-Z0-9_\[\]\.]+)\s+(?:to|=)\s+(.*)$/i);
-    if (setMatch) {
-      jsLines.push(`${indent}${setMatch[1]} = ${setMatch[2]};`);
-      continue;
-    }
-
-    // Direct assignment: a = b
-    if (/^[a-zA-Z0-9_\[\]\.]+\s*=/.test(trimmed)) {
-      jsLines.push(`${indent}${trimmed};`);
-      continue;
-    }
-
-    jsLines.push(`${indent}${trimmed};`);
+    // Fallback statement
+    intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${transpileExpression(trimmed)};` });
   }
 
-  // Handle block closes based on indentation
-  const structuredJS = [];
-  const indentStack = [0];
+  // Second pass: Indentation block resolution
+  const finalJS = [];
+  const blockStack = []; // stores indent of enclosing blocks
 
-  for (let l of jsLines) {
-    const rawIndent = l.search(/\S/);
-    if (rawIndent === -1) {
-      structuredJS.push(l);
+  for (const item of intermediateLines) {
+    if (item.type === 'blank') {
+      finalJS.push('');
       continue;
     }
 
-    while (indentStack.length > 1 && rawIndent < indentStack[indentStack.length - 1]) {
-      indentStack.pop();
-      structuredJS.push(' '.repeat(indentStack[indentStack.length - 1]) + '}');
+    if (item.type === 'comment') {
+      finalJS.push(' '.repeat(item.indent) + item.code);
+      continue;
     }
 
-    if (l.trimEnd().endsWith('{')) {
-      indentStack.push(rawIndent + 4);
+    if (item.type === 'block_mid') {
+      while (blockStack.length > 0 && item.indent < blockStack[blockStack.length - 1]) {
+        blockStack.pop();
+        finalJS.push(' '.repeat(item.indent) + '}');
+      }
+      finalJS.push(' '.repeat(item.indent) + item.code);
+      continue;
     }
 
-    structuredJS.push(l);
+    // For statements and new block openings, close any blocks deeper than this indent
+    while (blockStack.length > 0 && item.indent <= blockStack[blockStack.length - 1]) {
+      const closedIndent = blockStack.pop();
+      finalJS.push(' '.repeat(closedIndent) + '}');
+    }
+
+    finalJS.push(' '.repeat(item.indent) + item.code);
+
+    if (item.type === 'block_open') {
+      blockStack.push(item.indent);
+    }
   }
 
-  while (indentStack.length > 1) {
-    indentStack.pop();
-    structuredJS.push(' '.repeat(indentStack[indentStack.length - 1]) + '}');
+  while (blockStack.length > 0) {
+    const closedIndent = blockStack.pop();
+    finalJS.push(' '.repeat(closedIndent) + '}');
   }
 
-  return structuredJS.join('\n');
+  return finalJS.join('\n');
+}
+
+function transpileExpression(expr) {
+  if (!expr) return '';
+  let res = expr;
+
+  // Comparison & logical aliases
+  res = res.replace(/\bis equal to\b/gi, '===');
+  res = res.replace(/\bis not equal to\b/gi, '!==');
+  res = res.replace(/\bis at least\b/gi, '>=');
+  res = res.replace(/\bis at most\b/gi, '<=');
+  res = res.replace(/\bis greater than or equal to\b/gi, '>=');
+  res = res.replace(/\bis less than or equal to\b/gi, '<=');
+  res = res.replace(/\bis greater than\b/gi, '>');
+  res = res.replace(/\bis less than\b/gi, '<');
+  res = res.replace(/\bgreater than or equal to\b/gi, '>=');
+  res = res.replace(/\bless than or equal to\b/gi, '<=');
+  res = res.replace(/\bgreater than\b/gi, '>');
+  res = res.replace(/\bless than\b/gi, '<');
+  res = res.replace(/\bequal to\b/gi, '===');
+  res = res.replace(/\bequals\b/gi, '===');
+
+  // Math aliases
+  res = res.replace(/\bmultiplied by\b/gi, '*');
+  res = res.replace(/\bdivided by\b/gi, '/');
+  res = res.replace(/\bplus\b/gi, '+');
+  res = res.replace(/\bminus\b/gi, '-');
+  res = res.replace(/\b(mod|modulo|modulus|modulous|modoulous)\b/gi, '%');
+
+  // Collection size/length: length of <var> or size of <var>
+  res = res.replace(/\b(?:length of|size of)\s+([a-zA-Z0-9_\[\]]+)/gi, '$1.length');
+
+  return res;
 }
 
 function escapeHtml(str) {
@@ -389,23 +466,25 @@ create a reversed of ""
 create a i of 0
 
 while i less than length of word:
-   set reversed to word[i] plus reversed 
-   set i to i plus 1
+    set reversed to word[i] plus reversed 
+    set i to i plus 1
 
 if word is equal to reversed:
-    display "palindrome"`
+    display "The word '" + word + "' is a palindrome!"
+else:
+    display "not palindrome"`
   },
   enlngf: {
     title: 'Frontend Markup & UI (.enlngf)',
     desc: 'Declarative component trees, props, stateful reactive hooks, and DOM events compiled directly to Web UI.',
     code: `type enlngf
 
-component UserCard with name, role:
-    create container styled as "card":
-        create text name with style "bold title"
-        create text role with style "muted subtitle"
-        create button "Follow":
-            on click: emit follow_event(name)`
+component UserProfile with username, status:
+    create container styled as "profile-card":
+        create text username with style "heading-1"
+        create badge status with style "status-online"
+        create button "Message":
+            on click: emit open_direct_message(username)`
   },
   enlngs: {
     title: 'Server & API Routes (.enlngs)',
@@ -414,12 +493,11 @@ component UserCard with name, role:
 
 listen on port 8080
 
-route get "/api/users":
-    fetch all users from database
-    respond with status 200 and json users
+route get "/api/v1/health":
+    respond with status 200 and json {"status": "healthy"}
 
-route post "/api/login" with body credentials:
-    verify credentials and return jwt token`
+route post "/api/v1/auth" with body payload:
+    verify payload.token and respond with session`
   },
   enlngd: {
     title: 'Design Tokens & Styles (.enlngd)',
@@ -427,21 +505,22 @@ route post "/api/login" with body credentials:
     code: `type enlngd
 
 define theme dark_mode:
-    primary_color is #00f0ff
-    background is #07090e
-    card_surface is rgba(15, 23, 42, 0.8)
+    primary_surface is #09090b
+    card_surface is #18181b
+    border_color is #27272a
+    accent_color is #ffffff
 
 style class "card":
     background is card_surface
-    border_radius is 14px
-    backdrop_blur is 12px`
+    border is "1px solid " + border_color
+    border_radius is 8px`
   },
   enlngm: {
     title: 'Mobile Apps & HAL (.enlngm)',
     desc: 'Hardware Abstraction Layer for Android (NDK/Vulkan) and iOS (Metal) with 120 FPS native activities.',
     code: `type enlngm
 
-screen MainFeed:
+screen Dashboard:
     on device orientation change:
         realign layout to current orientation
         
