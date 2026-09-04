@@ -338,6 +338,28 @@ body {
   box-shadow: 0 4px 16px rgba(16, 185, 129, 0.28);
 }
 
+.nav-btn-official {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-card);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-btn-official:hover {
+  background: var(--bg-subtle);
+  border-color: rgba(251, 191, 36, 0.5);
+  color: var(--accent-gold);
+  transform: translateY(-1px);
+}
+
 [data-theme="dark"] .nav-btn-download:hover {
   color: #ffffff;
 }
@@ -449,7 +471,8 @@ body {
   align-items: center;
 }
 
-.badge-tag {
+.badge-tag,
+.hero-pill-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -461,6 +484,35 @@ body {
   color: var(--text-secondary);
   margin-bottom: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.hero-pill-badge:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.pill-divider {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.pill-gold {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.badge-arrow {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  transition: transform 0.2s ease;
+}
+
+.hero-pill-badge:hover .badge-arrow {
+  transform: translateX(3px);
+  color: var(--text-primary);
 }
 
 .badge-dot {
