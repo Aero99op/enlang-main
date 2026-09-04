@@ -243,6 +243,9 @@ body::before {
   color: var(--text-secondary);
   max-width: 640px;
   margin: 0 auto 36px;
+  line-height: 1.6;
+}
+
 /* Direct 1-Click GUI Installer Download Option */
 .hero-installer-cta {
   display: flex;
