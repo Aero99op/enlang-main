@@ -1,6 +1,6 @@
 /*
  * enlng - The Sovereign Universal General-Purpose Programming Language
- * Domain: PURE ENLNG (Complete Python Parity + Natural English Grammar)
+ * Domain: PURE ENLNG (Universal Standard Parity + Natural English Grammar)
  * Zero Web. Zero Mobile. 100% General-Purpose Sovereign Computing.
  */
 
@@ -291,7 +291,7 @@ const char* CORE_ENLNG_RUNNER =
 
 void print_help() {
     printf("Enlng Sovereign Programming Language Compiler & Runtime v%s\n", ENLNG_VERSION);
-    printf("Full General-Purpose Language (Complete Python Parity + Natural English Grammar)\n\n");
+    printf("Full General-Purpose Language (Universal Standard Parity + Natural English Grammar)\n\n");
     printf("Usage:\n");
     printf("  enlng run <file.enlng>    Compile and execute enlng script\n");
     printf("  enlng <file.enlng>        Direct execution\n");

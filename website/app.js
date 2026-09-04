@@ -459,7 +459,7 @@ function escapeHtml(str) {
 const DOMAINS_DATA = {
   enlng: {
     title: 'Core Backend (.enlng)',
-    desc: 'General-purpose algorithms, collections, math, OOP, exceptions, and I/O with 100% Python parity.',
+    desc: 'General-purpose algorithms, collections, math, OOP, exceptions, and native standard I/O.',
     code: `type enlng
 
 create a word of "madam"
@@ -562,32 +562,342 @@ function initDomainTabs() {
   });
 }
 
-// --- 4. Interactive 3D Animated Book ---
+// --- 4. Interactive 3D Animated Book (360° Drag + Multi-Page Highlight Reader) ---
+const BOOK_PAGES = [
+  {
+    chapter: 'CHAPTER 1',
+    pages: 'pp. 1-28 / 193',
+    badge: 'Core Architectural Philosophy',
+    title: 'The Sovereign Grammar',
+    excerpt: 'Natural English syntax eliminates symbol barrier friction, translating directly into high-throughput machine bytecode.',
+    snippet: `<span class="code-kw">type</span> <span class="code-val">enlng</span>\n<span class="code-kw">create</span> <span class="code-id">greeting</span> <span class="code-kw">of</span> <span class="code-val">"Hello Sovereign World"</span>\n<span class="code-kw">display</span> <span class="code-id">greeting</span>`,
+    seal: 'Universal Syntax Specification'
+  },
+  {
+    chapter: 'CHAPTER 2',
+    pages: 'pp. 29-64 / 193',
+    badge: 'Native Arithmetic Engine',
+    title: 'Inferred Types & Natural Math',
+    excerpt: 'Automatic compile-time type inference with zero runtime boxing overhead and spoken English arithmetic operators.',
+    snippet: `<span class="code-kw">create</span> <span class="code-id">price</span> <span class="code-kw">of</span> <span class="code-num">250</span>\n<span class="code-kw">create</span> <span class="code-id">tax</span> <span class="code-kw">of</span> <span class="code-id">price</span> <span class="code-op">multiplied by</span> <span class="code-num">0.18</span>\n<span class="code-kw">display</span> <span class="code-val">"Total: "</span> <span class="code-op">+</span> (<span class="code-id">price</span> <span class="code-op">plus</span> <span class="code-id">tax</span>)`,
+    seal: 'High-Throughput Math Runtime'
+  },
+  {
+    chapter: 'CHAPTER 3',
+    pages: 'pp. 65-102 / 193',
+    badge: 'Flow Control & Logic',
+    title: 'Natural Branching & Loops',
+    excerpt: 'Express complex decision logic and collection sweeps cleanly in human sentence structures without nested bracket noise.',
+    snippet: `<span class="code-kw">while</span> <span class="code-id">count</span> <span class="code-op">is less than</span> <span class="code-id">target</span>:\n  <span class="code-kw">set</span> <span class="code-id">count</span> <span class="code-kw">to</span> <span class="code-id">count</span> <span class="code-op">plus</span> <span class="code-num">1</span>\n  <span class="code-kw">display</span> <span class="code-val">"Step "</span> <span class="code-op">+</span> <span class="code-id">count</span>`,
+    seal: 'Deterministic Control Flow'
+  },
+  {
+    chapter: 'CHAPTER 4',
+    pages: 'pp. 103-146 / 193',
+    badge: '6 Sovereign Domains',
+    title: 'Cross-Domain Tier Isolation',
+    excerpt: 'Compile-time isolation guarantees across .enlng, .enlngf, .enlngs, .enlngui, .enlngapp, and .enlngdb tiers.',
+    snippet: `<span class="code-kw">type</span> <span class="code-val">enlngserver</span>\n<span class="code-kw">create</span> <span class="code-id">route</span> <span class="code-kw">of</span> <span class="code-val">"/api/v1/health"</span>\n<span class="code-kw">respond with json</span> {<span class="code-val">"status"</span>: <span class="code-val">"healthy"</span>}`,
+    seal: 'Tier Security Invariant'
+  },
+  {
+    chapter: 'CHAPTER 5',
+    pages: 'pp. 147-172 / 193',
+    badge: 'Memory & Native Compilation',
+    title: 'Deterministic Memory Model',
+    excerpt: 'Zero garbage-collector latency pauses via slot-based compile-time registers and instant 1.8ms warm boot.',
+    snippet: `<span class="code-kw">type</span> <span class="code-val">enlng</span>\n<span class="code-kw">function</span> <span class="code-id">process_buffer</span> <span class="code-kw">with</span> <span class="code-id">buf</span>:\n  <span class="code-kw">display</span> <span class="code-val">"Active registers: "</span> <span class="code-op">+</span> <span class="code-kw">length of</span> <span class="code-id">buf</span>`,
+    seal: 'Zero-GC Machine Runtime'
+  },
+  {
+    chapter: 'CHAPTER 6',
+    pages: 'pp. 173-193 / 193',
+    badge: 'Standard Universal Library',
+    title: 'Full Universal Standard Library',
+    excerpt: 'Complete built-in standard library for advanced data structures, math, cryptography, file I/O, and sockets.',
+    snippet: `<span class="code-kw">type</span> <span class="code-val">enlngdb</span>\n<span class="code-kw">connect to</span> <span class="code-val">"production.db"</span>\n<span class="code-kw">find all</span> <span class="code-id">users</span> <span class="code-kw">where</span> <span class="code-id">active</span> <span class="code-op">is</span> <span class="code-val">true</span>`,
+    seal: 'Universal Standard Parity'
+  }
+];
+
 function initAnimatedBook() {
   const bookStage = document.getElementById('bookStage');
-  const previewBtn = document.getElementById('previewBookBtn');
-  const hintText = document.querySelector('.open-hint');
+  const book3D = document.getElementById('book3D');
+  const openHint = document.getElementById('openHint');
+  const toggleCoverBtn = document.getElementById('toggleCoverBtn');
+  const coverBtnText = document.getElementById('coverBtnText');
+  const toggleOrbitBtn = document.getElementById('toggleOrbitBtn');
+  const autoFlipBtn = document.getElementById('autoFlipBtn');
+  const autoFlipText = document.getElementById('autoFlipText');
+  const reset3dBtn = document.getElementById('reset3dBtn');
+  const browsePagesBtn = document.getElementById('browsePagesBtn');
+  const prevPageBtn = document.getElementById('prevPageBtn');
+  const nextPageBtn = document.getElementById('nextPageBtn');
+  const pageDotsBar = document.getElementById('pageDotsBar');
 
-  if (!bookStage) return;
+  if (!bookStage || !book3D) return;
 
-  const toggleBook = (e) => {
-    if (e && e.target && e.target.closest('a')) return;
-    bookStage.classList.toggle('book-open');
-    if (hintText) {
-      if (bookStage.classList.contains('book-open')) {
-        hintText.textContent = 'Click to Close ✕';
-      } else {
-        hintText.textContent = 'Hover / Click to Open →';
-      }
+  // --- 1. Multi-Page Highlight State & Navigation ---
+  let currentPageIndex = 0;
+  let autoFlipInterval = null;
+
+  function renderPageDots() {
+    if (!pageDotsBar) return;
+    pageDotsBar.innerHTML = '';
+    BOOK_PAGES.forEach((pg, idx) => {
+      const dot = document.createElement('button');
+      dot.className = `page-dot ${idx === currentPageIndex ? 'active' : ''}`;
+      dot.title = `${pg.chapter}: ${pg.title}`;
+      dot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setPage(idx);
+      });
+      pageDotsBar.appendChild(dot);
+    });
+  }
+
+  function setPage(idx) {
+    if (idx < 0) idx = BOOK_PAGES.length - 1;
+    if (idx >= BOOK_PAGES.length) idx = 0;
+    currentPageIndex = idx;
+
+    const pageData = BOOK_PAGES[currentPageIndex];
+    const pageTurnOverlay = document.getElementById('pageTurnOverlay');
+
+    if (pageTurnOverlay) {
+      pageTurnOverlay.classList.remove('flipping');
+      void pageTurnOverlay.offsetWidth; // trigger reflow
+      pageTurnOverlay.classList.add('flipping');
     }
+
+    // Update DOM content
+    const pageCh = document.getElementById('pageCh');
+    const pageNum = document.getElementById('pageNum');
+    const pageTitle = document.getElementById('pageTitle');
+    const pageHighlightBadge = document.getElementById('pageHighlightBadge');
+    const pageExcerpt = document.getElementById('pageExcerpt');
+    const pageCodeSnippet = document.getElementById('pageCodeSnippet');
+    const pageSeal = document.getElementById('pageSeal');
+
+    if (pageCh) pageCh.textContent = pageData.chapter;
+    if (pageNum) pageNum.textContent = pageData.pages;
+    if (pageTitle) pageTitle.textContent = pageData.title;
+    if (pageHighlightBadge) pageHighlightBadge.textContent = pageData.badge;
+    if (pageExcerpt) pageExcerpt.textContent = pageData.excerpt;
+    if (pageCodeSnippet) pageCodeSnippet.innerHTML = pageData.snippet.replace(/\n/g, '<br>').replace(/  /g, '&nbsp;&nbsp;');
+    if (pageSeal) pageSeal.textContent = pageData.seal;
+
+    renderPageDots();
+
+    // Ensure cover is open so user sees the page
+    if (!bookStage.classList.contains('book-open')) {
+      bookStage.classList.add('book-open');
+      updateCoverButton(true);
+    }
+  }
+
+  if (prevPageBtn) {
+    prevPageBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setPage(currentPageIndex - 1);
+    });
+  }
+
+  if (nextPageBtn) {
+    nextPageBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setPage(currentPageIndex + 1);
+    });
+  }
+
+  renderPageDots();
+
+  // --- 2. Auto-Flip Progression ---
+  function toggleAutoFlip() {
+    if (autoFlipInterval) {
+      clearInterval(autoFlipInterval);
+      autoFlipInterval = null;
+      if (autoFlipText) autoFlipText.textContent = '▶ Auto-Flip Pages';
+      if (autoFlipBtn) autoFlipBtn.classList.remove('active');
+    } else {
+      if (!bookStage.classList.contains('book-open')) {
+        bookStage.classList.add('book-open');
+        updateCoverButton(true);
+      }
+      if (autoFlipText) autoFlipText.textContent = '⏸ Pause Flip';
+      if (autoFlipBtn) autoFlipBtn.classList.add('active');
+      autoFlipInterval = setInterval(() => {
+        setPage(currentPageIndex + 1);
+      }, 3500);
+    }
+  }
+
+  if (autoFlipBtn) {
+    autoFlipBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleAutoFlip();
+    });
+  }
+
+  // --- 3. Cover Open / Close Toggle ---
+  function updateCoverButton(isOpen) {
+    if (coverBtnText) {
+      coverBtnText.textContent = isOpen ? '📕 Close Cover' : '📖 Open Book';
+    }
+    if (openHint) {
+      openHint.textContent = isOpen ? 'Click to Close ✕' : 'Click / Tap to Open →';
+    }
+  }
+
+  function toggleCover() {
+    const isOpen = bookStage.classList.toggle('book-open');
+    updateCoverButton(isOpen);
+  }
+
+  if (toggleCoverBtn) {
+    toggleCoverBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleCover();
+    });
+  }
+
+  if (browsePagesBtn) {
+    browsePagesBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!bookStage.classList.contains('book-open')) {
+        bookStage.classList.add('book-open');
+        updateCoverButton(true);
+      }
+      setPage(currentPageIndex + 1);
+    });
+  }
+
+  // --- 4. 360° Mouse / Touch Drag Rotation ---
+  let isDragging = false;
+  let hasDragged = false;
+  let startX = 0;
+  let startY = 0;
+  let currentRotY = -22;
+  let currentRotX = 10;
+  let isOrbiting = false;
+
+  function applyTransform() {
+    book3D.style.transform = `rotateY(${currentRotY}deg) rotateX(${currentRotX}deg)`;
+  }
+
+  const startDrag = (clientX, clientY) => {
+    isDragging = true;
+    hasDragged = false;
+    startX = clientX;
+    startY = clientY;
+    bookStage.classList.add('is-dragging');
+    book3D.style.animation = 'none'; // pause float
+    if (isOrbiting) stopOrbit();
   };
 
-  bookStage.addEventListener('click', toggleBook);
+  const moveDrag = (clientX, clientY) => {
+    if (!isDragging) return;
+    const deltaX = clientX - startX;
+    const deltaY = clientY - startY;
+    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+      hasDragged = true;
+    }
+    currentRotY += deltaX * 0.75;
+    currentRotX -= deltaY * 0.5;
 
-  if (previewBtn) {
-    previewBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      toggleBook();
+    // Clamp X rotation to avoid upside-down flip
+    currentRotX = Math.max(-45, Math.min(45, currentRotX));
+
+    applyTransform();
+    startX = clientX;
+    startY = clientY;
+  };
+
+  const endDrag = () => {
+    if (!isDragging) return;
+    isDragging = false;
+    bookStage.classList.remove('is-dragging');
+  };
+
+  bookStage.addEventListener('mousedown', (e) => {
+    if (e.target.closest('button')) return;
+    startDrag(e.clientX, e.clientY);
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    moveDrag(e.clientX, e.clientY);
+  });
+
+  window.addEventListener('mouseup', () => {
+    endDrag();
+  });
+
+  // Touch Support for Mobile
+  bookStage.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      startDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1) {
+      moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => {
+    endDrag();
+  });
+
+  // Click on book cover opens/closes only if user did not drag
+  bookStage.addEventListener('click', (e) => {
+    if (hasDragged) return;
+    if (e.target.closest('button')) return;
+    toggleCover();
+  });
+
+  // --- 5. 360° Orbit Turntable ---
+  let orbitTimer = null;
+  function startOrbit() {
+    isOrbiting = true;
+    book3D.style.animation = 'none';
+    if (toggleOrbitBtn) toggleOrbitBtn.classList.add('active');
+    orbitTimer = setInterval(() => {
+      currentRotY = (currentRotY + 1.2) % 360;
+      applyTransform();
+    }, 16);
+  }
+
+  function stopOrbit() {
+    isOrbiting = false;
+    if (orbitTimer) {
+      clearInterval(orbitTimer);
+      orbitTimer = null;
+    }
+    if (toggleOrbitBtn) toggleOrbitBtn.classList.remove('active');
+  }
+
+  if (toggleOrbitBtn) {
+    toggleOrbitBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (isOrbiting) {
+        stopOrbit();
+      } else {
+        startOrbit();
+      }
+    });
+  }
+
+  // --- 6. Reset 3D View ---
+  if (reset3dBtn) {
+    reset3dBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      stopOrbit();
+      currentRotY = -22;
+      currentRotX = 10;
+      applyTransform();
+      book3D.style.animation = 'bookFloat 6s ease-in-out infinite';
     });
   }
 }

@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Enlangg — The Sovereign Natural English Programming Language</title>
-  <meta name="description" content="Enlangg is the sovereign universal programming language. Natural English syntax, 100% Python parity, and dedicated domains for Core, Frontend, Server, Design, Mobile, and DB." />
+  <meta name="description" content="Enlangg is the sovereign universal programming language. Natural English syntax, universal standard library parity, and dedicated domains for Core, Frontend, Server, Design, Mobile, and DB." />
   
   <!-- Premium Modern Typography: Inter + JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.0.3" />
+  <link rel="stylesheet" href="style.css?v=5.0.4" />
 </head>
 <body>
 
@@ -29,6 +29,14 @@
         <a href="#playground" class="nav-link">Playground</a>
         <a href="#domains" class="nav-link">Domains</a>
         <a href="#book" class="nav-link">Book</a>
+        <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="nav-btn-download" title="1-Click Direct Windows Setup">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download Installer (.exe)</span>
+        </a>
         <a href="#book" class="nav-btn-action">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -47,7 +55,7 @@
       <div class="container hero-content">
         <div class="badge-tag">
           <span class="badge-dot"></span>
-          <span>Native Standalone Toolchain · 100% Python Parity</span>
+          <span>Native Standalone Toolchain · Universal Standard Parity</span>
         </div>
         
         <h1 class="hero-title">
@@ -58,6 +66,45 @@
         <p class="hero-subtitle">
           Enlangg is a sovereign general-purpose programming language compiling natural English to native machine binaries. Strict domain isolation, instant CLI execution, zero runtime dependencies.
         </p>
+
+        <!-- Primary 1-Click GUI Installer Download Option -->
+        <div class="hero-installer-cta">
+          <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="installer-dl-btn" id="mainDownloadBtn" title="Direct download standalone setup">
+            <div class="dl-btn-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </div>
+            <div class="dl-btn-content">
+              <span class="dl-btn-title">Download Windows Installer (.exe)</span>
+              <span class="dl-btn-meta">v5.0 Native Standalone · 310 KB · Zero Admin Privileges</span>
+            </div>
+            <span class="dl-btn-badge">Direct Download ↓</span>
+          </a>
+
+          <div class="installer-flow-steps">
+            <div class="flow-step">
+              <span class="step-num">1</span>
+              <span class="step-text">Click Download</span>
+            </div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">
+              <span class="step-num">2</span>
+              <span class="step-text">Open Setup.exe</span>
+            </div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">
+              <span class="step-num">3</span>
+              <span class="step-text">Auto PATH & Ready</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="terminal-install-divider">
+          <span>Or install via terminal command</span>
+        </div>
 
         <!-- 1-Click Multi-OS Installer Terminal -->
         <div class="installer-card">
@@ -187,7 +234,7 @@
           <div class="domain-content-card">
             <div class="domain-details">
               <h3 id="domainTitle" class="domain-title">Core Backend (.enlng)</h3>
-              <p id="domainDesc" class="domain-desc">General-purpose algorithms, collections, math, OOP, exceptions, and I/O with 100% Python parity.</p>
+              <p id="domainDesc" class="domain-desc">General-purpose algorithms, collections, math, OOP, exceptions, and native standard I/O.</p>
             </div>
             <div class="domain-code-preview">
               <pre><code id="domainCodeSample">type enlng
@@ -210,68 +257,127 @@ else:
       </div>
     </section>
 
-    <!-- Definitive Specification Book Section (Interactive 3D Animated) -->
+    <!-- Definitive Specification Book Section (360° Rotatable & Multi-Page Animated Showcase) -->
     <section class="book-section" id="book">
       <div class="container book-container">
-        <!-- Interactive 3D Animated Book Stage -->
-        <div class="book-stage" id="bookStage" title="Click or hover to open 3D preview">
-          <div class="book-3d" id="book3D">
-            <!-- Spine -->
-            <div class="book-spine">
-              <span class="spine-title">ENLANGG: THE ENLNG</span>
-              <span class="spine-pages">193 PAGES</span>
+        <!-- 360° Interactive 3D Animated Book Stage -->
+        <div class="book-showcase-wrapper">
+          <div class="book-stage" id="bookStage" title="Drag to rotate 360° · Click to open/close">
+            <div class="book-3d" id="book3D">
+              <!-- Spine -->
+              <div class="book-spine">
+                <span class="spine-title">ENLANGG: THE ENLNG</span>
+                <span class="spine-pages">193 PAGES</span>
+              </div>
+
+              <!-- Paper Block Thickness (Realistic 3D Stack) -->
+              <div class="page-edge-right"></div>
+              <div class="page-edge-top"></div>
+              <div class="page-edge-bottom"></div>
+
+              <!-- Back Cover (Visible in 360° rotation) -->
+              <div class="book-back-cover">
+                <div class="back-cover-header">
+                  <span class="back-badge">UNIVERSAL SPECIFICATION</span>
+                  <span class="back-seal">⚡</span>
+                </div>
+                <div class="back-cover-body">
+                  <h5 class="back-title">THE ENLNG ARCHITECTURE</h5>
+                  <p class="back-blurb">
+                    The complete 193-page canonical manual for the sovereign English-syntax computing platform. Explaining compiler slots, 6 isolated domains, and native bytecode emission.
+                  </p>
+                  <div class="back-features-list">
+                    <span>✓ Zero External Dependencies</span>
+                    <span>✓ 6 Isolated Tier Domains</span>
+                    <span>✓ Sub-2ms Binary Execution</span>
+                  </div>
+                </div>
+                <div class="back-cover-footer">
+                  <div class="barcode-graphic">
+                    <span class="barcode-lines">||||| | |||| || |||||| | |||</span>
+                    <span class="isbn-text">SPEC-ENLNG-2026-V5</span>
+                  </div>
+                  <span class="back-license">MIT LICENSE</span>
+                </div>
+              </div>
+
+              <!-- Multi-Page Flip Stack (Chapters 1 to 6) -->
+              <div class="book-inside-page" id="bookInsidePage">
+                <div class="page-turn-overlay" id="pageTurnOverlay"></div>
+                <div class="page-header">
+                  <span class="page-ch" id="pageCh">CHAPTER 1</span>
+                  <span class="page-num" id="pageNum">pp. 1-28 / 193</span>
+                </div>
+                <h4 class="page-title" id="pageTitle">The Sovereign Philosophy</h4>
+                <div class="page-highlight-badge" id="pageHighlightBadge">Core Architectural Point</div>
+                <p class="page-excerpt" id="pageExcerpt">
+                  Natural English syntax eliminates arbitrary symbol friction, compiling directly to native machine bytecode.
+                </p>
+                <div class="page-code-snippet" id="pageCodeSnippet">
+                  <span class="code-kw">type</span> <span class="code-val">enlng</span><br>
+                  <span class="code-kw">create</span> <span class="code-id">greeting</span> <span class="code-kw">of</span> <span class="code-val">"Hello Sovereign World"</span><br>
+                  <span class="code-kw">display</span> <span class="code-id">greeting</span>
+                </div>
+                <div class="page-seal">
+                  <span class="seal-icon">✦</span>
+                  <span class="seal-text" id="pageSeal">Universal Syntax Specification</span>
+                </div>
+              </div>
+
+              <!-- Front Cover (Opens in 3D) -->
+              <div class="book-front-cover" id="bookFrontCover">
+                <div class="cover-foil-shimmer"></div>
+                <div class="cover-header">
+                  <span class="book-badge">MASTER SPECIFICATION</span>
+                  <span class="cover-seal">⚡</span>
+                </div>
+                <div class="cover-center">
+                  <h3 class="book-title">ENLANGG:<br>THE ENLNG</h3>
+                  <div class="title-divider"></div>
+                  <p class="book-author">Definitive Manual & Reference</p>
+                </div>
+                <div class="cover-footer">
+                  <span class="book-pages-pill">193 Master Pages</span>
+                  <span class="open-hint" id="openHint">Click / Tap to Open →</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Paper Block Thickness (Realistic 3D Stack) -->
-            <div class="page-edge-right"></div>
-            <div class="page-edge-top"></div>
-            <div class="page-edge-bottom"></div>
+            <!-- Realistic Floating Drop Shadow -->
+            <div class="book-ground-shadow" id="bookGroundShadow"></div>
 
-            <!-- Back Cover -->
-            <div class="book-back-cover"></div>
-
-            <!-- Inside Page (Chapter 1 Content) -->
-            <div class="book-inside-page">
-              <div class="page-header">
-                <span class="page-ch">CHAPTER 1</span>
-                <span class="page-num">p. 1 / 193</span>
-              </div>
-              <h4 class="page-title">The Sovereign Philosophy</h4>
-              <p class="page-excerpt">
-                Enlng dissolves artificial symbol barriers. Natural English grammar translates directly to high-throughput machine bytecode.
-              </p>
-              <div class="page-code-snippet">
-                <span class="code-kw">type</span> <span class="code-val">enlng</span><br>
-                <span class="code-kw">create</span> <span class="code-id">n</span> <span class="code-kw">of</span> <span class="code-num">10</span><br>
-                <span class="code-kw">while</span> <span class="code-id">count</span> <span class="code-op">is less than</span> <span class="code-id">n</span>:<br>
-                &nbsp;&nbsp;<span class="code-kw">display</span> <span class="code-id">first</span>
-              </div>
-              <div class="page-seal">
-                <span class="seal-icon">✦</span>
-                <span class="seal-text">Universal Spec Edition</span>
-              </div>
-            </div>
-
-            <!-- Front Cover (Opens in 3D on hover/click) -->
-            <div class="book-front-cover" id="bookFrontCover">
-              <div class="cover-foil-shimmer"></div>
-              <div class="cover-header">
-                <span class="book-badge">MASTER SPECIFICATION</span>
-                <span class="cover-seal">⚡</span>
-              </div>
-              <div class="cover-center">
-                <h3 class="book-title">ENLANGG:<br>THE ENLNG</h3>
-                <div class="title-divider"></div>
-                <p class="book-author">Definitive Manual & Reference</p>
-              </div>
-              <div class="cover-footer">
-                <span class="book-pages-pill">193 Master Pages</span>
-                <span class="open-hint">Hover / Tap to Open →</span>
-              </div>
+            <div class="drag-hint-badge">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+              <span>Drag to rotate 360°</span>
             </div>
           </div>
-          <!-- Realistic Floating Drop Shadow -->
-          <div class="book-ground-shadow"></div>
+
+          <!-- Interactive Controls for 360° and Multi-Page Browsing -->
+          <div class="book-interactive-bar">
+            <div class="book-ctrl-row">
+              <button type="button" class="book-ctrl-btn" id="toggleOrbitBtn" title="360 degree turntable rotation">
+                <span>🔄 360° Orbit</span>
+              </button>
+              <button type="button" class="book-ctrl-btn" id="toggleCoverBtn" title="Open or close book cover">
+                <span id="coverBtnText">📖 Open Book</span>
+              </button>
+              <button type="button" class="book-ctrl-btn" id="autoFlipBtn" title="Auto-flip through all chapter highlights">
+                <span id="autoFlipText">▶ Auto-Flip Pages</span>
+              </button>
+              <button type="button" class="book-ctrl-btn" id="reset3dBtn" title="Reset perspective view">
+                <span>↺ Reset View</span>
+              </button>
+            </div>
+
+            <!-- Page Flip Navigation -->
+            <div class="page-flip-controls">
+              <button type="button" class="page-nav-arrow" id="prevPageBtn" title="Previous page highlight">← Prev</button>
+              <div class="page-scrubber-dots" id="pageDotsBar"></div>
+              <button type="button" class="page-nav-arrow" id="nextPageBtn" title="Next page highlight">Next →</button>
+            </div>
+          </div>
         </div>
 
         <div class="book-info">
@@ -289,12 +395,12 @@ else:
               </svg>
               <span>Download PDF Book (420 KB)</span>
             </a>
-            <button type="button" class="secondary-btn" id="previewBookBtn">
+            <button type="button" class="secondary-btn" id="browsePagesBtn">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
-              <span>Interactive 3D Preview</span>
+              <span>Explore Chapter Highlights</span>
             </button>
           </div>
           <div class="book-meta-grid">
@@ -308,7 +414,7 @@ else:
             </div>
             <div class="meta-item">
               <span class="meta-val">100%</span>
-              <span class="meta-lbl">Python Parity</span>
+              <span class="meta-lbl">Standard Parity</span>
             </div>
           </div>
         </div>
@@ -334,6 +440,6 @@ else:
     </div>
   </footer>
 
-  <script src="app.js?v=5.0.3"></script>
+  <script src="app.js?v=5.0.4"></script>
 </body>
 </html>
