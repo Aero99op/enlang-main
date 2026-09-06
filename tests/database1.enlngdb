@@ -1,4 +1,5 @@
 type enlgdb;
+show databases;
 create table accounts with id, name, email;
 insert record into accounts with id 1, name "spandan", email "spandanpatra1234@gmail.com";
 find all records from accounts where id is 1;

@@ -6,7 +6,8 @@ from enlngdb.ast_nodes import (
     ProgramNode, DomainHeaderNode, DisplayNode, CreateTableNode, ColumnDefNode,
     InsertRecordNode, FindRecordsNode, UpdateRecordsNode, DeleteRecordsNode,
     CountRecordsNode, OpenDatabaseNode, SaveDatabaseNode, HintNode, OrderByNode,
-    BinaryOpNode, UnaryOpNode, IdentifierNode, LiteralNode, ASTNode
+    BinaryOpNode, UnaryOpNode, IdentifierNode, LiteralNode, ASTNode,
+    ShowDatabasesNode, ShowTablesNode
 )
 
 
@@ -158,8 +159,22 @@ class Parser:
         elif self.match(TokenType.INSERT, TokenType.PUT):
             return self.parse_insert()
 
-        # FIND / FETCH / GET / SELECT / SHOW ...
-        elif self.match(TokenType.FIND, TokenType.FETCH, TokenType.GET, TokenType.SELECT, TokenType.SHOW):
+        # SHOW DATABASES / TABLES ...
+        elif self.match(TokenType.SHOW):
+            saved_pos = self.pos
+            self.consume(TokenType.SHOW)
+            self.skip_silent_words()
+            if self.match(TokenType.DATABASES, TokenType.DATABASE):
+                self.consume(self.current_token().type)
+                return ShowDatabasesNode()
+            elif self.match(TokenType.TABLES, TokenType.TABLE):
+                self.consume(self.current_token().type)
+                return ShowTablesNode()
+            self.pos = saved_pos
+            return self.parse_find()
+
+        # FIND / FETCH / GET / SELECT ...
+        elif self.match(TokenType.FIND, TokenType.FETCH, TokenType.GET, TokenType.SELECT):
             return self.parse_find()
 
         # UPDATE / CHANGE ...

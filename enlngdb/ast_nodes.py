@@ -30,6 +30,16 @@ class SaveDatabaseNode(ASTNode):
 
 
 @dataclass
+class ShowDatabasesNode(ASTNode):
+    pass
+
+
+@dataclass
+class ShowTablesNode(ASTNode):
+    pass
+
+
+@dataclass
 class HintNode(ASTNode):
     hints: Dict[str, Any] = field(default_factory=dict)
 

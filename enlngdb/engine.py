@@ -5,9 +5,11 @@ external database drivers, or intermediate representations.
 """
 
 import os
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from enlngdb.ast_nodes import (
     ProgramNode, DomainHeaderNode, DisplayNode, OpenDatabaseNode, SaveDatabaseNode,
+    ShowDatabasesNode, ShowTablesNode,
     HintNode, CreateTableNode, InsertRecordNode, FindRecordsNode, UpdateRecordsNode,
     DeleteRecordsNode, CountRecordsNode, ASTNode, LiteralNode
 )
@@ -76,6 +78,38 @@ class NativeExecutionEngine:
                     "path": stmt.db_path,
                     "success": True,
                     "message": msg
+                }
+
+            elif isinstance(stmt, ShowDatabasesNode):
+                edb_files = [f.name for f in Path(".").glob("*.edb")] + [f.name for f in Path(".").glob("*.db")]
+                if self.db_path and self.db_path not in edb_files:
+                    edb_files.append(self.db_path)
+                rows = [{"database_name": f.replace(".edb", "").replace(".db", ""), "file": f} for f in sorted(set(edb_files))]
+                if not rows:
+                    rows = [{"database_name": "default_memory", "file": ":memory:"}]
+                if self.stream_output:
+                    table_output = self.format_table(rows)
+                    print(table_output)
+                return {
+                    "type": "SHOW_DATABASES",
+                    "rows": rows,
+                    "count": len(rows),
+                    "success": True
+                }
+
+            elif isinstance(stmt, ShowTablesNode):
+                table_names = list(self.storage.tables.keys())
+                rows = [{"table_name": t, "records": len(self.storage.tables[t].rows)} for t in table_names]
+                if not rows:
+                    rows = [{"table_name": "(no tables found)", "records": 0}]
+                if self.stream_output:
+                    table_output = self.format_table(rows)
+                    print(table_output)
+                return {
+                    "type": "SHOW_TABLES",
+                    "rows": rows,
+                    "count": len(rows),
+                    "success": True
                 }
 
             elif isinstance(stmt, HintNode):

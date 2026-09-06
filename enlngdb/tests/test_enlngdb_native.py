@@ -178,3 +178,21 @@ def test_semicolon_line_endings_and_chaining():
     reports2 = run_enlngdb_source(code2, stream_output=False)
     assert len(reports2) == 3
     assert reports2[-1]["rows"][0]["title"] == "Mouse"
+
+
+def test_show_databases_and_tables():
+    code = """
+    type enlngdb;
+    show databases;
+    create table inventory with item_id, stock;
+    show tables;
+    """
+    reports = run_enlngdb_source(code, stream_output=False)
+    assert len(reports) == 3
+    assert reports[0]["type"] == "SHOW_DATABASES"
+    assert reports[0]["success"] is True
+    assert reports[2]["type"] == "SHOW_TABLES"
+    assert reports[2]["success"] is True
+    table_names = [r["table_name"] for r in reports[2]["rows"]]
+    assert "inventory" in table_names
+
