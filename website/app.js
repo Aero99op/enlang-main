@@ -439,14 +439,14 @@ function evaluateSingleCondition(row, cond) {
     return regex.test(val);
   }
 
-  // 2. Comparison operators
+  // 2. Comparison operators - Compound phrases MUST precede single-word operators
   const opPatterns = [
     { op: '>=', regex: /^([a-zA-Z0-9_]+)\s*(?:>=|is\s+greater\s+than\s+or\s+equal\s+to|is\s+at\s+least)\s*(.*)$/i },
     { op: '<=', regex: /^([a-zA-Z0-9_]+)\s*(?:<=|is\s+less\s+than\s+or\s+equal\s+to|is\s+at\s+most)\s*(.*)$/i },
+    { op: '>',  regex: /^([a-zA-Z0-9_]+)\s*(?:>|is\s+greater\s+than)\s*(.*)$/i },
+    { op: '<',  regex: /^([a-zA-Z0-9_]+)\s*(?:<|is\s+less\s+than)\s*(.*)$/i },
     { op: '!=', regex: /^([a-zA-Z0-9_]+)\s*(?:!=|is\s+not\s+equal\s+to|is\s+not)\s*(.*)$/i },
-    { op: '==', regex: /^([a-zA-Z0-9_]+)\s*(?:==|=|is\s+equal\s+to|is)\s*(.*)$/i },
-    { op: '>', regex: /^([a-zA-Z0-9_]+)\s*(?:>|is\s+greater\s+than)\s*(.*)$/i },
-    { op: '<', regex: /^([a-zA-Z0-9_]+)\s*(?:<|is\s+less\s+than)\s*(.*)$/i }
+    { op: '==', regex: /^([a-zA-Z0-9_]+)\s*(?:==|=|is\s+equal\s+to|\bis\b)\s*(.*)$/i }
   ];
 
   for (const { op, regex } of opPatterns) {
@@ -456,7 +456,7 @@ function evaluateSingleCondition(row, cond) {
       const targetVal = m[2].trim().replace(/^["']|["']$/g, '');
       const rowVal = row[col];
 
-      if (rowVal === undefined) return false;
+      if (rowVal === undefined || rowVal === null) return false;
 
       // Numeric comparison
       const numRow = Number(rowVal);
@@ -479,6 +479,7 @@ function evaluateSingleCondition(row, cond) {
       if (op === '<') return strRow < strTarget;
       if (op === '>=') return strRow >= strTarget;
       if (op === '<=') return strRow <= strTarget;
+      return false;
     }
   }
 
@@ -647,12 +648,26 @@ function executeEnlngDBStatement(statement, engineState) {
   }
 
   // 6. FIND / SHOW ALL RECORDS / VALUES FROM <name> [WHERE ...] [ORDER BY ...]
-  const findMatch = stmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)(?:\s+where\s+(.+?))?(?:\s+order\s+by\s+([a-zA-Z0-9_]+)(?:\s+(ascending|descending|asc|desc))?)?$/i);
+  let findStmt = stmt;
+  let sortCol = null;
+  let sortDir = null;
+  const orderMatch = findStmt.match(/\s+order\s+by\s+([a-zA-Z0-9_]+)(?:\s+(ascending|descending|asc|desc))?$/i);
+  if (orderMatch) {
+    sortCol = orderMatch[1];
+    sortDir = orderMatch[2];
+    findStmt = findStmt.substring(0, orderMatch.index).trim();
+  }
+
+  let whereClause = null;
+  const whereMatch = findStmt.match(/\s+where\s+(.+)$/i);
+  if (whereMatch) {
+    whereClause = whereMatch[1].trim();
+    findStmt = findStmt.substring(0, whereMatch.index).trim();
+  }
+
+  const findMatch = findStmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)$/i);
   if (findMatch) {
     const tableName = findMatch[1];
-    const whereClause = findMatch[2];
-    const sortCol = findMatch[3];
-    const sortDir = findMatch[4];
 
     const currentDb = engineState.databases[engineState.activeDb];
     if (!currentDb.tables[tableName]) {
