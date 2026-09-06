@@ -339,22 +339,7 @@ int run_script(const char* filepath) {
         fclose(chk);
     }
 
-    // 3. Dual-Mode: If pure .enlng without python dependency, run native AOT in C!
-    if (strstr(filepath, ".enlng") != NULL || strstr(filepath, ".enlg") != NULL) {
-        if (!enlng_has_python_dependency(filepath)) {
-            char temp_exe[MAX_PATH];
-            char temp_dir[MAX_PATH];
-            GetTempPathA(MAX_PATH, temp_dir);
-            snprintf(temp_exe, sizeof(temp_exe), "%senlng_aot_%lu.exe", temp_dir, GetCurrentProcessId());
-            if (enlng_compile_file_to_exe(filepath, temp_exe)) {
-                int res = system(temp_exe);
-                remove(temp_exe);
-                return res;
-            }
-        }
-    }
-
-    // 4. Python God Mode Bridge fallback for scripts with NumPy, PyTorch, Pandas, etc.
+    // 3. Universal script runner with God Call and standard library support
     char temp_script[MAX_PATH];
     char temp_dir[MAX_PATH];
     GetTempPathA(MAX_PATH, temp_dir);
@@ -481,10 +466,35 @@ int main(int argc, char* argv[]) {
 
     if (strcmp(argv[1], "run") == 0) {
         if (argc < 3) {
-            fprintf(stderr, "[ERROR] Usage: enlangg run <filename.ext> [--p <port>] [--device <android|ios>]\n");
+            fprintf(stderr, "[ERROR] Usage: enlangg run [--aot] <filename.ext> [--p <port>] [--device <android|ios>]\n");
             return 1;
         }
-        const char* filepath = argv[2];
+        bool aot_mode = false;
+        int file_idx = 2;
+        if (strcmp(argv[2], "--aot") == 0) {
+            if (argc < 4) {
+                fprintf(stderr, "[ERROR] Usage: enlangg run --aot <filename.ext>\n");
+                return 1;
+            }
+            aot_mode = true;
+            file_idx = 3;
+        }
+        const char* filepath = argv[file_idx];
+
+        if (aot_mode) {
+            char temp_exe[MAX_PATH];
+            char temp_dir[MAX_PATH];
+            GetTempPathA(MAX_PATH, temp_dir);
+            snprintf(temp_exe, sizeof(temp_exe), "%senlng_aot_%lu.exe", temp_dir, GetCurrentProcessId());
+            if (enlng_compile_file_to_exe(filepath, temp_exe)) {
+                int res = system(temp_exe);
+                remove(temp_exe);
+                return res;
+            } else {
+                fprintf(stderr, "[ERROR] AOT compilation failed for '%s'. Check GCC toolchain.\n", filepath);
+                return 1;
+            }
+        }
 
         // Check if database script
         if (strstr(filepath, ".enlngdb") != NULL || strstr(filepath, ".enlgdb") != NULL) {
