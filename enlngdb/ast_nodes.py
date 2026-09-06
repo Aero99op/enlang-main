@@ -20,6 +20,11 @@ class DisplayNode(ASTNode):
 
 
 @dataclass
+class UseDatabaseNode(ASTNode):
+    db_path: str
+
+
+@dataclass
 class OpenDatabaseNode(ASTNode):
     db_path: str
 
@@ -36,7 +41,7 @@ class ShowDatabasesNode(ASTNode):
 
 @dataclass
 class ShowTablesNode(ASTNode):
-    pass
+    database_name: Optional[str] = None
 
 
 @dataclass

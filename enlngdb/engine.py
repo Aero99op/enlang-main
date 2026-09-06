@@ -9,11 +9,27 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from enlngdb.ast_nodes import (
     ProgramNode, DomainHeaderNode, DisplayNode, OpenDatabaseNode, SaveDatabaseNode,
-    ShowDatabasesNode, ShowTablesNode,
+    ShowDatabasesNode, ShowTablesNode, UseDatabaseNode,
     HintNode, CreateTableNode, InsertRecordNode, FindRecordsNode, UpdateRecordsNode,
     DeleteRecordsNode, CountRecordsNode, ASTNode, LiteralNode
 )
 from enlngdb.storage import NativeStorageEngine, StorageError
+
+
+def resolve_db_path(name: str) -> str:
+    """Resolves a database identifier or path to an existing or canonical .edb/.db file."""
+    candidates = [
+        name,
+        f"{name}.edb",
+        f"{name}.db",
+        os.path.join("..", name),
+        os.path.join("..", f"{name}.edb"),
+        os.path.join("..", f"{name}.db"),
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return f"{name}.edb"
 
 
 class NativeExecutionEngine:
@@ -56,14 +72,33 @@ class NativeExecutionEngine:
                 }
 
             elif isinstance(stmt, OpenDatabaseNode):
-                self.storage.load_from_disk(stmt.db_path)
-                self.db_path = stmt.db_path
-                msg = f"Opened sovereign database file '{stmt.db_path}'."
+                target_path = resolve_db_path(stmt.db_path)
+                self.storage.load_from_disk(target_path)
+                self.db_path = target_path
+                msg = f"Opened sovereign database file '{target_path}'."
                 if self.stream_output:
                     print(f"[enlngdb] {msg}")
                 return {
                     "type": "OPEN_DATABASE",
-                    "path": stmt.db_path,
+                    "path": target_path,
+                    "success": True,
+                    "message": msg
+                }
+
+            elif isinstance(stmt, UseDatabaseNode):
+                target_path = resolve_db_path(stmt.db_path)
+                self.db_path = target_path
+                if os.path.exists(target_path):
+                    self.storage.load_from_disk(target_path)
+                    msg = f"Switched to database '{target_path}' ({len(self.storage.tables)} table(s) loaded)."
+                else:
+                    self.storage = NativeStorageEngine(db_path=target_path)
+                    msg = f"Switched to database '{target_path}' (new database initialized)."
+                if self.stream_output:
+                    print(f"[enlngdb] {msg}")
+                return {
+                    "type": "USE_DATABASE",
+                    "path": target_path,
                     "success": True,
                     "message": msg
                 }
@@ -82,11 +117,18 @@ class NativeExecutionEngine:
 
             elif isinstance(stmt, ShowDatabasesNode):
                 edb_files = [f.name for f in Path(".").glob("*.edb")] + [f.name for f in Path(".").glob("*.db")]
-                if self.db_path and self.db_path not in edb_files:
-                    edb_files.append(self.db_path)
-                rows = [{"database_name": f.replace(".edb", "").replace(".db", ""), "file": f} for f in sorted(set(edb_files))]
+                if self.db_path and self.db_path not in edb_files and self.db_path != ":memory:":
+                    edb_files.append(Path(self.db_path).name)
+                rows = []
+                for f in sorted(set(edb_files)):
+                    is_active = bool(self.db_path and (self.db_path == f or Path(self.db_path).name == f or Path(self.db_path).stem == f.replace(".edb", "").replace(".db", "")))
+                    rows.append({
+                        "database_name": f.replace(".edb", "").replace(".db", ""),
+                        "file": f,
+                        "status": "* active" if is_active else ""
+                    })
                 if not rows:
-                    rows = [{"database_name": "default_memory", "file": ":memory:"}]
+                    rows = [{"database_name": "default_memory", "file": ":memory:", "status": "* active"}]
                 if self.stream_output:
                     table_output = self.format_table(rows)
                     print(table_output)
@@ -98,8 +140,22 @@ class NativeExecutionEngine:
                 }
 
             elif isinstance(stmt, ShowTablesNode):
-                table_names = list(self.storage.tables.keys())
-                rows = [{"table_name": t, "records": len(self.storage.tables[t].rows)} for t in table_names]
+                db_label = stmt.database_name or (Path(self.db_path).stem if self.db_path else "current")
+                if stmt.database_name:
+                    target_path = resolve_db_path(stmt.database_name)
+                    if self.db_path and (self.db_path == target_path or Path(self.db_path).name == target_path or Path(self.db_path).stem == stmt.database_name):
+                        table_names = list(self.storage.tables.keys())
+                        rows = [{"table_name": t, "records": len(self.storage.tables[t].rows), "database": db_label} for t in table_names]
+                    elif os.path.exists(target_path):
+                        temp_storage = NativeStorageEngine(db_path=target_path)
+                        table_names = list(temp_storage.tables.keys())
+                        rows = [{"table_name": t, "records": len(temp_storage.tables[t].rows), "database": db_label} for t in table_names]
+                    else:
+                        rows = [{"table_name": f"(database '{stmt.database_name}' not found)", "records": 0, "database": db_label}]
+                else:
+                    table_names = list(self.storage.tables.keys())
+                    rows = [{"table_name": t, "records": len(self.storage.tables[t].rows)} for t in table_names]
+
                 if not rows:
                     rows = [{"table_name": "(no tables found)", "records": 0}]
                 if self.stream_output:
@@ -107,6 +163,7 @@ class NativeExecutionEngine:
                     print(table_output)
                 return {
                     "type": "SHOW_TABLES",
+                    "database": stmt.database_name,
                     "rows": rows,
                     "count": len(rows),
                     "success": True

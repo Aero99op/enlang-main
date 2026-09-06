@@ -7,7 +7,7 @@ from enlngdb.ast_nodes import (
     InsertRecordNode, FindRecordsNode, UpdateRecordsNode, DeleteRecordsNode,
     CountRecordsNode, OpenDatabaseNode, SaveDatabaseNode, HintNode, OrderByNode,
     BinaryOpNode, UnaryOpNode, IdentifierNode, LiteralNode, ASTNode,
-    ShowDatabasesNode, ShowTablesNode
+    ShowDatabasesNode, ShowTablesNode, UseDatabaseNode
 )
 
 
@@ -145,6 +145,10 @@ class Parser:
         elif self.match(TokenType.OPEN, TokenType.CONNECT):
             return self.parse_open_database()
 
+        # USE DATABASE ...
+        elif self.match(TokenType.USE):
+            return self.parse_use_database()
+
         # SAVE DATABASE ...
         elif self.match(TokenType.SAVE):
             if self.peek_token(1).type == TokenType.DATABASE:
@@ -168,8 +172,22 @@ class Parser:
                 self.consume(self.current_token().type)
                 return ShowDatabasesNode()
             elif self.match(TokenType.TABLES, TokenType.TABLE):
+                is_plural = self.match(TokenType.TABLES)
                 self.consume(self.current_token().type)
-                return ShowTablesNode()
+                self.skip_silent_words()
+                db_name = None
+                if self.match(TokenType.OF, TokenType.IN, TokenType.FROM):
+                    self.consume(self.current_token().type)
+                    self.skip_silent_words()
+                    if self.match(TokenType.DATABASE):
+                        self.consume(TokenType.DATABASE)
+                        self.skip_silent_words()
+                    db_name = self.parse_path_or_identifier("database name")
+                    return ShowTablesNode(database_name=db_name)
+                elif not is_plural and self.match(TokenType.IDENTIFIER, TokenType.STRING_LITERAL):
+                    tbl = self.parse_identifier_or_string("table name")
+                    return FindRecordsNode(table_name=tbl, fields=["*"])
+                return ShowTablesNode(database_name=None)
             self.pos = saved_pos
             return self.parse_find()
 
@@ -205,24 +223,38 @@ class Parser:
         return DisplayNode(message=msg_expr)
 
     # -------------------------------------------------------------
-    # 2. DATABASE OPEN & SAVE
+    # 2. DATABASE OPEN, USE & SAVE
     # -------------------------------------------------------------
-    def parse_open_database(self) -> OpenDatabaseNode:
-        self.consume(self.current_token().type)  # OPEN or CONNECT
-        if self.match(TokenType.TO):
-            self.consume(TokenType.TO)
+    def parse_use_database(self) -> UseDatabaseNode:
+        self.consume(TokenType.USE)
+        self.skip_silent_words()
         if self.match(TokenType.DATABASE):
             self.consume(TokenType.DATABASE)
-        path_tok = self.consume(TokenType.STRING_LITERAL, "Expected database file path string")
-        return OpenDatabaseNode(db_path=str(path_tok.value))
+            self.skip_silent_words()
+        path = self.parse_path_or_identifier("database name or path")
+        return UseDatabaseNode(db_path=path)
+
+    def parse_open_database(self) -> OpenDatabaseNode:
+        self.consume(self.current_token().type)  # OPEN or CONNECT
+        self.skip_silent_words()
+        if self.match(TokenType.TO):
+            self.consume(TokenType.TO)
+            self.skip_silent_words()
+        if self.match(TokenType.DATABASE):
+            self.consume(TokenType.DATABASE)
+            self.skip_silent_words()
+        path = self.parse_path_or_identifier("database file path")
+        return OpenDatabaseNode(db_path=path)
 
     def parse_save_database(self) -> SaveDatabaseNode:
         self.consume(TokenType.SAVE)
         self.consume(TokenType.DATABASE)
+        self.skip_silent_words()
         if self.match(TokenType.TO):
             self.consume(TokenType.TO)
-        path_tok = self.consume(TokenType.STRING_LITERAL, "Expected database file path string")
-        return SaveDatabaseNode(db_path=str(path_tok.value))
+            self.skip_silent_words()
+        path = self.parse_path_or_identifier("database file path")
+        return SaveDatabaseNode(db_path=path)
 
     # -------------------------------------------------------------
     # 3. CREATE TABLE
@@ -793,3 +825,16 @@ class Parser:
             self.pos += 1
             return str(tok.value)
         raise ParserError(f"Expected {context}, but found '{tok.value}'", tok)
+
+    def parse_path_or_identifier(self, context: str = "identifier") -> str:
+        self.skip_silent_words()
+        tok = self.current_token()
+        if self.match(TokenType.STRING_LITERAL):
+            self.pos += 1
+            return str(tok.value)
+        base = self.parse_identifier_or_string(context)
+        if self.match(TokenType.DOT):
+            self.consume(TokenType.DOT)
+            ext = self.parse_identifier_or_string("file extension")
+            return f"{base}.{ext}"
+        return base

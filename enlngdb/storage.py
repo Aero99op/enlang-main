@@ -384,8 +384,24 @@ class NativeStorageEngine:
     def load_from_disk(self, file_path: str):
         if not os.path.exists(file_path):
             raise StorageError(f"Database file '{file_path}' not found.")
-        with open(file_path, "r", encoding="utf-8") as f:
-            payload = json.load(f)
+        if os.path.getsize(file_path) == 0:
+            self.tables.clear()
+            return
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            try:
+                with open(file_path, "rb") as bf:
+                    header = bf.read(16)
+                    if b"SQLite" in header:
+                        raise StorageError(f"File '{file_path}' is a legacy SQLite binary database. EnlngDB is 100% sovereign native and uses .edb format.")
+            except StorageError:
+                raise
+            except Exception:
+                pass
+            raise StorageError(f"File '{file_path}' is not a valid sovereign EnlngDB database file.")
+
         tables_data = payload.get("tables", {})
         self.tables.clear()
         for name, t_dict in tables_data.items():

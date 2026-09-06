@@ -25,7 +25,7 @@ def run_enlngdb_source(source: str,
     if engine is None:
         engine = NativeExecutionEngine(db_path=db_path, stream_output=stream_output)
     reports = engine.execute_program(ast)
-    if engine.db_path:
+    if engine.db_path and engine.db_path != ":memory:":
         engine.storage.save_to_disk(engine.db_path)
     return reports
 

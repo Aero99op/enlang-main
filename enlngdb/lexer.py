@@ -28,6 +28,7 @@ class Lexer:
         "tables": TokenType.TABLES,
         "database": TokenType.DATABASE,
         "databases": TokenType.DATABASES,
+        "use": TokenType.USE,
         "open": TokenType.OPEN,
         "connect": TokenType.CONNECT,
         "save": TokenType.SAVE,
@@ -58,6 +59,7 @@ class Lexer:
 
         # Prepositions & Modifiers
         "all": TokenType.ALL,
+        "of": TokenType.OF,
         "from": TokenType.FROM,
         "where": TokenType.WHERE,
         "in": TokenType.IN,

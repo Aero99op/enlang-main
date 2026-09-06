@@ -11,6 +11,7 @@ dist/
 # Binary datasets & ML model artifacts (store separately or via releases)
 *.pkl
 *.db
+*.edb
 *.sqlite
 *.sqlite3
 *.csv

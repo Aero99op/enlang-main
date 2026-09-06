@@ -196,3 +196,24 @@ def test_show_databases_and_tables():
     table_names = [r["table_name"] for r in reports[2]["rows"]]
     assert "inventory" in table_names
 
+
+def test_use_database_and_show_tables_of_db(tmp_path):
+    test_db = (tmp_path / "custom_app.edb").as_posix()
+    code = f"""
+    type enlgdb;
+    use database "{test_db}";
+    create table products with id, title, price;
+    insert record into products with id 101, title "Laptop", price 999;
+    show tables;
+    show tables of database "{test_db}";
+    show all records from products;
+    find all records from products;
+    """
+    reports = run_enlngdb_source(code, stream_output=False)
+    assert any(r.get("type") == "USE_DATABASE" for r in reports)
+    find_reports = [r for r in reports if r.get("type") == "FIND"]
+    assert len(find_reports) == 2
+    assert find_reports[0]["rows"][0]["title"] == "Laptop"
+    assert find_reports[1]["rows"][0]["title"] == "Laptop"
+
+

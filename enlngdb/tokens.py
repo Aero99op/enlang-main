@@ -20,6 +20,7 @@ class TokenType(Enum):
     TABLES = auto()
     DATABASE = auto()
     DATABASES = auto()
+    USE = auto()
     OPEN = auto()
     CONNECT = auto()
     SAVE = auto()
@@ -50,6 +51,7 @@ class TokenType(Enum):
 
     # Clausal Prepositions & Modifiers
     ALL = auto()
+    OF = auto()
     FROM = auto()
     WHERE = auto()
     IN = auto()
