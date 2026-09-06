@@ -1,0 +1,57 @@
+type enlngdb
+
+# ==============================================================================
+#   ENLNGDB SOVEREIGN NATIVE DATABASE SCRIPT (ZERO SQL, ZERO EXTERNAL DB)
+#   Pure Conversational English • Zero SQL Translation • Native Memory & .edb
+# ==============================================================================
+
+display "=================================================================="
+display "       ENLNGDB: SOVEREIGN CONVERSATIONAL DATABASE ENGINE          "
+display "=================================================================="
+
+# 1. Engine Directives & Hints
+hint storage: "in-memory-fast", persistence: "edb-atomic"
+
+# 2. Schema Provisioning (Safe re-runnable schema)
+create table if not exists gamers with player_id, tag, xp, tier, is_active
+
+display ">> Table 'gamers' provisioned successfully in sovereign memory."
+
+# 3. Data Ingestion (Conversational English records)
+insert record into gamers with player_id 101, tag "Valkyrie", xp 95400, tier "Immortal", is_active true
+insert record into gamers with player_id 102, tag "Phantom", xp 142000, tier "Radiant", is_active true
+insert record into gamers with player_id 103, tag "NoobMaster", xp 12500, tier "Bronze", is_active false
+insert record into gamers with player_id 104, tag "Shadow", xp 88000, tier "Ascendant", is_active true
+insert record into gamers with player_id 105, tag "Aero", xp 165000, tier "Radiant", is_active true
+
+display ">> 5 Player records registered into sovereign store."
+
+# 4. Natural Query with Silent Words & Comparators
+display ">> LIVE QUERY 1: All active top-tier players (XP >= 85,000) sorted by XP:"
+find all the records from gamers where xp is at least 85000 and is_active is true order by xp descending
+
+# 5. Wildcard Substring Search (LIKE operator)
+display ">> LIVE QUERY 2: Searching tags containing 'Master':"
+find records from gamers where tag like "%Master%"
+
+# 6. Targeted Record Mutation
+display ">> Updating Valkyrie to Radiant tier..."
+update records in gamers set tier = "Radiant" where player_id is 101
+
+# 7. Verification Query
+display ">> LIVE QUERY 3: All Radiant Tier Players after upgrade:"
+find records from gamers where tier is "Radiant" order by xp descending
+
+# 8. Fast Aggregation
+count records in gamers where tier is "Radiant"
+
+# 9. Targeted Deletion with Safety
+display ">> Removing inactive players..."
+delete records from gamers where is_active is false
+
+# 10. Persistence to Sovereign Binary File (.edb)
+save database to "gamers_vault.edb"
+
+display "=================================================================="
+display "   ALL ENLNGDB SOVEREIGN OPERATIONS EXECUTED WITH ZERO SQL!       "
+display "=================================================================="
