@@ -1,0 +1,6 @@
+type enlng
+
+import python module "math" as py_math
+
+set val to py_math.sin(1.57079)
+display "Computed sine via Python God Call:", val

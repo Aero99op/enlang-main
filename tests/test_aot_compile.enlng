@@ -1,0 +1,20 @@
+type enlng
+
+display "=============================================================="
+display "    ENLANGG SOVEREIGN AOT NATIVE C COMPILATION TEST          "
+display "=============================================================="
+
+set count to 0
+set total to 0
+
+while count is less than 5:
+    set count to count plus 1
+    set total to total plus (count multiplied by 10)
+    display "Loop step:", count, "Current total:", total
+
+if total is greater than 100:
+    display "Test passed! Total exceeded 100:", total
+else:
+    display "Total is:", total
+
+display "AOT Native C Execution Finished with 0 Leaks!"

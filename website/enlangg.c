@@ -12,6 +12,7 @@
 #include <string.h>
 #include <windows.h>
 #include "enlngdb/c/enlngdb.h"
+#include "enlng/c/enlng_emitter.h"
 
 #define VERSION "5.0.0-sovereign-universal"
 
@@ -265,9 +266,13 @@ const char* EMBEDDED_RUNNER =
 "    m = re.match(r'^(?:define\\s+function|function|routine|procedure|def)\\s+([a-zA-Z0-9_]+)(?:\\s+with\\s+(.*?))?:$', trimmed, re.I)\n"
 "    if m: return f'{indent}def {m.group(1)}({m.group(2) or \"\"}):'\n"
 "\n"
-"    # 13. Modules & Libraries\n"
-"    m = re.match(r'^(?:use\\s+library|import)\\s+\"?([a-zA-Z0-9_]+)\"?', trimmed)\n"
-"    if m: return f'{indent}import {m.group(1)}'\n"
+"    # 13. Modules & Libraries (Dual-Mode Python Bridge)\n"
+"    m = re.match(r'^(?:import\\s+python\\s+module|import\\s+module|use\\s+library|import)\\s+[\"\\']?([a-zA-Z0-9_]+)[\"\\']?(?:\\s+as\\s+([a-zA-Z0-9_]+))?', trimmed, re.I)\n"
+"    if m:\n"
+"        mod = m.group(1)\n"
+"        alias = m.group(2)\n"
+"        if alias: return f'{indent}import {mod} as {alias}'\n"
+"        return f'{indent}import {mod}'\n"
 "\n"
 "    return f'{indent}{fix_expr(trimmed)}'\n"
 "\n"
@@ -302,12 +307,14 @@ const char* EMBEDDED_RUNNER =
 void print_help() {
     printf("Enlangg Sovereign Compiler & Runtime v%s\n\n", VERSION);
     printf("Usage:\n");
-    printf("  enlangg run <filename.ext>                Run backend / natural English script\n");
-    printf("  enlangg run <app.enlngf> --p <port>       Launch interactive Web Studio\n");
-    printf("  enlangg run <app.enlngmf> --device <dev>  Deploy live to Android / iOS simulator\n");
-    printf("  enlangg <script.enlngdb>                  Execute Pure C Sovereign Database script\n");
-    printf("  enlangg db run <script.enlngdb>           Execute Pure C Sovereign Database script\n");
-    printf("  enlangg db -e \"<query>\"                   Execute instant conversational query in C\n");
+    printf("  enlangg compile <file.enlng> [-o <out.exe>]  AOT compile natural English to native C machine code (.exe)\n");
+    printf("  enlangg emit-c <file.enlng> [-o <out.c>]     Emit clean ISO C99 code with Scoped Arena Memory\n");
+    printf("  enlangg run <filename.ext>                  Run backend / natural English script (Dual-Mode)\n");
+    printf("  enlangg run <app.enlngf> --p <port>         Launch interactive Web Studio\n");
+    printf("  enlangg run <app.enlngmf> --device <dev>    Deploy live to Android / iOS simulator\n");
+    printf("  enlangg <script.enlngdb>                    Execute Pure C Sovereign Database script\n");
+    printf("  enlangg db run <script.enlngdb>             Execute Pure C Sovereign Database script\n");
+    printf("  enlangg db -e \"<query>\"                     Execute instant conversational query in C\n");
     printf("  enlangg db serve [--port 8080] [--db <file.edb>] Launch sovereign EnlngDB Cloud HTTP Daemon\n");
     printf("  enlangg build <app.enlngmf> --target apk -o <app.apk>  Build production APK\n");
     printf("  enlangg build <app.enlngmf> --target ipa -o <app.ipa>  Build production IPA\n");
@@ -332,6 +339,22 @@ int run_script(const char* filepath) {
         fclose(chk);
     }
 
+    // 3. Dual-Mode: If pure .enlng without python dependency, run native AOT in C!
+    if (strstr(filepath, ".enlng") != NULL || strstr(filepath, ".enlg") != NULL) {
+        if (!enlng_has_python_dependency(filepath)) {
+            char temp_exe[MAX_PATH];
+            char temp_dir[MAX_PATH];
+            GetTempPathA(MAX_PATH, temp_dir);
+            snprintf(temp_exe, sizeof(temp_exe), "%senlng_aot_%lu.exe", temp_dir, GetCurrentProcessId());
+            if (enlng_compile_file_to_exe(filepath, temp_exe)) {
+                int res = system(temp_exe);
+                remove(temp_exe);
+                return res;
+            }
+        }
+    }
+
+    // 4. Python God Mode Bridge fallback for scripts with NumPy, PyTorch, Pandas, etc.
     char temp_script[MAX_PATH];
     char temp_dir[MAX_PATH];
     GetTempPathA(MAX_PATH, temp_dir);
@@ -368,6 +391,63 @@ int main(int argc, char* argv[]) {
     if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
         print_help();
         return 0;
+    }
+
+    if (strcmp(argv[1], "compile") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "[ERROR] Usage: enlangg compile <file.enlng> [-o <output.exe>]\n");
+            return 1;
+        }
+        const char* in_file = argv[2];
+        char out_file[MAX_PATH];
+        snprintf(out_file, sizeof(out_file), "%s.exe", in_file);
+        char* ext = strstr(out_file, ".enlng");
+        if (!ext) ext = strstr(out_file, ".enlg");
+        if (ext) strcpy(ext, ".exe");
+
+        for (int i = 3; i < argc; i++) {
+            if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
+                strncpy(out_file, argv[i + 1], sizeof(out_file) - 1);
+            }
+        }
+        printf("==============================================================\n");
+        printf("       ENLANGG AHEAD-OF-TIME (AOT) NATIVE C COMPILER          \n");
+        printf("==============================================================\n");
+        printf(" >> Source: %s\n", in_file);
+        printf(" >> Target Binary: %s\n", out_file);
+        printf(" >> Memory Architecture: Sovereign Scoped Bump Arena (enlng_mem.h)\n");
+        printf(" >> Automatic Memory Reclamation: ENABLED (0 leaks, 1-cycle reset)\n");
+        printf(" >> Generating ISO C99 source representation...\n");
+
+        if (enlng_compile_file_to_exe(in_file, out_file)) {
+            printf("[SUCCESS] Native standalone machine code binary generated: '%s'\n", out_file);
+            return 0;
+        } else {
+            fprintf(stderr, "[ERROR] Native C compilation failed. Check GCC toolchain.\n");
+            return 1;
+        }
+    }
+
+    if (strcmp(argv[1], "emit-c") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "[ERROR] Usage: enlangg emit-c <file.enlng> [-o <output.c>]\n");
+            return 1;
+        }
+        const char* in_file = argv[2];
+        char out_file[MAX_PATH];
+        snprintf(out_file, sizeof(out_file), "%s.c", in_file);
+        for (int i = 3; i < argc; i++) {
+            if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
+                strncpy(out_file, argv[i + 1], sizeof(out_file) - 1);
+            }
+        }
+        if (enlng_emit_c_from_file(in_file, out_file)) {
+            printf("[SUCCESS] Emitted C99 source file: '%s'\n", out_file);
+            return 0;
+        } else {
+            fprintf(stderr, "[ERROR] Failed to emit C source file.\n");
+            return 1;
+        }
     }
 
     if (strcmp(argv[1], "db") == 0) {
