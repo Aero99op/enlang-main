@@ -30,8 +30,9 @@ venv/
 *.log
 scratch/
 
-# Loose test output images in root
+# Loose test output images and raw videos in root
 /*.png
+/*.mp4
 
 # Local deployment bundles
 .vercel/
