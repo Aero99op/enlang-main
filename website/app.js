@@ -501,7 +501,7 @@ function parseKeyValuePairs(str) {
   for (const item of items) {
     const trimmed = item.trim();
     if (!trimmed) continue;
-    const match = trimmed.match(/^([a-zA-Z0-9_]+)\s+(.*)$/);
+    const match = trimmed.match(/^([a-zA-Z0-9_]+)\s*(?:[:=]|as|to|is|\s)\s*(.*)$/i);
     if (match) {
       const key = match[1];
       let rawVal = match[2].trim();
@@ -618,8 +618,8 @@ function executeEnlngDBStatement(statement, engineState) {
     };
   }
 
-  // 5. INSERT RECORD INTO <name> WITH <k1 v1, ...>
-  const insertMatch = stmt.match(/^insert\s+record\s+into\s+([a-zA-Z0-9_]+)\s+with\s+(.+)$/i);
+  // 5. INSERT RECORD INTO <name> WITH / VALUES <k1 v1, ...>
+  const insertMatch = stmt.match(/^insert\s+(?:record\s+into|records\s+into|row\s+into|into)?\s*([a-zA-Z0-9_]+)\s+(?:with|values)\s+(.+)$/i);
   if (insertMatch) {
     const tableName = insertMatch[1];
     const keyValsStr = insertMatch[2];
