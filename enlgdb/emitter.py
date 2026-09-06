@@ -6,7 +6,7 @@ from enlgdb.ast_nodes import (
     CreateDatabaseNode, UseDatabaseNode, ShowDatabasesNode, ShowTablesNode, DropDatabaseNode,
     SelectNode, UpdateNode, DeleteNode, DropTableNode,
     TruncateTableNode, AlterTableNode, BinaryOpNode,
-    UnaryOpNode, FunctionCallNode, IdentifierNode, LiteralNode, ASTNode
+    UnaryOpNode, FunctionCallNode, IdentifierNode, LiteralNode, ASTNode, HintNode
 )
 
 
@@ -24,7 +24,10 @@ class SQLEmitter:
         return results
 
     def emit_statement(self, stmt: ASTNode) -> Tuple[str, List[Any]]:
-        if isinstance(stmt, CreateDatabaseNode):
+        if isinstance(stmt, HintNode):
+            hint_str = ", ".join(f"{k}={v!r}" for k, v in stmt.hints.items())
+            return f"-- HINT: {hint_str}", []
+        elif isinstance(stmt, CreateDatabaseNode):
             if self.dialect == "sqlite":
                 return f'ATTACH DATABASE "{stmt.db_name}.db" AS "{stmt.db_name}";', []
             return f'CREATE DATABASE "{stmt.db_name}";', []
@@ -132,7 +135,15 @@ class SQLEmitter:
                 fields_str_list.append(f'"{f}"' if "." not in f else f)
 
         distinct_kw = "DISTINCT " if node.distinct else ""
-        sql_parts = [f'SELECT {distinct_kw}{", ".join(fields_str_list)} FROM "{node.table_name}"']
+        indexed_by = ""
+        hint_comment = ""
+        if node.hints:
+            if "index" in node.hints and self.dialect == "sqlite":
+                indexed_by = f' INDEXED BY "{node.hints["index"]}"'
+            hint_str = ", ".join(f"{k}={v!r}" for k, v in node.hints.items())
+            hint_comment = f" /*+ HINT({hint_str}) */"
+
+        sql_parts = [f'SELECT {distinct_kw}{", ".join(fields_str_list)}{hint_comment} FROM "{node.table_name}"{indexed_by}']
 
         # Joins
         for j in node.joins:

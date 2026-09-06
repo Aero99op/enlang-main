@@ -4,7 +4,7 @@ from typing import List, Tuple, Any, Dict, Optional
 from pathlib import Path
 from enlgdb.ast_nodes import (
     ProgramNode, SelectNode, CreateTableNode, InsertNode, UpdateNode, DeleteNode, DropTableNode,
-    CreateDatabaseNode, UseDatabaseNode, ShowDatabasesNode, ShowTablesNode, DropDatabaseNode
+    CreateDatabaseNode, UseDatabaseNode, ShowDatabasesNode, ShowTablesNode, DropDatabaseNode, HintNode
 )
 
 
@@ -95,6 +95,15 @@ class DatabaseEngine:
                     "message": f"Database '{stmt_node.db_name}' ({db_file}) deleted safely."
                 }
 
+            elif isinstance(stmt_node, HintNode):
+                return {
+                    "type": "HINT",
+                    "hints": stmt_node.hints,
+                    "sql": sql,
+                    "success": True,
+                    "message": f"Engine directive accepted: {stmt_node.hints}"
+                }
+
             # Standard SQL operations
             self.cursor.execute(sql, params)
             self.conn.commit()
@@ -110,6 +119,7 @@ class DatabaseEngine:
                     "columns": cols,
                     "rows": rows,
                     "count": len(rows),
+                    "hints": stmt_node.hints,
                     "success": True
                 }
             elif isinstance(stmt_node, CreateTableNode):

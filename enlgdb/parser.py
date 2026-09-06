@@ -8,7 +8,7 @@ from enlgdb.ast_nodes import (
     InsertNode, SelectNode, OrderByNode, JoinNode,
     UpdateNode, DeleteNode, DropTableNode, TruncateTableNode,
     AlterTableNode, BinaryOpNode, UnaryOpNode, FunctionCallNode,
-    IdentifierNode, LiteralNode, ASTNode
+    IdentifierNode, LiteralNode, ASTNode, HintNode
 )
 
 
@@ -53,6 +53,48 @@ class Parser:
         while self.match(TokenType.NEWLINE):
             self.pos += 1
 
+    def skip_silent_words(self):
+        """Skips conversational filler words like 'the', 'a', 'an', 'please', 'records', 'rows', etc."""
+        silent_types = {
+            TokenType.THE, TokenType.A, TokenType.AN,
+            TokenType.PLEASE, TokenType.KINDLY, TokenType.SIMPLY, TokenType.JUST,
+            TokenType.THAT, TokenType.WHICH,
+            TokenType.RECORD, TokenType.RECORDS,
+            TokenType.ROW, TokenType.ROWS,
+            TokenType.ENTRY, TokenType.ENTRIES,
+            TokenType.DATA, TokenType.ITEM, TokenType.ITEMS
+        }
+        while self.match(*silent_types):
+            self.pos += 1
+
+    def parse_hints_dict(self) -> Dict[str, Any]:
+        """Parses 'hint key: val, key2: val2' into a dictionary."""
+        self.consume(TokenType.HINT)
+        hints: Dict[str, Any] = {}
+        while True:
+            self.skip_silent_words()
+            key_tok = self.current_token()
+            if self.match(TokenType.IDENTIFIER, TokenType.INDEX, TokenType.DEFAULT):
+                self.pos += 1
+                key = str(key_tok.value)
+            else:
+                break
+            if self.match(TokenType.COLON, TokenType.EQUALS):
+                self.pos += 1
+            val_expr = self.parse_expression()
+            if isinstance(val_expr, LiteralNode):
+                hints[key] = val_expr.value
+            elif isinstance(val_expr, IdentifierNode):
+                hints[key] = val_expr.name
+            else:
+                hints[key] = val_expr
+            
+            if self.match(TokenType.COMMA):
+                self.consume(TokenType.COMMA)
+            else:
+                break
+        return hints
+
     def parse(self) -> ProgramNode:
         self.skip_newlines()
         header = None
@@ -78,10 +120,15 @@ class Parser:
         return ProgramNode(header=header, statements=statements)
 
     def parse_statement(self) -> ASTNode:
+        self.skip_silent_words()
         tok = self.current_token()
 
+        # HINT ...
+        if self.match(TokenType.HINT):
+            return self.parse_standalone_hint()
+
         # CREATE TABLE / DATABASE ...
-        if self.match(TokenType.CREATE):
+        elif self.match(TokenType.CREATE):
             if self.peek_token(1).type == TokenType.DATABASE:
                 return self.parse_create_database()
             return self.parse_create_table()
@@ -90,24 +137,30 @@ class Parser:
         elif self.match(TokenType.USE):
             return self.parse_use_database()
 
-        # SHOW DATABASES / TABLES ...
+        # SHOW DATABASES / TABLES ... OR SHOW QUERY
         elif self.match(TokenType.SHOW):
-            return self.parse_show()
-
-        # INSERT INTO ...
-        elif self.match(TokenType.INSERT):
-            return self.parse_insert()
-
-        # SELECT ...
-        elif self.match(TokenType.SELECT):
+            if self.peek_token(1).type in (TokenType.DATABASES, TokenType.DATABASE, TokenType.TABLES, TokenType.TABLE):
+                return self.parse_show()
             return self.parse_select()
 
-        # UPDATE ...
-        elif self.match(TokenType.UPDATE):
+        # INSERT / SAVE / PUT INTO ...
+        elif self.match(TokenType.INSERT, TokenType.SAVE, TokenType.PUT):
+            return self.parse_insert()
+
+        # SELECT / FIND / FETCH / GET ...
+        elif self.match(TokenType.SELECT, TokenType.FIND, TokenType.FETCH, TokenType.GET):
+            return self.parse_select()
+
+        # COUNT ... (e.g. count records in "accounts" where ...)
+        elif self.match(TokenType.COUNT):
+            return self.parse_count_query()
+
+        # UPDATE / CHANGE ...
+        elif self.match(TokenType.UPDATE, TokenType.CHANGE):
             return self.parse_update()
 
-        # DELETE ...
-        elif self.match(TokenType.DELETE):
+        # DELETE / REMOVE ...
+        elif self.match(TokenType.DELETE, TokenType.REMOVE):
             return self.parse_delete()
 
         # DROP TABLE / DATABASE / COLUMN ...
@@ -128,7 +181,7 @@ class Parser:
             raise ParserError(
                 f"Unexpected database statement beginning with '{tok.value}'",
                 tok,
-                "Valid enlgdb statements are: 'create database', 'use database', 'show databases', 'show tables', 'create table', 'insert into', 'select', 'update', 'delete', 'drop table'."
+                "Valid statements: create table/database, use database, show tables, insert/save into, select/find/fetch/get, update, delete/remove, count, hint."
             )
 
     # -------------------------------------------------------------
@@ -186,17 +239,21 @@ class Parser:
         self.consume(TokenType.INDENT, "Expected indented column definitions block", "Indent column definitions by 4 spaces under 'with:'.")
 
         columns: List[ColumnDefNode] = []
+        table_hints: Dict[str, Any] = {}
         while not self.match(TokenType.DEDENT, TokenType.EOF):
             self.skip_newlines()
             if self.match(TokenType.DEDENT, TokenType.EOF):
                 break
 
-            col_def = self.parse_column_def()
-            columns.append(col_def)
+            if self.match(TokenType.HINT):
+                table_hints.update(self.parse_hints_dict())
+            else:
+                col_def = self.parse_column_def()
+                columns.append(col_def)
             self.skip_newlines()
 
         self.consume(TokenType.DEDENT, "Expected dedent after column block")
-        return CreateTableNode(table_name=table_name, columns=columns)
+        return CreateTableNode(table_name=table_name, columns=columns, hints=table_hints)
 
     def parse_column_def(self) -> ColumnDefNode:
         col_name = self.parse_table_or_column_name("column name")
@@ -227,6 +284,7 @@ class Parser:
         default_val = None
         references_table = None
         references_col = None
+        col_hints: Dict[str, Any] = {}
 
         while not self.match(TokenType.NEWLINE, TokenType.DEDENT, TokenType.EOF):
             if self.match(TokenType.PRIMARY):
@@ -253,6 +311,8 @@ class Parser:
                     self.consume(TokenType.LPAREN)
                     references_col = self.parse_table_or_column_name("referenced column")
                     self.consume(TokenType.RPAREN)
+            elif self.match(TokenType.HINT):
+                col_hints.update(self.parse_hints_dict())
             else:
                 break
 
@@ -265,18 +325,24 @@ class Parser:
             unique=unique,
             default_value=default_val,
             references_table=references_table,
-            references_column=references_col
+            references_column=references_col,
+            hints=col_hints
         )
 
     # -------------------------------------------------------------
-    # 2. INSERT INTO
+    # 2. INSERT INTO / SAVE / PUT
     # -------------------------------------------------------------
     def parse_insert(self) -> InsertNode:
-        self.consume(TokenType.INSERT)
-        self.consume(TokenType.INTO, "Expected 'into' after 'insert'", "Use: insert into \"table_name\" values:")
+        self.consume(self.current_token().type)  # INSERT, SAVE, or PUT
+        self.skip_silent_words()
+        if self.match(TokenType.INTO):
+            self.consume(TokenType.INTO)
+        self.skip_silent_words()
         table_name = self.parse_table_or_column_name("table name")
-        self.consume(TokenType.VALUES, "Expected 'values:' after table name", "Use: insert into \"table_name\" values:")
+        self.skip_silent_words()
 
+        if self.match(TokenType.VALUES, TokenType.WITH):
+            self.consume(self.current_token().type)
         if self.match(TokenType.COLON):
             self.consume(TokenType.COLON)
 
@@ -297,50 +363,76 @@ class Parser:
             # Inline single line key-values
             k, v = self.parse_key_value_assignment()
             values[k] = v
-            while self.match(TokenType.COMMA):
-                self.consume(TokenType.COMMA)
+            while self.match(TokenType.COMMA, TokenType.AND):
+                self.consume(self.current_token().type)
+                self.skip_silent_words()
                 k, v = self.parse_key_value_assignment()
                 values[k] = v
 
-        return InsertNode(table_name=table_name, values=values)
+        hints: Dict[str, Any] = {}
+        self.skip_silent_words()
+        if self.match(TokenType.HINT):
+            hints = self.parse_hints_dict()
+
+        return InsertNode(table_name=table_name, values=values, hints=hints)
 
     def parse_key_value_assignment(self) -> tuple:
+        self.skip_silent_words()
         key = self.parse_table_or_column_name("field name")
-        if self.match(TokenType.COLON):
-            self.consume(TokenType.COLON)
-        elif self.match(TokenType.EQUALS):
-            self.consume(TokenType.EQUALS)
-        elif self.match(TokenType.AS):
-            self.consume(TokenType.AS)
-        else:
-            raise ParserError(f"Expected ':' or '=' after field '{key}'", self.current_token(),
-                              f"Use: {key}: value")
+        self.skip_silent_words()
+        if self.match(TokenType.COLON, TokenType.EQUALS, TokenType.AS, TokenType.TO, TokenType.IS):
+            self.consume(self.current_token().type)
 
+        self.skip_silent_words()
         val = self.parse_expression()
         return key, val
 
     # -------------------------------------------------------------
-    # 3. SELECT (DQL)
+    # 3. SELECT (DQL) / FIND / FETCH / GET / SHOW
     # -------------------------------------------------------------
     def parse_select(self) -> SelectNode:
-        self.consume(TokenType.SELECT)
+        self.consume(self.current_token().type)  # SELECT, FIND, FETCH, GET, SHOW
+        self.skip_silent_words()
         distinct = False
         if self.match(TokenType.DISTINCT):
             self.consume(TokenType.DISTINCT)
             distinct = True
+            self.skip_silent_words()
+
+        limit = None
+        # Support: find top 10 ...
+        if self.match(TokenType.TOP):
+            self.consume(TokenType.TOP)
+            self.skip_silent_words()
+            num_tok = self.consume(TokenType.NUMBER_LITERAL, "Expected integer number after 'top'")
+            limit = int(num_tok.value)
+            self.skip_silent_words()
 
         fields: List[Any] = []
         if self.match(TokenType.ALL, TokenType.STAR):
             self.pos += 1
             fields.append("*")
+            self.skip_silent_words()
+        elif self.match(TokenType.FROM, TokenType.IN):
+            # e.g. find from "users" or find top 5 from "users"
+            fields.append("*")
         else:
             fields.append(self.parse_select_field())
-            while self.match(TokenType.COMMA):
-                self.consume(TokenType.COMMA)
+            self.skip_silent_words()
+            while self.match(TokenType.COMMA, TokenType.AND):
+                self.consume(self.current_token().type)
+                self.skip_silent_words()
                 fields.append(self.parse_select_field())
+                self.skip_silent_words()
 
-        self.consume(TokenType.FROM, "Expected 'from' in select statement", "Use: select ... from \"table_name\"")
+        if self.match(TokenType.FROM, TokenType.IN):
+            self.consume(self.current_token().type)
+        else:
+            raise ParserError("Expected 'from' or 'in' in select statement", self.current_token(), "Use: select ... from \"table_name\"")
+
+        self.skip_silent_words()
         table_name = self.parse_table_or_column_name("table name")
+        self.skip_silent_words()
 
         # Joins
         joins: List[JoinNode] = []
@@ -365,37 +457,71 @@ class Parser:
 
         # WHERE
         where = None
+        self.skip_silent_words()
         if self.match(TokenType.WHERE):
             self.consume(TokenType.WHERE)
+            self.skip_silent_words()
             where = self.parse_expression()
 
-        # ORDER BY
+        # ORDER BY / SORTED BY
         order_by = None
-        if self.match(TokenType.ORDER):
-            self.consume(TokenType.ORDER)
-            self.consume(TokenType.BY, "Expected 'by' after 'order'", "Use: order by <field> [ascending/descending]")
+        self.skip_silent_words()
+        if self.match(TokenType.ORDER, TokenType.SORTED):
+            self.consume(self.current_token().type)
+            self.skip_silent_words()
+            if self.match(TokenType.BY):
+                self.consume(TokenType.BY)
+                self.skip_silent_words()
             field_name = self.parse_table_or_column_name("order by field")
             direction = "ASC"
-            if self.match(TokenType.DESCENDING, TokenType.DESC):
+            self.skip_silent_words()
+            if self.match(TokenType.DESCENDING, TokenType.DESC, TokenType.HIGHEST):
                 self.pos += 1
+                if self.match(TokenType.FIRST):
+                    self.consume(TokenType.FIRST)
                 direction = "DESC"
-            elif self.match(TokenType.ASCENDING, TokenType.ASC):
+            elif self.match(TokenType.ASCENDING, TokenType.ASC, TokenType.LOWEST):
                 self.pos += 1
+                if self.match(TokenType.FIRST):
+                    self.consume(TokenType.FIRST)
                 direction = "ASC"
             order_by = OrderByNode(field=field_name, direction=direction)
 
         # LIMIT & OFFSET
-        limit = None
+        self.skip_silent_words()
         offset = None
         if self.match(TokenType.LIMIT):
             self.consume(TokenType.LIMIT)
+            self.skip_silent_words()
+            if self.match(TokenType.TO):
+                self.consume(TokenType.TO)
+                self.skip_silent_words()
             num_tok = self.consume(TokenType.NUMBER_LITERAL, "Expected integer number after 'limit'")
             limit = int(num_tok.value)
 
+        self.skip_silent_words()
         if self.match(TokenType.OFFSET):
             self.consume(TokenType.OFFSET)
+            self.skip_silent_words()
             num_tok = self.consume(TokenType.NUMBER_LITERAL, "Expected integer number after 'offset'")
             offset = int(num_tok.value)
+
+        hints: Dict[str, Any] = {}
+        self.skip_silent_words()
+        if self.match(TokenType.HINT):
+            hints = self.parse_hints_dict()
+        elif self.match(TokenType.COLON):
+            self.consume(TokenType.COLON)
+            if self.match(TokenType.NEWLINE):
+                self.consume(TokenType.NEWLINE)
+            if self.match(TokenType.INDENT):
+                self.consume(TokenType.INDENT)
+                while self.match(TokenType.HINT):
+                    hints.update(self.parse_hints_dict())
+                    if self.match(TokenType.NEWLINE):
+                        self.consume(TokenType.NEWLINE)
+                if self.match(TokenType.DEDENT):
+                    self.consume(TokenType.DEDENT)
 
         return SelectNode(
             fields=fields,
@@ -405,10 +531,12 @@ class Parser:
             order_by=order_by,
             limit=limit,
             offset=offset,
-            distinct=distinct
+            distinct=distinct,
+            hints=hints
         )
 
     def parse_select_field(self) -> Any:
+        self.skip_silent_words()
         tok = self.current_token()
         # Aggregate functions: count(id), avg(points), etc.
         if self.match(TokenType.COUNT, TokenType.SUM, TokenType.AVG, TokenType.MIN, TokenType.MAX):
@@ -423,47 +551,107 @@ class Parser:
         return self.parse_table_or_column_name("field name")
 
     # -------------------------------------------------------------
-    # 4. UPDATE
+    # 3B. TOP-LEVEL COUNT QUERY (Direct English Count)
+    # -------------------------------------------------------------
+    def parse_count_query(self) -> SelectNode:
+        self.consume(TokenType.COUNT)
+        self.skip_silent_words()
+        if self.match(TokenType.ALL, TokenType.STAR):
+            self.consume(self.current_token().type)
+            self.skip_silent_words()
+
+        if self.match(TokenType.FROM, TokenType.IN):
+            self.consume(self.current_token().type)
+        else:
+            raise ParserError("Expected 'from' or 'in' in count statement", self.current_token(),
+                              "Use: count records in \"table_name\" where ...")
+        self.skip_silent_words()
+        table_name = self.parse_table_or_column_name("table name")
+        self.skip_silent_words()
+
+        where = None
+        if self.match(TokenType.WHERE):
+            self.consume(TokenType.WHERE)
+            self.skip_silent_words()
+            where = self.parse_expression()
+
+        hints = {}
+        self.skip_silent_words()
+        if self.match(TokenType.HINT):
+            hints = self.parse_hints_dict()
+
+        return SelectNode(
+            fields=[FunctionCallNode(name="COUNT", arguments=["*"])],
+            table_name=table_name,
+            where=where,
+            hints=hints
+        )
+
+    def parse_standalone_hint(self) -> HintNode:
+        return HintNode(hints=self.parse_hints_dict())
+
+    # -------------------------------------------------------------
+    # 4. UPDATE / CHANGE
     # -------------------------------------------------------------
     def parse_update(self) -> UpdateNode:
-        self.consume(TokenType.UPDATE)
+        self.consume(self.current_token().type)  # UPDATE or CHANGE
+        self.skip_silent_words()
         table_name = self.parse_table_or_column_name("table name")
+        self.skip_silent_words()
         self.consume(TokenType.SET, "Expected 'set' after table name", "Use: update \"table_name\" set col = val where ...")
+        self.skip_silent_words()
 
         assignments: Dict[str, Any] = {}
         k, v = self.parse_key_value_assignment()
         assignments[k] = v
-        while self.match(TokenType.COMMA):
-            self.consume(TokenType.COMMA)
+        while self.match(TokenType.COMMA, TokenType.AND):
+            self.consume(self.current_token().type)
+            self.skip_silent_words()
             k, v = self.parse_key_value_assignment()
             assignments[k] = v
 
         where = None
+        self.skip_silent_words()
         if self.match(TokenType.WHERE):
             self.consume(TokenType.WHERE)
+            self.skip_silent_words()
             where = self.parse_expression()
 
-        return UpdateNode(table_name=table_name, assignments=assignments, where=where)
+        hints = {}
+        self.skip_silent_words()
+        if self.match(TokenType.HINT):
+            hints = self.parse_hints_dict()
+
+        return UpdateNode(table_name=table_name, assignments=assignments, where=where, hints=hints)
 
     # -------------------------------------------------------------
-    # 5. DELETE (With Safety Guard)
+    # 5. DELETE / REMOVE (With Safety Guard)
     # -------------------------------------------------------------
     def parse_delete(self) -> DeleteNode:
-        self.consume(TokenType.DELETE)
+        self.consume(self.current_token().type)  # DELETE or REMOVE
+        self.skip_silent_words()
         is_all = False
         if self.match(TokenType.ALL):
             self.consume(TokenType.ALL)
             is_all = True
+            self.skip_silent_words()
 
-        self.consume(TokenType.FROM, "Expected 'from' after delete", "Use: delete from \"table_name\" where ...")
+        if self.match(TokenType.FROM, TokenType.IN):
+            self.consume(self.current_token().type)
+        else:
+            raise ParserError("Expected 'from' or 'in' after delete", self.current_token(), "Use: delete from \"table_name\" where ...")
+        self.skip_silent_words()
         table_name = self.parse_table_or_column_name("table name")
 
         where = None
+        self.skip_silent_words()
         if self.match(TokenType.WHERE):
             self.consume(TokenType.WHERE)
+            self.skip_silent_words()
             where = self.parse_expression()
 
         confirmation_token = None
+        self.skip_silent_words()
         if self.match(TokenType.CONFIRMED, TokenType.CONFIRM):
             confirmation_token = self.parse_confirmation(f"delete all from {table_name}", f"delete all from {table_name} confirmed")
 
@@ -475,7 +663,12 @@ class Parser:
                 f"To purge all rows safely, use: delete all from \"{table_name}\" confirmed or provide a 'where' clause."
             )
 
-        return DeleteNode(table_name=table_name, is_all=is_all, where=where, confirmation_token=confirmation_token)
+        hints = {}
+        self.skip_silent_words()
+        if self.match(TokenType.HINT):
+            hints = self.parse_hints_dict()
+
+        return DeleteNode(table_name=table_name, is_all=is_all, where=where, confirmation_token=confirmation_token, hints=hints)
 
     # -------------------------------------------------------------
     # 6. DROP TABLE & DROP COLUMN (With Safety Guard)
@@ -588,7 +781,126 @@ class Parser:
         return expr
 
     def parse_comparison(self) -> Any:
+        self.skip_silent_words()
         expr = self.parse_additive()
+        self.skip_silent_words()
+
+        # Natural English comparisons
+        if self.match(TokenType.IS):
+            self.consume(TokenType.IS)
+            self.skip_silent_words()
+            if self.match(TokenType.NOT):
+                self.consume(TokenType.NOT)
+                self.skip_silent_words()
+                if self.match(TokenType.EQUAL, TokenType.EQUALS):
+                    self.consume(self.current_token().type)
+                    if self.match(TokenType.TO):
+                        self.consume(TokenType.TO)
+                right = self.parse_additive()
+                return BinaryOpNode(left=expr, operator="!=", right=right)
+
+            elif self.match(TokenType.GREATER, TokenType.MORE, TokenType.ABOVE):
+                self.consume(self.current_token().type)
+                if self.match(TokenType.THAN):
+                    self.consume(TokenType.THAN)
+                self.skip_silent_words()
+                if self.match(TokenType.OR):
+                    self.consume(TokenType.OR)
+                    if self.match(TokenType.EQUAL, TokenType.EQUALS):
+                        self.consume(self.current_token().type)
+                        if self.match(TokenType.TO):
+                            self.consume(TokenType.TO)
+                    right = self.parse_additive()
+                    return BinaryOpNode(left=expr, operator=">=", right=right)
+                right = self.parse_additive()
+                return BinaryOpNode(left=expr, operator=">", right=right)
+
+            elif self.match(TokenType.AT):
+                self.consume(TokenType.AT)
+                if self.match(TokenType.LEAST):
+                    self.consume(TokenType.LEAST)
+                    right = self.parse_additive()
+                    return BinaryOpNode(left=expr, operator=">=", right=right)
+                elif self.match(TokenType.MOST):
+                    self.consume(TokenType.MOST)
+                    right = self.parse_additive()
+                    return BinaryOpNode(left=expr, operator="<=", right=right)
+
+            elif self.match(TokenType.LESS, TokenType.UNDER, TokenType.BELOW):
+                self.consume(self.current_token().type)
+                if self.match(TokenType.THAN):
+                    self.consume(TokenType.THAN)
+                self.skip_silent_words()
+                if self.match(TokenType.OR):
+                    self.consume(TokenType.OR)
+                    if self.match(TokenType.EQUAL, TokenType.EQUALS):
+                        self.consume(self.current_token().type)
+                        if self.match(TokenType.TO):
+                            self.consume(TokenType.TO)
+                    right = self.parse_additive()
+                    return BinaryOpNode(left=expr, operator="<=", right=right)
+                right = self.parse_additive()
+                return BinaryOpNode(left=expr, operator="<", right=right)
+
+            elif self.match(TokenType.EQUAL, TokenType.EQUALS):
+                self.consume(self.current_token().type)
+                if self.match(TokenType.TO):
+                    self.consume(TokenType.TO)
+                right = self.parse_additive()
+                return BinaryOpNode(left=expr, operator="=", right=right)
+
+            else:
+                right = self.parse_additive()
+                return BinaryOpNode(left=expr, operator="IS", right=right)
+
+        elif self.match(TokenType.AT):
+            self.consume(TokenType.AT)
+            if self.match(TokenType.LEAST):
+                self.consume(TokenType.LEAST)
+                right = self.parse_additive()
+                return BinaryOpNode(left=expr, operator=">=", right=right)
+            elif self.match(TokenType.MOST):
+                self.consume(TokenType.MOST)
+                right = self.parse_additive()
+                return BinaryOpNode(left=expr, operator="<=", right=right)
+
+        elif self.match(TokenType.GREATER, TokenType.MORE, TokenType.ABOVE):
+            self.consume(self.current_token().type)
+            if self.match(TokenType.THAN):
+                self.consume(TokenType.THAN)
+            self.skip_silent_words()
+            if self.match(TokenType.OR):
+                self.consume(TokenType.OR)
+                if self.match(TokenType.EQUAL, TokenType.EQUALS):
+                    self.consume(self.current_token().type)
+                    if self.match(TokenType.TO):
+                        self.consume(TokenType.TO)
+                right = self.parse_additive()
+                return BinaryOpNode(left=expr, operator=">=", right=right)
+            right = self.parse_additive()
+            return BinaryOpNode(left=expr, operator=">", right=right)
+
+        elif self.match(TokenType.LESS, TokenType.UNDER, TokenType.BELOW):
+            self.consume(self.current_token().type)
+            if self.match(TokenType.THAN):
+                self.consume(TokenType.THAN)
+            self.skip_silent_words()
+            if self.match(TokenType.OR):
+                self.consume(TokenType.OR)
+                if self.match(TokenType.EQUAL, TokenType.EQUALS):
+                    self.consume(self.current_token().type)
+                    if self.match(TokenType.TO):
+                        self.consume(TokenType.TO)
+                right = self.parse_additive()
+                return BinaryOpNode(left=expr, operator="<=", right=right)
+            right = self.parse_additive()
+            return BinaryOpNode(left=expr, operator="<", right=right)
+
+        elif self.match(TokenType.EQUALS):
+            self.consume(TokenType.EQUALS)
+            right = self.parse_additive()
+            return BinaryOpNode(left=expr, operator="=", right=right)
+
         op_map = {
             TokenType.EQUALS: "=",
             TokenType.NOT_EQUALS: "!=",
@@ -598,7 +910,8 @@ class Parser:
             TokenType.LTE: "<=",
             TokenType.IS: "IS",
             TokenType.LIKE: "LIKE",
-            TokenType.IN: "IN"
+            TokenType.IN: "IN",
+            TokenType.BETWEEN: "BETWEEN"
         }
         if self.current_token().type in op_map:
             op_tok = self.current_token()
@@ -616,6 +929,7 @@ class Parser:
         return expr
 
     def parse_primary(self) -> Any:
+        self.skip_silent_words()
         tok = self.current_token()
         if self.match(TokenType.NUMBER_LITERAL):
             self.consume(TokenType.NUMBER_LITERAL)
@@ -631,7 +945,6 @@ class Parser:
             return LiteralNode(value=None, literal_type="null")
         elif self.match(TokenType.IDENTIFIER):
             self.consume(TokenType.IDENTIFIER)
-            # Check for dotted identifier: users.id
             name = str(tok.value)
             if self.match(TokenType.DOT):
                 self.consume(TokenType.DOT)
@@ -647,6 +960,7 @@ class Parser:
             raise ParserError(f"Unexpected token in expression: '{tok.value}'", tok)
 
     def parse_literal_or_constant(self) -> Any:
+        self.skip_silent_words()
         tok = self.current_token()
         if self.match(TokenType.NUMBER_LITERAL, TokenType.STRING_LITERAL, TokenType.BOOLEAN_LITERAL, TokenType.NULL_LITERAL):
             self.pos += 1
@@ -657,6 +971,15 @@ class Parser:
         raise ParserError(f"Expected literal default value, found '{tok.value}'", tok)
 
     def parse_table_or_column_name(self, context: str = "identifier") -> str:
+        self.skip_silent_words()
+        # Optional noise words before table or column
+        if self.match(TokenType.TABLE):
+            self.consume(TokenType.TABLE)
+            self.skip_silent_words()
+        elif self.match(TokenType.COLUMN):
+            self.consume(TokenType.COLUMN)
+            self.skip_silent_words()
+
         tok = self.current_token()
         if self.match(TokenType.STRING_LITERAL, TokenType.IDENTIFIER):
             self.pos += 1

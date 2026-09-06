@@ -1,0 +1,54 @@
+type enlgdb
+
+# ==============================================================
+#   ENLNGDB: THE CONVERSATIONAL ENGLISH DATABASE ENGINE
+#   SQL Power in Spoken Prose with Silent Words & Hint Directives
+# ==============================================================
+
+# 1. Table definition with Table & Column Hints
+create table "accounts" with:
+    hint engine: "sqlite"
+    hint journal: "wal"
+    hint description: "High-frequency transactional ledger"
+    id as integer primary key autoincrement
+    account_holder as text not null
+    balance as real default 0.0
+    tier as text default "Standard"
+    status as text default "Active"
+
+# 2. Insert Records using Natural English Verbs ("insert record into", "save into")
+insert record into the table "accounts" values:
+    account_holder: "Bibhu"
+    balance: 85000.0
+    tier: "Gold"
+    status: "Active"
+
+save into "accounts" values:
+    account_holder: "Aero"
+    balance: 145000.0
+    tier: "VIP"
+    status: "Active"
+
+save into "accounts" values:
+    account_holder: "Raj"
+    balance: 24000.0
+    tier: "Standard"
+    status: "Active"
+
+save into "accounts" values:
+    account_holder: "Priya"
+    balance: 98000.0
+    tier: "Platinum"
+    status: "Active"
+
+# 3. Query with Silent Words ("the", "table", "records") & Conversational Comparators ("is at least")
+find the account_holder, the balance from the table "accounts" where balance is at least 80000 sorted by balance highest first
+
+# 4. Top-N Query with Query Optimization Hint
+get top 3 from "accounts" where balance is greater than 50000 sorted by balance highest first hint cache: true
+
+# 5. Direct English Update with "to"
+update "accounts" set tier to "Diamond_VIP" where account_holder is "Aero"
+
+# 6. Direct English Count Query
+count records in "accounts" where status is "Active"

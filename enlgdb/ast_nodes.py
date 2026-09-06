@@ -41,6 +41,11 @@ class DropDatabaseNode(ASTNode):
 
 
 @dataclass
+class HintNode(ASTNode):
+    hints: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
 class ColumnDefNode(ASTNode):
     name: str
     data_type: str
@@ -51,6 +56,7 @@ class ColumnDefNode(ASTNode):
     default_value: Optional[Any] = None
     references_table: Optional[str] = None
     references_column: Optional[str] = None
+    hints: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -58,12 +64,14 @@ class CreateTableNode(ASTNode):
     table_name: str
     columns: List[ColumnDefNode] = field(default_factory=list)
     if_not_exists: bool = True
+    hints: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class InsertNode(ASTNode):
     table_name: str
     values: Dict[str, Any] = field(default_factory=dict)
+    hints: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -120,6 +128,7 @@ class SelectNode(ASTNode):
     limit: Optional[int] = None
     offset: Optional[int] = None
     distinct: bool = False
+    hints: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -127,6 +136,7 @@ class UpdateNode(ASTNode):
     table_name: str
     assignments: Dict[str, Any] = field(default_factory=dict)
     where: Optional[Any] = None
+    hints: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -135,6 +145,7 @@ class DeleteNode(ASTNode):
     is_all: bool = False
     where: Optional[Any] = None
     confirmation_token: Optional[str] = None
+    hints: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
