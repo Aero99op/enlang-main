@@ -323,6 +323,9 @@ def main():
             dart_file = build_enlgm_file(args.file)
             print(f"[enlgm] Running Flutter application...")
             subprocess.run(["flutter", "run"])
+        elif file_lower.endswith(".enlngdb"):
+            from enlngdb.compiler import run_enlngdb_file
+            run_enlngdb_file(args.file)
         elif file_lower.endswith(".enlgdb"):
             from enlgdb.compiler import run_enlgdb_file
             run_enlgdb_file(args.file)
