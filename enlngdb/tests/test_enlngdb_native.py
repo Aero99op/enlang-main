@@ -159,3 +159,22 @@ def test_table_constraints():
     # Duplicate unique email must raise StorageError
     with pytest.raises(StorageError):
         table.insert({"id": 3, "email": "admin@enlangg.org"})
+
+
+def test_semicolon_line_endings_and_chaining():
+    # 1. Standard semicolon line endings
+    code1 = """
+    type enlngdb;
+    create table users with id, name;
+    insert record into users with id 1, name "Bibhu";
+    find records from users;
+    """
+    reports1 = run_enlngdb_source(code1, stream_output=False)
+    assert len(reports1) == 3
+    assert reports1[-1]["count"] == 1
+
+    # 2. Semicolons chaining multiple statements on single line
+    code2 = "create table items with id, title; insert record into items with id 10, title 'Mouse'; find records from items;"
+    reports2 = run_enlngdb_source(code2, stream_output=False)
+    assert len(reports2) == 3
+    assert reports2[-1]["rows"][0]["title"] == "Mouse"

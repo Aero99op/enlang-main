@@ -125,6 +125,7 @@ class TokenType(Enum):
 
     # Symbols & Punctuation
     COLON = auto()
+    SEMICOLON = auto()
     COMMA = auto()
     DOT = auto()
     LPAREN = auto()

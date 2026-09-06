@@ -305,6 +305,9 @@ class Lexer:
             if ch == ':':
                 self.advance()
                 self.tokens.append(Token(TokenType.COLON, ':', self.line, start_col))
+            elif ch == ';':
+                self.advance()
+                self.tokens.append(Token(TokenType.SEMICOLON, ';', self.line, start_col))
             elif ch == ',':
                 self.advance()
                 self.tokens.append(Token(TokenType.COMMA, ',', self.line, start_col))

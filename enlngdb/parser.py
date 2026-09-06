@@ -48,7 +48,7 @@ class Parser:
         raise ParserError(msg, tok, hint)
 
     def skip_newlines(self):
-        while self.match(TokenType.NEWLINE):
+        while self.match(TokenType.NEWLINE, TokenType.SEMICOLON):
             self.pos += 1
 
     def skip_silent_words(self):
@@ -61,7 +61,14 @@ class Parser:
             TokenType.ENTRY, TokenType.ENTRIES,
             TokenType.DATA, TokenType.ITEM, TokenType.ITEMS
         }
+        delimiters = {
+            TokenType.WITH, TokenType.WHERE, TokenType.SET,
+            TokenType.COMMA, TokenType.SEMICOLON, TokenType.NEWLINE,
+            TokenType.EOF, TokenType.COLON, TokenType.EQUALS, TokenType.IS
+        }
         while self.match(*silent_types):
+            if self.peek_token(1).type in delimiters:
+                break
             self.pos += 1
 
     def parse_hints_dict(self) -> Dict[str, Any]:
@@ -115,6 +122,8 @@ class Parser:
             stmt = self.parse_statement()
             if stmt:
                 statements.append(stmt)
+            while self.match(TokenType.SEMICOLON):
+                self.consume(TokenType.SEMICOLON)
             self.skip_newlines()
 
         return ProgramNode(header=header, statements=statements)
@@ -763,6 +772,9 @@ class Parser:
 
         tok = self.current_token()
         if self.match(TokenType.STRING_LITERAL, TokenType.IDENTIFIER):
+            self.pos += 1
+            return str(tok.value)
+        elif tok.type not in (TokenType.WITH, TokenType.WHERE, TokenType.FROM, TokenType.INTO, TokenType.SET, TokenType.EOF, TokenType.SEMICOLON, TokenType.NEWLINE, TokenType.COLON, TokenType.COMMA) and isinstance(tok.value, str):
             self.pos += 1
             return str(tok.value)
         raise ParserError(f"Expected {context}, but found '{tok.value}'", tok)
