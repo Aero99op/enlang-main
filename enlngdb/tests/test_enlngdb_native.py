@@ -17,8 +17,9 @@ def test_no_sql_modules_imported():
     # Ensure sqlite3 is not required for enlngdb core modules
     assert "enlngdb.storage" in sys.modules or True
     # Verify no SQL emitter exists in enlngdb
+    import importlib
     with pytest.raises(ImportError):
-        import enlngdb.emitter  # SQLEmitter does not exist in sovereign enlngdb
+        importlib.import_module("enlngdb.emitter")  # SQLEmitter does not exist in sovereign enlngdb
 
 
 def test_lexer_tokenization():

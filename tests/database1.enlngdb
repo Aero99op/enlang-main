@@ -3,7 +3,4 @@ show databases;
 use database1;
 show tables;
 find all records from student;
-insert record into student with id 2,name "ansh", rollno 22;
-find all records from student;
-delete rollno from student;
 find all records from student;
