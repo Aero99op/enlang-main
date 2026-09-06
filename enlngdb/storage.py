@@ -4,10 +4,12 @@ import json
 import os
 import re
 from pathlib import Path
+from contextlib import contextmanager
 from typing import Dict, List, Any, Optional, Callable
 from enlngdb.ast_nodes import (
     ColumnDefNode, BinaryOpNode, UnaryOpNode, IdentifierNode, LiteralNode, OrderByNode
 )
+from enlngdb.locking import DatabaseLock
 
 
 class StorageError(Exception):
@@ -23,6 +25,7 @@ class Table:
         self.primary_key: Optional[str] = None
         self.indexes: Dict[str, Dict[Any, List[int]]] = {}
         self.auto_increment_counters: Dict[str, int] = {}
+        self.version: int = 1
 
         for col in self.columns:
             if col.is_primary_key:
@@ -43,10 +46,12 @@ class Table:
 
     def insert(self, record: Dict[str, Any]) -> Dict[str, Any]:
         new_row = dict(record)
+        new_row.setdefault("_version", 1)
         self._apply_defaults_and_autoincrement(new_row)
         self._validate_constraints(new_row)
         row_idx = len(self.rows)
         self.rows.append(new_row)
+        self.version += 1
         self._update_indexes(new_row, row_idx)
         return new_row
 
@@ -112,23 +117,28 @@ class Table:
             if filter_fn is None or filter_fn(row):
                 for k, v in assignments.items():
                     row[k] = v
+                row["_version"] = row.get("_version", 1) + 1
                 updated_count += 1
 
-        # Rebuild indexes
-        self._rebuild_indexes()
+        if updated_count > 0:
+            self.version += 1
+            self._rebuild_indexes()
         return updated_count
 
     def delete(self, filter_fn: Optional[Callable[[Dict[str, Any]], bool]]) -> int:
         if filter_fn is None:
             count = len(self.rows)
             self.rows.clear()
+            self.version += 1
             self._rebuild_indexes()
             return count
 
         initial_count = len(self.rows)
         self.rows = [r for r in self.rows if not filter_fn(r)]
         deleted_count = initial_count - len(self.rows)
-        self._rebuild_indexes()
+        if deleted_count > 0:
+            self.version += 1
+            self._rebuild_indexes()
         return deleted_count
 
     def delete_column(self, column_name: str) -> bool:
@@ -140,6 +150,8 @@ class Table:
         if self.primary_key == column_name:
             self.primary_key = None
         self.auto_increment_counters.pop(column_name, None)
+        if existed:
+            self.version += 1
         return existed
 
     def count(self, filter_fn: Optional[Callable[[Dict[str, Any]], bool]] = None) -> int:
@@ -159,6 +171,7 @@ class Table:
         return {
             "name": self.name,
             "hints": self.hints,
+            "version": getattr(self, "version", 1),
             "columns": [
                 {
                     "name": col.name,
@@ -188,6 +201,7 @@ class Table:
                 hints=c.get("hints", {})
             ))
         table = cls(name=data["name"], columns=cols, hints=data.get("hints", {}))
+        table.version = data.get("version", 1)
         table.rows = data.get("rows", [])
         table._rebuild_indexes()
         return table
@@ -269,38 +283,47 @@ class ExpressionEvaluator:
 
 
 class NativeStorageEngine:
-    """Zero-SQL Sovereign Native Storage Engine for Enlangg."""
+    """Zero-SQL Sovereign Native Storage Engine for Enlangg with Thread & Process Concurrency Locking."""
 
     def __init__(self, db_path: Optional[str] = None):
         self.tables: Dict[str, Table] = {}
         self.db_path = db_path
+        self.lock = DatabaseLock(db_path=db_path)
         if db_path and os.path.exists(db_path):
             self.load_from_disk(db_path)
 
+    @contextmanager
+    def transaction(self, timeout: Optional[float] = 10.0):
+        """Atomic transaction context manager holding an exclusive cross-thread/process write lock."""
+        with self.lock.write(timeout=timeout):
+            yield self
+
     def create_table(self, table_name: str, columns: Optional[List[ColumnDefNode]] = None, hints: Optional[Dict[str, Any]] = None, if_not_exists: bool = False) -> Table:
-        if table_name in self.tables and if_not_exists:
-            return self.tables[table_name]
-        table = Table(name=table_name, columns=columns, hints=hints)
-        self.tables[table_name] = table
-        return table
+        with self.lock.write():
+            if table_name in self.tables and if_not_exists:
+                return self.tables[table_name]
+            table = Table(name=table_name, columns=columns, hints=hints)
+            self.tables[table_name] = table
+            return table
 
     def insert(self, table_name: str, values: Dict[str, Any], hints: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        if table_name not in self.tables:
-            # Auto-provision table if not explicitly created
-            self.tables[table_name] = Table(name=table_name, hints=hints)
-        elif hints:
-            self.tables[table_name].hints.update(hints)
+        with self.lock.write():
+            if table_name not in self.tables:
+                # Auto-provision table if not explicitly created
+                self.tables[table_name] = Table(name=table_name, hints=hints)
+            elif hints:
+                self.tables[table_name].hints.update(hints)
 
-        evaluated_values = {}
-        for k, v in values.items():
-            if isinstance(v, LiteralNode):
-                evaluated_values[k] = v.value
-            elif isinstance(v, (IdentifierNode, BinaryOpNode, UnaryOpNode)):
-                evaluated_values[k] = ExpressionEvaluator.evaluate(v, {})
-            else:
-                evaluated_values[k] = v
+            evaluated_values = {}
+            for k, v in values.items():
+                if isinstance(v, LiteralNode):
+                    evaluated_values[k] = v.value
+                elif isinstance(v, (IdentifierNode, BinaryOpNode, UnaryOpNode)):
+                    evaluated_values[k] = ExpressionEvaluator.evaluate(v, {})
+                else:
+                    evaluated_values[k] = v
 
-        return self.tables[table_name].insert(evaluated_values)
+            return self.tables[table_name].insert(evaluated_values)
 
     def find(self,
              table_name: str,
@@ -310,135 +333,144 @@ class NativeStorageEngine:
              limit: Optional[int] = None,
              offset: Optional[int] = None,
              hints: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
-        if table_name not in self.tables:
-            raise StorageError(f"Table '{table_name}' does not exist.")
-        if hints:
-            self.tables[table_name].hints.update(hints)
+        with self.lock.read():
+            if table_name not in self.tables:
+                raise StorageError(f"Table '{table_name}' does not exist.")
+            if hints:
+                self.tables[table_name].hints.update(hints)
 
-        filter_fn = None
-        if where_ast is not None:
-            filter_fn = lambda r: bool(ExpressionEvaluator.evaluate(where_ast, r))
+            filter_fn = None
+            if where_ast is not None:
+                filter_fn = lambda r: bool(ExpressionEvaluator.evaluate(where_ast, r))
 
-        return self.tables[table_name].find(
-            filter_fn=filter_fn,
-            order_by=order_by,
-            limit=limit,
-            offset=offset,
-            fields=fields
-        )
+            return self.tables[table_name].find(
+                filter_fn=filter_fn,
+                order_by=order_by,
+                limit=limit,
+                offset=offset,
+                fields=fields
+            )
 
     def update(self,
                table_name: str,
                assignments: Dict[str, Any],
                where_ast: Optional[Any] = None,
                hints: Optional[Dict[str, Any]] = None) -> int:
-        if table_name not in self.tables:
-            raise StorageError(f"Table '{table_name}' does not exist.")
-        if hints:
-            self.tables[table_name].hints.update(hints)
+        with self.lock.write():
+            if table_name not in self.tables:
+                raise StorageError(f"Table '{table_name}' does not exist.")
+            if hints:
+                self.tables[table_name].hints.update(hints)
 
-        filter_fn = None
-        if where_ast is not None:
-            filter_fn = lambda r: bool(ExpressionEvaluator.evaluate(where_ast, r))
+            filter_fn = None
+            if where_ast is not None:
+                filter_fn = lambda r: bool(ExpressionEvaluator.evaluate(where_ast, r))
 
-        # Evaluate expressions in assignments if needed
-        evaluated_assignments = {}
-        for k, v in assignments.items():
-            if isinstance(v, LiteralNode):
-                evaluated_assignments[k] = v.value
-            elif isinstance(v, (IdentifierNode, BinaryOpNode, UnaryOpNode)):
-                evaluated_assignments[k] = ExpressionEvaluator.evaluate(v, {})
-            else:
-                evaluated_assignments[k] = v
+            # Evaluate expressions in assignments if needed
+            evaluated_assignments = {}
+            for k, v in assignments.items():
+                if isinstance(v, LiteralNode):
+                    evaluated_assignments[k] = v.value
+                elif isinstance(v, (IdentifierNode, BinaryOpNode, UnaryOpNode)):
+                    evaluated_assignments[k] = ExpressionEvaluator.evaluate(v, {})
+                else:
+                    evaluated_assignments[k] = v
 
-        return self.tables[table_name].update(filter_fn=filter_fn, assignments=evaluated_assignments)
+            return self.tables[table_name].update(filter_fn=filter_fn, assignments=evaluated_assignments)
 
     def delete(self,
                table_name: str,
                where_ast: Optional[Any] = None,
                hints: Optional[Dict[str, Any]] = None) -> int:
-        if table_name not in self.tables:
-            raise StorageError(f"Table '{table_name}' does not exist.")
-        if hints:
-            self.tables[table_name].hints.update(hints)
+        with self.lock.write():
+            if table_name not in self.tables:
+                raise StorageError(f"Table '{table_name}' does not exist.")
+            if hints:
+                self.tables[table_name].hints.update(hints)
 
-        filter_fn = None
-        if where_ast is not None:
-            filter_fn = lambda r: bool(ExpressionEvaluator.evaluate(where_ast, r))
+            filter_fn = None
+            if where_ast is not None:
+                filter_fn = lambda r: bool(ExpressionEvaluator.evaluate(where_ast, r))
 
-        return self.tables[table_name].delete(filter_fn=filter_fn)
+            return self.tables[table_name].delete(filter_fn=filter_fn)
 
     def count(self,
               table_name: str,
               where_ast: Optional[Any] = None,
               hints: Optional[Dict[str, Any]] = None) -> int:
-        if table_name not in self.tables:
-            raise StorageError(f"Table '{table_name}' does not exist.")
-        if hints:
-            self.tables[table_name].hints.update(hints)
+        with self.lock.read():
+            if table_name not in self.tables:
+                raise StorageError(f"Table '{table_name}' does not exist.")
+            if hints:
+                self.tables[table_name].hints.update(hints)
 
-        filter_fn = None
-        if where_ast is not None:
-            filter_fn = lambda r: bool(ExpressionEvaluator.evaluate(where_ast, r))
+            filter_fn = None
+            if where_ast is not None:
+                filter_fn = lambda r: bool(ExpressionEvaluator.evaluate(where_ast, r))
 
-        return self.tables[table_name].count(filter_fn=filter_fn)
+            return self.tables[table_name].count(filter_fn=filter_fn)
 
     def delete_column(self, table_name: str, column_name: str) -> bool:
-        if table_name not in self.tables:
-            raise StorageError(f"Table '{table_name}' does not exist.")
-        return self.tables[table_name].delete_column(column_name)
+        with self.lock.write():
+            if table_name not in self.tables:
+                raise StorageError(f"Table '{table_name}' does not exist.")
+            return self.tables[table_name].delete_column(column_name)
 
     def drop_table(self, table_name: str) -> bool:
-        if table_name not in self.tables:
-            raise StorageError(f"Table '{table_name}' does not exist.")
-        del self.tables[table_name]
-        return True
+        with self.lock.write():
+            if table_name not in self.tables:
+                raise StorageError(f"Table '{table_name}' does not exist.")
+            del self.tables[table_name]
+            return True
 
     def drop_database(self, database_name: str, resolved_path: Optional[str] = None) -> bool:
-        target_path = resolved_path or database_name
-        removed = False
-        if os.path.exists(target_path):
-            os.remove(target_path)
-            removed = True
-        if self.db_path and (self.db_path == target_path or Path(self.db_path).stem == database_name):
-            self.tables.clear()
-            self.db_path = None
-        return removed
+        with self.lock.write():
+            target_path = resolved_path or database_name
+            removed = False
+            if os.path.exists(target_path):
+                os.remove(target_path)
+                removed = True
+            if self.db_path and (self.db_path == target_path or Path(self.db_path).stem == database_name):
+                self.tables.clear()
+                self.db_path = None
+            return removed
 
     def save_to_disk(self, file_path: str):
-        payload = {
-            "format": "ENLNGDB_SOVEREIGN_V1",
-            "tables": {name: t.to_dict() for name, t in self.tables.items()}
-        }
-        temp_path = f"{file_path}.tmp"
-        with open(temp_path, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, default=str)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        os.rename(temp_path, file_path)
+        with self.lock.write():
+            payload = {
+                "format": "ENLNGDB_SOVEREIGN_V1",
+                "tables": {name: t.to_dict() for name, t in self.tables.items()}
+            }
+            temp_path = f"{file_path}.tmp"
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2, default=str)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            os.rename(temp_path, file_path)
 
     def load_from_disk(self, file_path: str):
-        if not os.path.exists(file_path):
-            raise StorageError(f"Database file '{file_path}' not found.")
-        if os.path.getsize(file_path) == 0:
-            self.tables.clear()
-            return
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                payload = json.load(f)
-        except (UnicodeDecodeError, json.JSONDecodeError):
+        with self.lock.write():
+            if not os.path.exists(file_path):
+                raise StorageError(f"Database file '{file_path}' not found.")
+            if os.path.getsize(file_path) == 0:
+                self.tables.clear()
+                return
             try:
-                with open(file_path, "rb") as bf:
-                    header = bf.read(16)
-                    if b"SQLite" in header:
-                        raise StorageError(f"File '{file_path}' is a legacy SQLite binary database. EnlngDB is 100% sovereign native and uses .edb format.")
-            except StorageError:
-                raise
-            except Exception:
-                pass
-            raise StorageError(f"File '{file_path}' is not a valid sovereign EnlngDB database file.")
+                with open(file_path, "r", encoding="utf-8") as f:
+                    payload = json.load(f)
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                try:
+                    with open(file_path, "rb") as bf:
+                        header = bf.read(16)
+                        if b"SQLite" in header:
+                            raise StorageError(f"File '{file_path}' is a legacy SQLite binary database. EnlngDB is 100% sovereign native and uses .edb format.")
+                except StorageError:
+                    raise
+                except Exception:
+                    pass
+                raise StorageError(f"File '{file_path}' is not a valid sovereign EnlngDB database file.")
 
-        tables_data = payload.get("tables", {})
-        self.tables.clear()
-        for name, t_dict in tables_data.items():
-            self.tables[name] = Table.from_dict(t_dict)
+            tables_data = payload.get("tables", {})
+            self.tables.clear()
+            for name, t_dict in tables_data.items():
+                self.tables[name] = Table.from_dict(t_dict)

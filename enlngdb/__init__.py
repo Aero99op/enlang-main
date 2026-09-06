@@ -20,6 +20,9 @@ from enlngdb.ast_nodes import (
 from enlngdb.storage import NativeStorageEngine, Table, StorageError
 from enlngdb.engine import NativeExecutionEngine, DatabaseEngine
 from enlngdb.compiler import compile_enlngdb_source, run_enlngdb_source, run_enlngdb_file
+from enlngdb.locking import FileLock, RWLock, DatabaseLock, LockTimeoutError
+from enlngdb.server import EnlngDBHttpServer, serve_enlngdb
+from enlngdb.paging import LRUPageCache, PagedRecordStream, estimate_memory_bytes
 
 __all__ = [
     "Token",
@@ -48,4 +51,13 @@ __all__ = [
     "compile_enlngdb_source",
     "run_enlngdb_source",
     "run_enlngdb_file",
+    "FileLock",
+    "RWLock",
+    "DatabaseLock",
+    "LockTimeoutError",
+    "EnlngDBHttpServer",
+    "serve_enlngdb",
+    "LRUPageCache",
+    "PagedRecordStream",
+    "estimate_memory_bytes",
 ]

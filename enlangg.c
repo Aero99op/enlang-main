@@ -304,6 +304,7 @@ void print_help() {
     printf("  enlangg run <filename.ext>                Run backend / natural English script\n");
     printf("  enlangg run <app.enlngf> --p <port>       Launch interactive Web Studio\n");
     printf("  enlangg run <app.enlngmf> --device <dev>  Deploy live to Android / iOS simulator\n");
+    printf("  enlangg db serve [--port 8080] [--db <file.edb>] Launch sovereign EnlngDB Cloud HTTP Daemon\n");
     printf("  enlangg build <app.enlngmf> --target apk -o <app.apk>  Build production APK\n");
     printf("  enlangg build <app.enlngmf> --target ipa -o <app.ipa>  Build production IPA\n");
 }
@@ -319,14 +320,16 @@ int run_script(const char* filepath) {
         fprintf(stderr, "[ENLANGG ERROR] Could not create temp runner script.\n");
         return 1;
     }
+
     fputs(EMBEDDED_RUNNER, f);
     fclose(f);
 
-    char cmd[MAX_PATH * 4];
-    snprintf(cmd, sizeof(cmd), "python -u -q \"%s\" \"%s\"", temp_script, filepath);
-    int ret = system(cmd);
+    char cmd[MAX_PATH * 2 + 64];
+    snprintf(cmd, sizeof(cmd), "python \"%s\" \"%s\"", temp_script, filepath);
+    int res = system(cmd);
+
     remove(temp_script);
-    return ret;
+    return res;
 }
 
 int main(int argc, char* argv[]) {
@@ -336,13 +339,26 @@ int main(int argc, char* argv[]) {
     }
 
     if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
-        printf("enlangg version %s\n", VERSION);
+        printf("enlangg version %s (Sovereign General Purpose)\n", VERSION);
         return 0;
     }
 
     if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
         print_help();
         return 0;
+    }
+
+    if (strcmp(argv[1], "db") == 0) {
+        if (argc >= 3 && strcmp(argv[2], "serve") == 0) {
+            char cmd[1024] = "python -m enlngdb.server";
+            for (int i = 3; i < argc; i++) {
+                strcat(cmd, " ");
+                strcat(cmd, argv[i]);
+            }
+            return system(cmd);
+        }
+        fprintf(stderr, "[ERROR] Usage: enlangg db serve [--port <port>] [--db <file.edb>]\n");
+        return 1;
     }
 
     if (strcmp(argv[1], "run") == 0) {
