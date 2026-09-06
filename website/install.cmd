@@ -12,13 +12,14 @@ if not exist "%INSTALL_DIR%" (
 
 set "PRIMARY_URL=https://enlangg.vercel.app"
 
-echo [1/3] Installing enlangg ^& enlng executables to: %INSTALL_DIR%
+echo [1/3] Installing enlangg, enlng, & enlngdb executables to: %INSTALL_DIR%
 
 if exist "%~dp0enlangg.exe" (
     if exist "%~dp0enlng.exe" (
         echo   Copying local build binaries...
         copy /y "%~dp0enlangg.exe" "%INSTALL_DIR%\enlangg.exe" >nul
         copy /y "%~dp0enlng.exe" "%INSTALL_DIR%\enlng.exe" >nul
+        if exist "%~dp0enlngdb.exe" copy /y "%~dp0enlngdb.exe" "%INSTALL_DIR%\enlngdb.exe" >nul
         goto :after_copy
     )
 )
@@ -34,6 +35,7 @@ if %errorlevel% neq 0 (
     echo [ERROR] Failed to download enlng.exe from %PRIMARY_URL%
     exit /b 1
 )
+curl -fsSL "%PRIMARY_URL%/enlngdb.exe" -o "%INSTALL_DIR%\enlngdb.exe" 2>nul
 
 :after_copy
 
