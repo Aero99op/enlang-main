@@ -978,6 +978,40 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.run-selection-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.38);
+  color: var(--accent-gold);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 13px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-sans);
+}
+
+.run-selection-btn:hover {
+  background: rgba(251, 191, 36, 0.22);
+  border-color: rgba(251, 191, 36, 0.65);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(251, 191, 36, 0.25);
+}
+
+.run-selection-btn:active {
+  transform: translateY(0);
+}
+
+.run-selection-btn.running {
+  filter: brightness(1.3);
+  transform: scale(0.97);
 }
 
 .run-btn {
@@ -1002,6 +1036,11 @@ html, body {
   box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
 }
 
+.run-btn.running {
+  filter: brightness(1.2);
+  transform: scale(0.97);
+}
+
 .shortcut-kbd {
   font-family: var(--font-mono);
   font-size: 0.68rem;
@@ -1010,6 +1049,78 @@ html, body {
   border-radius: 3px;
   color: rgba(255, 255, 255, 0.85);
   margin-left: 2px;
+}
+
+.sandbox-domain-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+}
+
+.domain-mode-pill {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-sans);
+  text-decoration: none;
+}
+
+.domain-mode-pill:hover {
+  color: var(--text-primary);
+}
+
+.domain-mode-pill.active {
+  background: rgba(16, 185, 129, 0.16);
+  color: var(--accent-emerald);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.domain-mode-pill.active[data-mode="enlngdb"] {
+  background: rgba(251, 191, 36, 0.16);
+  color: var(--accent-gold);
+}
+
+.chip-btn-db {
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.chip-btn-db:hover {
+  border-color: rgba(251, 191, 36, 0.6);
+  color: var(--accent-gold);
+}
+
+.status-db-info {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-gold);
+}
+
+.term-stmt {
+  color: var(--accent-cyan);
+  font-weight: 600;
+  display: block;
+  margin-top: 4px;
+}
+
+.term-success {
+  color: #34d399;
+  display: block;
+}
+
+.term-warn {
+  color: #f59e0b;
+  display: block;
 }
 
 .editor-grid {

@@ -92,15 +92,34 @@
   <!-- Full-Screen Interactive Playground Window -->
   <main class="container" style="padding: 20px 24px 60px;">
     
-    <!-- Template Chips Bar -->
-    <div style="margin-bottom: 12px;">
-      <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Select Template:</div>
-      <div class="chip-bar-scrollable">
+    <!-- Mode Selector & Template Chips Bar -->
+    <div style="margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">
+          Select Sandbox Mode & Template:
+        </div>
+        <div class="sandbox-domain-pills">
+          <button type="button" class="domain-mode-pill active" id="modeCoreBtn" data-mode="enlng">⚡ Core Language (.enlng)</button>
+          <button type="button" class="domain-mode-pill" id="modeDbBtn" data-mode="enlngdb">🗄️ EnlngDB SQL Studio (.enlngdb)</button>
+        </div>
+      </div>
+
+      <!-- Presets for Core Language -->
+      <div class="chip-bar-scrollable" id="corePresetsBar">
         <button type="button" class="chip-btn preset-btn active" data-preset="fibonacci">Fibonacci Series</button>
         <button type="button" class="chip-btn preset-btn" data-preset="factorial">Factorial</button>
         <button type="button" class="chip-btn preset-btn" data-preset="palindrome">Palindrome Check</button>
         <button type="button" class="chip-btn preset-btn" data-preset="even_odd">Even / Odd Filter</button>
         <button type="button" class="chip-btn preset-btn" data-preset="smart_input">Spoken String Formatter</button>
+      </div>
+
+      <!-- Presets for EnlngDB Sovereign Engine -->
+      <div class="chip-bar-scrollable" id="dbPresetsBar" style="display: none;">
+        <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_tour">📊 Quickstart Tour</button>
+        <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_schema">🔍 Schema Discovery</button>
+        <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_crud">👥 Student Registry (CRUD)</button>
+        <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_deletions">🛡️ Deletions & Guards</button>
+        <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_filter">⚡ Filter & Sort</button>
       </div>
     </div>
 
@@ -109,19 +128,34 @@
       
       <!-- Toolbar -->
       <div class="playground-toolbar" style="padding: 12px 18px; background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent-gold); font-weight: 700;">sandbox.enlng</span>
-          <span style="font-size: 0.74rem; color: var(--text-muted);">Enlangg Compiler</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="terminal-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <span id="editorFileBadge" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent-gold); font-weight: 700;">sandbox.enlng</span>
+          <span id="editorEngineBadge" style="font-size: 0.74rem; color: var(--text-muted); background: var(--bg-card); padding: 2px 8px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">Enlangg Compiler</span>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <button type="button" class="btn btn-secondary" id="clearOutputBtn" style="padding: 6px 12px; font-size: 0.8rem;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary" id="resetDbBtn" style="padding: 6px 12px; font-size: 0.78rem;" title="Reset EnlngDB In-Memory Sovereign Database to initial sample tables">
+            Reset DB
+          </button>
+          <button type="button" class="btn btn-secondary" id="clearOutputBtn" style="padding: 6px 12px; font-size: 0.78rem;" title="Clear console output">
             Clear Output
           </button>
-          <button type="button" class="btn btn-primary" id="runCodeBtn" style="padding: 6px 14px; font-size: 0.82rem;">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            <span>Run Code</span>
-            <kbd style="font-size: 0.7rem; background: rgba(0,0,0,0.25); padding: 2px 5px; border-radius: 3px; margin-left: 4px;">Ctrl+↵</kbd>
+          <button type="button" class="run-selection-btn" id="runSelectionBtn" title="Execute only the highlighted query or the statement at the cursor line (Shift + Enter)">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span>Run Line / Selection</span>
+            <kbd class="shortcut-kbd">Shift+↵</kbd>
+          </button>
+          <button type="button" class="run-btn" id="runCodeBtn" title="Execute entire script from top to bottom (Ctrl + Enter)">
+            <svg class="run-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+            <span>Run All</span>
+            <kbd class="shortcut-kbd">Ctrl+↵</kbd>
           </button>
         </div>
       </div>
@@ -144,7 +178,7 @@
 
           <div class="editor-body-wrap">
             <div class="editor-line-numbers" id="lineNumbers"></div>
-            <textarea id="codeEditor" spellcheck="false" aria-label="Enlangg Code Editor" placeholder="Write sovereign enlng code here..."></textarea>
+            <textarea id="codeEditor" spellcheck="false" aria-label="Enlangg Code Editor" placeholder="Write sovereign enlng or enlngdb code here..."></textarea>
           </div>
         </div>
 
@@ -153,7 +187,7 @@
           <div class="panel-header" style="background: rgba(14, 14, 18, 0.95);">
             <div class="panel-tab active">
               <span class="term-status-dot"></span>
-              <span>Execution Terminal (Micro-VM)</span>
+              <span id="terminalTitle">Execution Terminal (Micro-VM)</span>
             </div>
             <div class="terminal-actions">
               <button type="button" class="btn btn-secondary" id="copyTermBtn" style="padding: 4px 10px; font-size: 0.74rem;">Copy</button>
@@ -161,35 +195,64 @@
           </div>
 
           <div class="terminal-body-wrap">
-            <pre class="terminal-body" id="terminalOutput"><span class="term-dim">=== Enlangg Browser Runtime Engine ===
-Ready for execution. Press "Run Code" or hit Ctrl+Enter.</span></pre>
+            <pre class="terminal-body" id="terminalOutput"><span class="term-dim">=== Enlangg & EnlngDB In-Browser Runtime Engine ===
+Ready for execution.
+• Run All: Click "Run All" or press Ctrl+Enter.
+• Run Single Query / Selection: Place cursor on a line or highlight statements, then click "Run Line / Selection" or press Shift+Enter.</span></pre>
           </div>
         </div>
 
       </div>
+
+      <!-- IDE Bottom Status Bar -->
+      <div class="playground-statusbar">
+        <div class="status-left">
+          <span class="status-indicator"></span>
+          <span class="status-text" id="statusEngineText">Runtime Engine Ready</span>
+          <span class="status-separator">|</span>
+          <span id="runtimeExecTime" class="status-time">Execution: Ready</span>
+          <span class="status-separator">|</span>
+          <span class="status-db-info" id="statusActiveDb">Active DB: database1</span>
+        </div>
+        <div class="status-right">
+          <span>Shortcuts: <kbd style="background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono);">Shift+↵</kbd> Line/Selection · <kbd style="background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono);">Ctrl+↵</kbd> All</span>
+          <span class="status-separator">|</span>
+          <span id="editorDomainStatus">Domain: <strong>Core (.enlng)</strong></span>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Quick Reference Cheatsheet Bar Below Sandbox -->
-    <div style="margin-top: 24px; padding: 20px 24px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; font-size: 0.82rem;">
-      <div>
-        <div style="font-weight: 700; color: var(--accent-gold); margin-bottom: 4px;">Variable Assignment</div>
-        <code style="color: var(--text-primary); font-weight: 600;">set x to 10</code>
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">Synonyms: <code>let x = 10</code>, <code>create x as 10</code></div>
+    <!-- Dual Quick Reference Cheatsheet Bar Below Sandbox -->
+    <div style="margin-top: 24px; padding: 24px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <span style="font-size: 0.8rem; font-weight: 800; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 0.08em;">Quick Reference Cheatsheet</span>
+        <span style="font-size: 0.74rem; color: var(--text-muted);">Modern SQL & Natural English Grammar</span>
       </div>
-      <div>
-        <div style="font-weight: 700; color: var(--accent-gold); margin-bottom: 4px;">Mutation & Math</div>
-        <code style="color: var(--text-primary); font-weight: 600;">increase x by 1</code>
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">Or: <code>set x to x plus 1</code>, <code>decrease x by 2</code></div>
-      </div>
-      <div>
-        <div style="font-weight: 700; color: var(--accent-gold); margin-bottom: 4px;">Conditional Logic</div>
-        <code style="color: var(--text-primary); font-weight: 600;">if x is greater than 5:</code>
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">Also: <code>if x &gt; 5:</code>, <code>if x is equal to y:</code></div>
-      </div>
-      <div>
-        <div style="font-weight: 700; color: var(--accent-gold); margin-bottom: 4px;">Output & Input</div>
-        <code style="color: var(--text-primary); font-weight: 600;">display "Value: ", x</code>
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">Input: <code>ask "Enter name: "</code></div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; font-size: 0.82rem;">
+        <div>
+          <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 4px;">EnlngDB Discovery</div>
+          <code style="color: var(--text-primary); font-weight: 600;">show databases;</code><br>
+          <code style="color: var(--text-primary); font-weight: 600;">show tables of database main_db;</code>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Switch DB: <code>use database &lt;name&gt;;</code></div>
+        </div>
+        <div>
+          <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 4px;">EnlngDB DDL & Insertion</div>
+          <code style="color: var(--text-primary); font-weight: 600;">create table users with id, name, marks;</code>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Insert: <code>insert record into users with id 1, name "Vikram", marks 95;</code></div>
+        </div>
+        <div>
+          <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 4px;">EnlngDB Queries & Filtering</div>
+          <code style="color: var(--text-primary); font-weight: 600;">find all records from student;</code>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Where clause: <code>where marks is greater than 80 order by marks desc;</code></div>
+        </div>
+        <div>
+          <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 4px;">EnlngDB Deletions & Guards</div>
+          <code style="color: var(--text-primary); font-weight: 600;">delete column marks from student;</code><br>
+          <code style="color: var(--text-primary); font-weight: 600;">delete from student where id is 1;</code>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Safe Drop: <code>delete table accounts confirmed;</code></div>
+        </div>
       </div>
     </div>
 

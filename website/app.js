@@ -140,7 +140,90 @@ while i is less than or equal to number:
 display "Factorial calculation:"
 display "The factorial of", number, "is", result`,
 
+  // === EnlngDB Sovereign Engine Presets ===
+  enlngdb_tour: `type enlngdb;
+
+// Modern SQL Studio: Press "Run All" (Ctrl+Enter) to execute the whole script
+// Or click on any line & press "Run Line / Selection" (Shift+Enter) to run statement-by-statement!
+
+show databases;
+
+use database1;
+
+show tables;
+
+find all records from student;
+
+find all records from faculty;`,
+
+  enlngdb_schema: `type enlngdb;
+
+// Schema Discovery & Inspection across Sovereign Databases
+show databases;
+
+show tables of database main_db;
+
+show tables of database database1;
+
+use main_db;
+
+find all records from accounts;`,
+
+  enlngdb_crud: `type enlngdb;
+
+// Create Table, Insert Records, and Query with Conditions
+use university_db;
+
+create table scholars with id, name, major, cgpa;
+
+insert record into scholars with id 1, name "Aryan Sharma", major "AI & Robotics", cgpa 9.4;
+insert record into scholars with id 2, name "Meera Sen", major "Quantum Systems", cgpa 9.8;
+insert record into scholars with id 3, name "Dev Patel", major "Distributed Systems", cgpa 8.9;
+
+show tables;
+
+find all records from scholars;
+
+// Filter records with natural where clause
+find all records from scholars where cgpa is greater than 9.0;`,
+
+  enlngdb_deletions: `type enlngdb;
+
+// Sovereign Deletions & Safety Guard Demonstrations
+use main_db;
+
+show tables;
+
+// 1. Delete a specific record
+delete from accounts where id is 3;
+
+// 2. Drop a column permanently from table
+delete column tier from accounts;
+
+find all records from accounts;
+
+// 3. Delete table without 'confirmed' -> triggers security guard!
+delete table accounts;
+
+// 4. Safe drop with 'confirmed' keyword:
+// delete table accounts confirmed;`,
+
+  enlngdb_filter: `type enlngdb;
+
+// Query Filtering and Sorting Expressions
+use database1;
+
+// 1. Filter with comparison operators
+find all records from student where marks is greater than 80;
+
+// 2. Filter with exact equality
+find all records from student where grade is "A";
+
+// 3. Sort records descending
+find all records from student order by marks descending;`,
+
   topic1: `type enlng
+
 
 // Topic 01: Hello World & The Sovereign Declaration
 display "Hello, Sovereign World!"
@@ -223,15 +306,716 @@ display "Enlangg Sovereign C-ABI & Python Ecosystem Layer"
 display "Native access to 400,000+ packages with zero whitelisting"`
 };
 
+// --- 2. Live In-Browser Enlng & EnlngDB Sandbox Engines ---
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// In-Memory Sovereign Database State & Sample Tables
+const INITIAL_SOVEREIGN_DB = {
+  activeDb: 'database1',
+  databases: {
+    'database1': {
+      name: 'database1',
+      tables: {
+        'student': {
+          columns: ['roll_no', 'name', 'marks', 'grade'],
+          rows: [
+            { roll_no: 101, name: 'Vikram Malhotra', marks: 92, grade: 'A' },
+            { roll_no: 102, name: 'Ananya Iyer', marks: 96, grade: 'A+' },
+            { roll_no: 103, name: 'Kabir Mehta', marks: 78, grade: 'B' },
+            { roll_no: 104, name: 'Rhea Sengupta', marks: 85, grade: 'A' },
+            { roll_no: 105, name: 'Arjun Rao', marks: 64, grade: 'C' }
+          ]
+        },
+        'faculty': {
+          columns: ['id', 'name', 'department', 'salary'],
+          rows: [
+            { id: 1, name: 'Dr. Sunita Sen', department: 'Computer Science', salary: 115000 },
+            { id: 2, name: 'Prof. Rajesh Nair', department: 'Mathematics', salary: 98000 }
+          ]
+        }
+      }
+    },
+    'main_db': {
+      name: 'main_db',
+      tables: {
+        'accounts': {
+          columns: ['id', 'holder', 'balance', 'tier'],
+          rows: [
+            { id: 1, holder: 'Aero Technologies', balance: 450000, tier: 'Gold' },
+            { id: 2, holder: 'Apex Global', balance: 89000, tier: 'Platinum' },
+            { id: 3, holder: 'Zenith Studio', balance: 12500, tier: 'Silver' },
+            { id: 4, holder: 'Nova Labs', balance: 230000, tier: 'Gold' }
+          ]
+        },
+        'system_logs': {
+          columns: ['log_id', 'level', 'message', 'source'],
+          rows: [
+            { log_id: 201, level: 'INFO', message: 'Sovereign cluster online', source: 'kernel' },
+            { log_id: 202, level: 'WARN', message: 'Memory allocation limit near 80%', source: 'worker-1' },
+            { log_id: 203, level: 'INFO', message: 'Snapshot persisted to disk', source: 'storage' }
+          ]
+        }
+      }
+    },
+    'university_db': {
+      name: 'university_db',
+      tables: {
+        'courses': {
+          columns: ['code', 'title', 'credits'],
+          rows: [
+            { code: 'CS101', title: 'Compiler Construction', credits: 4 },
+            { code: 'DB201', title: 'Sovereign Database Architecture', credits: 4 },
+            { code: 'SE301', title: 'Systems Engineering & C-ABI', credits: 3 }
+          ]
+        }
+      }
+    }
+  }
+};
+
+let sovereignDB = JSON.parse(JSON.stringify(INITIAL_SOVEREIGN_DB));
+
+function resetSovereignDB() {
+  sovereignDB = JSON.parse(JSON.stringify(INITIAL_SOVEREIGN_DB));
+}
+
+// Formats tabular data as exact, aligned ASCII grid tables like modern CLI / SQL tools
+function formatAsciiTable(headers, rows) {
+  if (!headers || headers.length === 0) return '(0 columns)';
+  if (!rows || rows.length === 0) return 'Empty set (0 rows)';
+
+  const colWidths = {};
+  headers.forEach(h => {
+    colWidths[h] = Math.max(h.length, 1);
+  });
+
+  rows.forEach(row => {
+    headers.forEach(h => {
+      const rawVal = row[h];
+      const val = rawVal !== undefined && rawVal !== null ? String(rawVal) : 'NULL';
+      if (val.length > colWidths[h]) {
+        colWidths[h] = val.length;
+      }
+    });
+  });
+
+  const border = '+' + headers.map(h => '-'.repeat(colWidths[h] + 2)).join('+') + '+';
+  const headerRow = '|' + headers.map(h => ' ' + h.padEnd(colWidths[h]) + ' ').join('|') + '|';
+
+  const dataRows = rows.map(row => {
+    return '|' + headers.map(h => {
+      const rawVal = row[h];
+      const val = rawVal !== undefined && rawVal !== null ? String(rawVal) : 'NULL';
+      const isNum = typeof rawVal === 'number' || (!isNaN(Number(rawVal)) && rawVal !== '');
+      const padded = isNum ? val.padStart(colWidths[h]) : val.padEnd(colWidths[h]);
+      return ' ' + padded + ' ';
+    }).join('|') + '|';
+  });
+
+  return [border, headerRow, border, ...dataRows, border].join('\n');
+}
+
+// Expression and condition evaluator for natural EnlngDB WHERE queries
+function evaluateSingleCondition(row, cond) {
+  const trimmed = cond.trim();
+  if (!trimmed) return true;
+
+  // 1. LIKE pattern: name like "%Malhotra%"
+  const likeMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s+like\s+["']?(.*?)["']?$/i);
+  if (likeMatch) {
+    const col = likeMatch[1];
+    const pattern = likeMatch[2].replace(/%/g, '.*');
+    const val = String(row[col] ?? '');
+    const regex = new RegExp('^' + pattern + '$', 'i');
+    return regex.test(val);
+  }
+
+  // 2. Comparison operators
+  const opPatterns = [
+    { op: '>=', regex: /^([a-zA-Z0-9_]+)\s*(?:>=|is\s+greater\s+than\s+or\s+equal\s+to|is\s+at\s+least)\s*(.*)$/i },
+    { op: '<=', regex: /^([a-zA-Z0-9_]+)\s*(?:<=|is\s+less\s+than\s+or\s+equal\s+to|is\s+at\s+most)\s*(.*)$/i },
+    { op: '!=', regex: /^([a-zA-Z0-9_]+)\s*(?:!=|is\s+not\s+equal\s+to|is\s+not)\s*(.*)$/i },
+    { op: '==', regex: /^([a-zA-Z0-9_]+)\s*(?:==|=|is\s+equal\s+to|is)\s*(.*)$/i },
+    { op: '>', regex: /^([a-zA-Z0-9_]+)\s*(?:>|is\s+greater\s+than)\s*(.*)$/i },
+    { op: '<', regex: /^([a-zA-Z0-9_]+)\s*(?:<|is\s+less\s+than)\s*(.*)$/i }
+  ];
+
+  for (const { op, regex } of opPatterns) {
+    const m = trimmed.match(regex);
+    if (m) {
+      const col = m[1];
+      const targetVal = m[2].trim().replace(/^["']|["']$/g, '');
+      const rowVal = row[col];
+
+      if (rowVal === undefined) return false;
+
+      // Numeric comparison
+      const numRow = Number(rowVal);
+      const numTarget = Number(targetVal);
+      if (!isNaN(numRow) && !isNaN(numTarget) && rowVal !== '' && targetVal !== '') {
+        if (op === '>=') return numRow >= numTarget;
+        if (op === '<=') return numRow <= numTarget;
+        if (op === '>') return numRow > numTarget;
+        if (op === '<') return numRow < numTarget;
+        if (op === '==' || op === '=') return numRow === numTarget;
+        if (op === '!=') return numRow !== numTarget;
+      }
+
+      // String / boolean comparison
+      const strRow = String(rowVal).toLowerCase();
+      const strTarget = String(targetVal).toLowerCase();
+      if (op === '==' || op === '=') return strRow === strTarget;
+      if (op === '!=') return strRow !== strTarget;
+      if (op === '>') return strRow > strTarget;
+      if (op === '<') return strRow < strTarget;
+      if (op === '>=') return strRow >= strTarget;
+      if (op === '<=') return strRow <= strTarget;
+    }
+  }
+
+  return true;
+}
+
+function evaluateWhereCondition(row, whereClause) {
+  if (!whereClause || !whereClause.trim()) return true;
+  const conditions = whereClause.trim().split(/\s+and\s+/i);
+  for (const cond of conditions) {
+    if (!evaluateSingleCondition(row, cond)) return false;
+  }
+  return true;
+}
+
+// Parses comma-separated key value pairs for insert and update
+function parseKeyValuePairs(str) {
+  const items = splitOutsideQuotes(str, ',');
+  const record = {};
+  for (const item of items) {
+    const trimmed = item.trim();
+    if (!trimmed) continue;
+    const match = trimmed.match(/^([a-zA-Z0-9_]+)\s+(.*)$/);
+    if (match) {
+      const key = match[1];
+      let rawVal = match[2].trim();
+      if ((rawVal.startsWith('"') && rawVal.endsWith('"')) || (rawVal.startsWith("'") && rawVal.endsWith("'"))) {
+        record[key] = rawVal.slice(1, -1);
+      } else if (rawVal.toLowerCase() === 'true') {
+        record[key] = true;
+      } else if (rawVal.toLowerCase() === 'false') {
+        record[key] = false;
+      } else if (rawVal.toLowerCase() === 'null') {
+        record[key] = null;
+      } else if (!isNaN(Number(rawVal)) && rawVal !== '') {
+        record[key] = Number(rawVal);
+      } else {
+        record[key] = rawVal;
+      }
+    }
+  }
+  return record;
+}
+
+// Executes an individual EnlngDB statement against sovereign storage
+function executeEnlngDBStatement(statement, engineState) {
+  const stmt = statement.trim().replace(/;+$/, '').trim();
+  if (!stmt) return null;
+
+  if (/^type\s+(?:enlngdb|enlgdb)$/i.test(stmt)) {
+    return {
+      type: 'TYPE_DECLARATION',
+      output: `Sovereign EnlngDB Engine active. Zero SQL dependency.`
+    };
+  }
+
+  // 1. SHOW DATABASES / LIST DATABASES
+  if (/^(?:show\s+databases|list\s+databases)$/i.test(stmt)) {
+    const dbNames = Object.keys(engineState.databases);
+    const rows = dbNames.map(name => ({
+      Database: (name === engineState.activeDb ? '* ' : '  ') + name,
+      Status: name === engineState.activeDb ? 'Active' : 'Ready',
+      Tables: Object.keys(engineState.databases[name].tables).length
+    }));
+    const t0 = performance.now();
+    const tableAscii = formatAsciiTable(['Database', 'Status', 'Tables'], rows);
+    const ms = (performance.now() - t0).toFixed(2);
+    return {
+      type: 'SHOW_DATABASES',
+      output: `${tableAscii}\n${rows.length} database(s) in set (${ms} ms)`
+    };
+  }
+
+  // 2. USE DATABASE <name>
+  const useMatch = stmt.match(/^use(?:\s+database)?\s+["']?([a-zA-Z0-9_\-.]+)["']?$/i);
+  if (useMatch) {
+    const dbName = useMatch[1];
+    if (!engineState.databases[dbName]) {
+      engineState.databases[dbName] = { name: dbName, tables: {} };
+    }
+    engineState.activeDb = dbName;
+    return {
+      type: 'USE_DATABASE',
+      output: `Database changed to '${dbName}'.`
+    };
+  }
+
+  // 3. SHOW TABLES [OF DATABASE <name>]
+  const showTablesMatch = stmt.match(/^(?:show\s+tables|list\s+tables)(?:\s+of\s+database\s+["']?([a-zA-Z0-9_\-.]+)["']?)?$/i);
+  if (showTablesMatch) {
+    const targetDb = showTablesMatch[1] || engineState.activeDb;
+    if (!engineState.databases[targetDb]) {
+      return {
+        type: 'ERROR',
+        error: `Database '${targetDb}' does not exist.`
+      };
+    }
+    const dbObj = engineState.databases[targetDb];
+    const tableNames = Object.keys(dbObj.tables);
+    if (tableNames.length === 0) {
+      return {
+        type: 'SHOW_TABLES',
+        output: `Empty set (0 tables found in '${targetDb}').`
+      };
+    }
+    const rows = tableNames.map(name => {
+      const tbl = dbObj.tables[name];
+      return {
+        Table: name,
+        Columns: (tbl.columns || []).join(', '),
+        'Row Count': (tbl.rows || []).length
+      };
+    });
+    const t0 = performance.now();
+    const tableAscii = formatAsciiTable(['Table', 'Columns', 'Row Count'], rows);
+    const ms = (performance.now() - t0).toFixed(2);
+    return {
+      type: 'SHOW_TABLES',
+      output: `${tableAscii}\n${rows.length} table(s) in '${targetDb}' (${ms} ms)`
+    };
+  }
+
+  // 4. CREATE TABLE <name> WITH <cols>
+  const createTableMatch = stmt.match(/^create\s+table\s+([a-zA-Z0-9_]+)\s+with\s+(.+)$/i);
+  if (createTableMatch) {
+    const tableName = createTableMatch[1];
+    const colListStr = createTableMatch[2];
+    const columns = colListStr.split(',').map(c => c.trim().replace(/^column\s+/i, '')).filter(Boolean);
+    const currentDb = engineState.databases[engineState.activeDb];
+    currentDb.tables[tableName] = {
+      columns,
+      rows: []
+    };
+    return {
+      type: 'CREATE_TABLE',
+      output: `Query OK: Table '${tableName}' created in '${engineState.activeDb}' with ${columns.length} columns: [${columns.join(', ')}].`
+    };
+  }
+
+  // 5. INSERT RECORD INTO <name> WITH <k1 v1, ...>
+  const insertMatch = stmt.match(/^insert\s+record\s+into\s+([a-zA-Z0-9_]+)\s+with\s+(.+)$/i);
+  if (insertMatch) {
+    const tableName = insertMatch[1];
+    const keyValsStr = insertMatch[2];
+    const currentDb = engineState.databases[engineState.activeDb];
+    if (!currentDb.tables[tableName]) {
+      return {
+        type: 'ERROR',
+        error: `Table '${tableName}' does not exist in active database '${engineState.activeDb}'.`
+      };
+    }
+    const table = currentDb.tables[tableName];
+    const newRecord = parseKeyValuePairs(keyValsStr);
+
+    Object.keys(newRecord).forEach(k => {
+      if (!table.columns.includes(k)) {
+        table.columns.push(k);
+      }
+    });
+
+    table.rows.push(newRecord);
+    return {
+      type: 'INSERT',
+      output: `Query OK, 1 record successfully inserted into '${tableName}'.`
+    };
+  }
+
+  // 6. FIND / SHOW ALL RECORDS / VALUES FROM <name> [WHERE ...] [ORDER BY ...]
+  const findMatch = stmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)(?:\s+where\s+(.+?))?(?:\s+order\s+by\s+([a-zA-Z0-9_]+)(?:\s+(ascending|descending|asc|desc))?)?$/i);
+  if (findMatch) {
+    const tableName = findMatch[1];
+    const whereClause = findMatch[2];
+    const sortCol = findMatch[3];
+    const sortDir = findMatch[4];
+
+    const currentDb = engineState.databases[engineState.activeDb];
+    if (!currentDb.tables[tableName]) {
+      return {
+        type: 'ERROR',
+        error: `Table '${tableName}' does not exist in active database '${engineState.activeDb}'.`
+      };
+    }
+
+    const table = currentDb.tables[tableName];
+    let matchedRows = (table.rows || []).filter(r => evaluateWhereCondition(r, whereClause));
+
+    if (sortCol) {
+      const isDesc = Boolean(sortDir && sortDir.toLowerCase().startsWith('desc'));
+      matchedRows = [...matchedRows].sort((a, b) => {
+        const vA = a[sortCol];
+        const vB = b[sortCol];
+        if (vA === vB) return 0;
+        if (vA === undefined) return isDesc ? 1 : -1;
+        if (vB === undefined) return isDesc ? -1 : 1;
+        if (typeof vA === 'number' && typeof vB === 'number') {
+          return isDesc ? vB - vA : vA - vB;
+        }
+        return isDesc ? String(vB).localeCompare(String(vA)) : String(vA).localeCompare(String(vB));
+      });
+    }
+
+    const t0 = performance.now();
+    const tableAscii = formatAsciiTable(table.columns, matchedRows);
+    const ms = (performance.now() - t0).toFixed(2);
+    return {
+      type: 'FIND',
+      output: `${tableAscii}\n${matchedRows.length} row(s) in set (${ms} ms)`
+    };
+  }
+
+  // 7. COUNT RECORDS IN <name>
+  const countMatch = stmt.match(/^count\s+records\s+in\s+([a-zA-Z0-9_]+)(?:\s+where\s+(.+))?$/i);
+  if (countMatch) {
+    const tableName = countMatch[1];
+    const whereClause = countMatch[2];
+    const currentDb = engineState.databases[engineState.activeDb];
+    if (!currentDb.tables[tableName]) {
+      return { type: 'ERROR', error: `Table '${tableName}' not found.` };
+    }
+    const table = currentDb.tables[tableName];
+    const count = table.rows.filter(r => evaluateWhereCondition(r, whereClause)).length;
+    return {
+      type: 'COUNT',
+      output: formatAsciiTable(['Table', 'Count'], [{ Table: tableName, Count: count }])
+    };
+  }
+
+  // 8. UPDATE RECORDS IN <name> SET <col> = <val> [WHERE ...]
+  const updateMatch = stmt.match(/^update\s+(?:records\s+in\s+|table\s+)?([a-zA-Z0-9_]+)\s+set\s+(.+?)(?:\s+where\s+(.+))?$/i);
+  if (updateMatch) {
+    const tableName = updateMatch[1];
+    const setClause = updateMatch[2];
+    const whereClause = updateMatch[3];
+    const currentDb = engineState.databases[engineState.activeDb];
+    if (!currentDb.tables[tableName]) {
+      return { type: 'ERROR', error: `Table '${tableName}' not found.` };
+    }
+    const table = currentDb.tables[tableName];
+    const assignments = parseKeyValuePairs(setClause.replace(/=/g, ' '));
+    let affected = 0;
+    table.rows.forEach(r => {
+      if (evaluateWhereCondition(r, whereClause)) {
+        Object.assign(r, assignments);
+        affected++;
+      }
+    });
+    return {
+      type: 'UPDATE',
+      output: `Query OK, ${affected} row(s) updated in '${tableName}'.`
+    };
+  }
+
+  // 9. DELETE COLUMN <col> FROM <name>
+  const delColMatch = stmt.match(/^delete\s+(?:column\s+)?([a-zA-Z0-9_]+)\s+from\s+([a-zA-Z0-9_]+)$/i);
+  if (delColMatch) {
+    const colName = delColMatch[1];
+    const tableName = delColMatch[2];
+    const currentDb = engineState.databases[engineState.activeDb];
+    if (!currentDb.tables[tableName]) {
+      return { type: 'ERROR', error: `Table '${tableName}' not found in '${engineState.activeDb}'.` };
+    }
+    const table = currentDb.tables[tableName];
+    table.columns = table.columns.filter(c => c !== colName);
+    table.rows.forEach(r => delete r[colName]);
+    return {
+      type: 'DELETE_COLUMN',
+      output: `Query OK: Column '${colName}' dropped from table '${tableName}'.`
+    };
+  }
+
+  // 10. DELETE FROM <name> [WHERE ...]
+  const delRowMatch = stmt.match(/^delete\s+from\s+([a-zA-Z0-9_]+)(?:\s+where\s+(.+))?$/i);
+  if (delRowMatch) {
+    const tableName = delRowMatch[1];
+    const whereClause = delRowMatch[2];
+    const currentDb = engineState.databases[engineState.activeDb];
+    if (!currentDb.tables[tableName]) {
+      return { type: 'ERROR', error: `Table '${tableName}' not found.` };
+    }
+    const table = currentDb.tables[tableName];
+    const initialLen = table.rows.length;
+    table.rows = table.rows.filter(r => !evaluateWhereCondition(r, whereClause));
+    const deletedCount = initialLen - table.rows.length;
+    return {
+      type: 'DELETE',
+      output: `Query OK, ${deletedCount} row(s) deleted from '${tableName}'.`
+    };
+  }
+
+  // 11. DELETE TABLE <name> [confirmed]
+  const delTableMatch = stmt.match(/^delete\s+table\s+([a-zA-Z0-9_]+)(?:\s+(confirmed))?$/i);
+  if (delTableMatch) {
+    const tableName = delTableMatch[1];
+    const isConfirmed = Boolean(delTableMatch[2]);
+    const currentDb = engineState.databases[engineState.activeDb];
+    if (!currentDb.tables[tableName]) {
+      return { type: 'ERROR', error: `Table '${tableName}' does not exist in '${engineState.activeDb}'.` };
+    }
+    if (!isConfirmed) {
+      return {
+        type: 'SECURITY_GUARD',
+        output: `[SECURITY GUARD] Table drop aborted! Confirmation required.\nTo permanently drop this table and purge all records, run:\n  delete table ${tableName} confirmed;`
+      };
+    }
+    delete currentDb.tables[tableName];
+    return {
+      type: 'DROP_TABLE',
+      output: `Query OK: Table '${tableName}' permanently dropped from '${engineState.activeDb}'.`
+    };
+  }
+
+  // 12. DELETE DATABASE <name> [confirmed]
+  const delDbMatch = stmt.match(/^delete\s+database\s+["']?([a-zA-Z0-9_\-.]+)["']?(?:\s+(confirmed))?$/i);
+  if (delDbMatch) {
+    const dbName = delDbMatch[1];
+    const isConfirmed = Boolean(delDbMatch[2]);
+    if (!engineState.databases[dbName]) {
+      return { type: 'ERROR', error: `Database '${dbName}' does not exist.` };
+    }
+    if (!isConfirmed) {
+      return {
+        type: 'SECURITY_GUARD',
+        output: `[SECURITY GUARD] Database drop aborted! Confirmation required.\nTo permanently drop this database and all tables, run:\n  delete database ${dbName} confirmed;`
+      };
+    }
+    delete engineState.databases[dbName];
+    if (engineState.activeDb === dbName) {
+      const remaining = Object.keys(engineState.databases);
+      engineState.activeDb = remaining.length > 0 ? remaining[0] : 'main_db';
+      if (!engineState.databases[engineState.activeDb]) {
+        engineState.databases[engineState.activeDb] = { name: engineState.activeDb, tables: {} };
+      }
+    }
+    return {
+      type: 'DROP_DATABASE',
+      output: `Query OK: Database '${dbName}' permanently dropped.`
+    };
+  }
+
+  return {
+    type: 'UNKNOWN',
+    error: `EnlngDB Syntax Error: Unrecognized statement: '${stmt}'. Check syntax or run 'show databases;'`
+  };
+}
+
+// Extracts executable statements from a script, handling semicolons, newlines, and comments
+function extractStatements(text) {
+  const cleanLines = [];
+  for (const rawLine of text.split('\n')) {
+    const trimmed = rawLine.trim();
+    if (!trimmed) continue;
+    if (trimmed.startsWith('//') || trimmed.startsWith('--') || trimmed.startsWith('#')) {
+      continue;
+    }
+    cleanLines.push(trimmed);
+  }
+
+  const combined = cleanLines.join('\n');
+  if (!combined.trim()) return [];
+
+  if (combined.includes(';')) {
+    const rawStmts = splitOutsideQuotes(combined, ';');
+    const stmts = [];
+    for (const s of rawStmts) {
+      const t = s.trim();
+      if (!t) continue;
+      if (/^type\s+(?:enlngdb|enlgdb|enlng)$/i.test(t)) continue;
+      stmts.push(t);
+    }
+    return stmts;
+  }
+
+  const stmts = [];
+  for (const line of cleanLines) {
+    const t = line.trim();
+    if (!t) continue;
+    if (/^type\s+(?:enlngdb|enlgdb|enlng)$/i.test(t)) continue;
+    stmts.push(t);
+  }
+  return stmts;
+}
+
+// Identifies if source code belongs to EnlngDB database engine
+function isEnlngDbCode(code) {
+  const trimmed = code.trim().toLowerCase();
+  if (trimmed.startsWith('type enlngdb') || trimmed.startsWith('type enlgdb')) {
+    return true;
+  }
+  const dbPatterns = [
+    /\bshow\s+databases\b/i,
+    /\buse\s+database\b/i,
+    /\buse\s+[a-zA-Z0-9_\-.]+\s*;/i,
+    /\bshow\s+tables\b/i,
+    /\bcreate\s+table\b/i,
+    /\binsert\s+record\s+into\b/i,
+    /\bfind\s+all\s+records\b/i,
+    /\bshow\s+all\s+records\b/i,
+    /\bfind\s+records\s+from\b/i,
+    /\bdelete\s+column\b/i,
+    /\bdelete\s+table\b/i,
+    /\bdelete\s+database\b/i
+  ];
+  return dbPatterns.some(regex => regex.test(code));
+}
+
+// Retrieves either full code, highlighted selection, or current statement under cursor
+function getQueryToExecute(editor, isSelectionOnly) {
+  const fullText = editor.value;
+  if (!isSelectionOnly) {
+    return { text: fullText, mode: 'all', lineInfo: 'all', lineNum: 1 };
+  }
+
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+
+  // Highlighted selection
+  if (start !== end) {
+    const selectedText = fullText.substring(start, end).trim();
+    if (selectedText.length > 0) {
+      const lineStart = fullText.substring(0, start).split('\n').length;
+      const lineEnd = fullText.substring(0, end).split('\n').length;
+      const lineInfo = lineStart === lineEnd ? `line ${lineStart}` : `lines ${lineStart}-${lineEnd}`;
+      return { text: selectedText, mode: 'selection', lineInfo, lineNum: lineStart };
+    }
+  }
+
+  // Single line at cursor
+  const textBefore = fullText.substring(0, start);
+  const prevNewline = textBefore.lastIndexOf('\n');
+  const lineStartIdx = prevNewline === -1 ? 0 : prevNewline + 1;
+
+  let lineEndIdx = fullText.indexOf('\n', start);
+  if (lineEndIdx === -1) lineEndIdx = fullText.length;
+
+  const currentLine = fullText.substring(lineStartIdx, lineEndIdx).trim();
+  const currentLineNum = fullText.substring(0, lineStartIdx).split('\n').length;
+
+  return {
+    text: currentLine,
+    mode: 'line',
+    lineInfo: `line ${currentLineNum}`,
+    lineNum: currentLineNum
+  };
+}
+
+// Executes statements in browser against sovereign database store
+function executeEnlngDB(statementsToRun, terminal, executionMeta = { mode: 'all' }) {
+  const outputs = [];
+  const tStart = performance.now();
+
+  if (executionMeta.mode === 'line') {
+    outputs.push(`<span class="term-dim">// ▶ Executing line ${executionMeta.lineNum}:</span>`);
+  } else if (executionMeta.mode === 'selection') {
+    outputs.push(`<span class="term-dim">// ▶ Executing selection (${executionMeta.lineInfo}):</span>`);
+  } else {
+    outputs.push(`<span class="term-dim">// === EnlngDB In-Browser Engine (Active DB: ${sovereignDB.activeDb}) ===</span>`);
+  }
+
+  if (statementsToRun.length === 0) {
+    if (executionMeta.mode === 'line') {
+      outputs.push(`<span class="term-warn">[EnlngDB] No executable query found on line ${executionMeta.lineNum}. Place cursor on a query statement or highlight code to execute.</span>`);
+    } else {
+      outputs.push(`<span class="term-dim">// 0 executable statements found.</span>`);
+    }
+    terminal.innerHTML = outputs.join('\n');
+    return;
+  }
+
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < statementsToRun.length; i++) {
+    const stmt = statementsToRun[i];
+    const stmtPrefix = statementsToRun.length > 1 ? `[${i + 1}/${statementsToRun.length}] ` : '';
+
+    outputs.push(`<span class="term-stmt">${escapeHtml(stmtPrefix + stmt)};</span>`);
+
+    try {
+      const res = executeEnlngDBStatement(stmt, sovereignDB);
+      if (!res) continue;
+
+      if (res.type === 'ERROR' || res.error) {
+        failCount++;
+        outputs.push(`<span class="term-err">${escapeHtml(res.error)}</span>\n`);
+      } else if (res.type === 'SECURITY_GUARD') {
+        outputs.push(`<span class="term-warn">${escapeHtml(res.output)}</span>\n`);
+      } else {
+        successCount++;
+        outputs.push(`<span class="term-success">${escapeHtml(res.output)}</span>\n`);
+      }
+    } catch (err) {
+      failCount++;
+      outputs.push(`<span class="term-err">EnlngDB Execution Error: ${escapeHtml(err.message)}</span>\n`);
+    }
+  }
+
+  const tEnd = performance.now();
+  const totalMs = (tEnd - tStart).toFixed(2);
+
+  if (executionMeta.mode === 'all') {
+    outputs.push(`<span class="term-dim">// Finished: ${successCount} succeeded, ${failCount} failed (${totalMs} ms)</span>`);
+  }
+
+  terminal.innerHTML = outputs.join('\n');
+  terminal.scrollTop = terminal.scrollHeight;
+
+  // Update status indicators
+  const timePill = document.getElementById('runtimeExecTime');
+  if (timePill) timePill.textContent = `Execution: ${totalMs}ms (In-Memory Micro-VM)`;
+
+  const activeDbElem = document.getElementById('statusActiveDb');
+  if (activeDbElem) {
+    activeDbElem.textContent = `Active DB: ${sovereignDB.activeDb}`;
+    activeDbElem.style.display = 'inline-block';
+  }
+}
+
 function initPlayground() {
   const editor = document.getElementById('codeEditor');
   const terminal = document.getElementById('terminalOutput');
   const runBtn = document.getElementById('runCodeBtn');
+  const runSelectionBtn = document.getElementById('runSelectionBtn');
   const clearBtn = document.getElementById('clearOutputBtn');
-  const copyOutputBtn = document.getElementById('copyOutputBtn');
-  const lineNumbersElem = document.getElementById('editorLineNumbers');
+  const resetDbBtn = document.getElementById('resetDbBtn');
+  const copyOutputBtn = document.getElementById('copyOutputBtn') || document.getElementById('copyTermBtn');
+  const lineNumbersElem = document.getElementById('editorLineNumbers') || document.getElementById('lineNumbers');
   const lineCountElem = document.getElementById('editorLineCount');
   const presetBtns = document.querySelectorAll('.preset-btn');
+  const modeCoreBtn = document.getElementById('modeCoreBtn');
+  const modeDbBtn = document.getElementById('modeDbBtn');
+  const corePresetsBar = document.getElementById('corePresetsBar');
+  const dbPresetsBar = document.getElementById('dbPresetsBar');
+  const editorFileBadge = document.getElementById('editorFileBadge');
+  const editorEngineBadge = document.getElementById('editorEngineBadge');
+  const editorDomainStatus = document.getElementById('editorDomainStatus');
+  const statusActiveDb = document.getElementById('statusActiveDb');
+  const statusEngineText = document.getElementById('statusEngineText');
 
   function updateLineNumbers() {
     if (!editor || !lineNumbersElem) return;
@@ -244,34 +1028,62 @@ function initPlayground() {
     lineNumbersElem.innerHTML = numsHtml;
   }
 
+  function syncDomainVisuals() {
+    if (!editor) return;
+    const isDb = isEnlngDbCode(editor.value);
+    if (isDb) {
+      if (editorFileBadge) editorFileBadge.textContent = 'sandbox.enlngdb';
+      if (editorEngineBadge) editorEngineBadge.textContent = 'EnlngDB Sovereign Engine';
+      if (editorDomainStatus) editorDomainStatus.innerHTML = 'Domain: <strong>Database (.enlngdb)</strong>';
+      if (statusActiveDb) {
+        statusActiveDb.style.display = 'inline-block';
+        statusActiveDb.textContent = `Active DB: ${sovereignDB.activeDb}`;
+      }
+      if (statusEngineText) statusEngineText.textContent = 'EnlngDB Engine Ready';
+    } else {
+      if (editorFileBadge) editorFileBadge.textContent = 'sandbox.enlng';
+      if (editorEngineBadge) editorEngineBadge.textContent = 'Enlangg Compiler';
+      if (editorDomainStatus) editorDomainStatus.innerHTML = 'Domain: <strong>Core (.enlng)</strong>';
+      if (statusActiveDb) statusActiveDb.style.display = 'none';
+      if (statusEngineText) statusEngineText.textContent = 'Sovereign VM Engine Ready';
+    }
+  }
+
   if (editor && lineNumbersElem) {
-    editor.addEventListener('input', updateLineNumbers);
+    editor.addEventListener('input', () => {
+      updateLineNumbers();
+      syncDomainVisuals();
+    });
     editor.addEventListener('scroll', () => {
       lineNumbersElem.scrollTop = editor.scrollTop;
     });
   }
 
-  // Check URL parameters for ?topic=1..8 or ?code=...
-  const urlParams = new URLSearchParams(window.location.search);
-  const topicParam = urlParams.get('topic');
-  const codeParam = urlParams.get('code');
-
-  if (topicParam && (CODE_PRESETS['topic' + topicParam] || CODE_PRESETS[topicParam])) {
-    const key = CODE_PRESETS['topic' + topicParam] ? ('topic' + topicParam) : topicParam;
-    if (editor) {
-      editor.value = CODE_PRESETS[key];
-      updateLineNumbers();
-    }
-  } else if (codeParam) {
-    try {
-      if (editor) {
-        editor.value = decodeURIComponent(codeParam);
+  // Mode toggles
+  if (modeCoreBtn && modeDbBtn) {
+    modeCoreBtn.addEventListener('click', () => {
+      modeCoreBtn.classList.add('active');
+      modeDbBtn.classList.remove('active');
+      if (corePresetsBar) corePresetsBar.style.display = 'flex';
+      if (dbPresetsBar) dbPresetsBar.style.display = 'none';
+      if (editor && CODE_PRESETS.fibonacci) {
+        editor.value = CODE_PRESETS.fibonacci;
         updateLineNumbers();
+        syncDomainVisuals();
       }
-    } catch(e) {}
-  } else if (editor && CODE_PRESETS.fibonacci) {
-    editor.value = CODE_PRESETS.fibonacci;
-    updateLineNumbers();
+    });
+
+    modeDbBtn.addEventListener('click', () => {
+      modeDbBtn.classList.add('active');
+      modeCoreBtn.classList.remove('active');
+      if (corePresetsBar) corePresetsBar.style.display = 'none';
+      if (dbPresetsBar) dbPresetsBar.style.display = 'flex';
+      if (editor && CODE_PRESETS.enlngdb_tour) {
+        editor.value = CODE_PRESETS.enlngdb_tour;
+        updateLineNumbers();
+        syncDomainVisuals();
+      }
+    });
   }
 
   // Preset buttons
@@ -280,19 +1092,66 @@ function initPlayground() {
       presetBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const presetName = btn.getAttribute('data-preset');
-      if (CODE_PRESETS[presetName]) {
+      if (CODE_PRESETS[presetName] && editor) {
         editor.value = CODE_PRESETS[presetName];
         updateLineNumbers();
+        syncDomainVisuals();
       }
     });
   });
 
+  // URL parameters handling
+  const urlParams = new URLSearchParams(window.location.search);
+  const topicParam = urlParams.get('topic');
+  const presetParam = urlParams.get('preset');
+  const codeParam = urlParams.get('code');
+
+  if (topicParam && (CODE_PRESETS['topic' + topicParam] || CODE_PRESETS[topicParam])) {
+    const key = CODE_PRESETS['topic' + topicParam] ? ('topic' + topicParam) : topicParam;
+    if (editor) {
+      editor.value = CODE_PRESETS[key];
+      updateLineNumbers();
+      syncDomainVisuals();
+    }
+  } else if (presetParam && CODE_PRESETS[presetParam]) {
+    if (editor) {
+      editor.value = CODE_PRESETS[presetParam];
+      updateLineNumbers();
+      syncDomainVisuals();
+    }
+  } else if (codeParam) {
+    try {
+      if (editor) {
+        editor.value = decodeURIComponent(codeParam);
+        updateLineNumbers();
+        syncDomainVisuals();
+      }
+    } catch(e) {}
+  } else if (editor) {
+    if (!editor.value.trim()) {
+      editor.value = CODE_PRESETS.fibonacci;
+    }
+    updateLineNumbers();
+    syncDomainVisuals();
+  }
+
+  // Clear button
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
-      terminal.innerHTML = '<span class="term-dim">// Terminal cleared. Press Run Code or Ctrl+Enter to execute.</span>';
+      terminal.innerHTML = '<span class="term-dim">// Terminal cleared. Press Run All (Ctrl+Enter) or Run Selection (Shift+Enter).</span>';
     });
   }
 
+  // Reset DB button
+  if (resetDbBtn) {
+    resetDbBtn.addEventListener('click', () => {
+      resetSovereignDB();
+      syncDomainVisuals();
+      terminal.innerHTML = `<span class="term-success">[EnlngDB] Sovereign in-memory database storage reset to initial sample seed:\n • database1 (tables: student, faculty)\n • main_db (tables: accounts, system_logs)\n • university_db (tables: courses)\nActive database: ${sovereignDB.activeDb}</span>`;
+    });
+  }
+
+  // Copy button
   if (copyOutputBtn) {
     copyOutputBtn.addEventListener('click', async () => {
       const text = terminal.textContent;
@@ -307,26 +1166,75 @@ function initPlayground() {
     });
   }
 
-  const runCode = () => {
+  // Execute Entire Script (Run All)
+  const runAll = () => {
+    if (!editor || !terminal) return;
     if (runBtn) {
       runBtn.classList.add('running');
       setTimeout(() => runBtn.classList.remove('running'), 200);
     }
-    executeEnlngInBrowser(editor.value, terminal);
+    const code = editor.value;
+    if (isEnlngDbCode(code)) {
+      const stmts = extractStatements(code);
+      executeEnlngDB(stmts, terminal, { mode: 'all' });
+    } else {
+      executeEnlngInBrowser(code, terminal);
+    }
+  };
+
+  // Execute Selection or Current Line
+  const runSelection = () => {
+    if (!editor || !terminal) return;
+    if (runSelectionBtn) {
+      runSelectionBtn.classList.add('running');
+      setTimeout(() => runSelectionBtn.classList.remove('running'), 200);
+    }
+    const queryData = getQueryToExecute(editor, true);
+    if (!queryData.text || !queryData.text.trim()) {
+      terminal.innerHTML = `<span class="term-warn">[Sandbox] Cursor is on an empty line (${queryData.lineInfo}). Place cursor on code or highlight queries to execute.</span>`;
+      return;
+    }
+
+    if (isEnlngDbCode(editor.value) || isEnlngDbCode(queryData.text)) {
+      const stmts = extractStatements(queryData.text);
+      executeEnlngDB(stmts, terminal, queryData);
+    } else {
+      executeEnlngInBrowser(queryData.text, terminal, true);
+    }
   };
 
   if (runBtn) {
-    runBtn.addEventListener('click', runCode);
+    runBtn.addEventListener('click', runAll);
   }
 
-  // Ctrl + Enter shortcut support
+  if (runSelectionBtn) {
+    runSelectionBtn.addEventListener('click', runSelection);
+  }
+
+  // Keyboard Shortcuts: Ctrl+Enter (Run All), Shift+Enter / Ctrl+Shift+Enter / Alt+Enter (Run Selection/Line)
   window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    // Ctrl + Shift + Enter or Alt + Enter: Run Selection
+    if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Enter') || (e.altKey && e.key === 'Enter')) {
       e.preventDefault();
-      runCode();
+      runSelection();
+      return;
+    }
+
+    // Ctrl + Enter: Run All
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      runAll();
+      return;
+    }
+
+    // Shift + Enter inside editor: Run Selection or Current Line
+    if (e.shiftKey && e.key === 'Enter' && !e.ctrlKey && !e.metaKey && document.activeElement === editor) {
+      e.preventDefault();
+      runSelection();
     }
   });
 }
+
 
 // Client-Side Sovereign Enlng Transpiler & Sandbox Execution
 function executeEnlngInBrowser(sourceCode, terminal) {

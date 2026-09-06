@@ -229,16 +229,23 @@
               <span class="toolbar-label">Preset:</span>
               <button class="preset-btn active" data-preset="fibonacci">Fibonacci</button>
               <button class="preset-btn" data-preset="palindrome">Palindrome</button>
+              <button class="preset-btn chip-btn-db" data-preset="enlngdb_tour">📊 EnlngDB Tour</button>
+              <button class="preset-btn chip-btn-db" data-preset="enlngdb_schema">🔍 EnlngDB Schema</button>
+              <button class="preset-btn chip-btn-db" data-preset="enlngdb_crud">👥 EnlngDB CRUD</button>
               <button class="preset-btn" data-preset="smart_input">Smart Output</button>
-              <button class="preset-btn" data-preset="even_odd">Even / Odd</button>
               <button class="preset-btn" data-preset="factorial">Factorial</button>
             </div>
             <div class="toolbar-actions">
-              <button class="run-btn" id="runCodeBtn" title="Execute (Ctrl + Enter)">
+              <button class="run-selection-btn" id="runSelectionBtn" title="Execute highlighted query or line at cursor (Shift + Enter)">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                <span>Run Selection</span>
+                <kbd class="shortcut-kbd">Shift+↵</kbd>
+              </button>
+              <button class="run-btn" id="runCodeBtn" title="Execute All (Ctrl + Enter)">
                 <svg class="run-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                   <path d="M8 5v14l11-7z"/>
                 </svg>
-                <span>Run Code</span>
+                <span>Run All</span>
                 <kbd class="shortcut-kbd">Ctrl+↵</kbd>
               </button>
             </div>
@@ -253,17 +260,17 @@
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                   </svg>
-                  <span class="file-name">algorithm.enlng</span>
+                  <span class="file-name" id="editorFileBadge">algorithm.enlng</span>
                   <span class="tab-indicator"></span>
                 </div>
                 <div class="panel-meta-info">
+                  <span id="editorEngineBadge">Enlangg</span>
                   <span>UTF-8</span>
-                  <span>Enlangg</span>
                 </div>
               </div>
               <div class="editor-body-wrap">
                 <div class="editor-line-numbers" id="editorLineNumbers"></div>
-                <textarea id="codeEditor" spellcheck="false" placeholder="Write sovereign enlng code here..."></textarea>
+                <textarea id="codeEditor" spellcheck="false" placeholder="Write sovereign enlng or enlngdb code here..."></textarea>
               </div>
             </div>
 
@@ -271,7 +278,7 @@
               <div class="panel-header">
                 <div class="panel-tab active">
                   <span class="term-status-dot"></span>
-                  <span class="file-name">output.log</span>
+                  <span class="file-name" id="terminalTitle">output.log</span>
                 </div>
                 <div class="terminal-actions">
                   <button class="terminal-btn" id="copyOutputBtn" title="Copy output">Copy</button>
@@ -279,7 +286,7 @@
                 </div>
               </div>
               <div class="terminal-body-wrap">
-                <pre id="terminalOutput" class="terminal-body"><span class="term-dim">// Press "Run Code" or press Ctrl+Enter to execute in the sandbox...</span></pre>
+                <pre id="terminalOutput" class="terminal-body"><span class="term-dim">// Press "Run All" (Ctrl+Enter) or "Run Selection" (Shift+Enter) to execute...</span></pre>
               </div>
             </div>
           </div>
@@ -288,14 +295,16 @@
           <div class="playground-statusbar">
             <div class="status-left">
               <span class="status-indicator"></span>
-              <span class="status-text">Sovereign VM Engine Ready</span>
+              <span class="status-text" id="statusEngineText">Runtime Engine Ready</span>
               <span class="status-separator">|</span>
-              <span id="runtimeExecTime" class="status-time">Execution: ~1.2ms (Zero GC)</span>
+              <span id="runtimeExecTime" class="status-time">Execution: Ready</span>
+              <span class="status-separator">|</span>
+              <span class="status-db-info" id="statusActiveDb" style="display:none;">DB: database1</span>
             </div>
             <div class="status-right">
               <span>Lines: <strong id="editorLineCount">15</strong></span>
               <span class="status-separator">|</span>
-              <span>Domain: <strong>Core (.enlng)</strong></span>
+              <span id="editorDomainStatus">Domain: <strong>Core (.enlng)</strong></span>
             </div>
           </div>
         </div>
