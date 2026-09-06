@@ -1,6 +1,7 @@
 """Compiler and pipeline executor for enlngdb (Sovereign Native Storage Engine - ZERO SQL)."""
 
 import os
+from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 from enlngdb.lexer import Lexer
 from enlngdb.parser import Parser
@@ -37,7 +38,7 @@ def run_enlngdb_file(input_file: str,
     with open(input_file, "r", encoding="utf-8") as f:
         source = f.read()
 
-    target_db = db_path
+    target_db = db_path or Path(input_file).with_suffix(".edb").as_posix()
     engine = NativeExecutionEngine(db_path=target_db, stream_output=stream_output)
     reports = run_enlngdb_source(source, db_path=target_db, engine=engine, stream_output=stream_output)
     return reports
