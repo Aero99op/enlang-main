@@ -7,7 +7,8 @@ from enlngdb.ast_nodes import (
     InsertRecordNode, FindRecordsNode, UpdateRecordsNode, DeleteRecordsNode,
     CountRecordsNode, OpenDatabaseNode, SaveDatabaseNode, HintNode, OrderByNode,
     BinaryOpNode, UnaryOpNode, IdentifierNode, LiteralNode, ASTNode,
-    ShowDatabasesNode, ShowTablesNode, UseDatabaseNode
+    ShowDatabasesNode, ShowTablesNode, UseDatabaseNode,
+    DeleteColumnNode, DropTableNode, DropDatabaseNode
 )
 
 
@@ -203,8 +204,8 @@ class Parser:
         elif self.match(TokenType.COUNT):
             return self.parse_count()
 
-        # DELETE / REMOVE ...
-        elif self.match(TokenType.DELETE, TokenType.REMOVE):
+        # DELETE / REMOVE / DROP ...
+        elif self.match(TokenType.DELETE, TokenType.REMOVE, TokenType.DROP):
             return self.parse_delete()
 
         else:
@@ -415,6 +416,13 @@ class Parser:
             self.consume(TokenType.ALL)
             fields = ["*"]
             self.skip_silent_words()
+            if self.match(TokenType.VALUES):
+                self.consume(TokenType.VALUES)
+                self.skip_silent_words()
+        elif self.match(TokenType.VALUES):
+            self.consume(TokenType.VALUES)
+            fields = ["*"]
+            self.skip_silent_words()
         elif self.match(TokenType.FROM, TokenType.IN):
             fields = ["*"]
         else:
@@ -575,9 +583,77 @@ class Parser:
     # -------------------------------------------------------------
     # 8. DELETE RECORDS
     # -------------------------------------------------------------
-    def parse_delete(self) -> DeleteRecordsNode:
-        self.consume(self.current_token().type)  # DELETE or REMOVE
+    def parse_delete(self) -> ASTNode:
+        self.consume(self.current_token().type)  # DELETE, REMOVE, DROP
         self.skip_silent_words()
+
+        # 1. DELETE/DROP DATABASE <database_name> [CONFIRMED]
+        if self.match(TokenType.DATABASE):
+            self.consume(TokenType.DATABASE)
+            self.skip_silent_words()
+            db_name = self.parse_path_or_identifier("database name")
+            self.skip_silent_words()
+            confirm_tok = None
+            if self.match(TokenType.CONFIRMED, TokenType.CONFIRM):
+                self.consume(self.current_token().type)
+                confirm_tok = "CONFIRMED"
+            hints = {}
+            self.skip_silent_words()
+            if self.match(TokenType.HINT):
+                hints = self.parse_hints_dict()
+            return DropDatabaseNode(database_name=db_name, confirmation_token=confirm_tok, hints=hints)
+
+        # 2. DELETE/DROP TABLE <table_name> [CONFIRMED]
+        if self.match(TokenType.TABLE):
+            self.consume(TokenType.TABLE)
+            self.skip_silent_words()
+            table_name = self.parse_identifier_or_string("table name")
+            self.skip_silent_words()
+            confirm_tok = None
+            if self.match(TokenType.CONFIRMED, TokenType.CONFIRM):
+                self.consume(self.current_token().type)
+                confirm_tok = "CONFIRMED"
+            hints = {}
+            self.skip_silent_words()
+            if self.match(TokenType.HINT):
+                hints = self.parse_hints_dict()
+            return DropTableNode(table_name=table_name, confirmation_token=confirm_tok, hints=hints)
+
+        # 3. DELETE/DROP COLUMN <column_name> FROM/IN <table_name>
+        if self.match(TokenType.COLUMN):
+            self.consume(TokenType.COLUMN)
+            self.skip_silent_words()
+            col_name = self.parse_identifier_or_string("column name")
+            self.skip_silent_words()
+            if self.match(TokenType.FROM, TokenType.IN):
+                self.consume(self.current_token().type)
+            else:
+                raise ParserError("Expected 'from' or 'in' after column name in delete statement", self.current_token())
+            self.skip_silent_words()
+            table_name = self.parse_identifier_or_string("table name")
+            hints = {}
+            self.skip_silent_words()
+            if self.match(TokenType.HINT):
+                hints = self.parse_hints_dict()
+            return DeleteColumnNode(table_name=table_name, column_name=col_name, hints=hints)
+
+        # 4. DELETE <column_name> FROM/IN <table_name> (e.g. "delete rollno from student;")
+        if not self.match(TokenType.FROM, TokenType.IN, TokenType.ALL, TokenType.WHERE) and self.match(TokenType.IDENTIFIER):
+            saved = self.pos
+            potential_col = self.parse_identifier_or_string("column name")
+            self.skip_silent_words()
+            if self.match(TokenType.FROM, TokenType.IN):
+                self.consume(self.current_token().type)
+                self.skip_silent_words()
+                table_name = self.parse_identifier_or_string("table name")
+                hints = {}
+                self.skip_silent_words()
+                if self.match(TokenType.HINT):
+                    hints = self.parse_hints_dict()
+                return DeleteColumnNode(table_name=table_name, column_name=potential_col, hints=hints)
+            self.pos = saved
+
+        # 5. DELETE RECORDS (Entire Row or filtered rows)
         is_all = False
         if self.match(TokenType.ALL):
             self.consume(TokenType.ALL)

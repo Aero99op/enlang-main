@@ -217,3 +217,34 @@ def test_use_database_and_show_tables_of_db(tmp_path):
     assert find_reports[1]["rows"][0]["title"] == "Laptop"
 
 
+def test_delete_row_column_table_and_database(tmp_path):
+    test_db = (tmp_path / "lifecycle_ops.edb").as_posix()
+    code = f"""
+    type enlngdb;
+    use database "{test_db}";
+    create table staff with id, name, salary, dept;
+    insert record into staff with id 1, name "Bibhu", salary 50000, dept "IT";
+    insert record into staff with id 2, name "Ansh", salary 45000, dept "HR";
+
+    -- 1. Delete row
+    delete from staff where id is 2;
+
+    -- 2. Delete column (both with and without 'column' keyword)
+    delete column salary from staff;
+    delete dept from staff;
+
+    -- 3. Delete table confirmed
+    delete table staff confirmed;
+
+    -- 4. Delete database confirmed
+    delete database "{test_db}" confirmed;
+    """
+    reports = run_enlngdb_source(code, stream_output=False)
+    types = [r["type"] for r in reports]
+    assert "DELETE" in types
+    assert "DELETE_COLUMN" in types
+    assert "DROP_TABLE" in types
+    assert "DROP_DATABASE" in types
+
+
+

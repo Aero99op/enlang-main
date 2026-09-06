@@ -138,6 +138,17 @@ class Table:
         self._rebuild_indexes()
         return deleted_count
 
+    def delete_column(self, column_name: str) -> bool:
+        existed = any(c.name == column_name for c in self.columns) or any(column_name in r for r in self.rows)
+        self.columns = [c for c in self.columns if c.name != column_name]
+        for r in self.rows:
+            r.pop(column_name, None)
+        self.indexes.pop(column_name, None)
+        if self.primary_key == column_name:
+            self.primary_key = None
+        self.auto_increment_counters.pop(column_name, None)
+        return existed
+
     def count(self, filter_fn: Optional[Callable[[Dict[str, Any]], bool]] = None) -> int:
         if filter_fn is None:
             return len(self.rows)
@@ -368,6 +379,28 @@ class NativeStorageEngine:
             filter_fn = lambda r: bool(ExpressionEvaluator.evaluate(where_ast, r))
 
         return self.tables[table_name].count(filter_fn=filter_fn)
+
+    def delete_column(self, table_name: str, column_name: str) -> bool:
+        if table_name not in self.tables:
+            raise StorageError(f"Table '{table_name}' does not exist.")
+        return self.tables[table_name].delete_column(column_name)
+
+    def drop_table(self, table_name: str) -> bool:
+        if table_name not in self.tables:
+            raise StorageError(f"Table '{table_name}' does not exist.")
+        del self.tables[table_name]
+        return True
+
+    def drop_database(self, database_name: str, resolved_path: Optional[str] = None) -> bool:
+        target_path = resolved_path or database_name
+        removed = False
+        if os.path.exists(target_path):
+            os.remove(target_path)
+            removed = True
+        if self.db_path and (self.db_path == target_path or Path(self.db_path).stem == database_name):
+            self.tables.clear()
+            self.db_path = None
+        return removed
 
     def save_to_disk(self, file_path: str):
         payload = {

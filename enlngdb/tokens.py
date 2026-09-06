@@ -18,6 +18,8 @@ class TokenType(Enum):
     CREATE = auto()
     TABLE = auto()
     TABLES = auto()
+    COLUMN = auto()
+    COLUMNS = auto()
     DATABASE = auto()
     DATABASES = auto()
     USE = auto()

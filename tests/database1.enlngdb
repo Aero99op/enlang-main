@@ -1,19 +1,9 @@
-type enlgdb;
-
--- 1. Databases ki list dekhna
+type enlngdb;
 show databases;
-
--- 2. Database switch / use karna (optional)
-use database my_app;
-
--- 3. Table create aur record insert karna
-create table accounts with id, name, email;
-insert record into accounts with id 1, name "spandan", email "spandanpatra1234@gmail.com";
-
--- 4. Tables dekhna: current database ki aur specific database ki
+use database1;
 show tables;
-show tables of database my_app;
-
--- 5. Data fetch karna: find aur show dono se
-find all records from accounts;
-show all records from accounts;
+find all records from student;
+insert record into student with id 2,name "ansh", rollno 22;
+find all records from student;
+delete rollno from student;
+find all records from student;

@@ -11,7 +11,8 @@ from enlngdb.ast_nodes import (
     ProgramNode, DomainHeaderNode, DisplayNode, OpenDatabaseNode, SaveDatabaseNode,
     ShowDatabasesNode, ShowTablesNode, UseDatabaseNode,
     HintNode, CreateTableNode, InsertRecordNode, FindRecordsNode, UpdateRecordsNode,
-    DeleteRecordsNode, CountRecordsNode, ASTNode, LiteralNode
+    DeleteRecordsNode, CountRecordsNode, ASTNode, LiteralNode,
+    DeleteColumnNode, DropTableNode, DropDatabaseNode
 )
 from enlngdb.storage import NativeStorageEngine, StorageError
 
@@ -258,6 +259,11 @@ class NativeExecutionEngine:
                 }
 
             elif isinstance(stmt, DeleteRecordsNode):
+                if stmt.is_all and stmt.confirmation_token != "CONFIRMED":
+                    raise StorageError(
+                        f"Destructive operation blocked: deleting all records from '{stmt.table_name}' requires 'confirmed' keyword. "
+                        f"Example: delete all records from {stmt.table_name} confirmed;"
+                    )
                 merged_hints = {**self.active_hints, **stmt.hints}
                 deleted_count = self.storage.delete(
                     table_name=stmt.table_name,
@@ -265,10 +271,61 @@ class NativeExecutionEngine:
                     hints=merged_hints
                 )
                 msg = f"Deleted {deleted_count} record(s) from table '{stmt.table_name}'."
+                if self.stream_output:
+                    print(f"[enlngdb] {msg}")
                 return {
                     "type": "DELETE",
                     "table": stmt.table_name,
                     "rows_affected": deleted_count,
+                    "success": True,
+                    "message": msg
+                }
+
+            elif isinstance(stmt, DeleteColumnNode):
+                self.storage.delete_column(stmt.table_name, stmt.column_name)
+                msg = f"Deleted column '{stmt.column_name}' from table '{stmt.table_name}'."
+                if self.stream_output:
+                    print(f"[enlngdb] {msg}")
+                return {
+                    "type": "DELETE_COLUMN",
+                    "table": stmt.table_name,
+                    "column": stmt.column_name,
+                    "success": True,
+                    "message": msg
+                }
+
+            elif isinstance(stmt, DropTableNode):
+                if stmt.confirmation_token != "CONFIRMED":
+                    raise StorageError(
+                        f"Destructive operation blocked: deleting table '{stmt.table_name}' requires 'confirmed' keyword. "
+                        f"Example: delete table {stmt.table_name} confirmed;"
+                    )
+                self.storage.drop_table(stmt.table_name)
+                msg = f"Dropped table '{stmt.table_name}' permanently."
+                if self.stream_output:
+                    print(f"[enlngdb] {msg}")
+                return {
+                    "type": "DROP_TABLE",
+                    "table": stmt.table_name,
+                    "success": True,
+                    "message": msg
+                }
+
+            elif isinstance(stmt, DropDatabaseNode):
+                if stmt.confirmation_token != "CONFIRMED":
+                    raise StorageError(
+                        f"Destructive operation blocked: deleting database '{stmt.database_name}' requires 'confirmed' keyword. "
+                        f"Example: delete database {stmt.database_name} confirmed;"
+                    )
+                target_path = resolve_db_path(stmt.database_name)
+                self.storage.drop_database(stmt.database_name, resolved_path=target_path)
+                msg = f"Dropped database '{stmt.database_name}' ('{target_path}') permanently."
+                if self.stream_output:
+                    print(f"[enlngdb] {msg}")
+                return {
+                    "type": "DROP_DATABASE",
+                    "database": stmt.database_name,
+                    "path": target_path,
                     "success": True,
                     "message": msg
                 }

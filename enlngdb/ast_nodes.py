@@ -111,6 +111,27 @@ class DeleteRecordsNode(ASTNode):
 
 
 @dataclass
+class DeleteColumnNode(ASTNode):
+    table_name: str
+    column_name: str
+    hints: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class DropTableNode(ASTNode):
+    table_name: str
+    confirmation_token: Optional[str] = None
+    hints: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class DropDatabaseNode(ASTNode):
+    database_name: str
+    confirmation_token: Optional[str] = None
+    hints: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
 class CountRecordsNode(ASTNode):
     table_name: str
     where: Optional[Any] = None

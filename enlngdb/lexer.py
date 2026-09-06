@@ -26,6 +26,8 @@ class Lexer:
         "create": TokenType.CREATE,
         "table": TokenType.TABLE,
         "tables": TokenType.TABLES,
+        "column": TokenType.COLUMN,
+        "columns": TokenType.COLUMNS,
         "database": TokenType.DATABASE,
         "databases": TokenType.DATABASES,
         "use": TokenType.USE,
