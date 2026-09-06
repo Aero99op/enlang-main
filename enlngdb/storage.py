@@ -3,6 +3,7 @@
 import json
 import os
 import re
+from pathlib import Path
 from typing import Dict, List, Any, Optional, Callable
 from enlngdb.ast_nodes import (
     ColumnDefNode, BinaryOpNode, UnaryOpNode, IdentifierNode, LiteralNode, OrderByNode
@@ -42,8 +43,14 @@ class Table:
 
     def insert(self, record: Dict[str, Any]) -> Dict[str, Any]:
         new_row = dict(record)
+        self._apply_defaults_and_autoincrement(new_row)
+        self._validate_constraints(new_row)
+        row_idx = len(self.rows)
+        self.rows.append(new_row)
+        self._update_indexes(new_row, row_idx)
+        return new_row
 
-        # Handle autoincrement & defaults
+    def _apply_defaults_and_autoincrement(self, new_row: Dict[str, Any]):
         for col in self.columns:
             if col.name not in new_row or new_row[col.name] is None:
                 if col.autoincrement and col.name in self.auto_increment_counters:
@@ -52,22 +59,17 @@ class Table:
                 elif col.default_value is not None:
                     new_row[col.name] = col.default_value
 
-            # Primary key / unique check
+    def _validate_constraints(self, new_row: Dict[str, Any]):
+        for col in self.columns:
             if (col.is_primary_key or col.unique) and col.name in new_row:
                 val = new_row[col.name]
                 if col.name in self.indexes and val in self.indexes[col.name]:
                     raise StorageError(f"Duplicate key error: {col.name}='{val}' already exists in table '{self.name}'.")
 
-        row_idx = len(self.rows)
-        self.rows.append(new_row)
-
-        # Update indexes
+    def _update_indexes(self, new_row: Dict[str, Any], row_idx: int):
         for col_name, idx_map in self.indexes.items():
             if col_name in new_row:
-                val = new_row[col_name]
-                idx_map.setdefault(val, []).append(row_idx)
-
-        return new_row
+                idx_map.setdefault(new_row[col_name], []).append(row_idx)
 
     def find(self,
              filter_fn: Optional[Callable[[Dict[str, Any]], bool]] = None,
@@ -75,43 +77,34 @@ class Table:
              limit: Optional[int] = None,
              offset: Optional[int] = None,
              fields: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-        # 1. Filter rows
-        matched_rows: List[Dict[str, Any]] = []
-        for row in self.rows:
-            if filter_fn is None or filter_fn(row):
-                matched_rows.append(row)
-
-        # 2. Sort
+        matched_rows = [r for r in self.rows if filter_fn is None or filter_fn(r)]
         if order_by and order_by.field:
-            reverse = (order_by.direction.upper() == "DESC")
-            def sort_key(r):
-                val = r.get(order_by.field)
-                if isinstance(val, LiteralNode):
-                    val = val.value
-                if val is None:
-                    return (0, "")
-                if isinstance(val, (int, float)):
-                    return (1, val)
-                return (2, str(val))
-            matched_rows.sort(key=sort_key, reverse=reverse)
-
-        # 3. Offset
+            self._sort_rows(matched_rows, order_by)
         if offset is not None and offset > 0:
             matched_rows = matched_rows[offset:]
-
-        # 4. Limit
         if limit is not None and limit >= 0:
             matched_rows = matched_rows[:limit]
+        return self._project_fields(matched_rows, fields)
 
-        # 5. Project fields
+    @staticmethod
+    def _sort_rows(rows: List[Dict[str, Any]], order_by: OrderByNode):
+        reverse = (order_by.direction.upper() == "DESC")
+        def sort_key(r):
+            val = r.get(order_by.field)
+            if isinstance(val, LiteralNode):
+                val = val.value
+            if val is None:
+                return (0, "")
+            if isinstance(val, (int, float)):
+                return (1, val)
+            return (2, str(val))
+        rows.sort(key=sort_key, reverse=reverse)
+
+    @staticmethod
+    def _project_fields(rows: List[Dict[str, Any]], fields: Optional[List[str]]) -> List[Dict[str, Any]]:
         if fields and fields != ["*"]:
-            projected = []
-            for row in matched_rows:
-                projected.append({f: row.get(f) for f in fields})
-            return projected
-
-        # Return copies of rows
-        return [dict(r) for r in matched_rows]
+            return [{f: row.get(f) for f in fields} for row in rows]
+        return [dict(r) for r in rows]
 
     def update(self, filter_fn: Optional[Callable[[Dict[str, Any]], bool]], assignments: Dict[str, Any]) -> int:
         updated_count = 0
@@ -155,7 +148,7 @@ class Table:
         return sum(1 for r in self.rows if filter_fn(r))
 
     def _rebuild_indexes(self):
-        for col_name in list(self.indexes.keys()):
+        for col_name in self.indexes:
             self.indexes[col_name] = {}
             for idx, row in enumerate(self.rows):
                 if col_name in row:
@@ -203,76 +196,76 @@ class Table:
 class ExpressionEvaluator:
     """Evaluates AST conditions and expressions directly against in-memory record dictionaries."""
 
+    @staticmethod
+    def _unwrap(val: Any) -> Any:
+        return val.value if isinstance(val, LiteralNode) else val
+
     @classmethod
     def evaluate(cls, expr: Any, row: Dict[str, Any]) -> Any:
         if expr is None:
             return True
-
         if isinstance(expr, LiteralNode):
             return expr.value
-
         if isinstance(expr, IdentifierNode):
-            val = row.get(expr.name)
-            if isinstance(val, LiteralNode):
-                return val.value
-            return val
-
+            return cls._unwrap(row.get(expr.name))
         if isinstance(expr, BinaryOpNode):
-            op = expr.operator.upper()
-            left = cls.evaluate(expr.left, row)
-            right = cls.evaluate(expr.right, row)
-
-            if isinstance(left, LiteralNode):
-                left = left.value
-            if isinstance(right, LiteralNode):
-                right = right.value
-
-            if op == "AND":
-                return bool(left) and bool(right)
-            elif op == "OR":
-                return bool(left) or bool(right)
-            elif op in ("=", "=="):
-                return left == right
-            elif op == "!=":
-                return left != right
-            elif op == ">":
-                if left is None or right is None: return False
-                return float(left) > float(right)
-            elif op == ">=":
-                if left is None or right is None: return False
-                return float(left) >= float(right)
-            elif op == "<":
-                if left is None or right is None: return False
-                return float(left) < float(right)
-            elif op == "<=":
-                if left is None or right is None: return False
-                return float(left) <= float(right)
-            elif op == "LIKE":
-                if left is None or right is None: return False
-                # Wildcard matching: % -> .*, _ -> .
-                parts = []
-                for seg in str(right).split('%'):
-                    subparts = [re.escape(s) for s in seg.split('_')]
-                    parts.append('.'.join(subparts))
-                pattern = "^" + ".*".join(parts) + "$"
-                return bool(re.match(pattern, str(left), re.IGNORECASE))
-            elif op == "+":
-                if isinstance(left, str) or isinstance(right, str):
-                    return str(left) + str(right)
-                return (left or 0) + (right or 0)
-            elif op == "-":
-                return (left or 0) - (right or 0)
-            else:
-                raise StorageError(f"Unsupported storage operator '{op}'")
-
+            left = cls._unwrap(cls.evaluate(expr.left, row))
+            right = cls._unwrap(cls.evaluate(expr.right, row))
+            return cls._evaluate_binary(left, expr.operator.upper(), right)
         if isinstance(expr, UnaryOpNode):
             val = cls.evaluate(expr.operand, row)
-            if expr.operator.upper() == "NOT":
-                return not bool(val)
-            elif expr.operator == "-":
-                return -val
-
+            return not bool(val) if expr.operator.upper() == "NOT" else (-val if expr.operator == "-" else val)
         return expr
+
+    @classmethod
+    def _evaluate_binary(cls, left: Any, op: str, right: Any) -> Any:
+        if op == "AND":
+            return bool(left) and bool(right)
+        if op == "OR":
+            return bool(left) or bool(right)
+        if op in ("=", "=="):
+            return left == right
+        if op == "!=":
+            return left != right
+        if op in (">", ">=", "<", "<="):
+            return cls._evaluate_relational(left, op, right)
+        if op == "LIKE":
+            return cls._evaluate_like(left, right)
+        if op in ("+", "-"):
+            return cls._evaluate_arithmetic(left, op, right)
+        raise StorageError(f"Unsupported storage operator '{op}'")
+
+    @staticmethod
+    def _evaluate_relational(left: Any, op: str, right: Any) -> bool:
+        if left is None or right is None:
+            return False
+        l_num, r_num = float(left), float(right)
+        if op == ">":
+            return l_num > r_num
+        if op == ">=":
+            return l_num >= r_num
+        if op == "<":
+            return l_num < r_num
+        return l_num <= r_num
+
+    @staticmethod
+    def _evaluate_like(left: Any, right: Any) -> bool:
+        if left is None or right is None:
+            return False
+        parts = []
+        for seg in str(right).split('%'):
+            subparts = [re.escape(s) for s in seg.split('_')]
+            parts.append('.'.join(subparts))
+        pattern = "^" + ".*".join(parts) + "$"
+        return bool(re.match(pattern, str(left), re.IGNORECASE))
+
+    @staticmethod
+    def _evaluate_arithmetic(left: Any, op: str, right: Any) -> Any:
+        if op == "+":
+            if isinstance(left, str) or isinstance(right, str):
+                return str(left) + str(right)
+            return (left or 0) + (right or 0)
+        return (left or 0) - (right or 0)
 
 
 class NativeStorageEngine:
@@ -295,6 +288,8 @@ class NativeStorageEngine:
         if table_name not in self.tables:
             # Auto-provision table if not explicitly created
             self.tables[table_name] = Table(name=table_name, hints=hints)
+        elif hints:
+            self.tables[table_name].hints.update(hints)
 
         evaluated_values = {}
         for k, v in values.items():
@@ -317,6 +312,8 @@ class NativeStorageEngine:
              hints: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         if table_name not in self.tables:
             raise StorageError(f"Table '{table_name}' does not exist.")
+        if hints:
+            self.tables[table_name].hints.update(hints)
 
         filter_fn = None
         if where_ast is not None:
@@ -337,6 +334,8 @@ class NativeStorageEngine:
                hints: Optional[Dict[str, Any]] = None) -> int:
         if table_name not in self.tables:
             raise StorageError(f"Table '{table_name}' does not exist.")
+        if hints:
+            self.tables[table_name].hints.update(hints)
 
         filter_fn = None
         if where_ast is not None:
@@ -360,6 +359,8 @@ class NativeStorageEngine:
                hints: Optional[Dict[str, Any]] = None) -> int:
         if table_name not in self.tables:
             raise StorageError(f"Table '{table_name}' does not exist.")
+        if hints:
+            self.tables[table_name].hints.update(hints)
 
         filter_fn = None
         if where_ast is not None:
@@ -373,6 +374,8 @@ class NativeStorageEngine:
               hints: Optional[Dict[str, Any]] = None) -> int:
         if table_name not in self.tables:
             raise StorageError(f"Table '{table_name}' does not exist.")
+        if hints:
+            self.tables[table_name].hints.update(hints)
 
         filter_fn = None
         if where_ast is not None:
