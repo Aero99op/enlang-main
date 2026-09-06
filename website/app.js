@@ -440,13 +440,14 @@ function evaluateSingleCondition(row, cond) {
   }
 
   // 2. Comparison operators - Compound phrases MUST precede single-word operators
+  // 'is' is treated as an optional/silent helper word (e.g. 'is greater than' vs 'greater than' vs 'is >' vs '>')
   const opPatterns = [
-    { op: '>=', regex: /^([a-zA-Z0-9_]+)\s*(?:>=|is\s+greater\s+than\s+or\s+equal\s+to|is\s+at\s+least)\s*(.*)$/i },
-    { op: '<=', regex: /^([a-zA-Z0-9_]+)\s*(?:<=|is\s+less\s+than\s+or\s+equal\s+to|is\s+at\s+most)\s*(.*)$/i },
-    { op: '>',  regex: /^([a-zA-Z0-9_]+)\s*(?:>|is\s+greater\s+than)\s*(.*)$/i },
-    { op: '<',  regex: /^([a-zA-Z0-9_]+)\s*(?:<|is\s+less\s+than)\s*(.*)$/i },
-    { op: '!=', regex: /^([a-zA-Z0-9_]+)\s*(?:!=|is\s+not\s+equal\s+to|is\s+not)\s*(.*)$/i },
-    { op: '==', regex: /^([a-zA-Z0-9_]+)\s*(?:==|=|is\s+equal\s+to|\bis\b)\s*(.*)$/i }
+    { op: '>=', regex: /^([a-zA-Z0-9_]+)\s*(?:(?:is\s+)?>=|(?:is\s+)?greater\s+than\s+or\s+equal\s+to|(?:is\s+)?at\s+least)\s*(.*)$/i },
+    { op: '<=', regex: /^([a-zA-Z0-9_]+)\s*(?:(?:is\s+)?<=|(?:is\s+)?less\s+than\s+or\s+equal\s+to|(?:is\s+)?at\s+most)\s*(.*)$/i },
+    { op: '>',  regex: /^([a-zA-Z0-9_]+)\s*(?:(?:is\s+)?>|(?:is\s+)?greater\s+than|(?:is\s+)?exceeds|(?:is\s+)?above)\s*(.*)$/i },
+    { op: '<',  regex: /^([a-zA-Z0-9_]+)\s*(?:(?:is\s+)?<|(?:is\s+)?less\s+than|(?:is\s+)?below)\s*(.*)$/i },
+    { op: '!=', regex: /^([a-zA-Z0-9_]+)\s*(?:(?:is\s+)?!=|(?:is\s+)?not\s+equal\s+to|is\s+not|not\s+equals?|isn't)\s*(.*)$/i },
+    { op: '==', regex: /^([a-zA-Z0-9_]+)\s*(?:(?:is\s+)?==|(?:is\s+)?=|(?:is\s+)?equal\s+to|equals?|\bis\b)\s*(.*)$/i }
   ];
 
   for (const { op, regex } of opPatterns) {
