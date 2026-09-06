@@ -1,0 +1,12 @@
+type enlng
+
+// Topic 04: Decision Logic: Spoken Branching & Fallbacks
+set user_age to 22
+set has_verified_id to true
+
+if user_age is greater than or equal to 21 and has_verified_id is equal to true:
+    display "Access Authorized: Primary Production System"
+otherwise if user_age is greater than 16:
+    display "Access Restricted: Observer Access Only"
+otherwise:
+    display "Access Denied: Age verification requirement not met"

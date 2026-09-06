@@ -1,0 +1,7 @@
+type enlng
+
+// Topic 05: Loops: While, Until & Bounded Iteration
+set counter to 1
+while counter is less than or equal to 5:
+    display "Iteration count: ", counter
+    increase counter by 1

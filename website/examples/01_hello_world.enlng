@@ -1,0 +1,5 @@
+type enlng
+
+// Topic 01: Hello World & The Sovereign Declaration
+display "Hello, Sovereign World!"
+display "Enlangg compiles natural English to bare-metal C machine code."

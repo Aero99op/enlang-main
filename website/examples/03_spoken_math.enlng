@@ -1,0 +1,14 @@
+type enlng
+
+// Topic 03: Spoken Math & Arithmetic Operations
+set base_salary to 65000
+set bonus to 12000
+set tax_rate to 0.18
+
+set gross_pay to base_salary plus bonus
+set deductions to gross_pay multiplied by tax_rate
+set net_pay to gross_pay minus deductions
+
+display "Gross Compensation: ", gross_pay
+display "Estimated Tax: ", deductions
+display "Net Take-Home: ", net_pay

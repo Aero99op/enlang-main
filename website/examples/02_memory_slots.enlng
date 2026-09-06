@@ -1,0 +1,13 @@
+type enlng
+
+// Topic 02: Deterministic Memory Slots & Spoken Variables
+set server_port to 8080
+set server_name to "Primary Gateway"
+set is_active to true
+
+// Mutate existing slot value with 'set'
+set server_port to 9000
+
+display "Server: ", server_name
+display "Port: ", server_port
+display "Status Active: ", is_active

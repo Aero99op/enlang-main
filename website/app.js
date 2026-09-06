@@ -138,7 +138,89 @@ while i is less than or equal to number:
     set i to i plus 1
 
 display "Factorial calculation:"
-display "The factorial of", number, "is", result`
+display "The factorial of", number, "is", result`,
+
+  topic1: `type enlng
+
+// Topic 01: Hello World & The Sovereign Declaration
+display "Hello, Sovereign World!"
+display "Enlangg compiles natural English to bare-metal C machine code."`,
+
+  topic2: `type enlng
+
+// Topic 02: Deterministic Memory Slots
+set server_port to 8080
+set server_name to "Primary Gateway"
+set is_active to true
+
+// Mutate existing slot value with 'set'
+set server_port to 9000
+
+display "Server: ", server_name
+display "Port: ", server_port
+display "Status Active: ", is_active`,
+
+  topic3: `type enlng
+
+// Topic 03: Spoken Math & Arithmetic Operations
+set base_salary to 65000
+set bonus to 12000
+set tax_rate to 0.18
+
+set gross_pay to base_salary plus bonus
+set deductions to gross_pay multiplied by tax_rate
+set net_pay to gross_pay minus deductions
+
+display "Gross Compensation: ", gross_pay
+display "Estimated Tax: ", deductions
+display "Net Take-Home: ", net_pay`,
+
+  topic4: `type enlng
+
+// Topic 04: Decision Logic: Spoken Branching & Fallbacks
+set user_age to 22
+set has_verified_id to true
+
+if user_age is greater than or equal to 21 and has_verified_id is equal to true:
+    display "Access Authorized: Primary Production System"
+otherwise if user_age is greater than 16:
+    display "Access Restricted: Observer Access Only"
+otherwise:
+    display "Access Denied: Age verification requirement not met"`,
+
+  topic5: `type enlng
+
+// Topic 05: Loops: While, Until & Bounded Iteration
+set counter to 1
+while counter is less than or equal to 5:
+    display "Iteration count: ", counter
+    increase counter by 1`,
+
+  topic6: `type enlng
+
+// Topic 06: Procedures, Scopes & Return Values
+define calculate_tax(amount, rate):
+    set tax_val to amount multiplied by rate
+    return tax_val
+
+set bill to 250
+set tax to calculate_tax(bill, 0.08)
+display "Subtotal: $", bill
+display "Tax Calculated: $", tax`,
+
+  topic7: `type enlng
+
+// Topic 07: Structured Data: Lists & Hash Maps
+set servers to ["alpha", "beta", "gamma"]
+display "Primary Node: ", servers[0]
+display "Active Cluster Nodes: ", servers
+display "Total Cluster Size: ", length of servers`,
+
+  topic8: `type enlng
+
+// Topic 08: Python God Call & C-ABI Foreign Interop
+display "Enlangg Sovereign C-ABI & Python Ecosystem Layer"
+display "Native access to 400,000+ packages with zero whitelisting"`
 };
 
 function initPlayground() {
@@ -169,8 +251,25 @@ function initPlayground() {
     });
   }
 
-  // Load default preset
-  if (editor && CODE_PRESETS.fibonacci) {
+  // Check URL parameters for ?topic=1..8 or ?code=...
+  const urlParams = new URLSearchParams(window.location.search);
+  const topicParam = urlParams.get('topic');
+  const codeParam = urlParams.get('code');
+
+  if (topicParam && (CODE_PRESETS['topic' + topicParam] || CODE_PRESETS[topicParam])) {
+    const key = CODE_PRESETS['topic' + topicParam] ? ('topic' + topicParam) : topicParam;
+    if (editor) {
+      editor.value = CODE_PRESETS[key];
+      updateLineNumbers();
+    }
+  } else if (codeParam) {
+    try {
+      if (editor) {
+        editor.value = decodeURIComponent(codeParam);
+        updateLineNumbers();
+      }
+    } catch(e) {}
+  } else if (editor && CODE_PRESETS.fibonacci) {
     editor.value = CODE_PRESETS.fibonacci;
     updateLineNumbers();
   }
@@ -417,14 +516,14 @@ function transpileEnlngToJS(lines) {
       continue;
     }
 
-    const elifMatch = trimmed.match(/^(?:else\s+if|elif)\s+(.*?):$/i);
+    const elifMatch = trimmed.match(/^(?:else\s+if|otherwise\s+if|elif)\s+(.*?):$/i);
     if (elifMatch) {
       const cond = transpileExpression(elifMatch[1]);
       intermediateLines.push({ type: 'block_mid', indent: indentLen, code: `} else if (${cond}) {` });
       continue;
     }
 
-    if (/^else:$/i.test(trimmed)) {
+    if (/^(?:else|otherwise):$/i.test(trimmed)) {
       intermediateLines.push({ type: 'block_mid', indent: indentLen, code: `} else {` });
       continue;
     }
@@ -561,6 +660,14 @@ function transpileExpression(expr) {
   res = res.replace(/\bplus\b/gi, '+');
   res = res.replace(/\bminus\b/gi, '-');
   res = res.replace(/\b(mod|modulo|modulus|modulous|modoulous)\b/gi, '%');
+
+  // Boolean logical operators
+  res = res.replace(/\band\b/gi, '&&');
+  res = res.replace(/\bor\b/gi, '||');
+  res = res.replace(/\bnot\s+/gi, '!');
+
+  // Collection containment: <collection> contains <item>
+  res = res.replace(/\b([a-zA-Z0-9_\[\]]+)\s+contains\s+(.*)/gi, '($1.includes($2))');
 
   // Collection size/length: length of <var> or size of <var>
   res = res.replace(/\b(?:length of|size of)\s+([a-zA-Z0-9_\[\]]+)/gi, '$1.length');

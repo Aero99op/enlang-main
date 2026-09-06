@@ -1,0 +1,7 @@
+type enlng
+
+// Topic 07: Structured Data: Lists & Hash Maps
+set servers to ["alpha", "beta", "gamma"]
+display "Primary Node: ", servers[0]
+display "Active Cluster Nodes: ", servers
+display "Total Cluster Size: ", length of servers

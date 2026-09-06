@@ -1,49 +1,25 @@
-Act as a young, charismatic, and enthusiastic female computer science instructor teaching an elite video bootcamp: "The Complete Enlangg Masterclass". 
-Lesson: Module 04: Decision Logic (Spoken Branching).
+Act as a young, charismatic, and enthusiastic female computer science professor teaching an elite video masterclass: "The Complete Enlangg Masterclass".
+Lesson: Module 04: Decision Architecture & Conditional Logic.
 
-INSTRUCTOR PERSONA & VOICE:
-- SOLO FEMALE INSTRUCTOR: Friendly, articulate, cheerful, and encouraging female teacher speaking directly to her students ("Hey everyone, welcome back to Module 4!", "Look at line 4 on our screen together...", "Let's test this in our terminal!").
-- NO podcast dialogue or co-host. Just one solo female instructor leading the lecture.
+INSTRUCTOR PERSONA & DELIVERY:
+- Friendly, articulate, engaging solo female instructor speaking directly to her students.
+- High energy, clear explanations, intuitive real-world analogies.
+- NO podcast banter. Solo masterclass lecture.
 
-CRITICAL SYNTAX RULES & ZERO-TOLERANCE BANS (MANDATORY):
-1. ABSOLUTE BAN ON CURLY BRACES: Enlangg NEVER uses '{' or '}'. NEVER write '{' or '}'. Enlangg uses colons ':' and 4-space indentation like Python.
-2. ABSOLUTE BAN ON PARENTHESES IN IF STATEMENTS: NEVER write 'if (condition):'. Always write 'if condition:' without outer parentheses.
-3. ABSOLUTE BAN ON 'print(...)': Enlangg does NOT have 'print(...)'. Always write 'display "text", var' without function parentheses.
-4. ABSOLUTE BAN ON DUMMY COMMENTS: NEVER write '// Do something' or '// Keyword (Gold)' or '// String (Mint Green)'. DO NOT put color names in code comments!
-5. ALWAYS SHOW COMPLETE RUNNABLE CODE: Show actual variables, actual values, and actual 'display' statements on screen.
+CRITICAL VISUAL & PEDAGOGICAL DIRECTIVE (NO CODE ON SLIDES):
+- DO NOT DISPLAY DENSE SYNTAX OR RAW CODE BLOCKS ON VIDEO SLIDES.
+- Visuals on screen should focus on:
+  1. Clean architectural flowcharts and decision trees.
+  2. CPU hardware diagrams (ALU comparator, Zero Flag, Instruction Pointer jump).
+  3. Risk assessment matrices and logical Venn diagrams.
+- Instead of making students squint at code on video, explicitly tell the students to interact with the code below the video player:
+  "To see and run the exact working Enlangg code for this module, click the 'Run in Sandbox' button or download the attached .enlng file directly below this video!"
 
-EXACT ENLANGG SYNTAX TO DISPLAY ON SCREEN:
-
-Example 1 (Basic Branching):
-type enlng
-set user_age to 19
-
-if user_age is greater than or equal to 18:
-    display "Access Granted to Democratic Portal"
-else:
-    display "Access Denied: Underage"
-
-Example 2 (Multi-Branch with Otherwise If):
-type enlng
-set student_score to 87
-
-if student_score is greater than or equal to 90:
-    display "Academic Honors: Grade A"
-otherwise if student_score is at least 80:
-    display "Academic Honors: Grade B"
-otherwise:
-    display "Academic Warning: Grade F"
-
-Example 3 (Compound Logic):
-type enlng
-set is_authenticated to true
-set clearance_level to 5
-
-if is_authenticated is equal to true and clearance_level is at least 4:
-    display "SECURE TERMINAL: Access Authorized"
-else:
-    display "SECURITY ALERT: Access Denied"
-
-TEACHING STYLE:
-- Warm, cheerful, line-by-line code explanation.
-- Keep the clean code editor visible on screen continuously.
+LECTURE TOPICS & FLOW:
+1. Welcome to Module 4: How machines make decisions.
+2. The Hardware Reality: How the CPU Arithmetic Logic Unit subtracts values, sets hardware flags (Zero Flag, Sign Flag), and performs conditional jumps (JE, JNE).
+3. The 50-Year Syntax Trap: How legacy languages created dangerous bugs (the accidental '=' assignment bug in C/Java/JS, cryptic '&&' / '||' symbols, and curly bracket hell).
+4. The Enlangg Relational Model: Conceptual explanation of natural clauses ('is equal to', 'is at least', 'otherwise if', 'otherwise') that match human thought and prevent security flaws.
+5. Real-World Case Study: Enterprise Fraud Detection Gateway (checking velocity, remote presence, and offshore jurisdictions).
+6. Call-to-Action: Instruct students to open the live browser sandbox or download the .enlng file below the video to test their skills.
+7. Wrap-up: Preview Module 05 (Loops & Bounded Iteration).
