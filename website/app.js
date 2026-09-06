@@ -424,13 +424,64 @@ function formatAsciiTable(headers, rows) {
   return [border, headerRow, border, ...dataRows, border].join('\n');
 }
 
-// Expression and condition evaluator for natural EnlngDB WHERE queries
+// Normalizes sugar phrases like BETWEEN and FROM...TO before boolean tokenization
+function normalizeWhereClause(clause) {
+  let normalized = clause.trim();
+
+  // Normalize BETWEEN: col [is] between A and B -> (col >= A and col <= B)
+  normalized = normalized.replace(/\b([a-zA-Z0-9_]+)\s+(?:is\s+)?between\s+([^\s]+)\s+and\s+([^\s,;)]+)/gi, (m, col, a, b) => {
+    return `(${col} >= ${a} and ${col} <= ${b})`;
+  });
+
+  // Normalize FROM ... TO: col [is] from A to B -> (col >= A and col <= B)
+  normalized = normalized.replace(/\b([a-zA-Z0-9_]+)\s+(?:is\s+)?from\s+([^\s]+)\s+to\s+([^\s,;)]+)/gi, (m, col, a, b) => {
+    return `(${col} >= ${a} and ${col} <= ${b})`;
+  });
+
+  return normalized;
+}
+
+// Expression and condition evaluator for an atomic EnlngDB condition
 function evaluateSingleCondition(row, cond) {
   const trimmed = cond.trim();
   if (!trimmed) return true;
 
-  // 1. LIKE pattern: name like "%Malhotra%"
-  const likeMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s+like\s+["']?(.*?)["']?$/i);
+  // 1. IS NULL / IS NOT NULL / IS EMPTY / IS NOT EMPTY
+  const nullMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s+is\s+(not\s+null|null|not\s+empty|empty)$/i);
+  if (nullMatch) {
+    const col = nullMatch[1];
+    const op = nullMatch[2].toLowerCase();
+    const val = row[col];
+    const isNullOrEmpty = val === null || val === undefined || val === '';
+    if (op === 'null' || op === 'empty') return isNullOrEmpty;
+    if (op === 'not null' || op === 'not empty') return !isNullOrEmpty;
+  }
+
+  // 2. IN / NOT IN: col [is] [not] in (val1, val2, ...)
+  const inMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s+(?:is\s+)?(not\s+in|in)\s*\((.*?)\)$/i);
+  if (inMatch) {
+    const col = inMatch[1];
+    const isIn = inMatch[2].toLowerCase() === 'in';
+    const rawItems = inMatch[3].split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+    const rowVal = String(row[col] ?? '').toLowerCase();
+    const found = rawItems.some(item => item.toLowerCase() === rowVal);
+    return isIn ? found : !found;
+  }
+
+  // 3. CONTAINS / STARTS WITH / ENDS WITH
+  const textSearchMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s+(?:is\s+)?(contains|starts\s+with|ends\s+with)\s+["']?(.*?)["']?$/i);
+  if (textSearchMatch) {
+    const col = textSearchMatch[1];
+    const op = textSearchMatch[2].toLowerCase();
+    const target = textSearchMatch[3].toLowerCase();
+    const rowVal = String(row[col] ?? '').toLowerCase();
+    if (op === 'contains') return rowVal.includes(target);
+    if (op === 'starts with') return rowVal.startsWith(target);
+    if (op === 'ends with') return rowVal.endsWith(target);
+  }
+
+  // 4. LIKE pattern: col like "%xyz%"
+  const likeMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s+(?:is\s+)?like\s+["']?(.*?)["']?$/i);
   if (likeMatch) {
     const col = likeMatch[1];
     const pattern = likeMatch[2].replace(/%/g, '.*');
@@ -439,7 +490,7 @@ function evaluateSingleCondition(row, cond) {
     return regex.test(val);
   }
 
-  // 2. Comparison operators - Compound phrases MUST precede single-word operators
+  // 5. Comparison operators - Compound phrases MUST precede single-word operators
   // 'is' is treated as an optional/silent helper word (e.g. 'is greater than' vs 'greater than' vs 'is >' vs '>')
   const opPatterns = [
     { op: '>=', regex: /^([a-zA-Z0-9_]+)\s*(?:(?:is\s+)?>=|(?:is\s+)?greater\s+than\s+or\s+equal\s+to|(?:is\s+)?at\s+least)\s*(.*)$/i },
@@ -487,13 +538,106 @@ function evaluateSingleCondition(row, cond) {
   return true;
 }
 
+// Splits string by a delimiter word outside quotes and parentheses
+function splitLogicalTokens(text, word) {
+  const parts = [];
+  let depth = 0;
+  let inQuote = null;
+  let cur = '';
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inQuote) {
+      cur += ch;
+      if (ch === inQuote) inQuote = null;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inQuote = ch;
+      cur += ch;
+      continue;
+    }
+
+    if (ch === '(') {
+      depth++;
+      cur += ch;
+      continue;
+    }
+    if (ch === ')') {
+      depth--;
+      cur += ch;
+      continue;
+    }
+
+    if (depth === 0) {
+      const sub = text.substring(i);
+      const match = sub.match(new RegExp('^\\s+' + word + '\\s+', 'i'));
+      if (match) {
+        parts.push(cur.trim());
+        cur = '';
+        i += match[0].length - 1;
+        continue;
+      }
+    }
+
+    cur += ch;
+  }
+
+  if (cur.trim()) parts.push(cur.trim());
+  return parts;
+}
+
+function evalLogicalOr(row, expr) {
+  const orParts = splitLogicalTokens(expr, 'or');
+  if (orParts.length > 1) {
+    return orParts.some(part => evalLogicalAnd(row, part));
+  }
+  return evalLogicalAnd(row, expr);
+}
+
+function evalLogicalAnd(row, expr) {
+  const andParts = splitLogicalTokens(expr, 'and');
+  if (andParts.length > 1) {
+    return andParts.every(part => evalLogicalAtom(row, part));
+  }
+  return evalLogicalAtom(row, expr);
+}
+
+function evalLogicalAtom(row, expr) {
+  let trimmed = expr.trim();
+
+  // Strip outer matching parentheses and recursively evaluate inner expression
+  if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+    let depth = 0;
+    let safe = true;
+    for (let i = 0; i < trimmed.length - 1; i++) {
+      if (trimmed[i] === '(') depth++;
+      else if (trimmed[i] === ')') {
+        depth--;
+        if (depth === 0) { safe = false; break; }
+      }
+    }
+    if (safe) {
+      return evalLogicalOr(row, trimmed.substring(1, trimmed.length - 1).trim());
+    }
+  }
+
+  // Check NOT: not (expr) OR not condition
+  const notMatch = trimmed.match(/^not\s+(.*)$/i);
+  if (notMatch) {
+    return !evalLogicalOr(row, notMatch[1].trim());
+  }
+
+  return evaluateSingleCondition(row, trimmed);
+}
+
+// Robust recursive WHERE evaluator supporting AND, OR, NOT, parentheses, BETWEEN, IN, NULL, etc.
 function evaluateWhereCondition(row, whereClause) {
   if (!whereClause || !whereClause.trim()) return true;
-  const conditions = whereClause.trim().split(/\s+and\s+/i);
-  for (const cond of conditions) {
-    if (!evaluateSingleCondition(row, cond)) return false;
-  }
-  return true;
+  const normalized = normalizeWhereClause(whereClause);
+  return evalLogicalOr(row, normalized);
 }
 
 // Parses comma-separated key value pairs for insert and update
