@@ -1,0 +1,7 @@
+type enlngdb;
+create table scholars with id, name, cgpa;
+insert into scholars with id 1, name "Aryan Sharma", cgpa 9.4;
+insert into scholars with id 2, name "Meera Sen", cgpa 9.8;
+insert into scholars with id 3, name "Dev Patel", cgpa 8.9;
+find records from scholars where cgpa is greater than 9.0;
+count records from scholars;

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
+#include "enlngdb/c/enlngdb.h"
 
 #define VERSION "5.0.0-sovereign-universal"
 
@@ -304,12 +305,33 @@ void print_help() {
     printf("  enlangg run <filename.ext>                Run backend / natural English script\n");
     printf("  enlangg run <app.enlngf> --p <port>       Launch interactive Web Studio\n");
     printf("  enlangg run <app.enlngmf> --device <dev>  Deploy live to Android / iOS simulator\n");
+    printf("  enlangg <script.enlngdb>                  Execute Pure C Sovereign Database script\n");
+    printf("  enlangg db run <script.enlngdb>           Execute Pure C Sovereign Database script\n");
+    printf("  enlangg db -e \"<query>\"                   Execute instant conversational query in C\n");
     printf("  enlangg db serve [--port 8080] [--db <file.edb>] Launch sovereign EnlngDB Cloud HTTP Daemon\n");
     printf("  enlangg build <app.enlngmf> --target apk -o <app.apk>  Build production APK\n");
     printf("  enlangg build <app.enlngmf> --target ipa -o <app.ipa>  Build production IPA\n");
 }
 
 int run_script(const char* filepath) {
+    // 1. Check if database script (.enlngdb, .enlgdb)
+    if (strstr(filepath, ".enlngdb") != NULL || strstr(filepath, ".enlgdb") != NULL) {
+        return enlngdb_run_file(filepath);
+    }
+
+    // 2. Check if file declares "type enlngdb" header
+    FILE* chk = fopen(filepath, "r");
+    if (chk) {
+        char buf[64] = {0};
+        if (fgets(buf, sizeof(buf), chk)) {
+            if (strncmp(buf, "type enlngdb", 12) == 0 || strncmp(buf, "type enlgdb", 11) == 0) {
+                fclose(chk);
+                return enlngdb_run_file(filepath);
+            }
+        }
+        fclose(chk);
+    }
+
     char temp_script[MAX_PATH];
     char temp_dir[MAX_PATH];
     GetTempPathA(MAX_PATH, temp_dir);
@@ -357,7 +379,23 @@ int main(int argc, char* argv[]) {
             }
             return system(cmd);
         }
+        if (argc >= 3 && (strcmp(argv[2], "run") == 0 || strstr(argv[2], ".enlngdb") != NULL || strstr(argv[2], ".enlgdb") != NULL)) {
+            const char* fpath = strcmp(argv[2], "run") == 0 ? (argc >= 4 ? argv[3] : NULL) : argv[2];
+            if (!fpath) {
+                fprintf(stderr, "[ERROR] Usage: enlangg db run <file.enlngdb>\n");
+                return 1;
+            }
+            return enlngdb_run_file(fpath);
+        }
+        if (argc >= 4 && strcmp(argv[2], "-e") == 0) {
+            EnlngDatabase* db = enlngdb_create("default");
+            int count = enlngdb_execute_script(db, argv[3], true);
+            enlngdb_free(db);
+            return count >= 0 ? 0 : 1;
+        }
         fprintf(stderr, "[ERROR] Usage: enlangg db serve [--port <port>] [--db <file.edb>]\n");
+        fprintf(stderr, "               enlangg db run <file.enlngdb>\n");
+        fprintf(stderr, "               enlangg db -e \"<query>\"\n");
         return 1;
     }
 
@@ -367,6 +405,11 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         const char* filepath = argv[2];
+
+        // Check if database script
+        if (strstr(filepath, ".enlngdb") != NULL || strstr(filepath, ".enlgdb") != NULL) {
+            return enlngdb_run_file(filepath);
+        }
 
         // Check if mobile app
         if (strstr(filepath, ".enlngmf") != NULL) {
