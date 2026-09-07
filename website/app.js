@@ -899,16 +899,23 @@ function executeEnlngDBStatement(statement, engineState) {
   if (!updateMatch) {
     updateMatch = stmt.match(/^(?:update|change|modify)\s+(?:records\s+in\s+|rows\s+in\s+|table\s+)?([a-zA-Z0-9_]+)\s+(?:set\s+)?(.+?)(?:\s+where\s+(.+))?$/i);
   }
+  if (!updateMatch) {
+    // support: update/set <col> to/=/is <val> in <table_name> [where ...]
+    const altMatch = stmt.match(/^(?:update|change|set|modify)\s+(.+?)\s+in\s+(?:table\s+|the\s+table\s+)?([a-zA-Z0-9_]+)(?:\s+where\s+(.+))?$/i);
+    if (altMatch) {
+      updateMatch = [altMatch[0], altMatch[2], altMatch[1], altMatch[3]];
+    }
+  }
   if (updateMatch) {
     const tableName = updateMatch[1];
     const setClause = updateMatch[2];
     const whereClause = updateMatch[3];
     const currentDb = engineState.databases[engineState.activeDb];
-    if (!currentDb.tables[tableName]) {
+    if (!currentDb || !currentDb.tables[tableName]) {
       return { type: 'ERROR', error: `Table '${tableName}' not found in active database '${engineState.activeDb}'.` };
     }
     const table = currentDb.tables[tableName];
-    const assignments = parseKeyValuePairs(setClause);
+    const assignments = parseKeyValuePairs(setClause.replace(/^set\s+/i, ''));
     let affected = 0;
     table.rows.forEach(r => {
       if (evaluateWhereCondition(r, whereClause)) {
@@ -1065,13 +1072,15 @@ function isEnlngDbCode(code) {
     /\buse\s+[a-zA-Z0-9_\-.]+\s*;/i,
     /\bshow\s+tables\b/i,
     /\bcreate\s+table\b/i,
-    /\binsert\s+record\s+into\b/i,
+    /\binsert\s+(?:record\s+)?into\b/i,
     /\bfind\s+all\s+records\b/i,
     /\bshow\s+all\s+records\b/i,
     /\bfind\s+records\s+from\b/i,
     /\bdelete\s+column\b/i,
     /\bdelete\s+table\b/i,
-    /\bdelete\s+database\b/i
+    /\bdelete\s+database\b/i,
+    /\b(?:in\s+[a-zA-Z0-9_]+\s+)?(?:update|change|modify)\b/i,
+    /\bupdate\s+[a-zA-Z0-9_]+\s+set\b/i
   ];
   return dbPatterns.some(regex => regex.test(code));
 }
