@@ -51,17 +51,17 @@ function Install-EnlanggCore($targetBase, $addToPath, $associateFiles, $statusCa
     $localEnlng = Join-Path $scriptDir "enlng.exe"
     $localEnlngdb = Join-Path $scriptDir "enlngdb.exe"
 
-    if ((Test-Path $localEnlangg) -and (Test-Path $localEnlng)) {
+    if ((Test-Path $localEnlangg) -and (Test-Path $localEnlng) -and (Test-Path $localEnlngdb)) {
         Copy-Item -Force $localEnlangg $enlanggExe
         Copy-Item -Force $localEnlng $enlngExe
-        if (Test-Path $localEnlngdb) { Copy-Item -Force $localEnlngdb $enlngdbExe }
+        Copy-Item -Force $localEnlngdb $enlngdbExe
     } else {
         & $statusCallback "Fetching binaries from sovereign distribution..."
         $primaryUrl = "https://enlangg.vercel.app"
         try {
             Invoke-WebRequest -Uri "$primaryUrl/enlangg.exe" -OutFile $enlanggExe -UseBasicParsing -TimeoutSec 30
             Invoke-WebRequest -Uri "$primaryUrl/enlng.exe" -OutFile $enlngExe -UseBasicParsing -TimeoutSec 30
-            try { Invoke-WebRequest -Uri "$primaryUrl/enlngdb.exe" -OutFile $enlngdbExe -UseBasicParsing -TimeoutSec 30 } catch {}
+            Invoke-WebRequest -Uri "$primaryUrl/enlngdb.exe" -OutFile $enlngdbExe -UseBasicParsing -TimeoutSec 30
         } catch {
             throw "Failed to download binaries from sovereign distribution: $($_.Exception.Message)"
         }
@@ -96,10 +96,12 @@ function Install-EnlanggCore($targetBase, $addToPath, $associateFiles, $statusCa
 
     # Optional File Associations
     if ($associateFiles) {
-        & $statusCallback "Registering .enlng file associations..."
+        & $statusCallback "Registering .enlng & .enlngdb file associations..."
         try {
             cmd /c "assoc .enlng=EnlanggScript >nul 2>&1"
             cmd /c "ftype EnlanggScript=\"$enlanggExe\" run \"%1\" %* >nul 2>&1"
+            cmd /c "assoc .enlngdb=EnlngDBScript >nul 2>&1"
+            cmd /c "ftype EnlngDBScript=\"$enlanggExe\" db run \"%1\" %* >nul 2>&1"
         } catch {}
     }
 
@@ -212,7 +214,7 @@ if ($Silent) {
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Enlangg Native Toolchain" FontSize="11" Foreground="#475569" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="0" Text="v5.0.0 Sovereign Master" FontSize="11" Foreground="#475569" VerticalAlignment="Center"/>
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button x:Name="BtnCancel" Content="Cancel" Width="90" Height="36" Margin="0,0,10,0"/>
                 <Button x:Name="BtnInstall" Content="Install Now" Width="120" Height="36" Background="#00F0FF" Foreground="#000000" BorderThickness="0"/>

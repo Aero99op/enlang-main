@@ -623,10 +623,10 @@ display product</div>
 
           <h3 class="docs-h3">Natural Conversational DDL &amp; DML Syntax</h3>
           <p class="docs-p">
-            EnlngDB uses natural human phrasing for schema declarations, data insertions, and query filtering:
+            EnlngDB uses natural human phrasing for schema declarations, data insertions, query filtering, and <strong>in-table row/column updates</strong>:
           </p>
 
-          <div class="code-block-card">
+          <div class="code-block-card" style="margin-bottom: 24px;">
             <div class="code-block-header">
               <span>university_scholars.enlngdb</span>
               <button type="button" class="copy-code-btn terminal-btn" data-target="edbCode">Copy</button>
@@ -635,14 +635,67 @@ display product</div>
 
 use university_db;
 
-create table scholars with id, name, major, cgpa;
+create table scholars with id, name, cgpa, status;
 
-insert record into scholars with id 1, name "Aryan Sharma", major "AI & Robotics", cgpa 9.4;
-insert record into scholars with id 2, name "Meera Sen", major "Quantum Systems", cgpa 9.8;
-insert record into scholars with id 3, name "Dev Patel", major "Distributed Systems", cgpa 8.9;
+insert record into scholars with id 1, name "aryan", cgpa 8.2, status "probation";
+insert record into scholars with id 2, name "meera", cgpa 9.4, status "honors";
+insert record into scholars with id 3, name "kunal", cgpa 7.8, status "probation";
 
-find all records from scholars where cgpa is greater than 9.0;
-count records from scholars where cgpa is greater than 9.0;</div>
+find all records from scholars;
+
+# 1. Conversational row update by condition
+in scholars change cgpa to 9.8 where name is "aryan";
+
+# 2. Update with 'update' keyword & relational expression
+in scholars update status to "dean_list" where cgpa is greater than 9.0;
+
+# 3. Multi-field update in a single atomic instruction
+in scholars set cgpa to 9.95, status to "gold_medalist" where name is "aryan";
+
+# 4. Bulk column update across all rows (unconstrained)
+in scholars set status to "active_enrolled";
+
+find all records from scholars;</div>
+          </div>
+
+          <h3 class="docs-h3">In-Table Mutation Grammar Reference</h3>
+          <div class="table-responsive" style="margin-bottom: 24px;">
+            <table style="font-size: 0.85rem;">
+              <thead>
+                <tr>
+                  <th>Syntax Pattern</th>
+                  <th>Example Phrase</th>
+                  <th>Behavior</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>in &lt;tbl&gt; change &lt;col&gt; to &lt;val&gt; where ...;</code></td>
+                  <td><code>in scholars change cgpa to 9.8 where name is "aryan";</code></td>
+                  <td>Updates single column for matching rows (0.03 ms in Pure C)</td>
+                </tr>
+                <tr>
+                  <td><code>in &lt;tbl&gt; update &lt;col&gt; to &lt;val&gt; where ...;</code></td>
+                  <td><code>in scholars update status to "honors" where cgpa &gt;= 9.0;</code></td>
+                  <td>Updates matching records using relational condition</td>
+                </tr>
+                <tr>
+                  <td><code>in &lt;tbl&gt; set &lt;col1&gt; to &lt;val1&gt;, &lt;col2&gt; to &lt;val2&gt; where ...;</code></td>
+                  <td><code>in scholars set cgpa to 9.95, status to "topper" where name is "aryan";</code></td>
+                  <td>Atomically updates multiple fields simultaneously</td>
+                </tr>
+                <tr>
+                  <td><code>update &lt;tbl&gt; set &lt;col&gt; = &lt;val&gt; where ...;</code></td>
+                  <td><code>update scholars set status = "dean_list" where cgpa &gt; 9.0;</code></td>
+                  <td>Standard SQL/DSL assignment phrasing</td>
+                </tr>
+                <tr>
+                  <td><code>in &lt;tbl&gt; set &lt;col&gt; to &lt;val&gt;;</code></td>
+                  <td><code>in scholars set status to "active_enrolled";</code></td>
+                  <td>Unconstrained column mutation across every row in table</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </article>
 
@@ -684,6 +737,11 @@ count records from scholars where cgpa is greater than 9.0;</div>
                   <td>Executes conversational database scripts natively via Pure C engine (&lt;0.05 ms)</td>
                 </tr>
                 <tr>
+                  <td><code>enlngdb &lt;script.enlngdb&gt;</code></td>
+                  <td>-</td>
+                  <td>Standalone Pure C high-performance database execution and binary state persistence</td>
+                </tr>
+                <tr>
                   <td><code>enlangg db run &lt;file.enlngdb&gt;</code></td>
                   <td>-</td>
                   <td>Runs database scripts with automatic binary state persistence (.edb)</td>
@@ -697,6 +755,11 @@ count records from scholars where cgpa is greater than 9.0;</div>
                   <td><code>enlangg db serve</code></td>
                   <td><code>[--port 8080] [--db &lt;file.edb&gt;]</code></td>
                   <td>Launches sovereign EnlngDB Cloud HTTP Daemon for Next.js / web clients</td>
+                </tr>
+                <tr>
+                  <td><code>enlngdb --version</code></td>
+                  <td>-</td>
+                  <td>Displays Pure C native database engine version and architecture</td>
                 </tr>
                 <tr>
                   <td><code>enlng check &lt;file&gt;</code></td>

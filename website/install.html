@@ -110,12 +110,12 @@
           <span style="font-size: 0.76rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Recommended for Windows 10/11</span>
           <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Windows 1-Click Installer</h3>
           <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
-            Standalone setup wizard that installs <code>enlangg.exe</code> and <code>enlng.exe</code> into <code>%LOCALAPPDATA%\enlangg</code>, configures User PATH automatically, and registers file associations.
+            Standalone setup wizard that installs <code>enlangg.exe</code>, <code>enlng.exe</code>, and <code>enlngdb.exe</code> into <code>%USERPROFILE%\.enlangg\bin</code>, configures User PATH automatically, and registers <code>.enlng</code> &amp; <code>.enlngdb</code> file associations.
           </p>
           <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">
-            Package: enlangg-setup.exe<br>
-            Payload Size: 310 KB<br>
-            Architecture: x86_64 Native (No Admin Rights Required)
+            Package: enlangg-setup.exe (or setup.exe)<br>
+            Payload Size: 488 KB<br>
+            Bundles: enlangg.exe, enlng.exe, enlngdb.exe (No Admin Rights Required)
           </div>
           <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="btn btn-primary" style="margin-top: auto; justify-content: center;">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -300,11 +300,19 @@ gcc -O3 enlng.c -o enlng
         <div class="code-block-header">
           <span>Terminal Diagnostics</span>
         </div>
-        <div class="code-block-body"># Check compiler version
+        <div class="code-block-body"># Check universal toolchain
+$ enlangg --version
+enlangg version 5.0.0-sovereign-universal
+
+# Check compiler version
 $ enlng --version
 Enlangg Enlangg Compiler (x86_64-windows-msvc)
 Deterministic Memory Slots: ACTIVE
 Zero-GC Mode: ENABLED
+
+# Check native C database engine
+$ enlngdb --version
+enlngdb version 5.0.0 (Pure C Microsecond Database Engine)
 
 # Check C99 backend linker
 $ gcc --version

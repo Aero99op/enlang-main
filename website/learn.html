@@ -204,7 +204,20 @@
                 08:10
               </span>
             </div>
-            <div class="curriculum-item-title">Python God Call & C-ABI</div>
+            <div class="curriculum-item-title">Python God Call &amp; C-ABI</div>
+          </a>
+        </li>
+
+        <li>
+          <a href="#track9" class="curriculum-item-link">
+            <div class="curriculum-item-top">
+              <span class="curriculum-track-num" style="color: var(--accent-emerald);">TOPIC 09</span>
+              <span class="curriculum-video-duration">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                07:30
+              </span>
+            </div>
+            <div class="curriculum-item-title">EnlngDB &amp; In-Table Updates</div>
           </a>
         </li>
       </ul>
@@ -878,6 +891,71 @@ display "Standard Deviation: ", stdev_val</div>
             <li class="lesson-takeaway-item">
               <span>•</span>
               <span>Enables seamless execution of AI/ML workflows while keeping the core application in bare-metal compiled code.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- TOPIC 09: EnlngDB Sovereign Database & Natural In-Table Mutations -->
+      <section class="topic-lesson-section" id="track9">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 09</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 8 mins · Pure C Engine</span>
+        </div>
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">9. EnlngDB Sovereign Database &amp; Natural In-Table Updates</h2>
+        <p class="docs-p" style="margin-bottom: 20px;">
+          Execute ultra-low latency conversational queries and mutate rows or columns directly in pure C without SQL strings or ORM overhead. Write human English queries like <code>in &lt;table&gt; change/update &lt;col&gt; to &lt;val&gt; where ...</code>.
+        </p>
+
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>09_enlngdb_mutations.enlngdb</span>
+            <div style="display: flex; gap: 8px;">
+              <a href="playground.html?mode=enlngdb&preset=enlngdb_updates" class="terminal-btn" style="text-decoration: none;">Run in Sandbox</a>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="track09Code">Copy Code</button>
+            </div>
+          </div>
+          <div class="code-block-body" id="track09Code">type enlngdb;
+
+use university_db;
+
+create table scholars with id, name, cgpa, status;
+
+insert record into scholars with id 1, name "aryan", cgpa 8.2, status "probation";
+insert record into scholars with id 2, name "meera", cgpa 9.4, status "honors";
+insert record into scholars with id 3, name "kunal", cgpa 7.8, status "probation";
+
+find all records from scholars;
+
+# 1. Conversational row update by condition
+in scholars change cgpa to 9.8 where name is "aryan";
+
+# 2. Update with relational condition
+in scholars update status to "dean_list" where cgpa is greater than 9.0;
+
+# 3. Multi-field update in single statement
+in scholars set cgpa to 9.95, status to "gold_medalist" where name is "aryan";
+
+# 4. Bulk column update across all rows
+in scholars set status to "active_enrolled";
+
+find all records from scholars;</div>
+        </div>
+
+        <div class="lesson-takeaways-card">
+          <div class="lesson-takeaways-title">Key Database Architecture Insights</div>
+          <ul class="lesson-takeaways-list">
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Executes in under 0.03 milliseconds in Pure C with zero SQL compilation overhead.</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Direct binary serialization (.edb) ensures ACID persistence to disk automatically.</span>
+            </li>
+            <li class="lesson-takeaway-item">
+              <span>•</span>
+              <span>Available via <code>enlangg &lt;file.enlngdb&gt;</code>, <code>enlangg db run &lt;file.enlngdb&gt;</code>, and standalone <code>enlngdb &lt;file.enlngdb&gt;</code>.</span>
             </li>
           </ul>
         </div>

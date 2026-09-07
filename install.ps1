@@ -44,20 +44,24 @@ function Install-EnlanggCore($targetBase, $addToPath, $associateFiles, $statusCa
 
     $enlanggExe = Join-Path $binDir "enlangg.exe"
     $enlngExe = Join-Path $binDir "enlng.exe"
+    $enlngdbExe = Join-Path $binDir "enlngdb.exe"
 
     $scriptDir = $PSScriptRoot
     $localEnlangg = Join-Path $scriptDir "enlangg.exe"
     $localEnlng = Join-Path $scriptDir "enlng.exe"
+    $localEnlngdb = Join-Path $scriptDir "enlngdb.exe"
 
-    if ((Test-Path $localEnlangg) -and (Test-Path $localEnlng)) {
+    if ((Test-Path $localEnlangg) -and (Test-Path $localEnlng) -and (Test-Path $localEnlngdb)) {
         Copy-Item -Force $localEnlangg $enlanggExe
         Copy-Item -Force $localEnlng $enlngExe
+        Copy-Item -Force $localEnlngdb $enlngdbExe
     } else {
         & $statusCallback "Fetching binaries from sovereign distribution..."
         $primaryUrl = "https://enlangg.vercel.app"
         try {
             Invoke-WebRequest -Uri "$primaryUrl/enlangg.exe" -OutFile $enlanggExe -UseBasicParsing -TimeoutSec 30
             Invoke-WebRequest -Uri "$primaryUrl/enlng.exe" -OutFile $enlngExe -UseBasicParsing -TimeoutSec 30
+            Invoke-WebRequest -Uri "$primaryUrl/enlngdb.exe" -OutFile $enlngdbExe -UseBasicParsing -TimeoutSec 30
         } catch {
             throw "Failed to download binaries from sovereign distribution: $($_.Exception.Message)"
         }
@@ -92,10 +96,12 @@ function Install-EnlanggCore($targetBase, $addToPath, $associateFiles, $statusCa
 
     # Optional File Associations
     if ($associateFiles) {
-        & $statusCallback "Registering .enlng file associations..."
+        & $statusCallback "Registering .enlng & .enlngdb file associations..."
         try {
             cmd /c "assoc .enlng=EnlanggScript >nul 2>&1"
             cmd /c "ftype EnlanggScript=\"$enlanggExe\" run \"%1\" %* >nul 2>&1"
+            cmd /c "assoc .enlngdb=EnlngDBScript >nul 2>&1"
+            cmd /c "ftype EnlngDBScript=\"$enlanggExe\" db run \"%1\" %* >nul 2>&1"
         } catch {}
     }
 

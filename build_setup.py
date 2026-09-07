@@ -8,9 +8,12 @@ def main():
         enlangg_bytes = f.read()
     with open("enlng.exe", "rb") as f:
         enlng_bytes = f.read()
+    with open("enlngdb.exe", "rb") as f:
+        enlngdb_bytes = f.read()
         
     print(f"enlangg.exe size: {len(enlangg_bytes)} bytes")
     print(f"enlng.exe size: {len(enlng_bytes)} bytes")
+    print(f"enlngdb.exe size: {len(enlngdb_bytes)} bytes")
 
     c_code = []
     c_code.append("""#define WIN32_LEAN_AND_MEAN
@@ -34,6 +37,13 @@ def main():
     c_code.append("static const unsigned char enlng_bin[] = {\n")
     for i in range(0, len(enlng_bytes), 32):
         chunk = enlng_bytes[i:i+32]
+        c_code.append("    " + ", ".join(str(b) for b in chunk) + ",\n")
+    c_code.append("};\n\n")
+
+    c_code.append(f"static const unsigned int enlngdb_len = {len(enlngdb_bytes)};\n")
+    c_code.append("static const unsigned char enlngdb_bin[] = {\n")
+    for i in range(0, len(enlngdb_bytes), 32):
+        chunk = enlngdb_bytes[i:i+32]
         c_code.append("    " + ", ".join(str(b) for b in chunk) + ",\n")
     c_code.append("};\n\n")
 
@@ -93,12 +103,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     char enlangg_path[MAX_PATH];
     char enlng_path[MAX_PATH];
+    char enlngdb_path[MAX_PATH];
     snprintf(enlangg_path, sizeof(enlangg_path), "%s\\enlangg.exe", install_dir);
     snprintf(enlng_path, sizeof(enlng_path), "%s\\enlng.exe", install_dir);
+    snprintf(enlngdb_path, sizeof(enlngdb_path), "%s\\enlngdb.exe", install_dir);
 
     // Extract files
     if (!write_file(enlangg_path, enlangg_bin, enlangg_len) ||
-        !write_file(enlng_path, enlng_bin, enlng_len)) {
+        !write_file(enlng_path, enlng_bin, enlng_len) ||
+        !write_file(enlngdb_path, enlngdb_bin, enlngdb_len)) {
         if (!is_silent) {
             MessageBoxA(NULL,
                 "Failed to write executables. Please verify directory permissions.",
@@ -121,8 +134,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         "Installation Directory:\n  %s\n\n"
         "PATH environment variable has been configured automatically.\n\n"
         "Commands installed:\n"
-        "  - enlangg.exe (General Toolchain)\n"
-        "  - enlng.exe   (Compiler & Runtime)\n\n"
+        "  - enlangg.exe (Universal Toolchain & C Database Engine)\n"
+        "  - enlng.exe   (Compiler & Runtime)\n"
+        "  - enlngdb.exe (Pure C Microsecond Database Engine)\n\n"
         "Would you like to open Command Prompt now to try it out?",
         install_dir);
 

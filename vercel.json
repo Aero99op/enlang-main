@@ -93,6 +93,23 @@
       ]
     },
     {
+      "source": "/enlngdb.exe",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/octet-stream"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment; filename=\"enlngdb.exe\""
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/(install.ps1|install.cmd|install.sh)",
       "headers": [
         {
