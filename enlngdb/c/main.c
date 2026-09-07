@@ -1,11 +1,17 @@
 #include "enlngdb.h"
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
         printf("EnlngDB Pure C Native Database Engine v%s\n", ENLNGDB_VERSION);
         printf("Usage:\n");
         printf("  enlngdb <script.enlngdb>       Execute natural English database script\n");
         printf("  enlngdb -e \"<query>\"           Execute inline statement\n");
+        printf("  enlngdb --version              Display version information\n");
+        return 0;
+    }
+
+    if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
+        printf("enlngdb version %s (Pure C Microsecond Database Engine)\n", ENLNGDB_VERSION);
         return 0;
     }
 

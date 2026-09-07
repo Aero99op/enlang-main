@@ -1,19 +1,29 @@
 import os
 import subprocess
+import shutil
 
 def main():
-    print("Building Standalone Enlangg Windows Installer...")
+    print("Building Standalone Enlangg Windows Sovereign 7-in-1 Suite Installer...")
     
-    with open("enlangg.exe", "rb") as f:
-        enlangg_bytes = f.read()
-    with open("enlng.exe", "rb") as f:
-        enlng_bytes = f.read()
-    with open("enlngdb.exe", "rb") as f:
-        enlngdb_bytes = f.read()
-        
-    print(f"enlangg.exe size: {len(enlangg_bytes)} bytes")
-    print(f"enlng.exe size: {len(enlng_bytes)} bytes")
-    print(f"enlngdb.exe size: {len(enlngdb_bytes)} bytes")
+    bin_names = [
+        ("enlangg", "enlangg.exe"),
+        ("enlng", "enlng.exe"),
+        ("enlngdb", "enlngdb.exe"),
+        ("enlngf", "enlngf.exe"),
+        ("enlngd", "enlngd.exe"),
+        ("enlngs", "enlngs.exe"),
+        ("enlngm", "enlngm.exe"),
+    ]
+
+    bin_data = {}
+    for key, fname in bin_names:
+        if not os.path.exists(fname):
+            print(f"[ERROR] Required binary missing: {fname}")
+            return False
+        with open(fname, "rb") as f:
+            data = f.read()
+        bin_data[key] = data
+        print(f"  - {fname}: {len(data)} bytes")
 
     c_code = []
     c_code.append("""#define WIN32_LEAN_AND_MEAN
@@ -25,27 +35,14 @@ def main():
 // Embedded binaries
 """)
 
-    # Format bytes in chunks
-    c_code.append(f"static const unsigned int enlangg_len = {len(enlangg_bytes)};\n")
-    c_code.append("static const unsigned char enlangg_bin[] = {\n")
-    for i in range(0, len(enlangg_bytes), 32):
-        chunk = enlangg_bytes[i:i+32]
-        c_code.append("    " + ", ".join(str(b) for b in chunk) + ",\n")
-    c_code.append("};\n\n")
-
-    c_code.append(f"static const unsigned int enlng_len = {len(enlng_bytes)};\n")
-    c_code.append("static const unsigned char enlng_bin[] = {\n")
-    for i in range(0, len(enlng_bytes), 32):
-        chunk = enlng_bytes[i:i+32]
-        c_code.append("    " + ", ".join(str(b) for b in chunk) + ",\n")
-    c_code.append("};\n\n")
-
-    c_code.append(f"static const unsigned int enlngdb_len = {len(enlngdb_bytes)};\n")
-    c_code.append("static const unsigned char enlngdb_bin[] = {\n")
-    for i in range(0, len(enlngdb_bytes), 32):
-        chunk = enlngdb_bytes[i:i+32]
-        c_code.append("    " + ", ".join(str(b) for b in chunk) + ",\n")
-    c_code.append("};\n\n")
+    for key, fname in bin_names:
+        data = bin_data[key]
+        c_code.append(f"static const unsigned int {key}_len = {len(data)};\n")
+        c_code.append(f"static const unsigned char {key}_bin[] = {{\n")
+        for i in range(0, len(data), 32):
+            chunk = data[i:i+32]
+            c_code.append("    " + ", ".join(str(b) for b in chunk) + ",\n")
+        c_code.append("};\n\n")
 
     c_code.append(r"""
 static int write_file(const char *path, const unsigned char *data, unsigned int len) {
@@ -101,17 +98,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     CreateDirectoryA(base_dir, NULL);
     CreateDirectoryA(install_dir, NULL);
 
-    char enlangg_path[MAX_PATH];
-    char enlng_path[MAX_PATH];
-    char enlngdb_path[MAX_PATH];
-    snprintf(enlangg_path, sizeof(enlangg_path), "%s\\enlangg.exe", install_dir);
-    snprintf(enlng_path, sizeof(enlng_path), "%s\\enlng.exe", install_dir);
-    snprintf(enlngdb_path, sizeof(enlngdb_path), "%s\\enlngdb.exe", install_dir);
+    char p_enlangg[MAX_PATH];
+    char p_enlng[MAX_PATH];
+    char p_enlngdb[MAX_PATH];
+    char p_enlngf[MAX_PATH];
+    char p_enlngd[MAX_PATH];
+    char p_enlngs[MAX_PATH];
+    char p_enlngm[MAX_PATH];
 
-    // Extract files
-    if (!write_file(enlangg_path, enlangg_bin, enlangg_len) ||
-        !write_file(enlng_path, enlng_bin, enlng_len) ||
-        !write_file(enlngdb_path, enlngdb_bin, enlngdb_len)) {
+    snprintf(p_enlangg, sizeof(p_enlangg), "%s\\enlangg.exe", install_dir);
+    snprintf(p_enlng, sizeof(p_enlng), "%s\\enlng.exe", install_dir);
+    snprintf(p_enlngdb, sizeof(p_enlngdb), "%s\\enlngdb.exe", install_dir);
+    snprintf(p_enlngf, sizeof(p_enlngf), "%s\\enlngf.exe", install_dir);
+    snprintf(p_enlngd, sizeof(p_enlngd), "%s\\enlngd.exe", install_dir);
+    snprintf(p_enlngs, sizeof(p_enlngs), "%s\\enlngs.exe", install_dir);
+    snprintf(p_enlngm, sizeof(p_enlngm), "%s\\enlngm.exe", install_dir);
+
+    // Extract all 7 binaries
+    if (!write_file(p_enlangg, enlangg_bin, enlangg_len) ||
+        !write_file(p_enlng, enlng_bin, enlng_len) ||
+        !write_file(p_enlngdb, enlngdb_bin, enlngdb_len) ||
+        !write_file(p_enlngf, enlngf_bin, enlngf_len) ||
+        !write_file(p_enlngd, enlngd_bin, enlngd_len) ||
+        !write_file(p_enlngs, enlngs_bin, enlngs_len) ||
+        !write_file(p_enlngm, enlngm_bin, enlngm_len)) {
         if (!is_silent) {
             MessageBoxA(NULL,
                 "Failed to write executables. Please verify directory permissions.",
@@ -128,22 +138,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 0;
     }
 
-    char msg[1024];
+    char msg[1200];
     snprintf(msg, sizeof(msg),
-        "Enlangg Sovereign Toolchain has been successfully installed!\n\n"
+        "Enlangg Sovereign Full-Stack Toolchain has been successfully installed!\n\n"
         "Installation Directory:\n  %s\n\n"
         "PATH environment variable has been configured automatically.\n\n"
-        "Commands installed:\n"
-        "  - enlangg.exe (Universal Toolchain & C Database Engine)\n"
-        "  - enlng.exe   (Compiler & Runtime)\n"
-        "  - enlngdb.exe (Pure C Microsecond Database Engine)\n\n"
+        "All 7 Tier Commands installed:\n"
+        "  - enlangg.exe (Universal Toolchain CLI)\n"
+        "  - enlng.exe   (Core Logic Compiler & Runtime)\n"
+        "  - enlngdb.exe (Pure C Microsecond Database Engine)\n"
+        "  - enlngf.exe  (Frontend Markup & Web Studio)\n"
+        "  - enlngd.exe  (Design Tokens & Stylesheet Engine)\n"
+        "  - enlngs.exe  (Reactive Fullstack Script Engine)\n"
+        "  - enlngm.exe  (Mobile Native & HAL Compiler)\n\n"
         "Would you like to open Command Prompt now to try it out?",
         install_dir);
 
     int res = MessageBoxA(NULL, msg, "Enlangg Setup — Installation Complete", MB_YESNO | MB_ICONINFORMATION);
     if (res == IDYES) {
         char cmd[MAX_PATH + 100];
-        snprintf(cmd, sizeof(cmd), "cmd.exe /k \"title Enlangg Sovereign Terminal && cd /d %s && enlng --help\"", userprofile);
+        snprintf(cmd, sizeof(cmd), "cmd.exe /k \"title Enlangg Sovereign Terminal && cd /d %s && enlangg --help\"", userprofile);
         WinExec(cmd, SW_SHOW);
     }
 
@@ -183,12 +197,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         print("Compile error:", res.stderr)
         return False
         
-    # Also copy as setup.exe for convenience
-    import shutil
     shutil.copy("website/enlangg-setup.exe", "website/setup.exe")
     shutil.copy("website/enlangg-setup.exe", "setup.exe")
     
-    # Clean up scratch files
     for clean in [src_file, "scratch_app.manifest", "scratch_res.rc", "scratch_res.res"]:
         if os.path.exists(clean):
             os.remove(clean)

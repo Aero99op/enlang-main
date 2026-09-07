@@ -42,28 +42,21 @@ function Install-EnlanggCore($targetBase, $addToPath, $associateFiles, $statusCa
     & $statusCallback "Extracting and verifying core binaries..."
     & $progressCallback 25
 
-    $enlanggExe = Join-Path $binDir "enlangg.exe"
-    $enlngExe = Join-Path $binDir "enlng.exe"
-    $enlngdbExe = Join-Path $binDir "enlngdb.exe"
-
+    $binList = @("enlangg.exe", "enlng.exe", "enlngdb.exe", "enlngf.exe", "enlngd.exe", "enlngs.exe", "enlngm.exe")
     $scriptDir = $PSScriptRoot
-    $localEnlangg = Join-Path $scriptDir "enlangg.exe"
-    $localEnlng = Join-Path $scriptDir "enlng.exe"
-    $localEnlngdb = Join-Path $scriptDir "enlngdb.exe"
+    $primaryUrl = "https://enlangg.vercel.app"
 
-    if ((Test-Path $localEnlangg) -and (Test-Path $localEnlng) -and (Test-Path $localEnlngdb)) {
-        Copy-Item -Force $localEnlangg $enlanggExe
-        Copy-Item -Force $localEnlng $enlngExe
-        Copy-Item -Force $localEnlngdb $enlngdbExe
-    } else {
-        & $statusCallback "Fetching binaries from sovereign distribution..."
-        $primaryUrl = "https://enlangg.vercel.app"
-        try {
-            Invoke-WebRequest -Uri "$primaryUrl/enlangg.exe" -OutFile $enlanggExe -UseBasicParsing -TimeoutSec 30
-            Invoke-WebRequest -Uri "$primaryUrl/enlng.exe" -OutFile $enlngExe -UseBasicParsing -TimeoutSec 30
-            Invoke-WebRequest -Uri "$primaryUrl/enlngdb.exe" -OutFile $enlngdbExe -UseBasicParsing -TimeoutSec 30
-        } catch {
-            throw "Failed to download binaries from sovereign distribution: $($_.Exception.Message)"
+    foreach ($b in $binList) {
+        $dest = Join-Path $binDir $b
+        $local = Join-Path $scriptDir $b
+        if (Test-Path $local) {
+            Copy-Item -Force $local $dest
+        } else {
+            try {
+                Invoke-WebRequest -Uri "$primaryUrl/$b" -OutFile $dest -UseBasicParsing -TimeoutSec 30
+            } catch {
+                Write-Warning "Could not fetch $b: $($_.Exception.Message)"
+            }
         }
     }
 
@@ -94,14 +87,27 @@ function Install-EnlanggCore($targetBase, $addToPath, $associateFiles, $statusCa
 
     & $progressCallback 80
 
-    # Optional File Associations
+    # Optional File Associations for all 6 domains
     if ($associateFiles) {
-        & $statusCallback "Registering .enlng & .enlngdb file associations..."
+        & $statusCallback "Registering .enlng, .enlngdb, .enlngf, .enlngd, .enlngs, .enlngm file associations..."
         try {
+            $enlanggExe = Join-Path $binDir "enlangg.exe"
+            $enlngfExe  = Join-Path $binDir "enlngf.exe"
+            $enlngdExe  = Join-Path $binDir "enlngd.exe"
+            $enlngsExe  = Join-Path $binDir "enlngs.exe"
+            $enlngmExe  = Join-Path $binDir "enlngm.exe"
             cmd /c "assoc .enlng=EnlanggScript >nul 2>&1"
             cmd /c "ftype EnlanggScript=\"$enlanggExe\" run \"%1\" %* >nul 2>&1"
             cmd /c "assoc .enlngdb=EnlngDBScript >nul 2>&1"
             cmd /c "ftype EnlngDBScript=\"$enlanggExe\" db run \"%1\" %* >nul 2>&1"
+            cmd /c "assoc .enlngf=EnlngFScript >nul 2>&1"
+            cmd /c "ftype EnlngFScript=\"$enlngfExe\" \"%1\" %* >nul 2>&1"
+            cmd /c "assoc .enlngd=EnlngDScript >nul 2>&1"
+            cmd /c "ftype EnlngDScript=\"$enlngdExe\" \"%1\" %* >nul 2>&1"
+            cmd /c "assoc .enlngs=EnlngSScript >nul 2>&1"
+            cmd /c "ftype EnlngSScript=\"$enlngsExe\" \"%1\" %* >nul 2>&1"
+            cmd /c "assoc .enlngm=EnlngMScript >nul 2>&1"
+            cmd /c "ftype EnlngMScript=\"$enlngmExe\" \"%1\" %* >nul 2>&1"
         } catch {}
     }
 

@@ -311,7 +311,10 @@ void print_help() {
     printf("  enlangg emit-c <file.enlng> [-o <out.c>]     Emit clean ISO C99 code with Scoped Arena Memory\n");
     printf("  enlangg run <filename.ext>                  Run backend / natural English script (Dual-Mode)\n");
     printf("  enlangg run <app.enlngf> --p <port>         Launch interactive Web Studio\n");
-    printf("  enlangg run <app.enlngmf> --device <dev>    Deploy live to Android / iOS simulator\n");
+    printf("  enlangg f <app.enlngf> [--port 3000]        Launch Frontend Web Studio\n");
+    printf("  enlangg d <theme.enlngd> [-o out.css]       Compile Design Tokens to CSS\n");
+    printf("  enlangg s <logic.enlngs> [-o out.js]        Compile Reactive Fullstack Scripts\n");
+    printf("  enlangg m <app.enlngm>                      Mobile Native & HAL Compiler\n");
     printf("  enlangg <script.enlngdb>                    Execute Pure C Sovereign Database script\n");
     printf("  enlangg db run <script.enlngdb>             Execute Pure C Sovereign Database script\n");
     printf("  enlangg db -e \"<query>\"                     Execute instant conversational query in C\n");
@@ -462,6 +465,46 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "               enlangg db run <file.enlngdb>\n");
         fprintf(stderr, "               enlangg db -e \"<query>\"\n");
         return 1;
+    }
+
+    if (strcmp(argv[1], "f") == 0 || strcmp(argv[1], "web") == 0) {
+        char cmd[2048] = "python -m enlgf";
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "d") == 0 || strcmp(argv[1], "design") == 0) {
+        char cmd[2048] = "python -m enlgd";
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "s") == 0 || strcmp(argv[1], "script") == 0) {
+        char cmd[2048] = "python -m enlgs";
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "m") == 0 || strcmp(argv[1], "mobile") == 0) {
+        char cmd[2048] = "python -m enlgm";
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
     }
 
     if (strcmp(argv[1], "run") == 0) {
