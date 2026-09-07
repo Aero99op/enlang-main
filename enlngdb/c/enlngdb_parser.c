@@ -430,38 +430,97 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         }
     }
 
-    // 9. update / change [records in] <table_name> set <col> = <val> [where <filter_col> <op> <target_val>]
-    if (str_starts_with_ci(stmt, "update ") || str_starts_with_ci(stmt, "change ")) {
-        const char* p = stmt + (str_starts_with_ci(stmt, "update ") ? 7 : 7);
-        while (isspace((unsigned char)*p)) p++;
+    // 9. update / change / in <table_name> update/change/set
+    bool is_in_stmt = str_starts_with_ci(stmt, "in ");
+    bool is_upd_stmt = str_starts_with_ci(stmt, "update ") || str_starts_with_ci(stmt, "change ") || str_starts_with_ci(stmt, "modify ");
 
-        if (str_starts_with_ci(p, "records in ")) p += 11;
-        else if (str_starts_with_ci(p, "rows in ")) p += 8;
-        else if (str_starts_with_ci(p, "in ")) p += 3;
-        if (str_starts_with_ci(p, "the ")) p += 4;
-        while (isspace((unsigned char)*p)) p++;
+    if (is_in_stmt || is_upd_stmt) {
+        char tbl_name[64] = {0};
+        const char* after_action = NULL;
 
-        const char* set_pos = strstr(p, " set ");
-        if (!set_pos) set_pos = strstr(p, " SET ");
-        if (set_pos) {
-            char tbl_name[64] = {0};
-            int tlen = (int)(set_pos - p);
-            if (tlen >= (int)sizeof(tbl_name)) tlen = (int)sizeof(tbl_name) - 1;
-            strncpy(tbl_name, p, tlen);
-            tbl_name[tlen] = '\0';
-            trim(tbl_name);
+        if (is_in_stmt) {
+            const char* p = stmt + 3;
+            while (isspace((unsigned char)*p)) p++;
+            if (str_starts_with_ci(p, "table ")) p += 6;
+            if (str_starts_with_ci(p, "the ")) p += 4;
+            while (isspace((unsigned char)*p)) p++;
 
+            char tname[64] = {0};
+            if (sscanf(p, "%63s", tname) == 1) {
+                strncpy(tbl_name, tname, sizeof(tbl_name) - 1);
+                const char* post_tbl = p + strlen(tname);
+                while (isspace((unsigned char)*post_tbl)) post_tbl++;
+
+                if (str_starts_with_ci(post_tbl, "update ")) {
+                    post_tbl += 7;
+                } else if (str_starts_with_ci(post_tbl, "change ")) {
+                    post_tbl += 7;
+                } else if (str_starts_with_ci(post_tbl, "set ")) {
+                    post_tbl += 4;
+                } else if (str_starts_with_ci(post_tbl, "modify ")) {
+                    post_tbl += 7;
+                } else {
+                    // Not an update statement starting with 'in'
+                    return true;
+                }
+
+                while (isspace((unsigned char)*post_tbl)) post_tbl++;
+                if (str_starts_with_ci(post_tbl, "set ")) {
+                    post_tbl += 4;
+                    while (isspace((unsigned char)*post_tbl)) post_tbl++;
+                }
+                after_action = post_tbl;
+            }
+        } else {
+            const char* p = stmt;
+            if (str_starts_with_ci(p, "update ")) p += 7;
+            else if (str_starts_with_ci(p, "change ")) p += 7;
+            else if (str_starts_with_ci(p, "modify ")) p += 7;
+            while (isspace((unsigned char)*p)) p++;
+
+            if (str_starts_with_ci(p, "records in ")) p += 11;
+            else if (str_starts_with_ci(p, "rows in ")) p += 8;
+            else if (str_starts_with_ci(p, "in ")) p += 3;
+            if (str_starts_with_ci(p, "the ")) p += 4;
+            if (str_starts_with_ci(p, "table ")) p += 6;
+            while (isspace((unsigned char)*p)) p++;
+
+            const char* set_pos = strstr(p, " set ");
+            if (!set_pos) set_pos = strstr(p, " SET ");
+
+            if (set_pos) {
+                int tlen = (int)(set_pos - p);
+                if (tlen >= (int)sizeof(tbl_name)) tlen = (int)sizeof(tbl_name) - 1;
+                strncpy(tbl_name, p, tlen);
+                tbl_name[tlen] = '\0';
+                trim(tbl_name);
+
+                after_action = set_pos + 5;
+                while (isspace((unsigned char)*after_action)) after_action++;
+            } else {
+                char tname[64] = {0};
+                if (sscanf(p, "%63s", tname) == 1) {
+                    strncpy(tbl_name, tname, sizeof(tbl_name) - 1);
+                    const char* post_tbl = p + strlen(tname);
+                    while (isspace((unsigned char)*post_tbl)) post_tbl++;
+                    if (str_starts_with_ci(post_tbl, "set ")) {
+                        post_tbl += 4;
+                        while (isspace((unsigned char)*post_tbl)) post_tbl++;
+                    }
+                    after_action = post_tbl;
+                }
+            }
+        }
+
+        if (tbl_name[0] && after_action && *after_action) {
             EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
             if (!tbl) {
                 if (print_output) printf("ERROR: Table '%s' does not exist in database '%s'.\n\n", tbl_name, db->name);
                 return false;
             }
 
-            const char* after_set = set_pos + 5;
-            while (isspace((unsigned char)*after_set)) after_set++;
-
             char rest[512];
-            strncpy(rest, after_set, sizeof(rest) - 1);
+            strncpy(rest, after_action, sizeof(rest) - 1);
             rest[sizeof(rest) - 1] = '\0';
 
             char filter_col[64] = {0};
@@ -551,6 +610,12 @@ int enlngdb_execute_script(EnlngDatabase* db, const char* script_content, bool p
         while (*ptr && (isspace((unsigned char)*ptr) || *ptr == ';' || *ptr == '\n' || *ptr == '\r')) ptr++;
         if (!*ptr) break;
 
+        // Skip comments starting with '#'
+        if (*ptr == '#') {
+            while (*ptr && *ptr != '\n' && *ptr != '\r') ptr++;
+            continue;
+        }
+
         char* stmt_start = ptr;
         bool in_q = false;
         char q_char = 0;
@@ -584,7 +649,7 @@ int enlngdb_execute_script(EnlngDatabase* db, const char* script_content, bool p
 }
 
 int enlngdb_run_file(const char* filepath) {
-    FILE* f = fopen(filepath, "r");
+    FILE* f = fopen(filepath, "rb");
     if (!f) {
         fprintf(stderr, "[ENLNGDB ERROR] Could not open file: %s\n", filepath);
         return 1;
@@ -600,8 +665,8 @@ int enlngdb_run_file(const char* filepath) {
         return 1;
     }
 
-    fread(buffer, 1, sz, f);
-    buffer[sz] = '\0';
+    size_t actual = fread(buffer, 1, sz, f);
+    buffer[actual] = '\0';
     fclose(f);
 
     // Derive database name from filename

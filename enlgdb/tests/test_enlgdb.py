@@ -223,3 +223,43 @@ drop database esports_hub confirmed
     reports = engine.execute_program(ast, emitter)
     assert len(reports) == 6
     assert all(r["success"] for r in reports)
+
+
+def test_conversational_in_table_update():
+    code = """
+type enlgdb
+
+create table scholars with:
+    id as integer primary key
+    name as text
+    cgpa as real
+    status as text
+
+insert into scholars values:
+    id: 1
+    name: "aryan"
+    cgpa: 8.2
+    status: "probation"
+insert into scholars values:
+    id: 2
+    name: "meera"
+    cgpa: 9.4
+    status: "honors"
+
+in scholars change cgpa to 9.8 where name is "aryan";
+in scholars update status to "dean_list" where name is "aryan";
+"""
+    ast, sql_tuples = compile_enlgdb_source(code)
+    emitter = SQLEmitter(dialect="sqlite")
+    engine = DatabaseEngine(db_path=":memory:")
+    reports = engine.execute_program(ast, emitter)
+    assert len(reports) == 5
+    assert all(r["success"] for r in reports)
+
+    # Check updated record in DB
+    cursor = engine.conn.cursor()
+    cursor.execute("SELECT cgpa, status FROM scholars WHERE name = 'aryan'")
+    row = cursor.fetchone()
+    assert row[0] == 9.8
+    assert row[1] == "dean_list"
+

@@ -1,0 +1,22 @@
+type enlngdb;
+
+create table scholars with id, name, cgpa, status;
+
+insert into scholars with id 1, name "aryan", cgpa 8.2, status "probation";
+insert into scholars with id 2, name "meera", cgpa 9.4, status "honors";
+insert into scholars with id 3, name "kunal", cgpa 7.8, status "probation";
+
+find all records from scholars;
+
+# User's exact requested syntax:
+in scholars change cgpa to 9.8 where name is "aryan";
+
+find all records from scholars;
+
+# Also with update:
+in scholars update status to "topper" where name is "aryan";
+
+# Also with set:
+in scholars set cgpa to 9.95, status to "gold_medalist" where name is "aryan";
+
+find all records from scholars;

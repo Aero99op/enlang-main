@@ -159,6 +159,10 @@ class Parser:
         elif self.match(TokenType.UPDATE, TokenType.CHANGE):
             return self.parse_update()
 
+        # IN <table_name> UPDATE / CHANGE / SET ...
+        elif self.match(TokenType.IN):
+            return self.parse_in_statement()
+
         # DELETE / REMOVE ...
         elif self.match(TokenType.DELETE, TokenType.REMOVE):
             return self.parse_delete()
@@ -591,15 +595,16 @@ class Parser:
         return HintNode(hints=self.parse_hints_dict())
 
     # -------------------------------------------------------------
-    # 4. UPDATE / CHANGE
+    # 4. UPDATE / CHANGE / IN <TABLE> UPDATE/CHANGE/SET
     # -------------------------------------------------------------
     def parse_update(self) -> UpdateNode:
         self.consume(self.current_token().type)  # UPDATE or CHANGE
         self.skip_silent_words()
         table_name = self.parse_table_or_column_name("table name")
         self.skip_silent_words()
-        self.consume(TokenType.SET, "Expected 'set' after table name", "Use: update \"table_name\" set col = val where ...")
-        self.skip_silent_words()
+        if self.match(TokenType.SET):
+            self.consume(TokenType.SET)
+            self.skip_silent_words()
 
         assignments: Dict[str, Any] = {}
         k, v = self.parse_key_value_assignment()
@@ -623,6 +628,51 @@ class Parser:
             hints = self.parse_hints_dict()
 
         return UpdateNode(table_name=table_name, assignments=assignments, where=where, hints=hints)
+
+    def parse_in_statement(self) -> ASTNode:
+        self.consume(TokenType.IN)
+        self.skip_silent_words()
+        if self.match(TokenType.TABLE):
+            self.consume(TokenType.TABLE)
+            self.skip_silent_words()
+        table_name = self.parse_table_or_column_name("table name")
+        self.skip_silent_words()
+
+        if self.match(TokenType.UPDATE, TokenType.CHANGE, TokenType.SET):
+            self.consume(self.current_token().type)
+            self.skip_silent_words()
+            if self.match(TokenType.SET):
+                self.consume(TokenType.SET)
+                self.skip_silent_words()
+
+            assignments: Dict[str, Any] = {}
+            k, v = self.parse_key_value_assignment()
+            assignments[k] = v
+            while self.match(TokenType.COMMA, TokenType.AND):
+                self.consume(self.current_token().type)
+                self.skip_silent_words()
+                k, v = self.parse_key_value_assignment()
+                assignments[k] = v
+
+            where = None
+            self.skip_silent_words()
+            if self.match(TokenType.WHERE):
+                self.consume(TokenType.WHERE)
+                self.skip_silent_words()
+                where = self.parse_expression()
+
+            hints = {}
+            self.skip_silent_words()
+            if self.match(TokenType.HINT):
+                hints = self.parse_hints_dict()
+
+            return UpdateNode(table_name=table_name, assignments=assignments, where=where, hints=hints)
+
+        raise ParserError(
+            "Expected 'update', 'change', or 'set' after 'in <table_name>'",
+            self.current_token(),
+            "Use: in scholars change cgpa to 9.8 where name is \"aryan\";"
+        )
 
     # -------------------------------------------------------------
     # 5. DELETE / REMOVE (With Safety Guard)

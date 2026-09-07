@@ -347,6 +347,11 @@ class Lexer:
                 self.tokens.append(Token(single_tokens[ch], ch, start_line, start_col))
                 continue
 
+            if ch == ';':
+                self.advance()
+                self.tokens.append(Token(TokenType.NEWLINE, '\n', start_line, start_col))
+                continue
+
             # Identifiers and Keywords
             if ch.isalpha() or ch == '_':
                 start_line, start_col = self.line, self.col
