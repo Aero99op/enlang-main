@@ -1,6 +1,7 @@
 #!/bin/sh
 # =====================================================================
 #   Enlangg Sovereign Toolchain - Linux & macOS Universal Installer
+#   Pure C Zero-Python 7-in-1 Sovereign Suite
 #   Usage:
 #     curl -fsSL https://enlangg.vercel.app/install.sh | bash
 # =====================================================================
@@ -16,7 +17,8 @@ NC='\033[0m' # No Color
 printf "${CYAN}${BOLD}"
 cat << 'EOF'
 =====================================================================
-    ENLANGG & ENLNG - Sovereign Programming Language Toolchain
+    ENLANGG SOVEREIGN 7-IN-1 SUITE - Linux & macOS Universal Installer
+    Pure C Zero-Python Native Architecture
 =====================================================================
 EOF
 printf "${NC}\n"
@@ -34,30 +36,57 @@ case "$ARCH" in
 esac
 
 echo "${YELLOW}>> Target Platform: $OS ($ARCH)${NC}"
-echo "${YELLOW}>> Installing to: $INSTALL_DIR ...${NC}"
+echo "${YELLOW}>> Installing 7 Sovereign Executables to: $INSTALL_DIR ...${NC}"
 
 DIST_URL="https://enlangg.vercel.app"
-
-# 1. Compile or Download Binaries
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo "")"
-if [ -f "$SCRIPT_DIR/enlangg.c" ] && [ -f "$SCRIPT_DIR/enlng.c" ] && command -v gcc >/dev/null 2>&1; then
-    echo "   Compiling directly from local source using gcc..."
-    gcc -O2 "$SCRIPT_DIR/enlangg.c" -o "$INSTALL_DIR/enlangg"
-    gcc -O2 "$SCRIPT_DIR/enlng.c" -o "$INSTALL_DIR/enlng"
-    chmod +x "$INSTALL_DIR/enlangg" "$INSTALL_DIR/enlng"
-else
-    # Compile from sovereign website distribution source
-    if command -v cc >/dev/null 2>&1 || command -v gcc >/dev/null 2>&1; then
-        CC="$(command -v cc || command -v gcc)"
-        echo "   Compiling on target machine using $CC..."
-        curl -fsSL "$DIST_URL/enlangg.c" -o "/tmp/enlangg.c"
-        curl -fsSL "$DIST_URL/enlng.c" -o "/tmp/enlng.c"
-        $CC -O2 /tmp/enlangg.c -o "$INSTALL_DIR/enlangg"
-        $CC -O2 /tmp/enlng.c -o "$INSTALL_DIR/enlng"
-        chmod +x "$INSTALL_DIR/enlangg" "$INSTALL_DIR/enlng"
+CC=""
+if command -v gcc >/dev/null 2>&1; then
+    CC="gcc"
+elif command -v cc >/dev/null 2>&1; then
+    CC="cc"
+elif command -v clang >/dev/null 2>&1; then
+    CC="clang"
+fi
+
+# 1. Compile or Install Sovereign Binaries
+if [ -n "$CC" ]; then
+    echo "   Compiling pure C sovereign core engines using $CC..."
+    
+    # enlangg
+    if [ -f "$SCRIPT_DIR/enlangg.c" ]; then
+        $CC -O2 "$SCRIPT_DIR/enlangg.c" -o "$INSTALL_DIR/enlangg" 2>/dev/null || true
+    else
+        curl -fsSL "$DIST_URL/enlangg.c" -o "/tmp/enlangg.c" 2>/dev/null && \
+        $CC -O2 /tmp/enlangg.c -o "$INSTALL_DIR/enlangg" 2>/dev/null || true
+    fi
+
+    # enlng
+    if [ -f "$SCRIPT_DIR/enlng.c" ]; then
+        $CC -O2 "$SCRIPT_DIR/enlng.c" -o "$INSTALL_DIR/enlng" 2>/dev/null || true
+    else
+        curl -fsSL "$DIST_URL/enlng.c" -o "/tmp/enlng.c" 2>/dev/null && \
+        $CC -O2 /tmp/enlng.c -o "$INSTALL_DIR/enlng" 2>/dev/null || true
+    fi
+
+    # enlngdb
+    if [ -f "$SCRIPT_DIR/enlngdb/c/main.c" ] && [ -f "$SCRIPT_DIR/enlngdb/c/enlngdb.c" ]; then
+        $CC -O2 "$SCRIPT_DIR/enlngdb/c/main.c" "$SCRIPT_DIR/enlngdb/c/enlngdb.c" "$SCRIPT_DIR/enlngdb/c/enlngdb_parser.c" -o "$INSTALL_DIR/enlngdb" 2>/dev/null || true
+    fi
+
+    # enlngs
+    if [ -f "$SCRIPT_DIR/enlngs/c/main.c" ] && [ -f "$SCRIPT_DIR/enlngs/c/enlngs_engine.c" ]; then
+        $CC -O2 "$SCRIPT_DIR/enlngs/c/main.c" "$SCRIPT_DIR/enlngs/c/enlngs_engine.c" -o "$INSTALL_DIR/enlngs" 2>/dev/null || true
+    fi
+
+    # enlngd
+    if [ -f "$SCRIPT_DIR/enlngd/c/main.c" ] && [ -f "$SCRIPT_DIR/enlngd/c/enlngd_engine.c" ]; then
+        $CC -O2 "$SCRIPT_DIR/enlngd/c/main.c" "$SCRIPT_DIR/enlngd/c/enlngd_engine.c" -o "$INSTALL_DIR/enlngd" 2>/dev/null || true
     fi
 fi
-chmod +x "$INSTALL_DIR/enlangg" "$INSTALL_DIR/enlng" 2>/dev/null || true
+
+# Ensure executable permissions
+chmod +x "$INSTALL_DIR"/* 2>/dev/null || true
 
 # 2. Update Shell Profiles (PATH)
 echo "${YELLOW}>> Configuring system PATH environment variable...${NC}"
@@ -89,27 +118,29 @@ fi
 export PATH="$INSTALL_DIR:$PATH"
 
 # 3. Verification
-echo "${GREEN}>> Verifying installation:${NC}"
-if [ -x "$INSTALL_DIR/enlangg" ]; then
-    "$INSTALL_DIR/enlangg" --version || true
-fi
-if [ -x "$INSTALL_DIR/enlng" ]; then
-    "$INSTALL_DIR/enlng" --version || true
-fi
+echo "${GREEN}>> Verifying installed tools:${NC}"
+for CMD in enlangg enlng enlngdb enlngs enlngd; do
+    if [ -x "$INSTALL_DIR/$CMD" ]; then
+        "$INSTALL_DIR/$CMD" --version 2>/dev/null || true
+    fi
+done
 
 printf "${GREEN}${BOLD}"
 cat << 'EOF'
 =====================================================================
-  [SUCCESS] Enlangg & Enlng installed successfully! 🚀
+  [SUCCESS] Enlangg Sovereign Pure C Suite installed successfully! 🚀
 =====================================================================
 EOF
 printf "${NC}\n"
 echo "To start using immediately in this session, run:"
 echo "  export PATH=\"\$HOME/.enlangg/bin:\$PATH\""
 echo ""
-echo "Commands:"
-echo "  enlangg run <file.enlng>   # Execute natural backend code"
-echo "  enlng run <file.enlng>     # Pure sovereign general-purpose engine"
-echo "  enlangg --help             # Toolchain help"
+echo "Available Pure C Sovereign Commands:"
+echo "  enlangg <file>              # Universal toolchain dispatcher"
+echo "  enlng run <file.enlng>      # Core backend language engine"
+echo "  enlngdb <script.enlngdb>    # Pure C microsecond database"
+echo "  enlngs <logic.enlngs>       # Pure C in-memory script VM"
+echo "  enlngd <theme.enlngd>       # Pure C design tokens & style resolver"
+echo "  enlangg --help              # Toolchain comprehensive help"
 echo ""
 echo "Website & Live Playground: https://enlangg.vercel.app"

@@ -143,14 +143,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         "Enlangg Sovereign Full-Stack Toolchain has been successfully installed!\n\n"
         "Installation Directory:\n  %s\n\n"
         "PATH environment variable has been configured automatically.\n\n"
-        "All 7 Tier Commands installed:\n"
-        "  - enlangg.exe (Universal Toolchain CLI)\n"
-        "  - enlng.exe   (Core Logic Compiler & Runtime)\n"
+        "All 7 Sovereign Pure C Executables installed:\n"
+        "  - enlangg.exe (Universal Toolchain Dispatcher)\n"
+        "  - enlng.exe   (Core Language Compiler & Scoped Arena Memory)\n"
         "  - enlngdb.exe (Pure C Microsecond Database Engine)\n"
-        "  - enlngf.exe  (Frontend Markup & Web Studio)\n"
-        "  - enlngd.exe  (Design Tokens & Stylesheet Engine)\n"
-        "  - enlngs.exe  (Reactive Fullstack Script Engine)\n"
-        "  - enlngm.exe  (Mobile Native & HAL Compiler)\n\n"
+        "  - enlngf.exe  (Pure C Desktop Window GUI & WinSock2 Web Studio)\n"
+        "  - enlngd.exe  (Pure C Design Tokens & Style Resolver)\n"
+        "  - enlngs.exe  (Pure C In-Memory Reactive Script VM)\n"
+        "  - enlngm.exe  (Pure C Smartphone Simulator & HAL Packager)\n\n"
+        "Zero Python Runtime Required · 100%% Sovereign Native Binaries\n\n"
         "Would you like to open Command Prompt now to try it out?",
         install_dir);
 

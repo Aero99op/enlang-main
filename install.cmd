@@ -3,6 +3,7 @@ setlocal enabledelayedexpansion
 
 echo =====================================================================
 echo     ENLANGG SOVEREIGN 7-IN-1 SUITE - Command Prompt (CMD) Installer
+echo     Pure C Zero-Python Native Architecture
 echo =====================================================================
 
 set "INSTALL_DIR=%USERPROFILE%\.enlangg\bin"
@@ -12,14 +13,14 @@ if not exist "%INSTALL_DIR%" (
 
 set "PRIMARY_URL=https://enlangg.vercel.app"
 
-echo [1/3] Installing 7 Sovereign Executables to: %INSTALL_DIR%
-echo   - enlangg.exe (Universal Toolchain CLI)
-echo   - enlng.exe   (Core Language Compiler)
-echo   - enlngdb.exe (Pure C Database Engine)
-echo   - enlngf.exe  (Frontend Markup & Web Studio)
-echo   - enlngd.exe  (Design Tokens & Stylesheet Engine)
-echo   - enlngs.exe  (Reactive Fullstack Script Engine)
-echo   - enlngm.exe  (Mobile Native & HAL Compiler)
+echo [1/3] Installing 7 Sovereign Pure C Executables to: %INSTALL_DIR%
+echo   - enlangg.exe (Universal Toolchain Dispatcher)
+echo   - enlng.exe   (Core Language Compiler and Scoped Arena Memory)
+echo   - enlngdb.exe (Pure C Microsecond Database Engine)
+echo   - enlngf.exe  (Pure C Desktop Window GUI and WinSock2 Web Studio)
+echo   - enlngd.exe  (Pure C Design Tokens and Style Resolver)
+echo   - enlngs.exe  (Pure C In-Memory Reactive Script VM)
+echo   - enlngm.exe  (Pure C Smartphone Simulator and HAL Packager)
 
 if exist "%~dp0enlangg.exe" (
     if exist "%~dp0enlng.exe" (
@@ -68,13 +69,15 @@ echo [3/3] Verifying 7-in-1 Suite installation:
 echo =====================================================================
 echo   [SUCCESS] Complete Enlangg 7-in-1 Suite installed successfully!
 echo =====================================================================
-echo Available Commands:
-echo   enlangg <file>                    (Universal Toolchain)
-echo   enlng run <file.enlng>            (Core Backend Logic)
-echo   enlngdb <script.enlngdb>          (Pure C Microsecond Database)
-echo   enlngf <app.enlngf> --port 3000   (Frontend & Web Studio)
-echo   enlngd <theme.enlngd> -o out.css  (Design Tokens to CSS)
-echo   enlngs <logic.enlngs> -o out.js   (Reactive Fullstack Scripts)
-echo   enlngm <app.enlngm>               (Mobile Native & HAL)
+echo Available Pure C Sovereign Commands:
+echo   enlangg [file]                    (Universal Toolchain Dispatcher)
+echo   enlng run [file.enlng]            (Core Backend Computing)
+echo   enlngdb [script.enlngdb]          (Pure C Microsecond Database)
+echo   enlngs [logic.enlngs]             (Pure C In-Memory Script VM)
+echo   enlngf [app.enlngf]               (Pure C Desktop Window GUI)
+echo   enlngf serve [app.enlngf]         (Pure C WinSock2 Web Studio)
+echo   enlngd [theme.enlngd]             (Pure C Design Tokens and Styles)
+echo   enlngm [app.enlngm]               (Pure C Smartphone Simulator)
+echo   enlngm build [app.enlngm]         (Pure C Mobile HAL Packager)
 echo.
-echo Documentation & Online Playground: https://enlangg.vercel.app
+echo Documentation and Online Playground: https://enlangg.vercel.app

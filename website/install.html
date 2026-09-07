@@ -114,8 +114,8 @@
           </p>
           <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">
             Package: enlangg-setup.exe (or setup.exe)<br>
-            Payload Size: 684 KB<br>
-            Bundles: enlangg, enlng, enlngdb, enlngf, enlngd, enlngs, enlngm (No Admin Rights Required)
+            Payload Size: 670 KB<br>
+            Bundles: enlangg, enlng, enlngdb, enlngf, enlngd, enlngs, enlngm (100% Pure C Sovereign · Zero Python · No Admin Required)
           </div>
           <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="btn btn-primary" style="margin-top: auto; justify-content: center;">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -298,41 +298,97 @@ gcc -O3 enlng.c -o enlng
 
       <div class="code-block-card" style="margin-bottom: 24px;">
         <div class="code-block-header">
-          <span>Terminal Diagnostics</span>
+          <span>Terminal Diagnostics (Pure C Sovereign Verification)</span>
         </div>
-        <div class="code-block-body"># Check universal toolchain
+        <div class="code-block-body"># Check universal toolchain master dispatcher
 $ enlangg --version
-enlangg version 5.0.0-sovereign-universal
+enlangg version 5.0.0-sovereign-universal (Sovereign General Purpose)
 
-# Check compiler version
+# Check core compiler
 $ enlng --version
-Enlangg Enlangg Compiler (x86_64-windows-msvc)
-Deterministic Memory Slots: ACTIVE
-Zero-GC Mode: ENABLED
+enlng version 2.0.0-general-purpose-master (General Purpose)
 
-# Check native C database engine
+# Check native pure C microsecond database engine
 $ enlngdb --version
-enlngdb version 5.0.0 (Pure C Microsecond Database Engine)
+enlngdb version 2.0.0-pure-c-native (Pure C Microsecond Database Engine)
 
-# Check frontend & web studio engine
-$ enlngf --version
-enlngf version 5.0.0 (Enlangg Frontend & Web Studio Engine)
-
-# Check design tokens engine
-$ enlngd --version
-enlngd version 5.0.0 (Enlangg Design Tokens & Stylesheet Engine)
-
-# Check reactive fullstack script engine
+# Check pure C in-memory reactive script VM
 $ enlngs --version
-enlngs version 5.0.0 (Enlangg Reactive Fullstack Script Engine)
+enlngs version 5.3.0 (Pure C Sovereign Reactive Script Engine - ZERO PYTHON)
 
-# Check mobile native compiler
+# Check pure C desktop window GUI & web studio
+$ enlngf --version
+enlngf version 5.3.0 (Pure C Sovereign Frontend Engine - ZERO PYTHON)
+
+# Check pure C design tokens & style resolver
+$ enlngd --version
+enlngd version 5.3.0 (Pure C Sovereign Design Tokens Engine - ZERO PYTHON)
+
+# Check pure C mobile simulator & HAL packager
 $ enlngm --version
-enlngm version 5.0.0 (Enlangg Mobile Native & HAL Compiler)
+enlngm version 5.3.0 (Pure C Sovereign Mobile Native Engine - ZERO PYTHON)
 
 # Check C99 backend linker
 $ gcc --version
 gcc (MinGW-W64 x86_64) 13.2.0</div>
+      </div>
+
+      <h3 class="docs-h3" style="margin-top: 32px;">Sovereign 7-in-1 CLI Commands Cheat Sheet</h3>
+      <div class="table-responsive" style="margin-bottom: 32px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Command</th>
+              <th>Engine</th>
+              <th>Runtime</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>enlangg &lt;file&gt;</code></td>
+              <td>Universal Dispatcher</td>
+              <td>Pure C</td>
+              <td>Universal runner that automatically detects and dispatches any .enlng, .enlngdb, .enlngs, .enlngf, .enlngd, .enlngm file</td>
+            </tr>
+            <tr>
+              <td><code>enlng run &lt;file.enlng&gt;</code></td>
+              <td>Core General-Purpose</td>
+              <td>Pure C</td>
+              <td>Compile and execute backend natural English code with Scoped Arena Memory (zero GC overhead)</td>
+            </tr>
+            <tr>
+              <td><code>enlngdb &lt;file.enlngdb&gt;</code></td>
+              <td>Conversational Database</td>
+              <td>Pure C</td>
+              <td>Microsecond conversational database engine (<0.05ms) with persistent .edb storage</td>
+            </tr>
+            <tr>
+              <td><code>enlngs &lt;file.enlngs&gt;</code></td>
+              <td>Reactive Script VM</td>
+              <td>Pure C</td>
+              <td>Zero-Python in-memory script VM running variables, loops, arithmetic, and logic</td>
+            </tr>
+            <tr>
+              <td><code>enlngf &lt;file.enlngf&gt;</code></td>
+              <td>Frontend Engine</td>
+              <td>Pure C</td>
+              <td>Native Win32 desktop GUI window or built-in WinSock2 HTTP server (<code>enlngf serve</code>)</td>
+            </tr>
+            <tr>
+              <td><code>enlngd &lt;file.enlngd&gt;</code></td>
+              <td>Design Tokens Engine</td>
+              <td>Pure C</td>
+              <td>Parse, inspect, and resolve design tokens, theme palettes, and style rules</td>
+            </tr>
+            <tr>
+              <td><code>enlngm &lt;file.enlngm&gt;</code></td>
+              <td>Mobile Native Engine</td>
+              <td>Pure C</td>
+              <td>Hardware-accelerated smartphone simulator (390x844 viewport) and ARM64 mobile HAL packager</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <h3 class="docs-h3">Frequently Encountered Issues & Fixes</h3>

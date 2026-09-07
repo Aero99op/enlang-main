@@ -55,7 +55,7 @@ function Install-EnlanggCore($targetBase, $addToPath, $associateFiles, $statusCa
             try {
                 Invoke-WebRequest -Uri "$primaryUrl/$b" -OutFile $dest -UseBasicParsing -TimeoutSec 30
             } catch {
-                Write-Warning "Could not fetch $b: $($_.Exception.Message)"
+                Write-Warning "Could not fetch ${b}: $($_.Exception.Message)"
             }
         }
     }
@@ -92,6 +92,7 @@ function Install-EnlanggCore($targetBase, $addToPath, $associateFiles, $statusCa
         & $statusCallback "Registering .enlng, .enlngdb, .enlngf, .enlngd, .enlngs, .enlngm file associations..."
         try {
             $enlanggExe = Join-Path $binDir "enlangg.exe"
+            $enlngdbExe = Join-Path $binDir "enlngdb.exe"
             $enlngfExe  = Join-Path $binDir "enlngf.exe"
             $enlngdExe  = Join-Path $binDir "enlngd.exe"
             $enlngsExe  = Join-Path $binDir "enlngs.exe"
@@ -99,7 +100,7 @@ function Install-EnlanggCore($targetBase, $addToPath, $associateFiles, $statusCa
             cmd /c "assoc .enlng=EnlanggScript >nul 2>&1"
             cmd /c "ftype EnlanggScript=\"$enlanggExe\" run \"%1\" %* >nul 2>&1"
             cmd /c "assoc .enlngdb=EnlngDBScript >nul 2>&1"
-            cmd /c "ftype EnlngDBScript=\"$enlanggExe\" db run \"%1\" %* >nul 2>&1"
+            cmd /c "ftype EnlngDBScript=\"$enlngdbExe\" \"%1\" %* >nul 2>&1"
             cmd /c "assoc .enlngf=EnlngFScript >nul 2>&1"
             cmd /c "ftype EnlngFScript=\"$enlngfExe\" \"%1\" %* >nul 2>&1"
             cmd /c "assoc .enlngd=EnlngDScript >nul 2>&1"
@@ -181,8 +182,8 @@ if ($Silent) {
                 <TextBlock Text="⚡" FontSize="26" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#00F0FF"/>
             </Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                <TextBlock Text="Enlangg Setup Wizard" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
-                <TextBlock Text="Sovereign Natural English Language &amp; Compiler Toolchain" FontSize="12.5" Foreground="#94A3B8" Margin="0,2,0,0"/>
+                <TextBlock Text="Enlangg Pure C Sovereign Setup Wizard" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+                <TextBlock Text="Sovereign Natural English 7-in-1 Suite (Zero Python Runtime)" FontSize="12.5" Foreground="#94A3B8" Margin="0,2,0,0"/>
             </StackPanel>
         </Grid>
 
@@ -202,10 +203,10 @@ if ($Silent) {
 
                 <TextBlock Text="Environment &amp; Integration" FontSize="13" FontWeight="SemiBold" Foreground="#E2E8F0" Margin="0,4,0,6"/>
                 <CheckBox x:Name="ChkPath" Content="Automatically add Enlangg to System Environment Variables (PATH)" IsChecked="True"/>
-                <TextBlock Text="Allows running 'enlangg' and 'enlng' commands directly from any terminal." FontSize="11.5" Foreground="#64748B" Margin="22,2,0,10"/>
+                <TextBlock Text="Enables enlangg, enlng, enlngdb, enlngs, enlngf, enlngd, enlngm in any terminal." FontSize="11.5" Foreground="#64748B" Margin="22,2,0,10"/>
                 
-                <CheckBox x:Name="ChkAssoc" Content="Register file associations for .enlng (Sovereign scripts)" IsChecked="True"/>
-                <TextBlock Text="Enables direct execution and IDE file linking." FontSize="11.5" Foreground="#64748B" Margin="22,2,0,14"/>
+                <CheckBox x:Name="ChkAssoc" Content="Register file associations for all 6 Sovereign domains" IsChecked="True"/>
+                <TextBlock Text="Associates .enlng, .enlngdb, .enlngf, .enlngd, .enlngs, .enlngm to native executables." FontSize="11.5" Foreground="#64748B" Margin="22,2,0,14"/>
 
                 <!-- Progress Bar Section (Hidden initially) -->
                 <ProgressBar x:Name="InstallProgress" Height="8" Background="#090D16" Foreground="#00F0FF" BorderThickness="0" Margin="0,10,0,8" Visibility="Collapsed"/>
