@@ -1,0 +1,14 @@
+type enlngs;
+
+create counter as 10;
+increase counter by 25;
+show "Counter value: " + counter;
+
+define APP_NAME as "Enlangg Sovereign Script Engine";
+show "Welcome to " + APP_NAME;
+
+repeat 3 times:
+    show "Sovereign pure C execution pulse";
+end
+
+show "Done!";

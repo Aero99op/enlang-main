@@ -467,8 +467,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (strcmp(argv[1], "f") == 0 || strcmp(argv[1], "web") == 0) {
-        char cmd[2048] = "python -m enlgf";
+    if (strcmp(argv[1], "f") == 0 || strcmp(argv[1], "web") == 0 || strcmp(argv[1], "frontend") == 0) {
+        char cmd[2048] = "enlngf";
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -477,8 +477,8 @@ int main(int argc, char* argv[]) {
         return system(cmd);
     }
 
-    if (strcmp(argv[1], "d") == 0 || strcmp(argv[1], "design") == 0) {
-        char cmd[2048] = "python -m enlgd";
+    if (strcmp(argv[1], "d") == 0 || strcmp(argv[1], "design") == 0 || strcmp(argv[1], "styles") == 0) {
+        char cmd[2048] = "enlngd";
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -488,7 +488,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (strcmp(argv[1], "s") == 0 || strcmp(argv[1], "script") == 0) {
-        char cmd[2048] = "python -m enlgs";
+        char cmd[2048] = "enlngs";
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -498,7 +498,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (strcmp(argv[1], "m") == 0 || strcmp(argv[1], "mobile") == 0) {
-        char cmd[2048] = "python -m enlgm";
+        char cmd[2048] = "enlngm";
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -544,22 +544,32 @@ int main(int argc, char* argv[]) {
             return enlngdb_run_file(filepath);
         }
 
-        // Check if mobile app
-        if (strstr(filepath, ".enlngmf") != NULL) {
-            const char* dev = "Android ADB";
-            for (int i = 3; i < argc; i++) {
-                if (strcmp(argv[i], "--device") == 0 && i + 1 < argc) {
-                    dev = argv[i + 1];
-                }
-            }
-            printf("==============================================================\n");
-            printf("       ENLANG MOBILE LIVE DEPLOYMENT -> DEVICE: %s            \n", dev);
-            printf("==============================================================\n");
-            printf("  >> Connecting to ADB / Xcode Bridge...\n");
-            printf("  >> Installing ARM64 native binary package...\n");
-            printf("  >> Launching Sovereign Native Activity on target hardware.\n");
-            printf("  >> Hot Reload stream active. (0 errors, 120 FPS target)\n");
-            return 0;
+        // Check if reactive script (.enlngs / .enlgs)
+        if (strstr(filepath, ".enlngs") != NULL || strstr(filepath, ".enlgs") != NULL) {
+            char cmd[1024];
+            snprintf(cmd, sizeof(cmd), "enlngs run \"%s\"", filepath);
+            return system(cmd);
+        }
+
+        // Check if frontend markup (.enlngf / .enlgf)
+        if (strstr(filepath, ".enlngf") != NULL || strstr(filepath, ".enlgf") != NULL) {
+            char cmd[1024];
+            snprintf(cmd, sizeof(cmd), "enlngf run \"%s\"", filepath);
+            return system(cmd);
+        }
+
+        // Check if design token sheet (.enlngd / .enlgd)
+        if (strstr(filepath, ".enlngd") != NULL || strstr(filepath, ".enlgd") != NULL) {
+            char cmd[1024];
+            snprintf(cmd, sizeof(cmd), "enlngd \"%s\"", filepath);
+            return system(cmd);
+        }
+
+        // Check if mobile app (.enlngm / .enlgm)
+        if (strstr(filepath, ".enlngm") != NULL || strstr(filepath, ".enlgm") != NULL || strstr(filepath, ".enlngmf") != NULL) {
+            char cmd[1024];
+            snprintf(cmd, sizeof(cmd), "enlngm run \"%s\"", filepath);
+            return system(cmd);
         }
 
         // Standard script execution (.enlng, .enlg, .py, etc.)

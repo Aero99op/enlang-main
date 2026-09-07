@@ -1,0 +1,20 @@
+app "PrayasSovereignApp":
+    theme dark
+    accent color "#00f2fe"
+
+    screen Dashboard:
+        title "Prayas Sovereign Mobile"
+
+        text "Welcome to Sovereign Mobile" size 22 bold
+        spacer height 12
+        divider
+        spacer height 12
+
+        text "Pure C Mobile Runtime with Zero Flutter / Zero Android Studio dependency." size 14
+        spacer height 20
+
+        button "Open Sovereign Store":
+            show toast "Sovereign Store Launching..."
+
+        button "Check System Health":
+            show toast "All Systems Nominal (0.01ms)"

@@ -1,0 +1,7 @@
+type enlngdb;
+
+create table accounts with id, tier;
+insert into accounts with id 1, tier "Silver";
+find all records from accounts;
+in accounts update tier to Diamond where id is 1;
+find all records from accounts;
