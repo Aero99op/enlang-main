@@ -1,0 +1,80 @@
+document enlgf:
+    head:
+        title "Nexora Architecture & Product Engine"
+        connect design "styles.css"
+        connect script "logic.js"
+
+    body:
+        header class "navbar":
+            div class "container nav-inner":
+                a href "/" class "brand-logo":
+                    div class "logo-badge":
+                        span "◆"
+                    span "Nexora"
+                ul class "nav-menu":
+                    li:
+                        a "Product" href "/product" class "nav-link active"
+                    li:
+                        a "Solutions" href "/solutions" class "nav-link"
+                    li:
+                        a "Pricing" href "/pricing" class "nav-link"
+                    li:
+                        a "Resources" href "/resources" class "nav-link"
+                div class "nav-actions":
+                    a "Login" href "/login" class "btn-login"
+                    a "Get Started" href "/pricing" class "btn-pill-white"
+
+        section style "padding: 80px 0 40px; text-align: center;":
+            div class "container":
+                div "ENGINEERING ARCHITECTURE" class "hero-tagline"
+                h1 "Under the Hood: The Sovereign Compute Fabric" class "hero-title" style "max-width: 860px; margin: 0 auto 20px;"
+                p "Sub-12ms execution speed, hardware-accelerated isolated MicroVMs, and zero configuration edge streaming." class "hero-desc" style "margin: 0 auto 32px; max-width: 600px;"
+
+        section class "container":
+            div class "terminal-window":
+                div class "terminal-header":
+                    div style "width: 10px; height: 10px; border-radius: 50%; background: #ef4444;"
+                    div style "width: 10px; height: 10px; border-radius: 50%; background: #f59e0b;"
+                    div style "width: 10px; height: 10px; border-radius: 50%; background: #10b981;"
+                    span "bash — nexora compute inspect" style "color: #94a3b8; font-size: 12px; margin-left: 10px;"
+                div class "terminal-body":
+                    div:
+                        span "$ nexora cluster status --global" class "code-prompt"
+                    div:
+                        span "✔ 150+ Anycast PoPs active" class "code-green"
+                    div:
+                        span "✔ Cold start latency: 0.8ms (Pure C engine)" class "code-green"
+                    div:
+                        span "✔ Memory slot architecture: Deterministic zero-GC overhead" class "code-dim"
+                    div:
+                        span "✔ Sovereign Trinity verified: enlngf, enlngd, enlngs active" class "code-green"
+
+        section class "features-section":
+            div class "container features-split-grid":
+                div class "features-left-info":
+                    div "TECHNICAL PILLARS" class "kicker-blue"
+                    h2 "Built for uncompromising developers" class "features-main-heading"
+                    p "Every component is designed to eliminate friction between code commit and global availability." class "features-sub-text"
+                    a "Deploy to Production →" href "/pricing" class "btn-explore"
+                div class "features-card-grid":
+                    div class "feature-card":
+                        h3 "Isolated MicroVMs" class "feature-card-title"
+                        p "Bare-metal isolation with hardware memory protection and sub-millisecond warm up." class "feature-card-desc"
+                    div class "feature-card":
+                        h3 "Real-time Telemetry" class "feature-card-title"
+                        p "Observe distributed traces, request latencies, and error signals live." class "feature-card-desc"
+                    div class "feature-card":
+                        h3 "Native C Engine" class "feature-card-title"
+                        p "WinSock2 machine-code daemon delivering zero-copy binary throughput." class "feature-card-desc"
+                    div class "feature-card":
+                        h3 "Edge Storage" class "feature-card-title"
+                        p "Embedded zero-latency persistence replicated across tier-1 nodes." class "feature-card-desc"
+
+        footer class "site-footer":
+            div class "container":
+                div class "footer-bottom":
+                    p "© 2026 Nexora Platform Inc. All rights reserved. • Sovereign Architecture"
+
+        div id "nexora_toast" class "toast-notification":
+            span "🔔"
+            span "Notification" id "toast_message"

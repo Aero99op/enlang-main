@@ -1,0 +1,298 @@
+document enlgf:
+    head:
+        title "Nexora — Turn Ideas Into Real Products"
+        connect design "styles.css"
+        connect script "logic.js"
+
+    body:
+        header class "navbar":
+            div class "container nav-inner":
+                a href "/" class "brand-logo":
+                    div class "logo-badge":
+                        span "◆"
+                    span "Nexora"
+                ul class "nav-menu":
+                    li:
+                        a "Product" href "/product" class "nav-link"
+                    li:
+                        a "Solutions" href "/solutions" class "nav-link"
+                    li:
+                        a "Pricing" href "/pricing" class "nav-link"
+                    li:
+                        a "Resources" href "/resources" class "nav-link"
+                div class "nav-actions":
+                    a "Login" href "/login" class "btn-login"
+                    a "Get Started" href "/pricing" class "btn-pill-white"
+
+        section class "hero-section":
+            div class "hero-glow-bg"
+            div class "container hero-grid":
+                div class "hero-left":
+                    div "BUILD • AUTOMATE • SCALE" class "hero-tagline"
+                    h1 "Turn Ideas Into Real Products" class "hero-title"
+                    p "Nexora gives developers and teams everything they need to build, launch, and grow — faster than ever." class "hero-desc"
+                    div class "hero-cta-group":
+                        a "Get Started Free →" href "/pricing" class "btn-hero-primary"
+                        button "▶ Watch Demo" id "btn_watch_demo" class "btn-hero-secondary"
+                    div class "hero-trust-caption":
+                        span "No credit card required"
+                        span "•"
+                        span "Free forever plan"
+
+                div class "dashboard-perspective-wrap":
+                    div class "dashboard-window":
+                        div class "mockup-nav":
+                            div class "mockup-nav-left":
+                                div class "mockup-logo-text":
+                                    div class "logo-badge" style "width: 22px; height: 22px;":
+                                        span "◆"
+                                    span "Nexora"
+                                div class "mockup-search":
+                                    input type "text" placeholder "Search anything..." style "background: transparent; border: none; outline: none; color: #94a3b8; font-size: 0.76rem; width: 100%;" readonly "readonly"
+                            div class "mockup-user" style "position: relative;":
+                                span "A"
+                        div class "mockup-body":
+                            div class "mockup-sidebar":
+                                div class "mockup-menu-item active":
+                                    span "Home"
+                                div class "mockup-menu-item":
+                                    span "Projects"
+                                div class "mockup-menu-item":
+                                    span "Analytics"
+                                div class "mockup-menu-item":
+                                    span "Deployments"
+                                div class "mockup-menu-item":
+                                    span "Team"
+                                div class "mockup-menu-item":
+                                    span "Settings"
+                            div class "mockup-content":
+                                div:
+                                    div "Good evening, Ansh 👋" class "greeting-title"
+                                    div "Here's what's happening with your projects today." class "greeting-sub"
+                                div class "mockup-stat-grid":
+                                    div class "stat-tile":
+                                        div "Total Projects" class "stat-tile-label"
+                                        div "12" class "stat-tile-val"
+                                    div class "stat-tile":
+                                        div "Deployments" class "stat-tile-label"
+                                        div "48" class "stat-tile-val"
+                                    div class "stat-tile":
+                                        div "Active Users" class "stat-tile-label"
+                                        div "2.4K" class "stat-tile-val"
+                                    div class "stat-tile":
+                                        div "Uptime" class "stat-tile-label"
+                                        div "99.9%" class "stat-tile-val"
+
+        section class "pillars-section":
+            div class "container":
+                div class "pillars-grid":
+                    div class "pillar-item":
+                        div class "pillar-icon":
+                            span "⚡"
+                        div:
+                            h3 "Blazing Fast" class "pillar-title"
+                            p "Optimized for performance at every scale." class "pillar-desc"
+                    div class "pillar-item":
+                        div class "pillar-icon":
+                            span "🛡️"
+                        div:
+                            h3 "Secure by Default" class "pillar-title"
+                            p "Your data, always protected." class "pillar-desc"
+                    div class "pillar-item":
+                        div class "pillar-icon":
+                            span "👥"
+                        div:
+                            h3 "Built for Teams" class "pillar-title"
+                            p "Collaborate without limits." class "pillar-desc"
+                    div class "pillar-item":
+                        div class "pillar-icon":
+                            span "⚙️"
+                        div:
+                            h3 "Highly Customizable" class "pillar-title"
+                            p "Flexible to fit your workflow." class "pillar-desc"
+
+        section class "features-section":
+            div class "container features-split-grid":
+                div class "features-left-info":
+                    div "FEATURES" class "kicker-blue"
+                    h2 "Everything you need to build without limits" class "features-main-heading"
+                    p "Powerful tools, seamless integrations, and a developer-first experience — all in one place." class "features-sub-text"
+                    a "Explore All Features →" href "/product" class "btn-explore"
+                div class "features-card-grid":
+                    div class "feature-card btn-copy-cli" style "cursor: pointer;":
+                        div class "feature-icon-box" style "background: #0f172a; color: #3b82f6;":
+                            span ">_" style "font-family: monospace; font-weight: 800;"
+                        h3 "Powerful CLI" class "feature-card-title"
+                        p "Get up and running in seconds with our intuitive CLI." class "feature-card-desc"
+                    div class "feature-card":
+                        div class "feature-icon-box" style "background: #eff6ff; color: #2563eb;":
+                            span "🔌"
+                        h3 "Seamless Integrations" class "feature-card-title"
+                        p "Connect with your favorite tools and services." class "feature-card-desc"
+                    div class "feature-card":
+                        div class "feature-icon-box" style "background: #ecfdf5; color: #10b981;":
+                            span "📊"
+                        h3 "Real-time Analytics" class "feature-card-title"
+                        p "Track performance and usage in real time." class "feature-card-desc"
+                    div class "feature-card":
+                        div class "feature-icon-box" style "background: #f0f9ff; color: #0284c7;":
+                            span "🌐"
+                        h3 "Global Deployment" class "feature-card-title"
+                        p "Deploy worldwide with a single click." class "feature-card-desc"
+
+        section class "impact-section":
+            div class "container":
+                div class "impact-header-row":
+                    div "IMPACT" class "kicker-blue"
+                    h2 "Numbers that speak" class "impact-title"
+                    p "From solo developers to global teams, Nexora is powering the next generation of builders." class "impact-sub"
+                div class "impact-stats-grid":
+                    div class "impact-stat-item":
+                        div "50K+" class "impact-big-number"
+                        div "Active Developers" class "impact-stat-label"
+                    div class "impact-stat-item":
+                        div "1M+" class "impact-big-number"
+                        div "Deployments" class "impact-stat-label"
+                    div class "impact-stat-item":
+                        div "99.9%" class "impact-big-number"
+                        div "Uptime" class "impact-stat-label"
+                    div class "impact-stat-item":
+                        div "150+" class "impact-big-number"
+                        div "Countries" class "impact-stat-label"
+
+        section class "showroom-section" style "padding: 80px 0; border-top: 1px solid rgba(255, 255, 255, 0.06); background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%);":
+            div class "container":
+                div style "text-align: center; margin-bottom: 50px;":
+                    div "360° INTERACTIVE HARDWARE SHOWROOM" class "kicker-blue" style "display: inline-flex;"
+                    h2 "Engineered for Builders, Observed from Every Angle" style "font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin: 12px 0 16px; color: #fff;"
+                    p "Hover to dynamically tilt in 3D perspective, or click any card for a full 360° axial revolution." style "color: #94a3b8; font-size: 1.05rem; max-width: 620px; margin: 0 auto;"
+
+                div class "showroom-grid" style "display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px;":
+                    div class "card-360-container":
+                        div class "card-360-inner":
+                            div class "badge-360":
+                                span "🔄 360° Spin"
+                            div class "card-360-sheen"
+                            div style "height: 220px; overflow: hidden;":
+                                img src "workspace.jpg" alt "Curved Ultra-Wide Workstation" class "card-360-img" style "width: 100%; height: 100%; object-fit: cover;"
+                            div style "padding: 22px;":
+                                div style "display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;":
+                                    span "DEV WORKSTATION" style "font-size: 0.7rem; font-weight: 800; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.1em;"
+                                    span "• Sub-12ms Local Rig" style "font-size: 0.75rem; color: #10b981; font-weight: 600;"
+                                h3 "Ultra-Wide Command Station" style "font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 8px;"
+                                p "Curved OLED display and mechanical precision engineered for microsecond code iteration." style "font-size: 0.88rem; color: #94a3b8; line-height: 1.5;"
+
+                    div class "card-360-container":
+                        div class "card-360-inner":
+                            div class "badge-360":
+                                span "🔄 360° Spin"
+                            div class "card-360-sheen"
+                            div style "height: 220px; overflow: hidden;":
+                                img src "edge_node.jpg" alt "Nexus-7 MicroVM Edge Node" class "card-360-img" style "width: 100%; height: 100%; object-fit: cover;"
+                            div style "padding: 22px;":
+                                div style "display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;":
+                                    span "BARE-METAL EDGE" style "font-size: 0.7rem; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 0.1em;"
+                                    span "• 150+ Anycast PoPs" style "font-size: 0.75rem; color: #3b82f6; font-weight: 600;"
+                                h3 "Nexus-7 MicroVM Node" style "font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 8px;"
+                                p "Tier-1 Anycast cluster running lightweight isolated virtual machines with zero cold-starts." style "font-size: 0.88rem; color: #94a3b8; line-height: 1.5;"
+
+                    div class "card-360-container":
+                        div class "card-360-inner":
+                            div class "badge-360":
+                                span "🔄 360° Spin"
+                            div class "card-360-sheen"
+                            div style "height: 220px; overflow: hidden;":
+                                img src "ai_studio.jpg" alt "AI Autonomous Engineering Lab" class "card-360-img" style "width: 100%; height: 100%; object-fit: cover;"
+                            div style "padding: 22px;":
+                                div style "display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;":
+                                    span "AGENTIC LAB" style "font-size: 0.7rem; font-weight: 800; color: #a855f7; text-transform: uppercase; letter-spacing: 0.1em;"
+                                    span "• Real-Time Telemetry" style "font-size: 0.75rem; color: #10b981; font-weight: 600;"
+                                h3 "AI Autonomous Lab" style "font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 8px;"
+                                p "Dual-panel telemetry cockpit for multi-agent tool orchestration and real-time LLM token streams." style "font-size: 0.88rem; color: #94a3b8; line-height: 1.5;"
+
+        section class "builder-section" id "community":
+            div class "container builder-grid":
+                div class "builder-image-card card-360-container":
+                    div class "card-360-inner":
+                        div class "badge-360":
+                            span "🔄 360° Spin"
+                        div class "card-360-sheen"
+                        img src "workspace.jpg" alt "Nexora Developer Workspace" class "builder-img card-360-img"
+                div class "builder-content":
+                    div "FOR BUILDERS" class "kicker-blue"
+                    h2 "More than a platform. A partner in your journey." class "builder-title"
+                    p "We're on a mission to empower creators, developers, and teams to turn bold ideas into real-world impact." class "builder-sub"
+                    div class "builder-checklist":
+                        div class "check-item":
+                            div "✓" class "check-badge"
+                            span "Backed by a global community"
+                        div class "check-item":
+                            div "✓" class "check-badge"
+                            span "Constantly evolving with your feedback"
+                        div class "check-item":
+                            div "✓" class "check-badge"
+                            span "Committed to a more open and innovative future"
+                    a "Join the Community →" href "/pricing" class "btn-community"
+                    div "Build Create Grow Together ✨" class "handwritten-accent"
+
+        footer class "site-footer":
+            div class "container":
+                div class "footer-grid":
+                    div:
+                        div class "brand-logo" style "margin-bottom: 14px;":
+                            div class "logo-badge" style "width: 26px; height: 26px;":
+                                span "◆"
+                            span "Nexora" style "font-size: 1.15rem;"
+                        p "The developer platform engineered for sovereign velocity, microsecond orchestration, and global edge scale." style "color: #64748b; font-size: 0.85rem; max-width: 280px; line-height: 1.6;"
+                    div:
+                        h4 "Platform" class "footer-col-title"
+                        ul class "footer-links":
+                            li:
+                                a "CLI Engine" href "/product" class "footer-link"
+                            li:
+                                a "Global Edge CDN" href "/product" class "footer-link"
+                            li:
+                                a "MicroVM Sandboxes" href "/product" class "footer-link"
+                            li:
+                                a "Pricing Tiers" href "/pricing" class "footer-link"
+                    div:
+                        h4 "Solutions" class "footer-col-title"
+                        ul class "footer-links":
+                            li:
+                                a "Startups & Founders" href "/solutions" class "footer-link"
+                            li:
+                                a "Enterprise Scale" href "/solutions" class "footer-link"
+                            li:
+                                a "AI Autonomous Agents" href "/solutions" class "footer-link"
+                            li:
+                                a "Multiplayer Gaming" href "/solutions" class "footer-link"
+                    div:
+                        h4 "Resources" class "footer-col-title"
+                        ul class "footer-links":
+                            li:
+                                a "Documentation" href "/resources" class "footer-link"
+                            li:
+                                a "CLI Cheat Sheet" href "/resources" class "footer-link"
+                            li:
+                                a "API Reference" href "/resources" class "footer-link"
+                            li:
+                                a "Frequently Asked Questions" href "/resources" class "footer-link"
+                    div:
+                        h4 "Account" class "footer-col-title"
+                        ul class "footer-links":
+                            li:
+                                a "Sign In" href "/login" class "footer-link"
+                            li:
+                                a "Create Account" href "/login" class "footer-link"
+                            li:
+                                a "Enterprise Portal" href "/pricing" class "footer-link"
+                            li:
+                                a "System Status (99.99%)" href "/" class "footer-link"
+                div class "footer-bottom":
+                    p "© 2026 Nexora Platform Inc. All rights reserved. • Sovereign Architecture • Linear/Vercel Grade"
+                    div style "display: flex; gap: 16px; align-items: center;":
+                        span "🟢 All Systems Operational" style "display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #10b981;"
+
+        div id "nexora_toast" class "toast-notification":
+            span "🔔"
+            span "Notification" id "toast_message"

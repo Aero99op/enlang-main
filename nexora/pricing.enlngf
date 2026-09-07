@@ -1,0 +1,91 @@
+document enlgf:
+    head:
+        title "Nexora Pricing — Predictable Scalable Plans"
+        connect design "styles.css"
+        connect script "logic.js"
+
+    body:
+        header class "navbar":
+            div class "container nav-inner":
+                a href "/" class "brand-logo":
+                    div class "logo-badge":
+                        span "◆"
+                    span "Nexora"
+                ul class "nav-menu":
+                    li:
+                        a "Product" href "/product" class "nav-link"
+                    li:
+                        a "Solutions" href "/solutions" class "nav-link"
+                    li:
+                        a "Pricing" href "/pricing" class "nav-link active"
+                    li:
+                        a "Resources" href "/resources" class "nav-link"
+                div class "nav-actions":
+                    a "Login" href "/login" class "btn-login"
+                    a "Get Started" href "/pricing" class "btn-pill-white"
+
+        section style "padding: 80px 0 40px; text-align: center;":
+            div class "container":
+                div "TRANSPARENT PRICING" class "hero-tagline"
+                h1 "Predictable Plans for High-Performance Teams" class "hero-title" style "max-width: 860px; margin: 0 auto 20px;"
+                p "Start for free, scale effortlessly. Zero hidden surprise fees, no credit card required." class "hero-desc" style "margin: 0 auto 32px; max-width: 580px;"
+                div style "display: inline-flex; align-items: center; gap: 12px; background: #0e121b; padding: 6px 14px; border-radius: 9999px; border: 1px solid var(--border-subtle);":
+                    span "Monthly" style "font-size: 0.85rem; color: #94a3b8; font-weight: 600;"
+                    input type "checkbox" id "billing_toggle" style "cursor: pointer; width: 18px; height: 18px;"
+                    span "Annual (Save 20%)" style "font-size: 0.85rem; color: #10b981; font-weight: 600;"
+
+        section class "container":
+            div class "pricing-grid":
+                div class "pricing-card":
+                    h3 "Free Forever" class "pricing-title"
+                    p "For solo developers, open source exploration, and prototype builds." class "pricing-desc"
+                    div class "pricing-price":
+                        span "$0"
+                        span "/ month" class "pricing-period"
+                    div class "pricing-features-list":
+                        div "✓ 3 Active Sovereign Workspaces" class "pricing-feature-item"
+                        div "✓ 50K API Credits / month" class "pricing-feature-item"
+                        div "✓ Community Discord Support" class "pricing-feature-item"
+                        div "✓ Global Anycast Edge CDN" class "pricing-feature-item"
+                        div "✓ Standard SSL Certificates" class "pricing-feature-item"
+                    a "Get Started Free" href "/login" class "btn-hero-secondary" style "text-align: center;"
+
+                div class "pricing-card featured":
+                    div "MOST POPULAR" class "pricing-badge"
+                    h3 "Pro Builder" class "pricing-title"
+                    p "For active developers, independent founders, and fast-growing SaaS products." class "pricing-desc"
+                    div class "pricing-price":
+                        span "$29" id "price_pro"
+                        span "/ month" class "pricing-period"
+                    div class "pricing-features-list":
+                        div "✓ Unlimited Workspaces & Sandboxes" class "pricing-feature-item"
+                        div "✓ 1,000,000 API Credits / month" class "pricing-feature-item"
+                        div "✓ Custom Domains & Branch Previews" class "pricing-feature-item"
+                        div "✓ Real-time Telemetry & Analytics" class "pricing-feature-item"
+                        div "✓ 99.9% Contractual Uptime SLA" class "pricing-feature-item"
+                        div "✓ Priority Support via Private Channel" class "pricing-feature-item"
+                    a "Deploy Pro Workspace" href "/login" class "btn-hero-primary" style "text-align: center;"
+
+                div class "pricing-card":
+                    h3 "Enterprise Sovereign" class "pricing-title"
+                    p "For multinational enterprises, high-volume apps, and dedicated private VPCs." class "pricing-desc"
+                    div class "pricing-price":
+                        span "$199" id "price_enterprise"
+                        span "/ month" class "pricing-period"
+                    div class "pricing-features-list":
+                        div "✓ Dedicated Isolated VPC Deployment" class "pricing-feature-item"
+                        div "✓ Unlimited MicroVM Compute & Bandwidth" class "pricing-feature-item"
+                        div "✓ 24/7 Dedicated Systems Engineer" class "pricing-feature-item"
+                        div "✓ SAML SSO, SOC2 & HIPAA Compliance" class "pricing-feature-item"
+                        div "✓ 99.99% Financial Uptime Guarantee" class "pricing-feature-item"
+                        div "✓ Custom Data Retention & Audit Logs" class "pricing-feature-item"
+                    a "Contact Enterprise Team" href "/login" class "btn-hero-secondary" style "text-align: center;"
+
+        footer class "site-footer":
+            div class "container":
+                div class "footer-bottom":
+                    p "© 2026 Nexora Platform Inc. All rights reserved. • Sovereign Architecture"
+
+        div id "nexora_toast" class "toast-notification":
+            span "🔔"
+            span "Notification" id "toast_message"

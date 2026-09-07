@@ -1,0 +1,487 @@
+# =====================================================================
+#   NEXORA SOVEREIGN REACTIVE SCRIPT (.enlngs)
+#   Future-Proof Motion, 360 Image Animation & Error Boundary v2.4.0
+# =====================================================================
+
+create app_state_version as "2.4.0-360-animations"
+create billing_annual as false
+
+show "Nexora Sovereign 360 Motion Engine Initialized"
+
+# Global Resilience Shield
+window.addEventListener('error', function(event) {
+    console.warn("[Nexora Resilience Shield] Intercepted runtime exception:", event.message)
+})
+
+window.addEventListener('unhandledrejection', function(event) {
+    console.warn("[Nexora Resilience Shield] Intercepted unhandled promise rejection:", event.reason)
+})
+
+document.addEventListener('DOMContentLoaded', function() {
+    # 0. Single-initialization guard (Idempotent execution)
+    if (window.__NEXORA_INITIALIZED__) return;
+    window.__NEXORA_INITIALIZED__ = true;
+
+    show "DOM Ready: Booting Nexora 360 Motion Systems"
+
+    # =================================================================
+    # 1. DYNAMIC CSS MOTION & 360 ANIMATION SYSTEM INJECTION
+    # =================================================================
+    define css_rule_1 as "/* --- Nexora Hardware-Accelerated Animation Suite --- */ "
+    define css_rule_2 as "@keyframes floatDashboard { 0%, 100% { transform: perspective(1200px) translateY(0px) rotateX(0deg) rotateY(0deg); } 50% { transform: perspective(1200px) translateY(-7px) rotateX(0.65deg) rotateY(-0.4deg); } } "
+    define css_rule_3 as "@keyframes auroraBreathe { 0%, 100% { opacity: 0.35; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 0.65; transform: translate(-50%, -50%) scale(1.15); } } "
+    define css_rule_4 as "@keyframes beaconPulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } } "
+    define css_rule_5 as "@keyframes beaconPulseAmber { 0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); } 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } } "
+    define css_rule_6 as "@keyframes floatShipBadge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } } "
+    define css_rule_7 as "@keyframes heroShimmer { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } "
+    define css_rule_8 as "/* --- 360 Degree Image Card Animations --- */ "
+    define css_rule_9 as "@keyframes spin360Y { 0% { transform: perspective(1200px) rotateY(0deg) scale(1); } 50% { transform: perspective(1200px) rotateY(180deg) scale(0.94); } 100% { transform: perspective(1200px) rotateY(360deg) scale(1); } } "
+    define css_rule_10 as "@keyframes turntableOrbit { 0% { transform: perspective(1200px) rotateY(0deg); } 100% { transform: perspective(1200px) rotateY(360deg); } } "
+    define css_rule_11 as ".card-360-container { perspective: 1200px; transform-style: preserve-3d; cursor: pointer; } "
+    define css_rule_12 as ".card-360-inner { position: relative; border-radius: 18px; overflow: hidden; background: #0e121b; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 16px 45px rgba(0, 0, 0, 0.7); transform-style: preserve-3d; will-change: transform; transition: transform 0.15s ease-out, box-shadow 0.3s ease; } "
+    define css_rule_13 as ".card-360-inner.is-spinning { animation: spin360Y 1.25s cubic-bezier(0.2, 0.85, 0.25, 1) forwards; } "
+    define css_rule_14 as ".card-360-inner.is-turntable { animation: turntableOrbit 14s linear infinite; } "
+    define css_rule_15 as ".card-360-sheen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.18) 50%, transparent 80%); transform: translateX(-100%); pointer-events: none; transition: transform 0.7s ease; z-index: 5; } "
+    define css_rule_16 as ".card-360-inner:hover .card-360-sheen { transform: translateX(100%); } "
+    define css_rule_17 as ".badge-360 { position: absolute; top: 12px; right: 12px; background: rgba(8, 9, 13, 0.8); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.18); color: #f8fafc; font-size: 0.72rem; font-weight: 700; padding: 5px 12px; border-radius: 999px; display: flex; align-items: center; gap: 6px; cursor: pointer; z-index: 10; transition: all 0.2s ease; } "
+    define css_rule_18 as ".badge-360:hover { background: #3b82f6; border-color: #3b82f6; transform: scale(1.06); box-shadow: 0 0 12px rgba(59, 130, 246, 0.5); } "
+    define css_rule_19 as ".dashboard-window { animation: floatDashboard 6.5s ease-in-out infinite; will-change: transform; transform-style: preserve-3d; transition: transform 0.12s ease-out, box-shadow 0.3s ease; } "
+    define css_rule_20 as ".hero-glow-bg { animation: auroraBreathe 8s ease-in-out infinite; will-change: transform, opacity; } "
+    define css_rule_21 as ".status-dot-pulse { animation: beaconPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important; } "
+    define css_rule_22 as ".status-dot-pulse[style*='f59e0b'] { animation: beaconPulseAmber 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important; } "
+    define css_rule_23 as ".ship-badge { animation: floatShipBadge 4s ease-in-out infinite; will-change: transform; } "
+    define css_rule_24 as ".hero-tagline, .kicker-blue { background-size: 200% auto; animation: heroShimmer 8s ease infinite; } "
+    define css_rule_25 as ".reveal-node { opacity: 0; transform: translateY(22px); transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1); will-change: opacity, transform; } "
+    define css_rule_26 as ".reveal-node.is-revealed { opacity: 1; transform: translateY(0); } "
+    define css_rule_27 as ".spotlight-active { position: relative; overflow: hidden; } "
+    define css_rule_28 as ".spotlight-active::before { content: ''; position: absolute; top: var(--spot-y, -250px); left: var(--spot-x, -250px); width: 320px; height: 320px; background: radial-gradient(circle, rgba(59, 130, 246, 0.14) 0%, transparent 65%); transform: translate(-50%, -50%); pointer-events: none; opacity: 0; transition: opacity 0.3s ease; z-index: 1; } "
+    define css_rule_29 as ".spotlight-active:hover::before { opacity: 1; } "
+    define css_rule_30 as ".btn-magnetic { transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease; will-change: transform; } "
+    define css_rule_31 as "@media (prefers-reduced-motion: reduce) { .dashboard-window, .hero-glow-bg, .status-dot-pulse, .ship-badge, .hero-tagline, .kicker-blue, .card-360-inner { animation: none !important; } .reveal-node { opacity: 1 !important; transform: none !important; transition: none !important; } } "
+
+    define animStyle as document.createElement('style')
+    animStyle.id = 'nexora_dynamic_animations'
+    animStyle.textContent = css_rule_1 + css_rule_2 + css_rule_3 + css_rule_4 + css_rule_5 + css_rule_6 + css_rule_7 + css_rule_8 + css_rule_9 + css_rule_10 + css_rule_11 + css_rule_12 + css_rule_13 + css_rule_14 + css_rule_15 + css_rule_16 + css_rule_17 + css_rule_18 + css_rule_19 + css_rule_20 + css_rule_21 + css_rule_22 + css_rule_23 + css_rule_24 + css_rule_25 + css_rule_26 + css_rule_27 + css_rule_28 + css_rule_29 + css_rule_30 + css_rule_31
+    document.head.appendChild(animStyle)
+
+    # =================================================================
+    # 2. 360-DEGREE INTERACTIVE IMAGE CARD ENGINE
+    # =================================================================
+    define cardContainers as document.querySelectorAll('.card-360-container')
+
+    cardContainers.forEach(function(wrap) {
+        define card as wrap.querySelector('.card-360-inner')
+        define badge as wrap.querySelector('.badge-360')
+        if (!card) return;
+
+        create isSpinning as false
+
+        # A. Mouse Tracking 3D Tilt (Degrees on X & Y axes)
+        wrap.addEventListener('mousemove', function(e) {
+            if (isSpinning || card.classList.contains('is-turntable')) return;
+            define rect as wrap.getBoundingClientRect()
+            if (rect.width <= 0 || rect.height <= 0) return;
+            define dx as (e.clientX - rect.left) / rect.width - 0.5
+            define dy as (e.clientY - rect.top) / rect.height - 0.5
+            define rotY as (dx * 32).toFixed(2)
+            define rotX as (-dy * 24).toFixed(2)
+            card.style.transform = "perspective(1200px) rotateX(" + rotX + "deg) rotateY(" + rotY + "deg) translateZ(12px) scale3d(1.02, 1.02, 1.02)"
+        })
+
+        wrap.addEventListener('mouseleave', function() {
+            if (isSpinning || card.classList.contains('is-turntable')) return;
+            card.style.transform = "perspective(1200px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale3d(1, 1, 1)"
+        })
+
+        # B. 360-Degree Axial Revolution Spin on Click
+        function trigger360Spin(e) {
+            if (e) e.stopPropagation();
+            if (isSpinning) return;
+            isSpinning = true
+            card.classList.remove('is-turntable')
+            card.classList.add('is-spinning')
+            
+            define title as card.getAttribute('data-card-title') || (card.querySelector('h3') ? card.querySelector('h3').innerText.trim() : 'Hardware Node')
+            showToast("🔄 360° Axial Revolution: " + title)
+
+            setTimeout(function() {
+                card.classList.remove('is-spinning')
+                card.style.transform = "perspective(1200px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale3d(1, 1, 1)"
+                isSpinning = false
+            }, 1250)
+        }
+
+        if (badge) {
+            badge.addEventListener('click', trigger360Spin)
+        }
+        card.addEventListener('click', function(e) {
+            if (e.target !== badge && !badge.contains(e.target)) {
+                trigger360Spin(e)
+            }
+        })
+
+        # C. Double Click: Toggle Continuous 360° Turntable Mode
+        card.addEventListener('dblclick', function(e) {
+            e.stopPropagation()
+            card.classList.toggle('is-turntable')
+            if (card.classList.contains('is-turntable')) {
+                showToast("🛰️ Continuous 360° Turntable Mode: ON")
+            } else {
+                card.style.transform = "perspective(1200px) rotateX(0deg) rotateY(0deg) translateZ(0px)"
+                showToast("🛰️ Continuous 360° Turntable Mode: OFF")
+            }
+        })
+    })
+
+    # =================================================================
+    # 3. INTERACTIVE 3D MOUSE PARALLAX TILT ON HERO DASHBOARD
+    # =================================================================
+    define heroWrap as document.querySelector('.dashboard-perspective-wrap')
+    define dashWindow as document.querySelector('.dashboard-window')
+
+    if (heroWrap && dashWindow) {
+        create ticking as false
+        heroWrap.addEventListener('mousemove', function(e) {
+            if (!ticking) {
+                window.requestAnimationFrame(function() {
+                    dashWindow.style.animationPlayState = 'paused'
+                    define rect as heroWrap.getBoundingClientRect()
+                    if (rect.width > 0 && rect.height > 0) {
+                        define x as (e.clientX - rect.left) / rect.width - 0.5
+                        define y as (e.clientY - rect.top) / rect.height - 0.5
+                        define rotX as (-y * 12).toFixed(2)
+                        define rotY as (x * 14).toFixed(2)
+                        define transY as (-y * 8 - 4).toFixed(2)
+                        dashWindow.style.transform = "perspective(1200px) rotateX(" + rotX + "deg) rotateY(" + rotY + "deg) translateY(" + transY + "px) scale3d(1.015, 1.015, 1.015)"
+                    }
+                    ticking = false
+                })
+                ticking = true
+            }
+        })
+
+        heroWrap.addEventListener('mouseleave', function() {
+            dashWindow.style.transform = "perspective(1200px) rotateX(0deg) rotateY(0deg) translateY(0px) scale3d(1, 1, 1)"
+            setTimeout(function() {
+                dashWindow.style.animationPlayState = 'running'
+            }, 350)
+        })
+    }
+
+    # =================================================================
+    # 4. CARD SPOTLIGHT GRADIENT TRACKING (SAFE BOUNDS)
+    # =================================================================
+    define cards as document.querySelectorAll('.feature-card, .pillar-item, .pricing-card, .builder-card, .arch-card, .resource-card, .stat-tile')
+    cards.forEach(function(c) {
+        c.classList.add('spotlight-active')
+        c.addEventListener('mousemove', function(e) {
+            define cr as c.getBoundingClientRect()
+            define mx as e.clientX - cr.left
+            define my as e.clientY - cr.top
+            c.style.setProperty('--spot-x', mx + 'px')
+            c.style.setProperty('--spot-y', my + 'px')
+        })
+    })
+
+    # =================================================================
+    # 5. MAGNETIC CTA BUTTON MICRO-INTERACTIONS
+    # =================================================================
+    define magneticBtns as document.querySelectorAll('.btn-pill-white, .btn-explore, .btn-hero-primary, .btn-hero-secondary, .btn-login')
+    magneticBtns.forEach(function(btn) {
+        btn.classList.add('btn-magnetic')
+        btn.addEventListener('mousemove', function(e) {
+            define br as btn.getBoundingClientRect()
+            if (br.width > 0 && br.height > 0) {
+                define bx as (e.clientX - br.left) / br.width - 0.5
+                define by as (e.clientY - br.top) / br.height - 0.5
+                btn.style.transform = "translate(" + (bx * 8).toFixed(1) + "px, " + (by * 6).toFixed(1) + "px)"
+            }
+        })
+        btn.addEventListener('mouseleave', function() {
+            btn.style.transform = "translate(0px, 0px)"
+        })
+    })
+
+    # =================================================================
+    # 6. SMOOTH SCROLL REVEAL OBSERVER WITH AUTO-FALLBACK
+    # =================================================================
+    define revealTargets as document.querySelectorAll('.pillar-item, .feature-card, .impact-stat-item, .builder-card, .pricing-card, .arch-card, .resource-card, .faq-item, .logo-item, .showroom-grid > div')
+    
+    if ('IntersectionObserver' in window) {
+        define observer as new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-revealed')
+                    observer.unobserve(entry.target)
+                }
+            })
+        }, { threshold: 0.12 })
+
+        revealTargets.forEach(function(target, idx) {
+            target.classList.add('reveal-node')
+            target.style.transitionDelay = ((idx % 4) * 0.08) + 's'
+            observer.observe(target)
+        })
+    } else {
+        revealTargets.forEach(function(t) { t.classList.add('is-revealed') })
+    }
+
+    setTimeout(function() {
+        define hiddenNodes as document.querySelectorAll('.reveal-node:not(.is-revealed)')
+        hiddenNodes.forEach(function(n) { n.classList.add('is-revealed') })
+    }, 1400)
+
+    # =================================================================
+    # 7. IMPACT STAT NUMBER COUNTER ANIMATIONS (SAFE EASING)
+    # =================================================================
+    function animateNumber(element, start, end, suffix, duration) {
+        create startTime as null
+        function step(timestamp) {
+            if (!startTime) startTime = timestamp
+            define progress as Math.min((timestamp - startTime) / duration, 1)
+            define ease as progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress)
+            define current as Math.floor(start + (end - start) * ease)
+            element.textContent = current + suffix
+            if (progress < 1) {
+                window.requestAnimationFrame(step)
+            }
+        }
+        window.requestAnimationFrame(step)
+    }
+
+    function animateFloat(element, start, end, suffix, duration) {
+        create startTime as null
+        function step(timestamp) {
+            if (!startTime) startTime = timestamp
+            define progress as Math.min((timestamp - startTime) / duration, 1)
+            define ease as progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress)
+            define current as (start + (end - start) * ease).toFixed(1)
+            element.textContent = current + suffix
+            if (progress < 1) {
+                window.requestAnimationFrame(step)
+            }
+        }
+        window.requestAnimationFrame(step)
+    }
+
+    define impactGrid as document.querySelector('.impact-stats-grid')
+    if (impactGrid && 'IntersectionObserver' in window) {
+        define impactObs as new IntersectionObserver(function(entries) {
+            if (entries[0] && entries[0].isIntersecting) {
+                define impactNumbers as document.querySelectorAll('.impact-big-number')
+                impactNumbers.forEach(function(el) {
+                    define raw as el.textContent.trim()
+                    if (raw.indexOf('50K') !== -1) {
+                        animateNumber(el, 0, 50, 'K+', 1600)
+                    } else if (raw.indexOf('1M') !== -1) {
+                        animateNumber(el, 0, 1000, 'K+ (1M+)', 1800)
+                    } else if (raw.indexOf('99.9') !== -1) {
+                        animateFloat(el, 90.0, 99.9, '%', 1500)
+                    } else if (raw.indexOf('150') !== -1) {
+                        animateNumber(el, 0, 150, '+', 1400)
+                    }
+                })
+                impactObs.unobserve(impactGrid)
+            }
+        }, { threshold: 0.25 })
+        impactObs.observe(impactGrid)
+    }
+
+    # =================================================================
+    # 8. CHART SVG LINE DRAW-IN ON LOAD
+    # =================================================================
+    define chartPathEl as document.getElementById('growth_chart_path')
+    if (chartPathEl) {
+        define length as chartPathEl.getTotalLength ? chartPathEl.getTotalLength() : 600
+        chartPathEl.style.strokeDasharray = length
+        chartPathEl.style.strokeDashoffset = length
+        chartPathEl.style.transition = 'stroke-dashoffset 1.8s cubic-bezier(0.16, 1, 0.3, 1)'
+        setTimeout(function() {
+            chartPathEl.style.strokeDashoffset = '0'
+        }, 250)
+    }
+
+    # =================================================================
+    # 9. TOAST NOTIFICATION SYSTEM
+    # =================================================================
+    define toast as document.getElementById('nexora_toast')
+    define toastMsg as document.getElementById('toast_message')
+
+    function showToast(message) {
+        if (!toast || !toastMsg) return;
+        toastMsg.textContent = message
+        toast.classList.add('show')
+        setTimeout(function() {
+            toast.classList.remove('show')
+        }, 3600)
+    }
+
+    # =================================================================
+    # 10. WATCH DEMO MODAL CONTROLS
+    # =================================================================
+    define btnWatchDemo as document.getElementById('btn_watch_demo')
+    define modalDemo as document.getElementById('modal_demo')
+    define btnCloseModal as document.getElementById('btn_close_modal')
+    define modalBackdrop as document.getElementById('modal_backdrop')
+
+    if (btnWatchDemo && modalDemo) {
+        btnWatchDemo.addEventListener('click', function() {
+            modalDemo.classList.add('active')
+            show "Demo modal opened"
+        })
+    }
+
+    if (btnCloseModal && modalDemo) {
+        btnCloseModal.addEventListener('click', function() {
+            modalDemo.classList.remove('active')
+        })
+    }
+
+    if (modalBackdrop && modalDemo) {
+        modalBackdrop.addEventListener('click', function() {
+            modalDemo.classList.remove('active')
+        })
+    }
+
+    # =================================================================
+    # 11. INTERACTIVE PRICING BILLING TOGGLE (-20% DISCOUNT)
+    # =================================================================
+    define toggleBilling as document.getElementById('billing_toggle')
+    define pricePro as document.getElementById('price_pro')
+    define priceEnterprise as document.getElementById('price_enterprise')
+    define periodLabels as document.querySelectorAll('.pricing-period')
+
+    if (toggleBilling) {
+        toggleBilling.addEventListener('change', function() {
+            define isAnnual as this.checked
+            if (isAnnual) {
+                if (pricePro) pricePro.textContent = "$23"
+                if (priceEnterprise) priceEnterprise.textContent = "$159"
+                periodLabels.forEach(function(el) { el.textContent = "/ month (billed annually)" })
+                showToast("✨ 20% Annual Discount applied to all plans!")
+            } else {
+                if (pricePro) pricePro.textContent = "$29"
+                if (priceEnterprise) priceEnterprise.textContent = "$199"
+                periodLabels.forEach(function(el) { el.textContent = "/ month" })
+                showToast("Switched to Monthly billing.")
+            }
+        })
+    }
+
+    # =================================================================
+    # 12. INTERACTIVE CHART FILTER (HOME PAGE)
+    # =================================================================
+    define chartFilter as document.getElementById('chart_time_filter')
+    define chartPath as document.getElementById('growth_chart_path')
+    define chartArea as document.getElementById('growth_chart_area')
+
+    if (chartFilter && chartPath && chartArea) {
+        chartFilter.addEventListener('change', function() {
+            define val as this.value
+            if (val === '30d') {
+                chartPath.setAttribute('d', 'M 0,95 Q 50,60 100,75 T 200,50 T 300,25 T 400,10')
+                chartArea.setAttribute('d', 'M 0,95 Q 50,60 100,75 T 200,50 T 300,25 T 400,10 L 400,110 L 0,110 Z')
+                showToast("Chart Updated: Last 30 Days Activity (+24% surge)")
+            } else if (val === '1y') {
+                chartPath.setAttribute('d', 'M 0,105 Q 60,90 120,75 T 240,45 T 320,30 T 400,8')
+                chartArea.setAttribute('d', 'M 0,105 Q 60,90 120,75 T 240,45 T 320,30 T 400,8 L 400,110 L 0,110 Z')
+                showToast("Chart Updated: Full Year Trajectory (4.2x expansion)")
+            } else {
+                chartPath.setAttribute('d', 'M 0,90 Q 50,70 100,85 T 200,60 T 300,35 T 400,15')
+                chartArea.setAttribute('d', 'M 0,90 Q 50,70 100,85 T 200,60 T 300,35 T 400,15 L 400,110 L 0,110 Z')
+                showToast("Chart View: Standard 6 Months")
+            }
+        })
+    }
+
+    # =================================================================
+    # 13. INTERACTIVE FAQ ACCORDION
+    # =================================================================
+    define faqHeaders as document.querySelectorAll('.faq-question')
+    faqHeaders.forEach(function(header) {
+        header.addEventListener('click', function() {
+            define item as this.parentElement
+            item.classList.toggle('active')
+            define answer as item.querySelector('.faq-answer')
+            if (answer) {
+                if (item.classList.contains('active')) {
+                    answer.style.maxHeight = '200px'
+                    answer.style.marginTop = '12px'
+                } else {
+                    answer.style.maxHeight = '0'
+                    answer.style.marginTop = '0'
+                }
+            }
+        })
+    })
+
+    # =================================================================
+    # 14. DUAL-MODE RESILIENT CLI COMMAND COPY
+    # =================================================================
+    function copyCommand(cmd) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(cmd).then(function() {
+                showToast("📋 Copied to clipboard: " + cmd)
+            }).catch(function() {
+                fallbackClipboard(cmd)
+            })
+        } else {
+            fallbackClipboard(cmd)
+        }
+    }
+
+    function fallbackClipboard(cmd) {
+        try {
+            define tempArea as document.createElement('textarea')
+            tempArea.value = cmd
+            tempArea.style.position = 'fixed'
+            tempArea.style.opacity = '0'
+            document.body.appendChild(tempArea)
+            tempArea.select()
+            document.execCommand('copy')
+            document.body.removeChild(tempArea)
+            showToast("📋 Copied to clipboard: " + cmd)
+        } catch(err) {
+            showToast("Command: " + cmd)
+        }
+    }
+
+    define copyBtns as document.querySelectorAll('.btn-copy-cli')
+    copyBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            define cmd as this.getAttribute('data-cmd') || 'npm install -g @nexora/cli && nexora init'
+            copyCommand(cmd)
+        })
+    })
+
+    # =================================================================
+    # 15. LOGIN FORM SUBMISSION
+    # =================================================================
+    define loginForm as document.getElementById('nexora_login_form')
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault()
+            define emailInput as document.getElementById('login_email')
+            define emailVal as emailInput ? emailInput.value : ''
+            if (emailVal) {
+                showToast("🚀 Authentication successful! Redirecting to dashboard...")
+                setTimeout(function() {
+                    window.location.href = '/'
+                }, 1400)
+            } else {
+                showToast("⚠️ Please enter a valid email address.")
+            }
+        })
+    }
+
+    # =================================================================
+    # 16. GLOBAL ACTION BUTTONS
+    # =================================================================
+    define actionBtns as document.querySelectorAll('[data-toast]')
+    actionBtns.forEach(function(b) {
+        b.addEventListener('click', function(e) {
+            define msg as this.getAttribute('data-toast')
+            if (msg) showToast(msg)
+        })
+    })
+})

@@ -1,0 +1,1028 @@
+# Nexora Sovereign Design Tokens & Style Sheet
+# Engineered for Enlangg Sovereign Web Framework (enlngf, enlngd, enlngs)
+
+define color "bg-dark" as #08090d
+define color "bg-card" as #0e121b
+define color "bg-surface" as #141a27
+define color "bg-white" as #ffffff
+define color "primary" as #3b82f6
+define color "primary-glow" as rgba(59, 130, 246, 0.25)
+define color "accent-blue" as #2563eb
+define color "accent-emerald" as #10b981
+define color "text-white" as #f8fafc
+define color "text-heading" as #ffffff
+define color "text-muted" as #94a3b8
+define color "text-dark" as #0f172a
+define color "text-dark-muted" as #64748b
+define color "border-subtle" as rgba(255, 255, 255, 0.08)
+define color "border-light" as #e2e8f0
+
+for "*" apply:
+    box-sizing border-box
+    margin 0
+    padding 0
+end
+
+for "body" apply:
+    font-family -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif
+    background var(--bg-dark)
+    color var(--text-white)
+    line-height 1.6
+    overflow-x hidden
+end
+
+for "a, button" apply:
+    color inherit
+    text-decoration none
+    cursor pointer
+    border none
+    outline none
+end
+
+for ".container" apply:
+    max-width 1240px
+    margin 0 auto
+    padding 0 24px
+end
+
+for ".navbar" apply:
+    position sticky
+    top 0
+    z-index 100
+    background rgba(8, 9, 13, 0.92)
+    backdrop-filter blur(16px)
+    -webkit-backdrop-filter blur(16px)
+    border-bottom 1px solid var(--border-subtle)
+    padding 16px 0
+end
+
+for ".nav-inner" apply:
+    display flex
+    align-items center
+    justify-content space-between
+end
+
+for ".brand-logo" apply:
+    display flex
+    align-items center
+    gap 10px
+    font size 22
+    font-weight 800
+    color var(--text-white)
+end
+
+for ".logo-badge" apply:
+    width 32px
+    height 32px
+    corner radius 8
+    background linear-gradient(135deg, #3b82f6, #1d4ed8)
+    display flex
+    align-items center
+    justify-content center
+end
+
+for ".nav-menu" apply:
+    display flex
+    align-items center
+    gap 32px
+    list-style none
+end
+
+for ".nav-link" apply:
+    font size 14
+    font-weight 500
+    color var(--text-muted)
+    padding 6px 0
+end
+
+for ".nav-link.active" apply:
+    color var(--text-white)
+    font-weight 700
+end
+
+for ".nav-actions" apply:
+    display flex
+    align-items center
+    gap 16px
+end
+
+for ".btn-login" apply:
+    font size 14
+    font-weight 600
+    color var(--text-white)
+    padding 8px 16px
+    corner radius 8
+end
+
+for ".btn-pill-white" apply:
+    background var(--bg-white)
+    color var(--bg-dark)
+    font size 14
+    font-weight 700
+    padding 9px 20px
+    corner radius 9999
+    display inline-flex
+    align-items center
+    gap 6px
+end
+
+for ".hero-section" apply:
+    padding 90px 0 80px
+    position relative
+    overflow hidden
+end
+
+for ".hero-grid" apply:
+    display grid
+    grid-template-columns 1.05fr 0.95fr
+    gap 48px
+    align-items center
+end
+
+for ".hero-tagline, .kicker-blue, .trusted-heading" apply:
+    font size 12
+    font-weight 800
+    letter-spacing 0.15em
+    color var(--text-muted)
+    text-transform uppercase
+    margin-bottom 16px
+end
+
+for ".hero-title" apply:
+    font size 60
+    font-weight 900
+    line-height 1.06
+    letter-spacing -0.035em
+    color var(--text-heading)
+    margin-bottom 22px
+end
+
+for ".gradient-text" apply:
+    background linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #93c5fd 100%)
+    -webkit-background-clip text
+    -webkit-text-fill-color transparent
+end
+
+for ".hero-desc" apply:
+    font size 17
+    line-height 1.65
+    color var(--text-muted)
+    margin-bottom 36px
+    max-width 500px
+end
+
+for ".hero-ctas, .hero-cta-group" apply:
+    display flex
+    align-items center
+    gap 16px
+    margin-bottom 22px
+end
+
+for ".btn-hero-primary, .btn-community" apply:
+    background var(--bg-white)
+    color var(--bg-dark)
+    font size 15
+    font-weight 700
+    padding 13px 26px
+    corner radius 10
+    display inline-flex
+    align-items center
+    gap 8px
+    box-shadow 0 4px 20px rgba(255, 255, 255, 0.2)
+end
+
+for ".btn-hero-secondary" apply:
+    background rgba(255, 255, 255, 0.05)
+    color var(--text-white)
+    border 1px solid var(--border-subtle)
+    font size 15
+    font-weight 600
+    padding 13px 24px
+    corner radius 10
+    display inline-flex
+    align-items center
+    gap 8px
+end
+
+for ".hero-perks, .hero-trust-caption" apply:
+    display flex
+    align-items center
+    gap 16px
+    font size 13
+    color var(--text-muted)
+end
+
+for ".dashboard-perspective-wrap" apply:
+    position relative
+    perspective 1000px
+end
+
+for ".dashboard-window" apply:
+    background #0b0e17
+    border 1px solid rgba(255, 255, 255, 0.12)
+    corner radius 18
+    overflow hidden
+    box-shadow 0 30px 90px rgba(0, 0, 0, 0.85), 0 0 40px rgba(59, 130, 246, 0.15)
+    position relative
+end
+
+for ".mockup-nav" apply:
+    background #0e121b
+    border-bottom 1px solid var(--border-subtle)
+    padding 10px 18px
+    display flex
+    align-items center
+    justify-content space-between
+end
+
+for ".mockup-nav-left" apply:
+    display flex
+    align-items center
+    gap 14px
+end
+
+for ".mockup-logo-text" apply:
+    font size 13
+    font-weight 700
+    color #ffffff
+    display flex
+    align-items center
+    gap 6px
+end
+
+for ".mockup-search" apply:
+    background #08090d
+    border 1px solid var(--border-subtle)
+    corner radius 6
+    padding 5px 12px
+    display flex
+    align-items center
+    gap 8px
+    width 220px
+end
+
+for ".mockup-user" apply:
+    width 28px
+    height 28px
+    border-radius 50%
+    background #1e293b
+    display flex
+    align-items center
+    justify-content center
+    font size 11
+    font-weight 700
+    color #ffffff
+end
+
+for ".mockup-body" apply:
+    display grid
+    grid-template-columns 140px 1fr
+    min-height 380px
+end
+
+for ".mockup-sidebar" apply:
+    background #090c13
+    border-right 1px solid var(--border-subtle)
+    padding 16px 10px
+    display flex
+    flex-direction column
+    gap 6px
+end
+
+for ".mockup-menu-item" apply:
+    display flex
+    align-items center
+    gap 10px
+    padding 7px 10px
+    corner radius 6
+    font size 12
+    color var(--text-muted)
+end
+
+for ".mockup-menu-item.active" apply:
+    background rgba(59, 130, 246, 0.15)
+    color #60a5fa
+    font-weight 600
+end
+
+for ".mockup-content" apply:
+    padding 20px
+    display flex
+    flex-direction column
+    gap 16px
+    background #0b0e17
+end
+
+for ".greeting-title" apply:
+    font size 16
+    font-weight 700
+    color #ffffff
+    margin-bottom 2px
+end
+
+for ".greeting-sub, .deploy-meta" apply:
+    font size 12
+    color var(--text-muted)
+end
+
+for ".mockup-stat-grid" apply:
+    display grid
+    grid-template-columns repeat(4, 1fr)
+    gap 10px
+end
+
+for ".stat-tile" apply:
+    background #101522
+    border 1px solid var(--border-subtle)
+    corner radius 8
+    padding 10px 12px
+end
+
+for ".stat-tile-label" apply:
+    font size 11
+    color var(--text-muted)
+    margin-bottom 4px
+end
+
+for ".stat-tile-val" apply:
+    font size 18
+    font-weight 800
+    color #ffffff
+    display flex
+    align-items baseline
+    gap 6px
+end
+
+for ".stat-badge-green" apply:
+    font size 10
+    color #10b981
+    font-weight 600
+end
+
+for ".mockup-mid-split" apply:
+    display grid
+    grid-template-columns 1.3fr 1fr
+    gap 12px
+end
+
+for ".chart-panel, .deploy-panel" apply:
+    background #101522
+    border 1px solid var(--border-subtle)
+    corner radius 8
+    padding 12px
+end
+
+for ".panel-header" apply:
+    display flex
+    align-items center
+    justify-content space-between
+    margin-bottom 10px
+end
+
+for ".panel-header-title, .modal-title" apply:
+    font size 12
+    font-weight 700
+    color #ffffff
+end
+
+for ".panel-header-filter" apply:
+    background rgba(255, 255, 255, 0.06)
+    border 1px solid var(--border-subtle)
+    corner radius 4
+    color var(--text-muted)
+    font size 10
+    padding 2px 6px
+end
+
+for ".deploy-row" apply:
+    display flex
+    align-items center
+    justify-content space-between
+    padding 6px 8px
+    border-bottom 1px solid rgba(255, 255, 255, 0.04)
+end
+
+for ".deploy-name, .pillar-title" apply:
+    font size 14
+    font-weight 700
+    color var(--text-heading)
+end
+
+for ".status-dot-pulse" apply:
+    width 6px
+    height 6px
+    border-radius 50%
+    background #10b981
+    box-shadow 0 0 8px #10b981
+end
+
+for ".ship-badge" apply:
+    position absolute
+    bottom -16px
+    right -12px
+    background #1e293b
+    color #ffffff
+    font size 13
+    font-weight 700
+    padding 8px 18px
+    corner radius 9999
+    display flex
+    align-items center
+    gap 8px
+    box-shadow 0 8px 24px rgba(0, 0, 0, 0.6)
+    border 1px solid rgba(255, 255, 255, 0.2)
+end
+
+for ".pillars-section" apply:
+    padding 40px 0 60px
+    border-bottom 1px solid var(--border-subtle)
+end
+
+for ".pillars-grid" apply:
+    display grid
+    grid-template-columns repeat(4, 1fr)
+    gap 24px
+end
+
+for ".pillar-item" apply:
+    display flex
+    align-items flex-start
+    gap 14px
+end
+
+for ".pillar-icon" apply:
+    flex-shrink 0
+    font size 19
+    color #60a5fa
+end
+
+for ".pillar-desc" apply:
+    font size 13
+    color var(--text-muted)
+    line-height 1.45
+end
+
+for ".trusted-section" apply:
+    padding 60px 0 80px
+    text-align center
+end
+
+for ".logos-strip" apply:
+    display flex
+    align-items center
+    justify-content space-between
+    gap 32px
+    opacity 0.75
+end
+
+for ".logo-item, .partner-logo" apply:
+    display flex
+    align-items center
+    gap 8px
+    font size 18
+    font-weight 800
+    color var(--text-white)
+end
+
+for ".features-section, .white-contrast-section" apply:
+    background var(--bg-white)
+    color var(--text-dark)
+    padding 100px 0 110px
+    position relative
+end
+
+for ".features-split-grid, .features-header-row" apply:
+    display grid
+    grid-template-columns 1.2fr 1fr
+    gap 48px
+    align-items flex-end
+    margin-bottom 64px
+end
+
+for ".features-left-info" apply:
+    display flex
+    flex-direction column
+    align-items flex-start
+end
+
+for ".features-main-heading, .section-title-dark" apply:
+    font size 48
+    font-weight 900
+    letter-spacing -0.03em
+    line-height 1.1
+    color var(--text-dark)
+    margin-bottom 16px
+end
+
+for ".features-sub-text, .section-desc-dark" apply:
+    font size 17
+    color var(--text-dark-muted)
+    line-height 1.6
+    margin-bottom 32px
+end
+
+for ".btn-explore" apply:
+    display inline-flex
+    align-items center
+    gap 8px
+    padding 12px 24px
+    border 1px solid #e2e8f0
+    corner radius 10
+    font size 15
+    font-weight 600
+    color var(--text-dark)
+    background var(--bg-white)
+end
+
+for ".features-card-grid" apply:
+    display grid
+    grid-template-columns 1fr 1fr
+    gap 20px
+end
+
+for ".feature-card" apply:
+    background var(--bg-white)
+    border 1px solid #e2e8f0
+    corner radius 16
+    padding 28px
+    box-shadow 0 4px 20px rgba(0, 0, 0, 0.03)
+end
+
+for ".feature-icon-box" apply:
+    width 44px
+    height 44px
+    corner radius 10
+    display flex
+    align-items center
+    justify-content center
+    margin-bottom 18px
+    font size 20
+end
+
+for ".feature-card-title" apply:
+    font size 18
+    font-weight 700
+    color var(--text-dark)
+    margin-bottom 8px
+end
+
+for ".feature-card-desc" apply:
+    font size 14
+    color var(--text-dark-muted)
+    line-height 1.55
+end
+
+for ".impact-section" apply:
+    background var(--bg-dark)
+    padding 90px 0 100px
+    border-top 1px solid var(--border-subtle)
+end
+
+for ".impact-header-row" apply:
+    display flex
+    flex-direction column
+    margin-bottom 50px
+end
+
+for ".impact-title" apply:
+    font size 42
+    font-weight 800
+    color var(--text-heading)
+    margin-bottom 12px
+end
+
+for ".impact-sub" apply:
+    font size 16
+    color var(--text-muted)
+    max-width 580px
+end
+
+for ".impact-stats-grid" apply:
+    display grid
+    grid-template-columns repeat(4, 1fr)
+    gap 32px
+end
+
+for ".impact-stat-item" apply:
+    display flex
+    flex-direction column
+end
+
+for ".pricing-price, .impact-big-number" apply:
+    font size 48
+    font-weight 900
+    color var(--text-heading)
+    line-height 1
+    margin-bottom 16px
+end
+
+for ".impact-stat-label" apply:
+    font size 15
+    color var(--text-muted)
+    font-weight 500
+end
+
+for ".builder-section" apply:
+    background #0b0e17
+    padding 80px 0 110px
+    border-top 1px solid var(--border-subtle)
+    position relative
+end
+
+for ".builder-grid" apply:
+    display grid
+    grid-template-columns 1fr 1.1fr
+    gap 64px
+    align-items center
+end
+
+for ".builder-image-card" apply:
+    position relative
+    corner radius 20
+    overflow hidden
+    border 1px solid rgba(255, 255, 255, 0.12)
+    box-shadow 0 20px 60px rgba(0, 0, 0, 0.7)
+end
+
+for ".builder-img" apply:
+    width 100%
+    height auto
+    display block
+    object-fit cover
+end
+
+for ".builder-content" apply:
+    display flex
+    flex-direction column
+    align-items flex-start
+    position relative
+end
+
+for ".builder-title" apply:
+    font size 42
+    font-weight 800
+    line-height 1.18
+    color var(--text-heading)
+    margin-bottom 18px
+end
+
+for ".builder-sub" apply:
+    font size 17
+    color var(--text-muted)
+    line-height 1.6
+    margin-bottom 28px
+end
+
+for ".builder-checklist" apply:
+    display flex
+    flex-direction column
+    gap 14px
+    margin-bottom 34px
+end
+
+for ".check-item" apply:
+    display flex
+    align-items center
+    gap 12px
+    font size 15
+    font-weight 500
+    color #f1f5f9
+end
+
+for ".check-badge" apply:
+    width 20px
+    height 20px
+    border-radius 50%
+    background var(--bg-white)
+    color var(--bg-dark)
+    display flex
+    align-items center
+    justify-content center
+    font size 12
+    font-weight 900
+end
+
+for ".handwritten-accent" apply:
+    position absolute
+    bottom -35px
+    right 10px
+    font-family cursive, sans-serif
+    font size 26
+    color rgba(255, 255, 255, 0.45)
+    transform rotate(-8deg)
+    pointer-events none
+end
+
+for ".terminal-window" apply:
+    background #0a0d14
+    border 1px solid rgba(255, 255, 255, 0.12)
+    corner radius 14
+    overflow hidden
+    box-shadow 0 20px 50px rgba(0, 0, 0, 0.7)
+    margin 30px 0
+end
+
+for ".terminal-header" apply:
+    background #0e121b
+    border-bottom 1px solid var(--border-subtle)
+    padding 10px 16px
+    display flex
+    align-items center
+    gap 12px
+end
+
+for ".terminal-body" apply:
+    padding 20px
+    font-family monospace
+    font size 14
+    line-height 1.7
+    color #e2e8f0
+end
+
+for ".code-prompt" apply:
+    color #3b82f6
+    font-weight 700
+    margin-right 8px
+end
+
+for ".code-dim" apply:
+    color #64748b
+end
+
+for ".code-green" apply:
+    color #10b981
+    font-weight 600
+end
+
+for ".pricing-grid" apply:
+    display grid
+    grid-template-columns repeat(3, 1fr)
+    gap 28px
+    margin 50px 0 80px
+end
+
+for ".pricing-card" apply:
+    background #0e121b
+    border 1px solid var(--border-subtle)
+    corner radius 18
+    padding 36px 28px
+    display flex
+    flex-direction column
+    position relative
+    transition all 0.3s ease
+end
+
+for ".pricing-card.featured" apply:
+    border 1px solid #3b82f6
+    box-shadow 0 0 35px rgba(59, 130, 246, 0.2)
+    background #111726
+end
+
+for ".pricing-badge" apply:
+    position absolute
+    top -12px
+    left 50%
+    transform translateX(-50%)
+    background #3b82f6
+    color #ffffff
+    font size 12
+    font-weight 800
+    padding 4px 14px
+    corner radius 9999
+end
+
+for ".pricing-title" apply:
+    font size 20
+    font-weight 800
+    color var(--text-heading)
+    margin-bottom 8px
+end
+
+for ".pricing-desc" apply:
+    font size 14
+    color var(--text-muted)
+    margin-bottom 24px
+    min-height 42px
+end
+
+for ".pricing-period" apply:
+    font size 15
+    font-weight 500
+    color var(--text-muted)
+end
+
+for ".pricing-features-list" apply:
+    display flex
+    flex-direction column
+    gap 12px
+    margin-bottom 32px
+    flex 1
+end
+
+for ".pricing-feature-item" apply:
+    display flex
+    align-items center
+    gap 10px
+    font size 14
+    color #cbd5e1
+end
+
+for ".faq-question" apply:
+    background #0e121b
+    border 1px solid var(--border-subtle)
+    corner radius 10
+    padding 16px 20px
+    font size 15
+    font-weight 600
+    color #ffffff
+    cursor pointer
+end
+
+for ".faq-answer" apply:
+    background rgba(255, 255, 255, 0.02)
+    border 1px solid var(--border-subtle)
+    border-top none
+    corner radius 0 0 10 10
+    padding 16px 20px
+    font size 14
+    color var(--text-muted)
+end
+
+for ".auth-wrapper" apply:
+    min-height 80vh
+    display flex
+    align-items center
+    justify-content center
+    padding 40px 24px
+end
+
+for ".auth-card" apply:
+    background #0e121b
+    border 1px solid var(--border-subtle)
+    corner radius 20
+    padding 44px
+    max-width 440px
+    width 100%
+    box-shadow 0 25px 70px rgba(0, 0, 0, 0.8)
+    display flex
+    flex-direction column
+end
+
+for ".auth-input-group" apply:
+    display flex
+    flex-direction column
+    gap 8px
+    margin-bottom 18px
+end
+
+for ".auth-input-label" apply:
+    font size 13
+    font-weight 600
+    color #cbd5e1
+end
+
+for ".auth-input" apply:
+    background #08090d
+    border 1px solid var(--border-subtle)
+    corner radius 10
+    padding 12px 16px
+    color #ffffff
+    font size 15
+    outline none
+end
+
+for ".btn-auth-submit" apply:
+    background #3b82f6
+    color #ffffff
+    font size 15
+    font-weight 700
+    padding 13px
+    corner radius 10
+    margin-top 10px
+    text-align center
+end
+
+for ".btn-oauth" apply:
+    background #141a27
+    border 1px solid var(--border-subtle)
+    color #ffffff
+    font size 14
+    font-weight 600
+    padding 11px
+    corner radius 10
+    display flex
+    align-items center
+    justify-content center
+    gap 10px
+    margin-bottom 10px
+end
+
+for ".modal-overlay" apply:
+    position fixed
+    top 0
+    left 0
+    width 100%
+    height 100%
+    background rgba(8, 9, 13, 0.88)
+    backdrop-filter blur(12px)
+    -webkit-backdrop-filter blur(12px)
+    z-index 2000
+    display none
+    align-items center
+    justify-content center
+    padding 24px
+end
+
+for ".modal-overlay.active" apply:
+    display flex
+end
+
+for ".modal-window" apply:
+    background #0e121b
+    border 1px solid rgba(255, 255, 255, 0.12)
+    corner radius 20
+    max-width 720px
+    width 100%
+    overflow hidden
+    box-shadow 0 25px 80px rgba(0, 0, 0, 0.9)
+end
+
+for ".modal-header" apply:
+    display flex
+    align-items center
+    justify-content space-between
+    padding 20px 24px
+    border-bottom 1px solid var(--border-subtle)
+end
+
+for ".modal-close-btn" apply:
+    background transparent
+    color var(--text-muted)
+    font size 24
+    cursor pointer
+    padding 4px 8px
+end
+
+for ".toast-notification" apply:
+    position fixed
+    bottom 32px
+    right 32px
+    background #0e121b
+    border 1px solid rgba(59, 130, 246, 0.4)
+    color #ffffff
+    padding 14px 22px
+    corner radius 12
+    box-shadow 0 10px 30px rgba(0, 0, 0, 0.7)
+    display none
+    align-items center
+    gap 12px
+    font size 15
+    font-weight 600
+    z-index 9999
+end
+
+for ".toast-notification.show" apply:
+    display flex
+end
+
+for ".site-footer" apply:
+    background #06070a
+    border-top 1px solid var(--border-subtle)
+    padding 60px 0 40px
+    font size 14
+    color var(--text-dark-muted)
+end
+
+for ".footer-grid" apply:
+    display grid
+    grid-template-columns 2fr repeat(4, 1fr)
+    gap 40px
+    margin-bottom 40px
+end
+
+for ".footer-col-title" apply:
+    font size 14
+    font-weight 700
+    color var(--text-heading)
+    margin-bottom 16px
+end
+
+for ".footer-links" apply:
+    display flex
+    flex-direction column
+    gap 10px
+    list-style none
+end
+
+for ".footer-link" apply:
+    color var(--text-muted)
+    font size 14
+end
+
+for ".footer-bottom" apply:
+    border-top 1px solid rgba(255, 255, 255, 0.05)
+    padding-top 24px
+    display flex
+    align-items center
+    justify-content space-between
+end

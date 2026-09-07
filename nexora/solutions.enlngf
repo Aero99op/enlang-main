@@ -1,0 +1,70 @@
+document enlgf:
+    head:
+        title "Nexora Solutions — High-Impact Use Cases"
+        connect design "styles.css"
+        connect script "logic.js"
+
+    body:
+        header class "navbar":
+            div class "container nav-inner":
+                a href "/" class "brand-logo":
+                    div class "logo-badge":
+                        span "◆"
+                    span "Nexora"
+                ul class "nav-menu":
+                    li:
+                        a "Product" href "/product" class "nav-link"
+                    li:
+                        a "Solutions" href "/solutions" class "nav-link active"
+                    li:
+                        a "Pricing" href "/pricing" class "nav-link"
+                    li:
+                        a "Resources" href "/resources" class "nav-link"
+                div class "nav-actions":
+                    a "Login" href "/login" class "btn-login"
+                    a "Get Started" href "/pricing" class "btn-pill-white"
+
+        section style "padding: 80px 0 40px; text-align: center;":
+            div class "container":
+                div "USE CASES & ENTERPRISE" class "hero-tagline"
+                h1 "Engineered for Every Stage of Scale" class "hero-title" style "max-width: 860px; margin: 0 auto 20px;"
+                p "From early stage MVP iteration to mission-critical multi-region enterprise deployments." class "hero-desc" style "margin: 0 auto 32px; max-width: 600px;"
+
+        section class "container":
+            div class "pricing-grid":
+                div class "pricing-card":
+                    h3 "Startups & Solo Builders" class "pricing-title"
+                    p "Launch ideas into revenue in hours, not weeks. Focus entirely on customer value." class "pricing-desc"
+                    div class "pricing-features-list":
+                        div "✓ Instant zero-config setup" class "pricing-feature-item"
+                        div "✓ Built-in global CDN" class "pricing-feature-item"
+                        div "✓ Generous free development tier" class "pricing-feature-item"
+                    a "Launch Your MVP" href "/pricing" class "btn-hero-primary" style "text-align: center;"
+
+                div class "pricing-card featured":
+                    div "HIGH SCALE" class "pricing-badge"
+                    h3 "AI Autonomous Labs" class "pricing-title"
+                    p "Orchestrate agent tool calls, streaming LLM inference, and low-latency token pipes." class "pricing-desc"
+                    div class "pricing-features-list":
+                        div "✓ Sub-12ms WebSocket streams" class "pricing-feature-item"
+                        div "✓ State persistence across steps" class "pricing-feature-item"
+                        div "✓ Massive concurrent agent workers" class "pricing-feature-item"
+                    a "Explore AI Architecture" href "/product" class "btn-hero-primary" style "text-align: center;"
+
+                div class "pricing-card":
+                    h3 "Enterprise Infrastructure" class "pricing-title"
+                    p "Dedicated VPC routing, compliance guardrails, and financial uptime guarantees." class "pricing-desc"
+                    div class "pricing-features-list":
+                        div "✓ SOC2 Type II & HIPAA ready" class "pricing-feature-item"
+                        div "✓ 99.99% Financial SLA" class "pricing-feature-item"
+                        div "✓ 24/7 dedicated engineering pod" class "pricing-feature-item"
+                    a "Contact Enterprise" href "/login" class "btn-hero-secondary" style "text-align: center;"
+
+        footer class "site-footer":
+            div class "container":
+                div class "footer-bottom":
+                    p "© 2026 Nexora Platform Inc. All rights reserved. • Sovereign Architecture"
+
+        div id "nexora_toast" class "toast-notification":
+            span "🔔"
+            span "Notification" id "toast_message"

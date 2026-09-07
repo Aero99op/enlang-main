@@ -1,0 +1,33 @@
+document enlgf:
+    head:
+        title "404 — Page Not Found | Nexora"
+        connect design "styles.css"
+        connect script "logic.js"
+
+    body:
+        header class "navbar":
+            div class "container nav-inner":
+                a href "/" class "brand-logo":
+                    div class "logo-badge":
+                        span "◆"
+                    span "Nexora"
+                div class "nav-actions":
+                    a "Return to Safety →" href "/" class "btn-pill-white"
+
+        section style "padding: 120px 0; text-align: center;":
+            div class "container":
+                div "SOVEREIGN ERROR BOUNDARY" class "hero-tagline"
+                h1 "404 — Route Not Found" class "hero-title" style "font-size: 3.5rem; margin-bottom: 16px;"
+                p "The sovereign coordinate you requested does not exist on this cluster." class "hero-desc" style "margin: 0 auto 32px; max-width: 520px;"
+                div style "display: flex; gap: 16px; justify-content: center;":
+                    a "← Return to Home" href "/" class "btn-hero-primary"
+                    a "System Status" href "/api/health" class "btn-hero-secondary"
+
+        footer class "site-footer":
+            div class "container":
+                div class "footer-bottom":
+                    p "© 2026 Nexora Platform Inc. All rights reserved. • Sovereign Error Boundary"
+
+        div id "nexora_toast" class "toast-notification":
+            span "🔔"
+            span "Notification" id "toast_message"

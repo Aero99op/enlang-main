@@ -1,0 +1,52 @@
+document enlgf:
+    head:
+        title "Nexora Resources & Knowledge Hub"
+        connect design "styles.css"
+        connect script "logic.js"
+
+    body:
+        header class "navbar":
+            div class "container nav-inner":
+                a href "/" class "brand-logo":
+                    div class "logo-badge":
+                        span "◆"
+                    span "Nexora"
+                ul class "nav-menu":
+                    li:
+                        a "Product" href "/product" class "nav-link"
+                    li:
+                        a "Solutions" href "/solutions" class "nav-link"
+                    li:
+                        a "Pricing" href "/pricing" class "nav-link"
+                    li:
+                        a "Resources" href "/resources" class "nav-link active"
+                div class "nav-actions":
+                    a "Login" href "/login" class "btn-login"
+                    a "Get Started" href "/pricing" class "btn-pill-white"
+
+        section style "padding: 80px 0 40px; text-align: center;":
+            div class "container":
+                div "DOCUMENTATION & SUPPORT" class "hero-tagline"
+                h1 "Resources, Guides & Answers" class "hero-title" style "max-width: 860px; margin: 0 auto 20px;"
+                p "Comprehensive technical guides, CLI cheatsheets, and answers to common questions." class "hero-desc" style "margin: 0 auto 32px; max-width: 600px;"
+
+        section class "container" style "max-width: 800px; margin: 0 auto 60px;":
+            div style "display: flex; flex-direction: column; gap: 16px;":
+                div class "faq-item":
+                    div "What makes Nexora different from traditional cloud hosts?" class "faq-question"
+                    div "Nexora runs on a Sovereign Trinity engine (.enlngf, .enlngd, .enlngs) streamed over a native Pure C WinSock2 daemon with zero static HTML/CSS/JS files stored on disk." class "faq-answer"
+                div class "faq-item":
+                    div "How do 360-degree card animations work?" class "faq-question"
+                    div "Image cards track cursor angle for 3D yaw and pitch perspective, execute axial 360° revolutions on click, and provide infinite turntable orbit modes on double-click." class "faq-answer"
+                div class "faq-item":
+                    div "Is there a free plan available?" class "faq-question"
+                    div "Yes! The Free Forever plan includes 3 active workspaces, 50,000 monthly credits, and global Anycast CDN with zero credit card required." class "faq-answer"
+
+        footer class "site-footer":
+            div class "container":
+                div class "footer-bottom":
+                    p "© 2026 Nexora Platform Inc. All rights reserved. • Sovereign Architecture"
+
+        div id "nexora_toast" class "toast-notification":
+            span "🔔"
+            span "Notification" id "toast_message"
