@@ -323,6 +323,54 @@ int enlngdb_count(EnlngTable* table, const char* filter_col, EnlngOp op, const E
     return count;
 }
 
+int enlngdb_update(EnlngTable* table, const char* filter_col, EnlngOp op, const EnlngVal* target_val, const char* set_col, const EnlngVal* set_val) {
+    if (!table || !set_col || !set_val) return 0;
+
+    int set_col_idx = -1;
+    for (int c = 0; c < table->col_count; c++) {
+        if (strcmp(table->columns[c].name, set_col) == 0) {
+            set_col_idx = c;
+            break;
+        }
+    }
+    if (set_col_idx < 0) return 0;
+
+    int filter_col_idx = -1;
+    if (filter_col && op != OP_NONE) {
+        for (int c = 0; c < table->col_count; c++) {
+            if (strcmp(table->columns[c].name, filter_col) == 0) {
+                filter_col_idx = c;
+                break;
+            }
+        }
+        if (filter_col_idx < 0) return 0;
+    }
+
+    int updated_count = 0;
+    for (size_t r = 0; r < table->row_count; r++) {
+        EnlngRow* row = &table->rows[r];
+        bool match = true;
+        if (filter_col_idx >= 0 && target_val) {
+            if (filter_col_idx < row->cell_count) {
+                match = eval_condition(&row->cells[filter_col_idx], op, target_val);
+            } else {
+                match = false;
+            }
+        }
+
+        if (match) {
+            if (set_col_idx < row->cell_count) {
+                enlng_free_val(&row->cells[set_col_idx]);
+                row->cells[set_col_idx] = enlng_copy_val(set_val);
+                updated_count++;
+            }
+        }
+    }
+
+    if (updated_count > 0) table->version++;
+    return updated_count;
+}
+
 int enlngdb_delete(EnlngTable* table, const char* filter_col, EnlngOp op, const EnlngVal* target_val, bool confirmed) {
     if (!table) return 0;
     if (!filter_col && !confirmed) {

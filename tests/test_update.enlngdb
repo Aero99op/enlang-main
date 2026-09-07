@@ -1,0 +1,22 @@
+type enlngdb;
+
+create table scholars with id, name, cgpa, status;
+
+insert into scholars with id 1, name "Aryan", cgpa 8.2, status "probation";
+insert into scholars with id 2, name "Meera", cgpa 9.4, status "honors";
+insert into scholars with id 3, name "Kunal", cgpa 7.8, status "probation";
+
+find all records from scholars;
+
+# 1. Update specific row by condition
+update scholars set status = "dean_list" where cgpa is greater than 9.0;
+
+# 2. Conversational 'change' and 'to'
+change scholars set cgpa to 9.8, status to "topper" where name is "Aryan";
+
+find all records from scholars;
+
+# 3. Update entire column across all rows (unconstrained update)
+update scholars set status = "active_enrolled";
+
+find all records from scholars;

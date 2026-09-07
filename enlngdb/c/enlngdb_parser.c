@@ -430,6 +430,114 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         }
     }
 
+    // 9. update / change [records in] <table_name> set <col> = <val> [where <filter_col> <op> <target_val>]
+    if (str_starts_with_ci(stmt, "update ") || str_starts_with_ci(stmt, "change ")) {
+        const char* p = stmt + (str_starts_with_ci(stmt, "update ") ? 7 : 7);
+        while (isspace((unsigned char)*p)) p++;
+
+        if (str_starts_with_ci(p, "records in ")) p += 11;
+        else if (str_starts_with_ci(p, "rows in ")) p += 8;
+        else if (str_starts_with_ci(p, "in ")) p += 3;
+        if (str_starts_with_ci(p, "the ")) p += 4;
+        while (isspace((unsigned char)*p)) p++;
+
+        const char* set_pos = strstr(p, " set ");
+        if (!set_pos) set_pos = strstr(p, " SET ");
+        if (set_pos) {
+            char tbl_name[64] = {0};
+            int tlen = (int)(set_pos - p);
+            if (tlen >= (int)sizeof(tbl_name)) tlen = (int)sizeof(tbl_name) - 1;
+            strncpy(tbl_name, p, tlen);
+            tbl_name[tlen] = '\0';
+            trim(tbl_name);
+
+            EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
+            if (!tbl) {
+                if (print_output) printf("ERROR: Table '%s' does not exist in database '%s'.\n\n", tbl_name, db->name);
+                return false;
+            }
+
+            const char* after_set = set_pos + 5;
+            while (isspace((unsigned char)*after_set)) after_set++;
+
+            char rest[512];
+            strncpy(rest, after_set, sizeof(rest) - 1);
+            rest[sizeof(rest) - 1] = '\0';
+
+            char filter_col[64] = {0};
+            EnlngOp op = OP_NONE;
+            EnlngVal target_val = enlng_null();
+
+            char* where_pos = strstr(rest, " where ");
+            if (!where_pos) where_pos = strstr(rest, " WHERE ");
+
+            if (where_pos) {
+                *where_pos = '\0';
+                char* cond = trim(where_pos + 7);
+                char cname[64];
+                if (sscanf(cond, "%63s", cname) == 1) {
+                    strncpy(filter_col, cname, sizeof(filter_col) - 1);
+                    char* op_start = cond + strlen(cname);
+                    while (isspace((unsigned char)*op_start)) op_start++;
+                    int op_len = 0;
+                    op = parse_op_phrase(op_start, &op_len);
+                    if (op != OP_NONE) {
+                        char* val_str = trim(op_start + op_len);
+                        target_val = parse_val_token(val_str);
+                    }
+                }
+            }
+
+            int total_updated = 0;
+            char* aptr = rest;
+            while (*aptr) {
+                while (isspace((unsigned char)*aptr) || *aptr == ',') aptr++;
+                if (!*aptr) break;
+
+                char* assign_end = strchr(aptr, ',');
+                if (assign_end) *assign_end = '\0';
+
+                char* sep = strstr(aptr, " = ");
+                if (!sep) sep = strstr(aptr, " to ");
+                if (!sep) sep = strstr(aptr, " is ");
+                if (!sep) sep = strstr(aptr, " : ");
+                if (!sep) sep = strchr(aptr, '=');
+
+                if (sep) {
+                    char col_name[64] = {0};
+                    int clen = (int)(sep - aptr);
+                    if (clen >= (int)sizeof(col_name)) clen = (int)sizeof(col_name) - 1;
+                    strncpy(col_name, aptr, clen);
+                    col_name[clen] = '\0';
+                    trim(col_name);
+
+                    if (*sep == '=') sep++;
+                    else if (strncmp(sep, " = ", 3) == 0) sep += 3;
+                    else if (strncmp(sep, " to ", 4) == 0) sep += 4;
+                    else if (strncmp(sep, " is ", 4) == 0) sep += 4;
+                    else if (strncmp(sep, " : ", 3) == 0) sep += 3;
+
+                    char* val_str = trim(sep);
+                    EnlngVal set_val = parse_val_token(val_str);
+
+                    int count = enlngdb_update(tbl, filter_col[0] ? filter_col : NULL, op, &target_val, col_name, &set_val);
+                    enlng_free_val(&set_val);
+                    if (count > total_updated) total_updated = count;
+                }
+
+                if (assign_end) aptr = assign_end + 1;
+                else break;
+            }
+
+            enlng_free_val(&target_val);
+
+            if (print_output) {
+                printf("Query OK, %d row(s) updated. (0.03 ms)\n\n", total_updated);
+            }
+            return true;
+        }
+    }
+
     return true;
 }
 
