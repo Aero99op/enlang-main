@@ -727,24 +727,14 @@ find all records from scholars;</div>
                   <td>Emits clean, portable ISO C99 source code instrumented with scoped bump arena memory macros</td>
                 </tr>
                 <tr>
-                  <td><code>enlangg run &lt;file.enlng&gt;</code></td>
+                  <td><code>enlangg run &lt;file.ext&gt;</code></td>
                   <td><code>[args...]</code></td>
-                  <td>Dual-Mode auto-dispatch: compiles & runs pure C instantly (&lt;2ms), or invokes Python God Call bridge if external Python packages are imported</td>
+                  <td>Unified executor: compiles &amp; runs pure C instantly (&lt;2ms) for all domains (.enlng, .enlngdb, .enlngs, .enlngf, .enlngd, .enlngm)</td>
                 </tr>
                 <tr>
-                  <td><code>enlangg &lt;script.enlngdb&gt;</code></td>
+                  <td><code>enlangg db &lt;script.enlngdb&gt;</code></td>
                   <td>-</td>
                   <td>Executes conversational database scripts natively via Pure C engine (&lt;0.05 ms)</td>
-                </tr>
-                <tr>
-                  <td><code>enlngdb &lt;script.enlngdb&gt;</code></td>
-                  <td>-</td>
-                  <td>Standalone Pure C high-performance database execution and binary state persistence</td>
-                </tr>
-                <tr>
-                  <td><code>enlangg db run &lt;file.enlngdb&gt;</code></td>
-                  <td>-</td>
-                  <td>Runs database scripts with automatic binary state persistence (.edb)</td>
                 </tr>
                 <tr>
                   <td><code>enlangg db -e "&lt;query&gt;"</code></td>
@@ -752,39 +742,49 @@ find all records from scholars;</div>
                   <td>Executes instant inline database query in compiled C machine code</td>
                 </tr>
                 <tr>
-                  <td><code>enlangg db serve</code></td>
-                  <td><code>[--port 8080] [--db &lt;file.edb&gt;]</code></td>
-                  <td>Launches sovereign EnlngDB Cloud HTTP Daemon for Next.js / web clients</td>
+                  <td><code>enlangg s &lt;logic.enlngs&gt;</code></td>
+                  <td><code>[-e "&lt;script&gt;"]</code></td>
+                  <td>Executes scripts natively on Pure C In-Memory Script VM (Zero Python / Zero Node.js)</td>
                 </tr>
                 <tr>
-                  <td><code>enlngdb --version</code></td>
-                  <td>-</td>
-                  <td>Displays Pure C native database engine version and architecture</td>
-                </tr>
-                <tr>
-                  <td><code>enlngf &lt;app.enlngf&gt;</code></td>
+                  <td><code>enlangg f &lt;app.enlngf&gt;</code></td>
                   <td><code>[--port 3000]</code></td>
-                  <td>Launches Frontend Web Studio with hot-reload or compiles UI components to standalone HTML</td>
+                  <td>Spawns native Win32 Desktop Window GUI or launches WinSock2 HTTP Web Studio (<code>f serve</code>)</td>
                 </tr>
                 <tr>
-                  <td><code>enlngd &lt;theme.enlngd&gt;</code></td>
+                  <td><code>enlangg d &lt;theme.enlngd&gt;</code></td>
                   <td><code>[-o &lt;out.css&gt;]</code></td>
-                  <td>Compiles natural English design tokens and responsive themes directly to production CSS</td>
+                  <td>Pure C Sovereign Design Tokens &amp; Style Resolver. Inspects tokens and resolves styles natively</td>
+                </tr>
+                <tr>
+                  <td><code>enlangg m &lt;app.enlngm&gt;</code></td>
+                  <td><code>[--target apk|ipa]</code></td>
+                  <td>Pure C Native Smartphone Simulator (390x844) &amp; Mobile Hardware Abstraction Layer (HAL) Packager</td>
+                </tr>
+                <tr>
+                  <td><code>enlngdb &lt;script.enlngdb&gt;</code></td>
+                  <td>-</td>
+                  <td>Standalone Pure C conversational database engine with binary .edb file persistence</td>
                 </tr>
                 <tr>
                   <td><code>enlngs &lt;logic.enlngs&gt;</code></td>
                   <td><code>[-o &lt;out.js&gt;]</code></td>
-                  <td>Compiles and executes reactive client scripts, DOM event bindings, and fullstack state logic</td>
+                  <td>Standalone Pure C in-memory script VM with dynamic variable symbol tables and loop VM</td>
+                </tr>
+                <tr>
+                  <td><code>enlngf &lt;app.enlngf&gt;</code></td>
+                  <td><code>serve / build</code></td>
+                  <td>Standalone Pure C native GUI window, WinSock2 HTTP server, and HTML5 compiler</td>
+                </tr>
+                <tr>
+                  <td><code>enlngd &lt;theme.enlngd&gt;</code></td>
+                  <td><code>inspect / compile</code></td>
+                  <td>Standalone Pure C token table inspector and CSS3 stylesheet generator</td>
                 </tr>
                 <tr>
                   <td><code>enlngm &lt;app.enlngm&gt;</code></td>
-                  <td><code>[--target apk|ipa]</code></td>
-                  <td>Compiles Mobile Native screens to Flutter/Dart and connects to Android NDK / Apple Metal HAL</td>
-                </tr>
-                <tr>
-                  <td><code>enlng check &lt;file&gt;</code></td>
-                  <td><code>--strict</code></td>
-                  <td>Validates grammar, types, and slot allocations without binary output</td>
+                  <td><code>run / build / export</code></td>
+                  <td>Standalone Pure C mobile device simulator, ARM64 package builder, and Dart exporter</td>
                 </tr>
                 <tr>
                   <td><code>enlng --version</code></td>

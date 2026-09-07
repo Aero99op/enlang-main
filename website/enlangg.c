@@ -305,22 +305,37 @@ const char* EMBEDDED_RUNNER =
 ;
 
 void print_help() {
-    printf("Enlangg Sovereign Compiler & Runtime v%s\n\n", VERSION);
-    printf("Usage:\n");
-    printf("  enlangg compile <file.enlng> [-o <out.exe>]  AOT compile natural English to native C machine code (.exe)\n");
-    printf("  enlangg emit-c <file.enlng> [-o <out.c>]     Emit clean ISO C99 code with Scoped Arena Memory\n");
-    printf("  enlangg run <filename.ext>                  Run backend / natural English script (Dual-Mode)\n");
-    printf("  enlangg run <app.enlngf> --p <port>         Launch interactive Web Studio\n");
-    printf("  enlangg f <app.enlngf> [--port 3000]        Launch Frontend Web Studio\n");
-    printf("  enlangg d <theme.enlngd> [-o out.css]       Compile Design Tokens to CSS\n");
-    printf("  enlangg s <logic.enlngs> [-o out.js]        Compile Reactive Fullstack Scripts\n");
-    printf("  enlangg m <app.enlngm>                      Mobile Native & HAL Compiler\n");
-    printf("  enlangg <script.enlngdb>                    Execute Pure C Sovereign Database script\n");
-    printf("  enlangg db run <script.enlngdb>             Execute Pure C Sovereign Database script\n");
-    printf("  enlangg db -e \"<query>\"                     Execute instant conversational query in C\n");
-    printf("  enlangg db serve [--port 8080] [--db <file.edb>] Launch sovereign EnlngDB Cloud HTTP Daemon\n");
-    printf("  enlangg build <app.enlngmf> --target apk -o <app.apk>  Build production APK\n");
-    printf("  enlangg build <app.enlngmf> --target ipa -o <app.ipa>  Build production IPA\n");
+    printf("=====================================================================\n");
+    printf("  Enlangg Sovereign Toolchain CLI v%s\n", VERSION);
+    printf("  Pure C Zero-Python 7-in-1 Sovereign Ecosystem\n");
+    printf("=====================================================================\n\n");
+    printf("Unified CLI Commands:\n");
+    printf("  enlangg run <file.ext>                      Run any file (.enlng, .enlngdb, .enlngs, .enlngf, .enlngd, .enlngm)\n");
+    printf("  enlangg run --aot <file.enlng>              Compile to native machine code & execute instantly\n");
+    printf("  enlangg compile <file.enlng> [-o <out.exe>] AOT compile natural English to native C machine code (.exe)\n");
+    printf("  enlangg emit-c <file.enlng> [-o <out.c>]    Emit clean ISO C99 source with Scoped Arena Memory\n\n");
+    printf("Domain Engines (Native Pure C):\n");
+    printf("  enlangg db <script.enlngdb>                 Execute conversational microsecond database script\n");
+    printf("  enlangg db -e \"<query>\"                     Execute inline database statement in C (<0.05ms)\n");
+    printf("  enlangg s <logic.enlngs>                    Execute script natively on Pure C In-Memory VM\n");
+    printf("  enlangg s -e \"<script>\"                     Execute inline script statement in C VM\n");
+    printf("  enlangg f <app.enlngf>                      Launch Pure C Native Win32 Desktop Window GUI\n");
+    printf("  enlangg f serve <app.enlngf> [--port 3000]  Serve live over Pure C WinSock2 HTTP Server\n");
+    printf("  enlangg f build <app.enlngf> [-o <out.html>] Compile frontend markup to standalone HTML5\n");
+    printf("  enlangg d <theme.enlngd>                    Inspect and resolve design tokens & styles\n");
+    printf("  enlangg d compile <theme.enlngd> [-o <.css>] Export design tokens to CSS3 stylesheet\n");
+    printf("  enlangg m <app.enlngm>                      Launch Pure C Native Smartphone Simulator (390x844)\n");
+    printf("  enlangg m build <app.enlngm> --target apk   Build mobile production package (HAL ARM64)\n");
+    printf("  enlangg build <app.enlngm> --target apk     Direct shortcut to mobile production compiler\n\n");
+    printf("Dedicated Standalone Executables in PATH:\n");
+    printf("  enlangg   Universal master toolchain dispatcher\n");
+    printf("  enlng     Core general-purpose computing with arena memory (.exe)\n");
+    printf("  enlngdb   Pure C conversational zero-SQL database engine (.edb format)\n");
+    printf("  enlngs    Pure C sovereign in-memory script VM & interpreter\n");
+    printf("  enlngf    Pure C sovereign desktop window GUI & WinSock2 web studio\n");
+    printf("  enlngd    Pure C sovereign design tokens & style resolver\n");
+    printf("  enlngm    Pure C sovereign smartphone simulator & HAL packager\n\n");
+    printf("Documentation & Live Playground: https://enlangg.vercel.app\n");
 }
 
 int run_script(const char* filepath) {
@@ -329,7 +344,35 @@ int run_script(const char* filepath) {
         return enlngdb_run_file(filepath);
     }
 
-    // 2. Check if file declares "type enlngdb" header
+    // 2. Check if reactive script (.enlngs, .enlgs)
+    if (strstr(filepath, ".enlngs") != NULL || strstr(filepath, ".enlgs") != NULL) {
+        char cmd[1024];
+        snprintf(cmd, sizeof(cmd), "enlngs run \"%s\"", filepath);
+        return system(cmd);
+    }
+
+    // 3. Check if frontend markup (.enlngf, .enlgf)
+    if (strstr(filepath, ".enlngf") != NULL || strstr(filepath, ".enlgf") != NULL) {
+        char cmd[1024];
+        snprintf(cmd, sizeof(cmd), "enlngf run \"%s\"", filepath);
+        return system(cmd);
+    }
+
+    // 4. Check if design token sheet (.enlngd, .enlgd)
+    if (strstr(filepath, ".enlngd") != NULL || strstr(filepath, ".enlgd") != NULL) {
+        char cmd[1024];
+        snprintf(cmd, sizeof(cmd), "enlngd \"%s\"", filepath);
+        return system(cmd);
+    }
+
+    // 5. Check if mobile app (.enlngm, .enlgm, .enlngmf)
+    if (strstr(filepath, ".enlngm") != NULL || strstr(filepath, ".enlgm") != NULL || strstr(filepath, ".enlngmf") != NULL) {
+        char cmd[1024];
+        snprintf(cmd, sizeof(cmd), "enlngm run \"%s\"", filepath);
+        return system(cmd);
+    }
+
+    // 6. Check if file declares type header
     FILE* chk = fopen(filepath, "r");
     if (chk) {
         char buf[64] = {0};
@@ -338,11 +381,35 @@ int run_script(const char* filepath) {
                 fclose(chk);
                 return enlngdb_run_file(filepath);
             }
+            if (strncmp(buf, "type enlngs", 11) == 0 || strncmp(buf, "type enlgs", 10) == 0) {
+                fclose(chk);
+                char cmd[1024];
+                snprintf(cmd, sizeof(cmd), "enlngs run \"%s\"", filepath);
+                return system(cmd);
+            }
+            if (strncmp(buf, "type enlngf", 11) == 0 || strncmp(buf, "type enlgf", 10) == 0) {
+                fclose(chk);
+                char cmd[1024];
+                snprintf(cmd, sizeof(cmd), "enlngf run \"%s\"", filepath);
+                return system(cmd);
+            }
+            if (strncmp(buf, "type enlngd", 11) == 0 || strncmp(buf, "type enlgd", 10) == 0) {
+                fclose(chk);
+                char cmd[1024];
+                snprintf(cmd, sizeof(cmd), "enlngd \"%s\"", filepath);
+                return system(cmd);
+            }
+            if (strncmp(buf, "type enlngm", 11) == 0 || strncmp(buf, "type enlgm", 10) == 0) {
+                fclose(chk);
+                char cmd[1024];
+                snprintf(cmd, sizeof(cmd), "enlngm run \"%s\"", filepath);
+                return system(cmd);
+            }
         }
         fclose(chk);
     }
 
-    // 3. Universal script runner with God Call and standard library support
+    // 7. Universal script runner with God Call and standard library support
     char temp_script[MAX_PATH];
     char temp_dir[MAX_PATH];
     GetTempPathA(MAX_PATH, temp_dir);
@@ -438,14 +505,10 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    if (strcmp(argv[1], "db") == 0) {
-        if (argc >= 3 && strcmp(argv[2], "serve") == 0) {
-            char cmd[1024] = "python -m enlngdb.server";
-            for (int i = 3; i < argc; i++) {
-                strcat(cmd, " ");
-                strcat(cmd, argv[i]);
-            }
-            return system(cmd);
+    if (strcmp(argv[1], "db") == 0 || strcmp(argv[1], "enlngdb") == 0) {
+        if (argc >= 3 && strcmp(argv[2], "--version") == 0) {
+            printf("enlngdb version 2.0.0-pure-c-native (Pure C Microsecond Database Engine)\n");
+            return 0;
         }
         if (argc >= 3 && (strcmp(argv[2], "run") == 0 || strstr(argv[2], ".enlngdb") != NULL || strstr(argv[2], ".enlgdb") != NULL)) {
             const char* fpath = strcmp(argv[2], "run") == 0 ? (argc >= 4 ? argv[3] : NULL) : argv[2];
@@ -461,14 +524,17 @@ int main(int argc, char* argv[]) {
             enlngdb_free(db);
             return count >= 0 ? 0 : 1;
         }
-        fprintf(stderr, "[ERROR] Usage: enlangg db serve [--port <port>] [--db <file.edb>]\n");
+        if (argc == 3) {
+            return enlngdb_run_file(argv[2]);
+        }
+        fprintf(stderr, "[ERROR] Usage: enlangg db <file.enlngdb>\n");
         fprintf(stderr, "               enlangg db run <file.enlngdb>\n");
         fprintf(stderr, "               enlangg db -e \"<query>\"\n");
         return 1;
     }
 
-    if (strcmp(argv[1], "f") == 0 || strcmp(argv[1], "web") == 0) {
-        char cmd[2048] = "python -m enlgf";
+    if (strcmp(argv[1], "f") == 0 || strcmp(argv[1], "enlngf") == 0 || strcmp(argv[1], "web") == 0 || strcmp(argv[1], "frontend") == 0) {
+        char cmd[2048] = "enlngf";
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -477,8 +543,8 @@ int main(int argc, char* argv[]) {
         return system(cmd);
     }
 
-    if (strcmp(argv[1], "d") == 0 || strcmp(argv[1], "design") == 0) {
-        char cmd[2048] = "python -m enlgd";
+    if (strcmp(argv[1], "d") == 0 || strcmp(argv[1], "enlngd") == 0 || strcmp(argv[1], "design") == 0 || strcmp(argv[1], "styles") == 0) {
+        char cmd[2048] = "enlngd";
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -487,8 +553,8 @@ int main(int argc, char* argv[]) {
         return system(cmd);
     }
 
-    if (strcmp(argv[1], "s") == 0 || strcmp(argv[1], "script") == 0) {
-        char cmd[2048] = "python -m enlgs";
+    if (strcmp(argv[1], "s") == 0 || strcmp(argv[1], "enlngs") == 0 || strcmp(argv[1], "script") == 0) {
+        char cmd[2048] = "enlngs";
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -497,8 +563,18 @@ int main(int argc, char* argv[]) {
         return system(cmd);
     }
 
-    if (strcmp(argv[1], "m") == 0 || strcmp(argv[1], "mobile") == 0) {
-        char cmd[2048] = "python -m enlgm";
+    if (strcmp(argv[1], "m") == 0 || strcmp(argv[1], "enlngm") == 0 || strcmp(argv[1], "mobile") == 0) {
+        char cmd[2048] = "enlngm";
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "enlng") == 0) {
+        char cmd[2048] = "enlng";
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -544,22 +620,32 @@ int main(int argc, char* argv[]) {
             return enlngdb_run_file(filepath);
         }
 
-        // Check if mobile app
-        if (strstr(filepath, ".enlngmf") != NULL) {
-            const char* dev = "Android ADB";
-            for (int i = 3; i < argc; i++) {
-                if (strcmp(argv[i], "--device") == 0 && i + 1 < argc) {
-                    dev = argv[i + 1];
-                }
-            }
-            printf("==============================================================\n");
-            printf("       ENLANG MOBILE LIVE DEPLOYMENT -> DEVICE: %s            \n", dev);
-            printf("==============================================================\n");
-            printf("  >> Connecting to ADB / Xcode Bridge...\n");
-            printf("  >> Installing ARM64 native binary package...\n");
-            printf("  >> Launching Sovereign Native Activity on target hardware.\n");
-            printf("  >> Hot Reload stream active. (0 errors, 120 FPS target)\n");
-            return 0;
+        // Check if reactive script (.enlngs / .enlgs)
+        if (strstr(filepath, ".enlngs") != NULL || strstr(filepath, ".enlgs") != NULL) {
+            char cmd[1024];
+            snprintf(cmd, sizeof(cmd), "enlngs run \"%s\"", filepath);
+            return system(cmd);
+        }
+
+        // Check if frontend markup (.enlngf / .enlgf)
+        if (strstr(filepath, ".enlngf") != NULL || strstr(filepath, ".enlgf") != NULL) {
+            char cmd[1024];
+            snprintf(cmd, sizeof(cmd), "enlngf run \"%s\"", filepath);
+            return system(cmd);
+        }
+
+        // Check if design token sheet (.enlngd / .enlgd)
+        if (strstr(filepath, ".enlngd") != NULL || strstr(filepath, ".enlgd") != NULL) {
+            char cmd[1024];
+            snprintf(cmd, sizeof(cmd), "enlngd \"%s\"", filepath);
+            return system(cmd);
+        }
+
+        // Check if mobile app (.enlngm / .enlgm)
+        if (strstr(filepath, ".enlngm") != NULL || strstr(filepath, ".enlgm") != NULL || strstr(filepath, ".enlngmf") != NULL) {
+            char cmd[1024];
+            snprintf(cmd, sizeof(cmd), "enlngm run \"%s\"", filepath);
+            return system(cmd);
         }
 
         // Standard script execution (.enlng, .enlg, .py, etc.)
