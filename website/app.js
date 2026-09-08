@@ -2069,9 +2069,9 @@ const BOOK_VOLUMES = {
     infoKicker: 'EnlngDB Canonical Volume · 2nd Edition',
     infoHeading: 'EnlngDB Architecture & Reference Manual',
     infoDesc: 'The definitive 10-section manual for the EnlngDB pure C embedded storage engine. Complete coverage of natural language DDL, DML, query operators, crash resilience, C API, Python bindings, and developer CLI.',
-    primaryDlHref: 'enlngdb_manual.md',
-    primaryDlDownload: 'enlngdb_manual.md',
-    primaryDlText: 'Download EnlngDB Manual (.md)',
+    primaryDlHref: 'enlngdb_manual.pdf',
+    primaryDlDownload: 'enlngdb_manual.pdf',
+    primaryDlText: 'Download EnlngDB Manual (PDF)',
     meta: [
       { val: '10', lbl: 'Master Sections' },
       { val: 'Pure C', lbl: 'Embedded Engine' },
@@ -2084,88 +2084,88 @@ const BOOK_VOLUMES = {
         badge: 'Pure C Storage Engine',
         title: 'Sovereign Zero-SQL Architecture',
         excerpt: 'Embedded pure C99 engine with zero external drivers, zero background daemons, and sub-microsecond in-memory index seek.',
-        snippet: '<span class="code-kw">type</span> <span class="code-val">enlngdb</span>\n<span class="code-kw">connect to</span> <span class="code-val">"production.enlngdb"</span>\n<span class="code-kw">display</span> <span class="code-val">"EnlngDB Engine Initialized: Sub-microsecond seek"</span>',
+        snippet: '<span class="code-kw">type</span> <span class="code-val">enlngdb</span>;\n<span class="code-kw">use</span> <span class="code-id">production</span>;\n<span class="code-kw">show tables</span>;\n<span class="code-kw">count records from</span> <span class="code-id">scholars</span>;',
         seal: 'Pure C99 Embedded Engine'
       },
       {
         chapter: 'SECTION 2',
         pages: 'Section 2 / 10',
-        badge: 'Schema & Column Grammar',
-        title: 'Natural DDL Table Invariants',
-        excerpt: 'Declarative table structure with primary keys, unique constraints, and typed schemas defined in natural English sentences.',
-        snippet: '<span class="code-kw">create table</span> <span class="code-id">users</span> (\n  <span class="code-id">id</span> <span class="code-kw">as primary key</span>,\n  <span class="code-id">username</span> <span class="code-kw">as text</span>,\n  <span class="code-id">balance</span> <span class="code-kw">as float</span>,\n  <span class="code-id">is_verified</span> <span class="code-kw">as boolean</span>\n)',
-        seal: 'Typed Schema Verification'
+        badge: 'Environment & Discovery',
+        title: 'Canonical Grammar & Databases',
+        excerpt: 'Declarative header declaration with active database context switching and instant metadata inspection.',
+        snippet: '<span class="code-kw">type</span> <span class="code-val">enlngdb</span>;\n<span class="code-kw">use database</span> <span class="code-id">university_db</span>;\n<span class="code-kw">show databases</span>;\n<span class="code-kw">show tables</span>;',
+        seal: 'Typed Schema Environment'
       },
       {
         chapter: 'SECTION 3',
         pages: 'Section 3 / 10',
-        badge: 'DML Ingestion',
-        title: 'Sub-Millisecond Record Insertion',
-        excerpt: 'Single and batch records written directly to typed column slots with compile-time type validation and zero SQL parsing overhead.',
-        snippet: '<span class="code-kw">insert into</span> <span class="code-id">users</span> <span class="code-kw">values</span> (\n  <span class="code-num">101</span>,\n  <span class="code-val">"sovereign_dev"</span>,\n  <span class="code-num">95000.50</span>,\n  <span class="code-val">true</span>\n)',
-        seal: '1.2M Writes/Sec Ingestion'
+        badge: 'Schema & Column Grammar',
+        title: 'Natural DDL Table Creation',
+        excerpt: 'Declarative table schema with comma-separated column names using natural English phrasing and automatic slot allocation.',
+        snippet: '<span class="code-kw">create table</span> <span class="code-id">scholars</span> <span class="code-kw">with</span> <span class="code-id">id</span>, <span class="code-id">name</span>, <span class="code-id">cgpa</span>, <span class="code-id">status</span>;\n<span class="code-kw">create table</span> <span class="code-id">accounts</span> <span class="code-kw">with</span> <span class="code-id">id</span>, <span class="code-id">holder</span>, <span class="code-id">balance</span>;\n<span class="code-kw">show tables</span>;',
+        seal: 'Natural Schema Declaration'
       },
       {
         chapter: 'SECTION 4',
         pages: 'Section 4 / 10',
-        badge: 'Query Operators',
-        title: 'Natural Query Engine & Filters',
-        excerpt: 'Express multi-clause filters using natural English operators: is equal to, is greater than, contains, and, or, order by, limit.',
-        snippet: '<span class="code-kw">find all</span> <span class="code-id">users</span> <span class="code-kw">where</span> <span class="code-id">balance</span> <span class="code-op">is greater than</span> <span class="code-num">50000</span>\n  <span class="code-kw">and</span> <span class="code-id">is_verified</span> <span class="code-op">is</span> <span class="code-val">true</span>\n  <span class="code-kw">order by</span> <span class="code-id">balance</span> <span class="code-kw">descending</span>\n  <span class="code-kw">limit</span> <span class="code-num">25</span>',
-        seal: 'Zero-SQL Predicate Pushdown'
+        badge: 'DML Ingestion',
+        title: 'Sub-Millisecond Record Insertion',
+        excerpt: 'Single and batch records written directly to typed column slots with comma-separated key-value pairs and auto-schema expansion.',
+        snippet: '<span class="code-kw">insert into</span> <span class="code-id">scholars</span> <span class="code-kw">with</span> <span class="code-id">id</span> <span class="code-num">1</span>, <span class="code-id">name</span> <span class="code-val">"aryan"</span>, <span class="code-id">cgpa</span> <span class="code-num">9.8</span>, <span class="code-id">status</span> <span class="code-val">"honors"</span>;\n<span class="code-kw">insert record into</span> <span class="code-id">scholars</span> <span class="code-kw">with</span> <span class="code-id">id</span> <span class="code-num">2</span>, <span class="code-id">name</span> <span class="code-val">"meera"</span>, <span class="code-id">cgpa</span> <span class="code-num">9.4</span>, <span class="code-id">status</span> <span class="code-val">"honors"</span>;',
+        seal: '1.2M Writes/Sec Ingestion'
       },
       {
         chapter: 'SECTION 5',
         pages: 'Section 5 / 10',
-        badge: 'Safe Mutations',
-        title: 'Safe Record Updates & Deletions',
-        excerpt: 'Targeted updates and deletes with predicate guarantees. Automatic rollbacks on constraint violation.',
-        snippet: '<span class="code-kw">update</span> <span class="code-id">users</span>\n  <span class="code-kw">set</span> <span class="code-id">balance</span> <span class="code-kw">to</span> <span class="code-id">balance</span> <span class="code-op">plus</span> <span class="code-num">500</span>\n  <span class="code-kw">where</span> <span class="code-id">username</span> <span class="code-op">is equal to</span> <span class="code-val">"sovereign_dev"</span>\n<span class="code-kw">delete from</span> <span class="code-id">users</span> <span class="code-kw">where</span> <span class="code-id">balance</span> <span class="code-op">is less than</span> <span class="code-num">0</span>',
-        seal: 'ACID Mutation Integrity'
+        badge: 'Query Operators',
+        title: 'Natural Query Engine & Filters',
+        excerpt: 'Express inquiries using natural English operators: is equal to, is greater than, is at least, is less than, like, and count.',
+        snippet: '<span class="code-kw">find all records from</span> <span class="code-id">scholars</span>;\n<span class="code-kw">find records from</span> <span class="code-id">scholars</span> <span class="code-kw">where</span> <span class="code-id">cgpa</span> <span class="code-op">is greater than</span> <span class="code-num">9.0</span>;\n<span class="code-kw">count records from</span> <span class="code-id">scholars</span> <span class="code-kw">where</span> <span class="code-id">status</span> <span class="code-op">is</span> <span class="code-val">"honors"</span>;',
+        seal: 'Zero-SQL Predicate Pushdown'
       },
       {
         chapter: 'SECTION 6',
         pages: 'Section 6 / 10',
-        badge: 'Crash Resilience',
-        title: 'Native Binary Format & WAL',
-        excerpt: 'Proprietary binary storage format with magic header 0x454E4442 (ENDB), transactional write-ahead logging, and sub-10ms crash recovery.',
-        snippet: '<span class="code-kw">database file</span>: <span class="code-val">"production.enlngdb"</span>\n<span class="code-kw">header magic</span>: <span class="code-num">0x454E4442</span> (<span class="code-val">\'E\' \'N\' \'D\' \'B\'</span>)\n<span class="code-kw">wal file</span>: <span class="code-val">"production.enlngdb.wal"</span>\n<span class="code-kw">sync mode</span>: <span class="code-val">FULL_SYNCHRONOUS</span>',
-        seal: 'Zero-Corruption Binary Layout'
+        badge: 'Safe Mutations',
+        title: 'Safe Record Updates & Rewrites',
+        excerpt: 'Conversational row updates with in-place slot modifications and atomic multi-field mutations.',
+        snippet: '<span class="code-kw">in</span> <span class="code-id">scholars</span> <span class="code-kw">change</span> <span class="code-id">cgpa</span> <span class="code-kw">to</span> <span class="code-num">9.9</span> <span class="code-kw">where</span> <span class="code-id">name</span> <span class="code-op">is</span> <span class="code-val">"aryan"</span>;\n<span class="code-kw">in</span> <span class="code-id">scholars</span> <span class="code-kw">update</span> <span class="code-id">status</span> <span class="code-kw">to</span> <span class="code-val">"dean_list"</span> <span class="code-kw">where</span> <span class="code-id">cgpa</span> <span class="code-op">is at least</span> <span class="code-num">9.5</span>;\n<span class="code-kw">in</span> <span class="code-id">scholars</span> <span class="code-kw">set</span> <span class="code-id">cgpa</span> <span class="code-kw">to</span> <span class="code-num">9.95</span>, <span class="code-id">status</span> <span class="code-kw">to</span> <span class="code-val">"gold_medalist"</span> <span class="code-kw">where</span> <span class="code-id">name</span> <span class="code-op">is</span> <span class="code-val">"aryan"</span>;',
+        seal: 'ACID Mutation Integrity'
       },
       {
         chapter: 'SECTION 7',
         pages: 'Section 7 / 10',
-        badge: 'C API & ABI',
-        title: 'Native C Engine Integration',
-        excerpt: 'Embed EnlngDB directly into any C, C++, Rust, or Zig application with clean C ABI functions enlngdb_open, enlngdb_query, enlngdb_close.',
-        snippet: '<span class="code-kw">#include</span> <span class="code-val">"enlngdb.h"</span>\n<span class="code-id">enlngdb_t</span>* <span class="code-id">db</span> = <span class="code-id">enlngdb_open</span>(<span class="code-val">"store.enlngdb"</span>);\n<span class="code-id">enlngdb_result_t</span>* <span class="code-id">res</span> = <span class="code-id">enlngdb_query</span>(<span class="code-id">db</span>, <span class="code-val">"find all users"</span>);\n<span class="code-id">enlngdb_free_result</span>(<span class="code-id">res</span>);\n<span class="code-id">enlngdb_close</span>(<span class="code-id">db</span>);',
-        seal: 'Zero-Glue C Integration'
+        badge: 'Crash Resilience',
+        title: 'Binary Disk Format & WAL',
+        excerpt: 'Proprietary binary storage format with magic header 0x454E4442 (ENDB), transactional write-ahead logging, and sub-10ms crash recovery.',
+        snippet: '<span class="code-kw"># Binary layout:</span> <span class="code-val">"university_db.edb"</span>\n<span class="code-kw"># Magic header:</span> <span class="code-num">0x454E4442</span> (<span class="code-val">\'E\' \'N\' \'D\' \'B\'</span>)\n<span class="code-kw"># WAL Journal:</span> <span class="code-val">"university_db.wal"</span>\n<span class="code-kw">find all records from</span> <span class="code-id">scholars</span>;',
+        seal: 'Zero-Corruption Binary Layout'
       },
       {
         chapter: 'SECTION 8',
         pages: 'Section 8 / 10',
-        badge: 'Python Package',
-        title: 'Python SDK & Context Manager',
-        excerpt: 'Full Pythonic interface with pip install enlngdb. Native bindings, automatic cursor iteration, dictionary rows, and pandas DataFrame support.',
-        snippet: '<span class="code-kw">import</span> <span class="code-id">enlngdb</span>\n<span class="code-kw">with</span> <span class="code-id">enlngdb</span>.<span class="code-id">connect</span>(<span class="code-val">"store.enlngdb"</span>) <span class="code-kw">as</span> <span class="code-id">db</span>:\n    <span class="code-id">users</span> = <span class="code-id">db</span>.<span class="code-id">find_all</span>(<span class="code-val">"users"</span>, <span class="code-kw">where</span>={<span class="code-val">"active"</span>: <span class="code-val">True</span>})\n    <span class="code-kw">for</span> <span class="code-id">u</span> <span class="code-kw">in</span> <span class="code-id">users</span>:\n        <span class="code-kw">print</span>(<span class="code-id">f"User {u[\'id\']}: {u[\'username\']}"</span>)',
-        seal: 'Pythonic C-Extension'
+        badge: 'C API & ABI',
+        title: 'Native C Engine Integration',
+        excerpt: 'Embed EnlngDB directly into any C, C++, Rust, or Zig application with clean C ABI functions enlngdb_create, enlngdb_execute_statement, enlngdb_save.',
+        snippet: '<span class="code-kw">#include</span> <span class="code-val">"enlngdb.h"</span>\n<span class="code-id">EnlngDatabase</span>* <span class="code-id">db</span> = <span class="code-id">enlngdb_create</span>(<span class="code-val">"finance"</span>);\n<span class="code-id">enlngdb_execute_statement</span>(<span class="code-id">db</span>, <span class="code-val">"create table accounts with id, bal;"</span>, <span class="code-val">true</span>);\n<span class="code-id">enlngdb_save</span>(<span class="code-id">db</span>, <span class="code-val">"finance.edb"</span>);\n<span class="code-id">enlngdb_free</span>(<span class="code-id">db</span>);',
+        seal: 'Zero-Glue C Integration'
       },
       {
         chapter: 'SECTION 9',
         pages: 'Section 9 / 10',
-        badge: 'Developer Tools',
-        title: 'Interactive CLI & REPL',
-        excerpt: 'Complete standalone binary enlngdb.exe for database inspection, interactive shell, SQL-to-EnlngDB migration, and binary compaction.',
-        snippet: '<span class="code-kw">$</span> <span class="code-id">enlngdb</span> <span class="code-val">dump</span> <span class="code-id">production.enlngdb</span>\n<span class="code-kw">$</span> <span class="code-id">enlngdb</span> <span class="code-val">compact</span> <span class="code-id">production.enlngdb</span>\n<span class="code-kw">$</span> <span class="code-id">enlngdb</span> <span class="code-val">interactive</span> <span class="code-id">production.enlngdb</span>\n<span class="code-id">enlngdb&gt;</span> <span class="code-kw">find all</span> <span class="code-id">users</span> <span class="code-kw">limit</span> <span class="code-num">5</span>',
-        seal: 'Zero-Config Developer CLI'
+        badge: 'Python Package',
+        title: 'Python SDK & Context Manager',
+        excerpt: 'Full Pythonic interface with pip install enlngdb. Native bindings, automatic cursor iteration, dictionary rows, and pandas DataFrame support.',
+        snippet: '<span class="code-kw">import</span> <span class="code-id">enlngdb</span>\n<span class="code-kw">with</span> <span class="code-id">enlngdb</span>.<span class="code-id">connect</span>(<span class="code-val">"university_db.edb"</span>) <span class="code-kw">as</span> <span class="code-id">db</span>:\n    <span class="code-id">rows</span> = <span class="code-id">db</span>.<span class="code-id">query</span>(<span class="code-val">"find all records from scholars where cgpa is at least 9.0;"</span>)\n    <span class="code-kw">for</span> <span class="code-id">r</span> <span class="code-kw">in</span> <span class="code-id">rows</span>:\n        <span class="code-kw">print</span>(<span class="code-id">f"Scholar {r[\'name\']}: {r[\'cgpa\']}"</span>)',
+        seal: 'Pythonic C-Extension'
       },
       {
         chapter: 'SECTION 10',
         pages: 'Section 10 / 10',
         badge: 'Universal Reference',
-        title: 'Universal Grammar & Matrix',
-        excerpt: 'Exhaustive cheat sheet of all DDL, DML, DQL keywords, comparison operators, aggregation functions, and error codes.',
-        snippet: '<span class="code-kw">create table</span> | <span class="code-kw">insert into</span> | <span class="code-kw">find all</span>\n<span class="code-kw">update ... set</span> | <span class="code-kw">delete from</span> | <span class="code-kw">drop table</span>\n<span class="code-op">is equal to</span> | <span class="code-op">is greater than</span> | <span class="code-op">contains</span>\n<span class="code-kw">count</span> | <span class="code-kw">sum</span> | <span class="code-kw">avg</span> | <span class="code-kw">min</span> | <span class="code-kw">max</span>',
+        title: 'Universal Grammar & CLI Matrix',
+        excerpt: 'Exhaustive cheat sheet of all DDL, DML, DQL keywords, comparison operators, CLI utility commands, and safe drop table syntax.',
+        snippet: '<span class="code-kw">$</span> <span class="code-id">enlngdb</span> <span class="code-val">run</span> <span class="code-id">database.enlngdb</span>\n<span class="code-kw">$</span> <span class="code-id">enlngdb</span>  <span class="code-kw"># Interactive REPL</span>\n<span class="code-kw">create table</span> | <span class="code-kw">insert into</span> | <span class="code-kw">find all records from</span>\n<span class="code-kw">in tbl change</span> | <span class="code-kw">count records from</span> | <span class="code-kw">drop table tbl confirmed</span>;',
         seal: '100% Grammar Coverage'
       }
     ]

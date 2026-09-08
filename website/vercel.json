@@ -191,7 +191,7 @@
       ]
     },
     {
-      "source": "/enlangg_the_enlng.pdf",
+      "source": "/(enlangg_the_enlng.pdf|enlngdb_manual.pdf)",
       "headers": [
         {
           "key": "Content-Type",
@@ -199,7 +199,7 @@
         },
         {
           "key": "Content-Disposition",
-          "value": "inline; filename=\"enlangg_the_enlng.pdf\""
+          "value": "inline"
         }
       ]
     },
