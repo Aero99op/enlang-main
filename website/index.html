@@ -153,6 +153,8 @@
                 <button type="button" class="os-tab active" data-os="powershell">PowerShell</button>
                 <button type="button" class="os-tab" data-os="cmd">CMD</button>
                 <button type="button" class="os-tab" data-os="bash">Bash / zsh</button>
+                <button type="button" class="os-tab" data-os="enlngdb">EnlngDB CLI</button>
+                <button type="button" class="os-tab" data-os="pip">Python PIP</button>
               </div>
               <button type="button" class="copy-btn" id="copyInstallerBtn" title="Copy command">
                 <svg class="copy-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
@@ -504,11 +506,30 @@ else:
       </div>
     </section>
 
-    <!-- Definitive Specification Book Section (360° Rotatable & Multi-Page Showcase) -->
+    <!-- Definitive Specification Book Section (360° Rotatable & Dual-Volume Showcase) -->
     <section class="book-section" id="book">
       <div class="container book-container">
         <!-- 360° Interactive 3D Animated Book Stage -->
         <div class="book-showcase-wrapper">
+          
+          <!-- Dual Volume Book Selector Bar -->
+          <div class="book-volume-selector">
+            <button type="button" class="book-vol-btn active" id="volEnlngBtn" data-volume="enlangg">
+              <span class="vol-badge">VOL I</span>
+              <div class="book-vol-content">
+                <span class="vol-name">Enlangg Architecture</span>
+                <span class="vol-meta">193 Master Pages</span>
+              </div>
+            </button>
+            <button type="button" class="book-vol-btn vol-db" id="volEnlngDbBtn" data-volume="enlngdb">
+              <span class="vol-badge vol-badge-db">VOL II</span>
+              <div class="book-vol-content">
+                <span class="vol-name">EnlngDB Zero-SQL</span>
+                <span class="vol-meta">10 Master Sections</span>
+              </div>
+            </button>
+          </div>
+
           <!-- Perspective Quick-Presets Bar -->
           <div class="perspective-presets-bar">
             <span class="presets-bar-title">3D Views:</span>
@@ -523,8 +544,8 @@ else:
               <!-- Spine -->
               <div class="book-spine">
                 <span class="spine-rib rib-top"></span>
-                <span class="spine-title">ENLANGG: THE ENLNG</span>
-                <span class="spine-pages">193 PAGES</span>
+                <span class="spine-title" id="spineTitle">ENLANGG: THE ENLNG</span>
+                <span class="spine-pages" id="spinePages">193 PAGES</span>
                 <span class="spine-rib rib-bottom"></span>
               </div>
 
@@ -534,16 +555,16 @@ else:
               <div class="page-edge-bottom"></div>
 
               <!-- Back Cover (Visible in 360° rotation) -->
-              <div class="book-back-cover">
+              <div class="book-back-cover" id="bookBackCover">
                 <div class="back-cover-header">
-                  <span class="back-badge">CANONICAL SPECIFICATION</span>
+                  <span class="back-badge" id="backBadge">CANONICAL SPECIFICATION</span>
                 </div>
                 <div class="back-cover-body">
-                  <h5 class="back-title">THE ENLNG ARCHITECTURE</h5>
-                  <p class="back-blurb">
+                  <h5 class="back-title" id="backTitle">THE ENLNG ARCHITECTURE</h5>
+                  <p class="back-blurb" id="backBlurb">
                     The complete 193-page canonical manual for the English-syntax computing platform. Details compiler slots, 6 isolated domains, and native bytecode emission.
                   </p>
-                  <div class="back-features-list">
+                  <div class="back-features-list" id="backFeaturesList">
                     <span>• Zero External Dependencies</span>
                     <span>• 6 Isolated Tier Domains</span>
                     <span>• Sub-2ms Binary Execution</span>
@@ -553,13 +574,13 @@ else:
                 <div class="back-cover-footer">
                   <div class="barcode-graphic">
                     <span class="barcode-lines">||||| | |||| || |||||| | |||</span>
-                    <span class="isbn-text">SPEC-ENLNG-2026</span>
+                    <span class="isbn-text" id="backIsbnText">SPEC-ENLNG-2026</span>
                   </div>
                   <span class="back-license">MIT LICENSE</span>
                 </div>
               </div>
 
-              <!-- Multi-Page Inside Book Display (Chapters 1 to 6) -->
+              <!-- Multi-Page Inside Book Display (Interactive Excerpt Reader) -->
               <div class="book-inside-page" id="bookInsidePage">
                 <div class="page-turn-overlay" id="pageTurnOverlay"></div>
                 <div class="page-header">
@@ -581,21 +602,36 @@ else:
                 </div>
               </div>
 
-              <!-- Front Cover (Opens in 3D) -->
+              <!-- Front Cover (Opens in 3D with Dual-Faced Realism) -->
               <div class="book-front-cover" id="bookFrontCover">
-                <div class="cover-crease"></div>
-                <div class="cover-header">
-                  <span class="book-badge">MASTER SPECIFICATION</span>
+                <!-- Front Exterior Face -->
+                <div class="cover-front-face" id="coverFrontFace">
+                  <div class="cover-crease"></div>
+                  <div class="cover-header">
+                    <span class="book-badge" id="bookCoverBadge">MASTER SPECIFICATION</span>
+                  </div>
+                  <div class="cover-center">
+                    <div class="cover-emblem-line" id="coverEmblemLine"></div>
+                    <h3 class="book-title" id="bookCoverTitle">ENLANGG<br>THE ENLNG</h3>
+                    <div class="title-divider" id="coverTitleDivider"></div>
+                    <p class="book-author" id="bookCoverAuthor">Canonical Architecture Manual</p>
+                  </div>
+                  <div class="cover-footer">
+                    <span class="book-pages-pill" id="bookCoverPagesPill">193 Master Pages</span>
+                    <span class="open-hint" id="openHint">Click to Open →</span>
+                  </div>
                 </div>
-                <div class="cover-center">
-                  <div class="cover-emblem-line"></div>
-                  <h3 class="book-title">ENLANGG<br>THE ENLNG</h3>
-                  <div class="title-divider"></div>
-                  <p class="book-author">Canonical Architecture Manual</p>
-                </div>
-                <div class="cover-footer">
-                  <span class="book-pages-pill">193 Master Pages</span>
-                  <span class="open-hint" id="openHint">Click to Open →</span>
+
+                <!-- Inside Interior Face (Visible when opened at -145deg) -->
+                <div class="cover-inside-face" id="coverInsideFace">
+                  <div class="inside-crease"></div>
+                  <div class="inside-ornament">
+                    <div class="inside-emblem-seal">✦</div>
+                    <h5 class="inside-edition-title" id="insideEditionTitle">ENLANGG FOUNDATION</h5>
+                    <p class="inside-edition-subtitle" id="insideEditionSubtitle">Sovereign Computing Architecture</p>
+                    <div class="inside-divider-line"></div>
+                    <div class="inside-spec-tag" id="insideSpecTag">SPEC-2026-NATIVE</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -611,16 +647,16 @@ else:
             </div>
           </div>
 
-          <!-- Clean Luxury Action Pill for 3D Book -->
+          <!-- Clean Luxury Action Pill for 3D Book (Numbered controls 1 & 2) -->
           <div class="book-interactive-bar">
             <div class="book-ctrl-row">
-              <button type="button" class="book-ctrl-btn" id="toggleCoverBtn" title="Open or close 3D cover">
+              <button type="button" class="book-ctrl-btn" id="toggleCoverBtn" title="1: Open or close 3D cover">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                 <span id="coverBtnText">Open Book</span>
               </button>
-              <button type="button" class="book-ctrl-btn" id="toggleOrbitBtn" title="Auto-orbit turntable">
+              <button type="button" class="book-ctrl-btn" id="toggleOrbitBtn" title="2: Auto-orbit 360° turntable">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-                <span>360° Turntable</span>
+                <span id="orbitBtnText">360° Turntable</span>
               </button>
               <button type="button" class="book-ctrl-btn" id="reset3dBtn" title="Reset perspective view">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -631,16 +667,16 @@ else:
         </div>
 
         <div class="book-info">
-          <div class="section-kicker">Canonical Volume · 1st Edition</div>
-          <h2 class="book-heading">The Definitive Language Manual: Enlangg Architecture</h2>
-          <p class="book-paragraph">
+          <div class="section-kicker" id="bookInfoKicker">Canonical Volume · 1st Edition</div>
+          <h2 class="book-heading" id="bookInfoHeading">The Definitive Language Manual: Enlangg Architecture</h2>
+          <p class="book-paragraph" id="bookInfoDesc">
             The complete 193-page architectural treatise covering natural English grammar semantics, slot-based compiler mechanics, cross-domain isolation invariants, and standard library references.
           </p>
 
           <!-- Interactive Chapter Direct Inspection -->
           <div class="book-chapters-interactive">
             <div class="chapters-header">
-              <span class="chapters-label">Explore Inside the Book:</span>
+              <span class="chapters-label" id="chaptersLabel">Explore Inside the Book:</span>
               <div class="chapter-nav-mini">
                 <button type="button" class="mini-nav-btn" id="prevPageBtn" title="Previous chapter">←</button>
                 <div class="page-scrubber-dots" id="pageDotsBar"></div>
@@ -653,13 +689,21 @@ else:
           </div>
 
           <div class="book-actions">
-            <a href="enlangg_the_enlng.pdf" download="enlangg_the_enlng.pdf" class="primary-btn">
+            <a href="enlangg_the_enlng.pdf" download="enlangg_the_enlng.pdf" class="primary-btn" id="bookPrimaryDlBtn">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              <span>Download PDF Book (420 KB)</span>
+              <span id="bookPrimaryDlText">Download PDF Book (420 KB)</span>
+            </a>
+            <a href="enlngdb_manual.md" download="enlngdb_manual.md" class="secondary-btn" id="bookSecondaryDlBtn" style="display:none;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Download EnlngDB Manual (.md)</span>
             </a>
             <button type="button" class="secondary-btn" id="browsePagesBtn">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
@@ -671,16 +715,107 @@ else:
           </div>
           <div class="book-meta-grid">
             <div class="meta-item">
-              <span class="meta-val">193</span>
-              <span class="meta-lbl">Master Pages</span>
+              <span class="meta-val" id="metaStat1">193</span>
+              <span class="meta-lbl" id="metaLbl1">Master Pages</span>
             </div>
             <div class="meta-item">
-              <span class="meta-val">6</span>
-              <span class="meta-lbl">Isolated Domains</span>
+              <span class="meta-val" id="metaStat2">6</span>
+              <span class="meta-lbl" id="metaLbl2">Isolated Domains</span>
             </div>
             <div class="meta-item">
-              <span class="meta-val">100%</span>
-              <span class="meta-lbl">Standard Parity</span>
+              <span class="meta-val" id="metaStat3">100%</span>
+              <span class="meta-lbl" id="metaLbl3">Standard Parity</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Developer Terminal Commands & CLI Matrix Section -->
+    <section class="cli-commands-section" id="terminal-commands">
+      <div class="container">
+        <div class="section-heading">
+          <div class="section-kicker">Developer Toolchain</div>
+          <h2 class="section-title">Terminal Commands & Quickstart Matrix</h2>
+          <p class="section-desc">Instant 1-click terminal commands to install, compile, query the database, or build native binaries across Windows, Linux, and macOS.</p>
+        </div>
+
+        <div class="cli-matrix-grid">
+          <!-- Card 1: 1-Liner Install -->
+          <div class="cli-card">
+            <div class="cli-card-header">
+              <div class="cli-card-tag cli-tag-install">INSTALLATION</div>
+              <button type="button" class="copy-code-btn terminal-btn" data-copy="powershell -ExecutionPolicy ByPass -c &quot;irm https://enlangg.vercel.app/install.ps1 | iex&quot;">Copy</button>
+            </div>
+            <h4 class="cli-card-title">Windows 1-Liner Terminal Install</h4>
+            <p class="cli-card-desc">Installs the complete 7-in-1 Sovereign Suite directly into PATH without admin privileges.</p>
+            <div class="cli-code-block">
+              <code>powershell -ExecutionPolicy ByPass -c "irm https://enlangg.vercel.app/install.ps1 | iex"</code>
+            </div>
+          </div>
+
+          <!-- Card 2: Linux / macOS Install -->
+          <div class="cli-card">
+            <div class="cli-card-header">
+              <div class="cli-card-tag cli-tag-unix">BASH / ZSH</div>
+              <button type="button" class="copy-code-btn terminal-btn" data-copy="curl -fsSL https://enlangg.vercel.app/install.sh | bash">Copy</button>
+            </div>
+            <h4 class="cli-card-title">Linux & macOS Universal Install</h4>
+            <p class="cli-card-desc">Automated curl installer that compiles the native C runtime and configures your shell.</p>
+            <div class="cli-code-block">
+              <code>curl -fsSL https://enlangg.vercel.app/install.sh | bash</code>
+            </div>
+          </div>
+
+          <!-- Card 3: EnlngDB Database CLI -->
+          <div class="cli-card">
+            <div class="cli-card-header">
+              <div class="cli-card-tag cli-tag-db">ENLNGDB CLI</div>
+              <button type="button" class="copy-code-btn terminal-btn" data-copy="enlngdb run database.enlngdb">Copy</button>
+            </div>
+            <h4 class="cli-card-title">Execute EnlngDB Script (.enlngdb)</h4>
+            <p class="cli-card-desc">Executes declarative database queries and persists state into high-speed binary .edb.</p>
+            <div class="cli-code-block">
+              <code>enlngdb run database.enlngdb</code>
+            </div>
+          </div>
+
+          <!-- Card 4: EnlngDB Interactive REPL -->
+          <div class="cli-card">
+            <div class="cli-card-header">
+              <div class="cli-card-tag cli-tag-db">DATABASE REPL</div>
+              <button type="button" class="copy-code-btn terminal-btn" data-copy="enlngdb">Copy</button>
+            </div>
+            <h4 class="cli-card-title">Launch Interactive Zero-SQL Console</h4>
+            <p class="cli-card-desc">Interactive conversational terminal prompt for live table creation, inspection, and updates.</p>
+            <div class="cli-code-block">
+              <code>enlngdb</code>
+            </div>
+          </div>
+
+          <!-- Card 5: Core Enlangg Compile -->
+          <div class="cli-card">
+            <div class="cli-card-header">
+              <div class="cli-card-tag cli-tag-core">ENLANGG COMPILER</div>
+              <button type="button" class="copy-code-btn terminal-btn" data-copy="enlangg compile main.enlng -o app.exe">Copy</button>
+            </div>
+            <h4 class="cli-card-title">Compile to Standalone Machine Binary</h4>
+            <p class="cli-card-desc">Compiles natural English source directly to native x64 machine code in &lt; 2 milliseconds.</p>
+            <div class="cli-code-block">
+              <code>enlangg compile main.enlng -o app.exe</code>
+            </div>
+          </div>
+
+          <!-- Card 6: Pure C Source Compile -->
+          <div class="cli-card">
+            <div class="cli-card-header">
+              <div class="cli-card-tag cli-tag-c">PURE C BUILD</div>
+              <button type="button" class="copy-code-btn terminal-btn" data-copy="gcc -O3 enlngdb.c enlngdb_parser.c -o enlngdb.exe">Copy</button>
+            </div>
+            <h4 class="cli-card-title">Compile Pure C Database Engine</h4>
+            <p class="cli-card-desc">Zero-dependency C99 build command producing the sovereign ~100KB database engine binary.</p>
+            <div class="cli-code-block">
+              <code>gcc -O3 enlngdb.c enlngdb_parser.c -o enlngdb.exe</code>
             </div>
           </div>
         </div>

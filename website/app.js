@@ -21,7 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
 const INSTALL_COMMANDS = {
   powershell: 'powershell -ExecutionPolicy ByPass -c "irm https://enlangg.vercel.app/install.ps1 | iex"',
   cmd: 'curl -fsSL https://enlangg.vercel.app/install.cmd -o install.cmd && install.cmd',
-  bash: 'curl -fsSL https://enlangg.vercel.app/install.sh | bash'
+  bash: 'curl -fsSL https://enlangg.vercel.app/install.sh | bash',
+  enlngdb: 'enlngdb run my_store.enlngdb --interactive',
+  pip: 'pip install enlngdb'
 };
 
 function initInstallerTabs() {
@@ -1954,63 +1956,221 @@ function initDomainTabs() {
   });
 }
 
-// --- 4. Interactive 3D Animated Book (360° Drag + Multi-Page Highlight Reader) ---
-const BOOK_PAGES = [
-  {
-    chapter: 'CHAPTER 1',
-    pages: 'pp. 1-28 / 193',
-    badge: 'Core Architectural Philosophy',
-    title: 'The Sovereign Grammar',
-    excerpt: 'Natural English syntax eliminates symbol barrier friction, translating directly into high-throughput machine bytecode.',
-    snippet: `<span class="code-kw">type</span> <span class="code-val">enlng</span>\n<span class="code-kw">create</span> <span class="code-id">greeting</span> <span class="code-kw">of</span> <span class="code-val">"Hello Sovereign World"</span>\n<span class="code-kw">display</span> <span class="code-id">greeting</span>`,
-    seal: 'Universal Syntax Specification'
+// --- 4. Interactive 3D Animated Book (Dual Volumes + 360° Drag + Multi-Page Highlight Reader) ---
+const BOOK_VOLUMES = {
+  enlangg: {
+    badge: 'MASTER SPECIFICATION',
+    title: 'ENLANGG<br>THE ENLNG',
+    author: 'Canonical Architecture Manual',
+    pagesPill: '193 Master Pages',
+    spineTitle: 'ENLANGG: THE ENLNG',
+    spinePages: '193 PAGES',
+    backBadge: 'CANONICAL SPECIFICATION',
+    backTitle: 'THE ENLNG ARCHITECTURE',
+    backBlurb: 'The complete 193-page canonical manual for the English-syntax computing platform. Details compiler slots, 6 isolated domains, and native bytecode emission.',
+    backFeatures: [
+      '• Zero External Dependencies',
+      '• 6 Isolated Tier Domains',
+      '• Sub-2ms Binary Execution',
+      '• Slot-Based Register Allocation'
+    ],
+    backIsbn: 'SPEC-ENLNG-2026',
+    insideTitle: 'ENLANGG FOUNDATION',
+    insideSubtitle: 'Sovereign Computing Architecture',
+    insideSpec: 'SPEC-2026-NATIVE',
+    infoKicker: 'Canonical Volume · 1st Edition',
+    infoHeading: 'The Definitive Language Manual: Enlangg Architecture',
+    infoDesc: 'The complete 193-page architectural treatise covering natural English grammar semantics, slot-based compiler mechanics, cross-domain isolation invariants, and standard library references.',
+    primaryDlHref: 'enlangg_the_enlng.pdf',
+    primaryDlDownload: 'enlangg_the_enlng.pdf',
+    primaryDlText: 'Download PDF Book (420 KB)',
+    meta: [
+      { val: '193', lbl: 'Master Pages' },
+      { val: '6', lbl: 'Isolated Domains' },
+      { val: '100%', lbl: 'Standard Parity' }
+    ],
+    pages: [
+      {
+        chapter: 'CHAPTER 1',
+        pages: 'pp. 1-28 / 193',
+        badge: 'Core Architectural Philosophy',
+        title: 'The Sovereign Grammar',
+        excerpt: 'Natural English syntax eliminates symbol barrier friction, translating directly into high-throughput machine bytecode.',
+        snippet: '<span class="code-kw">type</span> <span class="code-val">enlng</span>\n<span class="code-kw">create</span> <span class="code-id">greeting</span> <span class="code-kw">of</span> <span class="code-val">"Hello Sovereign World"</span>\n<span class="code-kw">display</span> <span class="code-id">greeting</span>',
+        seal: 'Universal Syntax Specification'
+      },
+      {
+        chapter: 'CHAPTER 2',
+        pages: 'pp. 29-64 / 193',
+        badge: 'Native Arithmetic Engine',
+        title: 'Inferred Types & Natural Math',
+        excerpt: 'Automatic compile-time type inference with zero runtime boxing overhead and spoken English arithmetic operators.',
+        snippet: '<span class="code-kw">create</span> <span class="code-id">price</span> <span class="code-kw">of</span> <span class="code-num">250</span>\n<span class="code-kw">create</span> <span class="code-id">tax</span> <span class="code-kw">of</span> <span class="code-id">price</span> <span class="code-op">multiplied by</span> <span class="code-num">0.18</span>\n<span class="code-kw">display</span> <span class="code-val">"Total: "</span> <span class="code-op">+</span> (<span class="code-id">price</span> <span class="code-op">plus</span> <span class="code-id">tax</span>)',
+        seal: 'High-Throughput Math Runtime'
+      },
+      {
+        chapter: 'CHAPTER 3',
+        pages: 'pp. 65-102 / 193',
+        badge: 'Flow Control & Logic',
+        title: 'Natural Branching & Loops',
+        excerpt: 'Express complex decision logic and collection sweeps cleanly in human sentence structures without nested bracket noise.',
+        snippet: '<span class="code-kw">while</span> <span class="code-id">count</span> <span class="code-op">is less than</span> <span class="code-id">target</span>:\n  <span class="code-kw">set</span> <span class="code-id">count</span> <span class="code-kw">to</span> <span class="code-id">count</span> <span class="code-op">plus</span> <span class="code-num">1</span>\n  <span class="code-kw">display</span> <span class="code-val">"Step "</span> <span class="code-op">+</span> <span class="code-id">count</span>',
+        seal: 'Deterministic Control Flow'
+      },
+      {
+        chapter: 'CHAPTER 4',
+        pages: 'pp. 103-146 / 193',
+        badge: '6 Sovereign Domains',
+        title: 'Cross-Domain Tier Isolation',
+        excerpt: 'Compile-time isolation guarantees across .enlng, .enlngf, .enlngs, .enlngd, .enlngm, and .enlngdb tiers.',
+        snippet: '<span class="code-kw">type</span> <span class="code-val">enlngs</span>\n<span class="code-kw">create</span> <span class="code-id">route</span> <span class="code-kw">of</span> <span class="code-val">"/api/v1/health"</span>\n<span class="code-kw">respond with json</span> {<span class="code-val">"status"</span>: <span class="code-val">"healthy"</span>}',
+        seal: 'Tier Security Invariant'
+      },
+      {
+        chapter: 'CHAPTER 5',
+        pages: 'pp. 147-172 / 193',
+        badge: 'Memory & Native Compilation',
+        title: 'Deterministic Memory Model',
+        excerpt: 'Zero garbage-collector latency pauses via slot-based compile-time registers and instant 1.8ms warm boot.',
+        snippet: '<span class="code-kw">type</span> <span class="code-val">enlng</span>\n<span class="code-kw">function</span> <span class="code-id">process_buffer</span> <span class="code-kw">with</span> <span class="code-id">buf</span>:\n  <span class="code-kw">display</span> <span class="code-val">"Active registers: "</span> <span class="code-op">+</span> <span class="code-kw">length of</span> <span class="code-id">buf</span>',
+        seal: 'Zero-GC Machine Runtime'
+      },
+      {
+        chapter: 'CHAPTER 6',
+        pages: 'pp. 173-193 / 193',
+        badge: 'Standard Universal Library',
+        title: 'Full Universal Standard Library',
+        excerpt: 'Complete built-in standard library for advanced data structures, math, cryptography, file I/O, and sockets.',
+        snippet: '<span class="code-kw">type</span> <span class="code-val">enlngdb</span>\n<span class="code-kw">connect to</span> <span class="code-val">"production.db"</span>\n<span class="code-kw">find all</span> <span class="code-id">users</span> <span class="code-kw">where</span> <span class="code-id">active</span> <span class="code-op">is</span> <span class="code-val">true</span>',
+        seal: 'Universal Standard Parity'
+      }
+    ]
   },
-  {
-    chapter: 'CHAPTER 2',
-    pages: 'pp. 29-64 / 193',
-    badge: 'Native Arithmetic Engine',
-    title: 'Inferred Types & Natural Math',
-    excerpt: 'Automatic compile-time type inference with zero runtime boxing overhead and spoken English arithmetic operators.',
-    snippet: `<span class="code-kw">create</span> <span class="code-id">price</span> <span class="code-kw">of</span> <span class="code-num">250</span>\n<span class="code-kw">create</span> <span class="code-id">tax</span> <span class="code-kw">of</span> <span class="code-id">price</span> <span class="code-op">multiplied by</span> <span class="code-num">0.18</span>\n<span class="code-kw">display</span> <span class="code-val">"Total: "</span> <span class="code-op">+</span> (<span class="code-id">price</span> <span class="code-op">plus</span> <span class="code-id">tax</span>)`,
-    seal: 'High-Throughput Math Runtime'
-  },
-  {
-    chapter: 'CHAPTER 3',
-    pages: 'pp. 65-102 / 193',
-    badge: 'Flow Control & Logic',
-    title: 'Natural Branching & Loops',
-    excerpt: 'Express complex decision logic and collection sweeps cleanly in human sentence structures without nested bracket noise.',
-    snippet: `<span class="code-kw">while</span> <span class="code-id">count</span> <span class="code-op">is less than</span> <span class="code-id">target</span>:\n  <span class="code-kw">set</span> <span class="code-id">count</span> <span class="code-kw">to</span> <span class="code-id">count</span> <span class="code-op">plus</span> <span class="code-num">1</span>\n  <span class="code-kw">display</span> <span class="code-val">"Step "</span> <span class="code-op">+</span> <span class="code-id">count</span>`,
-    seal: 'Deterministic Control Flow'
-  },
-  {
-    chapter: 'CHAPTER 4',
-    pages: 'pp. 103-146 / 193',
-    badge: '6 Sovereign Domains',
-    title: 'Cross-Domain Tier Isolation',
-    excerpt: 'Compile-time isolation guarantees across .enlng, .enlngf, .enlngs, .enlngd, .enlngm, and .enlngdb tiers.',
-    snippet: `<span class="code-kw">type</span> <span class="code-val">enlngs</span>\n<span class="code-kw">create</span> <span class="code-id">route</span> <span class="code-kw">of</span> <span class="code-val">"/api/v1/health"</span>\n<span class="code-kw">respond with json</span> {<span class="code-val">"status"</span>: <span class="code-val">"healthy"</span>}`,
-    seal: 'Tier Security Invariant'
-  },
-  {
-    chapter: 'CHAPTER 5',
-    pages: 'pp. 147-172 / 193',
-    badge: 'Memory & Native Compilation',
-    title: 'Deterministic Memory Model',
-    excerpt: 'Zero garbage-collector latency pauses via slot-based compile-time registers and instant 1.8ms warm boot.',
-    snippet: `<span class="code-kw">type</span> <span class="code-val">enlng</span>\n<span class="code-kw">function</span> <span class="code-id">process_buffer</span> <span class="code-kw">with</span> <span class="code-id">buf</span>:\n  <span class="code-kw">display</span> <span class="code-val">"Active registers: "</span> <span class="code-op">+</span> <span class="code-kw">length of</span> <span class="code-id">buf</span>`,
-    seal: 'Zero-GC Machine Runtime'
-  },
-  {
-    chapter: 'CHAPTER 6',
-    pages: 'pp. 173-193 / 193',
-    badge: 'Standard Universal Library',
-    title: 'Full Universal Standard Library',
-    excerpt: 'Complete built-in standard library for advanced data structures, math, cryptography, file I/O, and sockets.',
-    snippet: `<span class="code-kw">type</span> <span class="code-val">enlngdb</span>\n<span class="code-kw">connect to</span> <span class="code-val">"production.db"</span>\n<span class="code-kw">find all</span> <span class="code-id">users</span> <span class="code-kw">where</span> <span class="code-id">active</span> <span class="code-op">is</span> <span class="code-val">true</span>`,
-    seal: 'Universal Standard Parity'
+  enlngdb: {
+    badge: 'PURE C STORAGE ENGINE',
+    title: 'ENLNGDB<br>ZERO-SQL',
+    author: 'Embedded Database Manual',
+    pagesPill: '10 Master Sections',
+    spineTitle: 'ENLNGDB: ZERO-SQL MANUAL',
+    spinePages: '10 SECTIONS',
+    backBadge: 'STORAGE SPECIFICATION',
+    backTitle: 'ENLNGDB ZERO-SQL ENGINE',
+    backBlurb: 'The complete canonical manual for EnlngDB pure C embedded storage engine. Covers zero-SQL syntax, sub-microsecond seeks, binary WAL layout, C API, and Python bindings.',
+    backFeatures: [
+      '• Zero SQL Parsing Overhead',
+      '• Pure C99 Embedded Binary',
+      '• ACID WAL Crash Resilience',
+      '• Native Python SDK & C ABI'
+    ],
+    backIsbn: 'SPEC-ENLNGDB-2026',
+    insideTitle: 'ENLNGDB ZERO-SQL',
+    insideSubtitle: 'Pure C Storage Architecture',
+    insideSpec: 'SPEC-DB-2026-PURE-C',
+    infoKicker: 'EnlngDB Canonical Volume · 2nd Edition',
+    infoHeading: 'EnlngDB Architecture & Reference Manual',
+    infoDesc: 'The definitive 10-section manual for the EnlngDB pure C embedded storage engine. Complete coverage of natural language DDL, DML, query operators, crash resilience, C API, Python bindings, and developer CLI.',
+    primaryDlHref: 'enlngdb_manual.md',
+    primaryDlDownload: 'enlngdb_manual.md',
+    primaryDlText: 'Download EnlngDB Manual (.md)',
+    meta: [
+      { val: '10', lbl: 'Master Sections' },
+      { val: 'Pure C', lbl: 'Embedded Engine' },
+      { val: '0 SQL', lbl: 'Natural Syntax' }
+    ],
+    pages: [
+      {
+        chapter: 'SECTION 1',
+        pages: 'Section 1 / 10',
+        badge: 'Pure C Storage Engine',
+        title: 'Sovereign Zero-SQL Architecture',
+        excerpt: 'Embedded pure C99 engine with zero external drivers, zero background daemons, and sub-microsecond in-memory index seek.',
+        snippet: '<span class="code-kw">type</span> <span class="code-val">enlngdb</span>\n<span class="code-kw">connect to</span> <span class="code-val">"production.enlngdb"</span>\n<span class="code-kw">display</span> <span class="code-val">"EnlngDB Engine Initialized: Sub-microsecond seek"</span>',
+        seal: 'Pure C99 Embedded Engine'
+      },
+      {
+        chapter: 'SECTION 2',
+        pages: 'Section 2 / 10',
+        badge: 'Schema & Column Grammar',
+        title: 'Natural DDL Table Invariants',
+        excerpt: 'Declarative table structure with primary keys, unique constraints, and typed schemas defined in natural English sentences.',
+        snippet: '<span class="code-kw">create table</span> <span class="code-id">users</span> (\n  <span class="code-id">id</span> <span class="code-kw">as primary key</span>,\n  <span class="code-id">username</span> <span class="code-kw">as text</span>,\n  <span class="code-id">balance</span> <span class="code-kw">as float</span>,\n  <span class="code-id">is_verified</span> <span class="code-kw">as boolean</span>\n)',
+        seal: 'Typed Schema Verification'
+      },
+      {
+        chapter: 'SECTION 3',
+        pages: 'Section 3 / 10',
+        badge: 'DML Ingestion',
+        title: 'Sub-Millisecond Record Insertion',
+        excerpt: 'Single and batch records written directly to typed column slots with compile-time type validation and zero SQL parsing overhead.',
+        snippet: '<span class="code-kw">insert into</span> <span class="code-id">users</span> <span class="code-kw">values</span> (\n  <span class="code-num">101</span>,\n  <span class="code-val">"sovereign_dev"</span>,\n  <span class="code-num">95000.50</span>,\n  <span class="code-val">true</span>\n)',
+        seal: '1.2M Writes/Sec Ingestion'
+      },
+      {
+        chapter: 'SECTION 4',
+        pages: 'Section 4 / 10',
+        badge: 'Query Operators',
+        title: 'Natural Query Engine & Filters',
+        excerpt: 'Express multi-clause filters using natural English operators: is equal to, is greater than, contains, and, or, order by, limit.',
+        snippet: '<span class="code-kw">find all</span> <span class="code-id">users</span> <span class="code-kw">where</span> <span class="code-id">balance</span> <span class="code-op">is greater than</span> <span class="code-num">50000</span>\n  <span class="code-kw">and</span> <span class="code-id">is_verified</span> <span class="code-op">is</span> <span class="code-val">true</span>\n  <span class="code-kw">order by</span> <span class="code-id">balance</span> <span class="code-kw">descending</span>\n  <span class="code-kw">limit</span> <span class="code-num">25</span>',
+        seal: 'Zero-SQL Predicate Pushdown'
+      },
+      {
+        chapter: 'SECTION 5',
+        pages: 'Section 5 / 10',
+        badge: 'Safe Mutations',
+        title: 'Safe Record Updates & Deletions',
+        excerpt: 'Targeted updates and deletes with predicate guarantees. Automatic rollbacks on constraint violation.',
+        snippet: '<span class="code-kw">update</span> <span class="code-id">users</span>\n  <span class="code-kw">set</span> <span class="code-id">balance</span> <span class="code-kw">to</span> <span class="code-id">balance</span> <span class="code-op">plus</span> <span class="code-num">500</span>\n  <span class="code-kw">where</span> <span class="code-id">username</span> <span class="code-op">is equal to</span> <span class="code-val">"sovereign_dev"</span>\n<span class="code-kw">delete from</span> <span class="code-id">users</span> <span class="code-kw">where</span> <span class="code-id">balance</span> <span class="code-op">is less than</span> <span class="code-num">0</span>',
+        seal: 'ACID Mutation Integrity'
+      },
+      {
+        chapter: 'SECTION 6',
+        pages: 'Section 6 / 10',
+        badge: 'Crash Resilience',
+        title: 'Native Binary Format & WAL',
+        excerpt: 'Proprietary binary storage format with magic header 0x454E4442 (ENDB), transactional write-ahead logging, and sub-10ms crash recovery.',
+        snippet: '<span class="code-kw">database file</span>: <span class="code-val">"production.enlngdb"</span>\n<span class="code-kw">header magic</span>: <span class="code-num">0x454E4442</span> (<span class="code-val">\'E\' \'N\' \'D\' \'B\'</span>)\n<span class="code-kw">wal file</span>: <span class="code-val">"production.enlngdb.wal"</span>\n<span class="code-kw">sync mode</span>: <span class="code-val">FULL_SYNCHRONOUS</span>',
+        seal: 'Zero-Corruption Binary Layout'
+      },
+      {
+        chapter: 'SECTION 7',
+        pages: 'Section 7 / 10',
+        badge: 'C API & ABI',
+        title: 'Native C Engine Integration',
+        excerpt: 'Embed EnlngDB directly into any C, C++, Rust, or Zig application with clean C ABI functions enlngdb_open, enlngdb_query, enlngdb_close.',
+        snippet: '<span class="code-kw">#include</span> <span class="code-val">"enlngdb.h"</span>\n<span class="code-id">enlngdb_t</span>* <span class="code-id">db</span> = <span class="code-id">enlngdb_open</span>(<span class="code-val">"store.enlngdb"</span>);\n<span class="code-id">enlngdb_result_t</span>* <span class="code-id">res</span> = <span class="code-id">enlngdb_query</span>(<span class="code-id">db</span>, <span class="code-val">"find all users"</span>);\n<span class="code-id">enlngdb_free_result</span>(<span class="code-id">res</span>);\n<span class="code-id">enlngdb_close</span>(<span class="code-id">db</span>);',
+        seal: 'Zero-Glue C Integration'
+      },
+      {
+        chapter: 'SECTION 8',
+        pages: 'Section 8 / 10',
+        badge: 'Python Package',
+        title: 'Python SDK & Context Manager',
+        excerpt: 'Full Pythonic interface with pip install enlngdb. Native bindings, automatic cursor iteration, dictionary rows, and pandas DataFrame support.',
+        snippet: '<span class="code-kw">import</span> <span class="code-id">enlngdb</span>\n<span class="code-kw">with</span> <span class="code-id">enlngdb</span>.<span class="code-id">connect</span>(<span class="code-val">"store.enlngdb"</span>) <span class="code-kw">as</span> <span class="code-id">db</span>:\n    <span class="code-id">users</span> = <span class="code-id">db</span>.<span class="code-id">find_all</span>(<span class="code-val">"users"</span>, <span class="code-kw">where</span>={<span class="code-val">"active"</span>: <span class="code-val">True</span>})\n    <span class="code-kw">for</span> <span class="code-id">u</span> <span class="code-kw">in</span> <span class="code-id">users</span>:\n        <span class="code-kw">print</span>(<span class="code-id">f"User {u[\'id\']}: {u[\'username\']}"</span>)',
+        seal: 'Pythonic C-Extension'
+      },
+      {
+        chapter: 'SECTION 9',
+        pages: 'Section 9 / 10',
+        badge: 'Developer Tools',
+        title: 'Interactive CLI & REPL',
+        excerpt: 'Complete standalone binary enlngdb.exe for database inspection, interactive shell, SQL-to-EnlngDB migration, and binary compaction.',
+        snippet: '<span class="code-kw">$</span> <span class="code-id">enlngdb</span> <span class="code-val">dump</span> <span class="code-id">production.enlngdb</span>\n<span class="code-kw">$</span> <span class="code-id">enlngdb</span> <span class="code-val">compact</span> <span class="code-id">production.enlngdb</span>\n<span class="code-kw">$</span> <span class="code-id">enlngdb</span> <span class="code-val">interactive</span> <span class="code-id">production.enlngdb</span>\n<span class="code-id">enlngdb&gt;</span> <span class="code-kw">find all</span> <span class="code-id">users</span> <span class="code-kw">limit</span> <span class="code-num">5</span>',
+        seal: 'Zero-Config Developer CLI'
+      },
+      {
+        chapter: 'SECTION 10',
+        pages: 'Section 10 / 10',
+        badge: 'Universal Reference',
+        title: 'Universal Grammar & Matrix',
+        excerpt: 'Exhaustive cheat sheet of all DDL, DML, DQL keywords, comparison operators, aggregation functions, and error codes.',
+        snippet: '<span class="code-kw">create table</span> | <span class="code-kw">insert into</span> | <span class="code-kw">find all</span>\n<span class="code-kw">update ... set</span> | <span class="code-kw">delete from</span> | <span class="code-kw">drop table</span>\n<span class="code-op">is equal to</span> | <span class="code-op">is greater than</span> | <span class="code-op">contains</span>\n<span class="code-kw">count</span> | <span class="code-kw">sum</span> | <span class="code-kw">avg</span> | <span class="code-kw">min</span> | <span class="code-kw">max</span>',
+        seal: '100% Grammar Coverage'
+      }
+    ]
   }
-];
+};
 
 function initAnimatedBook() {
   const bookStage = document.getElementById('bookStage');
@@ -2019,8 +2179,7 @@ function initAnimatedBook() {
   const toggleCoverBtn = document.getElementById('toggleCoverBtn');
   const coverBtnText = document.getElementById('coverBtnText');
   const toggleOrbitBtn = document.getElementById('toggleOrbitBtn');
-  const autoFlipBtn = document.getElementById('autoFlipBtn');
-  const autoFlipText = document.getElementById('autoFlipText');
+  const orbitBtnText = document.getElementById('orbitBtnText');
   const reset3dBtn = document.getElementById('reset3dBtn');
   const browsePagesBtn = document.getElementById('browsePagesBtn');
   const prevPageBtn = document.getElementById('prevPageBtn');
@@ -2028,17 +2187,135 @@ function initAnimatedBook() {
   const pageDotsBar = document.getElementById('pageDotsBar');
   const chapterChipsBar = document.getElementById('chapterChipsBar');
   const viewBtns = document.querySelectorAll('.view-preset-btn');
+  const volEnlngBtn = document.getElementById('volEnlngBtn');
+  const volEnlngDbBtn = document.getElementById('volEnlngDbBtn');
 
   if (!bookStage || !book3D) return;
 
-  // --- 1. Multi-Page Highlight State & Navigation ---
+  // Active Volume State ('enlangg' or 'enlngdb')
+  let currentVolumeKey = 'enlangg';
   let currentPageIndex = 0;
-  let autoFlipInterval = null;
 
+  function getCurrentPages() {
+    return BOOK_VOLUMES[currentVolumeKey].pages;
+  }
+
+  // --- Volume Switching Logic ---
+  function switchBookVolume(volKey) {
+    if (!BOOK_VOLUMES[volKey]) return;
+    currentVolumeKey = volKey;
+
+    // Toggle Volume Buttons Active State
+    if (volEnlngBtn) volEnlngBtn.classList.toggle('active', volKey === 'enlangg');
+    if (volEnlngDbBtn) volEnlngDbBtn.classList.toggle('active', volKey === 'enlngdb');
+
+    // Toggle 3D Theme Skin
+    if (volKey === 'enlngdb') {
+      book3D.classList.add('theme-enlngdb');
+    } else {
+      book3D.classList.remove('theme-enlngdb');
+    }
+
+    const volData = BOOK_VOLUMES[volKey];
+
+    // 1. Update Front Cover Exterior Face
+    const coverBadge = document.getElementById('bookCoverBadge');
+    const coverTitle = document.getElementById('bookCoverTitle');
+    const coverAuthor = document.getElementById('bookCoverAuthor');
+    const coverPagesPill = document.getElementById('bookCoverPagesPill');
+
+    if (coverBadge) coverBadge.textContent = volData.badge;
+    if (coverTitle) coverTitle.innerHTML = volData.title;
+    if (coverAuthor) coverAuthor.textContent = volData.author;
+    if (coverPagesPill) coverPagesPill.textContent = volData.pagesPill;
+
+    // 2. Update Inside Face (Visible when cover is open)
+    const insideEditionTitle = document.getElementById('insideEditionTitle');
+    const insideEditionSubtitle = document.getElementById('insideEditionSubtitle');
+    const insideSpecTag = document.getElementById('insideSpecTag');
+
+    if (insideEditionTitle) insideEditionTitle.textContent = volData.insideTitle;
+    if (insideEditionSubtitle) insideEditionSubtitle.textContent = volData.insideSubtitle;
+    if (insideSpecTag) insideSpecTag.textContent = volData.insideSpec;
+
+    // 3. Update Spine
+    const spineTitle = document.getElementById('spineTitle');
+    const spinePages = document.getElementById('spinePages');
+    if (spineTitle) spineTitle.textContent = volData.spineTitle;
+    if (spinePages) spinePages.textContent = volData.spinePages;
+
+    // 4. Update Back Cover
+    const backBadge = document.getElementById('backBadge');
+    const backTitle = document.getElementById('backTitle');
+    const backBlurb = document.getElementById('backBlurb');
+    const backFeaturesList = document.getElementById('backFeaturesList');
+    const backIsbnText = document.getElementById('backIsbnText');
+
+    if (backBadge) backBadge.textContent = volData.backBadge;
+    if (backTitle) backTitle.textContent = volData.backTitle;
+    if (backBlurb) backBlurb.textContent = volData.backBlurb;
+    if (backIsbnText) backIsbnText.textContent = volData.backIsbn;
+
+    if (backFeaturesList && volData.backFeatures) {
+      backFeaturesList.innerHTML = volData.backFeatures.map(f => `<span>${f}</span>`).join('');
+    }
+
+    // 5. Update Book Details Sidebar Section
+    const bookInfoKicker = document.getElementById('bookInfoKicker');
+    const bookInfoHeading = document.getElementById('bookInfoHeading');
+    const bookInfoDesc = document.getElementById('bookInfoDesc');
+    const bookPrimaryDlBtn = document.getElementById('bookPrimaryDlBtn');
+    const bookPrimaryDlText = document.getElementById('bookPrimaryDlText');
+    const metaStat1 = document.getElementById('metaStat1');
+    const metaLbl1 = document.getElementById('metaLbl1');
+    const metaStat2 = document.getElementById('metaStat2');
+    const metaLbl2 = document.getElementById('metaLbl2');
+    const metaStat3 = document.getElementById('metaStat3');
+    const metaLbl3 = document.getElementById('metaLbl3');
+
+    if (bookInfoKicker) bookInfoKicker.textContent = volData.infoKicker;
+    if (bookInfoHeading) bookInfoHeading.textContent = volData.infoHeading;
+    if (bookInfoDesc) bookInfoDesc.textContent = volData.infoDesc;
+
+    if (bookPrimaryDlBtn) {
+      bookPrimaryDlBtn.setAttribute('href', volData.primaryDlHref);
+      bookPrimaryDlBtn.setAttribute('download', volData.primaryDlDownload);
+    }
+    if (bookPrimaryDlText) bookPrimaryDlText.textContent = volData.primaryDlText;
+
+    if (metaStat1 && volData.meta[0]) metaStat1.textContent = volData.meta[0].val;
+    if (metaLbl1 && volData.meta[0]) metaLbl1.textContent = volData.meta[0].lbl;
+    if (metaStat2 && volData.meta[1]) metaStat2.textContent = volData.meta[1].val;
+    if (metaLbl2 && volData.meta[1]) metaLbl2.textContent = volData.meta[1].lbl;
+    if (metaStat3 && volData.meta[2]) metaStat3.textContent = volData.meta[2].val;
+    if (metaLbl3 && volData.meta[2]) metaLbl3.textContent = volData.meta[2].lbl;
+
+    // Reset to page 0
+    currentPageIndex = 0;
+    renderPageDots();
+    setPage(0, false);
+  }
+
+  if (volEnlngBtn) {
+    volEnlngBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      switchBookVolume('enlangg');
+    });
+  }
+
+  if (volEnlngDbBtn) {
+    volEnlngDbBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      switchBookVolume('enlngdb');
+    });
+  }
+
+  // --- Multi-Page Highlight State & Navigation ---
   function renderPageDots() {
+    const pages = getCurrentPages();
     if (pageDotsBar) {
       pageDotsBar.innerHTML = '';
-      BOOK_PAGES.forEach((pg, idx) => {
+      pages.forEach((pg, idx) => {
         const dot = document.createElement('button');
         dot.className = `page-dot ${idx === currentPageIndex ? 'active' : ''}`;
         dot.title = `${pg.chapter}: ${pg.title}`;
@@ -2052,7 +2329,7 @@ function initAnimatedBook() {
 
     if (chapterChipsBar) {
       chapterChipsBar.innerHTML = '';
-      BOOK_PAGES.forEach((pg, idx) => {
+      pages.forEach((pg, idx) => {
         const chip = document.createElement('button');
         chip.className = `chapter-chip ${idx === currentPageIndex ? 'active' : ''}`;
         chip.textContent = `${idx + 1}. ${pg.title.split(' ')[0]}`;
@@ -2066,12 +2343,13 @@ function initAnimatedBook() {
     }
   }
 
-  function setPage(idx) {
-    if (idx < 0) idx = BOOK_PAGES.length - 1;
-    if (idx >= BOOK_PAGES.length) idx = 0;
+  function setPage(idx, shouldOpenCover = true) {
+    const pages = getCurrentPages();
+    if (idx < 0) idx = pages.length - 1;
+    if (idx >= pages.length) idx = 0;
     currentPageIndex = idx;
 
-    const pageData = BOOK_PAGES[currentPageIndex];
+    const pageData = pages[currentPageIndex];
     const pageTurnOverlay = document.getElementById('pageTurnOverlay');
 
     if (pageTurnOverlay) {
@@ -2100,9 +2378,12 @@ function initAnimatedBook() {
     renderPageDots();
 
     // Ensure cover is open so user sees the page
-    if (!bookStage.classList.contains('book-open')) {
+    if (shouldOpenCover && !bookStage.classList.contains('book-open')) {
       bookStage.classList.add('book-open');
       updateCoverButton(true);
+      currentRotY = -12;
+      currentRotX = 4;
+      applyTransform();
     }
   }
 
@@ -2122,37 +2403,13 @@ function initAnimatedBook() {
 
   renderPageDots();
 
-  // --- 2. Auto-Flip Progression ---
-  function toggleAutoFlip() {
-    if (autoFlipInterval) {
-      clearInterval(autoFlipInterval);
-      autoFlipInterval = null;
-      if (autoFlipText) autoFlipText.textContent = 'Auto-Flip Pages';
-      if (autoFlipBtn) autoFlipBtn.classList.remove('active');
-    } else {
-      if (!bookStage.classList.contains('book-open')) {
-        bookStage.classList.add('book-open');
-        updateCoverButton(true);
-      }
-      if (autoFlipText) autoFlipText.textContent = 'Pause Flip';
-      if (autoFlipBtn) autoFlipBtn.classList.add('active');
-      autoFlipInterval = setInterval(() => {
-        setPage(currentPageIndex + 1);
-      }, 3500);
-    }
-  }
-
-  if (autoFlipBtn) {
-    autoFlipBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleAutoFlip();
-    });
-  }
-
-  // --- 3. Cover Open / Close Toggle ---
+  // --- 1: Cover Open / Close Toggle (Button 1) ---
   function updateCoverButton(isOpen) {
     if (coverBtnText) {
       coverBtnText.textContent = isOpen ? 'Close Book' : 'Open Book';
+    }
+    if (toggleCoverBtn) {
+      toggleCoverBtn.classList.toggle('active', isOpen);
     }
     if (openHint) {
       openHint.textContent = isOpen ? 'Click to Close' : 'Click to Open →';
@@ -2162,6 +2419,18 @@ function initAnimatedBook() {
   function toggleCover() {
     const isOpen = bookStage.classList.toggle('book-open');
     updateCoverButton(isOpen);
+    if (isOpen) {
+      if (isOrbiting) stopOrbit();
+      stopInertia();
+      // Optimal reading angle facing the reader
+      currentRotY = -12;
+      currentRotX = 4;
+      applyTransform();
+    } else {
+      currentRotY = -22;
+      currentRotX = 10;
+      applyTransform();
+    }
   }
 
   if (toggleCoverBtn) {
@@ -2178,12 +2447,15 @@ function initAnimatedBook() {
       if (!bookStage.classList.contains('book-open')) {
         bookStage.classList.add('book-open');
         updateCoverButton(true);
+        currentRotY = -12;
+        currentRotX = 4;
+        applyTransform();
       }
       setPage(currentPageIndex + 1);
     });
   }
 
-  // --- 4. 360° Mouse / Touch Drag Rotation with Momentum ---
+  // --- 360° Mouse / Touch Drag Rotation with Momentum ---
   let isDragging = false;
   let hasDragged = false;
   let startX = 0;
@@ -2299,13 +2571,14 @@ function initAnimatedBook() {
     toggleCover();
   });
 
-  // --- 5. 360° Orbit Turntable ---
+  // --- 2: 360° Orbit Turntable (Button 2) ---
   let orbitTimer = null;
   function startOrbit() {
     isOrbiting = true;
     stopInertia();
     book3D.style.animation = 'none';
     if (toggleOrbitBtn) toggleOrbitBtn.classList.add('active');
+    if (orbitBtnText) orbitBtnText.textContent = 'Pause Turntable';
     orbitTimer = setInterval(() => {
       currentRotY = (currentRotY + 1.2) % 360;
       applyTransform();
@@ -2319,6 +2592,7 @@ function initAnimatedBook() {
       orbitTimer = null;
     }
     if (toggleOrbitBtn) toggleOrbitBtn.classList.remove('active');
+    if (orbitBtnText) orbitBtnText.textContent = '360° Turntable';
   }
 
   if (toggleOrbitBtn) {
@@ -2332,7 +2606,7 @@ function initAnimatedBook() {
     });
   }
 
-  // --- 6. Perspective Presets ---
+  // --- Perspective Presets ---
   viewBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2360,7 +2634,7 @@ function initAnimatedBook() {
     });
   });
 
-  // --- 7. Reset 3D View ---
+  // --- Reset 3D View ---
   if (reset3dBtn) {
     reset3dBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2376,6 +2650,7 @@ function initAnimatedBook() {
     });
   }
 }
+
 
 // --- 5. Frequently Asked Questions Accordion ---
 function initFaqAccordion() {
@@ -2489,10 +2764,16 @@ function initUniversalCopyButtons() {
   copyButtons.forEach(btn => {
     btn.addEventListener('click', async () => {
       const targetId = btn.getAttribute('data-target');
-      const codeElem = targetId ? document.getElementById(targetId) : btn.closest('.code-block-card')?.querySelector('pre code, pre');
-      if (!codeElem) return;
+      const directCode = btn.getAttribute('data-copy');
+      let codeText = '';
+      if (directCode) {
+        codeText = directCode;
+      } else {
+        const codeElem = targetId ? document.getElementById(targetId) : btn.closest('.code-block-card, .cli-card')?.querySelector('pre code, pre, .cli-code-block');
+        if (!codeElem) return;
+        codeText = codeElem.innerText.trim();
+      }
 
-      const codeText = codeElem.innerText.trim();
       try {
         await navigator.clipboard.writeText(codeText);
         const originalText = btn.textContent;
