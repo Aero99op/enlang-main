@@ -291,8 +291,8 @@
           <div class="code-block-body" id="track01Code">type enlng
 
 // Print to standard console output
-display "Hello, Sovereign World!"
-display "Enlangg compiles natural English to bare-metal C machine code."</div>
+show "Hello, Sovereign World!"
+show "Enlangg compiles natural English to bare-metal C machine code."</div>
         </div>
 
         <!-- Key Takeaways from NotebookLM -->
@@ -369,17 +369,16 @@ display "Enlangg compiles natural English to bare-metal C machine code."</div>
           </div>
           <div class="code-block-body" id="track02Code">type enlng
 
-// Set allocates slot 0 in the local stack frame
-set server_port to 8080
-set server_name to "Primary Gateway"
-set is_active to true
+freeze SERVER_NAME as "Primary Gateway"
+remember server_port as 8080
+remember is_active as true
 
-// Mutate existing slot value with 'set'
-set server_port to 9000
+# Reassign mutable memory slot
+server_port = 9000
 
-display "Server: ", server_name
-display "Port: ", server_port
-display "Status Active: ", is_active</div>
+show "Server:" SERVER_NAME
+show "Port:" server_port
+show "Status Active:" is_active</div>
         </div>
 
         <div class="lesson-takeaways-card">
@@ -459,17 +458,17 @@ display "Status Active: ", is_active</div>
           </div>
           <div class="code-block-body" id="track03Code">type enlng
 
-set base_salary to 65000
-set bonus to 12000
-set tax_rate to 0.18
+remember base_salary as 65000
+remember bonus as 12000
+freeze TAX_RATE as 0.18
 
-set gross_pay to base_salary plus bonus
-set deductions to gross_pay multiplied by tax_rate
-set net_pay to gross_pay minus deductions
+remember gross_pay as base_salary plus bonus
+remember deductions as gross_pay times TAX_RATE
+remember net_pay as gross_pay minus deductions
 
-display "Gross Compensation: ", gross_pay
-display "Estimated Tax: ", deductions
-display "Net Take-Home: ", net_pay</div>
+show "Gross Compensation: $" gross_pay
+show "Estimated Tax: $" deductions
+show "Net Take-Home: $" net_pay</div>
         </div>
 
         <div class="lesson-takeaways-card">

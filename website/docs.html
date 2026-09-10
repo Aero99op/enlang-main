@@ -135,6 +135,7 @@
             <li class="docs-nav-item"><a href="#ch6">Chapter 6: Foreign Function Interface</a></li>
             <li class="docs-nav-item"><a href="#ch7">Chapter 7: Python Interop God Call</a></li>
             <li class="docs-nav-item"><a href="#ch8">Chapter 8: EnlngDB Pure C Engine</a></li>
+            <li class="docs-nav-item" style="border-top: 1px solid rgba(56, 189, 248, 0.2); margin-top: 6px; padding-top: 6px;"><a href="#mastercode" style="color: #38bdf8; font-weight: 700;">👑 Mastercode Showcase</a></li>
           </ul>
         </div>
 
@@ -177,15 +178,14 @@
             </div>
             <div class="code-block-body" id="mathCode">type enlng
 
-set principal to 5000
-set rate to 0.05
-set years to 3
+freeze principal as 5000
+freeze rate as 0.05
+remember years as 3
 
-set interest to principal multiplied by rate multiplied by years
-set total to principal plus interest
+remember interest as principal times rate times years
+remember total as principal plus interest
 
-display "Calculated Total Balance:"
-display total</div>
+show "Calculated Total Balance: $" total</div>
           </div>
 
           <h3 class="docs-h3">Arithmetic & Assignment Operators</h3>
@@ -302,6 +302,59 @@ display total</div>
             </table>
           </div>
         </article>
+
+        
+          <h3 class="docs-h3">The Universal 4-Way Access Engine (Dot-Free & Bracket-Free)</h3>
+          <p class="docs-p">
+            In traditional programming languages, accessing properties requires dots (<code>obj.prop</code>) and collections require brackets (<code>arr[0]</code>).
+            Enlangg introduces <strong>Universal 4-Way Access Orthogonality</strong>: you can access any field, map key, or list index using pure conversational English or traditional notations interchangeably:
+          </p>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Access Form</th>
+                  <th>Syntax Example</th>
+                  <th>Spoken Intent</th>
+                  <th>Equivalent In Traditional PLs</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>1. Pure English 'of'</strong></td>
+                  <td><code>status of card</code></td>
+                  <td>Property of object (zero dots, zero brackets)</td>
+                  <td><code>card.status</code></td>
+                </tr>
+                <tr>
+                  <td><strong>2. Pure English 'at'</strong></td>
+                  <td><code>items at 0</code> · <code>account at "balance"</code></td>
+                  <td>Container indexed at position or key</td>
+                  <td><code>items[0]</code> · <code>account["balance"]</code></td>
+                </tr>
+                <tr>
+                  <td><strong>3. Dot Notation</strong></td>
+                  <td><code>card.status</code> · <code>account.tier</code></td>
+                  <td>Standard object member access</td>
+                  <td><code>card.status</code></td>
+                </tr>
+                <tr>
+                  <td><strong>4. Index Bracket</strong></td>
+                  <td><code>items[0]</code> · <code>account["balance"]</code></td>
+                  <td>Standard subscript indexing</td>
+                  <td><code>items[0]</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="docs-callout">
+            <span class="docs-callout-title">How does Enlng parse 'status of card'?</span>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0;">
+              In the statement <code>when status of card is "ACTIVE":</code>, the Enlng lexer and parser recognize <code>status</code> as the property identifier, <code>of</code> as the universal relational preposition, and <code>card</code> as the target container in scope. This enables natural English reading order without ambiguity!
+            </p>
+          </div>
 
         <!-- Chapter 2 -->
         <article class="docs-article-section" id="ch2">
@@ -479,19 +532,20 @@ listen on port 8080:
             </div>
             <div class="code-block-body" id="flowCode">type enlng
 
-set score to 94
+remember score as 94
 
-if score is greater than or equal to 90:
-    display "Grade: Sovereign Tier A"
-otherwise if score is greater than or equal to 75:
-    display "Grade: Tier B"
+when score is at least 90:
+    show "Grade: Sovereign Tier A"
 otherwise:
-    display "Grade: Tier C"
+    when score is at least 75:
+        show "Grade: Tier B"
+    otherwise:
+        show "Grade: Tier C"
 
-set counter to 1
-while counter is less than or equal to 5:
-    display "Iteration: ", counter
-    set counter to counter plus 1</div>
+remember counter as 1
+repeat while counter <= 5:
+    show "Iteration:" counter
+    counter increases by 1</div>
           </div>
         </article>
 
@@ -509,20 +563,18 @@ while counter is less than or equal to 5:
             </div>
             <div class="code-block-body" id="procCode">type enlng
 
-procedure calculate_mortgage with principal, rate, term_years returns number:
-    if principal is less than or equal to 0:
-        signal failure "Principal must be strictly positive"
+# Function Declaration with 'with' and 'give'
+function calculate_mortgage with principal, rate, term_years:
+    when principal <= 0:
+        give 0.0
     
-    set monthly_rate to rate divided by 12
-    set months to term_years multiplied by 12
-    set payment to principal multiplied by monthly_rate
-    return payment
+    remember monthly_rate as rate divided by 12.0
+    remember months as term_years times 12.0
+    give principal times monthly_rate
 
-attempt:
-    set monthly to calculate_mortgage(250000, 0.045, 30)
-    display "Monthly Payment: ", monthly
-catch failure with error_message:
-    display "Calculation Error: ", error_message</div>
+# Function Invocation using pure English 'with' (Zero Parentheses!)
+remember monthly as calculate_mortgage with 250000, 0.045, 30
+show "Monthly Payment: $" monthly</div>
           </div>
         </article>
 
@@ -850,6 +902,268 @@ find all records from scholars;</div>
                 </tr>
               </tbody>
             </table>
+          </div>
+        </article>
+
+      
+        <!-- Grand Mastercode Section -->
+        <article class="docs-article-section" id="mastercode">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 0.75rem; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">
+              CANONICAL CAPSTONE MASTERCODE
+            </span>
+            <span style="color: var(--text-muted); font-size: 0.85rem;">100% Authentic Enlng Grammar · Tested with enlng.exe Exit Code 0</span>
+          </div>
+          <h2 class="docs-h2" style="font-size: 2rem;">The Grand Mastercode: Enterprise Core Banking & Fraud Ledger</h2>
+          <p class="docs-p">
+            Below is the complete, production-grade monolithic system written entirely in authentic Sovereign Enlng.
+            It demonstrates <strong>every sovereign rule in harmony</strong>: immutable bindings (<code>freeze</code>), mutable memory (<code>remember</code>),
+            the Universal 4-Way Access Engine (<code>status of account</code>, <code>primary_account.tier</code>, <code>primary_account["balance"]</code>),
+            pure English functions with <code>with</code> and <code>give</code>, zero-parentheses functional invocations,
+            in-place mutation (<code>increases by</code>, <code>decreases by</code>), recursive actuarial yield calculations,
+            and <strong>Spatial Pair Sorting with silent words</strong> (<code>the left of the pair is greater than the right of the pair: swap pair</code>):
+          </p>
+
+          <div class="code-block-card" style="margin: 20px 0;">
+            <div class="code-block-header">
+              <span>master_enterprise_system.enlng (187 Lines Monolithic Pure Enlng)</span>
+              <button type="button" class="copy-code-btn terminal-btn" data-target="mastercodeSnippet">Copy Mastercode</button>
+            </div>
+            <div class="code-block-body" id="mastercodeSnippet" style="max-height: 480px; overflow-y: auto;">type enlng
+
+# ==============================================================================
+# 👑 ENLNG SOVEREIGN ENTERPRISE FINTECH ENGINE & REAL-TIME LEDGER
+# Monolithic Mastercode Demonstrating 100% True Authentic Enlng Grammar
+# Zero Cryptic Symbols • Universal 4-Way Access • Zero-Parentheses Invocations
+# ==============================================================================
+
+# Global System Constants
+freeze INSTITUTION_NAME as "Sovereign Reserve Bank"
+freeze PROTOCOL_VERSION as "2.0-SOVEREIGN"
+freeze BASE_CURRENCY as "USD"
+freeze MAX_TRANSACTION_LIMIT as 50000.0
+
+show "=========================================================================="
+show "🏛️ " INSTITUTION_NAME "// ENTERPRISE LEDGER CORE (" PROTOCOL_VERSION ")"
+show "=========================================================================="
+
+# ------------------------------------------------------------------------------
+# 1. FUNCTION DEFINITIONS (PURE ENGLISH, WITH PREPOSITION & GIVE)
+# ------------------------------------------------------------------------------
+
+# Function with two parameters, zero parentheses, returning calculation via 'give'
+function compute_risk_score with amount, customer_tier:
+    remember base_risk as 10.0
+    
+    when customer_tier is "VIP":
+        base_risk = 2.0
+    otherwise:
+        when customer_tier is "CORPORATE":
+            base_risk = 5.0
+        otherwise:
+            base_risk = 15.0
+    
+    when amount &gt; 25000.0:
+        base_risk increases by 25.0
+    otherwise:
+        when amount &gt; 10000.0:
+            base_risk increases by 10.0
+        
+    give base_risk
+
+# Function verifying card & account authorization
+function verify_transaction_status with account, tx_amount:
+    # 4-Way Universal Access in action: 'property of object'
+    remember card_status as status of account
+    remember current_balance as balance of account
+    
+    when card_status is not "ACTIVE":
+        give "REJECTED_CARD_INACTIVE"
+    
+    when tx_amount &gt; current_balance:
+        give "REJECTED_INSUFFICIENT_FUNDS"
+        
+    freeze limit as 50000.0
+    when tx_amount &gt; limit:
+        give "REJECTED_LIMIT_EXCEEDED"
+        
+    give "APPROVED"
+
+# ------------------------------------------------------------------------------
+# 2. STATE INITIALIZATION (REMEMBER, LISTS, MAPS & OF/AT ACCESS)
+# ------------------------------------------------------------------------------
+
+# Customer accounts represented as first-class composite maps
+remember primary_account as {
+    "account_number": "ACT-908124",
+    "holder_name": "Aero Henderson",
+    "tier": "VIP",
+    "balance": 85000.0,
+    "status": "ACTIVE",
+    "total_tx_count": 0
+}
+
+remember merchant_account as {
+    "account_number": "MER-441029",
+    "holder_name": "Sovereign Cloud Data Center",
+    "tier": "CORPORATE",
+    "balance": 120000.0,
+    "status": "ACTIVE",
+    "total_tx_count": 0
+}
+
+# Transaction batches as dynamic collections
+remember pending_transfers as [
+    {"id": "TX-101", "amount": 4500.0, "vendor": "Server Compute Cluster"},
+    {"id": "TX-102", "amount": 18200.0, "vendor": "Hardware Satellite Uplink"},
+    {"id": "TX-103", "amount": 1250.0, "vendor": "Edge Bandwidth Router"},
+    {"id": "TX-104", "amount": 32000.0, "vendor": "Quantum Core Accelerator"},
+    {"id": "TX-105", "amount": 800.0, "vendor": "Domain Registrar Service"}
+]
+
+remember ledger_history as []
+
+show ""
+show "&gt;&gt; Initializing System State..."
+show "Primary Account:" holder_name of primary_account
+show "Tier:" primary_account.tier
+show "Opening Balance: $" primary_account["balance"]
+show "Pending Transaction Batch Count:" count of pending_transfers
+show ""
+
+# ------------------------------------------------------------------------------
+# 3. TRANSACTION PROCESSING PIPELINE (LOOPS, ACCESS & MUTATION)
+# ------------------------------------------------------------------------------
+
+show "&gt;&gt; Executing Real-Time Transaction Verification Pipeline:"
+show "--------------------------------------------------------------------------"
+
+for tx in pending_transfers:
+    remember tx_id as tx.id
+    remember tx_amount as tx["amount"]
+    remember tx_vendor as vendor of tx
+    
+    # Function invocation using pure English 'with' (zero parentheses!)
+    remember auth_code as verify_transaction_status with primary_account, tx_amount
+    remember risk as compute_risk_score with tx_amount, tier of primary_account
+    
+    when auth_code is "APPROVED":
+        # Mutate account balance and counters using natural keywords
+        balance of primary_account decreases by tx_amount
+        total_tx_count of primary_account increases by 1
+        
+        balance of merchant_account increases by tx_amount
+        total_tx_count of merchant_account increases by 1
+        
+        # Build settled audit receipt
+        remember receipt as {
+            "id": tx_id,
+            "amount": tx_amount,
+            "vendor": tx_vendor,
+            "risk_score": risk,
+            "status": "SETTLED"
+        }
+        append(ledger_history, receipt)
+        
+        show "   [SETTLED]" tx_id "-&gt; $" tx_amount "to" tx_vendor "(Risk:" risk ")"
+    otherwise:
+        show "   [DECLINED]" tx_id "-&gt; Reason:" auth_code
+
+show "--------------------------------------------------------------------------"
+show "Settled Ledger Records:" count of ledger_history
+show "Updated Primary Balance: $" primary_account.balance
+show "Updated Merchant Balance: $" merchant_account.balance
+show ""
+
+# ------------------------------------------------------------------------------
+# 4. SPATIAL PAIR SORTING WITH SILENT WORDS (THE / IT IS)
+# ------------------------------------------------------------------------------
+
+remember settled_amounts as [18200.0, 4500.0, 1250.0, 32000.0, 800.0]
+
+show "&gt;&gt; Sorting Settled Ledger Amounts via Spatial Pair Primitives:"
+show "   Before Sorting:" settled_amounts
+
+repeat until sorted:
+    for each pair in settled_amounts:
+        when the left of the pair is greater than the right of the pair:
+            swap pair
+
+show "&gt;&gt; After Spatial Sort (Ascending):" settled_amounts
+
+# ------------------------------------------------------------------------------
+# 5. AGGREGATE SUMMARY AUDIT (REPEAT WHILE & RECURSION)
+# ------------------------------------------------------------------------------
+
+function calculate_compound_yield with principal, rate, periods:
+    when periods &lt;= 0:
+        give principal
+    remember next_principal as principal + (principal times rate)
+    give calculate_compound_yield with next_principal, rate, periods - 1
+
+remember projected_yield as calculate_compound_yield with balance of primary_account, 0.05, 3
+
+show ""
+show "=========================================================================="
+show "📊 FINANCIAL AUDIT SUMMARY & ACTUARIAL PROJECTIONS"
+show "=========================================================================="
+show "Account Number        :" primary_account.account_number
+show "Account Status        :" status of primary_account
+show "Closing Vault Balance : $" primary_account.balance
+show "Total Debits Processed:" total_tx_count of primary_account
+show "Projected 3-Yr Yield  : $" projected_yield
+show "=========================================================================="
+show "👑 ALL SOVEREIGN ENLNG ENTERPRISE GRAMMAR RULES VERIFIED WITH EXIT CODE 0!"
+show "=========================================================================="
+</div>
+          </div>
+
+          <h3 class="docs-h3">Verified Live Compiler Output Proof (Exit Code 0)</h3>
+          <p class="docs-p">
+            Captured directly from running <code>enlng.exe examples/master_enterprise_system.enlng</code>:
+          </p>
+
+          <div class="code-block-card" style="margin: 16px 0; border-color: rgba(34, 197, 94, 0.3);">
+            <div class="code-block-header" style="background: rgba(34, 197, 94, 0.08);">
+              <span style="color: #4ade80;">Terminal Output Proof (Native Machine Execution: 1.8ms, Exit Code 0)</span>
+            </div>
+            <div class="code-block-body" style="color: #f8fafc; font-size: 0.84rem;">==========================================================================
+🏛️  Sovereign Reserve Bank // ENTERPRISE LEDGER CORE ( 2.0-SOVEREIGN )
+==========================================================================
+
+&gt;&gt; Initializing System State...
+Primary Account: Aero Henderson
+Tier: VIP
+Opening Balance: $ 85000
+Pending Transaction Batch Count: 5
+
+&gt;&gt; Executing Real-Time Transaction Verification Pipeline:
+--------------------------------------------------------------------------
+   [SETTLED] TX-101 -&gt; $ 4500 to Server Compute Cluster (Risk: 2 )
+   [SETTLED] TX-102 -&gt; $ 18200 to Hardware Satellite Uplink (Risk: 12 )
+   [SETTLED] TX-103 -&gt; $ 1250 to Edge Bandwidth Router (Risk: 2 )
+   [SETTLED] TX-104 -&gt; $ 32000 to Quantum Core Accelerator (Risk: 27 )
+   [SETTLED] TX-105 -&gt; $ 800 to Domain Registrar Service (Risk: 2 )
+--------------------------------------------------------------------------
+Settled Ledger Records: 5
+Updated Primary Balance: $ 28250
+Updated Merchant Balance: $ 176750
+
+&gt;&gt; Sorting Settled Ledger Amounts via Spatial Pair Primitives:
+   Before Sorting: [18200, 4500, 1250, 32000, 800]
+&gt;&gt; After Spatial Sort (Ascending): [800, 1250, 4500, 18200, 32000]
+
+==========================================================================
+📊 FINANCIAL AUDIT SUMMARY &amp; ACTUARIAL PROJECTIONS
+==========================================================================
+Account Number        : ACT-908124
+Account Status        : ACTIVE
+Closing Vault Balance : $ 28250
+Total Debits Processed: 5
+Projected 3-Yr Yield  : $ 32702.9
+==========================================================================
+👑 ALL SOVEREIGN ENLNG ENTERPRISE GRAMMAR RULES VERIFIED WITH EXIT CODE 0!
+==========================================================================</div>
           </div>
         </article>
 

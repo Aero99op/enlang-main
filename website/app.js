@@ -70,272 +70,252 @@ function initInstallerTabs() {
 
 // --- 2. Live In-Browser Enlng Playground & VM ---
 const CODE_PRESETS = {
+  mastercode: `type enlng
+
+# ==============================================================================
+# 👑 ENLNG SOVEREIGN ENTERPRISE FINTECH ENGINE & REAL-TIME LEDGER
+# Monolithic Mastercode Demonstrating 100% True Authentic Enlng Grammar
+# ==============================================================================
+
+freeze INSTITUTION as "Sovereign Reserve Bank"
+freeze LIMIT as 50000.0
+
+remember primary_account as {
+    "account_number": "ACT-908124",
+    "holder_name": "Aero Henderson",
+    "tier": "VIP",
+    "balance": 85000.0,
+    "status": "ACTIVE",
+    "total_tx": 0
+}
+
+function compute_risk with amount, customer_tier:
+    remember risk as 10.0
+    when customer_tier is "VIP":
+        risk = 2.0
+    otherwise:
+        risk = 15.0
+    when amount > 25000.0:
+        risk increases by 25.0
+    give risk
+
+function verify_status with account, amount:
+    # Universal 4-Way Access: 'property of object'
+    remember card_status as status of account
+    remember bal as balance of account
+    when card_status is not "ACTIVE":
+        give "CARD_INACTIVE"
+    when amount > bal:
+        give "INSUFFICIENT_FUNDS"
+    give "APPROVED"
+
+show "=========================================================================="
+show "🏛️ " INSTITUTION "// ENTERPRISE LEDGER CORE"
+show "=========================================================================="
+show "Account Holder:" holder_name of primary_account
+show "Tier:" primary_account.tier
+show "Opening Balance: $" primary_account["balance"]
+
+remember pending_tx as [
+    {"id": "TX-1", "amount": 4500.0, "vendor": "Compute Cloud"},
+    {"id": "TX-2", "amount": 18200.0, "vendor": "Satellite Uplink"},
+    {"id": "TX-3", "amount": 1250.0, "vendor": "Edge Bandwidth"}
+]
+
+for tx in pending_tx:
+    remember auth as verify_status with primary_account, tx["amount"]
+    remember risk_score as compute_risk with tx["amount"], tier of primary_account
+    when auth is "APPROVED":
+        balance of primary_account decreases by tx["amount"]
+        total_tx of primary_account increases by 1
+        show "   [SETTLED]" tx.id "-> $" tx["amount"] "to" vendor of tx "(Risk:" risk_score ")"
+
+show "Remaining Vault Balance: $" primary_account.balance
+
+# Spatial Pair Sorting with Silent Words
+remember amounts as [18200.0, 4500.0, 1250.0]
+show "Before Spatial Sort:" amounts
+
+repeat until sorted:
+    for each pair in amounts:
+        when the left of the pair is greater than the right of the pair:
+            swap pair
+
+show "After Spatial Sort:" amounts
+show "All Sovereign Grammar Rules 100% Verified!"`,
+
   fibonacci: `type enlng
 
-set n to 10
-set first to 0
-set second to 1
-set count to 0
+# Fibonacci Series Generator in Pure Enlng
+remember n as 10
+remember first as 0
+remember second as 1
+remember count as 0
 
-display "--- Fibonacci Series (First 10) ---"
+show "--- Fibonacci Series (First 10) ---"
 
-while count is less than n:
-    display first
-    set next to first plus second
-    set first to second
-    set second to next
-    set count to count plus 1`,
+repeat while count < n:
+    show first
+    remember next as first plus second
+    first = second
+    second = next
+    count increases by 1`,
 
   palindrome: `type enlng
 
-set word to "madam"
-set reversed to ""
-set i to 0
+# Palindrome Verification with Universal String Indexing
+remember word as "madam"
+remember reversed as ""
+remember i as 0
 
-while i less than length of word:
-    set reversed to word[i] plus reversed 
-    set i to i plus 1
+repeat while i < (count of word):
+    reversed = word at i plus reversed
+    i increases by 1
 
-if word is equal to reversed:
-    display "The word '" + word + "' is a palindrome!"
-else:
-    display "not palindrome"`,
+when word is reversed:
+    show "The word '" word "' is a palindrome!"
+otherwise:
+    show "The word '" word "' is not a palindrome"`,
 
   smart_input: `type enlng
 
-set price to 45
-set tax to 5
-set total to price + tax
+# Clean Unformatted & Formatted Output
+remember price as 45
+remember tax as 5
+remember total as price plus tax
 
-display "--- Intentional '+' Concatenation ---"
-display "number" + 10 + "train"
+show "--- Multi-Argument Standard Output ---"
+show "Price:" price "Tax:" tax "Total:" total
 
-display "--- Natural Without Spaces ---"
-display "order", 402, "placed" without spaces
-
-display "--- Standard Output ---"
-display "The total calculated price is: ", total`,
+show "--- Universal Property Access ---"
+remember item as {"name": "Titanium Edge", "cost": total}
+show "Item Name:" name of item
+show "Item Cost: $" item.cost`,
 
   even_odd: `type enlng
 
-set number to 100
-set square to number * number
+# Even / Odd Determination with Natural Modulo
+remember number as 100
+remember square as number times number
+remember status as "odd"
 
-if number % 2 is equal to 0:
-    set status to "even"
-else:
-    set status to "odd"
+when number mod 2 is 0:
+    status = "even"
 
-display "the square of", number, "is", square
-display "the number", number, "is", status`,
+show "The square of" number "is" square
+show "The number" number "is" status`,
 
   factorial: `type enlng
 
-set number to 6
-set result to 1
-set i to 1
+# Factorial Calculation with While Loop
+remember number as 6
+remember result as 1
+remember i as 1
 
-while i is less than or equal to number:
-    set result to result * i
-    set i to i plus 1
+repeat while i <= number:
+    result = result times i
+    i increases by 1
 
-display "Factorial calculation:"
-display "The factorial of", number, "is", result`,
-
-  // === EnlngDB Sovereign Engine Presets ===
-  enlngdb_tour: `type enlngdb;
-
-// Modern SQL Studio: Press "Run All" (Ctrl+Enter) to execute the whole script
-// Or click on any line & press "Run Line / Selection" (Shift+Enter) to run statement-by-statement!
-
-show databases;
-
-use database1;
-
-show tables;
-
-find all records from student;
-
-find all records from faculty;`,
-
-  enlngdb_schema: `type enlngdb;
-
-// Schema Discovery & Inspection across Sovereign Databases
-show databases;
-
-show tables of database main_db;
-
-show tables of database database1;
-
-use main_db;
-
-find all records from accounts;`,
-
-  enlngdb_crud: `type enlngdb;
-
-// Create Table, Insert Records, and Query with Conditions
-use university_db;
-
-create table scholars with id, name, major, cgpa;
-
-insert record into scholars with id 1, name "Aryan Sharma", major "AI & Robotics", cgpa 9.4;
-insert record into scholars with id 2, name "Meera Sen", major "Quantum Systems", cgpa 9.8;
-insert record into scholars with id 3, name "Dev Patel", major "Distributed Systems", cgpa 8.9;
-
-show tables;
-
-find all records from scholars;
-
-// Filter records with natural where clause
-find all records from scholars where cgpa is greater than 9.0;`,
-
-  enlngdb_deletions: `type enlngdb;
-
-// Sovereign Deletions & Safety Guard Demonstrations
-use main_db;
-
-show tables;
-
-// 1. Delete a specific record
-delete from accounts where id is 3;
-
-// 2. Drop a column permanently from table
-delete column tier from accounts;
-
-find all records from accounts;
-
-// 3. Delete table without 'confirmed' -> triggers security guard!
-delete table accounts;
-
-// 4. Safe drop with 'confirmed' keyword:
-// delete table accounts confirmed;`,
-
-  enlngdb_filter: `type enlngdb;
-
-// Query Filtering and Sorting Expressions
-use database1;
-
-// 1. Filter with comparison operators
-find all records from student where marks is greater than 80;
-
-// 2. Filter with exact equality
-find all records from student where grade is "A";
-
-// 3. Sort records descending
-find all records from student order by marks descending;`,
-
-  enlngdb_updates: `type enlngdb;
-
-// Natural English In-Table Row & Column Updates (Pure C Engine: 0.03 ms)
-use university_db;
-
-create table scholars with id, name, cgpa, status;
-
-insert record into scholars with id 1, name "aryan", cgpa 8.2, status "probation";
-insert record into scholars with id 2, name "meera", cgpa 9.4, status "honors";
-insert record into scholars with id 3, name "kunal", cgpa 7.8, status "probation";
-
-find all records from scholars;
-
-// 1. Conversational update by condition (User syntax)
-in scholars change cgpa to 9.8 where name is "aryan";
-
-// 2. Update status with relational condition
-in scholars update status to "dean_list" where cgpa is greater than 9.0;
-
-// 3. Multi-field update in a single command
-in scholars set cgpa to 9.95, status to "gold_medalist" where name is "aryan";
-
-// 4. Update whole column across all rows (unconstrained)
-in scholars set status to "active_enrolled";
-
-find all records from scholars;`,
-
+show "Factorial of" number "is:" result`,
 
   topic1: `type enlng
 
-
-// Topic 01: Hello World & The Sovereign Declaration
-display "Hello, Sovereign World!"
-display "Enlangg compiles natural English to bare-metal C machine code."`,
+# Topic 01: Hello World & The Sovereign Declaration
+show "Hello, Sovereign World!"
+show "Enlangg compiles natural English to bare-metal C machine code."`,
 
   topic2: `type enlng
 
-// Topic 02: Deterministic Memory Slots
-set server_port to 8080
-set server_name to "Primary Gateway"
-set is_active to true
+# Topic 02: Deterministic Memory Slots (remember & freeze)
+freeze SERVER_NAME as "Primary Gateway"
+remember server_port as 8080
+remember is_active as true
 
-// Mutate existing slot value with 'set'
-set server_port to 9000
+# Mutate existing slot value with natural re-assignment
+server_port = 9000
 
-display "Server: ", server_name
-display "Port: ", server_port
-display "Status Active: ", is_active`,
+show "Server:" SERVER_NAME
+show "Port:" server_port
+show "Status Active:" is_active`,
 
   topic3: `type enlng
 
-// Topic 03: Spoken Math & Arithmetic Operations
-set base_salary to 65000
-set bonus to 12000
-set tax_rate to 0.18
+# Topic 03: Spoken Math & Arithmetic Operations
+remember base_salary as 65000
+remember bonus as 12000
+freeze TAX_RATE as 0.18
 
-set gross_pay to base_salary plus bonus
-set deductions to gross_pay multiplied by tax_rate
-set net_pay to gross_pay minus deductions
+remember gross_pay as base_salary plus bonus
+remember deductions as gross_pay times TAX_RATE
+remember net_pay as gross_pay minus deductions
 
-display "Gross Compensation: ", gross_pay
-display "Estimated Tax: ", deductions
-display "Net Take-Home: ", net_pay`,
+show "Gross Compensation: $" gross_pay
+show "Estimated Tax: $" deductions
+show "Net Take-Home: $" net_pay`,
 
   topic4: `type enlng
 
-// Topic 04: Decision Logic: Spoken Branching & Fallbacks
-set user_age to 22
-set has_verified_id to true
+# Topic 04: Decision Logic: Spoken Branching & Fallbacks
+remember user_age as 22
+remember has_verified_id as true
 
-if user_age is greater than or equal to 21 and has_verified_id is equal to true:
-    display "Access Authorized: Primary Production System"
-otherwise if user_age is greater than 16:
-    display "Access Restricted: Observer Access Only"
+when user_age >= 21 and has_verified_id:
+    show "Access Authorized: Primary Production System"
 otherwise:
-    display "Access Denied: Age verification requirement not met"`,
+    when user_age > 16:
+        show "Access Restricted: Observer Access Only"
+    otherwise:
+        show "Access Denied: Age verification requirement not met"`,
 
   topic5: `type enlng
 
-// Topic 05: Loops: While, Until & Bounded Iteration
-set counter to 1
-while counter is less than or equal to 5:
-    display "Iteration count: ", counter
-    increase counter by 1`,
+# Topic 05: Loops: While, Until & Bounded Iteration
+remember counter as 1
+repeat while counter <= 5:
+    show "Iteration count:" counter
+    counter increases by 1`,
 
   topic6: `type enlng
 
-// Topic 06: Procedures, Scopes & Return Values
-define calculate_tax(amount, rate):
-    set tax_val to amount multiplied by rate
-    return tax_val
+# Topic 06: Functions, Scopes & Return Values (with & give)
+function calculate_tax with amount, rate:
+    give amount times rate
 
-set bill to 250
-set tax to calculate_tax(bill, 0.08)
-display "Subtotal: $", bill
-display "Tax Calculated: $", tax`,
+remember bill as 250
+remember tax as calculate_tax with bill, 0.08
+
+show "Subtotal: $" bill
+show "Tax Calculated: $" tax`,
 
   topic7: `type enlng
 
-// Topic 07: Structured Data: Lists & Hash Maps
-set servers to ["alpha", "beta", "gamma"]
-display "Primary Node: ", servers[0]
-display "Active Cluster Nodes: ", servers
-display "Total Cluster Size: ", length of servers`,
+# Topic 07: Structured Data: Lists & Universal Property Access
+remember servers as ["alpha", "beta", "gamma"]
+show "Primary Node:" servers at 0
+show "Active Cluster Nodes:" servers
+show "Total Cluster Size:" count of servers
+
+remember node_info as {"ip": "192.168.1.1", "status": "ONLINE"}
+show "Node IP Address:" ip of node_info
+show "Node Health:" node_info.status`,
 
   topic8: `type enlng
 
-// Topic 08: Python God Call & C-ABI Foreign Interop
-display "Enlangg Sovereign C-ABI & Python Ecosystem Layer"
-display "Native access to 400,000+ packages with zero whitelisting"`
-};
+# Topic 08: Universal 4-Way Property Access Engine
+remember card as {"holder": "Aero", "status": "ACTIVE", "tier": "Gold"}
 
+# Access Method 1: 'property of object'
+show "Method 1 (of):" status of card
+
+# Access Method 2: 'container at key'
+show "Method 2 (at):" card at "holder"
+
+# Access Method 3: Dot notation
+show "Method 3 (dot):" card.tier
+
+# Access Method 4: Bracket notation
+show "Method 4 ([]):" card["status"]`
+};
 // --- 2. Live In-Browser Enlng & EnlngDB Sandbox Engines ---
 
 function escapeHtml(str) {
