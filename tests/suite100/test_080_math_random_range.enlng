@@ -1,0 +1,11 @@
+type enlng
+in_range = true
+for i from 1 to 20:
+    rnd = random_number(50, 60)
+    when rnd < 50 or rnd > 60:
+        in_range = false
+
+when in_range:
+    show "[TEST PASS 080] Math random_number Range"
+otherwise:
+    show "[FAIL 080]"

@@ -1,0 +1,14 @@
+type enlng
+action vector_norm(v):
+    sum_sq = 0
+    for x in v:
+        sum_sq = sum_sq + x * x
+    return sqrt(sum_sq)
+
+v = [3, 4]
+mag = vector_norm(v)
+
+when mag == 5:
+    show "[TEST PASS 082] ML Vector L2 Norm"
+otherwise:
+    show "[FAIL 082]"

@@ -1,0 +1,11 @@
+type enlng
+
+# Reusable Math Library for Suite100
+action square(x):
+    return x * x
+
+action cube(x):
+    return x * x * x
+
+action pythagoras(a, b):
+    return sqrt(a * a + b * b)

@@ -1,0 +1,11 @@
+type enlng
+action relu(x):
+    return max(0, x)
+
+r1 = relu(-15)
+r2 = relu(42)
+
+when r1 == 0 and r2 == 42:
+    show "[TEST PASS 087] ReLU Activation"
+otherwise:
+    show "[FAIL 087]"

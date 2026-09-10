@@ -1,0 +1,19 @@
+type enlng
+score = 85
+grade = "F"
+
+when score >= 90:
+    grade = "A"
+otherwise:
+    when score >= 80:
+        grade = "B"
+    otherwise:
+        when score >= 70:
+            grade = "C"
+        otherwise:
+            grade = "D"
+
+when grade == "B":
+    show "[TEST PASS 034] Nested When/Otherwise"
+otherwise:
+    show "[FAIL 034]"

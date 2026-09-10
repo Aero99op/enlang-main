@@ -1,0 +1,47 @@
+type enlng
+
+# Merge subroutine: merges two sorted halves
+function merge with arr, low, mid, high, temp:
+    remember i as low
+    remember j as mid + 1
+    remember k as low
+
+    while i <= mid and j <= high:
+        when arr[i] <= arr[j]:
+            temp[k] = arr[i]
+            i increases by 1
+        otherwise:
+            temp[k] = arr[j]
+            j increases by 1
+        k increases by 1
+
+    while i <= mid:
+        temp[k] = arr[i]
+        i increases by 1
+        k increases by 1
+
+    while j <= high:
+        temp[k] = arr[j]
+        j increases by 1
+        k increases by 1
+
+    for x from low to high:
+        arr[x] = temp[x]
+
+# Recursive divide-and-conquer Merge Sort
+function merge_sort with arr, low, high, temp:
+    when low < high:
+        remember mid as (low + high) / 2
+        merge_sort(arr, low, mid, temp)
+        merge_sort(arr, mid + 1, high, temp)
+        merge(arr, low, mid, high, temp)
+
+# Main program
+remember numbers as [38, 27, 43, 3, 9, 82, 10]
+remember temp as [0, 0, 0, 0, 0, 0, 0]
+
+show "Before Merge Sort:" numbers
+
+merge_sort(numbers, 0, count of numbers - 1, temp)
+
+show "After Merge Sort:" numbers

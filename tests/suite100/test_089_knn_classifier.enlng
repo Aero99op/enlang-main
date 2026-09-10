@@ -1,0 +1,27 @@
+type enlng
+dataset = [
+    { "x": 1, "y": 1, "label": "A" },
+    { "x": 2, "y": 1, "label": "A" },
+    { "x": 8, "y": 8, "label": "B" },
+    { "x": 9, "y": 9, "label": "B" }
+]
+
+action predict_knn1(dataset, qx, qy):
+    best_dist = 999999
+    best_label = ""
+    for pt in dataset:
+        dx = pt.x - qx
+        dy = pt.y - qy
+        dist = dx * dx + dy * dy
+        when dist < best_dist:
+            best_dist = dist
+            best_label = pt.label
+    return best_label
+
+lbl1 = predict_knn1(dataset, 1.5, 1.2)
+lbl2 = predict_knn1(dataset, 8.5, 8.2)
+
+when lbl1 == "A" and lbl2 == "B":
+    show "[TEST PASS 089] KNN Classifier Simulation"
+otherwise:
+    show "[FAIL 089]"

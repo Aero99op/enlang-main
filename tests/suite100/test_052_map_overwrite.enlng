@@ -1,0 +1,8 @@
+type enlng
+m = { "score": 50 }
+m["score"] = 99
+
+when m["score"] == 99 and len(m) == 1:
+    show "[TEST PASS 052] Map Overwrite Existing Key"
+otherwise:
+    show "[FAIL 052]"

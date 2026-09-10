@@ -1,0 +1,26 @@
+type enlng
+action sieve(limit):
+    is_prime = []
+    for i from 0 to limit:
+        append(is_prime, true)
+    is_prime[0] = false
+    is_prime[1] = false
+    p = 2
+    while p * p <= limit:
+        when is_prime[p]:
+            multiple = p * p
+            while multiple <= limit:
+                is_prime[multiple] = false
+                multiple = multiple + p
+        p = p + 1
+    primes = []
+    for i from 2 to limit:
+        when is_prime[i]:
+            append(primes, i)
+    return primes
+
+pr = sieve(30)
+when len(pr) == 10 and pr[0] == 2 and pr[9] == 29:
+    show "[TEST PASS 022] Sieve of Eratosthenes"
+otherwise:
+    show "[FAIL 022]"

@@ -1,0 +1,42 @@
+type enlng
+
+# Test 10: Native Sovereign HashMaps & Universal Container Access
+user = { "name": "Antigravity", "role": "Architect", "level": 99 }
+
+show "Initial User Map:"
+show user
+
+show "Bracket access user[\"name\"]:"
+show user["name"]
+
+show "Dot access user.role:"
+show user.role
+
+# Mutations
+user["status"] = "Active"
+user.department = "Core"
+user["level"] = 100
+
+show "After mutations:"
+show user
+
+show "has_key role:"
+show has_key(user, "role")
+
+show "has_key unknown:"
+show has_key(user, "unknown")
+
+show "Keys:"
+show keys(user)
+
+show "Values:"
+show values(user)
+
+# Negative indexing on list
+fruits = ["apple", "banana", "mango", "orange"]
+show "fruits[0]:"
+show fruits[0]
+show "fruits[-1] (last item):"
+show fruits[-1]
+show "fruits[-2] (second to last):"
+show fruits[-2]

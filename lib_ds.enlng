@@ -1,0 +1,190 @@
+type enlng
+
+# =====================================================================
+#   ENLANG OFFICIAL STANDARD LIBRARY: lib_ds.enlng
+#   Core Data Structures: Stack, Queue, Deque, Priority Queue, BST, Graph
+# =====================================================================
+
+# 1. Stack (LIFO)
+action create_stack():
+    return []
+
+action stack_push(s, val):
+    append(s, val)
+
+action stack_pop(s):
+    return pop(s)
+
+action stack_peek(s):
+    n = len(s)
+    when n == 0:
+        return null
+    return s[n - 1]
+
+action stack_is_empty(s):
+    return len(s) == 0
+
+action stack_size(s):
+    return len(s)
+
+# 2. Queue (FIFO)
+action create_queue():
+    return { "items": [], "front": 0 }
+
+action queue_enqueue(q, val):
+    append(q.items, val)
+
+action queue_dequeue(q):
+    when q.front >= len(q.items):
+        return null
+    items = q.items
+    val = items[q.front]
+    q.front = q.front + 1
+    return val
+
+action queue_peek(q):
+    when q.front >= len(q.items):
+        return null
+    items = q.items
+    return items[q.front]
+
+action queue_is_empty(q):
+    return q.front >= len(q.items)
+
+action queue_size(q):
+    return len(q.items) - q.front
+
+# 3. Deque (Double-Ended Queue)
+action create_deque():
+    return { "items": [], "front": 0 }
+
+action deque_push_back(dq, val):
+    append(dq.items, val)
+
+action deque_pop_front(dq):
+    when dq.front >= len(dq.items):
+        return null
+    items = dq.items
+    val = items[dq.front]
+    dq.front = dq.front + 1
+    return val
+
+action deque_peek_front(dq):
+    when dq.front >= len(dq.items):
+        return null
+    items = dq.items
+    return items[dq.front]
+
+action deque_peek_back(dq):
+    n = len(dq.items)
+    when dq.front >= n:
+        return null
+    items = dq.items
+    return items[n - 1]
+
+action deque_is_empty(dq):
+    return dq.front >= len(dq.items)
+
+action deque_size(dq):
+    return len(dq.items) - dq.front
+
+# 4. Priority Queue (Sorted List Min-Heap)
+action create_priority_queue():
+    return { "items": [] }
+
+action pq_insert(pq, val):
+    append(pq.items, val)
+    items = pq.items
+    repeat until sorted:
+        for each pair in items:
+            when pair.left > pair.right:
+                swap pair
+    pq.items = items
+
+action pq_peek_min(pq):
+    items = pq.items
+    when len(items) == 0:
+        return null
+    return items[0]
+
+action pq_extract_min(pq):
+    items = pq.items
+    when len(items) == 0:
+        return null
+    min_val = items[0]
+    new_items = []
+    n = len(items)
+    for i from 1 to n - 1:
+        append(new_items, items[i])
+    pq.items = new_items
+    return min_val
+
+action pq_size(pq):
+    return len(pq.items)
+
+action pq_is_empty(pq):
+    return len(pq.items) == 0
+
+# 5. Binary Search Tree (BST)
+action bst_node(val):
+    return { "val": val, "left": null, "right": null }
+
+action bst_insert(root, val):
+    when root == null:
+        return bst_node(val)
+    when val < root.val:
+        root.left = bst_insert(root.left, val)
+    otherwise:
+        root.right = bst_insert(root.right, val)
+    return root
+
+action bst_search(root, target):
+    when root == null:
+        return false
+    when root.val == target:
+        return true
+    when target < root.val:
+        return bst_search(root.left, target)
+    return bst_search(root.right, target)
+
+action bst_min(root):
+    when root == null:
+        return null
+    curr = root
+    repeat while curr.left != null:
+        curr = curr.left
+    return curr.val
+
+action bst_max(root):
+    when root == null:
+        return null
+    curr = root
+    repeat while curr.right != null:
+        curr = curr.right
+    return curr.val
+
+# 6. Graph (Adjacency List)
+action create_graph():
+    return {}
+
+action graph_add_node(g, node_id):
+    when not has_key(g, node_id):
+        g[node_id] = []
+
+action graph_add_edge(g, u, v):
+    graph_add_node(g, u)
+    graph_add_node(g, v)
+    neighbors = g[u]
+    append(neighbors, v)
+    g[u] = neighbors
+
+action graph_neighbors(g, u):
+    when has_key(g, u):
+        return g[u]
+    return []
+
+action graph_has_edge(g, u, v):
+    when not has_key(g, u):
+        return false
+    neighbors = g[u]
+    return contains(neighbors, v)

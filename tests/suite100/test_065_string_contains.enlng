@@ -1,0 +1,9 @@
+type enlng
+text = "The quick brown fox jumps"
+has_fox = contains(text, "fox")
+has_cat = contains(text, "cat")
+
+when has_fox and not has_cat:
+    show "[TEST PASS 065] String contains Substring"
+otherwise:
+    show "[FAIL 065]"

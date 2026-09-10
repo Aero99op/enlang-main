@@ -1,0 +1,7 @@
+type enlng
+m = { "token": "xyz789", "expiry": 3600 }
+
+when has_key(m, "token") and not has_key(m, "refresh_token"):
+    show "[TEST PASS 051] Map has_key Built-in"
+otherwise:
+    show "[FAIL 051]"

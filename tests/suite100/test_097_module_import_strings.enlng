@@ -1,0 +1,10 @@
+type enlng
+use "tests/suite100/lib_strings.enlng"
+
+b = banner("SOVEREIGN")
+row = csv_row("101", "Database", "Active")
+
+when b == "=== SOVEREIGN ===" and row == "101,Database,Active":
+    show "[TEST PASS 097] Module Import String Utils"
+otherwise:
+    show "[FAIL 097]"

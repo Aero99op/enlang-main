@@ -1,0 +1,28 @@
+type enlng
+
+# ZERO DOT, ZERO BRACKET NATURAL ACCESS ('of' & 'at')
+request = {
+    "user": {
+        "name": "Ramesh",
+        "role": "Intern"
+    },
+    "action": "DELETE",
+    "resource": "salary_slips_table"
+}
+
+# 1. Accessing via natural 'of' (property of object):
+target_resource = resource of request
+current_user = user of request
+user_role = role of current_user
+
+# 2. Accessing via 'at' (container at key):
+action_type = request at "action"
+
+show "Target Resource via 'of':" target_resource
+show "User Role via 'of':" user_role
+show "Action Type via 'at':" action_type
+
+when user_role == "Intern" and target_resource == "salary_slips_table":
+    show "[ACCESS DENIED] Intern cannot delete salary slips!"
+otherwise:
+    show "[ACCESS GRANTED]"

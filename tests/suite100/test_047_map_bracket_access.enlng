@@ -1,0 +1,8 @@
+type enlng
+user = { "name": "DeepMind", "city": "London" }
+user["status"] = "Active"
+
+when user["name"] == "DeepMind" and user["city"] == "London" and user["status"] == "Active":
+    show "[TEST PASS 047] Map Bracket Access"
+otherwise:
+    show "[FAIL 047]"

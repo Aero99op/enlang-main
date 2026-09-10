@@ -1,0 +1,14 @@
+type enlng
+a = true
+b = false
+c = true
+
+r1 = a and b
+r2 = a or b
+r3 = not b
+r4 = (a or b) and (not b or c)
+
+when not r1 and r2 and r3 and r4:
+    show "[TEST PASS 029] Boolean Logic"
+otherwise:
+    show "[FAIL 029]"

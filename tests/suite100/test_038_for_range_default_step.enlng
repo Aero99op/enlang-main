@@ -1,0 +1,9 @@
+type enlng
+sum = 0
+for i from 1 to 5:
+    sum = sum + i
+
+when sum == 15:
+    show "[TEST PASS 038] For Range Default Step"
+otherwise:
+    show "[FAIL 038]"

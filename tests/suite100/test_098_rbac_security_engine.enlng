@@ -1,0 +1,22 @@
+type enlng
+roles = {
+    "admin": ["read", "write", "delete", "deploy"],
+    "dev": ["read", "write"],
+    "guest": ["read"]
+}
+
+action can_perform(roles, role, action_name):
+    when not has_key(roles, role):
+        return false
+    perms = roles[role]
+    return contains(perms, action_name)
+
+c1 = can_perform(roles, "admin", "deploy")
+c2 = can_perform(roles, "dev", "deploy")
+c3 = can_perform(roles, "guest", "read")
+c4 = can_perform(roles, "guest", "write")
+
+when c1 and not c2 and c3 and not c4:
+    show "[TEST PASS 098] RBAC Security Engine"
+otherwise:
+    show "[FAIL 098]"

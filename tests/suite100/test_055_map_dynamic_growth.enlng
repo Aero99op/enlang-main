@@ -1,0 +1,13 @@
+type enlng
+m = {}
+for i from 1 to 50:
+    k = "key_" + i
+    m[k] = i * 10
+
+k25 = m["key_25"]
+k50 = m["key_50"]
+
+when len(m) == 50 and k25 == 250 and k50 == 500:
+    show "[TEST PASS 055] Map Dynamic Growth"
+otherwise:
+    show "[FAIL 055]"

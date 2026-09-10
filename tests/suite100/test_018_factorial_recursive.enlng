@@ -1,0 +1,13 @@
+type enlng
+action fact(n):
+    when n <= 1:
+        return 1
+    return n * fact(n - 1)
+
+f5 = fact(5)
+f6 = fact(6)
+
+when f5 == 120 and f6 == 720:
+    show "[TEST PASS 018] Factorial Recursive"
+otherwise:
+    show "[FAIL 018]"

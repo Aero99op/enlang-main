@@ -1,0 +1,38 @@
+type enlng
+action merge(arr, l, m, r, tmp):
+    i = l
+    j = m + 1
+    k = l
+    while i <= m and j <= r:
+        when arr[i] <= arr[j]:
+            tmp[k] = arr[i]
+            i = i + 1
+        otherwise:
+            tmp[k] = arr[j]
+            j = j + 1
+        k = k + 1
+    while i <= m:
+        tmp[k] = arr[i]
+        i = i + 1
+        k = k + 1
+    while j <= r:
+        tmp[k] = arr[j]
+        j = j + 1
+        k = k + 1
+    for x from l to r:
+        arr[x] = tmp[x]
+
+action merge_sort(arr, l, r, tmp):
+    when l < r:
+        m = (l + r) / 2
+        merge_sort(arr, l, m, tmp)
+        merge_sort(arr, m + 1, r, tmp)
+        merge(arr, l, m, r, tmp)
+
+a = [38, 27, 43, 3, 9, 82, 10]
+tmp = [0, 0, 0, 0, 0, 0, 0]
+merge_sort(a, 0, len(a) - 1, tmp)
+when a[0] == 3 and a[1] == 9 and a[6] == 82:
+    show "[TEST PASS 007] Merge Sort"
+otherwise:
+    show "[FAIL 007]"

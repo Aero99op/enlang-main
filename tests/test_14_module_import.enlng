@@ -1,0 +1,10 @@
+type enlng
+
+# Test 14: Sovereign Module Import System ('use')
+use "tests/math_lib.enlng"
+
+c = cube(5)
+show "cube(5) via imported module:" c
+
+h = hypotenuse(3, 4)
+show "hypotenuse(3, 4) via imported module:" h

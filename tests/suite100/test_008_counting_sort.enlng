@@ -1,0 +1,21 @@
+type enlng
+action counting_sort(arr, max_val):
+    count = []
+    for c from 0 to max_val:
+        append(count, 0)
+    for x in arr:
+        count[x] = count[x] + 1
+    out = []
+    for val from 0 to max_val:
+        c_cnt = count[val]
+        while c_cnt > 0:
+            append(out, val)
+            c_cnt = c_cnt - 1
+    return out
+
+a = [4, 2, 2, 8, 3, 3, 1]
+sorted_a = counting_sort(a, 8)
+when sorted_a[0] == 1 and sorted_a[1] == 2 and sorted_a[6] == 8:
+    show "[TEST PASS 008] Counting Sort"
+otherwise:
+    show "[FAIL 008]"

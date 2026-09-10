@@ -1,0 +1,10 @@
+type enlng
+fname = "test_093_tmp.txt"
+write_file(fname, "data")
+ex1 = file_exists(fname)
+ex2 = file_exists("phantom_file_non_existent.txt")
+
+when ex1 and not ex2:
+    show "[TEST PASS 093] File Exists Verification"
+otherwise:
+    show "[FAIL 093]"

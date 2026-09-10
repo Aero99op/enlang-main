@@ -1,0 +1,15 @@
+type enlng
+action fib_rec(n):
+    when n <= 0:
+        return 0
+    when n == 1:
+        return 1
+    return fib_rec(n - 1) + fib_rec(n - 2)
+
+f7 = fib_rec(7)
+f8 = fib_rec(8)
+
+when f7 == 13 and f8 == 21:
+    show "[TEST PASS 017] Fibonacci Recursive"
+otherwise:
+    show "[FAIL 017]"

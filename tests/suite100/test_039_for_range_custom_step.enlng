@@ -1,0 +1,9 @@
+type enlng
+list_by_3 = []
+for i from 0 to 12 by 3:
+    append(list_by_3, i)
+
+when len(list_by_3) == 5 and list_by_3[1] == 3 and list_by_3[4] == 12:
+    show "[TEST PASS 039] For Range Custom Step"
+otherwise:
+    show "[FAIL 039]"

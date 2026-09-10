@@ -1,0 +1,9 @@
+type enlng
+m = {}
+m["alpha"] = 1
+m["beta"] = 2
+
+when len(m) == 2 and m["alpha"] == 1 and m["beta"] == 2:
+    show "[TEST PASS 046] Empty Map Creation"
+otherwise:
+    show "[FAIL 046]"

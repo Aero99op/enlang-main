@@ -1,0 +1,18 @@
+type enlng
+action is_pal(s):
+    left = 0
+    right = len(s) - 1
+    while left < right:
+        when s[left] != s[right]:
+            return false
+        left = left + 1
+        right = right - 1
+    return true
+
+p1 = is_pal("racecar")
+p2 = is_pal("sovereign")
+
+when p1 and not p2:
+    show "[TEST PASS 025] Two Pointer Palindrome"
+otherwise:
+    show "[FAIL 025]"

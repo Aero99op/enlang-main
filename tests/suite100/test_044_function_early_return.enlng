@@ -1,0 +1,13 @@
+type enlng
+action check_positive(n):
+    when n <= 0:
+        return "negative_or_zero"
+    return "positive"
+
+r1 = check_positive(-5)
+r2 = check_positive(10)
+
+when r1 == "negative_or_zero" and r2 == "positive":
+    show "[TEST PASS 044] Function Early Return"
+otherwise:
+    show "[FAIL 044]"

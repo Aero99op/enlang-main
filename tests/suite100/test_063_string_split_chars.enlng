@@ -1,0 +1,7 @@
+type enlng
+chars = split("CODE", "")
+
+when len(chars) == 4 and chars[0] == "C" and chars[1] == "O" and chars[3] == "E":
+    show "[TEST PASS 063] String split by Empty String"
+otherwise:
+    show "[FAIL 063]"

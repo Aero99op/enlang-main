@@ -1,0 +1,10 @@
+type enlng
+items = ["a", "b", "c"]
+res = ""
+for ch in items:
+    res = res + ch
+
+when res == "abc":
+    show "[TEST PASS 041] For In List Short"
+otherwise:
+    show "[FAIL 041]"

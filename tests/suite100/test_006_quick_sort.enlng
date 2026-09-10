@@ -1,0 +1,22 @@
+type enlng
+action quick_sort(arr, low, high):
+    when low < high:
+        pivot = arr[high]
+        i = low
+        for j from low to high - 1:
+            when arr[j] < pivot:
+                swap arr[i] with arr[j]
+                i = i + 1
+        swap arr[i] with arr[high]
+        pi = i
+        when pi > low:
+            quick_sort(arr, low, pi - 1)
+        when pi < high:
+            quick_sort(arr, pi + 1, high)
+
+a = [10, 80, 30, 90, 40, 50, 70]
+quick_sort(a, 0, len(a) - 1)
+when a[0] == 10 and a[1] == 30 and a[6] == 90:
+    show "[TEST PASS 006] Quick Sort"
+otherwise:
+    show "[FAIL 006]"

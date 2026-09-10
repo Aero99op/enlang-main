@@ -1,0 +1,28 @@
+type enlng
+inventory = {}
+
+action add_product(inv, id, name, price, qty):
+    inv[id] = { "name": name, "price": price, "qty": qty }
+
+action update_qty(inv, id, delta):
+    when has_key(inv, id):
+        prod = inv[id]
+        prod.qty = prod.qty + delta
+
+action total_valuation(inv):
+    total = 0
+    p_ids = keys(inv)
+    for id in p_ids:
+        prod = inv[id]
+        total = total + prod.price * prod.qty
+    give total
+
+add_product(inventory, "P1", "Laptop", 1000, 5)
+add_product(inventory, "P2", "Mouse", 25, 20)
+update_qty(inventory, "P1", -1)
+
+val = total_valuation(inventory)
+when val == 4500:
+    show "[TEST PASS 099] Inventory Management System"
+otherwise:
+    show "[FAIL 099]"

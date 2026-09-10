@@ -1,0 +1,27 @@
+type enlng
+# A = [[1, 2], [3, 4]], B = [[2, 0], [1, 2]]
+# C[0][0] = 1*2 + 2*1 = 4
+# C[0][1] = 1*0 + 2*2 = 4
+# C[1][0] = 3*2 + 4*1 = 10
+# C[1][1] = 3*0 + 4*2 = 8
+A = [ [1, 2], [3, 4] ]
+B = [ [2, 0], [1, 2] ]
+C = []
+
+for i from 0 to 1:
+    row = []
+    row_a = A[i]
+    for j from 0 to 1:
+        sum = 0
+        for k from 0 to 1:
+            row_b = B[k]
+            sum = sum + row_a[k] * row_b[j]
+        append(row, sum)
+    append(C, row)
+
+c0 = C[0]
+c1 = C[1]
+when c0[0] == 4 and c0[1] == 4 and c1[0] == 10 and c1[1] == 8:
+    show "[TEST PASS 024] Matrix Multiplication"
+otherwise:
+    show "[FAIL 024]"

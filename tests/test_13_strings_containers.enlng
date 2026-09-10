@@ -1,0 +1,32 @@
+type enlng
+
+# Test 13: Native String & Container Built-ins
+
+csv_text = "apple,banana,mango,orange"
+show "Original text:" csv_text
+
+# 1. Split
+tokens = split(csv_text, ",")
+show "split tokens:" tokens
+show "len(tokens):" len(tokens)
+
+# 2. Join
+reconstructed = join(tokens, " -> ")
+show "reconstructed join:" reconstructed
+
+# 3. Append and Pop
+append(tokens, "grape")
+show "tokens after append grape:" tokens
+show "len(tokens) now:" len(tokens)
+
+popped = pop(tokens)
+show "popped item:" popped
+show "tokens after pop:" tokens
+
+# 4. Contains on String
+show "contains banana in csv_text:" contains(csv_text, "banana")
+show "contains zebra in csv_text:" contains(csv_text, "zebra")
+
+# 5. Contains on List
+show "contains mango in tokens:" contains(tokens, "mango")
+show "contains kiwi in tokens:" contains(tokens, "kiwi")

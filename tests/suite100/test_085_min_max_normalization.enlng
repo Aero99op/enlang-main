@@ -1,0 +1,21 @@
+type enlng
+action normalize(arr):
+    min_v = arr[0]
+    max_v = arr[0]
+    for x in arr:
+        min_v = min(min_v, x)
+        max_v = max(max_v, x)
+    scaled = []
+    diff = max_v - min_v
+    for x in arr:
+        val = (x - min_v) * 1.0 / diff
+        append(scaled, val)
+    return scaled
+
+raw = [10, 20, 30]
+s = normalize(raw)
+
+when s[0] == 0.0 and s[1] == 0.5 and s[2] == 1.0:
+    show "[TEST PASS 085] Min-Max Normalization"
+otherwise:
+    show "[FAIL 085]"

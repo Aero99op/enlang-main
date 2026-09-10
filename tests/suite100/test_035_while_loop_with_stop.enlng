@@ -1,0 +1,13 @@
+type enlng
+sum = 0
+i = 1
+while true:
+    sum = sum + i
+    i = i + 1
+    when i > 10:
+        stop
+
+when sum == 55 and i == 11:
+    show "[TEST PASS 035] While Loop with Stop"
+otherwise:
+    show "[FAIL 035]"

@@ -1,0 +1,17 @@
+type enlng
+action linear_search(arr, target):
+    idx = 0
+    for x in arr:
+        when x == target:
+            return idx
+        idx = idx + 1
+    return -1
+
+items = [10, 25, 30, 45, 50, 99]
+pos1 = linear_search(items, 45)
+pos2 = linear_search(items, 77)
+
+when pos1 == 3 and pos2 == -1:
+    show "[TEST PASS 001] Linear Search"
+otherwise:
+    show "[FAIL 001]"

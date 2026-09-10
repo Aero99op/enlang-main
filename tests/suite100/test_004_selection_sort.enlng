@@ -1,0 +1,18 @@
+type enlng
+action selection_sort(arr):
+    n = len(arr)
+    for i from 0 to n - 2:
+        min_idx = i
+        for j from i + 1 to n - 1:
+            when arr[j] < arr[min_idx]:
+                min_idx = j
+        when min_idx != i:
+            swap arr[i] with arr[min_idx]
+    return arr
+
+a = [29, 10, 14, 37, 13]
+selection_sort(a)
+when a[0] == 10 and a[1] == 13 and a[4] == 37:
+    show "[TEST PASS 004] Selection Sort"
+otherwise:
+    show "[FAIL 004]"

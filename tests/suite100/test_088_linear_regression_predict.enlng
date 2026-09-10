@@ -1,0 +1,15 @@
+type enlng
+# Model: y = 2.5 * x + 5.0
+weights = 2.5
+bias = 5.0
+
+action predict(x, w, b):
+    return w * x + b
+
+y1 = predict(2.0, weights, bias)
+y2 = predict(4.0, weights, bias)
+
+when y1 == 10.0 and y2 == 15.0:
+    show "[TEST PASS 088] Linear Regression Inference"
+otherwise:
+    show "[FAIL 088]"

@@ -1,0 +1,17 @@
+type enlng
+action dot_product(v1, v2):
+    sum = 0
+    n = len(v1)
+    for i from 0 to n - 1:
+        sum = sum + v1[i] * v2[i]
+    return sum
+
+a = [1, 2, 3]
+b = [4, 5, 6]
+# 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
+res = dot_product(a, b)
+
+when res == 32:
+    show "[TEST PASS 081] ML Vector Dot Product"
+otherwise:
+    show "[FAIL 081]"

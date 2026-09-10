@@ -1,0 +1,17 @@
+type enlng
+
+remember val1 as 10
+remember val2 as 10
+
+# Test symbols
+val1 += 5
+when val1 >= 15:
+    show "Symbolic += and >= passed! val1:" val1
+
+# Test English equivalents
+val2 increases by 5
+when val2 is at least 15:
+    show "English increases by and is at least passed! val2:" val2
+
+when val1 == val2:
+    show "Both symbolic and English operators yielded identical results:" val1

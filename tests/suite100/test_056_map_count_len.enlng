@@ -1,0 +1,9 @@
+type enlng
+m = { "a": 1, "b": 2, "c": 3, "d": 4 }
+c1 = count of m
+c2 = len(m)
+
+when c1 == 4 and c2 == 4:
+    show "[TEST PASS 056] Map count of and len"
+otherwise:
+    show "[FAIL 056]"

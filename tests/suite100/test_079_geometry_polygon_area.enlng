@@ -1,0 +1,14 @@
+type enlng
+action rect_area(w, h):
+    return w * h
+
+action tri_area(b, h):
+    return 0.5 * b * h
+
+r = rect_area(10, 5)
+t = tri_area(10, 6)
+
+when r == 50 and t == 30:
+    show "[TEST PASS 079] Geometry Polygon Area"
+otherwise:
+    show "[FAIL 079]"

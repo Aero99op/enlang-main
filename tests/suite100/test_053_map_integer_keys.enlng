@@ -1,0 +1,10 @@
+type enlng
+m = {}
+m[200] = "OK"
+m[404] = "Not Found"
+m[500] = "Server Error"
+
+when m[200] == "OK" and m[404] == "Not Found" and m["500"] == "Server Error":
+    show "[TEST PASS 053] Map Integer Keys Auto-Stringify"
+otherwise:
+    show "[FAIL 053]"

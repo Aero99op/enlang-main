@@ -1,0 +1,19 @@
+type enlng
+data = [10, 20, 30, 40, 50]
+n = len(data)
+sum = 0
+for x in data:
+    sum = sum + x
+mean = sum / n
+
+var_sum = 0
+for x in data:
+    diff = x - mean
+    var_sum = var_sum + diff * diff
+variance = var_sum / n
+
+# mean = 30, variance = (400 + 100 + 0 + 100 + 400) / 5 = 200
+when mean == 30 and variance == 200:
+    show "[TEST PASS 084] Statistics Mean and Variance"
+otherwise:
+    show "[FAIL 084]"

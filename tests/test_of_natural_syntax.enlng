@@ -1,0 +1,62 @@
+type enlng
+
+# ======================================================================
+# MASTER TEST: 'of' NATURAL PROPERTY ACCESS IN ENLNG
+# ======================================================================
+
+request = {
+    "user": {
+        "name": "Ramesh",
+        "role": "Intern"
+    },
+    "action": "DELETE",
+    "resource": "salary_slips_table"
+}
+
+# 1. Reading fields with 'of':
+target = resource of request
+show "Target resource via 'of':" target
+
+u = user of request
+user_role = role of u
+show "User role via 'of':" user_role
+
+# 2. Reading string literal with 'of':
+str_resource = "resource" of request
+show "Resource via string 'of':" str_resource
+
+# 3. Mutation with 'of':
+role of u = "Admin"
+show "After 'role of u = Admin':" role of u
+
+# 4. Change statement with 'of':
+change role of u to "SuperAdmin"
+show "After 'change role of u to SuperAdmin':" role of u
+
+# 5. Numeric increment with 'of':
+emp = { "salary": 500 }
+salary of emp increases by 150
+show "Employee salary after 'increases by':" salary of emp
+
+# 6. Spatial Pair access with 'of' and silent words ('the'):
+numbers = [50, 20]
+repeat until sorted:
+    for each pair in numbers:
+        when left of pair > right of pair:
+            swap pair
+
+show "Sorted numbers after 'left of pair':" numbers at 0 numbers at 1
+
+# 7. With silent words: 'the left of the pair'
+items = [90, 10]
+repeat until sorted:
+    for each pair in items:
+        when the left of the pair > the right of the pair:
+            swap pair
+
+show "Sorted items with silent words:" items at 0 items at 1
+
+when target == "salary_slips_table" and role of u == "SuperAdmin" and salary of emp == 650 and numbers at 0 == 20 and items at 0 == 10:
+    show "[TEST PASS OF SYNTAX] Pure Natural 'of' Property Access Works 100%!"
+otherwise:
+    show "[FAIL OF SYNTAX]"

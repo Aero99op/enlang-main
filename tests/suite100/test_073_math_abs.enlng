@@ -1,0 +1,8 @@
+type enlng
+a1 = abs(-99)
+a2 = abs(99)
+
+when a1 == 99 and a2 == 99:
+    show "[TEST PASS 073] Math abs"
+otherwise:
+    show "[FAIL 073]"

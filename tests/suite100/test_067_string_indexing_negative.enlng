@@ -1,0 +1,9 @@
+type enlng
+str = "ENLANG"
+last_ch = str[-1]
+second_last = str[-2]
+
+when last_ch == "G" and second_last == "N":
+    show "[TEST PASS 067] String Indexing Negative"
+otherwise:
+    show "[FAIL 067]"

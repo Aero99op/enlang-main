@@ -1,0 +1,18 @@
+type enlng
+action rotate_left(arr, k):
+    n = len(arr)
+    shift = k % n
+    out = []
+    for i from shift to n - 1:
+        append(out, arr[i])
+    for i from 0 to shift - 1:
+        append(out, arr[i])
+    return out
+
+a = [1, 2, 3, 4, 5]
+rot = rotate_left(a, 2)
+
+when rot[0] == 3 and rot[1] == 4 and rot[4] == 2:
+    show "[TEST PASS 021] Array Rotate"
+otherwise:
+    show "[FAIL 021]"

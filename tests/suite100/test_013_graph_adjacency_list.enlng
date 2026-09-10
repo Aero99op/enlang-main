@@ -1,0 +1,17 @@
+type enlng
+graph = {
+    "A": ["B", "C"],
+    "B": ["A", "D", "E"],
+    "C": ["A", "F"],
+    "D": ["B"],
+    "E": ["B", "F"],
+    "F": ["C", "E"]
+}
+
+neighbors_b = graph["B"]
+deg_b = len(neighbors_b)
+
+when deg_b == 3 and contains(neighbors_b, "D"):
+    show "[TEST PASS 013] Graph Adjacency List"
+otherwise:
+    show "[FAIL 013]"

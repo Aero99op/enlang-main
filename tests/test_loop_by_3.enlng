@@ -1,0 +1,12 @@
+type enlng
+
+remember num as 0
+
+show "--- Loop using 'increases by 3' ---"
+while num <= 15:
+    show "Number:" num
+    num increases by 3
+
+show "--- Loop using 'for range by 3' ---"
+for i from 0 to 15 by 3:
+    show "Number:" i

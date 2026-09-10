@@ -1,0 +1,13 @@
+type enlng
+m = {
+    "str": "hello",
+    "int": 42,
+    "flt": 3.14,
+    "bool": true,
+    "list": [1, 2, 3]
+}
+
+when m.str == "hello" and m.int == 42 and m.bool and len(m.list) == 3:
+    show "[TEST PASS 057] Map Mixed Value Types"
+otherwise:
+    show "[FAIL 057]"

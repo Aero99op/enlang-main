@@ -1,0 +1,23 @@
+type enlng
+action rle_encode(s):
+    when len(s) == 0:
+        return ""
+    encoded = ""
+    curr_char = s[0]
+    count = 1
+    n = len(s)
+    for i from 1 to n - 1:
+        when s[i] == curr_char:
+            count = count + 1
+        otherwise:
+            encoded = encoded + curr_char + count
+            curr_char = s[i]
+            count = 1
+    encoded = encoded + curr_char + count
+    return encoded
+
+res = rle_encode("AAABBBCC")
+when res == "A3B3C2":
+    show "[TEST PASS 070] Run-Length Encoding"
+otherwise:
+    show "[FAIL 070]"

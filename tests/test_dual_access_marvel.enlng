@@ -1,0 +1,31 @@
+type enlng
+
+# 1. Reading with 'at' vs '[]'
+numbers = [10, 20, 30, 40]
+show "Reading numbers at 0:" numbers at 0
+show "Reading numbers[1]:" numbers[1]
+show "Reading numbers at 2:" numbers at 2
+
+# 2. Assignment with 'at'
+numbers at 0 = 99
+show "After numbers at 0 = 99:" numbers at 0
+
+# 3. In-place increment with 'at'
+numbers at 1 increases by 5
+show "After numbers at 1 increases by 5:" numbers at 1
+
+# 4. Change statement with 'at'
+change numbers at 2 to 77
+show "After change numbers at 2 to 77:" numbers at 2
+
+# 5. Map access with 'at'
+salaries = { "dev": 100, "qa": 80 }
+show "Dev salary via at:" salaries at "dev"
+salaries at "dev" increases by 20
+show "Dev salary after increment via at:" salaries at "dev"
+
+# 6. Validation
+when numbers at 0 == 99 and numbers at 1 == 25 and numbers at 2 == 77 and salaries at "dev" == 120:
+    show "[TEST PASS DUAL ACCESS] The Dual-Syntax Universal Access Marvel Works 100%!"
+otherwise:
+    show "[FAIL DUAL ACCESS]"

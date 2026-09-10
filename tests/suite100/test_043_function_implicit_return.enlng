@@ -1,0 +1,9 @@
+type enlng
+action multiply(a, b):
+    a * b
+
+r = multiply(6, 7)
+when r == 42:
+    show "[TEST PASS 043] Function Implicit Return"
+otherwise:
+    show "[FAIL 043]"

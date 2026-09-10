@@ -1,0 +1,19 @@
+type enlng
+m1 = [ [1, 2], [3, 4] ]
+m2 = [ [5, 6], [7, 8] ]
+m3 = []
+
+for r from 0 to 1:
+    row = []
+    r1 = m1[r]
+    r2 = m2[r]
+    for c from 0 to 1:
+        append(row, r1[c] + r2[c])
+    append(m3, row)
+
+res0 = m3[0]
+res1 = m3[1]
+when res0[0] == 6 and res0[1] == 8 and res1[1] == 12:
+    show "[TEST PASS 023] Matrix Addition"
+otherwise:
+    show "[FAIL 023]"

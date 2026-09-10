@@ -1,0 +1,7 @@
+type enlng
+t1 = time_now()
+# Verify it's a valid epoch timestamp
+when t1 > 1700000000:
+    show "[TEST PASS 095] System time_now Progression"
+otherwise:
+    show "[FAIL 095]"

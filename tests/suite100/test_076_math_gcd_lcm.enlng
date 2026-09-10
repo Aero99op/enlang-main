@@ -1,0 +1,18 @@
+type enlng
+action gcd(a, b):
+    while b != 0:
+        t = b
+        b = a % b
+        a = t
+    return a
+
+action lcm(a, b):
+    return (a * b) / gcd(a, b)
+
+g = gcd(48, 18)
+l = lcm(4, 6)
+
+when g == 6 and l == 12:
+    show "[TEST PASS 076] Math GCD and LCM"
+otherwise:
+    show "[FAIL 076]"

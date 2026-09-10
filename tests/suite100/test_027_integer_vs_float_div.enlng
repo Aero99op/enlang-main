@@ -1,0 +1,10 @@
+type enlng
+# Integer division
+idiv = 7 / 2
+# Float division
+fdiv = 7.0 / 2.0
+
+when idiv == 3 and fdiv > 3.4 and fdiv < 3.6:
+    show "[TEST PASS 027] Integer vs Float Division"
+otherwise:
+    show "[FAIL 027]"

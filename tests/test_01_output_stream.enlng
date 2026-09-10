@@ -1,0 +1,8 @@
+type enlng
+
+remember user as "Spandan"
+remember score as 100
+remember active as true
+
+show "User:" user "Score:" score "Active:" active
+show "Stream output works with zero curly braces!"

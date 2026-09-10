@@ -1,0 +1,9 @@
+type enlng
+config = { "host": "127.0.0.1", "port": 8080 }
+config.debug = true
+config.port = 9000
+
+when config.host == "127.0.0.1" and config.port == 9000 and config.debug:
+    show "[TEST PASS 048] Map Dot Notation"
+otherwise:
+    show "[FAIL 048]"

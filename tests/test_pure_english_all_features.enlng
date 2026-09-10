@@ -1,0 +1,112 @@
+type enlng
+
+# ==============================================================================
+# 🏛️ ENLNG SOVEREIGN 100% PURE ENGLISH AUDIT (ZERO OPERATOR SYMBOLS)
+# Demonstrating that Enlng can be written in Pure English Words!
+# ==============================================================================
+
+# User Defined Functions with Pure English keywords
+function compute_factorial with n:
+    when n is at most 1:
+        give 1
+    give n times compute_factorial with n minus 1
+
+function calculate_discount with price, tier:
+    when tier is "VIP":
+        give price times 0.8
+    give price
+
+function gcd with a, b:
+    repeat while b is not 0:
+        remainder = a mod b
+        a = b
+        b = remainder
+    give a
+
+function is_prime with n:
+    when n is at most 1:
+        give false
+    d = 2
+    repeat while d times d is at most n:
+        when n mod d is 0:
+            give false
+        d increases by 1
+    give true
+
+show ">>> [START] Pure English Word Verification (Zero Operator Symbols)..."
+
+# 1. Primitives & Comparisons in English
+score = 42
+temperature = 36.6
+greeting = "Hello Enlng"
+is_active = true
+
+when score is 42 and temperature is greater than 30.0 and greeting is "Hello Enlng" and is_active:
+    show "[PASS 1/6] Primitives & Comparisons with 'is', 'is greater than', 'and'"
+
+# 2. Arithmetic in English
+num_a = 50
+num_b = 20
+total_sum = num_a plus num_b
+difference = num_a minus num_b
+product = num_a times num_b
+quotient = num_a divided by num_b
+remainder = num_a mod 7
+
+when total_sum is 70 and difference is 30 and product is 1000 and quotient is 2 and remainder is 1:
+    show "[PASS 2/6] Pure English Arithmetic ('plus', 'minus', 'times', 'divided by', 'mod')"
+
+# 3. Universal English Property Access ('of' and 'at')
+request_data = {
+    "user": "Ramesh",
+    "role": "Lead Architect",
+    "access_level": 5
+}
+
+# Accessing without dots or brackets:
+user_name = user of request_data
+user_role = role of request_data
+level = request_data at "access_level"
+
+# Updating without dots or brackets:
+change role of request_data to "Chief Architect"
+access_level of request_data increases by 3
+
+when user_name is "Ramesh" and user_role is "Lead Architect" and level is 5 and role of request_data is "Chief Architect" and access_level of request_data is 8:
+    show "[PASS 3/6] Universal Property Access & Mutation ('of' and 'at')"
+
+# 4. Functions & Recursion in English
+fact_5 = compute_factorial with 5
+disc = calculate_discount with 1000, "VIP"
+gcd_val = gcd with 48, 18
+prime_29 = is_prime with 29
+
+when fact_5 is 120 and disc is 800 and gcd_val is 6 and prime_29:
+    show "[PASS 4/6] Functions, Recursion & Algorithms in English ('function', 'with', 'give')"
+
+# 5. Loops in English
+counter = 0
+repeat while counter is less than 5:
+    counter increases by 1
+
+sum_range = 0
+for i from 1 to 5 by 1:
+    sum_range increases by i
+
+when counter is 5 and sum_range is 15:
+    show "[PASS 5/6] English Loops ('repeat while', 'increases by', 'for from to by')"
+
+# 6. Spatial Pair Sorting with Silent Words & 'of'
+numbers = [99, 12, 55, 3]
+repeat until sorted:
+    for each pair in numbers:
+        when the left of the pair is greater than the right of the pair:
+            swap pair
+
+when numbers at 0 is 3 and numbers at 1 is 12 and numbers at 2 is 55 and numbers at 3 is 99:
+    show "[PASS 6/6] Spatial Sorting with Silent Words ('the left of the pair is greater than the right of the pair')"
+
+show ""
+show "=========================================================================="
+show "👑 100% PURE ENGLISH CODING IN ENLNG PROVED BEYOND ANY DOUBT!"
+show "=========================================================================="

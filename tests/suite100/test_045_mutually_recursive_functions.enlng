@@ -1,0 +1,19 @@
+type enlng
+action is_odd(n):
+    when n == 0:
+        return false
+    return is_even(n - 1)
+
+action is_even(n):
+    when n == 0:
+        return true
+    return is_odd(n - 1)
+
+e4 = is_even(4)
+o7 = is_odd(7)
+e5 = is_even(5)
+
+when e4 and o7 and not e5:
+    show "[TEST PASS 045] Mutually Recursive Functions"
+otherwise:
+    show "[FAIL 045]"

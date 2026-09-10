@@ -1,0 +1,24 @@
+type enlng
+
+function is_palindrome_twopointer with s:
+    remember left as 0
+    remember right as count of s - 1
+    remember is_valid as true
+
+    while left < right:
+        when s[left] != s[right]:
+            is_valid = false
+            stop
+        left increases by 1
+        right decreases by 1
+
+    give is_valid
+
+remember test1 as "racecar"
+remember test2 as "engine"
+
+when is_palindrome_twopointer(test1):
+    show test1 "is a valid two-pointer palindrome!"
+
+when not is_palindrome_twopointer(test2):
+    show test2 "is correctly identified as non-palindrome!"

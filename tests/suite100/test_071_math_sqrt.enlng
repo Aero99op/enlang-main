@@ -1,0 +1,8 @@
+type enlng
+s1 = sqrt(100)
+s2 = sqrt(225)
+
+when s1 == 10 and s2 == 15:
+    show "[TEST PASS 071] Math sqrt"
+otherwise:
+    show "[FAIL 071]"

@@ -1,0 +1,21 @@
+type enlng
+action fib_iter(n):
+    when n <= 0:
+        return 0
+    when n == 1:
+        return 1
+    a = 0
+    b = 1
+    for i from 2 to n:
+        c = a + b
+        a = b
+        b = c
+    return b
+
+f10 = fib_iter(10)
+f15 = fib_iter(15)
+
+when f10 == 55 and f15 == 610:
+    show "[TEST PASS 016] Fibonacci Iterative"
+otherwise:
+    show "[FAIL 016]"

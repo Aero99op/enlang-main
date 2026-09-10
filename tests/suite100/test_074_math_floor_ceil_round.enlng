@@ -1,0 +1,9 @@
+type enlng
+f = floor(7.9)
+c = ceil(7.1)
+r = round(7.6)
+
+when f == 7 and c == 8 and r == 8:
+    show "[TEST PASS 074] Math floor ceil round"
+otherwise:
+    show "[FAIL 074]"

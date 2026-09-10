@@ -1,0 +1,29 @@
+type enlng
+
+# Test 12: Native Sovereign File I/O Built-ins
+
+filepath = "test_io_temp.txt"
+
+# 1. Write file
+write_res = write_file(filepath, "Hello Native Sovereign Enlang!")
+show "write_file returned:" write_res
+
+# 2. Check file exists
+exists1 = file_exists(filepath)
+show "file_exists returned:" exists1
+
+# 3. Read file
+content1 = read_file(filepath)
+show "read_file content:" content1
+
+# 4. Append to file
+append_res = append_file(filepath, " Powered by Pure C99 Engine.")
+show "append_file returned:" append_res
+
+# 5. Read back appended content
+content2 = read_file(filepath)
+show "read_file after append:" content2
+
+# 6. Check non-existent file
+exists2 = file_exists("does_not_exist_12345.xyz")
+show "non-existent file_exists returned:" exists2

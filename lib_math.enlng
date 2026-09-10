@@ -1,0 +1,148 @@
+type enlng
+
+# =====================================================================
+#   ENLANG OFFICIAL STANDARD LIBRARY: lib_math.enlng
+#   Advanced Mathematics, Number Theory, Geometry, and Statistics
+# =====================================================================
+
+action square(x):
+    return x * x
+
+action cube(x):
+    return x * x * x
+
+action pythagoras(a, b):
+    sum_sq = a * a + b * b
+    return sqrt(sum_sq)
+
+action hypotenuse(a, b):
+    sum_sq = a * a + b * b
+    return sqrt(sum_sq)
+
+action math_power(base, exp):
+    return pow(base, exp)
+
+action math_sqrt(val):
+    return sqrt(val)
+
+action math_abs(val):
+    return abs(val)
+
+action math_floor(val):
+    return floor(val)
+
+action math_ceil(val):
+    return ceil(val)
+
+action math_round(val):
+    return round(val)
+
+action clamp(val, low, high):
+    when val < low:
+        return low
+    when val > high:
+        return high
+    return val
+
+action factorial(n):
+    when n <= 1:
+        return 1
+    total = 1
+    for i from 2 to n:
+        total = total * i
+    return total
+
+action gcd(a, b):
+    repeat while b != 0:
+        temp = b
+        b = a % b
+        a = temp
+    return a
+
+action lcm(a, b):
+    when a == 0 or b == 0:
+        return 0
+    g = gcd(a, b)
+    prod = a * b
+    return prod / g
+
+action is_prime(n):
+    when n <= 1:
+        return false
+    when n <= 3:
+        return true
+    when n % 2 == 0 or n % 3 == 0:
+        return false
+    i = 5
+    repeat while i * i <= n:
+        when n % i == 0 or n % (i + 2) == 0:
+            return false
+        i = i + 6
+    return true
+
+action distance_2d(x1, y1, x2, y2):
+    dx = x2 - x1
+    dy = y2 - y1
+    dist_sq = dx * dx + dy * dy
+    return sqrt(dist_sq)
+
+action polygon_area(xs, ys):
+    n = len(xs)
+    when n < 3:
+        return 0
+    area2 = 0
+    j = n - 1
+    for i from 0 to n - 1:
+        term = (xs[j] + xs[i]) * (ys[j] - ys[i])
+        area2 = area2 + term
+        j = i
+    raw = abs(area2)
+    return raw / 2.0
+
+action math_sum(numbers):
+    total = 0
+    for num in numbers:
+        total = total + num
+    return total
+
+action math_mean(numbers):
+    n = len(numbers)
+    when n == 0:
+        return 0
+    total = math_sum(numbers)
+    return total / (n * 1.0)
+
+action math_variance(numbers):
+    n = len(numbers)
+    when n <= 1:
+        return 0
+    avg = math_mean(numbers)
+    sum_sq_diff = 0
+    for num in numbers:
+        diff = num - avg
+        sum_sq_diff = sum_sq_diff + diff * diff
+    return sum_sq_diff / (n * 1.0)
+
+action math_std_dev(numbers):
+    var_val = math_variance(numbers)
+    return sqrt(var_val)
+
+action math_min_list(numbers):
+    n = len(numbers)
+    when n == 0:
+        return 0
+    smallest = numbers[0]
+    for num in numbers:
+        when num < smallest:
+            smallest = num
+    return smallest
+
+action math_max_list(numbers):
+    n = len(numbers)
+    when n == 0:
+        return 0
+    biggest = numbers[0]
+    for num in numbers:
+        when num > biggest:
+            biggest = num
+    return biggest

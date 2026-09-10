@@ -1,0 +1,11 @@
+type enlng
+
+remember scores as [95, 20, 55, 12, 88, 42]
+
+show "Original scores:" scores
+
+sort scores ascending
+show "Scores ascending:" scores
+
+sort scores descending
+show "Scores descending:" scores

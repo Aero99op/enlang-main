@@ -1,0 +1,139 @@
+type enlng
+
+# =====================================================================
+#   ENLANG MASTER STANDARD LIBRARY TEST SUITE: test_stdlib_master.enlng
+#   Validating lib_math, lib_strings, lib_ds, and lib_ml
+# =====================================================================
+
+use "lib_math.enlng"
+use "lib_strings.enlng"
+use "lib_ds.enlng"
+use "lib_ml.enlng"
+
+show "=== 1. Validating lib_math.enlng ==="
+sq = square(12)
+cb = cube(4)
+pyth = pythagoras(9, 12)
+fact5 = factorial(5)
+gcd_val = gcd(48, 18)
+lcm_val = lcm(12, 15)
+pr29 = is_prime(29)
+pr30 = is_prime(30)
+dist = distance_2d(0, 0, 3, 4)
+
+nums = [10, 20, 30, 40, 50]
+s = math_sum(nums)
+m = math_mean(nums)
+v = math_variance(nums)
+sd = math_std_dev(nums)
+
+show "square(12):" sq
+show "cube(4):" cb
+show "pythagoras(9, 12):" pyth
+show "factorial(5):" fact5
+show "gcd(48, 18):" gcd_val
+show "lcm(12, 15):" lcm_val
+show "is_prime(29):" pr29
+show "is_prime(30):" pr30
+show "distance_2d(0, 0, 3, 4):" dist
+show "sum:" s "mean:" m "std_dev:" sd
+
+math_pass = false
+when sq == 144 and cb == 64 and pyth == 15 and fact5 == 120 and gcd_val == 6 and lcm_val == 60 and pr29 and not pr30 and dist == 5 and s == 150 and m == 30:
+    math_pass = true
+show "Math Library Status:" math_pass
+
+show "=== 2. Validating lib_strings.enlng ==="
+bnr = banner("ENLANG SOVEREIGN")
+csv = csv_row("alpha", "beta", "gamma")
+rev = string_reverse("racecar")
+pal1 = is_palindrome("radar")
+pal2 = is_palindrome("engine")
+padded = pad_left("42", 5, "0")
+
+show "Banner:" bnr
+show "CSV:" csv
+show "Reversed:" rev
+show "Radar palindrome:" pal1
+show "Engine palindrome:" pal2
+show "Padded:" padded
+
+str_pass = false
+when bnr == "=== ENLANG SOVEREIGN ===" and csv == "alpha,beta,gamma" and rev == "racecar" and pal1 and not pal2 and padded == "00042":
+    str_pass = true
+show "Strings Library Status:" str_pass
+
+show "=== 3. Validating lib_ds.enlng ==="
+# Stack
+stk = create_stack()
+stack_push(stk, 100)
+stack_push(stk, 200)
+stack_push(stk, 300)
+stk_pop = stack_pop(stk)
+stk_peek = stack_peek(stk)
+
+# Queue
+q = create_queue()
+queue_enqueue(q, "A")
+queue_enqueue(q, "B")
+queue_enqueue(q, "C")
+q_deq = queue_dequeue(q)
+q_peek = queue_peek(q)
+
+# Priority Queue
+pq = create_priority_queue()
+pq_insert(pq, 50)
+pq_insert(pq, 10)
+pq_insert(pq, 30)
+pq_min = pq_extract_min(pq)
+
+# BST
+tree = bst_node(50)
+bst_insert(tree, 30)
+bst_insert(tree, 70)
+bst_insert(tree, 20)
+bst_insert(tree, 40)
+has40 = bst_search(tree, 40)
+has99 = bst_search(tree, 99)
+bst_min_val = bst_min(tree)
+bst_max_val = bst_max(tree)
+
+# Graph
+graph = create_graph()
+graph_add_edge(graph, "Delhi", "Mumbai")
+graph_add_edge(graph, "Delhi", "Bengaluru")
+has_mumbai = graph_has_edge(graph, "Delhi", "Mumbai")
+has_kolkata = graph_has_edge(graph, "Delhi", "Kolkata")
+
+ds_pass = false
+when stk_pop == 300 and stk_peek == 200 and q_deq == "A" and q_peek == "B" and pq_min == 10 and has40 and not has99 and bst_min_val == 20 and bst_max_val == 70 and has_mumbai and not has_kolkata:
+    ds_pass = true
+show "Data Structures Library Status:" ds_pass
+
+show "=== 4. Validating lib_ml.enlng ==="
+v1 = [1, 2, 3]
+v2 = [4, 5, 6]
+dot = vec_dot(v1, v2)
+mag = vec_norm(v1)
+cos_sim = cosine_similarity(v1, v2)
+r1 = relu(10)
+r2 = relu(-5)
+sig0 = sigmoid(0)
+pred = linear_regression_predict([2, 3], [4, 5], 10)
+
+pts = [
+    { "x": 1, "y": 1, "label": "A" },
+    { "x": 9, "y": 9, "label": "B" }
+]
+knn_res = predict_knn1(pts, 1.2, 1.1)
+
+ml_pass = false
+when dot == 32 and r1 == 10 and r2 == 0 and sig0 > 0.49 and sig0 < 0.51 and pred == 33 and knn_res == "A":
+    ml_pass = true
+show "ML Library Status:" ml_pass
+
+show "=== 5. Final Master Verification ==="
+when math_pass and str_pass and ds_pass and ml_pass:
+    show "[MASTER TEST PASS] All Sovereign Enlang Standard Libraries 100% Operational!"
+otherwise:
+    show "[MASTER TEST FAIL] Verification failure in standard libraries!"

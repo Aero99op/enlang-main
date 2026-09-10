@@ -1,0 +1,9 @@
+type enlng
+action add_numbers(a, b):
+    return a + b
+
+r = add_numbers(15, 25)
+when r == 40:
+    show "[TEST PASS 042] Function Explicit Return"
+otherwise:
+    show "[FAIL 042]"

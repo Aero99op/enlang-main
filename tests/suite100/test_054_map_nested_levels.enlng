@@ -1,0 +1,17 @@
+type enlng
+system = {
+    "db": {
+        "host": "localhost",
+        "port": 5432
+    },
+    "app": {
+        "name": "enlang"
+    }
+}
+
+db_conf = system.db
+app_conf = system.app
+when db_conf.port == 5432 and app_conf.name == "enlang":
+    show "[TEST PASS 054] Map Nested Levels"
+otherwise:
+    show "[FAIL 054]"

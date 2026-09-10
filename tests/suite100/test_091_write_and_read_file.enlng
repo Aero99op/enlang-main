@@ -1,0 +1,9 @@
+type enlng
+fname = "test_091_tmp.txt"
+w = write_file(fname, "Sovereign Native Engine")
+r = read_file(fname)
+
+when w and r == "Sovereign Native Engine":
+    show "[TEST PASS 091] File Write and Read"
+otherwise:
+    show "[FAIL 091]"

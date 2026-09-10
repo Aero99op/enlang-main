@@ -1,0 +1,8 @@
+type enlng
+orig = "antigravity"
+rev = reverse orig
+
+when rev == "ytivargitna":
+    show "[TEST PASS 068] String Reversal Intent"
+otherwise:
+    show "[FAIL 068]"

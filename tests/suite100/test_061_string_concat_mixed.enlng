@@ -1,0 +1,7 @@
+type enlng
+res = "Val: " + 42 + ", Float: " + 3.5 + ", Bool: " + true
+
+when contains(res, "42") and contains(res, "3.5") and contains(res, "true"):
+    show "[TEST PASS 061] String Concatenation Mixed Types"
+otherwise:
+    show "[FAIL 061]"

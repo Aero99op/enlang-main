@@ -1,0 +1,18 @@
+type enlng
+action max_subarray(arr):
+    max_so_far = arr[0]
+    curr_max = arr[0]
+    n = len(arr)
+    for i from 1 to n - 1:
+        x = arr[i]
+        curr_max = max(x, curr_max + x)
+        max_so_far = max(max_so_far, curr_max)
+    return max_so_far
+
+data = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+res = max_subarray(data)
+
+when res == 6:
+    show "[TEST PASS 019] Kadane Max Subarray"
+otherwise:
+    show "[FAIL 019]"

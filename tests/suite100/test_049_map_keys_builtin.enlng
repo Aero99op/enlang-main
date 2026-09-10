@@ -1,0 +1,8 @@
+type enlng
+m = { "x": 10, "y": 20, "z": 30 }
+k = keys(m)
+
+when len(k) == 3 and contains(k, "x") and contains(k, "y") and contains(k, "z"):
+    show "[TEST PASS 049] Map keys() Built-in"
+otherwise:
+    show "[FAIL 049]"

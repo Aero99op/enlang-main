@@ -1,0 +1,53 @@
+type enlng
+
+# =====================================================================
+#   ENLANG OFFICIAL STANDARD LIBRARY: lib_strings.enlng
+#   Text Formatting, Parsing, Concatenation, and String Primitives
+# =====================================================================
+
+action banner(title):
+    return "=== " + title + " ==="
+
+action csv_row(col1, col2, col3):
+    return col1 + "," + col2 + "," + col3
+
+action csv_row_4(col1, col2, col3, col4):
+    return col1 + "," + col2 + "," + col3 + "," + col4
+
+action string_length(str):
+    return len(str)
+
+action string_contains(str, substr):
+    return contains(str, substr)
+
+action string_reverse(str):
+    rev = reverse str
+    return rev
+
+action is_palindrome(str):
+    rev = reverse str
+    return str == rev
+
+action repeat_char(ch, count):
+    res = ""
+    for i from 1 to count:
+        res = res + ch
+    return res
+
+action pad_left(str, target_len, pad_char):
+    res = str
+    repeat while len(res) < target_len:
+        res = pad_char + res
+    return res
+
+action pad_right(str, target_len, pad_char):
+    res = str
+    repeat while len(res) < target_len:
+        res = res + pad_char
+    return res
+
+action string_split(str, sep):
+    return split(str, sep)
+
+action string_join(arr, sep):
+    return join(arr, sep)

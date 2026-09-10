@@ -1,0 +1,14 @@
+type enlng
+words = ["sovereign", "native", "enlang", "sovereign", "compiler", "enlang", "sovereign"]
+freq = {}
+
+for w in words:
+    when has_key(freq, w):
+        freq[w] = freq[w] + 1
+    otherwise:
+        freq[w] = 1
+
+when freq["sovereign"] == 3 and freq["enlang"] == 2 and freq["native"] == 1:
+    show "[TEST PASS 059] Map Word Frequency Counter"
+otherwise:
+    show "[FAIL 059]"

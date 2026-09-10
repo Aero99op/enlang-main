@@ -1,0 +1,8 @@
+type enlng
+m = { "first": 100, "second": 200 }
+v = values(m)
+
+when len(v) == 2 and contains(v, 100) and contains(v, 200):
+    show "[TEST PASS 050] Map values() Built-in"
+otherwise:
+    show "[FAIL 050]"

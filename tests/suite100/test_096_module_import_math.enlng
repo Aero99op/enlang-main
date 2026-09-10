@@ -1,0 +1,11 @@
+type enlng
+use "tests/suite100/lib_math.enlng"
+
+sq = square(8)
+cb = cube(3)
+pyth = pythagoras(6, 8)
+
+when sq == 64 and cb == 27 and pyth == 10:
+    show "[TEST PASS 096] Module Import Math Lib"
+otherwise:
+    show "[FAIL 096]"

@@ -1,0 +1,8 @@
+type enlng
+m1 = min(50, 20)
+m2 = max(50, 20)
+
+when m1 == 20 and m2 == 50:
+    show "[TEST PASS 075] Math min and max"
+otherwise:
+    show "[FAIL 075]"

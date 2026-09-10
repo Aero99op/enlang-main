@@ -1,0 +1,19 @@
+type enlng
+
+# Pure enlng without artificial context blocks
+remember dev_salary as 100
+remember qa_salary as 80
+remember pm_salary as 120
+
+total_payroll = dev_salary + qa_salary + pm_salary
+
+remember balance as 1000
+balance decreases by total_payroll
+
+show "Total Payroll: " total_payroll
+show "Remaining Balance: " balance
+
+when total_payroll == 300 and balance == 700:
+    show "[TEST PASS CONTEXT] Pure Direct Logic Complete!"
+otherwise:
+    show "[FAIL CONTEXT]"

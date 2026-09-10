@@ -1,0 +1,25 @@
+type enlng
+graph = {
+    "A": ["B", "C"],
+    "B": ["D"],
+    "C": ["E"],
+    "D": [],
+    "E": []
+}
+
+visited = {}
+order = []
+
+action dfs(node, graph, visited, order):
+    visited[node] = true
+    append(order, node)
+    neighbors = graph[node]
+    for nbr in neighbors:
+        when not has_key(visited, nbr):
+            dfs(nbr, graph, visited, order)
+
+dfs("A", graph, visited, order)
+when len(order) == 5 and order[0] == "A" and order[1] == "B" and order[2] == "D":
+    show "[TEST PASS 015] DFS Traversal"
+otherwise:
+    show "[FAIL 015]"

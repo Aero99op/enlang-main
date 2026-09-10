@@ -1,0 +1,18 @@
+type enlng
+
+# Direct pure enlng algorithm without context wrappers
+numbers = [64, 34, 25, 12, 22, 11, 90]
+
+repeat until sorted:
+    for each pair in numbers:
+        when pair.left > pair.right:
+            swap pair
+
+is_valid = false
+when numbers[0] == 11 and numbers[1] == 12 and numbers[6] == 90:
+    is_valid = true
+
+when is_valid:
+    show "[TEST PASS CONTEXT ALGO] Spatial Pair Sorting in Pure Enlng Works!"
+otherwise:
+    show "[FAIL CONTEXT ALGO]"

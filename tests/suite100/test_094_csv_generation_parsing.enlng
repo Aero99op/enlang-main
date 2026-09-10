@@ -1,0 +1,11 @@
+type enlng
+csv_file = "test_094_tmp.csv"
+csv_data = "id,name,role\n1,Alice,Dev\n2,Bob,QA"
+write_file(csv_file, csv_data)
+loaded = read_file(csv_file)
+rows = split(loaded, "\n")
+
+when len(rows) >= 3 and contains(rows[1], "Alice"):
+    show "[TEST PASS 094] CSV Generation and Parsing"
+otherwise:
+    show "[FAIL 094]"

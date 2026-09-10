@@ -1,0 +1,18 @@
+type enlng
+action insertion_sort(arr):
+    n = len(arr)
+    for i from 1 to n - 1:
+        key = arr[i]
+        j = i - 1
+        while j >= 0 and arr[j] > key:
+            arr[j + 1] = arr[j]
+            j = j - 1
+        arr[j + 1] = key
+    return arr
+
+a = [12, 11, 13, 5, 6]
+insertion_sort(a)
+when a[0] == 5 and a[1] == 6 and a[4] == 13:
+    show "[TEST PASS 005] Insertion Sort"
+otherwise:
+    show "[FAIL 005]"

@@ -1,0 +1,5 @@
+type enlng
+
+remember the total as 50
+when the total is at least 50:
+    show "Silent words successfully absorbed! Total is:" total

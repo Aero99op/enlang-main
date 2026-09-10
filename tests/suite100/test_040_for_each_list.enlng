@@ -1,0 +1,10 @@
+type enlng
+items = [10, 20, 30]
+sum = 0
+for each item in items:
+    sum = sum + item
+
+when sum == 60:
+    show "[TEST PASS 040] For Each List"
+otherwise:
+    show "[FAIL 040]"

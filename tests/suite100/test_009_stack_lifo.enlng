@@ -1,0 +1,13 @@
+type enlng
+stack = []
+append(stack, "first")
+append(stack, "second")
+append(stack, "third")
+
+top1 = pop(stack)
+top2 = pop(stack)
+
+when top1 == "third" and top2 == "second" and len(stack) == 1:
+    show "[TEST PASS 009] Stack LIFO"
+otherwise:
+    show "[FAIL 009]"

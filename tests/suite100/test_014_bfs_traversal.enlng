@@ -1,0 +1,30 @@
+type enlng
+graph = {
+    "1": ["2", "3"],
+    "2": ["4", "5"],
+    "3": ["6"],
+    "4": [],
+    "5": [],
+    "6": []
+}
+
+visited = { "1": true }
+queue = ["1"]
+q_idx = 0
+order = []
+
+while q_idx < len(queue):
+    curr = queue[q_idx]
+    q_idx = q_idx + 1
+    append(order, curr)
+    
+    neighbors = graph[curr]
+    for nbr in neighbors:
+        when not has_key(visited, nbr):
+            visited[nbr] = true
+            append(queue, nbr)
+
+when len(order) == 6 and order[0] == "1" and order[1] == "2" and order[2] == "3":
+    show "[TEST PASS 014] BFS Traversal"
+otherwise:
+    show "[FAIL 014]"

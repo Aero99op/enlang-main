@@ -1,0 +1,19 @@
+type enlng
+action is_prime(n):
+    when n <= 1:
+        return false
+    d = 2
+    while d * d <= n:
+        when n % d == 0:
+            return false
+        d = d + 1
+    return true
+
+p17 = is_prime(17)
+p18 = is_prime(18)
+p29 = is_prime(29)
+
+when p17 and not p18 and p29:
+    show "[TEST PASS 077] Math is_prime"
+otherwise:
+    show "[FAIL 077]"

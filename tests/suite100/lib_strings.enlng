@@ -1,0 +1,8 @@
+type enlng
+
+# Reusable String Library for Suite100
+action banner(title):
+    return "=== " + title + " ==="
+
+action csv_row(col1, col2, col3):
+    return col1 + "," + col2 + "," + col3

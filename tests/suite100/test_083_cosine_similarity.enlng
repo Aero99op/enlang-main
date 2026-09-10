@@ -1,0 +1,20 @@
+type enlng
+action cosine_sim(v1, v2):
+    dot = 0
+    norm1 = 0
+    norm2 = 0
+    n = len(v1)
+    for i from 0 to n - 1:
+        dot = dot + v1[i] * v2[i]
+        norm1 = norm1 + v1[i] * v1[i]
+        norm2 = norm2 + v2[i] * v2[i]
+    return dot / (sqrt(norm1) * sqrt(norm2))
+
+v1 = [1, 0, 1]
+v2 = [1, 0, 1]
+sim = cosine_sim(v1, v2)
+
+when sim > 0.99 and sim < 1.01:
+    show "[TEST PASS 083] ML Cosine Similarity"
+otherwise:
+    show "[FAIL 083]"

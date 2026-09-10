@@ -1,0 +1,10 @@
+type enlng
+fname = "test_092_tmp.txt"
+write_file(fname, "Line 1\n")
+append_file(fname, "Line 2\n")
+content = read_file(fname)
+
+when contains(content, "Line 1") and contains(content, "Line 2"):
+    show "[TEST PASS 092] File Append Workflow"
+otherwise:
+    show "[FAIL 092]"

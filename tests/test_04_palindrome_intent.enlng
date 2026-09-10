@@ -1,0 +1,16 @@
+type enlng
+
+function check_palindrome with word:
+    when word == reverse word:
+        give true
+    otherwise:
+        give false
+
+remember w1 as "radar"
+remember w2 as "enlang"
+
+when check_palindrome(w1):
+    show w1 "is a Palindrome!"
+
+when not check_palindrome(w2):
+    show w2 "is NOT a Palindrome!"

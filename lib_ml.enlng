@@ -1,0 +1,109 @@
+type enlng
+
+# =====================================================================
+#   ENLANG OFFICIAL STANDARD LIBRARY: lib_ml.enlng
+#   Machine Learning, Linear Algebra, Metrics, and Normalization
+# =====================================================================
+
+action vec_dot(v1, v2):
+    n = len(v1)
+    sum = 0
+    for i from 0 to n - 1:
+        sum = sum + v1[i] * v2[i]
+    return sum
+
+action vec_norm(v):
+    dot = vec_dot(v, v)
+    return sqrt(dot)
+
+action vec_add(v1, v2):
+    n = len(v1)
+    res = []
+    for i from 0 to n - 1:
+        append(res, v1[i] + v2[i])
+    return res
+
+action vec_sub(v1, v2):
+    n = len(v1)
+    res = []
+    for i from 0 to n - 1:
+        append(res, v1[i] - v2[i])
+    return res
+
+action vec_scale(v, scalar):
+    n = len(v)
+    res = []
+    for i from 0 to n - 1:
+        append(res, v[i] * scalar)
+    return res
+
+action cosine_similarity(v1, v2):
+    dot = vec_dot(v1, v2)
+    mag1 = vec_norm(v1)
+    mag2 = vec_norm(v2)
+    denom = mag1 * mag2
+    when denom == 0:
+        return 0.0
+    return dot / denom
+
+action euclidean_distance(v1, v2):
+    n = len(v1)
+    sum_sq = 0
+    for i from 0 to n - 1:
+        diff = v1[i] - v2[i]
+        sum_sq = sum_sq + diff * diff
+    return sqrt(sum_sq)
+
+action sigmoid(z):
+    e = 2.718281828459
+    denom = 1.0 + pow(e, 0 - z)
+    return 1.0 / denom
+
+action relu(z):
+    when z > 0:
+        return z
+    return 0
+
+action leaky_relu(z, alpha):
+    when z > 0:
+        return z
+    return alpha * z
+
+action min_max_normalize(values):
+    n = len(values)
+    when n == 0:
+        return []
+    min_val = values[0]
+    max_val = values[0]
+    for val in values:
+        when val < min_val:
+            min_val = val
+        when val > max_val:
+            max_val = val
+    rng = (max_val - min_val) * 1.0
+    when rng == 0:
+        return values
+    res = []
+    for val in values:
+        norm = (val - min_val) / rng
+        append(res, norm)
+    return res
+
+action linear_regression_predict(features, weights, bias):
+    dot = vec_dot(features, weights)
+    return dot + bias
+
+action gini_impurity_binary(p1, p2):
+    return 1.0 - (p1 * p1 + p2 * p2)
+
+action predict_knn1(points, qx, qy):
+    best_dist = 999999
+    best_label = ""
+    for pt in points:
+        dx = pt.x - qx
+        dy = pt.y - qy
+        dist = dx * dx + dy * dy
+        when dist < best_dist:
+            best_dist = dist
+            best_label = pt.label
+    return best_label

@@ -1,0 +1,16 @@
+type enlng
+# Directly assign without remember
+foo = 100
+bar = "sovereign"
+baz = [1, 2, 3]
+
+action update():
+    inner = 50
+    return inner * 2
+
+res = update()
+
+when foo == 100 and bar == "sovereign" and len(baz) == 3 and res == 100:
+    show "[TEST PASS 032] Auto-Declaration Scoping"
+otherwise:
+    show "[FAIL 032]"

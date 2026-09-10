@@ -1,0 +1,9 @@
+type enlng
+
+# Reusable Math Library Module
+action cube(n):
+    return n * n * n
+
+action hypotenuse(a, b):
+    sum_sq = pow(a, 2) + pow(b, 2)
+    return sqrt(sum_sq)

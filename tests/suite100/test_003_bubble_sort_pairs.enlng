@@ -1,0 +1,12 @@
+type enlng
+arr = [64, 34, 25, 12, 22, 11, 90]
+
+repeat until sorted:
+    for each pair in arr:
+        when pair.left > pair.right:
+            swap pair
+
+when arr[0] == 11 and arr[6] == 90:
+    show "[TEST PASS 003] Bubble Sort Pairs"
+otherwise:
+    show "[FAIL 003]"

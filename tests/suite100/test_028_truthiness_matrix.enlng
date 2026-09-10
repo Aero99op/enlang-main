@@ -1,0 +1,32 @@
+type enlng
+t1 = 0
+t2 = 42
+t3 = ""
+t4 = "text"
+t5 = []
+t6 = [1]
+t7 = {}
+t8 = { "a": 1 }
+
+pass_cnt = 0
+when not t1:
+    pass_cnt = pass_cnt + 1
+when t2:
+    pass_cnt = pass_cnt + 1
+when not t3:
+    pass_cnt = pass_cnt + 1
+when t4:
+    pass_cnt = pass_cnt + 1
+when not t5:
+    pass_cnt = pass_cnt + 1
+when t6:
+    pass_cnt = pass_cnt + 1
+when not t7:
+    pass_cnt = pass_cnt + 1
+when t8:
+    pass_cnt = pass_cnt + 1
+
+when pass_cnt == 8:
+    show "[TEST PASS 028] Truthiness Matrix"
+otherwise:
+    show "[FAIL 028]"

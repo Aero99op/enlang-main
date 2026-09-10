@@ -1,0 +1,21 @@
+type enlng
+action two_sum(nums, target):
+    seen = {}
+    idx = 0
+    for num in nums:
+        diff = target - num
+        diff_str = "" + diff
+        when has_key(seen, diff_str):
+            return [seen[diff_str], idx]
+        num_str = "" + num
+        seen[num_str] = idx
+        idx = idx + 1
+    return [-1, -1]
+
+arr = [2, 7, 11, 15]
+ans = two_sum(arr, 9)
+
+when ans[0] == 0 and ans[1] == 1:
+    show "[TEST PASS 020] Two Sum HashMap"
+otherwise:
+    show "[FAIL 020]"

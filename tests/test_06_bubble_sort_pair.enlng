@@ -1,0 +1,12 @@
+type enlng
+
+remember numbers as [64, 34, 25, 12, 22, 11, 90]
+
+show "Original list:" numbers
+
+repeat until sorted:
+    for each pair in numbers:
+        when pair.left > pair.right:
+            swap pair
+
+show "Sorted list:" numbers

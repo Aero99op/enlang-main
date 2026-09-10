@@ -1,0 +1,5 @@
+# Invalid header domain test
+type python
+
+remember x as 10
+show x

@@ -1,0 +1,35 @@
+type enlng
+action bst_node(val):
+    return { "val": val, "left": null, "right": null }
+
+action bst_insert(root, val):
+    when root == null:
+        return bst_node(val)
+    when val < root.val:
+        root.left = bst_insert(root.left, val)
+    otherwise:
+        root.right = bst_insert(root.right, val)
+    return root
+
+action bst_search(root, target):
+    when root == null:
+        return false
+    when root.val == target:
+        return true
+    when target < root.val:
+        return bst_search(root.left, target)
+    return bst_search(root.right, target)
+
+tree = bst_node(50)
+bst_insert(tree, 30)
+bst_insert(tree, 70)
+bst_insert(tree, 20)
+bst_insert(tree, 40)
+
+has20 = bst_search(tree, 20)
+has99 = bst_search(tree, 99)
+
+when has20 and not has99:
+    show "[TEST PASS 012] Binary Search Tree"
+otherwise:
+    show "[FAIL 012]"

@@ -1,0 +1,27 @@
+type enlng
+action create_queue():
+    return { "items": [], "front": 0 }
+
+action enqueue(q, val):
+    append(q.items, val)
+
+action dequeue(q):
+    when q.front >= len(q.items):
+        return null
+    items = q.items
+    val = items[q.front]
+    q.front = q.front + 1
+    return val
+
+q = create_queue()
+enqueue(q, 100)
+enqueue(q, 200)
+enqueue(q, 300)
+
+a = dequeue(q)
+b = dequeue(q)
+
+when a == 100 and b == 200:
+    show "[TEST PASS 010] Queue FIFO"
+otherwise:
+    show "[FAIL 010]"

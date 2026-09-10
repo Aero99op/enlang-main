@@ -1,0 +1,12 @@
+type enlng
+c1 = (10 == 10)
+c2 = (10 != 20)
+c3 = (5 < 10)
+c4 = (15 > 10)
+c5 = (10 <= 10)
+c6 = (10 >= 10)
+
+when c1 and c2 and c3 and c4 and c5 and c6:
+    show "[TEST PASS 030] Comparisons Chain"
+otherwise:
+    show "[FAIL 030]"

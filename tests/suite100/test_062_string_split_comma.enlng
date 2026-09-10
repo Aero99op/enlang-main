@@ -1,0 +1,8 @@
+type enlng
+raw = "red,green,blue,yellow"
+parts = split(raw, ",")
+
+when len(parts) == 4 and parts[0] == "red" and parts[2] == "blue":
+    show "[TEST PASS 062] String split by Comma"
+otherwise:
+    show "[FAIL 062]"

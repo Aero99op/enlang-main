@@ -1,0 +1,9 @@
+type enlng
+str = "ENLANG"
+ch0 = str[0]
+ch1 = str[1]
+
+when ch0 == "E" and ch1 == "N":
+    show "[TEST PASS 066] String Indexing Positive"
+otherwise:
+    show "[FAIL 066]"

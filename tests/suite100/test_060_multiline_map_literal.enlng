@@ -1,0 +1,12 @@
+type enlng
+hero = {
+    "name": "Antigravity",
+    "speed": 100,
+    "power": 99,
+    "rank": "S"
+}
+
+when hero.name == "Antigravity" and hero.speed == 100 and hero.rank == "S":
+    show "[TEST PASS 060] Multiline Indented Map Literal"
+otherwise:
+    show "[FAIL 060]"

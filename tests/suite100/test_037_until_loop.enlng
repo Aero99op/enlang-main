@@ -1,0 +1,9 @@
+type enlng
+x = 1
+until x >= 16:
+    x = x * 2
+
+when x == 16:
+    show "[TEST PASS 037] Until Loop"
+otherwise:
+    show "[FAIL 037]"

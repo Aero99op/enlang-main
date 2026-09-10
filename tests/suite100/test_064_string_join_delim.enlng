@@ -1,0 +1,8 @@
+type enlng
+tokens = ["path", "to", "file", "txt"]
+s = join(tokens, "/")
+
+when s == "path/to/file/txt":
+    show "[TEST PASS 064] String join with Delimiter"
+otherwise:
+    show "[FAIL 064]"

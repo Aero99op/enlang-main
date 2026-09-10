@@ -1,0 +1,11 @@
+type enlng
+salaries = { "dev": 100, "qa": 80, "pm": 120 }
+total = 0
+roles = keys(salaries)
+for role in roles:
+    total = total + salaries[role]
+
+when total == 300:
+    show "[TEST PASS 058] Map Iteration via keys"
+otherwise:
+    show "[FAIL 058]"

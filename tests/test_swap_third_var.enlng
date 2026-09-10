@@ -1,0 +1,17 @@
+type enlng
+
+remember first_number as 10
+remember second_number as 20
+
+show "Before Swap:"
+show "First number:" first_number
+show "Second number:" second_number
+
+# Swapping using a third temporary variable
+remember temporary as first_number
+first_number = second_number
+second_number = temporary
+
+show "After Swap:"
+show "First number:" first_number
+show "Second number:" second_number

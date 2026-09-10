@@ -1,0 +1,22 @@
+type enlng
+action binary_search(arr, target):
+    low = 0
+    high = len(arr) - 1
+    while low <= high:
+        mid = (low + high) / 2
+        when arr[mid] == target:
+            return mid
+        when arr[mid] < target:
+            low = mid + 1
+        otherwise:
+            high = mid - 1
+    return -1
+
+sorted_arr = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91]
+r1 = binary_search(sorted_arr, 23)
+r2 = binary_search(sorted_arr, 99)
+
+when r1 == 5 and r2 == -1:
+    show "[TEST PASS 002] Binary Search"
+otherwise:
+    show "[FAIL 002]"

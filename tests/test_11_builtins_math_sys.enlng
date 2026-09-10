@@ -1,0 +1,37 @@
+type enlng
+
+# Test 11: Native Standard Library Math & System Built-ins
+
+sq = sqrt(144)
+show "sqrt(144) =" sq
+
+pw = pow(2, 10)
+show "pow(2, 10) =" pw
+
+ab = abs(-42)
+show "abs(-42) =" ab
+
+fl = floor(4.9)
+show "floor(4.9) =" fl
+
+ce = ceil(4.1)
+show "ceil(4.1) =" ce
+
+rd = round(4.6)
+show "round(4.6) =" rd
+
+mn = min(15, 88)
+show "min(15, 88) =" mn
+
+mx = max(15, 88)
+show "max(15, 88) =" mx
+
+rnd = random_number(10, 20)
+show "random_number(10, 20) =" rnd
+
+t = time_now()
+show "time_now() timestamp is positive:" (t > 0)
+
+show "Testing sleep 1 second..."
+sleep(1)
+show "Sleep finished successfully!"

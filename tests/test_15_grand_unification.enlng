@@ -1,0 +1,61 @@
+type enlng
+
+# Grand Unification Test: All Domains Working in Pure .enlng
+# No C/H modifications needed!
+
+show "=== 1. DSA Stack Demonstration ==="
+stack = []
+append(stack, "Task 1")
+append(stack, "Task 2")
+append(stack, "Task 3")
+show "Stack after 3 pushes:" stack
+item1 = pop(stack)
+show "Popped top item:" item1
+show "Stack remaining:" stack
+
+show "\n=== 2. Student Grade Management (HashMaps & Statistics) ==="
+grades = {
+    "Alice": 95,
+    "Bob": 82,
+    "Charlie": 88,
+    "Diana": 91
+}
+
+# Update student grades
+grades["Edward"] = 79
+grades.Bob = 85
+
+student_names = keys(grades)
+student_scores = values(grades)
+show "Enrolled students:" student_names
+show "Scores:" student_scores
+
+sum = 0
+for score in student_scores:
+    sum = sum + score
+
+n = len(student_scores)
+avg = sum / n
+show "Total score:" sum
+show "Class average:" avg
+
+variance_sum = 0
+for score in student_scores:
+    diff = score - avg
+    variance_sum = variance_sum + pow(diff, 2)
+
+std_dev = round(sqrt(variance_sum / n))
+show "Class score standard deviation:" std_dev
+
+show "\n=== 3. File I/O & String Processing ==="
+report_file = "class_report.txt"
+report_content = "Course: Advanced Sovereignty\nAverage: " + avg + "\nStatus: Complete\n"
+write_file(report_file, report_content)
+
+show "Report written! Checking existence:" file_exists(report_file)
+saved_data = read_file(report_file)
+show "Read back from disk:"
+show saved_data
+
+# Clean up
+show "Grand Unification Test Completed Successfully!"

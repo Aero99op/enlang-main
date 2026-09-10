@@ -1,0 +1,12 @@
+type enlng
+# Sigmoid: 1 / (1 + e^-z). For z = 0, sigmoid is exactly 0.5
+action sigmoid(z):
+    e = 2.718281828459
+    denom = 1.0 + pow(e, 0 - z)
+    return 1.0 / denom
+
+sig0 = sigmoid(0)
+when sig0 > 0.49 and sig0 < 0.51:
+    show "[TEST PASS 086] Sigmoid Activation"
+otherwise:
+    show "[FAIL 086]"

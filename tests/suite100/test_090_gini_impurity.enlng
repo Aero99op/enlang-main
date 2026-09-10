@@ -1,0 +1,13 @@
+type enlng
+# For binary classification: 1 - (p1^2 + p2^2)
+# If split is 50/50: 1 - (0.25 + 0.25) = 0.5
+action gini(p1, p2):
+    return 1.0 - (pow(p1, 2) + pow(p2, 2))
+
+g_even = gini(0.5, 0.5)
+g_pure = gini(1.0, 0.0)
+
+when g_even == 0.5 and g_pure == 0.0:
+    show "[TEST PASS 090] Gini Impurity"
+otherwise:
+    show "[FAIL 090]"
