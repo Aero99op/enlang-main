@@ -1660,6 +1660,20 @@ function transpileEnlngToJS(lines) {
       }
     }
 
+    // 2e. Swap Variables: swap a and b / swap a with b / swap a, b
+    const swapVarMatch = trimmed.match(/^swap\s+([a-zA-Z0-9_\[\]\.]+)(?:\s*(?:and|with|,)\s*|\s+)([a-zA-Z0-9_\[\]\.]+)$/i);
+    if (swapVarMatch && swapVarMatch[1].toLowerCase() !== 'pair') {
+      const left = transpileExpression(swapVarMatch[1]);
+      const right = transpileExpression(swapVarMatch[2]);
+      const tmpVar = `__swap_tmp_${intermediateLines.length}`;
+      intermediateLines.push({
+        type: 'stmt',
+        indent: indentLen,
+        code: `let ${tmpVar} = ${left}; ${left} = ${right}; ${right} = ${tmpVar};`
+      });
+      continue;
+    }
+
     // 3. Direct assignment: a = b
     const directAssign = trimmed.match(/^([a-zA-Z0-9_\[\]\.]+)\s*=\s*(.*)$/);
     if (directAssign) {
