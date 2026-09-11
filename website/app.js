@@ -1420,113 +1420,162 @@ function initPlayground() {
 
 
 // Client-Side Sovereign Enlng Transpiler & Sandbox Execution
-function executeEnlngInBrowser(sourceCode, terminal) {
-  terminal.innerHTML = '';
-  const lines = sourceCode.split('\n');
-  const outputLines = [];
-
-  const log = (...args) => {
-    outputLines.push(args.join(' '));
-  };
-
-  try {
-    const jsCode = transpileEnlngToJS(lines);
-    
-    // Sandbox execution context
-    const sandboxFunction = new Function('display', 'smartDisplay', 'cat', jsCode);
-    
-    const smartDisplay = (...args) => {
-      let sep = ' ';
-      let cleanArgs = args;
-      if (args.length > 0 && typeof args[args.length - 1] === 'object' && args[args.length - 1] !== null && '__sep' in args[args.length - 1]) {
-        sep = args[args.length - 1].__sep;
-        cleanArgs = args.slice(0, -1);
-      }
-      
-      if (sep === '') {
-        log(cleanArgs.map(a => String(a)).join(''));
-        return;
-      }
-      
-      const res = [];
-      for (let i = 0; i < cleanArgs.length; i++) {
-        const s = String(cleanArgs[i]);
-        if (i > 0 && res.length > 0) {
-          const prev = res[res.length - 1];
-          if (!prev.endsWith(' ') && !s.startsWith(' ')) {
-            res.push(sep);
-          }
-        }
-        res.push(s);
-      }
-      log(res.join(''));
-    };
-
-    const cat = (...args) => args.map(a => String(a)).join('');
-
-    const t0 = performance.now();
-    sandboxFunction(smartDisplay, smartDisplay, cat);
-    const t1 = performance.now();
-
-    const timePill = document.getElementById('runtimeExecTime');
-    if (timePill) {
-      timePill.textContent = `Execution: ${(t1 - t0).toFixed(2)}ms (Zero GC)`;
-    }
-
-    if (outputLines.length === 0) {
-      terminal.innerHTML = '<span class="term-dim">// Execution completed with 0 output statements</span>';
-    } else {
-      terminal.textContent = outputLines.join('\n');
-    }
-  } catch (err) {
-    terminal.innerHTML = `<span class="term-err">Enlng Runtime Error: ${escapeHtml(err.message)}</span>`;
-    const timePill = document.getElementById('runtimeExecTime');
-    if (timePill) {
-      timePill.textContent = 'Execution: Interrupted';
-    }
-  }
+function maskStrings(str) {
+  const strings = [];
+  const masked = str.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, (match) => {
+    strings.push(match);
+    return `__STR_${strings.length - 1}__`;
+  });
+  return { masked, strings };
 }
 
-function splitOutsideQuotes(str, delimiter) {
-  const result = [];
-  let current = '';
-  let inSingle = false;
-  let inDouble = false;
+function unmaskStrings(str, strings) {
+  return str.replace(/__STR_(\d+)__/g, (_, idx) => strings[Number(idx)]);
+}
 
-  for (let i = 0; i < str.length; i++) {
-    const ch = str[i];
-    if (ch === "'" && !inDouble) {
-      inSingle = !inSingle;
-      current += ch;
-    } else if (ch === '"' && !inSingle) {
-      inDouble = !inDouble;
-      current += ch;
-    } else if (ch === delimiter && !inSingle && !inDouble) {
-      result.push(current.trim());
-      current = '';
+function mergeLogicalLines(lines) {
+  const merged = [];
+  let currentLine = null;
+  let currentIndent = 0;
+  let braceDepth = 0;
+  let bracketDepth = 0;
+  let parenDepth = 0;
+
+  for (let rawLine of lines) {
+    const trimmed = rawLine.trim();
+    const indent = rawLine.length - rawLine.trimStart().length;
+
+    if (braceDepth === 0 && bracketDepth === 0 && parenDepth === 0) {
+      if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('//')) {
+        merged.push({ indent, text: trimmed });
+        continue;
+      }
+      currentLine = trimmed;
+      currentIndent = indent;
     } else {
-      current += ch;
+      let clean = trimmed;
+      let inDbl = false, inSgl = false;
+      for (let i = 0; i < clean.length; i++) {
+        if (clean[i] === '"' && !inSgl) inDbl = !inDbl;
+        else if (clean[i] === "'" && !inDbl) inSgl = !inSgl;
+        else if (clean[i] === '#' && !inDbl && !inSgl) {
+          clean = clean.slice(0, i).trim();
+          break;
+        }
+      }
+      if (clean) {
+        currentLine += ' ' + clean;
+      }
+    }
+
+    let inDbl = false, inSgl = false;
+    for (let i = 0; i < trimmed.length; i++) {
+      const ch = trimmed[i];
+      if (ch === '"' && !inSgl) inDbl = !inDbl;
+      else if (ch === "'" && !inDbl) inSgl = !inSgl;
+      else if (ch === '#' && !inDbl && !inSgl) {
+        break;
+      } else if (!inDbl && !inSgl) {
+        if (ch === '{') braceDepth++;
+        else if (ch === '}') braceDepth = Math.max(0, braceDepth - 1);
+        else if (ch === '[') bracketDepth++;
+        else if (ch === ']') bracketDepth = Math.max(0, bracketDepth - 1);
+        else if (ch === '(') parenDepth++;
+        else if (ch === ')') parenDepth = Math.max(0, parenDepth - 1);
+      }
+    }
+
+    if (braceDepth === 0 && bracketDepth === 0 && parenDepth === 0) {
+      if (currentLine !== null) {
+        merged.push({ indent: currentIndent, text: currentLine });
+        currentLine = null;
+      }
     }
   }
-  result.push(current.trim());
-  return result;
+
+  if (currentLine !== null) {
+    merged.push({ indent: currentIndent, text: currentLine });
+  }
+
+  return merged;
+}
+
+function transpileExpressionRaw(res) {
+  if (!res) return '';
+
+  // 1. Silent words stripping
+  res = res.replace(/\b(?:the|that|it\s+is|it)\s+/gi, ' ');
+
+  // 2. Count / length of (must run before general 'of' property access)
+  res = res.replace(/\b(?:count of|length of|size of)\s+([a-zA-Z0-9_\[\]\.]+)/gi, 'enlng_count($1)');
+
+  // 3. Universal property access: <field> of <object>
+  res = res.replace(/\b([a-zA-Z0-9_]+)\s+of\s+([a-zA-Z0-9_\[\]\.]+)/gi, '$2.$1');
+
+  // 4. Universal indexing: <container> at <index>
+  res = res.replace(/\b([a-zA-Z0-9_\[\]\.]+)\s+at\s+([a-zA-Z0-9_\"\'\.]+|__STR_\d+__)/gi, '$1[$2]');
+
+  // 5. Function call with 'with': fn with a, b -> fn(a, b)
+  res = res.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s+with\s+([^;\n]+)/gi, '$1($2)');
+
+  // 6. Comparison & logical aliases
+  res = res.replace(/\bis not\b/gi, '!==');
+  res = res.replace(/\bis equal to\b/gi, '===');
+  res = res.replace(/\bis not equal to\b/gi, '!==');
+  res = res.replace(/\bis at least\b/gi, '>=');
+  res = res.replace(/\bis at most\b/gi, '<=');
+  res = res.replace(/\bis greater than or equal to\b/gi, '>=');
+  res = res.replace(/\bis less than or equal to\b/gi, '<=');
+  res = res.replace(/\bis greater than\b/gi, '>');
+  res = res.replace(/\bis less than\b/gi, '<');
+  res = res.replace(/\bgreater than or equal to\b/gi, '>=');
+  res = res.replace(/\bless than or equal to\b/gi, '<=');
+  res = res.replace(/\bgreater than\b/gi, '>');
+  res = res.replace(/\bless than\b/gi, '<');
+  res = res.replace(/\bequal to\b/gi, '===');
+  res = res.replace(/\bequals\b/gi, '===');
+  res = res.replace(/\bis\b/gi, '===');
+
+  // 7. Math aliases
+  res = res.replace(/\bmultiplied by\b/gi, '*');
+  res = res.replace(/\btimes\b/gi, '*');
+  res = res.replace(/\bdivided by\b/gi, '/');
+  res = res.replace(/\bplus\b/gi, '+');
+  res = res.replace(/\bminus\b/gi, '-');
+  res = res.replace(/\b(mod|modulo|modulus|modulous)\b/gi, '%');
+
+  // 8. Boolean logical operators
+  res = res.replace(/\band\b/gi, '&&');
+  res = res.replace(/\bor\b/gi, '||');
+  res = res.replace(/\bnot\s+/gi, '!');
+
+  return res;
+}
+
+function transpileExpression(expr) {
+  if (!expr) return '';
+  const { masked, strings } = maskStrings(expr);
+  const raw = transpileExpressionRaw(masked);
+  return unmaskStrings(raw, strings);
 }
 
 function transpileEnlngToJS(lines) {
+  const mergedLines = mergeLogicalLines(lines);
   const intermediateLines = [];
   const declaredVars = new Set();
-  
-  for (let rawLine of lines) {
-    const indentLen = rawLine.length - rawLine.trimStart().length;
-    let trimmed = rawLine.trim();
+  let currentPairLoop = null;
+
+  for (let item of mergedLines) {
+    const indentLen = item.indent;
+    let trimmed = item.text;
 
     if (!trimmed) {
       intermediateLines.push({ type: 'blank', indent: indentLen, code: '' });
       continue;
     }
 
-    if (trimmed.startsWith('#')) {
-      intermediateLines.push({ type: 'comment', indent: indentLen, code: `// ${trimmed.replace(/^#\s*/, '')}` });
+    if (trimmed.startsWith('#') || trimmed.startsWith('//')) {
+      intermediateLines.push({ type: 'comment', indent: indentLen, code: `// ${trimmed.replace(/^[#\/]+\s*/, '')}` });
       continue;
     }
 
@@ -1535,8 +1584,8 @@ function transpileEnlngToJS(lines) {
       continue;
     }
 
-    // 1. Variable Declarations (create / declare / initialize / let / define)
-    const createMatch = trimmed.match(/^(?:create\s+(?:a\s+|an\s+|the\s+)?|declare\s+(?:a\s+|an\s+|the\s+)?|initialize\s+(?:a\s+|an\s+|the\s+)?|let\s+|define\s+)([a-zA-Z0-9_]+)\s+(?:of|as|to|=)\s+(.*)$/i);
+    // 1. Variable Declarations (remember / freeze / create / declare / initialize / let / define)
+    const createMatch = trimmed.match(/^(?:remember\s+(?:a\s+|an\s+|the\s+)?|freeze\s+(?:a\s+|an\s+|the\s+)?|create\s+(?:a\s+|an\s+|the\s+)?|declare\s+(?:a\s+|an\s+|the\s+)?|initialize\s+(?:a\s+|an\s+|the\s+)?|let\s+|define\s+)([a-zA-Z0-9_]+)\s+(?:of|as|to|=)\s+(.*)$/i);
     if (createMatch) {
       const varName = createMatch[1];
       const valExpr = transpileExpression(createMatch[2]);
@@ -1557,26 +1606,58 @@ function transpileEnlngToJS(lines) {
       continue;
     }
 
-    // 2b. Increment / Decrement
-    const incMatch = trimmed.match(/^(?:increase)\s+([a-zA-Z0-9_\[\]\.]+)\s+by\s+(.*)$/i);
-    if (incMatch) {
-      const target = incMatch[1];
-      const valExpr = transpileExpression(incMatch[2]);
+    // 2b. Postfix Increment / Decrement: <target> increases / decreases by <expr>
+    const incPostMatch = trimmed.match(/^([a-zA-Z0-9_\[\]\.\s]+?)\s+(?:increases|increased)\s+by\s+(.*)$/i);
+    if (incPostMatch) {
+      const rawTarget = incPostMatch[1].trim();
+      const target = transpileExpression(rawTarget);
+      const valExpr = transpileExpression(incPostMatch[2]);
       if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(target)) {
         declaredVars.add(target);
       }
       intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${target} += ${valExpr};` });
       continue;
     }
-    const decMatch = trimmed.match(/^(?:decrease)\s+([a-zA-Z0-9_\[\]\.]+)\s+by\s+(.*)$/i);
-    if (decMatch) {
-      const target = decMatch[1];
-      const valExpr = transpileExpression(decMatch[2]);
+    const decPostMatch = trimmed.match(/^([a-zA-Z0-9_\[\]\.\s]+?)\s+(?:decreases|decreased)\s+by\s+(.*)$/i);
+    if (decPostMatch) {
+      const rawTarget = decPostMatch[1].trim();
+      const target = transpileExpression(rawTarget);
+      const valExpr = transpileExpression(decPostMatch[2]);
       if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(target)) {
         declaredVars.add(target);
       }
       intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${target} -= ${valExpr};` });
       continue;
+    }
+
+    // 2c. Prefix Increment / Decrement: increase / decrease <target> by <expr>
+    const incMatch = trimmed.match(/^(?:increase)\s+([a-zA-Z0-9_\[\]\.\s]+?)\s+by\s+(.*)$/i);
+    if (incMatch) {
+      const target = transpileExpression(incMatch[1].trim());
+      const valExpr = transpileExpression(incMatch[2]);
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(target)) declaredVars.add(target);
+      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${target} += ${valExpr};` });
+      continue;
+    }
+    const decMatch = trimmed.match(/^(?:decrease)\s+([a-zA-Z0-9_\[\]\.\s]+?)\s+by\s+(.*)$/i);
+    if (decMatch) {
+      const target = transpileExpression(decMatch[1].trim());
+      const valExpr = transpileExpression(decMatch[2]);
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(target)) declaredVars.add(target);
+      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `${target} -= ${valExpr};` });
+      continue;
+    }
+
+    // 2d. Swap Pair
+    if (/^swap\s+pair$/i.test(trimmed)) {
+      if (currentPairLoop) {
+        intermediateLines.push({
+          type: 'stmt',
+          indent: indentLen,
+          code: `let __tmp = ${currentPairLoop.list}[${currentPairLoop.index}]; ${currentPairLoop.list}[${currentPairLoop.index}] = ${currentPairLoop.list}[${currentPairLoop.index} + 1]; ${currentPairLoop.list}[${currentPairLoop.index} + 1] = __tmp; __sorted = false;`
+        });
+        continue;
+      }
     }
 
     // 3. Direct assignment: a = b
@@ -1591,7 +1672,21 @@ function transpileEnlngToJS(lines) {
       continue;
     }
 
-    // 4. Loops (while / repeat while)
+    // 4a. Repeat Until Sorted
+    if (/^repeat\s+until\s+(?:it\s+is\s+)?sorted:$/i.test(trimmed)) {
+      intermediateLines.push({ type: 'block_open', indent: indentLen, code: `let __sorted = false; while (!__sorted) { __sorted = true;` });
+      continue;
+    }
+
+    // 4b. Repeat Until <cond>
+    const untilMatch = trimmed.match(/^repeat\s+until\s+(.*?):$/i);
+    if (untilMatch) {
+      const cond = transpileExpression(untilMatch[1]);
+      intermediateLines.push({ type: 'block_open', indent: indentLen, code: `while (!(${cond})) {` });
+      continue;
+    }
+
+    // 4c. Loops (while / repeat while)
     const whileMatch = trimmed.match(/^(?:while|repeat\s+while)\s+(.*?):$/i);
     if (whileMatch) {
       const cond = transpileExpression(whileMatch[1]);
@@ -1599,7 +1694,49 @@ function transpileEnlngToJS(lines) {
       continue;
     }
 
-    // 5. Conditionals (if / elif / else)
+    // 4d. For each pair in <list>:
+    const pairMatch = trimmed.match(/^for\s+(?:each\s+)?pair\s+in\s+([a-zA-Z0-9_\[\]\.]+):$/i);
+    if (pairMatch) {
+      const listName = pairMatch[1];
+      const idxVar = `__pair_i_${intermediateLines.length}`;
+      currentPairLoop = { list: listName, index: idxVar };
+      intermediateLines.push({
+        type: 'block_open',
+        indent: indentLen,
+        code: `for (let ${idxVar} = 0; ${idxVar} < ${listName}.length - 1; ${idxVar}++) { let pair = { left: ${listName}[${idxVar}], right: ${listName}[${idxVar} + 1] };`
+      });
+      continue;
+    }
+
+    // 4e. For <item> in <list>:
+    const forInMatch = trimmed.match(/^for\s+([a-zA-Z0-9_]+)\s+in\s+([a-zA-Z0-9_\[\]\.]+):$/i);
+    if (forInMatch) {
+      const itemVar = forInMatch[1];
+      const listName = forInMatch[2];
+      intermediateLines.push({
+        type: 'block_open',
+        indent: indentLen,
+        code: `for (let ${itemVar} of ${listName}) {`
+      });
+      continue;
+    }
+
+    // 4f. For <i> from <start> to <end> (by <step>):
+    const forRangeMatch = trimmed.match(/^for\s+([a-zA-Z0-9_]+)\s+from\s+(.*?)\s+to\s+(.*?)(?:\s+by\s+(.*?))?:$/i);
+    if (forRangeMatch) {
+      const iVar = forRangeMatch[1];
+      const startVal = transpileExpression(forRangeMatch[2]);
+      const endVal = transpileExpression(forRangeMatch[3]);
+      const stepVal = forRangeMatch[4] ? transpileExpression(forRangeMatch[4]) : '1';
+      intermediateLines.push({
+        type: 'block_open',
+        indent: indentLen,
+        code: `for (let ${iVar} = ${startVal}; ${iVar} <= ${endVal}; ${iVar} += ${stepVal}) {`
+      });
+      continue;
+    }
+
+    // 5. Conditionals (if / when / otherwise / else)
     const ifMatch = trimmed.match(/^(?:if|when)\s+(.*?):$/i);
     if (ifMatch) {
       const cond = transpileExpression(ifMatch[1]);
@@ -1619,22 +1756,29 @@ function transpileEnlngToJS(lines) {
       continue;
     }
 
-    // 6. Function definitions
-    const defMatch = trimmed.match(/^(?:define|def|function)\s+([a-zA-Z0-9_]+)\s*\((.*?)\)\s*:$/i);
-    if (defMatch) {
-      intermediateLines.push({ type: 'block_open', indent: indentLen, code: `function ${defMatch[1]}(${defMatch[2]}) {` });
+    // 6. Function definitions with 'with' or parens
+    const defWithMatch = trimmed.match(/^(?:function|define|def)\s+([a-zA-Z0-9_]+)\s+with\s+(.*?):$/i);
+    if (defWithMatch) {
+      const fnName = defWithMatch[1];
+      const params = defWithMatch[2];
+      intermediateLines.push({ type: 'block_open', indent: indentLen, code: `function ${fnName}(${params}) {` });
+      continue;
+    }
+    const defParenMatch = trimmed.match(/^(?:function|define|def)\s+([a-zA-Z0-9_]+)\s*\((.*?)\)\s*:$/i);
+    if (defParenMatch) {
+      intermediateLines.push({ type: 'block_open', indent: indentLen, code: `function ${defParenMatch[1]}(${defParenMatch[2]}) {` });
       continue;
     }
 
-    // 7. Returns
-    const retMatch = trimmed.match(/^return(?:\s+(.*))?$/i);
+    // 7. Returns (give / return)
+    const retMatch = trimmed.match(/^(?:give|return)(?:\s+(.*))?$/i);
     if (retMatch) {
       const val = retMatch[1] ? transpileExpression(retMatch[1]) : '';
       intermediateLines.push({ type: 'stmt', indent: indentLen, code: `return ${val};` });
       continue;
     }
 
-    // 8. Display / Print statements
+    // 8. Display / Show / Output / Print statements
     const displayMatch = trimmed.match(/^(?:display|show|output|print)\s+(.*)$/i);
     if (displayMatch) {
       let body = displayMatch[1].trim();
@@ -1651,24 +1795,16 @@ function transpileEnlngToJS(lines) {
         }
       }
 
-      // Check for concatenation operator '+' outside string literals
-      const plusParts = splitOutsideQuotes(body, '+');
-      if (plusParts.length > 1) {
-        const catArgs = plusParts.map(p => transpileExpression(p.trim())).join(', ');
-        intermediateLines.push({ type: 'stmt', indent: indentLen, code: `smartDisplay(cat(${catArgs})${sepArg});` });
-        continue;
-      }
+      const { masked, strings } = maskStrings(body);
+      let transpiled = transpileExpressionRaw(masked);
 
-      body = transpileExpression(body);
+      // Auto-comma insertion between tokens and string placeholders
+      transpiled = transpiled.replace(/(__STR_\d+__)\s+([a-zA-Z0-9_\(\[\{])/g, '$1, $2');
+      transpiled = transpiled.replace(/([a-zA-Z0-9_\]\)\}])\s+(__STR_\d+__)/g, '$1, $2');
+      transpiled = transpiled.replace(/(__STR_\d+__)\s+(__STR_\d+__)/g, '$1, $2');
 
-      // Auto comma for comma-less space-separated string literals and tokens
-      if (!body.includes(',')) {
-        body = body.replace(/("[^"]*"|'[^']*')\s+([a-zA-Z0-9_\(\[\{])/g, '$1, $2');
-        body = body.replace(/([a-zA-Z0-9_\]\)\}])\s+("[^"]*"|'[^']*')/g, '$1, $2');
-        body = body.replace(/("[^"]*"|'[^']*')\s+("[^"]*"|'[^']*')/g, '$1, $2');
-      }
-
-      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `smartDisplay(${body}${sepArg});` });
+      const finalBody = unmaskStrings(transpiled, strings);
+      intermediateLines.push({ type: 'stmt', indent: indentLen, code: `smartDisplay(${finalBody}${sepArg});` });
       continue;
     }
 
@@ -1678,7 +1814,7 @@ function transpileEnlngToJS(lines) {
 
   // Second pass: Indentation block resolution
   const finalJS = [];
-  const blockStack = []; // stores indent of enclosing blocks
+  const blockStack = [];
 
   for (const item of intermediateLines) {
     if (item.type === 'blank') {
@@ -1700,7 +1836,6 @@ function transpileEnlngToJS(lines) {
       continue;
     }
 
-    // For statements and new block openings, close any blocks deeper than this indent
     while (blockStack.length > 0 && item.indent <= blockStack[blockStack.length - 1]) {
       const closedIndent = blockStack.pop();
       finalJS.push(' '.repeat(closedIndent) + '}');
@@ -1725,45 +1860,78 @@ function transpileEnlngToJS(lines) {
   return finalJS.join('\n');
 }
 
-function transpileExpression(expr) {
-  if (!expr) return '';
-  let res = expr;
+function enlng_count(obj) {
+  if (obj === null || obj === undefined) return 0;
+  if (Array.isArray(obj) || typeof obj === 'string') return obj.length;
+  return Object.keys(obj).length;
+}
 
-  // Comparison & logical aliases
-  res = res.replace(/\bis equal to\b/gi, '===');
-  res = res.replace(/\bis not equal to\b/gi, '!==');
-  res = res.replace(/\bis at least\b/gi, '>=');
-  res = res.replace(/\bis at most\b/gi, '<=');
-  res = res.replace(/\bis greater than or equal to\b/gi, '>=');
-  res = res.replace(/\bis less than or equal to\b/gi, '<=');
-  res = res.replace(/\bis greater than\b/gi, '>');
-  res = res.replace(/\bis less than\b/gi, '<');
-  res = res.replace(/\bgreater than or equal to\b/gi, '>=');
-  res = res.replace(/\bless than or equal to\b/gi, '<=');
-  res = res.replace(/\bgreater than\b/gi, '>');
-  res = res.replace(/\bless than\b/gi, '<');
-  res = res.replace(/\bequal to\b/gi, '===');
-  res = res.replace(/\bequals\b/gi, '===');
+function append(list, item) {
+  if (Array.isArray(list)) list.push(item);
+  return list;
+}
 
-  // Math aliases
-  res = res.replace(/\bmultiplied by\b/gi, '*');
-  res = res.replace(/\bdivided by\b/gi, '/');
-  res = res.replace(/\bplus\b/gi, '+');
-  res = res.replace(/\bminus\b/gi, '-');
-  res = res.replace(/\b(mod|modulo|modulus|modulous|modoulous)\b/gi, '%');
+function executeEnlngInBrowser(sourceCode, terminal) {
+  terminal.innerHTML = '';
+  const lines = sourceCode.split('\n');
+  const outputLines = [];
 
-  // Boolean logical operators
-  res = res.replace(/\band\b/gi, '&&');
-  res = res.replace(/\bor\b/gi, '||');
-  res = res.replace(/\bnot\s+/gi, '!');
+  const log = (...args) => {
+    outputLines.push(args.join(' '));
+  };
 
-  // Collection containment: <collection> contains <item>
-  res = res.replace(/\b([a-zA-Z0-9_\[\]]+)\s+contains\s+(.*)/gi, '($1.includes($2))');
+  try {
+    const jsCode = transpileEnlngToJS(lines);
+    
+    // Sandbox execution context
+    const sandboxFunction = new Function('display', 'smartDisplay', 'cat', 'enlng_count', 'append', jsCode);
+    
+    const smartDisplay = (...args) => {
+      let sep = ' ';
+      let cleanArgs = args;
+      if (args.length > 0 && typeof args[args.length - 1] === 'object' && args[args.length - 1] !== null && '__sep' in args[args.length - 1]) {
+        sep = args[args.length - 1].__sep;
+        cleanArgs = args.slice(0, -1);
+      }
+      
+      const res = [];
+      for (let i = 0; i < cleanArgs.length; i++) {
+        const item = cleanArgs[i];
+        const s = typeof item === 'object' && item !== null ? JSON.stringify(item) : String(item);
+        if (i > 0 && res.length > 0) {
+          const prev = res[res.length - 1];
+          if (!prev.endsWith(' ') && !s.startsWith(' ')) {
+            res.push(sep);
+          }
+        }
+        res.push(s);
+      }
+      log(res.join(''));
+    };
 
-  // Collection size/length: length of <var> or size of <var>
-  res = res.replace(/\b(?:length of|size of)\s+([a-zA-Z0-9_\[\]]+)/gi, '$1.length');
+    const cat = (...args) => args.map(a => String(a)).join('');
 
-  return res;
+    const t0 = performance.now();
+    sandboxFunction(smartDisplay, smartDisplay, cat, enlng_count, append);
+    const t1 = performance.now();
+
+    const timePill = document.getElementById('runtimeExecTime');
+    if (timePill) {
+      timePill.textContent = `Execution: ${(t1 - t0).toFixed(2)}ms (Zero GC)`;
+    }
+
+    if (outputLines.length === 0) {
+      terminal.innerHTML = '<span class="term-dim">// Execution completed with 0 output statements</span>';
+    } else {
+      terminal.textContent = outputLines.join('\n');
+    }
+  } catch (err) {
+    terminal.innerHTML = `<span class="term-err">Enlng Runtime Error: ${escapeHtml(err.message)}</span>`;
+    const timePill = document.getElementById('runtimeExecTime');
+    if (timePill) {
+      timePill.textContent = 'Execution: Interrupted';
+    }
+  }
 }
 
 function escapeHtml(str) {
@@ -1784,18 +1952,18 @@ const DOMAINS_DATA = {
     ],
     code: `type enlng
 
-set word to "madam"
-set reversed to ""
-set i to 0
+remember word as "madam"
+remember reversed as ""
+remember i as 0
 
-while i less than length of word:
-    set reversed to word[i] plus reversed 
-    set i to i plus 1
+repeat while i < (count of word):
+    reversed = word at i plus reversed
+    i increases by 1
 
-if word is equal to reversed:
-    display "The word '" + word + "' is a palindrome!"
-else:
-    display "not palindrome"`
+when word is reversed:
+    show "The word '" word "' is a palindrome!"
+otherwise:
+    show "The word '" word "' is not a palindrome`
   },
   enlngf: {
     tier: 'Tier 2 · Client Representation',
