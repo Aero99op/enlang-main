@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   highlightActiveNav();
   initMobileMenu();
   initInstallerTabs();
+  initPlatformTabs();
   initPlayground();
   initDomainTabs();
   initAnimatedBook();
@@ -23,7 +24,7 @@ const INSTALL_COMMANDS = {
   cmd: 'curl -fsSL https://enlangg.vercel.app/install.cmd -o install.cmd && install.cmd',
   bash: 'curl -fsSL https://enlangg.vercel.app/install.sh | bash',
   enlngdb: 'enlngdb run my_store.enlngdb --interactive',
-  pip: 'pip install enlngdb'
+  pip: 'pip install enlang'
 };
 
 function initInstallerTabs() {
@@ -66,6 +67,28 @@ function initInstallerTabs() {
       }
     });
   }
+}
+
+function initPlatformTabs() {
+  const platformBar = document.getElementById('installPlatformBar');
+  if (!platformBar) return;
+  const btns = platformBar.querySelectorAll('.chip-btn');
+  const sections = document.querySelectorAll('.install-platform-section');
+
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.getAttribute('data-platform');
+      sections.forEach(sec => {
+        if (sec.id === 'platform-' + target) {
+          sec.style.display = 'block';
+        } else {
+          sec.style.display = 'none';
+        }
+      });
+    });
+  });
 }
 
 // --- 2. Live In-Browser Enlng Playground & VM ---
@@ -1044,27 +1067,30 @@ function extractStatements(text) {
 
 // Identifies if source code belongs to EnlngDB database engine
 function isEnlngDbCode(code) {
-  const trimmed = code.trim().toLowerCase();
-  if (trimmed.startsWith('type enlngdb') || trimmed.startsWith('type enlgdb')) {
+  if (!code) return false;
+  const trimmed = code.trim();
+
+  // 1. Explicit domain directive takes absolute priority
+  if (/^\s*type\s+(?:enlngdb|enlgdb)\b/i.test(trimmed)) {
     return true;
   }
+  if (/^\s*type\s+(?:enlng|enlangg|enlngs|enlngf|enlngd|enlngm)\b/i.test(trimmed)) {
+    return false;
+  }
+
+  // 2. Strict EnlngDB query detection (only when no explicit non-DB type directive is given)
   const dbPatterns = [
-    /\bshow\s+databases\b/i,
-    /\buse\s+database\b/i,
-    /\buse\s+[a-zA-Z0-9_\-.]+\s*;/i,
-    /\bshow\s+tables\b/i,
+    /\bshow\s+(?:databases|tables)\b/i,
+    /\buse\s+(?:database\s+)?[a-zA-Z0-9_\-.]+\s*;?/i,
     /\bcreate\s+table\b/i,
     /\binsert\s+(?:record\s+)?into\b/i,
-    /\bfind\s+all\s+records\b/i,
-    /\bshow\s+all\s+records\b/i,
-    /\bfind\s+records\s+from\b/i,
-    /\bdelete\s+column\b/i,
-    /\bdelete\s+table\b/i,
-    /\bdelete\s+database\b/i,
-    /\b(?:in\s+[a-zA-Z0-9_]+\s+)?(?:update|change|modify)\b/i,
-    /\bupdate\s+[a-zA-Z0-9_]+\s+set\b/i
+    /\bfind\s+(?:all\s+)?records\s+from\b/i,
+    /\bshow\s+all\s+records\s+from\b/i,
+    /\bdelete\s+(?:column|table|database|record|from)\b/i,
+    /\bupdate\s+[a-zA-Z0-9_]+\s+set\b/i,
+    /\bin\s+[a-zA-Z0-9_]+\s+(?:update|change|modify)\b/i
   ];
-  return dbPatterns.some(regex => regex.test(code));
+  return dbPatterns.some(regex => regex.test(trimmed));
 }
 
 // Retrieves either full code, highlighted selection, or current statement under cursor
@@ -1214,6 +1240,10 @@ function initPlayground() {
   function syncDomainVisuals() {
     if (!editor) return;
     const isDb = isEnlngDbCode(editor.value);
+    const resetDbBtn = document.getElementById('resetDbBtn');
+    if (resetDbBtn) {
+      resetDbBtn.style.display = isDb ? 'inline-flex' : 'none';
+    }
     if (isDb) {
       if (editorFileBadge) editorFileBadge.textContent = 'sandbox.enlngdb';
       if (editorEngineBadge) editorEngineBadge.textContent = 'EnlngDB Pure C Engine (<0.05ms)';

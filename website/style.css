@@ -4031,3 +4031,139 @@ pre {
   .page-hero { padding: 24px 0 20px; }
   .page-title { font-size: 1.35rem; }
 }
+
+/* =====================================================================
+   Advanced Mobile & Touch Responsiveness Suite (Non-AI-Slop Architecture)
+   ===================================================================== */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* OS Tabs Bar (Installers): Smooth single-line horizontal flick scroll on phones */
+.os-tabs {
+  max-width: 100%;
+  overflow-x: auto;
+  flex-wrap: nowrap !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.os-tabs::-webkit-scrollbar {
+  display: none;
+}
+.os-tab {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Presets Bar: Smooth touch scrolling instead of wrapping into multiple lines */
+.presets-group {
+  max-width: 100%;
+  overflow-x: auto;
+  flex-wrap: nowrap !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.presets-group::-webkit-scrollbar {
+  display: none;
+}
+.preset-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Tables: Full horizontal scroll wrappers on all platforms */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+.table-responsive table {
+  min-width: 520px;
+  width: 100%;
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  /* Prevent iOS Safari 16px input auto-zoom shift */
+  input[type="text"],
+  input[type="search"],
+  textarea,
+  #codeEditor {
+    font-size: 15px !important;
+  }
+
+  /* Playground Toolbar Clean Stack on Phones */
+  .playground-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 10px 14px !important;
+  }
+
+  .toolbar-actions {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  /* Hide non-touch keyboard hints on phones */
+  .shortcut-kbd {
+    display: none !important;
+  }
+
+  .run-selection-btn,
+  .run-btn {
+    padding: 7px 12px !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Playground Editor-Terminal Stack */
+  .editor-grid {
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+  }
+  .editor-panel {
+    min-height: 280px;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .editor-body-wrap {
+    min-height: 240px;
+  }
+  #codeEditor {
+    min-height: 220px;
+    line-height: 1.55;
+  }
+  .terminal-panel {
+    min-height: 200px;
+  }
+  .terminal-body-wrap {
+    min-height: 160px;
+    max-height: 320px;
+  }
+  .playground-statusbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 10px 14px;
+    font-size: 0.7rem;
+  }
+
+  /* Hero & Installer Cards on Mobile */
+  .installer-dl-btn {
+    padding: 14px 16px;
+  }
+  .dl-btn-title {
+    font-size: 1.02rem;
+  }
+  .dl-btn-meta {
+    font-size: 0.74rem;
+    line-height: 1.4;
+  }
+}
+

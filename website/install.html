@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.2.0" />
+  <link rel="stylesheet" href="style.css?v=5.5.0" />
 </head>
 <body>
 
@@ -97,6 +97,7 @@
       <button type="button" class="chip-btn active" data-platform="windows">Windows</button>
       <button type="button" class="chip-btn" data-platform="macos">macOS (Apple Silicon & Intel)</button>
       <button type="button" class="chip-btn" data-platform="linux">Linux (Debian / Arch / Fedora / Alpine)</button>
+      <button type="button" class="chip-btn" data-platform="pip">Python PIP (PyPI Toolchain)</button>
       <button type="button" class="chip-btn" data-platform="docker">Docker & CI/CD</button>
       <button type="button" class="chip-btn" data-platform="source">Compile from Source</button>
     </div>
@@ -108,18 +109,19 @@
         <!-- Method 1: GUI Setup -->
         <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 28px; display: flex; flex-direction: column;">
           <span style="font-size: 0.76rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Recommended for Windows 10/11</span>
-          <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Windows 1-Click Installer</h3>
+          <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Windows All-in-One Installer</h3>
           <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
-            Standalone setup wizard that installs the complete <strong>7-in-1 Sovereign Suite</strong> (<code>enlangg</code>, <code>enlng</code>, <code>enlngdb</code>, <code>enlngf</code>, <code>enlngd</code>, <code>enlngs</code>, <code>enlngm</code>) into <code>%USERPROFILE%\.enlangg\bin</code>, configures User PATH automatically, and registers all 6 domain file associations.
+            Standalone setup wizard that installs the complete <strong>All-in-One Sovereign Suite</strong> bundling all 6 domain engines (<code>enlng</code>, <code>enlngdb</code>, <code>enlngf</code>, <code>enlngd</code>, <code>enlngs</code>, <code>enlngm</code>) + Master Runner (<code>enlangg</code>) into <code>%USERPROFILE%\.enlangg\bin</code>, configures User PATH automatically, and registers all file associations.
           </p>
           <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">
             Package: enlangg-setup.exe (or setup.exe)<br>
             Payload Size: 670 KB<br>
-            Bundles: enlangg, enlng, enlngdb, enlngf, enlngd, enlngs, enlngm (100% Pure C Sovereign · Zero Python · No Admin Required)
+            Bundles: All 6 Domains (.enlng, .enlngdb, .enlngf, .enlngd, .enlngs, .enlngm) + enlangg CLI<br>
+            Requirements: 100% Pure C Native · Zero Python Required · No Admin Rights Required
           </div>
           <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="btn btn-primary" style="margin-top: auto; justify-content: center;">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            <span>Download Windows Installer (.exe)</span>
+            <span>Download All-in-One Suite (.exe)</span>
           </a>
         </div>
 
@@ -220,6 +222,35 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    <!-- Platform Section: Python PIP -->
+    <section class="install-platform-section" id="platform-pip" style="display: none; margin-bottom: 32px;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 28px;">
+        <span style="font-size: 0.76rem; font-weight: 700; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: inline-block;">Official Python PyPI Toolchain</span>
+        <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Install via Python PIP</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+          Install the complete cross-platform Enlangg toolchain globally using Python's package index (PyPI). This provides the universal <code>enlang</code> CLI, core compiler, and all 6 domain runners on Windows, macOS, and Linux:
+        </p>
+
+        <div class="code-block-card" style="margin-bottom: 20px;">
+          <div class="code-block-header">
+            <span>Terminal / Command Line</span>
+            <button type="button" class="copy-code-btn terminal-btn" data-target="pipInstallCmd">Copy</button>
+          </div>
+          <div class="code-block-body" id="pipInstallCmd">pip install enlang</div>
+        </div>
+
+        <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 12px;">Quickstart Verification:</h4>
+        <div class="code-block-card">
+          <div class="code-block-body"># 1. Run core backend algorithm
+enlang run script.enlng
+
+# 2. Launch microsecond database
+enlangdb run store.enlngdb --interactive
+
+# 3. Verify installation
+enlang --version</div>
         </div>
       </div>
     </section>
@@ -486,6 +517,6 @@ gcc (MinGW-W64 x86_64) 13.2.0</div>
     </div>
   </footer>
 
-  <script src="app.js?v=5.4.0"></script>
+  <script src="app.js?v=5.5.0"></script>
 </body>
 </html>
