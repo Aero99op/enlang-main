@@ -1,3 +1,6 @@
+[![PyPI version](https://badge.fury.io/py/enlang.svg)](https://badge.fury.io/py/enlang)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 # Enlangg: The English-Syntax Programming Language & Ecosystem
 
 <p align="center">
