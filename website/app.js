@@ -1063,6 +1063,11 @@ function executeEnlngDBStatement(statement, engineState) {
     }
     const table = currentDb.tables[tableName];
     const assignments = parseKeyValuePairs(setClause.replace(/^set\s+/i, ''));
+    Object.keys(assignments).forEach(k => {
+      if (!table.columns.includes(k)) {
+        table.columns.push(k);
+      }
+    });
     let affected = 0;
     table.rows.forEach(r => {
       if (evaluateWhereCondition(r, whereClause)) {
@@ -1076,6 +1081,40 @@ function executeEnlngDBStatement(statement, engineState) {
     };
   }
 
+  // 8.5. ADD COLUMN <col> TO <name> [DEFAULT <val>] or ALTER TABLE <name> ADD COLUMN <col> [DEFAULT <val>]
+  const addColMatch = stmt.match(/^(?:alter\s+table\s+([a-zA-Z0-9_]+)\s+add\s+(?:column\s+)?([a-zA-Z0-9_]+)(?:\s+default\s+(.+))?|add\s+column\s+([a-zA-Z0-9_]+)\s+to\s+([a-zA-Z0-9_]+)(?:\s+default\s+(.+))?)$/i);
+  if (addColMatch) {
+    const tableName = addColMatch[1] || addColMatch[5];
+    const colName = addColMatch[2] || addColMatch[4];
+    const rawDefault = (addColMatch[3] || addColMatch[6] || '').trim();
+    let defaultVal = null;
+    if (rawDefault) {
+      if ((rawDefault.startsWith('"') && rawDefault.endsWith('"')) || (rawDefault.startsWith("'") && rawDefault.endsWith("'"))) {
+        defaultVal = rawDefault.slice(1, -1);
+      } else if (!isNaN(Number(rawDefault)) && rawDefault !== '') {
+        defaultVal = Number(rawDefault);
+      } else {
+        defaultVal = rawDefault;
+      }
+    }
+    const currentDb = engineState.databases[engineState.activeDb];
+    if (!currentDb || !currentDb.tables[tableName]) {
+      return { type: 'ERROR', error: `Table '${tableName}' not found in '${engineState.activeDb}'.` };
+    }
+    const table = currentDb.tables[tableName];
+    if (!table.columns.includes(colName)) {
+      table.columns.push(colName);
+    }
+    table.rows.forEach(r => {
+      if (r[colName] === undefined) {
+        r[colName] = defaultVal;
+      }
+    });
+    return {
+      type: 'ADD_COLUMN',
+      output: `Query OK: Column '${colName}' added to table '${tableName}'.`
+    };
+  }
 
   // 9. DELETE COLUMN <col> FROM <name>
   const delColMatch = stmt.match(/^delete\s+(?:column\s+)?([a-zA-Z0-9_]+)\s+from\s+([a-zA-Z0-9_]+)$/i);
