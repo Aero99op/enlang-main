@@ -813,7 +813,54 @@
             <span class="breadcrumb-part" id="breadcrumbFile" style="color:var(--vscode-text-bright);font-weight:600;">main.enlng</span>
           </div>
 
-          <!-- Split Body: Code Editor + Live Canvas / Mobile Simulator -->
+          <!-- EnlangDB Sovereign SQL Studio Workbench Toolbar -->
+          <div class="enlngdb-workbench-bar" id="enlngdbWorkbenchBar" style="display:none;">
+            <div class="db-bar-left">
+              <button type="button" class="db-bar-btn run-line-btn" id="dbRunQueryAtCursorBtn" title="Execute statement at cursor line or highlighted selection (Shift + Enter)">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                <span>Run Query</span>
+                <kbd class="shortcut-kbd">Shift+↵</kbd>
+              </button>
+              <button type="button" class="db-bar-btn run-all-btn" id="dbRunAllQueriesBtn" title="Execute entire script from top to bottom (Ctrl + Enter)">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Run All</span>
+                <kbd class="shortcut-kbd">Ctrl+↵</kbd>
+              </button>
+              <div class="db-bar-separator"></div>
+              <button type="button" class="db-bar-btn secondary-btn" id="dbWorkbenchResetBtn" title="Reset In-Memory Sovereign Database to sample seed tables">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                <span>Reset DB</span>
+              </button>
+              <button type="button" class="db-bar-btn secondary-btn" id="dbWorkbenchClearBtn" title="Clear results">
+                <span>Clear</span>
+              </button>
+            </div>
+
+            <div class="db-bar-center">
+              <div class="db-presets-chips" id="dbWorkbenchPresets">
+                <button type="button" class="db-chip active" data-db-preset="enlngdb_tour">📊 Quickstart</button>
+                <button type="button" class="db-chip" data-db-preset="enlngdb_schema">🔍 Schema</button>
+                <button type="button" class="db-chip" data-db-preset="enlngdb_crud">👥 Students</button>
+                <button type="button" class="db-chip" data-db-preset="enlngdb_updates">✏️ Updates</button>
+                <button type="button" class="db-chip" data-db-preset="enlngdb_deletions">🛡️ Safety</button>
+                <button type="button" class="db-chip" data-db-preset="enlngdb_filter">⚡ Filter</button>
+              </div>
+            </div>
+
+            <div class="db-bar-right">
+              <span class="db-active-pill" id="dbWorkbenchActiveDbBadge">
+                <span class="db-dot-live"></span>
+                <span id="dbWorkbenchActiveDbName">database1</span>
+              </span>
+              <span class="db-latency-tag">&lt;0.05ms Micro-VM</span>
+              <div class="db-view-switch">
+                <button type="button" class="db-switch-btn active" id="dbSwitchGrid" title="Switch to phpMyAdmin/Workbench HTML Data Grid">Grid</button>
+                <button type="button" class="db-switch-btn" id="dbSwitchAscii" title="Switch to Terminal Monospace ASCII Table">ASCII</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Split Body: Code Editor + Live Canvas / Mobile Simulator / DB Workbench -->
           <div class="editor-split-body">
             
             <!-- Code Editor Pane -->
@@ -823,7 +870,7 @@
               <div id="intellisensePopup" class="intellisense-popup" style="display:none;"></div>
             </div>
 
-            <!-- Preview Pane (for .enlngf, .enlngd, and .enlngm) -->
+            <!-- Preview Pane (for .enlngf, .enlngd, .enlngm, and .enlngdb) -->
             <div class="preview-pane" id="previewPane">
               <div class="preview-header">
                 <span id="previewTitle">Live UI Preview (.enlngf / .enlngd)</span>
@@ -838,6 +885,29 @@
                   <div class="mobile-screen" id="mobileScreenContent">
                     <!-- Mobile interactive app rendered here -->
                   </div>
+                </div>
+
+                <!-- EnlangDB Sovereign Results & Data Grid Panel (Shown when viewing .enlngdb) -->
+                <div class="db-workbench-results-pane" id="dbWorkbenchResultsPane" style="display:none;width:100%;height:100%;flex-direction:column;background:#0d1117;border-radius:4px;overflow:hidden;">
+                  <div class="db-results-subbar" style="height:38px;min-height:38px;background:#161b22;border-bottom:1px solid #30363d;padding:0 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                    <div style="display:flex;align-items:center;gap:8px;overflow:hidden;flex:1;">
+                      <span class="db-exec-badge" id="dbResultsExecStatus" style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#238636;color:#fff;">READY</span>
+                      <span class="db-query-preview" id="dbResultsQueryPreview" style="font-family:var(--font-mono);font-size:11px;color:#c9d1d9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="Executed query preview">// Run a query with Shift+Enter</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <span class="db-timing-text" id="dbResultsTiming" style="font-size:10.5px;color:#8b949e;font-family:var(--font-mono);">&lt;0.05ms</span>
+                      <button type="button" class="db-tool-icon-btn" id="dbCopyResultBtn" title="Copy ASCII output to clipboard">Copy</button>
+                      <button type="button" class="db-tool-icon-btn" id="dbExportCsvBtn" title="Export table data to CSV">CSV</button>
+                    </div>
+                  </div>
+
+                  <!-- Interactive Data Grid Container (Table Grid View) -->
+                  <div class="db-results-grid-scroll" id="dbResultsGridContainer" style="flex:1;overflow:auto;padding:12px;">
+                    <!-- Rendered interactive HTML table -->
+                  </div>
+
+                  <!-- Monospace ASCII Console Container (ASCII View) -->
+                  <pre class="db-results-ascii-scroll" id="dbResultsAsciiContainer" style="display:none;flex:1;overflow:auto;padding:12px;margin:0;font-family:var(--font-mono);font-size:11.5px;color:#e6edf3;background:#090d13;line-height:1.45;"></pre>
                 </div>
               </div>
             </div>

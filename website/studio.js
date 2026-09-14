@@ -371,6 +371,17 @@ screen WalletHome:
     // If active file is frontend or mobile, optionally refresh live preview
     if (activeFile.endsWith('.enlngf') || activeFile.endsWith('.enlngd') || activeFile.endsWith('.enlngm')) {
       renderLivePreview();
+    } else if (activeFile.endsWith('.enlngdb')) {
+      syncEnlngDbWorkbenchView();
+    } else {
+      const wbBar = document.getElementById('enlngdbWorkbenchBar');
+      if (wbBar) wbBar.style.display = 'none';
+      const dbPane = document.getElementById('dbWorkbenchResultsPane');
+      if (dbPane) dbPane.style.display = 'none';
+      const previewTitle = document.getElementById('previewTitle');
+      if (previewPane && previewPane.classList.contains('visible') && previewTitle && previewTitle.innerHTML.includes('EnlangDB')) {
+        previewPane.classList.remove('visible');
+      }
     }
   }
 
@@ -700,6 +711,7 @@ screen WalletHome:
 
     // Keep interactive table in dockDatabase / dbGridContainer in sync
     renderEnlngDbGridResult(lastResult, dbState);
+    renderEnlngDbWorkbenchResults(lastResult, dbState, totalMs);
   }
 
   // Render EnlangDB query results into dockDatabase / dbGridContainer
@@ -849,6 +861,464 @@ screen WalletHome:
     }
 
     dbGridContainer.innerHTML = html;
+  }
+
+  // ==============================================================================
+  // ENLANGDB SOVEREIGN SQL WORKBENCH (Playground / MySQL Workbench / phpMyAdmin)
+  // ==============================================================================
+
+  const ENLNGDB_PRESETS = {
+    enlngdb_tour: `type enlngdb
+
+-- ==============================================================================
+-- 📊 ENLNGDB SOVEREIGN QUICKSTART TOUR
+-- In-Memory Pure C Micro-VM Engine (<0.05ms Latency)
+-- ==============================================================================
+
+use database database1;
+show tables;
+
+-- Query all records from student table
+find all records from student;
+
+-- Switch to main_db and inspect accounts
+use database main_db;
+show tables;
+find all records from accounts;
+`,
+
+    enlngdb_schema: `type enlngdb
+
+-- ==============================================================================
+-- 🔍 SCHEMA DISCOVERY & DATABASE EXPLORATION
+-- ==============================================================================
+
+show databases;
+
+use database database1;
+show tables;
+
+find all records from student;
+find all records from faculty;
+`,
+
+    enlngdb_crud: `type enlngdb
+
+-- ==============================================================================
+-- 👥 STUDENT REGISTRY (CRUD OPERATIONS)
+-- ==============================================================================
+
+use database database1;
+
+-- 1. Read existing records
+find all records from student;
+
+-- 2. Insert new student record
+insert into student with roll_no 106, name "Devansh Saxena", marks 88, grade "A";
+
+-- 3. Verify insertion
+find all records from student where roll_no is 106;
+`,
+
+    enlngdb_updates: `type enlngdb
+
+-- ==============================================================================
+-- ✏️ IN-TABLE ATOMIC UPDATES
+-- ==============================================================================
+
+use database database1;
+
+-- Query current record for student 105
+find all records from student where roll_no is 105;
+
+-- Update marks and grade
+update student set marks 75, grade "B" where roll_no is 105;
+
+-- Inspect updated student
+find all records from student where roll_no is 105;
+`,
+
+    enlngdb_deletions: `type enlngdb
+
+-- ==============================================================================
+-- 🛡️ DELETIONS & SOVEREIGN SAFETY GUARDS
+-- ==============================================================================
+
+use database database1;
+
+-- Attempt guarded deletion (failsafe)
+delete from student where marks < 70;
+
+-- Count remaining records
+count records in student;
+`,
+
+    enlngdb_filter: `type enlngdb
+
+-- ==============================================================================
+-- ⚡ FILTER & ADVANCED CONDITIONS
+-- ==============================================================================
+
+use database database1;
+
+-- Filter by marks threshold
+find all records from student where marks >= 85;
+
+-- Filter by specific grade
+find all records from student where grade is "A";
+`
+  };
+
+  // Extracts current query at cursor position or highlighted text
+  function extractQueryAtCursor() {
+    if (!codeEditor) return null;
+    const text = codeEditor.value;
+    const selStart = codeEditor.selectionStart;
+    const selEnd = codeEditor.selectionEnd;
+
+    // 1. Highlighted selection
+    if (selStart !== selEnd) {
+      const selected = text.substring(selStart, selEnd).trim();
+      if (selected.length > 0) {
+        const lineNum = text.substring(0, selStart).split('\n').length;
+        return { text: selected, mode: 'selection', lineNum };
+      }
+    }
+
+    // 2. Statement enclosing the cursor
+    const lines = text.split('\n');
+    const textBefore = text.substring(0, selStart);
+    const lineIndex = textBefore.split('\n').length - 1; // 0-indexed
+    const cursorLine = lines[lineIndex] || '';
+
+    // If cursor line has a query statement
+    if (cursorLine.trim() && !cursorLine.trim().startsWith('#') && !cursorLine.trim().startsWith('--') && !cursorLine.trim().startsWith('type ')) {
+      const prevSemi = text.lastIndexOf(';', selStart - 1);
+      const startIdx = prevSemi === -1 ? 0 : prevSemi + 1;
+      let nextSemi = text.indexOf(';', selStart);
+      if (nextSemi === -1) nextSemi = text.length;
+      else nextSemi = nextSemi + 1;
+
+      const candidate = text.substring(startIdx, nextSemi).trim();
+      const cleanStmt = candidate.split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('#') && !l.startsWith('--') && !l.startsWith('type '))
+        .join(' ');
+
+      if (cleanStmt) {
+        return { text: cleanStmt, mode: 'line', lineNum: lineIndex + 1 };
+      }
+    }
+
+    // Scan backwards from cursor line to nearest query
+    for (let i = lineIndex; i >= 0; i--) {
+      const l = lines[i].trim();
+      if (l && !l.startsWith('#') && !l.startsWith('--') && !l.startsWith('type ')) {
+        return { text: l, mode: 'line', lineNum: i + 1 };
+      }
+    }
+
+    // Scan forward from cursor line
+    for (let i = lineIndex; i < lines.length; i++) {
+      const l = lines[i].trim();
+      if (l && !l.startsWith('#') && !l.startsWith('--') && !l.startsWith('type ')) {
+        return { text: l, mode: 'line', lineNum: i + 1 };
+      }
+    }
+
+    return { text: text, mode: 'all', lineNum: 1 };
+  }
+
+  // Executes ONLY the query under the cursor or highlighted text (MySQL Workbench style)
+  function executeCurrentQueryAtCursor() {
+    if (!codeEditor) return;
+    const q = extractQueryAtCursor();
+    if (!q || !q.text || !q.text.trim()) {
+      appendTerminal(`<span class="term-warn">[EnlangDB Workbench] No query found at cursor line. Place cursor on a query or highlight statements.</span>`);
+      return;
+    }
+
+    // Ensure preview pane is open showing EnlangDB results
+    if (previewPane) previewPane.classList.add('visible');
+    const previewTitle = document.getElementById('previewTitle');
+    if (previewTitle) previewTitle.innerHTML = '🗄️ EnlangDB Live Workbench &amp; Results Grid';
+    if (livePreviewFrame) livePreviewFrame.style.display = 'none';
+    if (mobileSimulator) mobileSimulator.style.display = 'none';
+    const dbResultsPane = document.getElementById('dbWorkbenchResultsPane');
+    if (dbResultsPane) dbResultsPane.style.display = 'flex';
+
+    // Flash the line in editor
+    if (lineNumbers) {
+      const lineEl = lineNumbers.querySelector(`[data-line="${q.lineNum}"]`);
+      if (lineEl) {
+        lineEl.classList.add('executing-query-flash');
+        setTimeout(() => lineEl.classList.remove('executing-query-flash'), 800);
+      }
+    }
+
+    const t0 = performance.now();
+    const stmts = (typeof extractStatements === 'function')
+      ? extractStatements(q.text)
+      : (typeof window.extractStatements === 'function' ? window.extractStatements(q.text) : q.text.split(';').map(s => s.trim()).filter(Boolean));
+
+    const dbState = (typeof sovereignDB !== 'undefined') ? sovereignDB : (window.sovereignDB || null);
+    if (!dbState) return;
+
+    let lastRes = null;
+    const outputs = [];
+    outputs.push(`<span class="term-dim">// [Workbench Line ${q.lineNum}] Executing: ${escapeHtml(q.text)}</span>`);
+
+    for (let i = 0; i < stmts.length; i++) {
+      const stmt = stmts[i].trim();
+      if (!stmt) continue;
+      try {
+        const execFn = (typeof executeEnlngDBStatement === 'function')
+          ? executeEnlngDBStatement
+          : (window.executeEnlngDBStatement || null);
+        if (!execFn) break;
+        const res = execFn(stmt, dbState);
+        lastRes = { stmt, res };
+        if (res.type === 'ERROR' || res.error) {
+          outputs.push(`<span class="term-err">${escapeHtml(res.error)}</span>`);
+        } else {
+          outputs.push(`<span class="term-success">${escapeHtml(res.output)}</span>`);
+        }
+      } catch (err) {
+        outputs.push(`<span class="term-err">EnlangDB Execution Error: ${escapeHtml(err.message)}</span>`);
+      }
+    }
+
+    const t1 = performance.now();
+    const elapsedMs = (t1 - t0).toFixed(2);
+
+    // Keep enlngdb terminal in sync
+    appendTerminal(outputs.join('\n'));
+
+    // Update workbench results header
+    const execStatus = document.getElementById('dbResultsExecStatus');
+    const queryPreview = document.getElementById('dbResultsQueryPreview');
+    const timingPill = document.getElementById('dbResultsTiming');
+    const activeDbName = document.getElementById('dbWorkbenchActiveDbName');
+
+    if (execStatus) {
+      const isErr = lastRes && lastRes.res && (lastRes.res.error || lastRes.res.type === 'ERROR');
+      execStatus.textContent = isErr ? '✖ ERROR' : '✔ SUCCESS';
+      execStatus.style.background = isErr ? '#f85149' : '#238636';
+    }
+    if (queryPreview) {
+      queryPreview.textContent = `enlangdb> ${q.text.replace(/[\r\n]+/g, ' ')}`;
+    }
+    if (timingPill) {
+      timingPill.textContent = `${elapsedMs}ms (Micro-VM)`;
+    }
+    if (activeDbName && dbState.activeDb) {
+      activeDbName.textContent = dbState.activeDb;
+    }
+
+    // Render interactive HTML grid and ASCII views
+    renderEnlngDbWorkbenchResults(lastRes, dbState, elapsedMs);
+  }
+
+  // Executes all queries in the active .enlngdb file
+  function executeAllQueriesInActiveFile() {
+    if (!codeEditor) return;
+    executeEnlngDbInStudio(codeEditor.value);
+    const q = extractQueryAtCursor();
+    if (q && q.text) {
+      executeCurrentQueryAtCursor();
+    }
+  }
+
+  // Renders the interactive phpMyAdmin / Workbench HTML table and ASCII views
+  function renderEnlngDbWorkbenchResults(lastResult, dbState, elapsedMs) {
+    const gridContainer = document.getElementById('dbResultsGridContainer');
+    const asciiContainer = document.getElementById('dbResultsAsciiContainer');
+    if (!gridContainer || !dbState) return;
+
+    if (!lastResult || !lastResult.res) {
+      gridContainer.innerHTML = `<div style="padding:24px;text-align:center;color:#8b949e;font-size:12px;">Place cursor on a query and press <kbd class="shortcut-kbd">Shift+Enter</kbd> to run.</div>`;
+      if (asciiContainer) asciiContainer.textContent = '// No query executed yet.';
+      return;
+    }
+
+    const { stmt, res } = lastResult;
+    const activeDb = dbState.activeDb || 'database1';
+    const currentDbObj = dbState.databases[activeDb] || { name: activeDb, tables: {} };
+
+    // Update ASCII Container
+    if (asciiContainer) {
+      asciiContainer.textContent = res.output || (res.error ? `Error: ${res.error}` : 'No output');
+    }
+
+    // If error
+    if (res.error || res.type === 'ERROR') {
+      gridContainer.innerHTML = `
+        <div style="padding:14px;background:rgba(248,81,73,0.1);border:1px solid rgba(248,81,73,0.3);border-radius:6px;margin:8px 0;">
+          <div style="font-weight:700;color:#f85149;font-size:12px;margin-bottom:6px;">EnlangDB Execution Error</div>
+          <div style="color:#e6edf3;font-size:11.5px;font-family:var(--font-mono);">${escapeHtml(res.error)}</div>
+        </div>
+      `;
+      return;
+    }
+
+    let headers = [];
+    let rows = [];
+    let title = `Query Result`;
+
+    if (res.type === 'SHOW_TABLES') {
+      title = `Tables in database '${activeDb}'`;
+      headers = ['Table', 'Columns', 'Row Count'];
+      rows = Object.keys(currentDbObj.tables).map(name => {
+        const tbl = currentDbObj.tables[name];
+        return {
+          Table: name,
+          Columns: (tbl.columns || []).join(', '),
+          'Row Count': (tbl.rows || []).length
+        };
+      });
+    } else if (res.type === 'SHOW_DATABASES') {
+      title = 'Registered Databases';
+      headers = ['Database', 'Status', 'Tables'];
+      rows = Object.keys(dbState.databases).map(name => ({
+        Database: name,
+        Status: name === activeDb ? 'Active' : 'Ready',
+        Tables: Object.keys(dbState.databases[name].tables).length
+      }));
+    } else if (res.type === 'FIND') {
+      const findMatch = stmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)/i);
+      const tableName = findMatch ? findMatch[1] : '';
+      const tableObj = currentDbObj.tables[tableName];
+      if (tableObj) {
+        title = `Table: ${tableName}`;
+        headers = tableObj.columns || (tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []);
+        const whereMatch = stmt.match(/\s+where\s+(.+)$/i);
+        const whereClause = whereMatch ? whereMatch[1].trim() : null;
+        rows = (tableObj.rows || []).filter(r => (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition(r, whereClause) : true);
+      }
+    } else if (res.type === 'COUNT') {
+      title = 'Record Count';
+      const countMatch = stmt.match(/^count\s+records\s+in\s+([a-zA-Z0-9_]+)/i);
+      const tableName = countMatch ? countMatch[1] : 'table';
+      headers = ['Table', 'Count'];
+      const tableObj = currentDbObj.tables[tableName];
+      rows = [{ Table: tableName, Count: tableObj ? tableObj.rows.length : 0 }];
+    } else if (res.type === 'INSERT' || res.type === 'UPDATE' || res.type === 'CREATE_TABLE' || res.type === 'USE_DATABASE' || res.type === 'DROP_TABLE' || res.type === 'DELETE_COLUMN') {
+      const targetTableMatch = stmt.match(/(?:into|in|table|from)\s+([a-zA-Z0-9_]+)/i);
+      if (targetTableMatch) {
+        const tblName = targetTableMatch[1];
+        const tblObj = currentDbObj.tables[tblName];
+        if (tblObj) {
+          title = `Updated Table: ${tblName}`;
+          headers = tblObj.columns;
+          rows = tblObj.rows;
+        }
+      }
+    }
+
+    let html = '';
+
+    // Success notice banner for DML/DDL operations
+    if (res.output && (res.type === 'INSERT' || res.type === 'UPDATE' || res.type === 'CREATE_TABLE' || res.type === 'USE_DATABASE' || res.type === 'DROP_TABLE' || res.type === 'DELETE_COLUMN')) {
+      html += `
+        <div style="padding:8px 12px;background:rgba(46,160,67,0.12);border:1px solid rgba(46,160,67,0.3);border-radius:6px;color:#3fb950;font-size:11.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+          <span>✔</span>
+          <span>${escapeHtml(res.output)}</span>
+        </div>
+      `;
+    }
+
+    if (headers && headers.length > 0) {
+      html += `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:12px;font-weight:700;color:#f0f6fc;">${escapeHtml(title)}</span>
+          <span style="font-size:11px;color:#8b949e;font-family:var(--font-mono);">${rows ? rows.length : 0} record(s)</span>
+        </div>
+        <table class="sovereign-db-table">
+          <thead>
+            <tr>
+              ${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${(!rows || rows.length === 0) ? `<tr><td colspan="${headers.length}" style="text-align:center;color:#8b949e;padding:16px;">Empty set (0 records)</td></tr>` :
+              rows.map(row => `
+                <tr>
+                  ${headers.map((h, colIdx) => {
+                    const val = row[h];
+                    const isNum = typeof val === 'number' || (!isNaN(Number(val)) && val !== '' && val !== null && val !== undefined);
+                    const isKey = colIdx === 0 && (h.includes('id') || h.includes('roll_no') || h.includes('code') || h === 'Table' || h === 'Database');
+                    const cls = isKey ? 'cell-key' : (isNum ? 'cell-num' : 'cell-str');
+                    const displayVal = val !== undefined && val !== null ? escapeHtml(String(val)) : '<span style="color:#6e7681;">NULL</span>';
+                    return `<td class="${cls}">${displayVal}</td>`;
+                  }).join('')}
+                </tr>
+              `).join('')
+            }
+          </tbody>
+        </table>
+      `;
+    } else {
+      html += `
+        <div style="padding:16px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#3fb950;font-family:var(--font-mono);font-size:11.5px;white-space:pre-wrap;">
+${escapeHtml(res.output || 'Execution succeeded.')}
+        </div>
+      `;
+    }
+
+    gridContainer.innerHTML = html;
+
+    // Cache current result for CSV export and clipboard
+    window._lastEnlngDbResultData = { headers, rows, title, output: res.output };
+  }
+
+  // Exports currently viewed table rows as CSV
+  function exportEnlngDbResultCsv() {
+    const data = window._lastEnlngDbResultData;
+    if (!data || !data.headers || !data.rows || data.rows.length === 0) {
+      appendTerminal(`<span class="term-warn">[EnlangDB] No table data available to export to CSV.</span>`);
+      return;
+    }
+    const csvRows = [];
+    csvRows.push(data.headers.map(h => `"${String(h).replace(/"/g, '""')}"`).join(','));
+    data.rows.forEach(r => {
+      csvRows.push(data.headers.map(h => {
+        const val = r[h] !== undefined && r[h] !== null ? String(r[h]) : '';
+        return `"${val.replace(/"/g, '""')}"`;
+      }).join(','));
+    });
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(data.title || 'query_result').toLowerCase().replace(/[^a-z0-9_]/g, '_')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Synchronizes the EnlangDB SQL Studio & Workbench UI state
+  function syncEnlngDbWorkbenchView() {
+    if (!activeFile || !activeFile.endsWith('.enlngdb')) return;
+
+    const wbBar = document.getElementById('enlngdbWorkbenchBar');
+    if (wbBar) wbBar.style.display = 'flex';
+
+    if (previewPane) previewPane.classList.add('visible');
+    const previewTitle = document.getElementById('previewTitle');
+    if (previewTitle) previewTitle.innerHTML = '🗄️ EnlangDB Live Workbench &amp; Results Grid';
+
+    if (livePreviewFrame) livePreviewFrame.style.display = 'none';
+    if (mobileSimulator) mobileSimulator.style.display = 'none';
+
+    const dbResultsPane = document.getElementById('dbWorkbenchResultsPane');
+    if (dbResultsPane) dbResultsPane.style.display = 'flex';
+
+    const activeDbName = document.getElementById('dbWorkbenchActiveDbName');
+    if (activeDbName && sovereignDB) {
+      activeDbName.textContent = sovereignDB.activeDb || 'database1';
+    }
+
+    // Auto-execute current query or entire script so the user immediately sees live data
+    executeCurrentQueryAtCursor();
   }
 
   // ==============================================================================
@@ -6075,6 +6545,15 @@ Provide code in fenced code blocks.`;
           updateLineNumbers();
         }
 
+        // Shift + Enter or Alt + Enter: Run Query at Cursor when in .enlngdb (Workbench Style)
+        if (activeFile && activeFile.endsWith('.enlngdb')) {
+          if ((e.shiftKey && e.key === 'Enter') || (e.altKey && e.key === 'Enter')) {
+            e.preventDefault();
+            executeCurrentQueryAtCursor();
+            return;
+          }
+        }
+
         // Ctrl + Enter to run
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
           e.preventDefault();
@@ -6097,9 +6576,23 @@ Provide code in fenced code blocks.`;
       codeEditor.addEventListener('click', () => {
         updateCursorPos();
         updateIntellisense();
+        if (activeFile && activeFile.endsWith('.enlngdb')) {
+          const q = extractQueryAtCursor();
+          const btn = document.getElementById('dbRunQueryAtCursorBtn');
+          if (btn && q && q.text) {
+            btn.title = `Execute line ${q.lineNum}: ${q.text.slice(0, 45)} (Shift + Enter)`;
+          }
+        }
       });
       codeEditor.addEventListener('keyup', (e) => {
         updateCursorPos();
+        if (activeFile && activeFile.endsWith('.enlngdb')) {
+          const q = extractQueryAtCursor();
+          const btn = document.getElementById('dbRunQueryAtCursorBtn');
+          if (btn && q && q.text) {
+            btn.title = `Execute line ${q.lineNum}: ${q.text.slice(0, 45)} (Shift + Enter)`;
+          }
+        }
         if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
           updateIntellisense();
         }
@@ -6111,6 +6604,93 @@ Provide code in fenced code blocks.`;
     if (topRunBtn) topRunBtn.addEventListener('click', executeActiveFile);
     const editorRunBtn = document.getElementById('editorRunBtn');
     if (editorRunBtn) editorRunBtn.addEventListener('click', executeActiveFile);
+
+    // EnlangDB SQL Studio & Workbench Button Listeners
+    const dbRunLineBtn = document.getElementById('dbRunQueryAtCursorBtn');
+    if (dbRunLineBtn) {
+      dbRunLineBtn.addEventListener('click', executeCurrentQueryAtCursor);
+    }
+    const dbRunAllBtn = document.getElementById('dbRunAllQueriesBtn');
+    if (dbRunAllBtn) {
+      dbRunAllBtn.addEventListener('click', executeAllQueriesInActiveFile);
+    }
+    const dbResetBtn = document.getElementById('dbWorkbenchResetBtn');
+    if (dbResetBtn) {
+      dbResetBtn.addEventListener('click', () => {
+        if (typeof resetSovereignDB === 'function') resetSovereignDB();
+        executeCurrentQueryAtCursor();
+        showStudioToast('EnlangDB: Sovereign database reset to initial sample tables.', null);
+      });
+    }
+    const dbClearBtn = document.getElementById('dbWorkbenchClearBtn');
+    if (dbClearBtn) {
+      dbClearBtn.addEventListener('click', () => {
+        const grid = document.getElementById('dbResultsGridContainer');
+        if (grid) grid.innerHTML = `<div style="padding:24px;text-align:center;color:#8b949e;font-size:12px;">Results cleared. Press <kbd class="shortcut-kbd">Shift+Enter</kbd> to run a query.</div>`;
+        const ascii = document.getElementById('dbResultsAsciiContainer');
+        if (ascii) ascii.textContent = '// Results cleared.';
+      });
+    }
+
+    const dbSwitchGrid = document.getElementById('dbSwitchGrid');
+    const dbSwitchAscii = document.getElementById('dbSwitchAscii');
+    const dbGridCont = document.getElementById('dbResultsGridContainer');
+    const dbAsciiCont = document.getElementById('dbResultsAsciiContainer');
+
+    if (dbSwitchGrid && dbSwitchAscii) {
+      dbSwitchGrid.addEventListener('click', () => {
+        dbSwitchGrid.classList.add('active');
+        dbSwitchAscii.classList.remove('active');
+        if (dbGridCont) dbGridCont.style.display = 'block';
+        if (dbAsciiCont) dbAsciiCont.style.display = 'none';
+      });
+      dbSwitchAscii.addEventListener('click', () => {
+        dbSwitchAscii.classList.add('active');
+        dbSwitchGrid.classList.remove('active');
+        if (dbGridCont) dbGridCont.style.display = 'none';
+        if (dbAsciiCont) dbAsciiCont.style.display = 'block';
+      });
+    }
+
+    const dbCopyBtn = document.getElementById('dbCopyResultBtn');
+    if (dbCopyBtn) {
+      dbCopyBtn.addEventListener('click', async () => {
+        const ascii = document.getElementById('dbResultsAsciiContainer');
+        const textToCopy = ascii ? ascii.textContent : '';
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          dbCopyBtn.textContent = 'Copied!';
+          setTimeout(() => { dbCopyBtn.textContent = 'Copy'; }, 2000);
+        } catch (e) {
+          dbCopyBtn.textContent = 'Copied!';
+          setTimeout(() => { dbCopyBtn.textContent = 'Copy'; }, 2000);
+        }
+      });
+    }
+
+    const dbExportCsv = document.getElementById('dbExportCsvBtn');
+    if (dbExportCsv) {
+      dbExportCsv.addEventListener('click', exportEnlngDbResultCsv);
+    }
+
+    // Preset Chips for EnlangDB Workbench
+    const dbPresetChips = document.querySelectorAll('#dbWorkbenchPresets .db-chip');
+    dbPresetChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        dbPresetChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const presetKey = chip.getAttribute('data-db-preset');
+        if (ENLNGDB_PRESETS[presetKey] && codeEditor) {
+          codeEditor.value = ENLNGDB_PRESETS[presetKey];
+          if (activeFile && vfs[activeFile] !== undefined) {
+            vfs[activeFile] = codeEditor.value;
+            saveVfs();
+          }
+          updateLineNumbers();
+          executeAllQueriesInActiveFile();
+        }
+      });
+    });
 
     const formatDocBtn = document.getElementById('formatDocBtn');
     if (formatDocBtn) formatDocBtn.addEventListener('click', formatDocument);
@@ -6890,6 +7470,14 @@ Provide code in fenced code blocks.`;
       if (e.key === 'F5') {
         e.preventDefault();
         handleMenuAction('openDbConsole');
+      }
+      // Shift + Enter or Alt + Enter: Run Query at Cursor when in .enlngdb
+      if (activeFile && activeFile.endsWith('.enlngdb')) {
+        if ((e.shiftKey && e.key === 'Enter') || (e.altKey && e.key === 'Enter')) {
+          e.preventDefault();
+          executeCurrentQueryAtCursor();
+          return;
+        }
       }
       // Ctrl + Shift + P (Command Palette)
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'P' || e.key === 'p')) {

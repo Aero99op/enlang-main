@@ -337,7 +337,107 @@ show "Method 2 (at):" card at "holder"
 show "Method 3 (dot):" card.tier
 
 # Access Method 4: Bracket notation
-show "Method 4 ([]):" card["status"]`
+show "Method 4 ([]):" card["status"]`,
+
+  enlngdb_tour: `type enlngdb
+
+-- ==============================================================================
+-- 📊 ENLNGDB SOVEREIGN QUICKSTART TOUR
+-- In-Memory Pure C Micro-VM Engine (<0.05ms Latency)
+-- ==============================================================================
+
+use database database1;
+show tables;
+
+-- Query all records from student table
+find all records from student;
+
+-- Switch to main_db and inspect accounts
+use database main_db;
+show tables;
+find all records from accounts;
+`,
+
+  enlngdb_schema: `type enlngdb
+
+-- ==============================================================================
+-- 🔍 SCHEMA DISCOVERY & DATABASE EXPLORATION
+-- ==============================================================================
+
+show databases;
+
+use database database1;
+show tables;
+
+find all records from student;
+find all records from faculty;
+`,
+
+  enlngdb_crud: `type enlngdb
+
+-- ==============================================================================
+-- 👥 STUDENT REGISTRY (CRUD OPERATIONS)
+-- ==============================================================================
+
+use database database1;
+
+-- 1. Read existing records
+find all records from student;
+
+-- 2. Insert new student record
+insert into student with roll_no 106, name "Devansh Saxena", marks 88, grade "A";
+
+-- 3. Verify insertion
+find all records from student where roll_no is 106;
+`,
+
+  enlngdb_updates: `type enlngdb
+
+-- ==============================================================================
+-- ✏️ IN-TABLE ATOMIC UPDATES
+-- ==============================================================================
+
+use database database1;
+
+-- Query current record for student 105
+find all records from student where roll_no is 105;
+
+-- Update marks and grade
+update student set marks 75, grade "B" where roll_no is 105;
+
+-- Inspect updated student
+find all records from student where roll_no is 105;
+`,
+
+  enlngdb_deletions: `type enlngdb
+
+-- ==============================================================================
+-- 🛡️ DELETIONS & SOVEREIGN SAFETY GUARDS
+-- ==============================================================================
+
+use database database1;
+
+-- Attempt guarded deletion (failsafe)
+delete from student where marks < 70;
+
+-- Count remaining records
+count records in student;
+`,
+
+  enlngdb_filter: `type enlngdb
+
+-- ==============================================================================
+-- ⚡ FILTER & ADVANCED CONDITIONS
+-- ==============================================================================
+
+use database database1;
+
+-- Filter by marks threshold
+find all records from student where marks >= 85;
+
+-- Filter by specific grade
+find all records from student where grade is "A";
+`
 };
 // --- 2. Live In-Browser Enlng & EnlngDB Sandbox Engines ---
 
