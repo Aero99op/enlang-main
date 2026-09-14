@@ -632,6 +632,40 @@ screen WalletHome:
     }
   }
 
+  // Splits a string by delimiter outside of single or double quotes
+  function splitOutsideQuotes(str, delimiter = ';') {
+    if (!str) return [];
+    const parts = [];
+    let current = '';
+    let inDouble = false;
+    let inSingle = false;
+
+    for (let i = 0; i < str.length; i++) {
+      const char = str[i];
+      const prev = i > 0 ? str[i - 1] : null;
+
+      if (char === '"' && !inSingle && prev !== '\\') {
+        inDouble = !inDouble;
+        current += char;
+      } else if (char === "'" && !inDouble && prev !== '\\') {
+        inSingle = !inSingle;
+        current += char;
+      } else if (char === delimiter && !inDouble && !inSingle) {
+        parts.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    if (current.length > 0) {
+      parts.push(current);
+    }
+    return parts;
+  }
+  if (typeof window !== 'undefined' && !window.splitOutsideQuotes) {
+    window.splitOutsideQuotes = splitOutsideQuotes;
+  }
+
   // Execute .enlngdb in Studio using the Real EnlangDB Runner (matches Playground exactly)
   function executeEnlngDbInStudio(sqlCode, options = {}) {
     if (!sqlCode || !sqlCode.trim()) {
