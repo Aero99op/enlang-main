@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subway Surfers | Sovereign Enlang AG 2.0 Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    </script>
+    <link rel="stylesheet" href="subway_surfers.css">
+  </head>
+  <body>
+    <div id="game-container">
+      <canvas id="webgl-canvas">
+      </canvas>
+      <div id="hud">
+        <div class="hud-top">
+          <div class="hud-left-col">
+            <button id="btn-pause" class="pause-btn-ref" title="Pause Game">
+              <div class="pause-bar">
+              </div>
+              <div class="pause-bar">
+              </div>
+            </button>
+            <button id="btn-audio" class="audio-btn-ref" title="Toggle Audio">
+              <span id="audio-icon">🔊</span>
+            </button>
+            <div id="hoverboard-widget" class="hoverboard-widget-ref" style="display: none;">
+              <div class="hoverboard-icon-mini">🛹</div>
+              <div class="hoverboard-bar-track">
+                <div id="hoverboard-bar-fill" class="hoverboard-bar-fill">
+                </div>
+              </div>
+            </div>
+            <div id="hud-powerups-list" class="hud-powerups-list">
+            </div>
+          </div>
+          <div class="hud-right-col">
+            <div class="score-pill-ref" id="score-pill">
+              <span class="mult-text" id="multiplier-text">x3</span>
+              <div class="star-icon-ref">
+              </div>
+              <span class="score-digits" id="score-text">000000</span>
+            </div>
+            <div class="coin-pill-ref" id="coin-pill">
+              <span class="coin-digits" id="coin-text">0</span>
+              <div class="coin-disc-ref">
+              </div>
+            </div>
+            <div class="key-pill-ref" id="key-pill">
+              <span class="key-digits" id="key-text">2</span>
+              <div class="key-disc-ref">🔑</div>
+            </div>
+          </div>
+        </div>
+        <div class="touch-hint" id="touch-hint">SWIPE OR ARROW KEYS TO SURF • DOUBLE-TAP FOR HOVERBOARD</div>
+      </div>
+      <div id="start-overlay" class="overlay">
+        <div class="game-logo-ref">
+          <div class="logo-subway-ref">SUBWAY</div>
+          <div class="logo-surfers-ref">SURFERS</div>
+          <div class="logo-badge-sub">⚡ SOVEREIGN ENLANG EDITION</div>
+        </div>
+        <button id="btn-play" class="big-btn-ref">▶ TAP TO SURF</button>
+        <div class="controls-guide-ref">
+          <h3>CONTROLS & SHORTCUTS</h3>
+          <div class="guide-row">
+            <span>Switch Lanes</span>
+            <span class="guide-keys">← → or A / D or Swipe Left/Right</span>
+          </div>
+          <div class="guide-row">
+            <span>Jump Hurdle / Train</span>
+            <span class="guide-keys">↑ or W or Swipe Up</span>
+          </div>
+          <div class="guide-row">
+            <span>Roll / Slide Under</span>
+            <span class="guide-keys">↓ or S or Swipe Down</span>
+          </div>
+          <div class="guide-row">
+            <span>Hoverboard Shield</span>
+            <span class="guide-keys">SPACE or Double Tap</span>
+          </div>
+        </div>
+      </div>
+      <div id="pause-overlay" class="overlay hidden">
+        <div class="pause-card-ref">
+          <h2 class="pause-title-ref">GAME PAUSED</h2>
+          <div class="pause-buttons">
+            <button id="btn-resume" class="big-btn-ref">▶ RESUME</button>
+            <button id="btn-restart-pause" class="big-btn-ref btn-secondary">🔄 RESTART</button>
+          </div>
+        </div>
+      </div>
+      <div id="gameover-overlay" class="overlay hidden">
+        <div class="gameover-card-ref">
+          <h2 class="gameover-title-ref">BUSTED!</h2>
+          <div class="stat-item">
+            <span class="stat-label">Final Score</span>
+            <span class="stat-value" id="final-score">000000</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">High Score</span>
+            <span class="stat-value record" id="final-highscore">000000</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Coins Collected</span>
+            <span class="stat-value gold" id="final-coins">0</span>
+          </div>
+          <div class="gameover-buttons">
+            <button id="btn-revive" class="big-btn-ref btn-secondary" style="display: none;">🔑 SAVE ME! (1 KEY)</button>
+            <button id="btn-restart" class="big-btn-ref">🔄 PLAY AGAIN</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="subway_surfers.js">
+    </script>
+  </body>
+</html>

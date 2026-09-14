@@ -1,0 +1,89 @@
+document enlgf:
+    head:
+        title "Subway Surfers | Sovereign Enlang AG 2.0 Edition"
+        connect script "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+        connect design "subway_surfers.css"
+
+    body:
+        div id "game-container":
+            canvas id "webgl-canvas"
+
+            # ── Heads-Up Display (1:1 Arcade HUD) ──────────────────────────────
+            div id "hud":
+                div class "hud-top":
+                    div class "hud-left-col":
+                        button id "btn-pause" class "pause-btn-ref" title "Pause Game":
+                            div class "pause-bar"
+                            div class "pause-bar"
+                        button id "btn-audio" class "audio-btn-ref" title "Toggle Audio":
+                            span "🔊" id "audio-icon"
+                        div id "hoverboard-widget" class "hoverboard-widget-ref" style "display: none;":
+                            div "🛹" class "hoverboard-icon-mini"
+                            div class "hoverboard-bar-track":
+                                div id "hoverboard-bar-fill" class "hoverboard-bar-fill"
+                        div id "hud-powerups-list" class "hud-powerups-list"
+
+                    div class "hud-right-col":
+                        div class "score-pill-ref" id "score-pill":
+                            span "x3" class "mult-text" id "multiplier-text"
+                            div class "star-icon-ref"
+                            span "000000" class "score-digits" id "score-text"
+                        div class "coin-pill-ref" id "coin-pill":
+                            span "0" class "coin-digits" id "coin-text"
+                            div class "coin-disc-ref"
+                        div class "key-pill-ref" id "key-pill":
+                            span "2" class "key-digits" id "key-text"
+                            div "🔑" class "key-disc-ref"
+
+                div "SWIPE OR ARROW KEYS TO SURF • DOUBLE-TAP FOR HOVERBOARD" class "touch-hint" id "touch-hint"
+
+            # ── Start Screen Overlay ──────────────────────────────────────────
+            div id "start-overlay" class "overlay":
+                div class "game-logo-ref":
+                    div "SUBWAY" class "logo-subway-ref"
+                    div "SURFERS" class "logo-surfers-ref"
+                    div "⚡ SOVEREIGN ENLANG EDITION" class "logo-badge-sub"
+
+                button "▶ TAP TO SURF" id "btn-play" class "big-btn-ref"
+
+                div class "controls-guide-ref":
+                    h3 "CONTROLS & SHORTCUTS"
+                    div class "guide-row":
+                        span "Switch Lanes"
+                        span "← → or A / D or Swipe Left/Right" class "guide-keys"
+                    div class "guide-row":
+                        span "Jump Hurdle / Train"
+                        span "↑ or W or Swipe Up" class "guide-keys"
+                    div class "guide-row":
+                        span "Roll / Slide Under"
+                        span "↓ or S or Swipe Down" class "guide-keys"
+                    div class "guide-row":
+                        span "Hoverboard Shield"
+                        span "SPACE or Double Tap" class "guide-keys"
+
+            # ── Pause Screen Overlay ──────────────────────────────────────────
+            div id "pause-overlay" class "overlay hidden":
+                div class "pause-card-ref":
+                    h2 "GAME PAUSED" class "pause-title-ref"
+                    div class "pause-buttons":
+                        button "▶ RESUME" id "btn-resume" class "big-btn-ref"
+                        button "🔄 RESTART" id "btn-restart-pause" class "big-btn-ref btn-secondary"
+
+            # ── Game Over Screen Overlay ──────────────────────────────────────
+            div id "gameover-overlay" class "overlay hidden":
+                div class "gameover-card-ref":
+                    h2 "BUSTED!" class "gameover-title-ref"
+                    div class "stat-item":
+                        span "Final Score" class "stat-label"
+                        span "000000" class "stat-value" id "final-score"
+                    div class "stat-item":
+                        span "High Score" class "stat-label"
+                        span "000000" class "stat-value record" id "final-highscore"
+                    div class "stat-item":
+                        span "Coins Collected" class "stat-label"
+                        span "0" class "stat-value gold" id "final-coins"
+                    div class "gameover-buttons":
+                        button "🔑 SAVE ME! (1 KEY)" id "btn-revive" class "big-btn-ref btn-secondary" style "display: none;"
+                        button "🔄 PLAY AGAIN" id "btn-restart" class "big-btn-ref"
+
+        connect script "subway_surfers.js"

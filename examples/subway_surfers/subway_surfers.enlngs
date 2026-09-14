@@ -1,0 +1,1101 @@
+# ==============================================================================
+# Subway Surfers Sovereign Reactive Game Engine (.enlngs)
+# 1:1 Authentic Arcade Experience Powered by Enlang Sovereign Script Engine
+# Pure Natural English Declarations & Hardware-Accelerated 3D WebGL Universe
+# ==============================================================================
+
+in script:
+    show "Initializing Subway Surfers Sovereign Game Engine (.enlngs)..."
+
+    # ── State Declarations ────────────────────────────────────────────────
+    create score as 0
+    create highScore as 0
+    create coins as 0
+    create runCoins as 0
+    create keys as 2
+    create baseMultiplier as 3
+    create isAudioMuted as false
+    create gameState as "start"
+
+    define LANES as [-2.8, 0, 2.8]
+    define CHUNK_LENGTH as 60
+    define ACTIVE_CHUNKS as 8
+
+    create laneIndex as 1
+    create playerX as 0
+    create targetX as 0
+    create playerY as 0
+    create playerZ as 0
+    create playerVY as 0
+
+    create baseSpeed as 26
+    create speed as 26
+    create maxSpeed as 52
+    create gravity as -54
+    create jumpForce as 18
+
+    create isGrounded as true
+    create isJumping as false
+    create isRolling as false
+    create rollTimer as 0
+    create invulnerableTimer as 0
+    create lastTime as 0
+
+    # 3D Graphics Handles
+    create scene as null
+    create camera as null
+    create renderer as null
+    create canvas as null
+
+    # Character Model Pivots & Parts
+    create jakeGroup as null
+    create pelvisPivot as null
+    create torsoPivot as null
+    create headPivot as null
+    create leftHipPivot as null
+    create rightHipPivot as null
+    create leftShoulderPivot as null
+    create rightShoulderPivot as null
+    create hoverboardMeshGroup as null
+    create jakeRunCycle as 0
+
+    # Track & World Entities
+    create chunks as []
+    create trains as []
+    create obstacles as []
+    create coinsList as []
+    create powerupPickups as []
+    create nextChunkZ as 30
+
+    # Shared Materials
+    create ballastMat as null
+    create tieMat as null
+    create railMat as null
+    create bldgMat1 as null
+    create palmTrunkMat as null
+    create palmFrondMat as null
+    create trainBlueSideMat as null
+    create trainBlueFrontMat as null
+    create trainRedSideMat as null
+    create trainRedFrontMat as null
+    create trainRoofMat as null
+    create chevronMat as null
+    create coinMat as null
+
+    # Powerup States
+    create hoverboardActive as false
+    create hoverboardTimer as 0
+    create hoverboardDuration as 25
+    create magnetActive as false
+    create multiplierActive as false
+
+    # Web Audio Synthesizer Context
+    create audioCtx as null
+
+    # ── Enlang Sovereign Foundation Bridge (Encapsulating WebGL & DOM APIs) ─
+    create rand as Math.random
+    create floor as Math.floor
+    create sin as Math.sin
+    create cos as Math.cos
+    create abs as Math.abs
+    create min as Math.min
+    create max as Math.max
+    create hypot as Math.hypot
+    create pi as Math.PI
+    create RepeatWrapping as THREE.RepeatWrapping
+    create DoubleSide as THREE.DoubleSide
+
+    to do getElement with elemId:
+        return (document.getElementById(elemId) || document.querySelector(elemId))
+
+    to do getWindowWidth:
+        return window.innerWidth
+
+    to do getWindowHeight:
+        return window.innerHeight
+
+    to do getDevicePixelRatio:
+        return (window.devicePixelRatio || 1)
+
+    to do getNow:
+        return performance.now()
+
+    to do formatScore with num:
+        return String(floor(num)).padStart(6, "0")
+
+    to do saveHighScore with val:
+        localStorage.setItem("subway_high_score", val)
+
+    to do loadHighScore:
+        return (localStorage.getItem("subway_high_score") || 0)
+
+    to do setBarWidth with elemId, pct:
+        assign style.width of getElement(elemId) to pct + "%"
+
+    to do createCanvas with w, h:
+        create c as document.createElement("canvas")
+        assign width of c to w
+        assign height of c to h
+        return c
+
+    to do get2DContext with c:
+        return c.getContext("2d")
+
+    to do createTexture with c:
+        return new THREE.CanvasTexture(c)
+
+    to do configureTextureRepeat with tex, rx, ry:
+        assign wrapS of tex to RepeatWrapping
+        assign wrapT of tex to RepeatWrapping
+        tex.repeat.set(rx, ry)
+
+    to do createLinearGrad with ctx, x0, y0, x1, y1:
+        return ctx.createLinearGradient(x0, y0, x1, y1)
+
+    to do addGradColor with grad, stop, col:
+        grad.addColorStop(stop, col)
+
+    to do fillCanvasRect with ctx, x, y, w, h:
+        ctx.fillRect(x, y, w, h)
+
+    to do drawRect with ctx, col, x, y, w, h:
+        assign fillStyle of ctx to col
+        ctx.fillRect(x, y, w, h)
+
+    to do strokeRect with ctx, col, lw, x, y, w, h:
+        assign strokeStyle of ctx to col
+        assign lineWidth of ctx to lw
+        ctx.strokeRect(x, y, w, h)
+
+    to do drawCircle with ctx, col, x, y, r:
+        assign fillStyle of ctx to col
+        ctx.beginPath()
+        ctx.arc(x, y, r, 0, pi * 2)
+        ctx.fill()
+
+    to do drawEllipse with ctx, col, x, y, rx, ry:
+        assign fillStyle of ctx to col
+        ctx.beginPath()
+        ctx.ellipse(x, y, rx, ry, 0, 0, pi * 2)
+        ctx.fill()
+
+    to do drawLine with ctx, col, lw, x1, y1, x2, y2:
+        assign strokeStyle of ctx to col
+        assign lineWidth of ctx to lw
+        ctx.beginPath()
+        ctx.moveTo(x1, y1)
+        ctx.lineTo(x2, y2)
+        ctx.stroke()
+
+    to do drawText with ctx, txt, col, fontStr, alignStr, x, y:
+        assign fillStyle of ctx to col
+        assign font of ctx to fontStr
+        assign textAlign of ctx to alignStr
+        ctx.fillText(txt, x, y)
+
+    to do setPosition with obj, x, y, z:
+        obj.position.set(x, y, z)
+
+    to do setPosX with obj, x:
+        assign x of obj.position to x
+
+    to do setPosY with obj, y:
+        assign y of obj.position to y
+
+    to do setPosZ with obj, z:
+        assign z of obj.position to z
+
+    to do addPosX with obj, delta:
+        increase x of obj.position by delta
+
+    to do addPosY with obj, delta:
+        increase y of obj.position by delta
+
+    to do addPosZ with obj, delta:
+        increase z of obj.position by delta
+
+    to do setRotation with obj, rx, ry, rz:
+        obj.rotation.set(rx, ry, rz)
+
+    to do setRotX with obj, rx:
+        assign x of obj.rotation to rx
+
+    to do setRotY with obj, ry:
+        assign y of obj.rotation to ry
+
+    to do setRotZ with obj, rz:
+        assign z of obj.rotation to rz
+
+    to do addRotX with obj, delta:
+        increase x of obj.rotation by delta
+
+    to do addRotY with obj, delta:
+        increase y of obj.rotation by delta
+
+    to do addRotZ with obj, delta:
+        increase z of obj.rotation by delta
+
+    to do setScale with obj, sx, sy, sz:
+        obj.scale.set(sx, sy, sz)
+
+    to do setVisible with obj, isVis:
+        assign visible of obj to isVis
+
+    to do setShadows with mesh, cast, recv:
+        assign castShadow of mesh to cast
+        assign receiveShadow of mesh to recv
+
+    to do addToScene with obj:
+        scene.add(obj)
+
+    to do removeFromScene with obj:
+        scene.remove(obj)
+
+    to do addToGroup with grp, child:
+        grp.add(child)
+
+    to do createGroup:
+        return new THREE.Group()
+
+    to do createScene:
+        return new THREE.Scene()
+
+    to do setSceneBackground with scn, colHex:
+        assign background of scn to new THREE.Color(colHex)
+
+    to do setSceneFog with scn, colHex, near, far:
+        assign fog of scn to new THREE.Fog(colHex, near, far)
+
+    to do createPerspectiveCamera with fov, aspect, near, far:
+        return new THREE.PerspectiveCamera(fov, aspect, near, far)
+
+    to do updateCameraProjection with cam, aspect:
+        assign aspect of cam to aspect
+        cam.updateProjectionMatrix()
+
+    to do createWebGLRenderer with c:
+        return new THREE.WebGLRenderer({ "canvas": c, "antialias": true, "powerPreference": "high-performance" })
+
+    to do configureRenderer with r, w, h, dpr:
+        r.setSize(w, h)
+        r.setPixelRatio(dpr)
+
+    to do createHemisphereLight with skyCol, groundCol, intensity:
+        return new THREE.HemisphereLight(skyCol, groundCol, intensity)
+
+    to do createDirectionalLight with col, intensity:
+        return new THREE.DirectionalLight(col, intensity)
+
+    to do createColor with hexStr:
+        return new THREE.Color(hexStr)
+
+    to do createBoxMesh with w, h, d, mat:
+        create geo as new THREE.BoxGeometry(w, h, d)
+        return new THREE.Mesh(geo, mat)
+
+    to do createCylinderMesh with rt, rb, h, seg, mat:
+        create geo as new THREE.CylinderGeometry(rt, rb, h, seg)
+        return new THREE.Mesh(geo, mat)
+
+    to do createSphereMesh with r, seg, mat:
+        create geo as new THREE.SphereGeometry(r, seg, seg)
+        return new THREE.Mesh(geo, mat)
+
+    to do createPlaneMesh with w, h, mat:
+        create geo as new THREE.PlaneGeometry(w, h)
+        return new THREE.Mesh(geo, mat)
+
+    to do createBasicMat with col:
+        return new THREE.MeshBasicMaterial({ "color": col })
+
+    to do createStandardMat with col, rough, metal:
+        return new THREE.MeshStandardMaterial({ "color": col, "roughness": rough, "metalness": metal })
+
+    to do createTexMat with tex, rough:
+        return new THREE.MeshStandardMaterial({ "map": tex, "roughness": rough })
+
+    to do lookCameraAt with x, y, z:
+        camera.lookAt(x, y, z)
+
+    to do renderUniverse:
+        renderer.render(scene, camera)
+
+    # ── Procedural Texture Generators ─────────────────────────────────────
+    to do createBallastTexture:
+        create c as createCanvas(256, 256)
+        create ctx as get2DContext(c)
+        call drawRect with ctx, "#1e293b", 0, 0, 256, 256
+        repeat 1200 times:
+            create x as rand() * 256
+            create y as rand() * 256
+            create r as 1 + rand() * 2.5
+            create shade as floor(50 + rand() * 80)
+            create colStr as "rgb(" + shade + "," + (shade + 4) + "," + (shade + 8) + ")"
+            call drawCircle with ctx, colStr, x, y, r
+        create tex as createTexture(c)
+        call configureTextureRepeat with tex, 1, 12
+        return tex
+
+    to do createTieTexture:
+        create c as createCanvas(128, 64)
+        create ctx as get2DContext(c)
+        call drawRect with ctx, "#3e2723", 0, 0, 128, 64
+        repeat 40 times:
+            call drawRect with ctx, "#4e342e", 0, 0, 128, 1
+        call drawRect with ctx, "#78909c", 18, 16, 8, 32
+        call drawRect with ctx, "#78909c", 102, 16, 8, 32
+        return createTexture(c)
+
+    to do createRailTexture:
+        create c as createCanvas(64, 128)
+        create ctx as get2DContext(c)
+        create grad as createLinearGrad(ctx, 0, 0, 64, 0)
+        call addGradColor with grad, 0, "#475569"
+        call addGradColor with grad, 0.3, "#cbd5e1"
+        call addGradColor with grad, 0.5, "#ffffff"
+        call addGradColor with grad, 0.7, "#cbd5e1"
+        call addGradColor with grad, 1, "#334155"
+        assign fillStyle of ctx to grad
+        call fillCanvasRect with ctx, 0, 0, 64, 128
+        create tex as createTexture(c)
+        call configureTextureRepeat with tex, 1, 24
+        return tex
+
+    to do createBuildingTexture with baseCol, trimCol:
+        create c as createCanvas(256, 512)
+        create ctx as get2DContext(c)
+        call drawRect with ctx, baseCol, 0, 0, 256, 512
+        for rowIdx in [0, 1, 2, 3, 4, 5]:
+            create rowY as 30 + rowIdx * 75
+            for colIdx in [0, 1, 2, 3]:
+                create colX as 20 + colIdx * 55
+                call drawRect with ctx, trimCol, colX - 3, rowY - 3, 38, 48
+                create winGrad as createLinearGrad(ctx, colX, rowY, colX, rowY + 42)
+                call addGradColor with winGrad, 0, "#0284c7"
+                call addGradColor with winGrad, 1, "#0369a1"
+                assign fillStyle of ctx to winGrad
+                call fillCanvasRect with ctx, colX, rowY, 32, 42
+                call drawRect with ctx, "rgba(255, 255, 255, 0.4)", colX + 2, rowY + 2, 28, 4
+                call drawRect with ctx, "#ffffff", colX + 15, rowY, 2, 42
+                call drawRect with ctx, "#ffffff", colX, rowY + 20, 32, 2
+        create tex as createTexture(c)
+        call configureTextureRepeat with tex, 1, 2
+        return tex
+
+    to do createPalmTrunkTexture:
+        create c as createCanvas(64, 128)
+        create ctx as get2DContext(c)
+        call drawRect with ctx, "#78350f", 0, 0, 64, 128
+        for trunkStep in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+            call drawRect with ctx, "#451a03", 0, trunkStep * 12, 64, 3
+        return createTexture(c)
+
+    to do createPalmFrondTexture:
+        create c as createCanvas(128, 256)
+        create ctx as get2DContext(c)
+        call drawEllipse with ctx, "#15803d", 64, 128, 50, 120
+        call drawRect with ctx, "#4ade80", 62, 0, 4, 256
+        return createTexture(c)
+
+    to do createTrainSideTexture with isRed:
+        create c as createCanvas(512, 256)
+        create ctx as get2DContext(c)
+        call drawRect with ctx, isRed ? "#dc2626" : "#2563eb", 0, 0, 512, 256
+        call drawRect with ctx, "#facc15", 0, 200, 512, 24
+        call drawRect with ctx, "#ffffff", 0, 224, 512, 8
+        for winStep in [0, 1, 2, 3, 4]:
+            create x as 40 + winStep * 90
+            call drawRect with ctx, "#0f172a", x - 2, 48, 64, 94
+            create wGrad as createLinearGrad(ctx, x, 50, x, 140)
+            call addGradColor with wGrad, 0, "#38bdf8"
+            call addGradColor with wGrad, 1, "#0284c7"
+            assign fillStyle of ctx to wGrad
+            call fillCanvasRect with ctx, x, 50, 60, 90
+        return createTexture(c)
+
+    to do createTrainFrontTexture with isRed:
+        create c as createCanvas(256, 256)
+        create ctx as get2DContext(c)
+        call drawRect with ctx, isRed ? "#b91c1c" : "#1d4ed8", 0, 0, 256, 256
+        call drawRect with ctx, "#0f172a", 28, 38, 200, 94
+        create winGrad as createLinearGrad(ctx, 30, 40, 30, 130)
+        call addGradColor with winGrad, 0, "#38bdf8"
+        call addGradColor with winGrad, 1, "#0284c7"
+        assign fillStyle of ctx to winGrad
+        call fillCanvasRect with ctx, 30, 40, 196, 90
+        for stripeStep in [0, 1, 2, 3, 4, 5, 6, 7]:
+            create stripeCol as (stripeStep % 2 == 0) ? "#facc15" : "#1e293b"
+            assign fillStyle of ctx to stripeCol
+            create stripeX as stripeStep * 32
+            call drawLine with ctx, stripeCol, 16, stripeX + 12, 200, stripeX - 4, 256
+        return createTexture(c)
+
+    to do createChevronTexture:
+        create c as createCanvas(256, 64)
+        create ctx as get2DContext(c)
+        call drawRect with ctx, "#facc15", 0, 0, 256, 64
+        for chevronStep in [0, 1, 2, 3, 4, 5, 6]:
+            create x as -64 + chevronStep * 48
+            call drawLine with ctx, "#0f172a", 24, x + 12, 0, x + 42, 64
+        return createTexture(c)
+
+    # ── Web Audio Synthesizer ─────────────────────────────────────────────
+    to do initAudio:
+        if audioCtx == null:
+            create AudioClass as window["AudioContext"] || window["webkitAudioContext"]
+            if AudioClass != null:
+                audioCtx = new AudioClass()
+        if audioCtx != null && audioCtx["state"] == "suspended":
+            audioCtx.resume()
+
+    to do playSynthTone with waveType, startF, endF, vol, dur:
+        if isAudioMuted == true || audioCtx == null:
+            return
+        create now as audioCtx["currentTime"]
+        create osc as audioCtx.createOscillator()
+        create gain as audioCtx.createGain()
+        assign type of osc to waveType
+        osc.frequency.setValueAtTime(startF, now)
+        osc.frequency.exponentialRampToValueAtTime(endF, now + dur)
+        gain.gain.setValueAtTime(vol, now)
+        gain.gain.linearRampToValueAtTime(0.01, now + dur)
+        osc.connect(gain)
+        gain.connect(audioCtx["destination"])
+        osc.start(now)
+        osc.stop(now + dur)
+
+    to do playSoundJump:
+        call playSynthTone with "triangle", 180, 540, 0.3, 0.18
+
+    to do playSoundSlide:
+        call playSynthTone with "sawtooth", 320, 120, 0.2, 0.22
+
+    to do playSoundCoin:
+        if isAudioMuted == true || audioCtx == null:
+            return
+        create now as audioCtx["currentTime"]
+        create osc1 as audioCtx.createOscillator()
+        create osc2 as audioCtx.createOscillator()
+        create gain as audioCtx.createGain()
+        assign type of osc1 to "sine"
+        assign type of osc2 to "sine"
+        osc1.frequency.setValueAtTime(988, now)
+        osc2.frequency.setValueAtTime(1318, now + 0.05)
+        gain.gain.setValueAtTime(0.25, now)
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.18)
+        osc1.connect(gain)
+        osc2.connect(gain)
+        gain.connect(audioCtx["destination"])
+        osc1.start(now)
+        osc1.stop(now + 0.1)
+        osc2.start(now + 0.05)
+        osc2.stop(now + 0.18)
+
+    to do playSoundHoverboard:
+        call playSynthTone with "sine", 300, 900, 0.3, 0.25
+
+    to do playSoundCrash:
+        call playSynthTone with "sawtooth", 140, 40, 0.5, 0.35
+
+    # ── Sculpted Jake Character Builder ───────────────────────────────────
+    to do buildJakeCharacter:
+        jakeGroup = createGroup()
+        create skinMat as createStandardMat("#ffdbac", 0.55, 0)
+        create capRedMat as createStandardMat("#d32f2f", 0.45, 0)
+        create capWhiteMat as createStandardMat("#f8fafc", 0.5, 0)
+        create hoodieMat as createStandardMat("#f1f1ea", 0.7, 0)
+        create vestMat as createStandardMat("#1d4ed8", 0.6, 0)
+        create jeansMat as createStandardMat("#2563eb", 0.65, 0)
+        create shoeWhiteMat as createStandardMat("#ffffff", 0.35, 0)
+        create shoeGreenMat as createStandardMat("#22c55e", 0.4, 0)
+        create metalMat as createStandardMat("#d1d5db", 0.2, 0.9)
+
+        pelvisPivot = createGroup()
+        call setPosY with pelvisPivot, 0.82
+        call addToGroup with jakeGroup, pelvisPivot
+        create pelvisMesh as createBoxMesh(0.38, 0.22, 0.26, jeansMat)
+        call addToGroup with pelvisPivot, pelvisMesh
+
+        torsoPivot = createGroup()
+        call setPosY with torsoPivot, 0.16
+        call addToGroup with pelvisPivot, torsoPivot
+        create hoodieMesh as createBoxMesh(0.44, 0.46, 0.28, hoodieMat)
+        call setPosY with hoodieMesh, 0.22
+        call addToGroup with torsoPivot, hoodieMesh
+        create vestMesh as createBoxMesh(0.46, 0.42, 0.30, vestMat)
+        call setPosY with vestMesh, 0.22
+        call addToGroup with torsoPivot, vestMesh
+
+        # Emblem Canvas
+        create eCanvas as createCanvas(128, 64)
+        create ectx as get2DContext(eCanvas)
+        call drawRect with ectx, "#0f172a", 0, 0, 128, 64
+        call drawText with ectx, "SUB", "#facc15", "900 24stripeX sans-serif", "center", 64, 28
+        call drawText with ectx, "SURF", "#00f0ff", "900 24stripeX sans-serif", "center", 64, 54
+        create eTex as createTexture(eCanvas)
+        create eMesh as createPlaneMesh(0.24, 0.16, createBasicMat(null))
+        assign map of eMesh["material"] to eTex
+        call setPosition with eMesh, 0, 0.24, -0.155
+        call setRotY with eMesh, pi
+        call addToGroup with torsoPivot, eMesh
+
+        headPivot = createGroup()
+        call setPosY with headPivot, 0.52
+        call addToGroup with torsoPivot, headPivot
+        create headMesh as createBoxMesh(0.28, 0.30, 0.28, skinMat)
+        call setPosY with headMesh, 0.12
+        call addToGroup with headPivot, headMesh
+        create glassMesh as createBoxMesh(0.26, 0.08, 0.06, createStandardMat("#090d16", 0.1, 0.8))
+        call setPosition with glassMesh, 0, 0.14, 0.14
+        call addToGroup with headPivot, glassMesh
+        create capCrown as createSphereMesh(0.18, 16, capRedMat)
+        call setPosition with capCrown, 0, 0.20, 0
+        call addToGroup with headPivot, capCrown
+        create capBrim as createBoxMesh(0.24, 0.025, 0.18, capWhiteMat)
+        call setPosition with capBrim, 0, 0.22, -0.16
+        call setRotX with capBrim, -0.18
+        call addToGroup with headPivot, capBrim
+
+        # Shoulders & Arms
+        leftShoulderPivot = createGroup()
+        call setPosition with leftShoulderPivot, -0.28, 0.38, 0
+        call addToGroup with torsoPivot, leftShoulderPivot
+        create lArm as createBoxMesh(0.11, 0.36, 0.11, hoodieMat)
+        call setPosY with lArm, -0.16
+        call addToGroup with leftShoulderPivot, lArm
+        create lHand as createBoxMesh(0.09, 0.10, 0.09, skinMat)
+        call setPosY with lHand, -0.36
+        call addToGroup with leftShoulderPivot, lHand
+
+        rightShoulderPivot = createGroup()
+        call setPosition with rightShoulderPivot, 0.28, 0.38, 0
+        call addToGroup with torsoPivot, rightShoulderPivot
+        create rArm as createBoxMesh(0.11, 0.36, 0.11, hoodieMat)
+        call setPosY with rArm, -0.16
+        call addToGroup with rightShoulderPivot, rArm
+        create rHand as createBoxMesh(0.09, 0.10, 0.09, skinMat)
+        call setPosY with rHand, -0.36
+        call addToGroup with rightShoulderPivot, rHand
+        create canBody as createCylinderMesh(0.045, 0.045, 0.14, 12, metalMat)
+        call setPosition with canBody, 0.02, -0.38, 0.08
+        call addToGroup with rightShoulderPivot, canBody
+
+        # Hips & Legs
+        leftHipPivot = createGroup()
+        call setPosition with leftHipPivot, -0.13, -0.08, 0
+        call addToGroup with pelvisPivot, leftHipPivot
+        create lLeg as createBoxMesh(0.14, 0.44, 0.15, jeansMat)
+        call setPosY with lLeg, -0.20
+        call addToGroup with leftHipPivot, lLeg
+        create lShoe as createBoxMesh(0.15, 0.06, 0.28, shoeWhiteMat)
+        call setPosition with lShoe, 0, -0.48, 0.03
+        call addToGroup with leftHipPivot, lShoe
+        create lToe as createBoxMesh(0.14, 0.08, 0.14, shoeGreenMat)
+        call setPosition with lToe, 0, -0.43, 0.09
+        call addToGroup with leftHipPivot, lToe
+
+        rightHipPivot = createGroup()
+        call setPosition with rightHipPivot, 0.13, -0.08, 0
+        call addToGroup with pelvisPivot, rightHipPivot
+        create rLeg as createBoxMesh(0.14, 0.44, 0.15, jeansMat)
+        call setPosY with rLeg, -0.20
+        call addToGroup with rightHipPivot, rLeg
+        create rShoe as createBoxMesh(0.15, 0.06, 0.28, shoeWhiteMat)
+        call setPosition with rShoe, 0, -0.48, 0.03
+        call addToGroup with rightHipPivot, rShoe
+        create rToe as createBoxMesh(0.14, 0.08, 0.14, shoeGreenMat)
+        call setPosition with rToe, 0, -0.43, 0.09
+        call addToGroup with rightHipPivot, rToe
+
+        # Hoverboard Model
+        hoverboardMeshGroup = createGroup()
+        call setPosition with hoverboardMeshGroup, 0, 0.08, 0
+        call setVisible with hoverboardMeshGroup, false
+        create deckMesh as createBoxMesh(0.65, 0.05, 1.4, createStandardMat("#ef4444", 0.3, 0.4))
+        call addToGroup with hoverboardMeshGroup, deckMesh
+        create neonMesh as createBoxMesh(0.48, 0.06, 1.3, createStandardMat("#00f0ff", 0.2, 0))
+        call addToGroup with hoverboardMeshGroup, neonMesh
+        call addToGroup with jakeGroup, hoverboardMeshGroup
+
+        call addToScene with jakeGroup
+
+    to do updateJakeAnimation with dt:
+        create bankLean as (targetX - playerX)
+        call setRotZ with jakeGroup, bankLean * 0.14
+
+        if isRolling == true:
+            call setRotX with torsoPivot, 0.8
+            call setRotX with headPivot, -0.4
+            call setRotX with leftHipPivot, -1.2
+            call setRotX with rightHipPivot, -1.2
+            call setPosY with pelvisPivot, 0.45
+            return
+        else:
+            call setPosY with pelvisPivot, 0.82
+            call setRotX with torsoPivot, 0
+            call setRotX with headPivot, 0
+
+        if hoverboardActive == true:
+            call setRotX with leftHipPivot, 0.15
+            call setRotX with rightHipPivot, -0.15
+            call setRotX with leftShoulderPivot, -0.2
+            call setRotX with rightShoulderPivot, 0.2
+            call setRotZ with hoverboardMeshGroup, sin(getNow() * 0.01) * 0.08
+            return
+
+        if isGrounded == false || isJumping == true:
+            call setRotX with leftHipPivot, -0.7
+            call setRotX with rightHipPivot, 0.3
+            call setRotX with leftShoulderPivot, 1.1
+            call setRotX with rightShoulderPivot, -0.6
+            return
+
+        increase jakeRunCycle by dt * (speed * 0.72)
+        create sVal as sin(jakeRunCycle)
+        create cVal as cos(jakeRunCycle)
+        call setRotX with leftHipPivot, sVal * 0.85
+        call setRotX with rightHipPivot, -sVal * 0.85
+        call setRotX with leftShoulderPivot, -sVal * 0.75
+        call setRotX with rightShoulderPivot, sVal * 0.75
+        call setPosY with pelvisPivot, 0.82 + abs(cVal) * 0.08
+        call setRotY with headPivot, sVal * 0.08
+
+    # ── World Track Spawner & Entities ───────────────────────────────────
+    to do spawnTrackChunk with chunkZ:
+        create chunkGroup as createGroup()
+        call setPosZ with chunkGroup, chunkZ
+
+        create ballastMesh as createBoxMesh(14, 0.4, CHUNK_LENGTH, ballastMat)
+        call setPosition with ballastMesh, 0, -0.2, 0
+        call addToGroup with chunkGroup, ballastMesh
+
+        for laneIdx in [0, 1, 2]:
+            create laneX as LANES[laneIdx]
+            create railL as createBoxMesh(0.08, 0.14, CHUNK_LENGTH, railMat)
+            call setPosition with railL, laneX - 0.72, 0.07, 0
+            create railR as createBoxMesh(0.08, 0.14, CHUNK_LENGTH, railMat)
+            call setPosition with railR, laneX + 0.72, 0.07, 0
+            call addToGroup with chunkGroup, railL
+            call addToGroup with chunkGroup, railR
+            for tieStep in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]:
+                create tieMesh as createBoxMesh(1.9, 0.08, 0.44, tieMat)
+                call setPosition with tieMesh, laneX, 0.04, -CHUNK_LENGTH / 2 + 1.2 + tieStep * 2.4
+                call addToGroup with chunkGroup, tieMesh
+
+        # Mediterranean Buildings & Palms
+        for sideIdx in [0, 1]:
+            create side as (sideIdx == 0) ? -1 : 1
+            for bldgStep in [0, 1]:
+                create bldgZ as -CHUNK_LENGTH / 2 + 15 + bldgStep * 30
+                create bMesh as createBoxMesh(10, 26, 28, bldgMat1)
+                call setPosition with bMesh, side * 13, 13, bldgZ
+                call addToGroup with chunkGroup, bMesh
+                create palmMesh as createCylinderMesh(0.22, 0.28, 8.5, 8, palmTrunkMat)
+                call setPosition with palmMesh, side * 7.5, 4.2, bldgZ + 6
+                call addToGroup with chunkGroup, palmMesh
+
+        call addToScene with chunkGroup
+        add { "group": chunkGroup, "z": chunkZ } to chunks
+
+        if chunkZ < -20:
+            call populateEntities with chunkZ
+
+    to do populateEntities with chunkZ:
+        # 1. Trains
+        if rand() < 0.65:
+            create lane as floor(rand() * 3)
+            create isRed as (rand() < 0.45)
+            create trainGroup as createGroup()
+            create trainX as LANES[lane]
+            create trainZ as chunkZ + (rand() * 20 - 10)
+            create bodyMat as isRed ? trainRedSideMat : trainBlueSideMat
+            create bodyMesh as createBoxMesh(2.3, 3.4, 18, bodyMat)
+            call setPosY with bodyMesh, 1.7
+            call addToGroup with trainGroup, bodyMesh
+            create frontMat as isRed ? trainRedFrontMat : trainBlueFrontMat
+            create frontMesh as createPlaneMesh(2.3, 3.4, frontMat)
+            call setPosition with frontMesh, 0, 1.7, 9.01
+            call addToGroup with trainGroup, frontMesh
+            create roofMesh as createBoxMesh(2.32, 0.2, 18.02, trainRoofMat)
+            call setPosY with roofMesh, 3.5
+            call addToGroup with trainGroup, roofMesh
+            call setPosition with trainGroup, trainX, 0, trainZ
+            call addToScene with trainGroup
+            add { "group": trainGroup, "lane": lane, "isMoving": isRed, "speed": isRed ? 14 : 0, "x": trainX, "y": 0, "z": trainZ, "width": 2.3, "height": 3.6, "length": 18 } to trains
+
+            for coinStep in [0, 1, 2, 3]:
+                call spawnCoin with trainX, 4.2, trainZ - 6 + coinStep * 4
+
+        # 2. Hurdle Obstacles
+        for obsLane in [0, 1, 2]:
+            if rand() < 0.4:
+                create obsX as LANES[obsLane]
+                create obsZ as chunkZ + (rand() * 30 - 15)
+                create hurdleGroup as createGroup()
+                create hBoard as createBoxMesh(2.2, 0.45, 0.12, chevronMat)
+                call setPosY with hBoard, 0.75
+                call addToGroup with hurdleGroup, hBoard
+                call setPosition with hurdleGroup, obsX, 0, obsZ
+                call addToScene with hurdleGroup
+                add { "group": hurdleGroup, "type": "low_barrier", "x": obsX, "y": 0, "z": obsZ, "width": 2.2, "height": 1.0, "length": 0.4 } to obstacles
+            else if rand() < 0.5:
+                create coinX as LANES[obsLane]
+                for coinStep in [0, 1, 2, 3]:
+                    call spawnCoin with coinX, 0.95, chunkZ - 8 + coinStep * 4
+                if rand() < 0.15:
+                    call spawnPowerup with coinX, 1.2, chunkZ, "hoverboard"
+
+    to do spawnCoin with x, y, z:
+        create coinMesh as createCylinderMesh(0.38, 0.38, 0.08, 16, coinMat)
+        call setRotX with coinMesh, pi * 0.5
+        call setPosition with coinMesh, x, y, z
+        call addToScene with coinMesh
+        add { "mesh": coinMesh, "x": x, "y": y, "z": z, "collected": false } to coinsList
+
+    to do spawnPowerup with x, y, z, pType:
+        create pGroup as createGroup()
+        call setPosition with pGroup, x, y, z
+        create pMesh as createBoxMesh(0.65, 0.65, 0.65, createStandardMat("#ef4444", 0.2, 0))
+        call addToGroup with pGroup, pMesh
+        call addToScene with pGroup
+        add { "group": pGroup, "type": pType, "x": x, "y": y, "z": z, "collected": false } to powerupPickups
+
+    to do updateWorld with dt, curPlayerZ:
+        for chunk in chunks:
+            if chunk["z"] > curPlayerZ + CHUNK_LENGTH * 1.5:
+                call setPosZ with chunk["group"], nextChunkZ
+                assign z of chunk to nextChunkZ
+                decrease nextChunkZ by CHUNK_LENGTH
+                call populateEntities with chunk["z"]
+
+        for t in trains:
+            if t["isMoving"] == true:
+                increase z of t by t["speed"] * dt
+                call setPosZ with t["group"], t["z"]
+
+        for c in coinsList:
+            if c["collected"] == false:
+                call addRotZ with c["mesh"], dt * 3.5
+
+        for p in powerupPickups:
+            if p["collected"] == false:
+                call addRotY with p["group"], dt * 3.0
+
+    # ── Collision Handling ───────────────────────────────────────────────
+    to do checkCollisions:
+        if invulnerableTimer > 0:
+            return
+        create pMinX as playerX - 0.45
+        create pMaxX as playerX + 0.45
+        create pMinY as playerY
+        create pMaxY as playerY + (isRolling ? 0.75 : 1.7)
+        create pMinZ as playerZ - 0.45
+        create pMaxZ as playerZ + 0.45
+
+        # 1. Train Collision
+        for t in trains:
+            create tMinX as t["x"] - t["width"] / 2
+            create tMaxX as t["x"] + t["width"] / 2
+            create tMinY as t["y"]
+            create tMaxY as t["y"] + t["height"]
+            create tMinZ as t["z"] - t["length"] / 2
+            create tMaxZ as t["z"] + t["length"] / 2
+            if pMaxX > tMinX && pMinX < tMaxX && pMaxZ > tMinZ && pMinZ < tMaxZ:
+                if playerY >= tMaxY - 0.5 && playerVY <= 0:
+                    playerY = tMaxY
+                    playerVY = 0
+                    isGrounded = true
+                    isJumping = false
+                    return
+                call handleHit
+                return
+
+        # 2. Hurdle Collision
+        for obs in obstacles:
+            create oMinX as obs["x"] - obs["width"] / 2
+            create oMaxX as obs["x"] + obs["width"] / 2
+            create oMinZ as obs["z"] - obs["length"] / 2
+            create oMaxZ as obs["z"] + obs["length"] / 2
+            if pMaxX > oMinX && pMinX < oMaxX && pMaxZ > oMinZ && pMinZ < oMaxZ:
+                if obs["type"] == "low_barrier" && playerY > 0.8:
+                    return
+                call handleHit
+                return
+
+        # 3. Coin Collection
+        for c in coinsList:
+            if c["collected"] == false:
+                create dist as hypot(playerX - c["x"], playerZ - c["z"])
+                if magnetActive == true && dist < 18:
+                    increase x of c by (playerX - c["x"]) * 0.16
+                    increase y of c by (playerY + 0.8 - c["y"]) * 0.16
+                    increase z of c by (playerZ - c["z"]) * 0.16
+                    call setPosition with c["mesh"], c["x"], c["y"], c["z"]
+                if dist < 1.3:
+                    assign collected of c to true
+                    call removeFromScene with c["mesh"]
+                    increase runCoins by 1
+                    call playSoundCoin
+
+        # 4. Powerup Collection
+        for p in powerupPickups:
+            if p["collected"] == false:
+                create pDist as hypot(playerX - p["x"], playerZ - p["z"])
+                if pDist < 1.4:
+                    assign collected of p to true
+                    call removeFromScene with p["group"]
+                    call activateHoverboard
+
+    to do handleHit:
+        if hoverboardActive == true:
+            hoverboardActive = false
+            call setVisible with hoverboardMeshGroup, false
+            hide element "hoverboard-widget"
+            invulnerableTimer = 1.8
+            call playSoundCrash
+            return
+        call playSoundCrash
+        gameState = "gameover"
+        if score > highScore:
+            highScore = floor(score)
+            call saveHighScore with highScore
+        set text of "final-score" to formatScore(score)
+        set text of "final-highscore" to formatScore(highScore)
+        set text of "final-coins" to String(coins + runCoins)
+        remove class "hidden" from "gameover-overlay"
+
+    to do activateHoverboard:
+        if gameState != "playing":
+            return
+        if hoverboardActive == false:
+            hoverboardActive = true
+            hoverboardTimer = hoverboardDuration
+            call setVisible with hoverboardMeshGroup, true
+            show element "hoverboard-widget"
+            call playSoundHoverboard
+
+    to do updateHUD:
+        set text of "score-text" to formatScore(score)
+        set text of "multiplier-text" to "x" + (multiplierActive ? baseMultiplier * 2 : baseMultiplier)
+        set text of "coin-text" to String(coins + runCoins)
+        set text of "key-text" to String(keys)
+        if hoverboardActive == true:
+            create pct as (hoverboardTimer / hoverboardDuration) * 100
+            call setBarWidth with "hoverboard-bar-fill", pct
+
+    # ── Player Movement & Actions ─────────────────────────────────────────
+    to do moveLeft:
+        if gameState != "playing":
+            return
+        if laneIndex > 0:
+            decrease laneIndex by 1
+            targetX = LANES[laneIndex]
+            call playSoundSlide
+
+    to do moveRight:
+        if gameState != "playing":
+            return
+        if laneIndex < 2:
+            increase laneIndex by 1
+            targetX = LANES[laneIndex]
+            call playSoundSlide
+
+    to do jump:
+        if gameState != "playing":
+            return
+        if isGrounded == true:
+            playerVY = jumpForce
+            isGrounded = false
+            isJumping = true
+            call playSoundJump
+
+    to do roll:
+        if gameState != "playing":
+            return
+        isRolling = true
+        rollTimer = 0.75
+        if isGrounded == false:
+            playerVY = -28
+        call playSoundSlide
+
+    to do startGame:
+        call initAudio
+        gameState = "playing"
+        add class "hidden" to "start-overlay"
+
+    to do togglePause:
+        if gameState == "playing":
+            gameState = "paused"
+            remove class "hidden" from "pause-overlay"
+        else if gameState == "paused":
+            gameState = "playing"
+            add class "hidden" to "pause-overlay"
+
+    to do restartGame:
+        gameState = "playing"
+        score = 0
+        runCoins = 0
+        speed = baseSpeed
+        laneIndex = 1
+        targetX = LANES[1]
+        playerX = 0
+        playerY = 0
+        playerZ = 0
+        playerVY = 0
+        isRolling = false
+        rollTimer = 0
+        invulnerableTimer = 0
+        hoverboardActive = false
+        call setVisible with hoverboardMeshGroup, false
+        add class "hidden" to "pause-overlay"
+        add class "hidden" to "gameover-overlay"
+
+    # ── Main 3D Rendering & Game Loop ─────────────────────────────────────
+    to do initEngine:
+        canvas = getElement("webgl-canvas")
+        if canvas == null:
+            return
+
+        scene = createScene()
+        call setSceneBackground with scene, "#38bdf8"
+        call setSceneFog with scene, "#7dd3fc", 90, 240
+
+        create aspect as getWindowWidth() / getWindowHeight()
+        camera = createPerspectiveCamera(54, aspect, 0.1, 400)
+        call setPosition with camera, 0, 2.1, 3.8
+
+        renderer = createWebGLRenderer(canvas)
+        call configureRenderer with renderer, getWindowWidth(), getWindowHeight(), min(getDevicePixelRatio(), 2)
+
+        create hemiLight as createHemisphereLight("#ffffff", "#38bdf8", 0.75)
+        call addToScene with hemiLight
+        create dirLight as createDirectionalLight("#fffaed", 0.95)
+        call setPosition with dirLight, 30, 60, 40
+        call addToScene with dirLight
+
+        # Init Materials
+        ballastMat = createTexMat(createBallastTexture(), 0.9)
+        tieMat = createTexMat(createTieTexture(), 0.75)
+        railMat = createTexMat(createRailTexture(), 0.25)
+        assign metalness of railMat to 0.9
+        bldgMat1 = createTexMat(createBuildingTexture("#e06d29", "#ffca28"), 0.65)
+        palmTrunkMat = createTexMat(createPalmTrunkTexture(), 0.85)
+        palmFrondMat = createTexMat(createPalmFrondTexture(), 0.6)
+        assign side of palmFrondMat to DoubleSide
+        trainBlueSideMat = createTexMat(createTrainSideTexture(false), 0.35)
+        trainBlueFrontMat = createTexMat(createTrainFrontTexture(false), 0.35)
+        trainRedSideMat = createTexMat(createTrainSideTexture(true), 0.35)
+        trainRedFrontMat = createTexMat(createTrainFrontTexture(true), 0.35)
+        trainRoofMat = createStandardMat("#94a3b8", 0.35, 0.6)
+        chevronMat = createTexMat(createChevronTexture(), 0.5)
+        coinMat = createStandardMat("#facc15", 0.15, 0.85)
+        assign emissive of coinMat to createColor("#b45309")
+
+        call buildJakeCharacter
+
+        repeat ACTIVE_CHUNKS times:
+            call spawnTrackChunk with nextChunkZ
+            decrease nextChunkZ by CHUNK_LENGTH
+
+        lastTime = getNow()
+        requestAnimationFrame(gameLoop)
+        show "Subway Surfers Sovereign Engine Running at 60 FPS!"
+
+    to do gameLoop with currentTime:
+        requestAnimationFrame(gameLoop)
+        create dt as max(min((currentTime - lastTime) / 1000, 0.1), 0)
+        lastTime = currentTime
+
+        if gameState == "playing":
+            speed = min(speed + dt * 0.15, maxSpeed)
+            increase score by speed * dt * baseMultiplier
+
+            if invulnerableTimer > 0:
+                decrease invulnerableTimer by dt
+
+            if isRolling == true:
+                decrease rollTimer by dt
+                if rollTimer <= 0:
+                    isRolling = false
+
+            if hoverboardActive == true:
+                decrease hoverboardTimer by dt
+                if hoverboardTimer <= 0:
+                    hoverboardActive = false
+                    call setVisible with hoverboardMeshGroup, false
+                    hide element "hoverboard-widget"
+
+            create dx as targetX - playerX
+            increase playerX by dx * 16 * dt
+
+            increase playerVY by gravity * dt
+            increase playerY by playerVY * dt
+            if playerY <= 0:
+                playerY = 0
+                playerVY = 0
+                isGrounded = true
+                isJumping = false
+
+            decrease playerZ by speed * dt
+
+            call updateWorld with dt, playerZ
+            call checkCollisions
+            call updateHUD
+
+        call setPosition with jakeGroup, playerX, playerY, playerZ
+        call updateJakeAnimation with dt
+
+        call setPosX with camera, playerX * 0.65
+        call setPosY with camera, playerY + 2.15
+        call setPosZ with camera, playerZ + 4.1
+        call lookCameraAt with playerX * 0.65, playerY + 1.35, playerZ - 10
+
+        call renderUniverse
+
+    # ── Prepositional Event Bindings (Pure English) ───────────────────────
+    when window is resized:
+        call updateCameraProjection with camera, getWindowWidth() / getWindowHeight()
+        call configureRenderer with renderer, getWindowWidth(), getWindowHeight(), min(getDevicePixelRatio(), 2)
+
+    when window presses:
+        call initAudio
+        if (gameState == "start" || gameState == "gameover") && (event["code"] == "Space" || event["code"] == "Enter"):
+            if gameState == "start":
+                call startGame
+            else:
+                call restartGame
+            return
+        if event["code"] == "ArrowLeft" || event["key"] == "a" || event["key"] == "A":
+            call moveLeft
+        if event["code"] == "ArrowRight" || event["key"] == "d" || event["key"] == "D":
+            call moveRight
+        if event["code"] == "ArrowUp" || event["key"] == "w" || event["key"] == "W":
+            call jump
+        if event["code"] == "ArrowDown" || event["key"] == "s" || event["key"] == "S":
+            call roll
+        if event["code"] == "Space":
+            call activateHoverboard
+        if event["code"] == "KeyP" || event["code"] == "Escape":
+            call togglePause
+
+    when "btn-play" is clicked:
+        call startGame
+
+    when "btn-pause" is clicked:
+        call togglePause
+
+    when "btn-resume" is clicked:
+        call togglePause
+
+    when "btn-restart" is clicked:
+        call restartGame
+
+    when "btn-restart-pause" is clicked:
+        call restartGame
+
+    when "btn-audio" is clicked:
+        isAudioMuted = !isAudioMuted
+        set text of "audio-icon" to (isAudioMuted ? "🔇" : "🔊")
+
+    # ── Boot Engine ───────────────────────────────────────────────────────
+    call initEngine

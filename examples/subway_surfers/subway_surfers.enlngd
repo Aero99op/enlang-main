@@ -1,0 +1,444 @@
+# ==============================================================================
+# Subway Surfers Sovereign Design Tokens & Arcade Stylesheet (.enlngd)
+# Pure Natural English Styling Architecture for Enlang Sovereign Web Engine
+# ==============================================================================
+
+define color "sky-blue" as "#38bdf8"
+define color "rail-dark" as "#0b0f19"
+define color "card-surface" as "rgba(15, 23, 42, 0.88)"
+define color "card-border" as "rgba(255, 255, 255, 0.2)"
+define color "accent-gold" as "#facc15"
+define color "accent-cyan" as "#00f0ff"
+define color "accent-crimson" as "#ef4444"
+define color "accent-green" as "#22c55e"
+define color "text-pure" as "#ffffff"
+define color "text-muted" as "#94a3b8"
+
+for "*" apply:
+    box-sizing border-box
+    margin 0
+    padding 0
+end
+
+for "html, body" apply:
+    width 100%
+    height 100%
+    overflow hidden
+    background #0b0f19
+    font-family -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif
+    user-select none
+    touch-action none
+end
+
+for "#game-container" apply:
+    position relative
+    width 100%
+    height 100vh
+    overflow hidden
+    background #38bdf8
+end
+
+for "#webgl-canvas" apply:
+    position absolute
+    top 0
+    left 0
+    width 100%
+    height 100%
+    display block
+end
+
+for "#hud" apply:
+    position absolute
+    top 0
+    left 0
+    width 100%
+    height 100%
+    pointer-events none
+    z-index 10
+    display flex
+    flex-direction column
+    justify-content space-between
+    padding 16px
+end
+
+for ".hud-top" apply:
+    display flex
+    justify-content space-between
+    align-items flex-start
+    width 100%
+end
+
+for ".hud-left-col" apply:
+    display flex
+    flex-direction column
+    gap 12px
+    align-items flex-start
+end
+
+for ".hud-right-col" apply:
+    display flex
+    flex-direction column
+    gap 10px
+    align-items flex-end
+end
+
+for ".pause-btn-ref" apply:
+    width 48px
+    height 48px
+    border-radius 14px
+    background linear-gradient(135deg, #00f0ff, #0284c7)
+    border 3px solid #ffffff
+    box-shadow 0 6px 16px rgba(0, 240, 255, 0.45)
+    display flex
+    justify-content center
+    align-items center
+    gap 5px
+    cursor pointer
+    pointer-events auto
+    transition transform 0.1s
+end
+
+for ".pause-bar" apply:
+    width 5px
+    height 20px
+    background #ffffff
+    border-radius 3px
+end
+
+for ".audio-btn-ref" apply:
+    width 48px
+    height 48px
+    border-radius 14px
+    background linear-gradient(135deg, #f59e0b, #d97706)
+    border 3px solid #ffffff
+    box-shadow 0 6px 16px rgba(245, 158, 11, 0.45)
+    display flex
+    justify-content center
+    align-items center
+    font-size 22px
+    cursor pointer
+    pointer-events auto
+    transition transform 0.1s
+end
+
+for ".hoverboard-widget-ref" apply:
+    display flex
+    align-items center
+    gap 8px
+    background rgba(15, 23, 42, 0.85)
+    border 2px solid #22c55e
+    padding 6px 12px
+    border-radius 999px
+    box-shadow 0 4px 14px rgba(34, 197, 94, 0.35)
+end
+
+for ".hoverboard-icon-mini" apply:
+    font-size 18px
+end
+
+for ".hoverboard-bar-track" apply:
+    width 90px
+    height 12px
+    background rgba(255, 255, 255, 0.2)
+    border-radius 6px
+    overflow hidden
+end
+
+for ".hoverboard-bar-fill" apply:
+    width 100%
+    height 100%
+    background linear-gradient(90deg, #22c55e, #facc15)
+    border-radius 6px
+    transition width 0.1s linear
+end
+
+for ".hud-powerups-list" apply:
+    display flex
+    flex-direction column
+    gap 8px
+end
+
+for ".powerup-card" apply:
+    display flex
+    align-items center
+    gap 8px
+    background rgba(15, 23, 42, 0.9)
+    border 2px solid #00f0ff
+    padding 4px 12px
+    border-radius 999px
+    color #ffffff
+    font-size 13px
+    font-weight 800
+    box-shadow 0 4px 12px rgba(0, 240, 255, 0.3)
+end
+
+for ".score-pill-ref, .coin-pill-ref, .key-pill-ref" apply:
+    display flex
+    align-items center
+    background rgba(15, 23, 42, 0.88)
+    border 2px solid rgba(255, 255, 255, 0.25)
+    backdrop-filter blur(10px)
+    padding 6px 16px
+    border-radius 999px
+    gap 8px
+    box-shadow 0 6px 20px rgba(0,0,0,0.5)
+    pointer-events auto
+end
+
+for ".mult-text" apply:
+    font-weight 900
+    color #00f0ff
+    font-size 17px
+    letter-spacing 0.5px
+end
+
+for ".star-icon-ref" apply:
+    width 18px
+    height 18px
+    background #facc15
+    clip-path polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)
+end
+
+for ".score-digits" apply:
+    font-weight 900
+    font-size 22px
+    color #ffffff
+    letter-spacing 2px
+    font-family monospace
+end
+
+for ".coin-disc-ref" apply:
+    width 20px
+    height 20px
+    border-radius 50%
+    background radial-gradient(circle, #ffe066 30%, #f59e0b 90%)
+    border 2px solid #ffffff
+    box-shadow 0 0 8px #f59e0b
+end
+
+for ".coin-digits" apply:
+    font-weight 900
+    font-size 20px
+    color #ffd700
+    font-family monospace
+end
+
+for ".key-disc-ref" apply:
+    font-size 16px
+end
+
+for ".key-digits" apply:
+    font-weight 900
+    font-size 20px
+    color #00f0ff
+    font-family monospace
+end
+
+for ".touch-hint" apply:
+    text-align center
+    color #ffffff
+    font-weight 800
+    font-size 13px
+    letter-spacing 1px
+    text-shadow 0 2px 8px rgba(0,0,0,0.8)
+    padding 8px 20px
+    background rgba(15, 23, 42, 0.6)
+    border-radius 999px
+    margin 0 auto
+    backdrop-filter blur(6px)
+    border 1px solid rgba(255,255,255,0.15)
+end
+
+for ".overlay" apply:
+    position absolute
+    top 0
+    left 0
+    width 100%
+    height 100%
+    background rgba(8, 12, 22, 0.85)
+    backdrop-filter blur(12px)
+    display flex
+    flex-direction column
+    align-items center
+    justify-content center
+    z-index 50
+    transition opacity 0.25s ease
+end
+
+for ".overlay.hidden" apply:
+    display none
+end
+
+for ".game-logo-ref" apply:
+    display flex
+    flex-direction column
+    align-items center
+    margin-bottom 28px
+end
+
+for ".logo-subway-ref" apply:
+    font-size 56px
+    font-weight 900
+    color #ffffff
+    text-shadow 0 6px 0 #d97706, 0 12px 24px rgba(0,0,0,0.7)
+    letter-spacing 4px
+    line-height 1
+end
+
+for ".logo-surfers-ref" apply:
+    font-size 62px
+    font-weight 900
+    color #facc15
+    text-shadow 0 6px 0 #b45309, 0 14px 30px rgba(250, 204, 21, 0.65)
+    letter-spacing 5px
+    margin-top -10px
+    line-height 1
+end
+
+for ".logo-badge-sub" apply:
+    font-size 12px
+    font-weight 800
+    background #ef4444
+    color #ffffff
+    padding 5px 16px
+    border-radius 999px
+    letter-spacing 2px
+    box-shadow 0 4px 14px rgba(239, 68, 68, 0.5)
+    margin-top 10px
+end
+
+for ".big-btn-ref" apply:
+    padding 18px 46px
+    font-size 22px
+    font-weight 900
+    color #ffffff
+    background linear-gradient(180deg, #22c55e 0%, #15803d 100%)
+    border 3px solid #86efac
+    border-radius 18px
+    box-shadow 0 8px 0 #166534, 0 16px 30px rgba(0,0,0,0.5)
+    cursor pointer
+    transition transform 0.1s, box-shadow 0.1s
+    letter-spacing 1.5px
+    user-select none
+end
+
+for ".btn-secondary" apply:
+    background linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)
+    border 3px solid #93c5fd
+    box-shadow 0 8px 0 #1e40af, 0 16px 30px rgba(0,0,0,0.5)
+end
+
+for ".controls-guide-ref" apply:
+    margin-top 32px
+    background rgba(15, 23, 42, 0.85)
+    border 1px solid rgba(255, 255, 255, 0.18)
+    border-radius 20px
+    padding 22px 32px
+    max-width 520px
+    width 90%
+end
+
+for ".controls-guide-ref h3" apply:
+    font-size 15px
+    color #facc15
+    font-weight 800
+    letter-spacing 1.5px
+    margin-bottom 12px
+    text-align center
+end
+
+for ".guide-row" apply:
+    display flex
+    justify-content space-between
+    align-items center
+    padding 8px 0
+    border-bottom 1px solid rgba(255,255,255,0.08)
+    font-size 14px
+    color #cbd5e1
+end
+
+for ".guide-keys" apply:
+    font-weight 700
+    color #38bdf8
+    background rgba(56, 189, 248, 0.1)
+    padding 3px 10px
+    border-radius 6px
+    font-family monospace
+end
+
+for ".pause-card-ref, .gameover-card-ref" apply:
+    background rgba(15, 23, 42, 0.94)
+    border 2px solid rgba(255, 255, 255, 0.22)
+    border-radius 24px
+    padding 36px 44px
+    display flex
+    flex-direction column
+    align-items center
+    gap 18px
+    box-shadow 0 20px 60px rgba(0,0,0,0.75)
+    max-width 440px
+    width 90%
+end
+
+for ".pause-title-ref" apply:
+    font-size 36px
+    font-weight 900
+    color #00f0ff
+    letter-spacing 2px
+    text-shadow 0 4px 16px rgba(0, 240, 255, 0.5)
+end
+
+for ".pause-buttons" apply:
+    display flex
+    flex-direction column
+    gap 14px
+    width 100%
+end
+
+for ".gameover-title-ref" apply:
+    font-size 46px
+    font-weight 900
+    color #ef4444
+    text-shadow 0 4px 20px rgba(239, 68, 68, 0.65)
+    letter-spacing 3px
+end
+
+for ".stat-item" apply:
+    display flex
+    justify-content space-between
+    align-items center
+    width 100%
+    padding 12px 18px
+    background rgba(30, 41, 59, 0.75)
+    border-radius 14px
+    font-size 16px
+    border 1px solid rgba(255, 255, 255, 0.08)
+end
+
+for ".stat-label" apply:
+    color #94a3b8
+    font-weight 600
+end
+
+for ".stat-value" apply:
+    font-weight 900
+    color #ffffff
+    font-family monospace
+    font-size 18px
+end
+
+for ".stat-value.gold" apply:
+    color #ffd700
+end
+
+for ".stat-value.record" apply:
+    color #22c55e
+end
+
+for ".gameover-buttons" apply:
+    display flex
+    flex-direction column
+    gap 14px
+    width 100%
+    margin-top 10px
+end
