@@ -104,16 +104,79 @@ html, body {
 }
 
 .menu-item {
+  position: relative;
   padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
   color: var(--vscode-text-main);
   transition: background 0.15s;
+  user-select: none;
+  outline: none;
 }
 
-.menu-item:hover {
+.menu-label {
+  display: inline-block;
+  pointer-events: none;
+}
+
+.menu-item:hover, .menu-item.active {
   background: var(--vscode-hover);
   color: var(--vscode-text-bright);
+}
+
+/* Header Dropdown Menus (1:1 VS Code Native) */
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  background: #252526;
+  border: 1px solid var(--vscode-border);
+  border-radius: 5px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  min-width: 260px;
+  padding: 4px 0;
+  display: none;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.menu-dropdown.open,
+.menu-item.active > .menu-dropdown {
+  display: flex;
+}
+
+.menu-dropdown-item {
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--vscode-text-main);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+
+.menu-dropdown-item:hover {
+  background: var(--vscode-accent);
+  color: #ffffff;
+}
+
+.menu-dropdown-item:hover .menu-shortcut {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.menu-dropdown-divider {
+  height: 1px;
+  background: var(--vscode-border);
+  margin: 4px 0;
+}
+
+.menu-shortcut {
+  color: var(--vscode-text-muted);
+  font-size: 11px;
+  margin-left: 20px;
+  font-family: var(--font-mono);
 }
 
 .titlebar-center {

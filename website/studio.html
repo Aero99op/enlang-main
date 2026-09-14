@@ -21,14 +21,213 @@
           <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           <span>Enlangg Studio</span>
         </a>
-        <nav class="titlebar-menu">
-          <div class="menu-item" id="menuFile">File</div>
-          <div class="menu-item" id="menuEdit">Edit</div>
-          <div class="menu-item" id="menuSelection">Selection</div>
-          <div class="menu-item" id="menuView">View</div>
-          <div class="menu-item" id="menuRun">Run</div>
-          <div class="menu-item" id="menuTerminal">Terminal</div>
-          <div class="menu-item" id="menuHelp">Help</div>
+        <nav class="titlebar-menu" id="mainMenuBar">
+          <div class="menu-item" id="menuFile" tabindex="0">
+            <span class="menu-label">File</span>
+            <div class="menu-dropdown">
+              <div class="menu-dropdown-item" data-action="newFile">
+                <span>New File...</span>
+                <span class="menu-shortcut">Ctrl+N</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="newFolder">
+                <span>New Folder...</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="quickOpen">
+                <span>Quick Open...</span>
+                <span class="menu-shortcut">Ctrl+P</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="saveFile">
+                <span>Save File</span>
+                <span class="menu-shortcut">Ctrl+S</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="saveAll">
+                <span>Save All Files</span>
+                <span class="menu-shortcut">Ctrl+Shift+S</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="loadBanking">
+                <span>Load Template: Sovereign Banking (.enlng)</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="loadSubway">
+                <span>Load Template: Subway Surfers 3D (.enlngd/.enlngf)</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="loadDatabase">
+                <span>Load Template: EnlangDB Database (.enlngdb)</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="loadMobile">
+                <span>Load Template: Mobile Wallet Simulator (.enlngm)</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="exportProject">
+                <span>Export Project (JSON/VFS)</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="resetWorkspace">
+                <span>Reset Workspace to Default</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="closeTab">
+                <span>Close Active Editor</span>
+                <span class="menu-shortcut">Ctrl+W</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-item" id="menuEdit" tabindex="0">
+            <span class="menu-label">Edit</span>
+            <div class="menu-dropdown">
+              <div class="menu-dropdown-item" data-action="undo">
+                <span>Undo</span>
+                <span class="menu-shortcut">Ctrl+Z</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="redo">
+                <span>Redo</span>
+                <span class="menu-shortcut">Ctrl+Y</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="cut">
+                <span>Cut</span>
+                <span class="menu-shortcut">Ctrl+X</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="copy">
+                <span>Copy</span>
+                <span class="menu-shortcut">Ctrl+C</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="paste">
+                <span>Paste</span>
+                <span class="menu-shortcut">Ctrl+V</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="find">
+                <span>Find in Workspace</span>
+                <span class="menu-shortcut">Ctrl+F</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="selectAll">
+                <span>Select All</span>
+                <span class="menu-shortcut">Ctrl+A</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-item" id="menuSelection" tabindex="0">
+            <span class="menu-label">Selection</span>
+            <div class="menu-dropdown">
+              <div class="menu-dropdown-item" data-action="selectAll">
+                <span>Select All</span>
+                <span class="menu-shortcut">Ctrl+A</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="selectLine">
+                <span>Expand Line Selection</span>
+                <span class="menu-shortcut">Ctrl+L</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="duplicateLine">
+                <span>Duplicate Line Down</span>
+                <span class="menu-shortcut">Alt+Shift+↓</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="deleteLine">
+                <span>Delete Entire Line</span>
+                <span class="menu-shortcut">Ctrl+Shift+K</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-item" id="menuView" tabindex="0">
+            <span class="menu-label">View</span>
+            <div class="menu-dropdown">
+              <div class="menu-dropdown-item" data-action="viewExplorer">
+                <span>Explorer</span>
+                <span class="menu-shortcut">Ctrl+Shift+E</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="viewSearch">
+                <span>Search</span>
+                <span class="menu-shortcut">Ctrl+Shift+F</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="viewDatabase">
+                <span>EnlangDB Explorer</span>
+                <span class="menu-shortcut">Ctrl+Shift+D</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="viewDomains">
+                <span>Domains &amp; Ecosystem Hub</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="viewCopilot">
+                <span>Enlangg AI Copilot</span>
+                <span class="menu-shortcut">Ctrl+Shift+A</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="toggleSidebar">
+                <span>Toggle Primary Side Bar</span>
+                <span class="menu-shortcut">Ctrl+B</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="toggleDock">
+                <span>Toggle Terminal &amp; Output Dock</span>
+                <span class="menu-shortcut">Ctrl+`</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="togglePreview">
+                <span>Toggle Live Canvas / Mobile Preview</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-item" id="menuRun" tabindex="0">
+            <span class="menu-label">Run</span>
+            <div class="menu-dropdown">
+              <div class="menu-dropdown-item" data-action="runActiveFile">
+                <span>Run Active File</span>
+                <span class="menu-shortcut">Ctrl+Enter</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="openDbConsole">
+                <span>Execute EnlangDB Query</span>
+                <span class="menu-shortcut">F5</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="clearTerminal">
+                <span>Clear Output Terminal</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-item" id="menuTerminal" tabindex="0">
+            <span class="menu-label">Terminal</span>
+            <div class="menu-dropdown">
+              <div class="menu-dropdown-item" data-action="focusTerminal">
+                <span>Focus Sovereign Micro-VM Terminal</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="clearTerminal">
+                <span>Clear Terminal Screen</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="toggleDock">
+                <span>Toggle Panel Visibility</span>
+                <span class="menu-shortcut">Ctrl+`</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="openDbConsole">
+                <span>Switch to EnlangDB Interactive Console</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-item" id="menuHelp" tabindex="0">
+            <span class="menu-label">Help</span>
+            <div class="menu-dropdown">
+              <div class="menu-dropdown-item" data-action="openDocs">
+                <span>Enlangg Documentation &amp; Spec</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="openLearn">
+                <span>Interactive Grammar &amp; Tutorials</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="openLibrary">
+                <span>Standard Libraries &amp; DSA Modules</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="openShortcutsModal">
+                <span>Keyboard Shortcuts Reference</span>
+                <span class="menu-shortcut">F1</span>
+              </div>
+              <div class="menu-dropdown-item" data-action="openAboutModal">
+                <span>About Enlangg Studio</span>
+              </div>
+            </div>
+          </div>
         </nav>
       </div>
 
@@ -48,7 +247,7 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
           <span>AI Key</span>
         </button>
-        <button class="titlebar-btn" id="pwaInstallBtn" title="Install Desktop App" style="display:none;">
+        <button class="titlebar-btn" id="pwaInstallBtn" title="Install Desktop App">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
           <span>Install App</span>
         </button>
@@ -407,6 +606,94 @@
         <div id="quickOpenList" style="margin-top:8px;max-height:240px;overflow-y:auto;">
           <!-- Quick open file matches -->
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Keyboard Shortcuts Reference -->
+  <div class="modal-backdrop" id="shortcutsModal">
+    <div class="modal-box" style="width:600px;">
+      <div class="modal-header">
+        <span>⌨️ Keyboard Shortcuts Reference</span>
+        <button class="sidebar-action-btn" id="closeShortcutsModal">✕</button>
+      </div>
+      <div class="modal-body" style="max-height:420px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--vscode-border);text-align:left;color:var(--vscode-text-bright);">
+              <th style="padding:6px;">Action</th>
+              <th style="padding:6px;text-align:right;">Shortcut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:6px;">Run Active File in Sovereign VM</td><td style="padding:6px;text-align:right;"><kbd class="menu-shortcut" style="background:#111;padding:2px 6px;border-radius:3px;border:1px solid #333;">Ctrl + Enter</kbd></td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:6px;">Save Active File</td><td style="padding:6px;text-align:right;"><kbd class="menu-shortcut" style="background:#111;padding:2px 6px;border-radius:3px;border:1px solid #333;">Ctrl + S</kbd></td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:6px;">Quick Open File</td><td style="padding:6px;text-align:right;"><kbd class="menu-shortcut" style="background:#111;padding:2px 6px;border-radius:3px;border:1px solid #333;">Ctrl + P</kbd></td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:6px;">Toggle Primary Side Bar</td><td style="padding:6px;text-align:right;"><kbd class="menu-shortcut" style="background:#111;padding:2px 6px;border-radius:3px;border:1px solid #333;">Ctrl + B</kbd></td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:6px;">Toggle Terminal &amp; Bottom Dock</td><td style="padding:6px;text-align:right;"><kbd class="menu-shortcut" style="background:#111;padding:2px 6px;border-radius:3px;border:1px solid #333;">Ctrl + `</kbd></td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:6px;">Open AI Copilot</td><td style="padding:6px;text-align:right;"><kbd class="menu-shortcut" style="background:#111;padding:2px 6px;border-radius:3px;border:1px solid #333;">Ctrl + Shift + A</kbd></td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:6px;">Switch to Explorer</td><td style="padding:6px;text-align:right;"><kbd class="menu-shortcut" style="background:#111;padding:2px 6px;border-radius:3px;border:1px solid #333;">Ctrl + Shift + E</kbd></td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:6px;">Switch to Workspace Search</td><td style="padding:6px;text-align:right;"><kbd class="menu-shortcut" style="background:#111;padding:2px 6px;border-radius:3px;border:1px solid #333;">Ctrl + Shift + F</kbd></td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:6px;">Switch to EnlangDB Explorer</td><td style="padding:6px;text-align:right;"><kbd class="menu-shortcut" style="background:#111;padding:2px 6px;border-radius:3px;border:1px solid #333;">Ctrl + Shift + D</kbd></td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:6px;">Open Keyboard Shortcuts</td><td style="padding:6px;text-align:right;"><kbd class="menu-shortcut" style="background:#111;padding:2px 6px;border-radius:3px;border:1px solid #333;">F1</kbd></td></tr>
+            <tr><td style="padding:6px;">Close Modals / Dropdowns</td><td style="padding:6px;text-align:right;"><kbd class="menu-shortcut" style="background:#111;padding:2px 6px;border-radius:3px;border:1px solid #333;">Escape</kbd></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="titlebar-btn primary" id="dismissShortcutsBtn">Got It</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: About Enlangg Studio -->
+  <div class="modal-backdrop" id="aboutModal">
+    <div class="modal-box" style="width:500px;">
+      <div class="modal-header">
+        <span>👑 About Enlangg Studio</span>
+        <button class="sidebar-action-btn" id="closeAboutModal">✕</button>
+      </div>
+      <div class="modal-body" style="line-height:1.6;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="#007acc"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <div>
+            <h3 style="color:#fff;margin:0;font-size:15px;">Enlangg Studio (Sovereign Edition)</h3>
+            <span style="color:var(--vscode-text-muted);font-size:11.5px;">Version 1.0.0 · 1:1 Native VS Code Home IDE</span>
+          </div>
+        </div>
+        <p>Enlangg Studio is the dedicated, sovereign web IDE built specifically for the Enlangg language family and fullstack ecosystem.</p>
+        <div style="background:#181818;border:1px solid var(--vscode-border);border-radius:6px;padding:10px;font-size:11.5px;color:var(--vscode-text-main);">
+          <div>• <b>Virtual File System (VFS):</b> 100% in-browser, persistent localStorage storage.</div>
+          <div>• <b>Native Multi-Domain VM:</b> Real-time runtimes for <code>.enlng</code>, <code>.enlngdb</code>, <code>.enlgf</code>, <code>.enlngd</code>, <code>.enlngs</code>, <code>.enlngm</code>.</div>
+          <div>• <b>Subway Surfers 3D &amp; Canvas:</b> Live viewport &amp; mobile device simulator.</div>
+          <div>• <b>BYOK AI Copilot:</b> Connect Gemini, OpenAI, or offline Ollama with zero intermediary servers.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="titlebar-btn primary" id="dismissAboutBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Desktop App Install Guidance -->
+  <div class="modal-backdrop" id="pwaModal">
+    <div class="modal-box" style="width:500px;">
+      <div class="modal-header">
+        <span>💻 Install Enlangg Studio as Desktop App</span>
+        <button class="sidebar-action-btn" id="closePwaModal">✕</button>
+      </div>
+      <div class="modal-body" style="line-height:1.6;">
+        <p>You can run <b>Enlangg Studio</b> natively as an independent desktop application with dedicated windowing and offline capabilities.</p>
+        <div style="background:#181818;border:1px solid var(--vscode-border);border-radius:6px;padding:12px;font-size:12px;">
+          <div style="margin-bottom:8px;"><b>🌐 In Chrome, Edge, or Brave:</b></div>
+          <div>1. Click the <b>Install App</b> button below or the install icon in your address bar (right side).</div>
+          <div>2. Or open the browser menu (⋮) → <b>Install Enlangg Studio</b> or <i>Save and Share → Install page as app</i>.</div>
+          <div style="margin-top:8px;"><b>⚡ Windows / Mac / Linux:</b> Once installed, it launches directly from your Start Menu, Taskbar, or Applications folder just like VS Code!</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="titlebar-btn" id="dismissPwaBtn">Close</button>
+        <button class="titlebar-btn primary" id="triggerPwaPromptBtn">Install Now</button>
       </div>
     </div>
   </div>

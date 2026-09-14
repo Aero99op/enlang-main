@@ -731,9 +731,443 @@ Provide code in fenced code blocks.`;
     }
   }
 
+  // Save Active File
+  function saveActiveFile() {
+    if (activeFile && vfs[activeFile] !== undefined) {
+      if (codeEditor) vfs[activeFile] = codeEditor.value;
+      dirtyFiles.delete(activeFile);
+      renderTabs();
+      saveVfs();
+      appendTerminal(`\n<span class="term-green">[Workspace] Saved ${activeFile}</span>`);
+    }
+  }
+
+  // Save All Open Files
+  function saveAllFiles() {
+    if (activeFile && vfs[activeFile] !== undefined && codeEditor) {
+      vfs[activeFile] = codeEditor.value;
+    }
+    dirtyFiles.clear();
+    renderTabs();
+    saveVfs();
+    appendTerminal(`\n<span class="term-green">[Workspace] Saved all workspace files successfully.</span>`);
+  }
+
+  // Handle all dropdown menu actions
+  function handleMenuAction(action) {
+    switch (action) {
+      case 'newFile': {
+        const name = prompt('Enter new file path (e.g. src/utils.enlng or db/store.enlngdb):', 'src/new_module.enlng');
+        if (name && name.trim()) {
+          const cleanName = name.trim();
+          let defaultContent = `type enlng\n\n# New Enlangg Script\nshow "Hello from ${cleanName}"\n`;
+          if (cleanName.endsWith('.enlngdb')) {
+            defaultContent = `type enlngdb\n\n-- Embedded Database Schema\nuse database default_db;\nshow tables;\n`;
+          } else if (cleanName.endsWith('.enlgf')) {
+            defaultContent = `type enlgf\n\ncomponent NewComponent:\n    container styled as "card":\n        title "New Sovereign UI"\n`;
+          } else if (cleanName.endsWith('.enlngd')) {
+            defaultContent = `type enlngd\n\npalette Theme:\n    primary: #007acc\n    background: #1e1e1e\n`;
+          } else if (cleanName.endsWith('.enlngs')) {
+            defaultContent = `type enlngs\n\n-- Sovereign Event Script\non "click" do:\n    show "Clicked!"\n`;
+          } else if (cleanName.endsWith('.enlngm')) {
+            defaultContent = `type enlngm\n\nscreen MobileView:\n    appbar "My App":\n        action "back"\n    body:\n        card "Welcome to Enlang Mobile"\n`;
+          }
+          vfs[cleanName] = defaultContent;
+          saveVfs();
+          renderFileTree();
+          openFile(cleanName);
+        }
+        break;
+      }
+
+      case 'newFolder': {
+        const folder = prompt('Enter folder path (e.g. components or lib):', 'modules');
+        if (folder && folder.trim()) {
+          const cleanFolder = folder.trim().replace(/\/+$/, '');
+          const placeholder = `${cleanFolder}/module.enlng`;
+          vfs[placeholder] = `type enlng\n\n# Module inside ${cleanFolder}\nfreeze MODULE_NAME as "${cleanFolder}"\n`;
+          saveVfs();
+          renderFileTree();
+          openFile(placeholder);
+        }
+        break;
+      }
+
+      case 'quickOpen': {
+        const quickOpenModal = document.getElementById('quickOpenModal');
+        const quickOpenInput = document.getElementById('quickOpenInput');
+        if (quickOpenModal) {
+          quickOpenModal.classList.add('open');
+          if (quickOpenInput) {
+            quickOpenInput.value = '';
+            quickOpenInput.focus();
+            const quickOpenList = document.getElementById('quickOpenList');
+            if (quickOpenList) {
+              quickOpenList.innerHTML = '';
+              for (const match of Object.keys(vfs)) {
+                const row = document.createElement('div');
+                row.className = 'tree-item';
+                row.innerHTML = `<span>${match}</span>`;
+                row.addEventListener('click', () => {
+                  openFile(match);
+                  quickOpenModal.classList.remove('open');
+                });
+                quickOpenList.appendChild(row);
+              }
+            }
+          }
+        }
+        break;
+      }
+
+      case 'saveFile':
+        saveActiveFile();
+        break;
+
+      case 'saveAll':
+        saveAllFiles();
+        break;
+
+      case 'loadBanking':
+        window.loadSampleTemplate('banking');
+        break;
+
+      case 'loadSubway':
+        window.loadSampleTemplate('subway');
+        break;
+
+      case 'loadDatabase':
+        window.loadSampleTemplate('database');
+        break;
+
+      case 'loadMobile':
+        window.loadSampleTemplate('mobile');
+        break;
+
+      case 'exportProject': {
+        const blob = new Blob([JSON.stringify(vfs, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'enlangg-workspace.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        appendTerminal('\n<span class="term-green">[Workspace] Project exported as enlangg-workspace.json</span>');
+        break;
+      }
+
+      case 'resetWorkspace': {
+        if (confirm('Reset workspace to default Sovereign Banking & Ledger project?')) {
+          vfs = Object.assign({}, DEFAULT_WORKSPACE);
+          openTabs = ['src/main.enlng', 'db/schema.enlngdb'];
+          activeFile = 'src/main.enlng';
+          dirtyFiles.clear();
+          saveVfs();
+          renderFileTree();
+          renderTabs();
+          loadActiveFileContent();
+          updateBreadcrumbs();
+          updateDomainPill();
+          appendTerminal('\n<span class="term-yellow">[Workspace] Workspace reset to default Sovereign project.</span>');
+        }
+        break;
+      }
+
+      case 'closeTab':
+        if (activeFile) closeTab(activeFile);
+        break;
+
+      case 'undo':
+        if (codeEditor) {
+          codeEditor.focus();
+          document.execCommand('undo');
+        }
+        break;
+
+      case 'redo':
+        if (codeEditor) {
+          codeEditor.focus();
+          document.execCommand('redo');
+        }
+        break;
+
+      case 'cut':
+        if (codeEditor) {
+          codeEditor.focus();
+          document.execCommand('cut');
+        }
+        break;
+
+      case 'copy':
+        if (codeEditor) {
+          codeEditor.focus();
+          document.execCommand('copy');
+        }
+        break;
+
+      case 'paste':
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          navigator.clipboard.readText().then(text => {
+            if (codeEditor && text) {
+              const start = codeEditor.selectionStart;
+              const end = codeEditor.selectionEnd;
+              codeEditor.value = codeEditor.value.substring(0, start) + text + codeEditor.value.substring(end);
+              codeEditor.selectionStart = codeEditor.selectionEnd = start + text.length;
+              updateLineNumbers();
+              if (activeFile) {
+                vfs[activeFile] = codeEditor.value;
+                dirtyFiles.add(activeFile);
+                renderTabs();
+                saveVfs();
+              }
+            }
+          }).catch(() => {
+            if (codeEditor) {
+              codeEditor.focus();
+              document.execCommand('paste');
+            }
+          });
+        } else if (codeEditor) {
+          codeEditor.focus();
+          document.execCommand('paste');
+        }
+        break;
+
+      case 'find': {
+        const actSearch = document.getElementById('actSearch');
+        if (actSearch) actSearch.click();
+        const searchInput = document.getElementById('searchQueryInput');
+        if (searchInput) searchInput.focus();
+        break;
+      }
+
+      case 'selectAll':
+        if (codeEditor) {
+          codeEditor.focus();
+          codeEditor.select();
+        }
+        break;
+
+      case 'selectLine':
+        if (codeEditor) {
+          codeEditor.focus();
+          const val = codeEditor.value;
+          const selStart = codeEditor.selectionStart;
+          const lineStart = val.lastIndexOf('\n', selStart - 1) + 1;
+          let lineEnd = val.indexOf('\n', selStart);
+          if (lineEnd === -1) lineEnd = val.length;
+          codeEditor.setSelectionRange(lineStart, lineEnd);
+        }
+        break;
+
+      case 'duplicateLine':
+        if (codeEditor) {
+          const val = codeEditor.value;
+          const selStart = codeEditor.selectionStart;
+          const lineStart = val.lastIndexOf('\n', selStart - 1) + 1;
+          let lineEnd = val.indexOf('\n', selStart);
+          if (lineEnd === -1) lineEnd = val.length;
+          const currentLine = val.substring(lineStart, lineEnd);
+          codeEditor.value = val.substring(0, lineEnd) + '\n' + currentLine + val.substring(lineEnd);
+          codeEditor.selectionStart = codeEditor.selectionEnd = lineEnd + 1 + currentLine.length;
+          updateLineNumbers();
+          if (activeFile) {
+            vfs[activeFile] = codeEditor.value;
+            dirtyFiles.add(activeFile);
+            renderTabs();
+            saveVfs();
+          }
+        }
+        break;
+
+      case 'deleteLine':
+        if (codeEditor) {
+          const val = codeEditor.value;
+          const selStart = codeEditor.selectionStart;
+          const lineStart = val.lastIndexOf('\n', selStart - 1) + 1;
+          let lineEnd = val.indexOf('\n', selStart);
+          if (lineEnd === -1) lineEnd = val.length;
+          else lineEnd += 1;
+          codeEditor.value = val.substring(0, lineStart) + val.substring(lineEnd);
+          codeEditor.selectionStart = codeEditor.selectionEnd = lineStart;
+          updateLineNumbers();
+          if (activeFile) {
+            vfs[activeFile] = codeEditor.value;
+            dirtyFiles.add(activeFile);
+            renderTabs();
+            saveVfs();
+          }
+        }
+        break;
+
+      case 'viewExplorer': {
+        const actExplorer = document.getElementById('actExplorer');
+        if (actExplorer) actExplorer.click();
+        break;
+      }
+
+      case 'viewSearch': {
+        const actSearch = document.getElementById('actSearch');
+        if (actSearch) actSearch.click();
+        break;
+      }
+
+      case 'viewDatabase': {
+        const actDatabase = document.getElementById('actDatabase');
+        if (actDatabase) actDatabase.click();
+        break;
+      }
+
+      case 'viewDomains': {
+        const actDomains = document.getElementById('actDomains');
+        if (actDomains) actDomains.click();
+        break;
+      }
+
+      case 'viewCopilot':
+        if (copilotPanel) copilotPanel.classList.toggle('open');
+        break;
+
+      case 'toggleSidebar':
+        if (mainSidebar) mainSidebar.classList.toggle('collapsed');
+        break;
+
+      case 'toggleDock':
+        if (bottomDock) bottomDock.classList.toggle('collapsed');
+        break;
+
+      case 'togglePreview':
+        if (previewPane) {
+          previewPane.classList.toggle('visible');
+          if (previewPane.classList.contains('visible')) renderLivePreview();
+        }
+        break;
+
+      case 'runActiveFile':
+        executeActiveFile();
+        break;
+
+      case 'openDbConsole':
+        if (bottomDock) bottomDock.classList.remove('collapsed');
+        switchDockTab('dockDatabase');
+        const dbQueryInput = document.getElementById('dbQueryInput');
+        if (dbQueryInput) dbQueryInput.focus();
+        break;
+
+      case 'clearTerminal':
+        if (terminalOutput) terminalOutput.innerHTML = '<span class="term-dim">// Terminal cleared</span>';
+        break;
+
+      case 'focusTerminal':
+        if (bottomDock) bottomDock.classList.remove('collapsed');
+        switchDockTab('dockTerminal');
+        break;
+
+      case 'openDocs':
+        window.open('docs.html', '_blank');
+        break;
+
+      case 'openLearn':
+        window.open('learn.html', '_blank');
+        break;
+
+      case 'openLibrary':
+        window.open('library.html', '_blank');
+        break;
+
+      case 'openShortcutsModal': {
+        const shortcutsModal = document.getElementById('shortcutsModal');
+        if (shortcutsModal) shortcutsModal.classList.add('open');
+        break;
+      }
+
+      case 'openAboutModal': {
+        const aboutModal = document.getElementById('aboutModal');
+        if (aboutModal) aboutModal.classList.add('open');
+        break;
+      }
+
+      default:
+        console.warn('Unknown menu action:', action);
+        break;
+    }
+  }
+
+  // Setup Titlebar Menus (1:1 VS Code Dropdown Behavior)
+  let isMenuBarOpen = false;
+
+  function closeAllMenus() {
+    isMenuBarOpen = false;
+    document.querySelectorAll('.titlebar-menu .menu-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.titlebar-menu .menu-dropdown').forEach(el => el.classList.remove('open'));
+  }
+
+  function openMenu(menuItem) {
+    closeAllMenus();
+    isMenuBarOpen = true;
+    menuItem.classList.add('active');
+    const dropdown = menuItem.querySelector('.menu-dropdown');
+    if (dropdown) dropdown.classList.add('open');
+  }
+
+  function setupMenuBar() {
+    const menuItems = document.querySelectorAll('.titlebar-menu .menu-item');
+
+    menuItems.forEach(item => {
+      // Toggle on click
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.menu-dropdown-item')) return;
+        e.stopPropagation();
+        const isOpen = item.classList.contains('active');
+        if (isOpen) {
+          closeAllMenus();
+        } else {
+          openMenu(item);
+        }
+      });
+
+      // Hover switch when menu bar is already open
+      item.addEventListener('mouseenter', () => {
+        if (isMenuBarOpen && !item.classList.contains('active')) {
+          openMenu(item);
+        }
+      });
+    });
+
+    // Dropdown Item Action Click Delegation
+    document.addEventListener('click', (e) => {
+      const dropdownItem = e.target.closest('.menu-dropdown-item');
+      if (dropdownItem) {
+        const action = dropdownItem.getAttribute('data-action');
+        closeAllMenus();
+        if (action) {
+          handleMenuAction(action);
+        }
+        return;
+      }
+
+      // If clicked outside menu bar, close open dropdowns
+      if (!e.target.closest('.titlebar-menu')) {
+        closeAllMenus();
+      }
+    });
+  }
+
+  // Track PWA Installation Prompt
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+
   // Setup Event Listeners
   function setupEventListeners() {
-    // Editor text input
+    // 1. Initialize Menu Bar
+    setupMenuBar();
+
+    // 2. Editor text input
     if (codeEditor) {
       codeEditor.addEventListener('input', () => {
         if (activeFile && vfs[activeFile] !== undefined) {
@@ -763,13 +1197,15 @@ Provide code in fenced code blocks.`;
         }
 
         // Ctrl + S to save
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 's') {
           e.preventDefault();
-          if (activeFile) {
-            dirtyFiles.delete(activeFile);
-            renderTabs();
-            saveVfs();
-          }
+          saveActiveFile();
+        }
+
+        // Ctrl + Shift + S to save all
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+          e.preventDefault();
+          saveAllFiles();
         }
       });
 
@@ -777,13 +1213,13 @@ Provide code in fenced code blocks.`;
       codeEditor.addEventListener('keyup', updateCursorPos);
     }
 
-    // Run Buttons
+    // 3. Top Titlebar Buttons
     const topRunBtn = document.getElementById('topRunBtn');
     if (topRunBtn) topRunBtn.addEventListener('click', executeActiveFile);
     const editorRunBtn = document.getElementById('editorRunBtn');
     if (editorRunBtn) editorRunBtn.addEventListener('click', executeActiveFile);
 
-    // Toggle Preview
+    // 4. Toggle Preview
     const togglePreviewBtn = document.getElementById('togglePreviewBtn');
     if (togglePreviewBtn) {
       togglePreviewBtn.addEventListener('click', () => {
@@ -803,38 +1239,18 @@ Provide code in fenced code blocks.`;
       });
     }
 
-    // New File Button
+    // 5. Explorer Buttons
     const newFileBtn = document.getElementById('newFileBtn');
     if (newFileBtn) {
-      newFileBtn.addEventListener('click', () => {
-        const name = prompt('Enter new file name (e.g. src/utils.enlng or db/store.enlngdb):', 'src/new_script.enlng');
-        if (name && name.trim()) {
-          const cleanName = name.trim();
-          vfs[cleanName] = `type enlng\n\n# New Enlangg Script\nshow "Hello from ${cleanName}"\n`;
-          saveVfs();
-          openFile(cleanName);
-        }
-      });
+      newFileBtn.addEventListener('click', () => handleMenuAction('newFile'));
     }
 
-    // Reset Project Button
     const resetProjectBtn = document.getElementById('resetProjectBtn');
     if (resetProjectBtn) {
-      resetProjectBtn.addEventListener('click', () => {
-        if (confirm('Reset workspace to default Sovereign Banking & Ledger project?')) {
-          vfs = Object.assign({}, DEFAULT_WORKSPACE);
-          openTabs = ['src/main.enlng', 'db/schema.enlngdb'];
-          activeFile = 'src/main.enlng';
-          saveVfs();
-          renderFileTree();
-          renderTabs();
-          loadActiveFileContent();
-          updateBreadcrumbs();
-        }
-      });
+      resetProjectBtn.addEventListener('click', () => handleMenuAction('resetWorkspace'));
     }
 
-    // Activity Bar Icons
+    // 6. Activity Bar Icons
     const activities = [
       { id: 'actExplorer', pane: 'paneExplorer' },
       { id: 'actSearch', pane: 'paneSearch' },
@@ -860,7 +1276,7 @@ Provide code in fenced code blocks.`;
       }
     });
 
-    // Copilot Toggle
+    // 7. Copilot Toggle & Send
     const actCopilot = document.getElementById('actCopilot');
     if (actCopilot) {
       actCopilot.addEventListener('click', () => {
@@ -880,7 +1296,7 @@ Provide code in fenced code blocks.`;
       sendCopilotBtn.addEventListener('click', () => window.askCopilot());
     }
 
-    // Dock Tabs
+    // 8. Dock Tabs
     document.querySelectorAll('.dock-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         const targetPane = tab.getAttribute('data-pane');
@@ -902,7 +1318,7 @@ Provide code in fenced code blocks.`;
       });
     }
 
-    // BYOK Modal
+    // 9. BYOK Modal
     const byokConfigBtn = document.getElementById('byokConfigBtn');
     const copilotSettingsBtn = document.getElementById('copilotSettingsBtn');
     const byokModal = document.getElementById('byokModal');
@@ -944,7 +1360,7 @@ Provide code in fenced code blocks.`;
       });
     }
 
-    // Quick Open (Ctrl + P)
+    // 10. Quick Open (Ctrl + P)
     const quickOpenTrigger = document.getElementById('quickOpenTrigger');
     const quickOpenModal = document.getElementById('quickOpenModal');
     const quickOpenInput = document.getElementById('quickOpenInput');
@@ -991,27 +1407,145 @@ Provide code in fenced code blocks.`;
       });
     }
 
-    // Global Shortcuts
+    // 11. Shortcuts Modal
+    const shortcutsModal = document.getElementById('shortcutsModal');
+    const closeShortcutsModal = document.getElementById('closeShortcutsModal');
+    const dismissShortcutsBtn = document.getElementById('dismissShortcutsBtn');
+    const closeShortcuts = () => { if (shortcutsModal) shortcutsModal.classList.remove('open'); };
+    if (closeShortcutsModal) closeShortcutsModal.addEventListener('click', closeShortcuts);
+    if (dismissShortcutsBtn) dismissShortcutsBtn.addEventListener('click', closeShortcuts);
+    if (shortcutsModal) shortcutsModal.addEventListener('click', (e) => {
+      if (e.target === shortcutsModal) closeShortcuts();
+    });
+
+    // 12. About Modal
+    const aboutModal = document.getElementById('aboutModal');
+    const closeAboutModal = document.getElementById('closeAboutModal');
+    const dismissAboutBtn = document.getElementById('dismissAboutBtn');
+    const closeAbout = () => { if (aboutModal) aboutModal.classList.remove('open'); };
+    if (closeAboutModal) closeAboutModal.addEventListener('click', closeAbout);
+    if (dismissAboutBtn) dismissAboutBtn.addEventListener('click', closeAbout);
+    if (aboutModal) aboutModal.addEventListener('click', (e) => {
+      if (e.target === aboutModal) closeAbout();
+    });
+
+    // 13. PWA Desktop App Modal & Prompt
+    const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+    const pwaModal = document.getElementById('pwaModal');
+    const closePwaModal = document.getElementById('closePwaModal');
+    const dismissPwaBtn = document.getElementById('dismissPwaBtn');
+    const triggerPwaPromptBtn = document.getElementById('triggerPwaPromptBtn');
+
+    const openPwaModal = () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          deferredPrompt = null;
+        });
+      } else if (pwaModal) {
+        pwaModal.classList.add('open');
+      }
+    };
+
+    const closePwa = () => {
+      if (pwaModal) pwaModal.classList.remove('open');
+    };
+
+    if (pwaInstallBtn) pwaInstallBtn.addEventListener('click', openPwaModal);
+    if (closePwaModal) closePwaModal.addEventListener('click', closePwa);
+    if (dismissPwaBtn) dismissPwaBtn.addEventListener('click', closePwa);
+    if (pwaModal) pwaModal.addEventListener('click', (e) => {
+      if (e.target === pwaModal) closePwa();
+    });
+    if (triggerPwaPromptBtn) {
+      triggerPwaPromptBtn.addEventListener('click', () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt = null;
+        }
+        closePwa();
+      });
+    }
+
+    // 14. Global Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+      // F1 for Shortcuts
+      if (e.key === 'F1') {
+        e.preventDefault();
+        if (shortcutsModal) shortcutsModal.classList.add('open');
+      }
+      // F5 for DB console execute
+      if (e.key === 'F5') {
+        e.preventDefault();
+        handleMenuAction('openDbConsole');
+      }
+      // Ctrl + P
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'p') {
         e.preventDefault();
         openQuickModal();
       }
+      // Ctrl + S (Save)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 's') {
+        e.preventDefault();
+        saveActiveFile();
+      }
+      // Ctrl + Shift + S (Save All)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+        e.preventDefault();
+        saveAllFiles();
+      }
+      // Ctrl + N (New File)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'n') {
+        e.preventDefault();
+        handleMenuAction('newFile');
+      }
+      // Ctrl + W (Close Active Tab)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'w') {
+        e.preventDefault();
+        handleMenuAction('closeTab');
+      }
+      // Ctrl + `
       if ((e.ctrlKey || e.metaKey) && e.key === '`') {
         e.preventDefault();
         bottomDock.classList.toggle('collapsed');
       }
+      // Ctrl + B
       if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
         mainSidebar.classList.toggle('collapsed');
       }
+      // Ctrl + Shift + A (Copilot)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        copilotPanel.classList.toggle('open');
+      }
+      // Ctrl + Shift + E (Explorer)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'E' || e.key === 'e')) {
+        e.preventDefault();
+        handleMenuAction('viewExplorer');
+      }
+      // Ctrl + Shift + F (Search)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'F' || e.key === 'f')) {
+        e.preventDefault();
+        handleMenuAction('viewSearch');
+      }
+      // Ctrl + Shift + D (Database)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        e.preventDefault();
+        handleMenuAction('viewDatabase');
+      }
+      // Escape
       if (e.key === 'Escape') {
+        closeAllMenus();
         closeQuickModal();
         closeByok();
+        closeShortcuts();
+        closeAbout();
+        closePwa();
       }
     });
 
-    // EnlangDB Inline Query Bar
+    // 15. EnlangDB Inline Query Bar
     const dbExecuteBtn = document.getElementById('dbExecuteBtn');
     const dbQueryInput = document.getElementById('dbQueryInput');
     if (dbExecuteBtn && dbQueryInput) {
