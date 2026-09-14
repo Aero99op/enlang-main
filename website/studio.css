@@ -697,12 +697,49 @@ html, body {
   flex-shrink: 0;
 }
 
-.code-textarea {
+.code-editor-layer-wrap {
+  position: relative;
   flex: 1;
   height: 100%;
-  padding: 10px 14px;
+  overflow: hidden;
   background: var(--vscode-bg);
+}
+
+.code-highlight-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 10px 14px;
+  margin: 0;
+  background: transparent;
   color: #d4d4d4;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+  tab-size: 4;
+  white-space: pre;
+  overflow: hidden;
+  pointer-events: none;
+  border: none;
+  box-sizing: border-box;
+  z-index: 1;
+  word-wrap: normal;
+}
+
+.code-textarea {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 10px 14px;
+  margin: 0;
+  background: transparent !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  caret-color: #569cd6;
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 20px;
@@ -712,7 +749,48 @@ html, body {
   white-space: pre;
   overflow: auto;
   tab-size: 4;
-  caret-color: #aeafad;
+  box-sizing: border-box;
+  z-index: 2;
+  word-wrap: normal;
+}
+
+.code-textarea::selection {
+  background: rgba(38, 79, 120, 0.65) !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* Syntax Highlighting Token Styles */
+.hl-action {
+  color: #4ec9b0; /* Teal/Cyan: All words that do something (show, find, create, delete, etc.) */
+  font-weight: 600;
+}
+.hl-keyword {
+  color: #c586c0; /* Purple/Magenta: Control flow and language clauses */
+  font-weight: 600;
+}
+.hl-entity {
+  color: #9cdcfe; /* Light Blue: Database identifiers, tables, records */
+}
+.hl-string {
+  color: #ce9178; /* Coral/Amber: String literals */
+}
+.hl-number {
+  color: #b5cea8; /* Soft green: Numbers */
+}
+.hl-comment {
+  color: #6a9955; /* Forest green: Comments */
+  font-style: italic;
+}
+.hl-bool {
+  color: #569cd6; /* Blue: Boolean/null values */
+  font-weight: 600;
+}
+.hl-semi {
+  color: #858585; /* Semicolons and punctuation */
+}
+.hl-paren {
+  color: #ffd700; /* Rainbow yellow brackets */
 }
 
 /* Live Canvas / Simulator Pane */
@@ -1872,6 +1950,8 @@ html, body {
 .intellisense-type-icon.kw { background: #569cd6; color: #fff; }
 .intellisense-type-icon.fn { background: #dcdcaa; color: #1e1e1e; }
 .intellisense-type-icon.var { background: #9cdcfe; color: #1e1e1e; }
+.intellisense-type-icon.db { background: #4ec9b0; color: #1e1e1e; }
+.intellisense-type-icon.snippet { background: #c586c0; color: #fff; }
 
 /* Line Number Breakpoint Dots */
 .line-num-item {

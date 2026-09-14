@@ -1172,26 +1172,43 @@ function executeEnlngDBStatement(statement, engineState) {
 
 // Extracts executable statements from a script, handling semicolons, newlines, and comments
 function extractStatements(text) {
+  if (!text || !text.trim()) return [];
   const cleanLines = [];
+  let hasTypeSentence = false;
+  let typeSentenceDirective = 'type enlngdb';
+
   for (const rawLine of text.split('\n')) {
     const trimmed = rawLine.trim();
     if (!trimmed) continue;
     if (trimmed.startsWith('//') || trimmed.startsWith('--') || trimmed.startsWith('#')) {
       continue;
     }
+    // "type enlngdb is a sentence , that can be written without semi colon and with a semi colon , there is nothing wrong in it ."
+    const typeMatch = trimmed.match(/^type\s+([a-zA-Z0-9_]+);?$/i);
+    if (typeMatch) {
+      hasTypeSentence = true;
+      typeSentenceDirective = `type ${typeMatch[1]}`;
+      continue; // Exclude from statement concatenation so it doesn't merge with the next statement
+    }
     cleanLines.push(trimmed);
   }
 
-  const combined = cleanLines.join('\n');
-  if (!combined.trim()) return [];
+  // If the text contains ONLY the type sentence (e.g. "type enlngdb" or "type enlngdb;"), execute it!
+  if (cleanLines.length === 0) {
+    if (hasTypeSentence) {
+      return [typeSentenceDirective];
+    }
+    return [];
+  }
 
+  const combined = cleanLines.join('\n');
   if (combined.includes(';')) {
     const rawStmts = splitOutsideQuotes(combined, ';');
     const stmts = [];
     for (const s of rawStmts) {
       const t = s.trim();
       if (!t) continue;
-      if (/^type\s+(?:enlngdb|enlgdb|enlng)$/i.test(t)) continue;
+      if (/^type\s+[a-zA-Z0-9_]+;?$/i.test(t)) continue;
       stmts.push(t);
     }
     return stmts;
@@ -1201,7 +1218,7 @@ function extractStatements(text) {
   for (const line of cleanLines) {
     const t = line.trim();
     if (!t) continue;
-    if (/^type\s+(?:enlngdb|enlgdb|enlng)$/i.test(t)) continue;
+    if (/^type\s+[a-zA-Z0-9_]+;?$/i.test(t)) continue;
     stmts.push(t);
   }
   return stmts;

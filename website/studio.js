@@ -183,6 +183,7 @@ screen WalletHome:
   const fileTreeRoot = document.getElementById('fileTreeRoot');
   const editorTabsList = document.getElementById('editorTabsList');
   const codeEditor = document.getElementById('codeEditor');
+  const editorHighlightLayer = document.getElementById('editorHighlightLayer');
   const lineNumbers = document.getElementById('lineNumbers');
   const breadcrumbFolder = document.getElementById('breadcrumbFolder');
   const breadcrumbFile = document.getElementById('breadcrumbFile');
@@ -361,12 +362,14 @@ screen WalletHome:
       codeEditor.value = '// No file open. Select or create a file from the Explorer.';
       codeEditor.readOnly = true;
       updateLineNumbers();
+      updateEditorHighlight();
       return;
     }
 
     codeEditor.readOnly = false;
     codeEditor.value = vfs[activeFile];
     updateLineNumbers();
+    updateEditorHighlight();
 
     // If active file is frontend or mobile, optionally refresh live preview
     if (activeFile.endsWith('.enlngf') || activeFile.endsWith('.enlngd') || activeFile.endsWith('.enlngm')) {
@@ -431,6 +434,59 @@ screen WalletHome:
       html += `<div class="line-num-item ${hasBp ? 'has-breakpoint' : ''}" data-line="${i}" title="Line ${i}${hasBp ? ' (Breakpoint active)' : ' (Click to toggle breakpoint)'}">${i}${blameStr}</div>`;
     }
     lineNumbers.innerHTML = html;
+  }
+
+  // Universal Highlighting for Enlang & EnlangDB (Words that do something highlighted in vibrant colors)
+  function highlightEnlangCode(rawCode) {
+    if (!rawCode) return '';
+
+    const tokenRegex = /(--[^\r\n]*|#[^\r\n]*|\/\/[^\r\n]*)|("(?:[^"\\\r\n]|\\.)*"|'(?:[^'\\\r\n]|\\.)*')|(\b\d+(?:\.\d+)?\b)|(\b(?:show|find|create|delete|insert|update|use|drop|alter|count|select|swap|add|remove|remember|freeze|give|type|increases|decreases)\b)|(\b(?:when|otherwise|repeat|while|until|for|each|in|from|to|by|with|into|set|where|is|as|and|or|not|order|group|having|limit|offset|asc|desc)\b)|(\b(?:database1|main_db|databases|database|tables|table|records|record|values|value|pair|function|student|accounts)\b)|(\b(?:true|false|null)\b)|(;)/gi;
+
+    let lastIndex = 0;
+    let html = '';
+    let match;
+
+    while ((match = tokenRegex.exec(rawCode)) !== null) {
+      if (match.index > lastIndex) {
+        html += escapeHtml(rawCode.substring(lastIndex, match.index));
+      }
+      const [full, comment, str, num, action, kw, entity, boolNull, semi] = match;
+      if (comment !== undefined) {
+        html += `<span class="hl-comment">${escapeHtml(comment)}</span>`;
+      } else if (str !== undefined) {
+        html += `<span class="hl-string">${escapeHtml(str)}</span>`;
+      } else if (num !== undefined) {
+        html += `<span class="hl-number">${escapeHtml(num)}</span>`;
+      } else if (action !== undefined) {
+        html += `<span class="hl-action">${escapeHtml(action)}</span>`;
+      } else if (kw !== undefined) {
+        html += `<span class="hl-keyword">${escapeHtml(kw)}</span>`;
+      } else if (entity !== undefined) {
+        html += `<span class="hl-entity">${escapeHtml(entity)}</span>`;
+      } else if (boolNull !== undefined) {
+        html += `<span class="hl-bool">${escapeHtml(boolNull)}</span>`;
+      } else if (semi !== undefined) {
+        html += `<span class="hl-semi">${escapeHtml(semi)}</span>`;
+      }
+      lastIndex = tokenRegex.lastIndex;
+    }
+
+    if (lastIndex < rawCode.length) {
+      html += escapeHtml(rawCode.substring(lastIndex));
+    }
+
+    if (rawCode.endsWith('\n')) {
+      html += ' ';
+    }
+
+    return html;
+  }
+
+  function updateEditorHighlight() {
+    if (!editorHighlightLayer || !codeEditor) return;
+    editorHighlightLayer.innerHTML = highlightEnlangCode(codeEditor.value);
+    editorHighlightLayer.scrollTop = codeEditor.scrollTop;
+    editorHighlightLayer.scrollLeft = codeEditor.scrollLeft;
   }
 
   // Cursor Position Tracking
@@ -1019,14 +1075,20 @@ find all records from student where grade is "A";
       }
     }
 
-    // 2. Statement enclosing the cursor
+    // Statement enclosing the cursor
     const lines = text.split('\n');
     const textBefore = text.substring(0, selStart);
     const lineIndex = textBefore.split('\n').length - 1; // 0-indexed
     const cursorLine = lines[lineIndex] || '';
+    const trimmedLine = cursorLine.trim();
+
+    // Check if current line is "type enlngdb" or "type enlngdb;" (sentence with or without semicolon)
+    if (/^type\s+[a-zA-Z0-9_]+;?$/i.test(trimmedLine)) {
+      return { text: trimmedLine, mode: 'line', lineNum: lineIndex + 1 };
+    }
 
     // If cursor line has a query statement
-    if (cursorLine.trim() && !cursorLine.trim().startsWith('#') && !cursorLine.trim().startsWith('--') && !cursorLine.trim().startsWith('type ')) {
+    if (trimmedLine && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('--')) {
       const prevSemi = text.lastIndexOf(';', selStart - 1);
       const startIdx = prevSemi === -1 ? 0 : prevSemi + 1;
       let nextSemi = text.indexOf(';', selStart);
@@ -1036,7 +1098,7 @@ find all records from student where grade is "A";
       const candidate = text.substring(startIdx, nextSemi).trim();
       const cleanStmt = candidate.split('\n')
         .map(l => l.trim())
-        .filter(l => l && !l.startsWith('#') && !l.startsWith('--') && !l.startsWith('type '))
+        .filter(l => l && !l.startsWith('#') && !l.startsWith('--'))
         .join(' ');
 
       if (cleanStmt) {
@@ -1047,7 +1109,7 @@ find all records from student where grade is "A";
     // Scan backwards from cursor line to nearest query
     for (let i = lineIndex; i >= 0; i--) {
       const l = lines[i].trim();
-      if (l && !l.startsWith('#') && !l.startsWith('--') && !l.startsWith('type ')) {
+      if (l && !l.startsWith('#') && !l.startsWith('--')) {
         return { text: l, mode: 'line', lineNum: i + 1 };
       }
     }
@@ -1055,7 +1117,7 @@ find all records from student where grade is "A";
     // Scan forward from cursor line
     for (let i = lineIndex; i < lines.length; i++) {
       const l = lines[i].trim();
-      if (l && !l.startsWith('#') && !l.startsWith('--') && !l.startsWith('type ')) {
+      if (l && !l.startsWith('#') && !l.startsWith('--')) {
         return { text: l, mode: 'line', lineNum: i + 1 };
       }
     }
@@ -2881,6 +2943,7 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
     renderTabs();
     saveVfs();
     updateLineNumbers();
+    updateEditorHighlight();
     runDiagnostics();
 
     const msg = `[Prettier] Formatted ${activeFile} (${formatted.split('\n').length} lines) in ${dt}ms`;
@@ -5792,6 +5855,32 @@ window.addEventListener('message', function(e) {
   // ⚡ 7. INTELLISENSE & AUTOCOMPLETE POPUP
   // ==========================================
   const ENLANG_KEYWORDS = [
+    // Action verbs / Query commands (highlighted in teal/cyan)
+    { text: 'show', type: 'fn', doc: 'Print output or query: show message | show tables' },
+    { text: 'show tables', type: 'db', doc: 'EnlangDB: show all tables in active database' },
+    { text: 'show databases', type: 'db', doc: 'EnlangDB: list all registered databases' },
+    { text: 'show all records from', type: 'db', doc: 'EnlangDB: show all records from <table_name>' },
+    { text: 'find', type: 'db', doc: 'EnlangDB: find all records from <table> [where ...]' },
+    { text: 'find all records from', type: 'db', doc: 'EnlangDB query: find all records from <table_name>' },
+    { text: 'find records in', type: 'db', doc: 'EnlangDB query: find records in <table_name> where ...' },
+    { text: 'create table', type: 'db', doc: 'EnlangDB DDL: create table <name> (col1, col2)' },
+    { text: 'create database', type: 'db', doc: 'EnlangDB DDL: create database <name>' },
+    { text: 'create', type: 'db', doc: 'EnlangDB DDL: create table or create database' },
+    { text: 'delete from', type: 'db', doc: 'EnlangDB DML: delete from <table> where <condition>' },
+    { text: 'delete', type: 'db', doc: 'EnlangDB DML: delete from <table>' },
+    { text: 'insert into', type: 'db', doc: 'EnlangDB DML: insert into <table> with col1 val1, col2 val2' },
+    { text: 'insert', type: 'db', doc: 'EnlangDB DML: insert record into table' },
+    { text: 'update', type: 'db', doc: 'EnlangDB DML: update <table> set col1 val1 where ...' },
+    { text: 'use database', type: 'db', doc: 'EnlangDB: switch active database: use database <name>' },
+    { text: 'use', type: 'kw', doc: 'Import library or switch database: use "lib.enlng" | use database ...' },
+    { text: 'count records in', type: 'db', doc: 'EnlangDB: count records in <table_name>' },
+    { text: 'count of', type: 'fn', doc: 'Get collection length: count of items' },
+    { text: 'count', type: 'fn', doc: 'EnlangDB / Core: count records or items' },
+    { text: 'type enlngdb', type: 'db', doc: 'Declare sovereign EnlangDB engine mode' },
+    { text: 'type enlng', type: 'kw', doc: 'Declare core Enlang language mode' },
+    { text: 'type', type: 'kw', doc: 'File type declaration: type enlngdb | type enlng' },
+
+    // Core Enlang Language Keywords
     { text: 'remember', type: 'kw', doc: 'Declare a mutable variable: remember x as 10' },
     { text: 'freeze', type: 'kw', doc: 'Declare an immutable constant: freeze PI as 3.14159' },
     { text: 'when', type: 'kw', doc: 'Conditional statement: when condition:' },
@@ -5806,8 +5895,6 @@ window.addEventListener('message', function(e) {
     { text: 'swap', type: 'kw', doc: 'Swap two variables: swap a and b' },
     { text: 'function', type: 'kw', doc: 'Declare function: function calculate with a, b:' },
     { text: 'give', type: 'kw', doc: 'Return value: give result' },
-    { text: 'show', type: 'fn', doc: 'Print output to terminal: show message' },
-    { text: 'count of', type: 'fn', doc: 'Get collection length: count of items' },
     { text: 'has_key', type: 'fn', doc: 'Check map key: has_key(map, "key")' },
     { text: 'keys', type: 'fn', doc: 'Get all map keys: keys(map)' },
     { text: 'values', type: 'fn', doc: 'Get all map values: values(map)' },
@@ -5815,6 +5902,14 @@ window.addEventListener('message', function(e) {
     { text: 'remove', type: 'kw', doc: 'Remove item from list: remove item from list' },
     { text: 'increases by', type: 'kw', doc: 'Increment variable: x increases by 1' },
     { text: 'decreases by', type: 'kw', doc: 'Decrement variable: x decreases by 1' },
+
+    // EnlangDB Tables and Identifiers
+    { text: 'student', type: 'var', doc: 'Sample EnlangDB table: student (roll_no, name, marks, grade)' },
+    { text: 'accounts', type: 'var', doc: 'Sample EnlangDB table: accounts (account_id, owner, balance, type)' },
+    { text: 'database1', type: 'var', doc: 'Default sample database with student table' },
+    { text: 'main_db', type: 'var', doc: 'Sample database with accounts table' },
+
+    // Standard Library Functions
     { text: 'math_sqrt', type: 'fn', doc: 'Square root function: math_sqrt(n)' },
     { text: 'math_sin', type: 'fn', doc: 'Trigonometric sine: math_sin(rad)' },
     { text: 'str_slice', type: 'fn', doc: 'Slice string: str_slice(text, start, end)' },
@@ -5863,11 +5958,11 @@ window.addEventListener('message', function(e) {
     const lines = codeEditor.value.substring(0, codeEditor.selectionStart).split('\n');
     const lineIndex = lines.length - 1;
     const colIndex = lines[lineIndex].length;
-    const topOffset = (lineIndex + 1) * 19 + 6;
-    const leftOffset = Math.min(colIndex * 7.5 + 40, codeEditor.clientWidth - 290);
+    const topOffset = (lineIndex + 1) * 20 + 10 - codeEditor.scrollTop;
+    const leftOffset = Math.min(colIndex * 7.8 + 48 - codeEditor.scrollLeft, codeEditor.clientWidth - 290);
 
-    popup.style.top = `${topOffset}px`;
-    popup.style.left = `${Math.max(40, leftOffset)}px`;
+    popup.style.top = `${Math.max(10, topOffset)}px`;
+    popup.style.left = `${Math.max(48, leftOffset)}px`;
 
     intellisenseMatches.slice(0, 8).forEach((item, idx) => {
       const el = document.createElement('div');
@@ -5901,6 +5996,7 @@ window.addEventListener('message', function(e) {
     updateAutocompleteBadge(0);
     saveActiveFile();
     updateLineNumbers();
+    updateEditorHighlight();
   }
 
   function handleIntellisenseKeydown(e) {
@@ -6555,6 +6651,7 @@ Provide code in fenced code blocks.`;
           saveVfs();
         }
         updateLineNumbers();
+        updateEditorHighlight();
         clearTimeout(diagnosticsDebounceTimer);
         diagnosticsDebounceTimer = setTimeout(() => {
           runDiagnostics();
@@ -6577,6 +6674,7 @@ Provide code in fenced code blocks.`;
           codeEditor.value = codeEditor.value.substring(0, start) + '    ' + codeEditor.value.substring(end);
           codeEditor.selectionStart = codeEditor.selectionEnd = start + 4;
           updateLineNumbers();
+          updateEditorHighlight();
         }
 
         // Shift + Enter or Alt + Enter: Run Query at Cursor when in .enlngdb (Workbench Style)
@@ -6604,6 +6702,16 @@ Provide code in fenced code blocks.`;
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'S' || e.key === 's')) {
           e.preventDefault();
           saveAllFiles();
+        }
+      });
+
+      codeEditor.addEventListener('scroll', () => {
+        if (editorHighlightLayer) {
+          editorHighlightLayer.scrollTop = codeEditor.scrollTop;
+          editorHighlightLayer.scrollLeft = codeEditor.scrollLeft;
+        }
+        if (lineNumbers) {
+          lineNumbers.scrollTop = codeEditor.scrollTop;
         }
       });
 
@@ -6721,6 +6829,7 @@ Provide code in fenced code blocks.`;
             saveVfs();
           }
           updateLineNumbers();
+          updateEditorHighlight();
           executeAllQueriesInActiveFile();
         }
       });

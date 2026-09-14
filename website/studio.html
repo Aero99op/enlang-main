@@ -866,7 +866,10 @@
             <!-- Code Editor Pane -->
             <div class="editor-code-pane" style="position:relative;">
               <div class="line-numbers" id="lineNumbers" title="Click line number to toggle breakpoint">1</div>
-              <textarea id="codeEditor" class="code-textarea" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+              <div class="code-editor-layer-wrap">
+                <pre id="editorHighlightLayer" class="code-highlight-layer" aria-hidden="true"></pre>
+                <textarea id="codeEditor" class="code-textarea" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+              </div>
               <div id="intellisensePopup" class="intellisense-popup" style="display:none;"></div>
             </div>
 
