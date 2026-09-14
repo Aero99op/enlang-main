@@ -2046,7 +2046,7 @@ Provide code in fenced code blocks.`;
 
           document.querySelectorAll('.sidebar-pane').forEach(p => p.style.display = 'none');
           const target = document.getElementById(item.pane);
-          if (target) target.style.display = 'block';
+          if (target) target.style.display = 'flex';
         });
       }
     });

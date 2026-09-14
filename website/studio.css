@@ -380,6 +380,13 @@ html, body {
   color: var(--vscode-text-bright);
 }
 
+.sidebar-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
