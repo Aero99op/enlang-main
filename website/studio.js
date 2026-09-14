@@ -2383,31 +2383,237 @@ screen WalletHome:
     if (modal) modal.classList.remove('open');
   }
 
+  // ==============================================================================
+  // 🌟 OPEN EXTENSION IN EXPECTED WAY ENGINE (1:1 VS Code Native IDE Parity)
+  // ==============================================================================
+  function openExtensionInExpectedWay(extOrName) {
+    const installed = getInstalledExtensions();
+    let ext = null;
+    let name = '';
+
+    if (typeof extOrName === 'object' && extOrName !== null) {
+      ext = extOrName;
+      name = ((ext.name || '') + ' ' + (ext.displayName || '') + ' ' + (ext.description || '')).toLowerCase();
+    } else if (typeof extOrName === 'string') {
+      name = extOrName.trim().toLowerCase();
+      ext = installed.find(e => {
+        const en = ((e.name || '') + ' ' + (e.displayName || '') + ' ' + (e.id || '')).toLowerCase();
+        return en.includes(name) || name.includes(e.name.toLowerCase());
+      });
+    }
+
+    // 1. Docker
+    if (name.includes('docker') || name.includes('container')) {
+      toggleSidebarPane('paneDocker', 'actDocker');
+      renderDockerContainers();
+      appendTerminal('\n<span class="term-cyan">[Docker Engine] Opened Docker Containers & Images workspace panel.</span>');
+      showStudioToast('Docker extension opened.', null);
+      return true;
+    }
+
+    // 2. GitLens
+    if (name.includes('gitlens') || name.includes('git') || name.includes('source control')) {
+      toggleSidebarPane('paneGitLens', 'actGitLens');
+      renderGitLensCommits();
+      appendTerminal('\n<span class="term-cyan">[GitLens] Opened GitLens Commit History & Visual Graph.</span>');
+      showStudioToast('GitLens opened.', null);
+      return true;
+    }
+
+    // 3. SonarQube / SonarLint / Clean Code
+    if (name.includes('sonar') || name.includes('clean code') || name.includes('lint')) {
+      toggleSidebarPane('paneSonarQube', 'actSonarQube');
+      runSonarQubeAnalysis();
+      appendTerminal('\n<span class="term-cyan">[SonarQube] Opened Clean Code & Security Quality Gate Inspector.</span>');
+      showStudioToast('SonarQube opened. Quality Gate analyzed.', null);
+      return true;
+    }
+
+    // 4. Testing / Test Explorer
+    if (name.includes('test') || name.includes('explorer')) {
+      toggleSidebarPane('paneTesting', 'actTesting');
+      renderTestExplorer();
+      appendTerminal('\n<span class="term-cyan">[Test Explorer] Opened Sovereign Invariant Test Runner.</span>');
+      showStudioToast('Testing Explorer opened.', null);
+      return true;
+    }
+
+    // 5. Prettier Formatter
+    if (name.includes('prettier') || name.includes('formatter') || name.includes('format')) {
+      formatDocument();
+      appendTerminal('\n<span class="term-green">[Prettier] Executed code formatting on active document.</span>');
+      showStudioToast('Prettier Formatter executed.', null);
+      return true;
+    }
+
+    // 6. Live Server
+    if (name.includes('live') || name.includes('preview')) {
+      handleMenuAction('togglePreview');
+      appendTerminal('\n<span class="term-green">[Live Server] Live preview opened on port 5500.</span>');
+      showStudioToast('Live Server preview opened on port 5500.', null);
+      return true;
+    }
+
+    // 7. Themes
+    if (name.includes('dracula')) {
+      applyTheme('dracula');
+      appendTerminal('\n<span class="term-green">[Theme] Applied Dracula Official Theme.</span>');
+      showStudioToast("Theme 'Dracula' activated!", null);
+      return true;
+    }
+    if (name.includes('one dark') || name.includes('atom')) {
+      applyTheme('one-dark-pro');
+      appendTerminal('\n<span class="term-green">[Theme] Applied One Dark Pro Theme.</span>');
+      showStudioToast("Theme 'One Dark Pro' activated!", null);
+      return true;
+    }
+    if (name.includes('tokyo')) {
+      applyTheme('tokyo-night');
+      appendTerminal('\n<span class="term-green">[Theme] Applied Tokyo Night Theme.</span>');
+      showStudioToast("Theme 'Tokyo Night' activated!", null);
+      return true;
+    }
+    if (name.includes('nord')) {
+      applyTheme('nord');
+      appendTerminal('\n<span class="term-green">[Theme] Applied Nord Theme.</span>');
+      showStudioToast("Theme 'Nord' activated!", null);
+      return true;
+    }
+    if (name.includes('monokai')) {
+      applyTheme('monokai');
+      appendTerminal('\n<span class="term-green">[Theme] Applied Monokai Theme.</span>');
+      showStudioToast("Theme 'Monokai' activated!", null);
+      return true;
+    }
+    if (name.includes('cyberpunk')) {
+      applyTheme('cyberpunk');
+      appendTerminal('\n<span class="term-green">[Theme] Applied Cyberpunk 2077 Theme.</span>');
+      showStudioToast("Theme 'Cyberpunk 2077' activated!", null);
+      return true;
+    }
+    if (name.includes('github')) {
+      applyTheme('github-dark');
+      appendTerminal('\n<span class="term-green">[Theme] Applied GitHub Dark Theme.</span>');
+      showStudioToast("Theme 'GitHub Dark' activated!", null);
+      return true;
+    }
+    if (name === 'theme' || name === 'themes') {
+      openThemePicker();
+      return true;
+    }
+
+    // 8. Material Icon Theme
+    if (name.includes('material') || name.includes('icon')) {
+      localStorage.setItem('enlangg_icons_active', 'true');
+      renderFileTree();
+      renderTabs();
+      toggleSidebarPane('paneExplorer', 'actExplorer');
+      appendTerminal('\n<span class="term-green">[Icons] Material Icon Theme active in File Explorer.</span>');
+      showStudioToast('Material Icon Theme activated!', null);
+      return true;
+    }
+
+    // 9. Database / EnlangDB
+    if (name.includes('database') || name.includes('enlangdb') || name.includes('db')) {
+      toggleSidebarPane('paneDatabase', 'actDatabase');
+      const qInput = document.getElementById('dbQueryInput');
+      if (qInput) qInput.focus();
+      return true;
+    }
+
+    // 10. Copilot / AI
+    if (name.includes('copilot') || name.includes('ai') || name.includes('antigravity')) {
+      if (copilotPanel) copilotPanel.classList.add('open');
+      const cInput = document.getElementById('copilotInput');
+      if (cInput) cInput.focus();
+      return true;
+    }
+
+    // 11. Any other installed Open VSX extension
+    if (ext) {
+      openExtensionModal(ext, true);
+      appendTerminal(`\n<span class="term-cyan">[Extensions] Opened '${ext.displayName || ext.name}' settings & documentation.</span>`);
+      showStudioToast(`Opened extension '${ext.displayName || ext.name}'.`, null);
+      return true;
+    }
+
+    return false;
+  }
+
   function renderCommandPaletteList(query = '') {
     const list = document.getElementById('commandPaletteList');
     if (!list) return;
     list.innerHTML = '';
     const lq = (query || '').toLowerCase().trim();
+    const rawTarget = lq.replace(/^open\s*/i, '').trim();
 
     const installed = getInstalledExtensions();
-    const dynamicInstalledCmds = installed.map(ext => ({
-      category: 'Extension',
-      label: `${ext.displayName || ext.name}: Inspect Extension Details`,
-      shortcut: 'Open VSX',
-      action: () => openExtensionModal(ext, true)
-    }));
 
-    const combinedCommands = [...COMMAND_PALETTE_ITEMS, ...dynamicInstalledCmds];
+    // Generate explicit 'open <ext>' commands for all installed extensions
+    const dynamicOpenInstalledCmds = installed.map(ext => {
+      const dName = ext.displayName || ext.name;
+      return {
+        category: 'Open Extension',
+        label: `open ${ext.name.toLowerCase()} — Open ${dName}`,
+        searchTerms: `open ${ext.name.toLowerCase()} ${dName.toLowerCase()} ${ext.id || ''}`,
+        shortcut: 'Installed',
+        action: () => openExtensionInExpectedWay(ext)
+      };
+    });
+
+    // Built-in extension open shortcuts
+    const builtinOpenCmds = [
+      { category: 'Open Extension', label: 'open docker — Open Docker Containers & Images', searchTerms: 'open docker container daemon', shortcut: 'Docker', action: () => openExtensionInExpectedWay('docker') },
+      { category: 'Open Extension', label: 'open gitlens — Open GitLens Commits & Blame', searchTerms: 'open gitlens git vcs commits', shortcut: 'GitLens', action: () => openExtensionInExpectedWay('gitlens') },
+      { category: 'Open Extension', label: 'open sonarqube — Open SonarQube Clean Code', searchTerms: 'open sonarqube sonar sonarlint quality gate', shortcut: 'SonarQube', action: () => openExtensionInExpectedWay('sonarqube') },
+      { category: 'Open Extension', label: 'open testing — Open Test Explorer', searchTerms: 'open testing test tests explorer invariant', shortcut: 'Testing', action: () => openExtensionInExpectedWay('testing') },
+      { category: 'Open Extension', label: 'open prettier — Format Active Document', searchTerms: 'open prettier format formatter beautify', shortcut: 'Prettier', action: () => openExtensionInExpectedWay('prettier') },
+      { category: 'Open Extension', label: 'open liveserver — Open Live Server Viewport (:5500)', searchTerms: 'open liveserver live server preview 5500', shortcut: 'Live Server', action: () => openExtensionInExpectedWay('liveserver') },
+      { category: 'Open Extension', label: 'open dracula — Apply Dracula Official Theme', searchTerms: 'open dracula theme color', shortcut: 'Theme', action: () => openExtensionInExpectedWay('dracula') },
+      { category: 'Open Extension', label: 'open one dark — Apply One Dark Pro Theme', searchTerms: 'open one dark atom theme pro', shortcut: 'Theme', action: () => openExtensionInExpectedWay('one dark') },
+      { category: 'Open Extension', label: 'open tokyo night — Apply Tokyo Night Theme', searchTerms: 'open tokyo night theme', shortcut: 'Theme', action: () => openExtensionInExpectedWay('tokyo night') },
+      { category: 'Open Extension', label: 'open nord — Apply Nord Theme', searchTerms: 'open nord arctic theme', shortcut: 'Theme', action: () => openExtensionInExpectedWay('nord') },
+      { category: 'Open Extension', label: 'open monokai — Apply Monokai Theme', searchTerms: 'open monokai pro theme', shortcut: 'Theme', action: () => openExtensionInExpectedWay('monokai') },
+      { category: 'Open Extension', label: 'open cyberpunk — Apply Cyberpunk 2077 Theme', searchTerms: 'open cyberpunk 2077 neon theme', shortcut: 'Theme', action: () => openExtensionInExpectedWay('cyberpunk') },
+      { category: 'Open Extension', label: 'open github dark — Apply GitHub Dark Theme', searchTerms: 'open github dark theme', shortcut: 'Theme', action: () => openExtensionInExpectedWay('github dark') },
+      { category: 'Open Extension', label: 'open material icons — Apply Material Icon Theme', searchTerms: 'open material icons explorer', shortcut: 'Icons', action: () => openExtensionInExpectedWay('material icons') },
+      { category: 'Open Extension', label: 'open database — Open EnlangDB Studio Pane', searchTerms: 'open database enlangdb edb query', shortcut: 'Database', action: () => openExtensionInExpectedWay('database') },
+      { category: 'Open Extension', label: 'open copilot — Open Antigravity AI Copilot Drawer', searchTerms: 'open copilot ai assistant drawer', shortcut: 'Copilot', action: () => openExtensionInExpectedWay('copilot') }
+    ];
+
+    const combinedCommands = [
+      ...dynamicOpenInstalledCmds,
+      ...builtinOpenCmds,
+      ...COMMAND_PALETTE_ITEMS
+    ];
 
     activePaletteMatches = combinedCommands.filter(cmd => {
       if (!lq) return true;
-      return cmd.label.toLowerCase().includes(lq) || cmd.category.toLowerCase().includes(lq);
+      const terms = (cmd.searchTerms || '') + ' ' + (cmd.label || '') + ' ' + (cmd.category || '');
+      return terms.toLowerCase().includes(lq) || terms.toLowerCase().includes(rawTarget);
     });
+
+    // If user specifically typed 'open <target>' and no installed match was found, offer to install from Open VSX Marketplace
+    if (lq.startsWith('open ') && rawTarget && activePaletteMatches.length === 0) {
+      activePaletteMatches.unshift({
+        category: 'Open VSX Marketplace',
+        label: `open ${rawTarget} — 📥 Not Installed: Search & Install '${rawTarget}' from Marketplace`,
+        shortcut: 'Enter to Install',
+        action: () => {
+          closeCommandPalette();
+          toggleSidebarPane('paneExtensions', 'actExtensions');
+          const extSearchInput = document.getElementById('extensionSearchInput');
+          if (extSearchInput) extSearchInput.value = rawTarget;
+          searchOpenVsx(rawTarget, 0, false);
+          showStudioToast(`Searching Open VSX for '${rawTarget}' to install and open...`, null);
+        }
+      });
+    }
 
     selectedPaletteIndex = 0;
 
     if (activePaletteMatches.length === 0) {
-      list.innerHTML = `<div style="padding:16px;text-align:center;color:var(--vscode-text-muted);font-size:12px;">No matching commands found.</div>`;
+      list.innerHTML = `<div style="padding:16px;text-align:center;color:var(--vscode-text-muted);font-size:12px;">No matching commands found. Type 'open &lt;extension&gt;' (e.g. open docker, open gitlens, open prettier).</div>`;
       return;
     }
 
@@ -2415,7 +2621,7 @@ screen WalletHome:
       const item = document.createElement('div');
       item.className = `command-palette-item ${idx === selectedPaletteIndex ? 'selected' : ''}`;
       item.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
           <span class="cmd-category-tag">${escapeHtml(cmd.category)}</span>
           <span style="font-weight:600;color:var(--vscode-text-bright);">${escapeHtml(cmd.label)}</span>
         </div>
