@@ -1271,14 +1271,16 @@ screen WalletHome:
     // If clicking already active activity icon and sidebar is visible, collapse it
     if (act && act.classList.contains('active') && mainSidebar && !mainSidebar.classList.contains('collapsed')) {
       mainSidebar.classList.add('collapsed');
+      mainSidebar.style.display = 'none';
       act.classList.remove('active');
       return;
     }
 
     document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
     if (act) act.classList.add('active');
-    if (mainSidebar && mainSidebar.classList.contains('collapsed')) {
+    if (mainSidebar) {
       mainSidebar.classList.remove('collapsed');
+      mainSidebar.style.display = 'flex';
     }
     document.querySelectorAll('.sidebar-pane').forEach(p => p.style.display = 'none');
     if (target) target.style.display = 'flex';
@@ -4218,7 +4220,7 @@ Provide code in fenced code blocks.`;
     if (refreshDockerBtn) {
       refreshDockerBtn.addEventListener('click', () => {
         renderDockerContainers();
-        logToTerminal('[Docker Engine] State refreshed. All daemon containers synchronized.\n');
+        appendTerminal('\n<span class="term-green">[Docker Engine] State refreshed. All daemon containers synchronized.</span>');
         showStudioToast('Docker daemon synchronized.', null);
       });
     }
@@ -4272,7 +4274,7 @@ Provide code in fenced code blocks.`;
         currentGitBranch = e.target.value;
         const statusBranch = document.getElementById('statusBranch');
         if (statusBranch) statusBranch.textContent = currentGitBranch;
-        logToTerminal(`[GitLens] Switched to branch '${currentGitBranch}'. HEAD is at ${gitCommits[0]?.hash || 'main'}\n`);
+        appendTerminal(`\n<span class="term-cyan">[GitLens] Switched to branch '${currentGitBranch}'. HEAD is at ${gitCommits[0]?.hash || 'main'}</span>`);
         showStudioToast(`Git: Active branch set to '${currentGitBranch}'`, null);
       });
     }
