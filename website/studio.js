@@ -1461,6 +1461,11 @@ screen WalletHome:
     if (dockSonarTab) {
       dockSonarTab.style.display = hasSonar ? 'flex' : 'none';
     }
+
+    // 5. Restore manifest-driven extension contributions (Activity bar icons, sidebars)
+    if (typeof extensionHostRuntime !== 'undefined' && extensionHostRuntime && extensionHostRuntime.renderManifestContributions) {
+      extensionHostRuntime.renderManifestContributions();
+    }
   }
 
   async function searchOpenVsx(query = '', offset = 0, append = false) {
@@ -1649,7 +1654,9 @@ screen WalletHome:
         displayName: ext.displayName || ext.name,
         version: ext.version || '1.0.0',
         description: ext.description || '',
-        icon: ext.files && ext.files.icon ? ext.files.icon : '🧩',
+        icon: ext.files && ext.files.icon ? ext.files.icon : (ext.icon || '🧩'),
+        files: ext.files || {},
+        manifest: ext.manifest || null,
         downloadCount: ext.downloadCount || 1000,
         averageRating: ext.averageRating || 5.0,
         installed: true
@@ -2988,11 +2995,20 @@ screen WalletHome:
     const name = ((ext.name || '') + ' ' + (ext.displayName || '') + ' ' + (ext.description || '')).toLowerCase();
 
     if (!isInstall) {
+      const extId = ext.namespace ? `${ext.namespace}.${ext.name}` : (ext.id || ext.name);
+      if (typeof extensionHostRuntime !== 'undefined' && extensionHostRuntime) {
+        extensionHostRuntime.deactivateManifest(extId);
+      }
       appendTerminal(`\n<span class="term-yellow">[Extensions] Deactivated hooks for ${ext.displayName || ext.name}.</span>`);
       return;
     }
 
     appendTerminal(`\n<span class="term-green">[Extensions] Activating ${ext.displayName || ext.name}...</span>`);
+
+    // Manifest-driven activation for community extensions (Activity Bar icons, sidebars, webview providers)
+    if (typeof extensionHostRuntime !== 'undefined' && extensionHostRuntime && !ext.builtin) {
+      extensionHostRuntime.activateManifest(ext);
+    }
 
     // Theme extension detection
     if (name.includes('theme') || name.includes('dracula') || name.includes('one dark') || name.includes('tokyo') || name.includes('nord') || name.includes('monokai') || name.includes('cyberpunk') || name.includes('github')) {
@@ -3060,9 +3076,1123 @@ screen WalletHome:
       return;
     }
 
-    // Default extension
-    showStudioToast(`Extension '${ext.displayName || ext.name}' installed and activated successfully.`, null);
+    // Default extension — also try manifest-based activation
+    extensionHostRuntime.activateManifest(ext);
   }
+
+  // ==============================================================================
+  // 🌐 EXTENSION HOST RUNTIME — VS Code Extension Architecture for the Browser
+  // Manifest Parsing | Webview Providers | Bidirectional Message Passing RPC
+  // ==============================================================================
+
+  class ExtensionHostRuntime {
+    constructor() {
+      /** @type {Map<string, Object>} Cached parsed package.json manifests keyed by extId */
+      this._manifests = new Map();
+      /** @type {Map<string, Object>} Registered activity bar view containers keyed by containerId */
+      this._viewContainers = new Map();
+      /** @type {Map<string, Object>} Registered sidebar views keyed by viewId */
+      this._views = new Map();
+      /** @type {Map<string, HTMLIFrameElement>} Mounted webview iframes keyed by viewId */
+      this._webviewFrames = new Map();
+      /** @type {Map<string, Set<Function>>} Message callbacks keyed by viewId */
+      this._messageCallbacks = new Map();
+      /** @type {Map<string, Object>} Webview state persistence keyed by viewId */
+      this._webviewStates = new Map();
+      /** @type {Map<string, { provider: Object, options: Object }>} Registered WebviewViewProviders keyed by viewId */
+      this._webviewProviders = new Map();
+      /** @type {Set<string>} Set of extIds that have been manifest-activated */
+      this._activatedExtensions = new Set();
+      /** @type {number} Counter for generating unique DOM IDs */
+      this._idCounter = 0;
+
+      // Global message listener for webview → host communication
+      window.addEventListener('message', (event) => {
+        this._handleWebviewMessage(event);
+      });
+
+      // Restore persisted manifests from localStorage
+      this._restoreManifests();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1. MANIFEST FETCH & CACHE
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Fetch the package.json manifest for an extension from Open VSX.
+     * Uses ext.files.manifest URL if available, otherwise constructs the URL.
+     * Results are cached in memory and localStorage.
+     * @param {Object} ext - Extension metadata object
+     * @returns {Promise<Object|null>} Parsed package.json or null on failure
+     */
+    async fetchManifest(ext) {
+      const extId = this._getExtId(ext);
+
+      // Check memory cache first
+      if (this._manifests.has(extId)) {
+        return this._manifests.get(extId);
+      }
+
+      // Determine manifest URL
+      let manifestUrl = null;
+      if (ext.files && ext.files.manifest) {
+        manifestUrl = ext.files.manifest;
+      } else if (ext.namespace && ext.name) {
+        // Construct URL from Open VSX API pattern
+        const version = ext.version || 'latest';
+        manifestUrl = `https://open-vsx.org/api/${encodeURIComponent(ext.namespace)}/${encodeURIComponent(ext.name)}/${version}/file/package.json`;
+      }
+
+      if (!manifestUrl) return null;
+
+      try {
+        appendTerminal(`\n<span class="term-cyan">[ExtensionHost] Fetching manifest for ${ext.displayName || ext.name}...</span>`);
+
+        const response = await fetch(manifestUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+        let manifest = null;
+
+        if (contentType.includes('application/json') || contentType.includes('text/plain')) {
+          manifest = await response.json();
+        } else {
+          // Some endpoints return JSON without proper content-type
+          const text = await response.text();
+          manifest = JSON.parse(text);
+        }
+
+        if (manifest && typeof manifest === 'object') {
+          // Cache in memory
+          this._manifests.set(extId, manifest);
+          // Persist to localStorage
+          this._persistManifests();
+
+          appendTerminal(`<span class="term-green">[ExtensionHost] Manifest loaded: ${manifest.name || extId} v${manifest.version || '?'}</span>`);
+
+          // Log contribution points found
+          if (manifest.contributes) {
+            const contribs = Object.keys(manifest.contributes);
+            if (contribs.length > 0) {
+              appendTerminal(`<span class="term-cyan">[ExtensionHost] Contribution points: ${contribs.join(', ')}</span>`);
+            }
+          }
+
+          return manifest;
+        }
+      } catch (err) {
+        console.warn(`[ExtensionHost] Failed to fetch manifest for ${extId}:`, err);
+        appendTerminal(`\n<span class="term-yellow">[ExtensionHost] Manifest fetch failed for ${ext.displayName || ext.name}: ${err.message}</span>`);
+      }
+
+      return null;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 2. CONTRIBUTION PARSING
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Parse contributes.viewsContainers.activitybar and contributes.views
+     * from a package.json manifest. Registers containers and views.
+     * @param {string} extId - Extension identifier
+     * @param {Object} manifest - Parsed package.json
+     */
+    parseContributions(extId, manifest) {
+      if (!manifest || !manifest.contributes) return;
+
+      const contributes = manifest.contributes;
+
+      // Parse viewsContainers.activitybar
+      if (contributes.viewsContainers && contributes.viewsContainers.activitybar) {
+        const containers = contributes.viewsContainers.activitybar;
+        if (Array.isArray(containers)) {
+          containers.forEach(container => {
+            const containerId = container.id;
+            if (!containerId) return;
+
+            this._viewContainers.set(containerId, {
+              id: containerId,
+              title: container.title || containerId,
+              icon: container.icon || null, // Relative path to icon in extension bundle
+              extId: extId,
+              manifest: manifest
+            });
+
+            appendTerminal(`<span class="term-cyan">[ExtensionHost] Registered view container: "${container.title || containerId}" in Activity Bar</span>`);
+          });
+        }
+      }
+
+      // Parse views for each container
+      if (contributes.views) {
+        Object.keys(contributes.views).forEach(containerId => {
+          const views = contributes.views[containerId];
+          if (!Array.isArray(views)) return;
+
+          views.forEach(view => {
+            const viewId = view.id;
+            if (!viewId) return;
+
+            this._views.set(viewId, {
+              id: viewId,
+              name: view.name || viewId,
+              type: view.type || 'tree', // 'tree' or 'webview'
+              when: view.when || null,
+              containerId: containerId,
+              extId: extId,
+              visibility: view.visibility || 'visible',
+              initialSize: view.initialSize || undefined
+            });
+
+            appendTerminal(`<span class="term-cyan">[ExtensionHost] Registered view: "${view.name || viewId}" (type: ${view.type || 'tree'}) in container "${containerId}"</span>`);
+          });
+        });
+      }
+
+      // Also parse commands if present
+      if (contributes.commands && Array.isArray(contributes.commands)) {
+        const cmdCount = contributes.commands.length;
+        appendTerminal(`<span class="term-cyan">[ExtensionHost] Registered ${cmdCount} command(s) from ${extId}</span>`);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. ACTIVITY BAR ICON INJECTION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Dynamically inject an activity bar icon for a view container.
+     * Handles icon resolution: Open VSX icon URL → emoji fallback.
+     * @param {Object} containerData - Registered view container data
+     * @param {Object} ext - Extension metadata
+     */
+    injectActivityBarIcon(containerData, ext) {
+      const actGroup = document.getElementById('activityBarExtensionsGroup');
+      if (!actGroup) return;
+
+      const actId = `act_manifest_${containerData.id}`;
+      const paneId = `pane_manifest_${containerData.id}`;
+
+      // Don't inject duplicates
+      if (document.getElementById(actId)) return;
+
+      // Resolve icon: prefer ext.files.icon (URL), fallback to emoji detection
+      const iconUrl = (ext.files && ext.files.icon) ? ext.files.icon : null;
+      const emojiIcon = typeof detectExtensionEmoji === 'function'
+        ? detectExtensionEmoji((ext.name || '').toLowerCase(), ext.description || '')
+        : '🧩';
+
+      const iconDiv = document.createElement('div');
+      iconDiv.className = 'activity-icon';
+      iconDiv.id = actId;
+      iconDiv.title = `${containerData.title} (${containerData.extId})`;
+
+      if (iconUrl) {
+        // Use the extension's actual icon from Open VSX
+        const img = document.createElement('img');
+        img.src = iconUrl;
+        img.width = 22;
+        img.height = 22;
+        img.style.cssText = 'border-radius:4px;object-fit:contain;';
+        img.onerror = () => {
+          // Fallback to emoji if image fails
+          img.remove();
+          iconDiv.innerHTML = `<span style="font-size:18px;">${emojiIcon}</span>`;
+        };
+        iconDiv.appendChild(img);
+      } else {
+        iconDiv.innerHTML = `<span style="font-size:18px;">${emojiIcon}</span>`;
+      }
+
+      // Click handler toggles the sidebar pane
+      iconDiv.addEventListener('click', () => {
+        toggleSidebarPane(paneId, actId);
+      });
+
+      actGroup.appendChild(iconDiv);
+
+      appendTerminal(`<span class="term-green">[ExtensionHost] Injected Activity Bar icon: "${containerData.title}"</span>`);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 4. SIDEBAR PANE REGISTRATION (DOM Creation)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Create a new sidebar pane in the DOM for a registered view.
+     * The pane includes a header with the view name and a content area
+     * that can host tree views or webview iframes.
+     * @param {string} containerId - Container this view belongs to
+     * @param {Object} viewData - Registered view data
+     * @param {Object} ext - Extension metadata
+     */
+    registerView(containerId, viewData, ext) {
+      const sidebar = document.getElementById('mainSidebar');
+      if (!sidebar) return;
+
+      const paneId = `pane_manifest_${containerId}`;
+
+      // Don't create duplicate panes — but we do add multiple views to one container
+      let paneEl = document.getElementById(paneId);
+      if (!paneEl) {
+        paneEl = document.createElement('div');
+        paneEl.className = 'sidebar-pane';
+        paneEl.id = paneId;
+        paneEl.style.display = 'none';
+
+        // Pane Header
+        const header = document.createElement('div');
+        header.className = 'sidebar-header';
+        const containerData = this._viewContainers.get(containerId);
+        const containerTitle = containerData ? containerData.title : (ext.displayName || ext.name);
+
+        header.innerHTML = `
+          <span style="font-weight:600;font-size:12px;color:var(--vscode-text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${this._escapeHtml(containerTitle)}</span>
+          <div class="sidebar-header-actions">
+            <button class="sidebar-action-btn" title="Refresh" data-action="refresh">↻</button>
+            <button class="sidebar-action-btn" title="Extension Settings" data-action="settings">⚙</button>
+          </div>
+        `;
+
+        // Settings button opens extension modal
+        const settingsBtn = header.querySelector('[data-action="settings"]');
+        if (settingsBtn) {
+          settingsBtn.addEventListener('click', () => {
+            if (typeof openExtensionModal === 'function') {
+              openExtensionModal(ext, true);
+            }
+          });
+        }
+
+        // Refresh button re-mounts webviews
+        const refreshBtn = header.querySelector('[data-action="refresh"]');
+        if (refreshBtn) {
+          refreshBtn.addEventListener('click', () => {
+            this._refreshContainerViews(containerId);
+            showStudioToast(`${containerTitle}: Refreshed.`, null);
+          });
+        }
+
+        paneEl.appendChild(header);
+
+        // Content area
+        const content = document.createElement('div');
+        content.className = 'sidebar-content';
+        content.id = `pane_manifest_content_${containerId}`;
+        content.style.cssText = 'padding:0;overflow-y:auto;display:flex;flex-direction:column;flex:1;';
+        paneEl.appendChild(content);
+
+        sidebar.appendChild(paneEl);
+      }
+
+      // Add view section to content
+      const contentArea = document.getElementById(`pane_manifest_content_${containerId}`);
+      if (!contentArea) return;
+
+      const viewSection = document.createElement('div');
+      viewSection.id = `view_section_${viewData.id}`;
+      viewSection.style.cssText = 'display:flex;flex-direction:column;flex:1;min-height:0;';
+
+      // View section header (collapsible tree section)
+      const viewHeader = document.createElement('div');
+      viewHeader.className = 'tree-section-title';
+      viewHeader.style.cssText = 'cursor:pointer;user-select:none;';
+      viewHeader.innerHTML = `
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
+        <span>${this._escapeHtml((viewData.name || viewData.id).toUpperCase())}</span>
+      `;
+
+      const viewBody = document.createElement('div');
+      viewBody.id = `view_body_${viewData.id}`;
+      viewBody.style.cssText = 'display:flex;flex-direction:column;flex:1;min-height:0;';
+
+      // Toggle collapse
+      viewHeader.addEventListener('click', () => {
+        const isHidden = viewBody.style.display === 'none';
+        viewBody.style.display = isHidden ? 'flex' : 'none';
+        const arrow = viewHeader.querySelector('svg');
+        if (arrow) arrow.style.transform = isHidden ? '' : 'rotate(-90deg)';
+      });
+
+      viewSection.appendChild(viewHeader);
+      viewSection.appendChild(viewBody);
+      contentArea.appendChild(viewSection);
+
+      // Mount content based on view type
+      if (viewData.type === 'webview') {
+        this.mountWebview(viewData.id, ext, viewBody);
+      } else {
+        // Tree view — render a placeholder tree until extension provides data
+        this._renderTreeViewPlaceholder(viewData, ext, viewBody);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 5. WEBVIEW VIEW PROVIDER (Sandboxed iframe Mount)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Mount a sandboxed iframe for a webview view.
+     * Injects Content Security Policy header and the acquireVsCodeApi() shim
+     * that provides postMessage(), getState(), and setState().
+     * @param {string} viewId - Unique view identifier
+     * @param {Object} ext - Extension metadata
+     * @param {HTMLElement} container - DOM container to mount into
+     */
+    mountWebview(viewId, ext, container) {
+      // Remove existing iframe if remounting
+      const existingFrame = this._webviewFrames.get(viewId);
+      if (existingFrame && existingFrame.parentNode) {
+        existingFrame.parentNode.removeChild(existingFrame);
+      }
+
+      const iframe = document.createElement('iframe');
+      iframe.id = `webview_frame_${viewId}`;
+      iframe.style.cssText = 'width:100%;flex:1;min-height:200px;border:none;background:var(--vscode-sidebar-bg);';
+      iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-same-origin');
+      iframe.setAttribute('title', `Webview: ${viewId}`);
+
+      // Load state from persistence
+      const savedState = this._loadWebviewState(viewId);
+
+      // Generate the webview HTML content with CSP and VS Code API shim
+      const webviewHtml = this._generateWebviewHtml(viewId, ext, savedState);
+
+      container.appendChild(iframe);
+      this._webviewFrames.set(viewId, iframe);
+
+      // Write content to iframe using srcdoc
+      iframe.srcdoc = webviewHtml;
+
+      // If a WebviewViewProvider was registered for this viewId, resolve it immediately
+      if (this._webviewProviders.has(viewId)) {
+        const entry = this._webviewProviders.get(viewId);
+        this._resolveProviderForView(viewId, entry.provider);
+      }
+
+      appendTerminal(`<span class="term-green">[ExtensionHost] Mounted webview iframe for view "${viewId}" (sandboxed)</span>`);
+    }
+
+    /**
+     * Register a WebviewViewProvider (host provider for vscode.window.registerWebviewViewProvider).
+     * When the sidebar view is mounted or visible, provider.resolveWebviewView(webviewView) is called,
+     * allowing the extension to inject custom HTML, listen to messages, or post messages.
+     * @param {string} viewId - ID of the view defined in contributes.views
+     * @param {Object} provider - Provider object with resolveWebviewView method
+     * @param {Object} [options] - Webview view options
+     * @returns {{ dispose: Function }} Disposable
+     */
+    registerWebviewViewProvider(viewId, provider, options = {}) {
+      this._webviewProviders.set(viewId, { provider, options });
+
+      // If iframe already exists for this view, resolve it immediately
+      if (this._webviewFrames.has(viewId)) {
+        this._resolveProviderForView(viewId, provider);
+      }
+
+      appendTerminal(`\n<span class="term-green">[ExtensionHost] Registered WebviewViewProvider for "${viewId}"</span>`);
+
+      return {
+        dispose: () => {
+          this._webviewProviders.delete(viewId);
+        }
+      };
+    }
+
+    /**
+     * Resolve a WebviewViewProvider for a mounted view.
+     * Invokes provider.resolveWebviewView with standard VS Code WebviewView API.
+     * @param {string} viewId - View ID
+     * @param {Object} provider - Provider object
+     */
+    _resolveProviderForView(viewId, provider) {
+      const runtime = this;
+      const iframe = this._webviewFrames.get(viewId);
+      const viewData = this._views.get(viewId) || { id: viewId, name: viewId };
+
+      const webviewView = {
+        viewType: viewId,
+        title: viewData.name,
+        description: '',
+        badge: undefined,
+        visible: true,
+        webview: {
+          options: { enableScripts: true, ...(provider.options || {}) },
+          get html() {
+            return iframe ? (iframe.srcdoc || '') : '';
+          },
+          set html(newHtml) {
+            runtime.setWebviewHtml(viewId, newHtml);
+          },
+          postMessage: (message) => {
+            runtime.postMessage(viewId, message);
+            return Promise.resolve(true);
+          },
+          onDidReceiveMessage: (callback) => {
+            runtime.onDidReceiveMessage(viewId, callback);
+            return {
+              dispose: () => runtime.offDidReceiveMessage(viewId, callback)
+            };
+          },
+          asWebviewUri: (uri) => uri
+        },
+        show: (preserveFocus) => {
+          if (viewData.containerId) {
+            toggleSidebarPane(`pane_manifest_${viewData.containerId}`, `act_manifest_${viewData.containerId}`);
+          }
+        },
+        onDidDispose: (cb) => ({ dispose: () => {} })
+      };
+
+      try {
+        if (typeof provider.resolveWebviewView === 'function') {
+          provider.resolveWebviewView(webviewView, { state: this._loadWebviewState(viewId) }, {});
+        }
+      } catch (err) {
+        console.error(`[ExtensionHost] Error in resolveWebviewView for ${viewId}:`, err);
+      }
+    }
+
+    /**
+     * Set custom HTML for a webview, injecting the CSP and acquireVsCodeApi shim if missing.
+     * @param {string} viewId - View ID
+     * @param {string} html - Custom HTML content from extension
+     */
+    setWebviewHtml(viewId, html) {
+      const iframe = this._webviewFrames.get(viewId);
+      if (!iframe) return;
+
+      let processedHtml = html || '';
+      // Ensure acquireVsCodeApi shim is present for bidirectional RPC
+      if (!processedHtml.includes('acquireVsCodeApi') && !processedHtml.includes('vscode =')) {
+        const shimScript = `
+<script>
+window.acquireVsCodeApi = (function() {
+  let _acquired = false;
+  return function() {
+    if (_acquired && window.vscode) return window.vscode;
+    _acquired = true;
+    const _state = ${JSON.stringify(this._loadWebviewState(viewId))};
+    return Object.freeze({
+      postMessage: function(msg) {
+        window.parent.postMessage({
+          type: 'webview-rpc',
+          direction: 'webview-to-host',
+          viewId: '${viewId}',
+          payload: msg
+        }, '*');
+      },
+      getState: function() { return _state; },
+      setState: function(s) {
+        window.parent.postMessage({
+          type: 'webview-rpc',
+          direction: 'webview-state-update',
+          viewId: '${viewId}',
+          payload: s
+        }, '*');
+        return s;
+      }
+    });
+  };
+})();
+window.vscode = window.acquireVsCodeApi();
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'webview-rpc' && e.data.direction === 'host-to-webview') {
+    const payload = e.data.payload;
+    window.dispatchEvent(new MessageEvent('message', { data: payload }));
+    document.dispatchEvent(new CustomEvent('vscode-message', { detail: payload }));
+  }
+});
+</script>
+`;
+        if (processedHtml.includes('</head>')) {
+          processedHtml = processedHtml.replace('</head>', shimScript + '</head>');
+        } else if (processedHtml.includes('<body')) {
+          processedHtml = processedHtml.replace(/<body[^>]*>/, '$&' + shimScript);
+        } else {
+          processedHtml = shimScript + processedHtml;
+        }
+      }
+
+      iframe.srcdoc = processedHtml;
+    }
+
+    /**
+     * Generate the full HTML document for a webview iframe.
+     * Includes CSP meta tag, VS Code API shim, and default UI.
+     * @param {string} viewId - View identifier
+     * @param {Object} ext - Extension metadata
+     * @param {Object} savedState - Previously persisted state
+     * @returns {string} Complete HTML document string
+     */
+    _generateWebviewHtml(viewId, ext, savedState) {
+      const extName = ext.displayName || ext.name || 'Extension';
+      const stateJson = JSON.stringify(savedState || {}).replace(/</g, '\\u003c');
+      const extCategory = typeof detectExtensionCategory === 'function'
+        ? detectExtensionCategory((ext.name || '').toLowerCase(), ext.description || '')
+        : 'Extension';
+
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src https: data:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12px;
+      color: #cccccc;
+      background: transparent;
+      padding: 10px;
+      line-height: 1.5;
+    }
+    .wv-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .wv-title {
+      font-weight: 700;
+      font-size: 13px;
+      color: #e0e0e0;
+      margin-bottom: 6px;
+    }
+    .wv-subtitle {
+      font-size: 10.5px;
+      color: #808080;
+      margin-bottom: 8px;
+    }
+    .wv-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #ffffff;
+      background: #0e639c;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 3px 4px 3px 0;
+      transition: background 0.15s;
+    }
+    .wv-btn:hover { background: #1177bb; }
+    .wv-btn.secondary {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #cccccc;
+    }
+    .wv-btn.secondary:hover { background: rgba(255,255,255,0.1); }
+    .wv-log {
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 11px;
+      color: #808080;
+      padding: 6px 8px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-top: 6px;
+    }
+    .wv-log-entry { padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .wv-input {
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 11.5px;
+      font-family: inherit;
+      color: #cccccc;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 4px;
+      outline: none;
+      margin-top: 6px;
+    }
+    .wv-input:focus { border-color: #0e639c; }
+    .wv-status { display: flex; align-items: center; gap: 6px; font-size: 11px; margin-top: 8px; }
+    .wv-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .wv-dot.active { background: #4ec9b0; }
+    .wv-dot.inactive { background: #f44747; }
+  </style>
+</head>
+<body>
+  <div class="wv-card">
+    <div class="wv-title">${this._escapeHtml(extName)}</div>
+    <div class="wv-subtitle">${this._escapeHtml(extCategory)} · Webview Provider · View ID: ${this._escapeHtml(viewId)}</div>
+    <div class="wv-status">
+      <span class="wv-dot active"></span>
+      <span>Extension Host Connected</span>
+    </div>
+  </div>
+
+  <div class="wv-card">
+    <div class="wv-title" style="font-size:11.5px;">Message Console</div>
+    <div class="wv-subtitle">Send messages to the extension host runtime</div>
+    <input type="text" class="wv-input" id="msgInput" placeholder="Type a message to send to host...">
+    <div style="margin-top:8px;">
+      <button class="wv-btn" id="sendMsgBtn">Send to Host</button>
+      <button class="wv-btn secondary" id="pingBtn">Ping Host</button>
+      <button class="wv-btn secondary" id="getStateBtn">Get State</button>
+    </div>
+    <div class="wv-log" id="msgLog">
+      <div class="wv-log-entry" style="color:#4ec9b0;">[init] Webview mounted. acquireVsCodeApi() ready.</div>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    // acquireVsCodeApi() Shim — Bridges webview ↔ Extension Host
+    // ═══════════════════════════════════════════════════════════════
+    window.acquireVsCodeApi = (function() {
+      let _state = ${stateJson};
+      let _api = Object.freeze({
+        /**
+         * Post a message from the webview to the extension host.
+         * @param {any} message - Message payload
+         */
+        postMessage: function(message) {
+          window.parent.postMessage({
+            type: 'webview-rpc',
+            direction: 'webview-to-host',
+            viewId: '${viewId}',
+            payload: message
+          }, '*');
+        },
+
+        /**
+         * Get the persisted webview state.
+         * @returns {Object} Current state
+         */
+        getState: function() {
+          return _state;
+        },
+
+        /**
+         * Set and persist the webview state.
+         * @param {Object} newState - State to persist
+         * @returns {Object} The new state
+         */
+        setState: function(newState) {
+          _state = newState;
+          window.parent.postMessage({
+            type: 'webview-rpc',
+            direction: 'webview-state-update',
+            viewId: '${viewId}',
+            payload: newState
+          }, '*');
+          return newState;
+        }
+      });
+
+      return function acquireVsCodeApi() {
+        return _api;
+      };
+    })();
+
+    const vscode = window.acquireVsCodeApi();
+
+    // Listen for messages FROM the extension host
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'webview-rpc' && event.data.direction === 'host-to-webview') {
+        const payload = event.data.payload;
+        if (typeof logMessage === 'function') {
+          logMessage('recv', JSON.stringify(payload));
+        }
+
+        // Dispatch synthetic MessageEvent so standard window.addEventListener('message') handlers receive data directly
+        window.dispatchEvent(new MessageEvent('message', { data: payload }));
+        // Dispatch custom event for extension webview code
+        document.dispatchEvent(new CustomEvent('vscode-message', { detail: payload }));
+      }
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // Demo Webview UI Logic
+    // ═══════════════════════════════════════════════════════════════
+    const msgLog = document.getElementById('msgLog');
+    const msgInput = document.getElementById('msgInput');
+    const sendMsgBtn = document.getElementById('sendMsgBtn');
+    const pingBtn = document.getElementById('pingBtn');
+    const getStateBtn = document.getElementById('getStateBtn');
+
+    function logMessage(dir, text) {
+      const entry = document.createElement('div');
+      entry.className = 'wv-log-entry';
+      const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+      const prefix = dir === 'send' ? '→ sent' : dir === 'recv' ? '← recv' : '• info';
+      const color = dir === 'send' ? '#569cd6' : dir === 'recv' ? '#4ec9b0' : '#808080';
+      entry.innerHTML = '<span style="color:' + color + ';">[' + ts + '] ' + prefix + ':</span> ' + text;
+      msgLog.appendChild(entry);
+      msgLog.scrollTop = msgLog.scrollHeight;
+    }
+
+    sendMsgBtn.addEventListener('click', function() {
+      const msg = msgInput.value.trim();
+      if (!msg) return;
+      vscode.postMessage({ type: 'user-input', text: msg });
+      logMessage('send', JSON.stringify({ type: 'user-input', text: msg }));
+      msgInput.value = '';
+    });
+
+    msgInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') sendMsgBtn.click();
+    });
+
+    pingBtn.addEventListener('click', function() {
+      vscode.postMessage({ type: 'ping', timestamp: Date.now() });
+      logMessage('send', '{ type: "ping" }');
+    });
+
+    getStateBtn.addEventListener('click', function() {
+      const state = vscode.getState();
+      logMessage('info', 'State: ' + JSON.stringify(state));
+    });
+  </script>
+</body>
+</html>`;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 6. BIDIRECTIONAL MESSAGE PASSING (RPC Layer)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Send a message from the extension host to a webview.
+     * @param {string} viewId - Target webview view ID
+     * @param {any} data - Message payload
+     */
+    postMessage(viewId, data) {
+      const iframe = this._webviewFrames.get(viewId);
+      if (!iframe || !iframe.contentWindow) {
+        console.warn(`[ExtensionHost] No webview frame for viewId: ${viewId}`);
+        return;
+      }
+
+      iframe.contentWindow.postMessage({
+        type: 'webview-rpc',
+        direction: 'host-to-webview',
+        viewId: viewId,
+        payload: data
+      }, '*');
+    }
+
+    /**
+     * Register a callback for messages received from a webview.
+     * @param {string} viewId - Source webview view ID
+     * @param {Function} callback - Called with (message) when webview posts
+     */
+    onDidReceiveMessage(viewId, callback) {
+      if (!this._messageCallbacks.has(viewId)) {
+        this._messageCallbacks.set(viewId, new Set());
+      }
+      this._messageCallbacks.get(viewId).add(callback);
+    }
+
+    /**
+     * Remove a message callback.
+     * @param {string} viewId - Source webview view ID
+     * @param {Function} callback - The callback to remove
+     */
+    offDidReceiveMessage(viewId, callback) {
+      const cbs = this._messageCallbacks.get(viewId);
+      if (cbs) cbs.delete(callback);
+    }
+
+    /**
+     * Global message event handler. Routes webview→host messages
+     * to registered callbacks and handles state persistence.
+     * @param {MessageEvent} event - Window message event
+     */
+    _handleWebviewMessage(event) {
+      if (!event.data || event.data.type !== 'webview-rpc') return;
+
+      const { direction, viewId, payload } = event.data;
+
+      if (direction === 'webview-to-host') {
+        // Route to registered callbacks
+        const callbacks = this._messageCallbacks.get(viewId);
+        if (callbacks) {
+          callbacks.forEach(cb => {
+            try { cb(payload); } catch (err) { console.error('[ExtensionHost] Message callback error:', err); }
+          });
+        }
+
+        // Auto-respond to ping messages with pong
+        if (payload && payload.type === 'ping') {
+          this.postMessage(viewId, {
+            type: 'pong',
+            timestamp: Date.now(),
+            originalTimestamp: payload.timestamp,
+            latency: payload.timestamp ? Date.now() - payload.timestamp : 0
+          });
+        }
+
+        // Log user-input messages to terminal
+        if (payload && payload.type === 'user-input') {
+          appendTerminal(`\n<span class="term-cyan">[ExtensionHost:${viewId}] Received message: "${payload.text || JSON.stringify(payload)}"</span>`);
+          // Echo back a response
+          this.postMessage(viewId, {
+            type: 'host-response',
+            text: `Host received: "${payload.text}"`,
+            timestamp: Date.now()
+          });
+        }
+      }
+
+      if (direction === 'webview-state-update') {
+        // Persist webview state
+        this._saveWebviewState(viewId, payload);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 7. FULL ACTIVATION / DEACTIVATION PIPELINE
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Full activation pipeline for an extension.
+     * Fetches manifest, parses contributions, injects UI.
+     * @param {Object} ext - Extension metadata
+     */
+    async activateManifest(ext) {
+      const extId = this._getExtId(ext);
+
+      // Skip if already activated
+      if (this._activatedExtensions.has(extId)) return;
+
+      // Skip built-in extensions (they have hardcoded UI)
+      if (ext.builtin) return;
+
+      const manifest = await this.fetchManifest(ext);
+      if (!manifest) {
+        // No manifest available — still show default toast
+        showStudioToast(`Extension '${ext.displayName || ext.name}' installed and activated.`, null);
+        return;
+      }
+
+      // Parse contribution points
+      this.parseContributions(extId, manifest);
+
+      // Inject activity bar icons for each view container
+      const extContainers = [];
+      this._viewContainers.forEach((containerData, containerId) => {
+        if (containerData.extId === extId) {
+          extContainers.push(containerData);
+          this.injectActivityBarIcon(containerData, ext);
+        }
+      });
+
+      // Register views and mount webviews
+      this._views.forEach((viewData, viewId) => {
+        if (viewData.extId === extId) {
+          this.registerView(viewData.containerId, viewData, ext);
+        }
+      });
+
+      // Register default message handlers for all webview views
+      this._views.forEach((viewData, viewId) => {
+        if (viewData.extId === extId && viewData.type === 'webview') {
+          this.onDidReceiveMessage(viewId, (message) => {
+            console.log(`[ExtensionHost] Message from ${viewId}:`, message);
+          });
+        }
+      });
+
+      this._activatedExtensions.add(extId);
+
+      // If no view containers were found but manifest exists, show contribution summary
+      if (extContainers.length === 0 && manifest.contributes) {
+        const contribKeys = Object.keys(manifest.contributes);
+        if (contribKeys.length > 0) {
+          appendTerminal(`\n<span class="term-green">[ExtensionHost] ${ext.displayName || ext.name}: Loaded ${contribKeys.length} contribution(s): ${contribKeys.join(', ')}</span>`);
+        }
+        showStudioToast(`Extension '${ext.displayName || ext.name}' activated with ${contribKeys.length} contribution(s).`, null);
+      } else if (extContainers.length > 0) {
+        showStudioToast(`${ext.displayName || ext.name}: Sidebar view registered in Activity Bar.`, 'Open', () => {
+          const firstContainer = extContainers[0];
+          toggleSidebarPane(`pane_manifest_${firstContainer.id}`, `act_manifest_${firstContainer.id}`);
+        });
+      } else {
+        showStudioToast(`Extension '${ext.displayName || ext.name}' installed and activated.`, null);
+      }
+    }
+
+    /**
+     * Deactivate and clean up all UI contributions from an extension.
+     * Removes activity bar icons, sidebar panes, and destroys webview iframes.
+     * @param {string} extId - Extension identifier
+     */
+    deactivateManifest(extId) {
+      // Remove activity bar icons
+      this._viewContainers.forEach((containerData, containerId) => {
+        if (containerData.extId === extId) {
+          const actEl = document.getElementById(`act_manifest_${containerId}`);
+          if (actEl) actEl.remove();
+          const paneEl = document.getElementById(`pane_manifest_${containerId}`);
+          if (paneEl) paneEl.remove();
+          this._viewContainers.delete(containerId);
+        }
+      });
+
+      // Destroy webview iframes and clean up message callbacks
+      this._views.forEach((viewData, viewId) => {
+        if (viewData.extId === extId) {
+          const iframe = this._webviewFrames.get(viewId);
+          if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
+          this._webviewFrames.delete(viewId);
+          this._messageCallbacks.delete(viewId);
+          this._views.delete(viewId);
+
+          // Clean up view section DOM
+          const section = document.getElementById(`view_section_${viewId}`);
+          if (section) section.remove();
+        }
+      });
+
+      // Remove manifest cache
+      this._manifests.delete(extId);
+      this._activatedExtensions.delete(extId);
+      this._persistManifests();
+
+      appendTerminal(`\n<span class="term-yellow">[ExtensionHost] Deactivated and cleaned up all contributions from ${extId}</span>`);
+    }
+
+    /**
+     * Render manifest contributions for all currently installed extensions.
+     * Called on page load to restore persisted extension UI.
+     */
+    async renderManifestContributions() {
+      const installed = getInstalledExtensions();
+      for (const ext of installed) {
+        if (ext.builtin) continue;
+        const extId = this._getExtId(ext);
+        if (this._activatedExtensions.has(extId)) continue;
+
+        const manifest = this._manifests.get(extId);
+        if (manifest && manifest.contributes) {
+          // Re-parse and re-inject without re-fetching
+          this.parseContributions(extId, manifest);
+          this._viewContainers.forEach((containerData, containerId) => {
+            if (containerData.extId === extId) {
+              this.injectActivityBarIcon(containerData, ext);
+            }
+          });
+          this._views.forEach((viewData, viewId) => {
+            if (viewData.extId === extId) {
+              this.registerView(viewData.containerId, viewData, ext);
+            }
+          });
+          this._activatedExtensions.add(extId);
+        }
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // INTERNAL HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    _getExtId(ext) {
+      return ext.namespace ? `${ext.namespace}.${ext.name}` : (ext.id || ext.name || 'unknown');
+    }
+
+    _escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    _persistManifests() {
+      try {
+        const serializable = {};
+        this._manifests.forEach((manifest, extId) => {
+          serializable[extId] = manifest;
+        });
+        localStorage.setItem('enlangg_ext_manifests', JSON.stringify(serializable));
+      } catch (_) {}
+    }
+
+    _restoreManifests() {
+      try {
+        const saved = localStorage.getItem('enlangg_ext_manifests');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          Object.keys(parsed).forEach(extId => {
+            this._manifests.set(extId, parsed[extId]);
+          });
+        }
+      } catch (_) {}
+    }
+
+    _saveWebviewState(viewId, state) {
+      this._webviewStates.set(viewId, state);
+      try {
+        localStorage.setItem(`enlangg_webview_state_${viewId}`, JSON.stringify(state));
+      } catch (_) {}
+    }
+
+    _loadWebviewState(viewId) {
+      if (this._webviewStates.has(viewId)) {
+        return this._webviewStates.get(viewId);
+      }
+      try {
+        const saved = localStorage.getItem(`enlangg_webview_state_${viewId}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          this._webviewStates.set(viewId, parsed);
+          return parsed;
+        }
+      } catch (_) {}
+      return {};
+    }
+
+    _renderTreeViewPlaceholder(viewData, ext, container) {
+      const placeholder = document.createElement('div');
+      placeholder.style.cssText = 'padding:12px;display:flex;flex-direction:column;gap:8px;';
+
+      const infoCard = document.createElement('div');
+      infoCard.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid var(--vscode-border);border-radius:6px;padding:12px;';
+      infoCard.innerHTML = `
+        <div style="font-weight:600;font-size:12px;color:var(--vscode-text-bright);margin-bottom:4px;">${this._escapeHtml(viewData.name || viewData.id)}</div>
+        <div style="font-size:11px;color:var(--vscode-text-muted);line-height:1.4;">
+          Tree view registered by <strong>${this._escapeHtml(ext.displayName || ext.name)}</strong>. 
+          Data population requires extension host execution context.
+        </div>
+        <div style="margin-top:8px;font-size:10.5px;color:var(--vscode-text-muted);">
+          View ID: <code style="color:#4ec9b0;">${this._escapeHtml(viewData.id)}</code>
+        </div>
+      `;
+      placeholder.appendChild(infoCard);
+      container.appendChild(placeholder);
+    }
+
+    _refreshContainerViews(containerId) {
+      this._views.forEach((viewData, viewId) => {
+        if (viewData.containerId === containerId && viewData.type === 'webview') {
+          const iframe = this._webviewFrames.get(viewId);
+          if (iframe) {
+            iframe.srcdoc = iframe.srcdoc; // Force reload
+          }
+        }
+      });
+    }
+  }
+
+  // Singleton instance — globally accessible within the studio IIFE
+  const extensionHostRuntime = new ExtensionHostRuntime();
+  window.extensionHostRuntime = extensionHostRuntime;
+  window.vscode = window.vscode || {};
+  window.vscode.window = window.vscode.window || {};
+  window.vscode.window.registerWebviewViewProvider = function(viewId, provider, options) {
+    return extensionHostRuntime.registerWebviewViewProvider(viewId, provider, options);
+  };
 
   // Dock Tabs Switching
   function switchDockTab(paneId) {
