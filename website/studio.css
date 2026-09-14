@@ -1349,6 +1349,81 @@ html, body {
   font-weight: 600;
 }
 
+.extension-category-chips {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-top: 8px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.extension-category-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.ext-chip {
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--vscode-text-muted);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ext-chip:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+  background: #252526;
+}
+
+.ext-chip.active {
+  background: rgba(0, 122, 204, 0.25);
+  border-color: var(--vscode-accent);
+  color: #4ec9b0;
+  font-weight: 600;
+}
+
+.extension-status-bar {
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 10.5px;
+  color: var(--vscode-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.extension-load-more-btn {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 12px auto 20px auto;
+  padding: 8px 12px;
+  background: #252526;
+  border: 1px solid var(--vscode-border);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+
+.extension-load-more-btn:hover {
+  background: var(--vscode-accent);
+  border-color: var(--vscode-accent);
+}
+
+.extension-load-more-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .extension-item {
   display: flex;
   gap: 10px;

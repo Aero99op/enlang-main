@@ -936,6 +936,163 @@ screen WalletHome:
 
   let currentExtensionFilter = 'marketplace';
   let cachedMarketplaceExtensions = [];
+  let currentOpenVsxQuery = '';
+  let currentOpenVsxOffset = 0;
+  let totalOpenVsxCount = 17781;
+  let isLoadingExtensions = false;
+
+  const CURATED_FALLBACK_EXTENSIONS = [
+    {
+      displayName: 'Python Language Tooling',
+      name: 'python',
+      namespace: 'ms-python',
+      version: '2026.8.0',
+      description: 'IntelliSense, linting, debugging, code navigation, code formatting, refactoring, and test explorer for Python.',
+      downloadCount: 82921500,
+      averageRating: 4.8,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'Claude Code for VS Code',
+      name: 'claude-code',
+      namespace: 'Anthropic',
+      version: '2.1.270',
+      description: 'Claude Code harness for next-generation frontier pair programming and autonomous tasks.',
+      downloadCount: 48900000,
+      averageRating: 4.9,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'Prettier - Code Formatter',
+      name: 'prettier-vscode',
+      namespace: 'esbenp',
+      version: '10.4.0',
+      description: 'Code formatter using Prettier for JavaScript, TypeScript, CSS, HTML, JSON, and Markdown.',
+      downloadCount: 45200000,
+      averageRating: 4.7,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'Language Support for Java',
+      name: 'java',
+      namespace: 'redhat',
+      version: '1.57.0',
+      description: 'Java Linting, Intellisense, formatting, refactoring, Maven/Gradle support by Red Hat.',
+      downloadCount: 41900000,
+      averageRating: 5.0,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'Ruby LSP',
+      name: 'ruby-lsp',
+      namespace: 'Shopify',
+      version: '0.10.6',
+      description: 'An opinionated language server for Ruby with modern developer experience.',
+      downloadCount: 42400000,
+      averageRating: 4.8,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'Rust Analyzer',
+      name: 'rust-analyzer',
+      namespace: 'rust-lang',
+      version: '0.4.2026',
+      description: 'Rust language support with fast code completion, goto definition, syntax trees, and diagnostics.',
+      downloadCount: 18400000,
+      averageRating: 4.9,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'Dracula Official Theme',
+      name: 'theme-dracula',
+      namespace: 'dracula-theme',
+      version: '2.24.3',
+      description: 'Official Dracula Theme. A dark theme for 200+ apps, crafted for maximal readability.',
+      downloadCount: 12800000,
+      averageRating: 4.9,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'Go Language Support',
+      name: 'Go',
+      namespace: 'golang',
+      version: '0.41.4',
+      description: 'Rich Go language support for Visual Studio Code (gopls, debugging, testing).',
+      downloadCount: 38200000,
+      averageRating: 4.8,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'ESLint',
+      name: 'vscode-eslint',
+      namespace: 'dbaeumer',
+      version: '3.0.10',
+      description: 'Integrates ESLint JavaScript and TypeScript linter into your workspace.',
+      downloadCount: 36500000,
+      averageRating: 4.7,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'GitLens — Git supercharged',
+      name: 'gitlens',
+      namespace: 'eamodio',
+      version: '15.2.1',
+      description: 'Supercharge Git with inline blame annotations, code lens, repository exploration, and visual file history.',
+      downloadCount: 32100000,
+      averageRating: 4.9,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'C/C++ IntelliSense',
+      name: 'cpptools',
+      namespace: 'ms-vscode',
+      version: '1.20.5',
+      description: 'C/C++ IntelliSense, debugging, and code browsing for LLVM and GCC.',
+      downloadCount: 29800000,
+      averageRating: 4.7,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'Tailwind CSS IntelliSense',
+      name: 'vscode-tailwindcss',
+      namespace: 'bradlc',
+      version: '0.10.5',
+      description: 'Intelligent Tailwind CSS tooling for VS Code with autocompletion and hover previews.',
+      downloadCount: 24700000,
+      averageRating: 4.8,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'One Dark Pro Theme',
+      name: 'one-dark-pro',
+      namespace: 'zhuangtongfa',
+      version: '3.19.2',
+      description: "Atom's iconic One Dark theme, one of the most installed themes for modern IDEs.",
+      downloadCount: 21500000,
+      averageRating: 4.9,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'Markdown All in One',
+      name: 'markdown-all-in-one',
+      namespace: 'yzhang',
+      version: '3.6.2',
+      description: 'All you need for Markdown: keyboard shortcuts, table of contents, auto preview, and math formulas.',
+      downloadCount: 19800000,
+      averageRating: 4.8,
+      files: { icon: '' }
+    },
+    {
+      displayName: 'Material Icon Theme',
+      name: 'material-icon-theme',
+      namespace: 'PKief',
+      version: '5.4.0',
+      description: 'Material Design Icons for Visual Studio Code file trees and tabs.',
+      downloadCount: 17600000,
+      averageRating: 4.9,
+      files: { icon: '' }
+    }
+  ];
 
   function getInstalledExtensions() {
     try {
@@ -965,89 +1122,84 @@ screen WalletHome:
     }
   }
 
-  async function searchOpenVsx(query) {
+  async function searchOpenVsx(query = '', offset = 0, append = false) {
     const container = document.getElementById('extensionListContainer');
+    const statsElem = document.getElementById('extensionStatsText');
     if (!container) return;
 
-    container.innerHTML = `
-      <div style="padding:20px;text-align:center;color:var(--vscode-text-muted);font-size:12px;">
-        <div style="display:inline-block;animation:spin 1s linear infinite;margin-bottom:8px;">⏳</div>
-        <div>Searching Open VSX Registry...</div>
-      </div>
-    `;
+    isLoadingExtensions = true;
+    currentOpenVsxQuery = query ? query.trim() : '';
+    currentOpenVsxOffset = offset;
 
-    const searchQuery = query && query.trim() ? query.trim() : 'python';
+    if (!append) {
+      container.innerHTML = `
+        <div style="padding:28px 16px;text-align:center;color:var(--vscode-text-muted);font-size:12px;">
+          <div style="display:inline-block;animation:spin 1s linear infinite;margin-bottom:8px;font-size:18px;">⏳</div>
+          <div>Querying Open VSX Registry (17,780+ extensions)...</div>
+        </div>
+      `;
+      if (statsElem) statsElem.textContent = 'Searching Open VSX Registry...';
+    } else {
+      const loadBtn = document.getElementById('extLoadMoreBtn');
+      if (loadBtn) {
+        loadBtn.disabled = true;
+        loadBtn.textContent = 'Loading more extensions...';
+      }
+    }
+
+    let url = '';
+    const cleanQuery = currentOpenVsxQuery;
+    if (cleanQuery) {
+      url = `https://open-vsx.org/api/-/search?query=${encodeURIComponent(cleanQuery)}&size=30&offset=${offset}`;
+    } else {
+      url = `https://open-vsx.org/api/-/search?size=30&offset=${offset}&sortBy=downloadCount&sortOrder=desc`;
+    }
+
     try {
-      const resp = await fetch(`https://open-vsx.org/api/-/search?q=${encodeURIComponent(searchQuery)}&size=15`);
+      const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       if (data && data.extensions && Array.isArray(data.extensions)) {
-        cachedMarketplaceExtensions = data.extensions;
+        totalOpenVsxCount = data.totalSize || 17781;
+        if (append) {
+          cachedMarketplaceExtensions = cachedMarketplaceExtensions.concat(data.extensions);
+        } else {
+          cachedMarketplaceExtensions = data.extensions;
+        }
+        isLoadingExtensions = false;
         renderExtensionsList('marketplace');
+        if (statsElem) {
+          statsElem.textContent = `Showing ${cachedMarketplaceExtensions.length} of ${totalOpenVsxCount.toLocaleString()} extensions in Open VSX`;
+        }
         return;
       }
     } catch (err) {
       console.warn('Open VSX fetch fallback:', err);
     }
 
-    // Curated Fallback
-    cachedMarketplaceExtensions = [
-      {
-        displayName: 'Python Language Tooling',
-        name: 'python',
-        namespace: 'ms-python',
-        version: '2026.8.0',
-        description: 'IntelliSense, linting, debugging, code navigation, code formatting, refactoring, and test explorer for Python.',
-        downloadCount: 82921500,
-        averageRating: 4.8,
-        files: { icon: '' }
-      },
-      {
-        displayName: 'Prettier - Code Formatter',
-        name: 'prettier-vscode',
-        namespace: 'esbenp',
-        version: '10.4.0',
-        description: 'Code formatter using Prettier for JavaScript, TypeScript, CSS, HTML, JSON, and Markdown.',
-        downloadCount: 45200000,
-        averageRating: 4.7,
-        files: { icon: '' }
-      },
-      {
-        displayName: 'Rust Analyzer',
-        name: 'rust-analyzer',
-        namespace: 'rust-lang',
-        version: '0.4.2026',
-        description: 'Rust language support with fast code completion, goto definition, syntax trees, and diagnostics.',
-        downloadCount: 18400000,
-        averageRating: 4.9,
-        files: { icon: '' }
-      },
-      {
-        displayName: 'Dracula Official Theme',
-        name: 'theme-dracula',
-        namespace: 'dracula-theme',
-        version: '2.24.3',
-        description: 'Official Dracula Theme. A dark theme for 200+ apps, crafted for maximal readability and aesthetic elegance.',
-        downloadCount: 12800000,
-        averageRating: 4.9,
-        files: { icon: '' }
-      },
-      {
-        displayName: 'Markdown All in One',
-        name: 'markdown-all-in-one',
-        namespace: 'yzhang',
-        version: '3.6.2',
-        description: 'All you need for Markdown: keyboard shortcuts, table of contents, auto preview, and math formulas.',
-        downloadCount: 9800000,
-        averageRating: 4.8,
-        files: { icon: '' }
+    isLoadingExtensions = false;
+    if (!append) {
+      let filtered = CURATED_FALLBACK_EXTENSIONS;
+      if (cleanQuery) {
+        const lq = cleanQuery.toLowerCase();
+        filtered = CURATED_FALLBACK_EXTENSIONS.filter(e => 
+          e.name.toLowerCase().includes(lq) || 
+          (e.displayName && e.displayName.toLowerCase().includes(lq)) ||
+          (e.description && e.description.toLowerCase().includes(lq))
+        );
       }
-    ];
+      cachedMarketplaceExtensions = filtered;
+      totalOpenVsxCount = filtered.length;
+    }
     renderExtensionsList('marketplace');
+    if (statsElem) {
+      statsElem.textContent = `Showing ${cachedMarketplaceExtensions.length} popular extensions (Open VSX)`;
+    }
   }
 
   function renderExtensionsList(mode) {
     const container = document.getElementById('extensionListContainer');
+    const statsElem = document.getElementById('extensionStatsText');
     if (!container) return;
     container.innerHTML = '';
 
@@ -1057,14 +1209,18 @@ screen WalletHome:
     let list = [];
     if (mode === 'installed') {
       list = installed;
+      if (statsElem) statsElem.textContent = `${installed.length} sovereign extension(s) installed`;
     } else {
       list = cachedMarketplaceExtensions;
+      if (statsElem && list.length > 0) {
+        statsElem.textContent = `Showing ${list.length} of ${totalOpenVsxCount.toLocaleString()} extensions in Open VSX`;
+      }
     }
 
     if (list.length === 0) {
       container.innerHTML = `
         <div style="padding:24px;text-align:center;color:var(--vscode-text-muted);font-size:12px;">
-          No extensions found. Try searching for "theme", "python", "rust", or "prettier".
+          No extensions found. Try selecting "🔥 Top", "🎨 Themes", "🐍 Python", or typing another search term.
         </div>
       `;
       return;
@@ -1085,7 +1241,7 @@ screen WalletHome:
         </div>
         <div class="extension-details">
           <div class="extension-title-row">
-            <span class="extension-name">${ext.displayName || ext.name}</span>
+            <span class="extension-name" title="${ext.displayName || ext.name}">${ext.displayName || ext.name}</span>
             <button class="extension-install-btn ${isInstalled ? 'installed' : ''}" data-ext-id="${extId}">
               ${isInstalled ? (ext.builtin ? 'Built-in' : 'Installed') : 'Install'}
             </button>
@@ -1117,6 +1273,21 @@ screen WalletHome:
 
       container.appendChild(card);
     });
+
+    // If in marketplace mode and there are more extensions available, add "Load More" button
+    if (mode === 'marketplace' && cachedMarketplaceExtensions.length < totalOpenVsxCount) {
+      const loadMoreBtn = document.createElement('button');
+      loadMoreBtn.className = 'extension-load-more-btn';
+      loadMoreBtn.id = 'extLoadMoreBtn';
+      loadMoreBtn.innerHTML = `<span>Load More Extensions</span> <span style="font-size:10px;opacity:0.8;">(${cachedMarketplaceExtensions.length} of ${totalOpenVsxCount.toLocaleString()})</span>`;
+      loadMoreBtn.addEventListener('click', () => {
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.textContent = 'Loading more extensions...';
+        currentOpenVsxOffset += 30;
+        searchOpenVsx(currentOpenVsxQuery, currentOpenVsxOffset, true);
+      });
+      container.appendChild(loadMoreBtn);
+    }
   }
 
   function toggleExtensionInstall(ext) {
@@ -1964,20 +2135,52 @@ Provide code in fenced code blocks.`;
       });
     }
 
-    // Extensions Search & Filter Controls
+    // Extensions Search, Category Chips & Filter Controls
     const extSearchInput = document.getElementById('extensionSearchInput');
+    const extChips = document.querySelectorAll('#extensionCategoryChips .ext-chip');
     let extDebounceTimer = null;
+
+    if (extChips && extChips.length > 0) {
+      extChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          extChips.forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          const q = chip.getAttribute('data-query') || '';
+          if (extSearchInput) extSearchInput.value = q;
+          if (filterMarketplaceBtn && !filterMarketplaceBtn.classList.contains('active')) {
+            filterMarketplaceBtn.classList.add('active');
+            if (filterInstalledBtn) filterInstalledBtn.classList.remove('active');
+            currentExtensionFilter = 'marketplace';
+          }
+          searchOpenVsx(q, 0, false);
+        });
+      });
+    }
+
     if (extSearchInput) {
       extSearchInput.addEventListener('input', () => {
         clearTimeout(extDebounceTimer);
+        const q = extSearchInput.value.trim().toLowerCase();
+        // Sync active chip
+        if (extChips) {
+          extChips.forEach(chip => {
+            const cq = (chip.getAttribute('data-query') || '').toLowerCase();
+            if (cq === q) {
+              chip.classList.add('active');
+            } else {
+              chip.classList.remove('active');
+            }
+          });
+        }
         extDebounceTimer = setTimeout(() => {
-          searchOpenVsx(extSearchInput.value.trim());
-        }, 400);
+          searchOpenVsx(extSearchInput.value.trim(), 0, false);
+        }, 350);
       });
+
       extSearchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           clearTimeout(extDebounceTimer);
-          searchOpenVsx(extSearchInput.value.trim());
+          searchOpenVsx(extSearchInput.value.trim(), 0, false);
         }
       });
     }
@@ -2003,7 +2206,21 @@ Provide code in fenced code blocks.`;
     if (refreshExtensionsBtn) {
       refreshExtensionsBtn.addEventListener('click', () => {
         const q = extSearchInput ? extSearchInput.value.trim() : '';
-        searchOpenVsx(q);
+        searchOpenVsx(q, 0, false);
+      });
+    }
+
+    // Infinite scroll for extensions container
+    const extListContainer = document.getElementById('extensionListContainer');
+    if (extListContainer) {
+      extListContainer.addEventListener('scroll', () => {
+        if (currentExtensionFilter !== 'marketplace') return;
+        if (isLoadingExtensions) return;
+        if (cachedMarketplaceExtensions.length >= totalOpenVsxCount) return;
+        if (extListContainer.scrollTop + extListContainer.clientHeight >= extListContainer.scrollHeight - 100) {
+          currentOpenVsxOffset += 30;
+          searchOpenVsx(currentOpenVsxQuery, currentOpenVsxOffset, true);
+        }
       });
     }
 

@@ -387,12 +387,25 @@
           <div class="sidebar-content" style="display:flex;flex-direction:column;height:calc(100% - 35px);overflow:hidden;">
             <div style="padding:10px 12px 6px 12px;border-bottom:1px solid var(--vscode-border);">
               <div class="extension-search-wrap">
-                <input type="text" id="extensionSearchInput" class="modal-input" placeholder="Search Extensions in Open VSX..." style="font-size:11.5px;padding:6px 10px;" />
+                <input type="text" id="extensionSearchInput" class="modal-input" placeholder="Search across 17,000+ extensions..." style="font-size:11.5px;padding:6px 10px;" />
               </div>
               <div class="extension-filter-tabs">
                 <button class="ext-filter-btn active" id="filterMarketplaceBtn">Marketplace</button>
                 <button class="ext-filter-btn" id="filterInstalledBtn">Installed (<span id="installedCount">5</span>)</button>
               </div>
+              <div class="extension-category-chips" id="extensionCategoryChips">
+                <button class="ext-chip active" data-query="">🔥 Top</button>
+                <button class="ext-chip" data-query="theme">🎨 Themes</button>
+                <button class="ext-chip" data-query="python">🐍 Python</button>
+                <button class="ext-chip" data-query="javascript">⚡ JS/TS</button>
+                <button class="ext-chip" data-query="rust">🦀 Rust</button>
+                <button class="ext-chip" data-query="ai">🤖 AI</button>
+                <button class="ext-chip" data-query="git">🐙 Git</button>
+                <button class="ext-chip" data-query="formatter">✨ Formatters</button>
+              </div>
+            </div>
+            <div class="extension-status-bar" id="extensionStatusBar">
+              <span id="extensionStatsText">Showing popular extensions (17,780+ in Open VSX)</span>
             </div>
             
             <div class="extension-list-container" id="extensionListContainer" style="flex:1;overflow-y:auto;padding:4px 0;">
