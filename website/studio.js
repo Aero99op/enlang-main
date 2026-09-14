@@ -2547,15 +2547,343 @@ screen WalletHome:
       return true;
     }
 
-    // 11. Any other installed Open VSX extension
+    // 11. ═══ UNIVERSAL FALLBACK: Open ANY installed extension in its own dynamic sidebar panel ═══
+    // This handles EVERY extension that doesn't have a hardcoded panel above.
+    // It dynamically generates a full sidebar view with info, actions, config, and output log.
     if (ext) {
-      openExtensionModal(ext, true);
-      appendTerminal(`\n<span class="term-cyan">[Extensions] Opened '${ext.displayName || ext.name}' settings & documentation.</span>`);
-      showStudioToast(`Opened extension '${ext.displayName || ext.name}'.`, null);
+      openDynamicExtensionPanel(ext);
       return true;
     }
 
+    // If no extension object found at all, try to open by raw name search
+    if (name) {
+      const fuzzyMatch = installed.find(e => {
+        const searchable = ((e.name || '') + ' ' + (e.displayName || '') + ' ' + (e.id || '') + ' ' + (e.description || '')).toLowerCase();
+        return searchable.includes(name);
+      });
+      if (fuzzyMatch) {
+        openDynamicExtensionPanel(fuzzyMatch);
+        return true;
+      }
+    }
+
     return false;
+  }
+
+  // ==============================================================================
+  // 🌐 UNIVERSAL DYNAMIC EXTENSION PANEL RENDERER
+  // Opens ANY installed extension in the sidebar with full contextual UI
+  // ==============================================================================
+  function openDynamicExtensionPanel(ext) {
+    const dName = ext.displayName || ext.name || 'Extension';
+    const extName = (ext.name || '').toLowerCase();
+    const desc = ext.description || 'Extension package from the Open VSX Registry.';
+    const version = ext.version || '1.0.0';
+    const ns = ext.namespace || 'marketplace';
+    const downloads = ext.downloadCount ? ext.downloadCount.toLocaleString() : '10,000+';
+    const rating = ext.averageRating ? '★ ' + Number(ext.averageRating).toFixed(1) : '★ 5.0';
+    const iconEmoji = detectExtensionEmoji(extName, desc);
+    const extCategory = detectExtensionCategory(extName, desc);
+
+    // Populate the dynamic panel DOM
+    const dynTitle = document.getElementById('dynExtTitle');
+    const dynIcon = document.getElementById('dynExtIcon');
+    const dynBigIcon = document.getElementById('dynExtBigIcon');
+    const dynDisplayName = document.getElementById('dynExtDisplayName');
+    const dynPublisher = document.getElementById('dynExtPublisher');
+    const dynDescription = document.getElementById('dynExtDescription');
+    const dynDownloads = document.getElementById('dynExtDownloads');
+    const dynRating = document.getElementById('dynExtRating');
+    const dynStatus = document.getElementById('dynExtStatus');
+    const dynActions = document.getElementById('dynExtActions');
+    const dynConfig = document.getElementById('dynExtConfig');
+    const dynOutput = document.getElementById('dynExtOutput');
+
+    if (dynTitle) dynTitle.textContent = dName;
+    if (dynIcon) dynIcon.textContent = iconEmoji;
+    if (dynBigIcon) dynBigIcon.textContent = iconEmoji;
+    if (dynDisplayName) dynDisplayName.textContent = dName;
+    if (dynPublisher) dynPublisher.textContent = `${ns} · v${version}`;
+    if (dynDescription) dynDescription.textContent = desc;
+    if (dynDownloads) dynDownloads.textContent = '📥 ' + downloads;
+    if (dynRating) dynRating.textContent = rating;
+    if (dynStatus) { dynStatus.textContent = '● Active'; dynStatus.style.color = '#4ec9b0'; }
+
+    // Generate contextual Quick Actions based on extension category
+    if (dynActions) {
+      dynActions.innerHTML = '';
+      const actions = generateExtensionActions(ext, extCategory);
+      actions.forEach(act => {
+        const btn = document.createElement('button');
+        btn.className = 'titlebar-btn';
+        btn.style.cssText = 'width:100%;justify-content:flex-start;gap:8px;font-size:11.5px;padding:6px 10px;';
+        btn.innerHTML = `<span>${act.icon}</span><span>${act.label}</span>`;
+        btn.addEventListener('click', act.action);
+        dynActions.appendChild(btn);
+      });
+    }
+
+    // Generate contextual Configuration toggles
+    if (dynConfig) {
+      dynConfig.innerHTML = '';
+      const configs = generateExtensionConfig(ext, extCategory);
+      configs.forEach(cfg => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:rgba(255,255,255,0.02);border:1px solid var(--vscode-border);border-radius:4px;font-size:11.5px;';
+        row.innerHTML = `
+          <span style="color:var(--vscode-text-bright);">${cfg.label}</span>
+          <label style="position:relative;display:inline-block;width:32px;height:18px;cursor:pointer;">
+            <input type="checkbox" ${cfg.checked ? 'checked' : ''} style="opacity:0;width:0;height:0;" data-cfg-key="${cfg.key}">
+            <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:${cfg.checked ? '#4ec9b0' : 'rgba(255,255,255,0.1)'};border-radius:9px;transition:0.2s;"></span>
+            <span style="position:absolute;top:2px;left:${cfg.checked ? '16px' : '2px'};width:14px;height:14px;background:white;border-radius:50%;transition:0.2s;"></span>
+          </label>
+        `;
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        const slider = row.querySelectorAll('span');
+        if (checkbox) {
+          checkbox.addEventListener('change', () => {
+            slider[1].style.background = checkbox.checked ? '#4ec9b0' : 'rgba(255,255,255,0.1)';
+            slider[2].style.left = checkbox.checked ? '16px' : '2px';
+            appendTerminal(`\n<span class="term-yellow">[${dName}] Setting '${cfg.label}' ${checkbox.checked ? 'enabled' : 'disabled'}.</span>`);
+          });
+        }
+        dynConfig.appendChild(row);
+      });
+    }
+
+    // Generate Output Log
+    if (dynOutput) {
+      dynOutput.innerHTML = '';
+      const now = new Date();
+      const ts = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+      const logs = [
+        `[${ts}] Extension '${dName}' activated.`,
+        `[${ts}] Loading workspace contributions...`,
+        `[${ts}] Registered ${Math.floor(Math.random() * 5) + 1} command(s) from '${ns}.${ext.name || 'pkg'}'.`,
+        `[${ts}] ${extCategory} services initialized.`,
+        `[${ts}] Ready.`
+      ];
+      logs.forEach(log => {
+        const line = document.createElement('div');
+        line.textContent = log;
+        line.style.cssText = 'padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.03);';
+        dynOutput.appendChild(line);
+      });
+    }
+
+    // Wire Uninstall button
+    const uninstallBtn = document.getElementById('dynExtUninstallBtn');
+    if (uninstallBtn) {
+      uninstallBtn.onclick = () => {
+        toggleExtensionInstall(ext);
+        toggleSidebarPane('paneExtensions', 'actExtensions');
+      };
+    }
+
+    // Wire Settings button
+    const settingsBtn = document.getElementById('dynExtSettingsBtn');
+    if (settingsBtn) {
+      settingsBtn.onclick = () => {
+        openExtensionModal(ext, true);
+      };
+    }
+
+    // Open the panel
+    toggleSidebarPane('paneDynamicExtension', 'actExtensions');
+    appendTerminal(`\n<span class="term-cyan">[${dName}] Extension panel opened with ${extCategory} workspace view.</span>`);
+    showStudioToast(`${dName} opened.`, null);
+  }
+
+  // Detect an emoji icon based on extension name/description
+  function detectExtensionEmoji(name, desc) {
+    const s = (name + ' ' + desc).toLowerCase();
+    if (s.includes('python')) return '🐍';
+    if (s.includes('rust')) return '🦀';
+    if (s.includes('java') && !s.includes('javascript')) return '☕';
+    if (s.includes('go') || s.includes('golang')) return '🐹';
+    if (s.includes('c++') || s.includes('cpp')) return '⚡';
+    if (s.includes('ruby')) return '💎';
+    if (s.includes('php')) return '🐘';
+    if (s.includes('swift')) return '🐦';
+    if (s.includes('kotlin')) return '🇰';
+    if (s.includes('dart') || s.includes('flutter')) return '🎯';
+    if (s.includes('react') || s.includes('jsx')) return '⚛️';
+    if (s.includes('vue')) return '💚';
+    if (s.includes('angular')) return '🅰️';
+    if (s.includes('svelte')) return '🔥';
+    if (s.includes('tailwind') || s.includes('css')) return '🎨';
+    if (s.includes('html')) return '🌐';
+    if (s.includes('typescript') || s.includes('javascript') || s.includes('eslint')) return '📜';
+    if (s.includes('docker') || s.includes('container')) return '🐳';
+    if (s.includes('git')) return '🐙';
+    if (s.includes('database') || s.includes('sql') || s.includes('mongo') || s.includes('redis')) return '🗄️';
+    if (s.includes('debug')) return '🐞';
+    if (s.includes('test')) return '🧪';
+    if (s.includes('lint') || s.includes('format') || s.includes('prettier') || s.includes('beautify')) return '✨';
+    if (s.includes('theme') || s.includes('color') || s.includes('icon')) return '🎨';
+    if (s.includes('snippet')) return '📋';
+    if (s.includes('ai') || s.includes('copilot') || s.includes('intellisense') || s.includes('autocomplete')) return '🤖';
+    if (s.includes('markdown') || s.includes('docs')) return '📝';
+    if (s.includes('terminal') || s.includes('shell') || s.includes('bash')) return '💻';
+    if (s.includes('yaml') || s.includes('json') || s.includes('xml') || s.includes('toml')) return '📄';
+    if (s.includes('image') || s.includes('svg') || s.includes('png')) return '🖼️';
+    if (s.includes('remote') || s.includes('ssh') || s.includes('wsl')) return '🔌';
+    if (s.includes('todo') || s.includes('task') || s.includes('project')) return '✅';
+    if (s.includes('spell') || s.includes('grammar')) return '📖';
+    if (s.includes('bracket') || s.includes('indent') || s.includes('highlight')) return '🌈';
+    if (s.includes('path') || s.includes('file') || s.includes('explorer')) return '📁';
+    if (s.includes('server') || s.includes('rest') || s.includes('api') || s.includes('http')) return '🌍';
+    if (s.includes('security') || s.includes('vulnerability')) return '🛡️';
+    if (s.includes('cloud') || s.includes('aws') || s.includes('azure') || s.includes('gcp')) return '☁️';
+    if (s.includes('kubernetes') || s.includes('k8s') || s.includes('helm')) return '☸️';
+    return '🧩';
+  }
+
+  // Detect extension category
+  function detectExtensionCategory(name, desc) {
+    const s = (name + ' ' + desc).toLowerCase();
+    if (s.includes('theme') || s.includes('color') || s.includes('icon')) return 'Theme';
+    if (s.includes('lint') || s.includes('format') || s.includes('prettier') || s.includes('beautify') || s.includes('eslint')) return 'Formatter';
+    if (s.includes('debug')) return 'Debugger';
+    if (s.includes('test')) return 'Testing';
+    if (s.includes('snippet')) return 'Snippets';
+    if (s.includes('ai') || s.includes('copilot') || s.includes('intellisense') || s.includes('autocomplete') || s.includes('tabnine') || s.includes('codeium')) return 'AI Assistant';
+    if (s.includes('git') || s.includes('vcs') || s.includes('version control')) return 'Source Control';
+    if (s.includes('docker') || s.includes('container') || s.includes('kubernetes') || s.includes('k8s')) return 'DevOps';
+    if (s.includes('database') || s.includes('sql') || s.includes('mongo') || s.includes('redis')) return 'Database';
+    if (s.includes('remote') || s.includes('ssh') || s.includes('wsl')) return 'Remote';
+    if (s.includes('server') || s.includes('live') || s.includes('preview')) return 'Preview';
+    if (s.includes('security') || s.includes('sonar') || s.includes('vulnerability')) return 'Security';
+    if (s.includes('python') || s.includes('rust') || s.includes('java') || s.includes('go') || s.includes('c++') || s.includes('ruby') || s.includes('php') || s.includes('swift') || s.includes('kotlin') || s.includes('dart')) return 'Language';
+    if (s.includes('react') || s.includes('vue') || s.includes('angular') || s.includes('svelte') || s.includes('tailwind') || s.includes('css') || s.includes('html')) return 'Web Framework';
+    if (s.includes('markdown') || s.includes('docs')) return 'Documentation';
+    if (s.includes('bracket') || s.includes('indent') || s.includes('rainbow') || s.includes('highlight')) return 'Editor Enhancement';
+    if (s.includes('todo') || s.includes('task') || s.includes('project') || s.includes('bookmark')) return 'Productivity';
+    if (s.includes('terminal') || s.includes('shell') || s.includes('bash')) return 'Terminal';
+    if (s.includes('cloud') || s.includes('aws') || s.includes('azure') || s.includes('gcp')) return 'Cloud';
+    return 'Extension';
+  }
+
+  // Generate contextual quick actions for the dynamic panel
+  function generateExtensionActions(ext, category) {
+    const dName = ext.displayName || ext.name;
+    const actions = [];
+
+    // Universal actions for all extensions
+    actions.push({
+      icon: '📋', label: `Copy Extension ID: ${ext.namespace || 'marketplace'}.${ext.name}`,
+      action: () => {
+        try { navigator.clipboard.writeText(`${ext.namespace || 'marketplace'}.${ext.name}`); } catch(_) {}
+        showStudioToast('Extension ID copied to clipboard.', null);
+      }
+    });
+
+    // Category-specific actions
+    if (category === 'Language') {
+      actions.unshift({ icon: '🔍', label: 'Run Diagnostics on Active File', action: () => { runDiagnostics(); showStudioToast(`${dName}: Diagnostics triggered.`, null); } });
+      actions.unshift({ icon: '⚡', label: 'Activate Language Server', action: () => { appendTerminal(`\n<span class="term-green">[${dName}] Language server activated. IntelliSense ready.</span>`); showStudioToast(`${dName}: Language server active.`, null); } });
+    }
+    if (category === 'Formatter') {
+      actions.unshift({ icon: '✨', label: 'Format Active Document Now', action: () => { formatDocument(); showStudioToast(`${dName}: Document formatted.`, null); } });
+      actions.unshift({ icon: '📐', label: 'Set as Default Formatter', action: () => { appendTerminal(`\n<span class="term-green">[${dName}] Set as default formatter for workspace.</span>`); showStudioToast(`${dName}: Set as default formatter.`, null); } });
+    }
+    if (category === 'Theme') {
+      actions.unshift({ icon: '🎨', label: 'Apply This Theme', action: () => { openThemePicker(); } });
+    }
+    if (category === 'AI Assistant') {
+      actions.unshift({ icon: '💬', label: 'Open Inline Chat', action: () => { if (copilotPanel) copilotPanel.classList.add('open'); showStudioToast(`${dName}: AI chat opened.`, null); } });
+      actions.unshift({ icon: '⚡', label: 'Enable Auto Suggestions', action: () => { appendTerminal(`\n<span class="term-green">[${dName}] Inline AI completions enabled globally.</span>`); showStudioToast(`${dName}: Auto suggestions active.`, null); } });
+    }
+    if (category === 'Testing') {
+      actions.unshift({ icon: '▶', label: 'Run All Tests', action: () => { toggleSidebarPane('paneTesting', 'actTesting'); renderTestExplorer(); } });
+    }
+    if (category === 'Source Control') {
+      actions.unshift({ icon: '🐙', label: 'Open Source Control View', action: () => { toggleSidebarPane('paneGitLens', 'actGitLens'); renderGitLensCommits(); } });
+    }
+    if (category === 'DevOps') {
+      actions.unshift({ icon: '🐳', label: 'Open Container Manager', action: () => { toggleSidebarPane('paneDocker', 'actDocker'); renderDockerContainers(); } });
+    }
+    if (category === 'Database') {
+      actions.unshift({ icon: '🗄️', label: 'Open Database Explorer', action: () => { toggleSidebarPane('paneDatabase', 'actDatabase'); } });
+    }
+    if (category === 'Security') {
+      actions.unshift({ icon: '🛡️', label: 'Run Security Scan', action: () => { toggleSidebarPane('paneSonarQube', 'actSonarQube'); runSonarQubeAnalysis(); } });
+    }
+    if (category === 'Preview') {
+      actions.unshift({ icon: '🌐', label: 'Open Live Preview Viewport', action: () => { handleMenuAction('togglePreview'); } });
+    }
+    if (category === 'Snippets') {
+      actions.unshift({ icon: '📋', label: 'Insert Snippet', action: () => { appendTerminal(`\n<span class="term-green">[${dName}] Snippet library loaded. Type prefix and press Tab.</span>`); showStudioToast(`${dName}: Snippets available via Tab trigger.`, null); } });
+    }
+    if (category === 'Documentation') {
+      actions.unshift({ icon: '📝', label: 'Open Preview Panel', action: () => { handleMenuAction('togglePreview'); } });
+    }
+    if (category === 'Editor Enhancement') {
+      actions.unshift({ icon: '🌈', label: 'Activate Visual Enhancements', action: () => { appendTerminal(`\n<span class="term-green">[${dName}] Visual enhancements activated in editor.</span>`); showStudioToast(`${dName}: Editor enhancements active.`, null); } });
+    }
+    if (category === 'Productivity') {
+      actions.unshift({ icon: '✅', label: 'Open Task List / Bookmarks', action: () => { appendTerminal(`\n<span class="term-green">[${dName}] Task list / bookmarks view loaded.</span>`); showStudioToast(`${dName}: Productivity tools activated.`, null); } });
+    }
+    if (category === 'Web Framework') {
+      actions.unshift({ icon: '⚛️', label: 'Activate Framework IntelliSense', action: () => { runDiagnostics(); appendTerminal(`\n<span class="term-green">[${dName}] Framework-specific completion and diagnostics enabled.</span>`); showStudioToast(`${dName}: Framework support active.`, null); } });
+    }
+
+    // Always add View on Open VSX as last action
+    actions.push({
+      icon: '🔗', label: 'View on Open VSX Registry',
+      action: () => { window.open(ext.url || `https://open-vsx.org/extension/${ext.namespace || 'meta'}/${ext.name || 'pkg'}`, '_blank'); }
+    });
+
+    return actions;
+  }
+
+  // Generate contextual config toggles
+  function generateExtensionConfig(ext, category) {
+    const configs = [
+      { key: 'enabled', label: 'Enable Extension', checked: true }
+    ];
+
+    if (category === 'Language' || category === 'Formatter' || category === 'Web Framework') {
+      configs.push({ key: 'diagnostics', label: 'Show Diagnostics', checked: true });
+      configs.push({ key: 'autoFormat', label: 'Format on Save', checked: false });
+    }
+    if (category === 'AI Assistant') {
+      configs.push({ key: 'inlineSuggest', label: 'Inline Suggestions', checked: true });
+      configs.push({ key: 'autoComplete', label: 'Auto Complete', checked: true });
+    }
+    if (category === 'Formatter') {
+      configs.push({ key: 'formatOnSave', label: 'Format on Save', checked: true });
+      configs.push({ key: 'formatOnPaste', label: 'Format on Paste', checked: false });
+    }
+    if (category === 'Testing') {
+      configs.push({ key: 'autoRun', label: 'Auto Run on Save', checked: false });
+      configs.push({ key: 'showCoverage', label: 'Show Coverage Gutter', checked: true });
+    }
+    if (category === 'Source Control') {
+      configs.push({ key: 'autoFetch', label: 'Auto Fetch', checked: true });
+      configs.push({ key: 'inlineBlame', label: 'Inline Git Blame', checked: false });
+    }
+    if (category === 'Security') {
+      configs.push({ key: 'autoScan', label: 'Scan on Save', checked: true });
+      configs.push({ key: 'showHotspots', label: 'Show Security Hotspots', checked: true });
+    }
+    if (category === 'Editor Enhancement') {
+      configs.push({ key: 'bracketColors', label: 'Bracket Colorization', checked: true });
+      configs.push({ key: 'indentGuides', label: 'Indent Guides', checked: true });
+    }
+    if (category === 'Preview') {
+      configs.push({ key: 'autoRefresh', label: 'Auto Refresh on Save', checked: true });
+      configs.push({ key: 'openBrowser', label: 'Open in External Browser', checked: false });
+    }
+    if (category === 'Productivity') {
+      configs.push({ key: 'notifications', label: 'Show Notifications', checked: true });
+    }
+    if (category === 'Theme') {
+      configs.push({ key: 'applySyntax', label: 'Apply Syntax Colors', checked: true });
+      configs.push({ key: 'applyUI', label: 'Apply UI Colors', checked: true });
+    }
+
+    return configs;
   }
 
   function renderCommandPaletteList(query = '') {
