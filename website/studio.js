@@ -213,6 +213,47 @@ screen WalletHome:
     return { domain: 'Plain Document', badge: 'enlng', ext: '' };
   }
 
+  // Determine File Icon based on extension and active icon theme
+  function getFileIcon(filename) {
+    const isMaterial = localStorage.getItem('enlangg_icons_active') === 'true';
+    if (filename.endsWith('.enlng')) {
+      return isMaterial ? '<span style="font-size:13px;color:#fbbf24;">👑</span>' : '<span style="font-size:11px;color:#fbbf24;font-weight:700;">EN</span>';
+    }
+    if (filename.endsWith('.enlngdb')) {
+      return isMaterial ? '<span style="font-size:13px;color:#38bdf8;">🗄️</span>' : '<span style="font-size:11px;color:#38bdf8;font-weight:700;">DB</span>';
+    }
+    if (filename.endsWith('.enlngf')) {
+      return isMaterial ? '<span style="font-size:13px;color:#c084fc;">🎨</span>' : '<span style="font-size:11px;color:#c084fc;font-weight:700;">UI</span>';
+    }
+    if (filename.endsWith('.enlngd')) {
+      return isMaterial ? '<span style="font-size:13px;color:#f472b6;">💎</span>' : '<span style="font-size:11px;color:#f472b6;font-weight:700;">CSS</span>';
+    }
+    if (filename.endsWith('.enlngs')) {
+      return isMaterial ? '<span style="font-size:13px;color:#34d399;">⚡</span>' : '<span style="font-size:11px;color:#34d399;font-weight:700;">SRV</span>';
+    }
+    if (filename.endsWith('.enlngm')) {
+      return isMaterial ? '<span style="font-size:13px;color:#fb923c;">📱</span>' : '<span style="font-size:11px;color:#fb923c;font-weight:700;">MOB</span>';
+    }
+    if (filename.endsWith('.py')) {
+      return '<span style="font-size:13px;color:#38bdf8;">🐍</span>';
+    }
+    if (filename.endsWith('.js') || filename.endsWith('.ts')) {
+      return '<span style="font-size:13px;color:#facc15;">🟨</span>';
+    }
+    if (filename.endsWith('.rs')) {
+      return '<span style="font-size:13px;color:#f97316;">🦀</span>';
+    }
+    if (filename.endsWith('.json')) {
+      return '<span style="font-size:13px;color:#fbbf24;">📋</span>';
+    }
+    return `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+        <polyline points="13 2 13 9 20 9"></polyline>
+      </svg>
+    `;
+  }
+
   // Render File Tree Explorer
   function renderFileTree() {
     if (!fileTreeRoot) return;
@@ -224,12 +265,7 @@ screen WalletHome:
       const item = document.createElement('div');
       item.className = `tree-item ${path === activeFile ? 'active' : ''}`;
       item.innerHTML = `
-        <span class="tree-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-            <polyline points="13 2 13 9 20 9"></polyline>
-          </svg>
-        </span>
+        <span class="tree-icon">${getFileIcon(path)}</span>
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;">${path}</span>
         <span class="domain-badge domain-${info.badge}">${info.badge}</span>
       `;
@@ -269,7 +305,7 @@ screen WalletHome:
       tab.className = `tab ${file === activeFile ? 'active' : ''} ${dirtyFiles.has(file) ? 'dirty' : ''}`;
       const basename = file.split('/').pop();
       tab.innerHTML = `
-        <span style="font-weight:600;font-size:10px;" class="domain-${info.badge}">●</span>
+        <span class="tab-icon" style="display:inline-flex;align-items:center;margin-right:4px;">${getFileIcon(file)}</span>
         <span>${basename}</span>
         <span class="tab-dirty"></span>
         <span class="tab-close" title="Close">✕</span>
@@ -1299,6 +1335,7 @@ screen WalletHome:
       installed.splice(existingIndex, 1);
       saveInstalledExtensions(installed);
       appendTerminal(`\n<span class="term-yellow">[Extensions] Uninstalled ${ext.displayName || ext.name}</span>`);
+      activateExtension(ext, false);
     } else {
       installed.push({
         id: extId,
@@ -1314,6 +1351,7 @@ screen WalletHome:
       });
       saveInstalledExtensions(installed);
       appendTerminal(`\n<span class="term-green">[Extensions] Installed ${ext.displayName || ext.name} (v${ext.version || '1.0.0'}) from Open VSX Registry.</span>`);
+      activateExtension(ext, true);
     }
 
     renderExtensionsList(currentExtensionFilter);
@@ -1350,6 +1388,787 @@ screen WalletHome:
     }
 
     modal.classList.add('open');
+  }
+
+  // ==============================================================================
+  // 🌟 FUNCTIONAL EXTENSION RUNTIME ENGINES (Themes, Prettier, Diagnostics, Palette)
+  // ==============================================================================
+
+  // 1. Color Themes Registry
+  const STUDIO_THEMES = {
+    'vs-dark': {
+      name: 'Dark Modern (VS Code Default)',
+      author: 'Microsoft',
+      swatches: ['#1e1e1e', '#181818', '#007acc', '#4ec9b0'],
+      vars: {
+        '--vscode-bg': '#1e1e1e',
+        '--vscode-activity-bg': '#181818',
+        '--vscode-sidebar-bg': '#1f1f1f',
+        '--vscode-dock-bg': '#181818',
+        '--vscode-header-bg': '#181818',
+        '--vscode-statusbar-bg': '#007acc',
+        '--vscode-statusbar-text': '#ffffff',
+        '--vscode-border': '#2d2d2d',
+        '--vscode-active-border': '#007acc',
+        '--vscode-tab-bg': '#181818',
+        '--vscode-tab-active-bg': '#1e1e1e',
+        '--vscode-text-main': '#cccccc',
+        '--vscode-text-bright': '#ffffff',
+        '--vscode-text-muted': '#858585',
+        '--vscode-hover': '#2a2d2e',
+        '--vscode-selected': '#04395e',
+        '--vscode-accent': '#007acc',
+        '--vscode-accent-hover': '#0e639c',
+        '--vscode-green': '#4ec9b0',
+        '--vscode-blue': '#569cd6',
+        '--vscode-purple': '#c586c0'
+      }
+    },
+    'dracula': {
+      name: 'Dracula Official Theme',
+      author: 'Dracula Theme',
+      swatches: ['#282a36', '#21222c', '#bd93f9', '#50fa7b'],
+      vars: {
+        '--vscode-bg': '#282a36',
+        '--vscode-activity-bg': '#191a21',
+        '--vscode-sidebar-bg': '#21222c',
+        '--vscode-dock-bg': '#21222c',
+        '--vscode-header-bg': '#191a21',
+        '--vscode-statusbar-bg': '#191a21',
+        '--vscode-statusbar-text': '#f8f8f2',
+        '--vscode-border': '#44475a',
+        '--vscode-active-border': '#bd93f9',
+        '--vscode-tab-bg': '#191a21',
+        '--vscode-tab-active-bg': '#282a36',
+        '--vscode-text-main': '#f8f8f2',
+        '--vscode-text-bright': '#ffffff',
+        '--vscode-text-muted': '#6272a4',
+        '--vscode-hover': '#44475a',
+        '--vscode-selected': '#44475a',
+        '--vscode-accent': '#bd93f9',
+        '--vscode-accent-hover': '#ff79c6',
+        '--vscode-green': '#50fa7b',
+        '--vscode-blue': '#8be9fd',
+        '--vscode-purple': '#bd93f9'
+      }
+    },
+    'one-dark-pro': {
+      name: 'One Dark Pro',
+      author: 'binaryify',
+      swatches: ['#282c34', '#21252b', '#61afef', '#98c379'],
+      vars: {
+        '--vscode-bg': '#282c34',
+        '--vscode-activity-bg': '#21252b',
+        '--vscode-sidebar-bg': '#21252b',
+        '--vscode-dock-bg': '#21252b',
+        '--vscode-header-bg': '#1e2227',
+        '--vscode-statusbar-bg': '#1e2227',
+        '--vscode-statusbar-text': '#abb2bf',
+        '--vscode-border': '#181a1f',
+        '--vscode-active-border': '#61afef',
+        '--vscode-tab-bg': '#21252b',
+        '--vscode-tab-active-bg': '#282c34',
+        '--vscode-text-main': '#abb2bf',
+        '--vscode-text-bright': '#ffffff',
+        '--vscode-text-muted': '#5c6370',
+        '--vscode-hover': '#2c313a',
+        '--vscode-selected': '#3e4451',
+        '--vscode-accent': '#61afef',
+        '--vscode-accent-hover': '#528bff',
+        '--vscode-green': '#98c379',
+        '--vscode-blue': '#61afef',
+        '--vscode-purple': '#c678dd'
+      }
+    },
+    'tokyo-night': {
+      name: 'Tokyo Night',
+      author: 'enkia',
+      swatches: ['#1a1b26', '#16161e', '#7aa2f7', '#9ece6a'],
+      vars: {
+        '--vscode-bg': '#1a1b26',
+        '--vscode-activity-bg': '#16161e',
+        '--vscode-sidebar-bg': '#16161e',
+        '--vscode-dock-bg': '#16161e',
+        '--vscode-header-bg': '#13141c',
+        '--vscode-statusbar-bg': '#13141c',
+        '--vscode-statusbar-text': '#c0caf5',
+        '--vscode-border': '#292e42',
+        '--vscode-active-border': '#7aa2f7',
+        '--vscode-tab-bg': '#16161e',
+        '--vscode-tab-active-bg': '#1f2335',
+        '--vscode-text-main': '#a9b1d6',
+        '--vscode-text-bright': '#c0caf5',
+        '--vscode-text-muted': '#565f89',
+        '--vscode-hover': '#24283b',
+        '--vscode-selected': '#2e3c64',
+        '--vscode-accent': '#7aa2f7',
+        '--vscode-accent-hover': '#bb9af7',
+        '--vscode-green': '#9ece6a',
+        '--vscode-blue': '#7dcfff',
+        '--vscode-purple': '#bb9af7'
+      }
+    },
+    'nord': {
+      name: 'Nord',
+      author: 'arcticicestudio',
+      swatches: ['#2e3440', '#242933', '#88c0d0', '#a3be8c'],
+      vars: {
+        '--vscode-bg': '#2e3440',
+        '--vscode-activity-bg': '#242933',
+        '--vscode-sidebar-bg': '#242933',
+        '--vscode-dock-bg': '#242933',
+        '--vscode-header-bg': '#1e222a',
+        '--vscode-statusbar-bg': '#3b4252',
+        '--vscode-statusbar-text': '#eceff4',
+        '--vscode-border': '#3b4252',
+        '--vscode-active-border': '#88c0d0',
+        '--vscode-tab-bg': '#242933',
+        '--vscode-tab-active-bg': '#2e3440',
+        '--vscode-text-main': '#d8dee9',
+        '--vscode-text-bright': '#eceff4',
+        '--vscode-text-muted': '#4c566a',
+        '--vscode-hover': '#3b4252',
+        '--vscode-selected': '#434c5e',
+        '--vscode-accent': '#88c0d0',
+        '--vscode-accent-hover': '#81a1c1',
+        '--vscode-green': '#a3be8c',
+        '--vscode-blue': '#81a1c1',
+        '--vscode-purple': '#b48ead'
+      }
+    },
+    'monokai': {
+      name: 'Monokai Pro',
+      author: 'monokai',
+      swatches: ['#272822', '#1e1f1c', '#a6e22e', '#f92672'],
+      vars: {
+        '--vscode-bg': '#272822',
+        '--vscode-activity-bg': '#1e1f1c',
+        '--vscode-sidebar-bg': '#1e1f1c',
+        '--vscode-dock-bg': '#1e1f1c',
+        '--vscode-header-bg': '#171814',
+        '--vscode-statusbar-bg': '#171814',
+        '--vscode-statusbar-text': '#f8f8f2',
+        '--vscode-border': '#3e3d32',
+        '--vscode-active-border': '#a6e22e',
+        '--vscode-tab-bg': '#1e1f1c',
+        '--vscode-tab-active-bg': '#272822',
+        '--vscode-text-main': '#f8f8f2',
+        '--vscode-text-bright': '#ffffff',
+        '--vscode-text-muted': '#75715e',
+        '--vscode-hover': '#3e3d32',
+        '--vscode-selected': '#49483e',
+        '--vscode-accent': '#a6e22e',
+        '--vscode-accent-hover': '#fd971f',
+        '--vscode-green': '#a6e22e',
+        '--vscode-blue': '#66d9ef',
+        '--vscode-purple': '#ae81ff'
+      }
+    },
+    'github-dark': {
+      name: 'GitHub Dark Default',
+      author: 'GitHub',
+      swatches: ['#0d1117', '#010409', '#58a6ff', '#3fb950'],
+      vars: {
+        '--vscode-bg': '#0d1117',
+        '--vscode-activity-bg': '#010409',
+        '--vscode-sidebar-bg': '#010409',
+        '--vscode-dock-bg': '#010409',
+        '--vscode-header-bg': '#010409',
+        '--vscode-statusbar-bg': '#010409',
+        '--vscode-statusbar-text': '#c9d1d9',
+        '--vscode-border': '#30363d',
+        '--vscode-active-border': '#58a6ff',
+        '--vscode-tab-bg': '#010409',
+        '--vscode-tab-active-bg': '#0d1117',
+        '--vscode-text-main': '#c9d1d9',
+        '--vscode-text-bright': '#f0f6fc',
+        '--vscode-text-muted': '#8b949e',
+        '--vscode-hover': '#161b22',
+        '--vscode-selected': '#1f242c',
+        '--vscode-accent': '#58a6ff',
+        '--vscode-accent-hover': '#1f6feb',
+        '--vscode-green': '#3fb950',
+        '--vscode-blue': '#58a6ff',
+        '--vscode-purple': '#bc8cff'
+      }
+    },
+    'cyberpunk': {
+      name: 'Cyberpunk Neon',
+      author: 'endormi',
+      swatches: ['#120e29', '#0c091e', '#ff007f', '#00ffff'],
+      vars: {
+        '--vscode-bg': '#120e29',
+        '--vscode-activity-bg': '#0c091e',
+        '--vscode-sidebar-bg': '#0c091e',
+        '--vscode-dock-bg': '#0c091e',
+        '--vscode-header-bg': '#080614',
+        '--vscode-statusbar-bg': '#ff007f',
+        '--vscode-statusbar-text': '#ffffff',
+        '--vscode-border': '#2d1b4e',
+        '--vscode-active-border': '#ff007f',
+        '--vscode-tab-bg': '#0c091e',
+        '--vscode-tab-active-bg': '#1c1543',
+        '--vscode-text-main': '#00ffff',
+        '--vscode-text-bright': '#ffffff',
+        '--vscode-text-muted': '#725e9c',
+        '--vscode-hover': '#261b4d',
+        '--vscode-selected': '#37206b',
+        '--vscode-accent': '#ff007f',
+        '--vscode-accent-hover': '#00ffff',
+        '--vscode-green': '#00ff9f',
+        '--vscode-blue': '#00b8ff',
+        '--vscode-purple': '#ff007f'
+      }
+    }
+  };
+
+  let currentThemeKey = localStorage.getItem('enlangg_studio_theme') || 'vs-dark';
+
+  function applyTheme(themeKey) {
+    const theme = STUDIO_THEMES[themeKey];
+    if (!theme) return;
+    const root = document.documentElement;
+    for (const [prop, val] of Object.entries(theme.vars)) {
+      root.style.setProperty(prop, val);
+    }
+    localStorage.setItem('enlangg_studio_theme', themeKey);
+    currentThemeKey = themeKey;
+    appendTerminal(`\n<span class="term-green">[Theme] Applied color theme '${theme.name}' (${theme.author})</span>`);
+  }
+
+  function openThemePicker() {
+    const modal = document.getElementById('themePickerModal');
+    const input = document.getElementById('themeSearchInput');
+    if (!modal) return;
+    modal.classList.add('open');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+    renderThemePickerList('');
+  }
+
+  function closeThemePicker() {
+    const modal = document.getElementById('themePickerModal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  function renderThemePickerList(query = '') {
+    const list = document.getElementById('themeOptionsList');
+    if (!list) return;
+    list.innerHTML = '';
+    const lq = (query || '').toLowerCase().trim();
+
+    Object.entries(STUDIO_THEMES).forEach(([key, th]) => {
+      if (lq && !th.name.toLowerCase().includes(lq) && !key.toLowerCase().includes(lq) && !th.author.toLowerCase().includes(lq)) {
+        return;
+      }
+      const row = document.createElement('div');
+      row.className = `theme-option-row ${key === currentThemeKey ? 'active' : ''}`;
+      row.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <span style="font-weight:600;font-size:12px;color:var(--vscode-text-bright);">${th.name}</span>
+          <span style="font-size:10.5px;color:var(--vscode-text-muted);">${th.author}</span>
+        </div>
+        <div class="theme-swatches">
+          ${th.swatches.map(c => `<span class="theme-swatch" style="background:${c};"></span>`).join('')}
+        </div>
+      `;
+      row.addEventListener('click', () => {
+        applyTheme(key);
+        closeThemePicker();
+        showStudioToast(`Color theme switched to '${th.name}'`, null);
+      });
+      list.appendChild(row);
+    });
+  }
+
+  // 2. Interactive Studio Floating Toast
+  let toastTimer = null;
+  function showStudioToast(msg, actionText, onAction) {
+    const toast = document.getElementById('studioToast');
+    if (!toast) return;
+    clearTimeout(toastTimer);
+    toast.innerHTML = `
+      <span class="toast-msg">${escapeHtml(msg)}</span>
+      ${actionText ? `<button class="toast-action-btn" id="toastActionBtn">${escapeHtml(actionText)}</button>` : ''}
+      <button class="toast-close-btn" id="toastCloseBtn">✕</button>
+    `;
+    toast.classList.add('visible');
+
+    const actionBtn = document.getElementById('toastActionBtn');
+    if (actionBtn && onAction) {
+      actionBtn.addEventListener('click', () => {
+        toast.classList.remove('visible');
+        onAction();
+      });
+    }
+    const closeBtn = document.getElementById('toastCloseBtn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        toast.classList.remove('visible');
+      });
+    }
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('visible');
+    }, 6000);
+  }
+
+  // 3. Prettier & Code Formatter Engine
+  function formatDocument() {
+    if (!activeFile || !codeEditor || codeEditor.readOnly) return;
+    const raw = codeEditor.value;
+    if (!raw.trim()) return;
+
+    const t0 = performance.now();
+    let formatted = raw;
+
+    if (activeFile.endsWith('.json')) {
+      try {
+        const parsed = JSON.parse(raw);
+        formatted = JSON.stringify(parsed, null, 2);
+      } catch (_) {
+        appendTerminal(`<span class="term-err">[Prettier] JSON Parse Error: Cannot format invalid JSON.</span>`);
+        showStudioToast('Formatting failed: Invalid JSON syntax', null);
+        return;
+      }
+    } else {
+      // Normalizing indentation & formatting for Enlang and scripts
+      const lines = raw.split('\n');
+      let indentLevel = 0;
+      const formattedLines = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trimEnd();
+        const trimmed = line.trim();
+
+        if (!trimmed) {
+          if (formattedLines.length > 0 && formattedLines[formattedLines.length - 1] === '') {
+            continue;
+          }
+          formattedLines.push('');
+          continue;
+        }
+
+        if (/^(otherwise|else|elif|\}|\]|\))/.test(trimmed)) {
+          indentLevel = Math.max(0, indentLevel - 1);
+        }
+
+        const indentStr = '    '.repeat(indentLevel);
+        formattedLines.push(indentStr + trimmed);
+
+        if (trimmed.endsWith(':') || trimmed.endsWith('{') || trimmed.endsWith('[')) {
+          indentLevel++;
+        }
+      }
+      formatted = formattedLines.join('\n');
+    }
+
+    const dt = Math.max(1, Math.round(performance.now() - t0));
+    codeEditor.value = formatted;
+    vfs[activeFile] = formatted;
+    dirtyFiles.add(activeFile);
+    renderTabs();
+    saveVfs();
+    updateLineNumbers();
+    runDiagnostics();
+
+    const msg = `[Prettier] Formatted ${activeFile} (${formatted.split('\n').length} lines) in ${dt}ms`;
+    appendTerminal(`\n<span class="term-green">${msg}</span>`);
+    showStudioToast(msg, null);
+  }
+
+  // 4. Real-time Syntax Diagnostics & Problems Engine
+  let diagnosticsDebounceTimer = null;
+  let currentDiagnostics = [];
+
+  function runDiagnostics() {
+    const problemsPane = document.getElementById('dockProblems');
+    const statusProblems = document.getElementById('statusProblems');
+    const problemsTab = document.querySelector('.dock-tab[data-pane="dockProblems"]');
+
+    if (!activeFile || !vfs[activeFile]) {
+      if (problemsPane) {
+        problemsPane.innerHTML = `<div style="padding:16px;text-align:center;color:var(--vscode-text-muted);">No problems detected in open files.</div>`;
+      }
+      if (statusProblems) statusProblems.innerHTML = `<span>0 ⨂</span> <span>0 ⚠</span>`;
+      if (problemsTab) problemsTab.innerHTML = `<span>Problems (0)</span>`;
+      currentDiagnostics = [];
+      return;
+    }
+
+    const code = vfs[activeFile];
+    const lines = code.split('\n');
+    const diagnostics = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const lineNum = i + 1;
+      const trimmed = line.trim();
+
+      if (trimmed.startsWith('#') || trimmed.startsWith('--') || trimmed.startsWith('//')) {
+        continue;
+      }
+
+      // 1. Unmatched string quotes
+      let quoteCount = 0;
+      for (let c = 0; c < line.length; c++) {
+        if (line[c] === '"' && (c === 0 || line[c - 1] !== '\\')) quoteCount++;
+      }
+      if (quoteCount % 2 !== 0) {
+        diagnostics.push({
+          file: activeFile,
+          line: lineNum,
+          col: line.length,
+          severity: 'error',
+          source: 'Enlangg Linter',
+          message: 'Unterminated string literal: missing closing double quote (")'
+        });
+      }
+
+      // 2. Control block missing colon
+      if (/^(when|otherwise\s+when|repeat\s+(while|until)|for\s+|function\s+|component\s+|palette\s+|tokens\s+|screen\s+)/.test(trimmed)) {
+        if (!trimmed.endsWith(':') && !trimmed.endsWith('{')) {
+          diagnostics.push({
+            file: activeFile,
+            line: lineNum,
+            col: line.length,
+            severity: 'error',
+            source: 'Enlangg AST',
+            message: "Syntax Error: Statement block must end with colon ':'"
+          });
+        }
+      }
+
+      // 3. Frozen constant mutation protection
+      if (/freeze\s+([A-Za-z0-9_]+)\s+as/i.test(line)) {
+        const constMatch = line.match(/freeze\s+([A-Za-z0-9_]+)\s+as/i);
+        if (constMatch) {
+          const constName = constMatch[1];
+          for (let j = i + 1; j < lines.length; j++) {
+            const checkLine = lines[j].trim();
+            if (checkLine.startsWith(`${constName} =`) || checkLine.startsWith(`${constName} increases`) || checkLine.startsWith(`${constName} decreases`)) {
+              diagnostics.push({
+                file: activeFile,
+                line: j + 1,
+                col: 1,
+                severity: 'error',
+                source: 'Enlangg Sovereign Safety',
+                message: `Cannot reassign or mutate frozen immutable binding '${constName}'`
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // 4. JSON Syntax Check
+    if (activeFile.endsWith('.json')) {
+      try {
+        JSON.parse(code);
+      } catch (err) {
+        diagnostics.push({
+          file: activeFile,
+          line: 1,
+          col: 1,
+          severity: 'error',
+          source: 'JSON Parser',
+          message: err.message
+        });
+      }
+    }
+
+    currentDiagnostics = diagnostics;
+    const errors = diagnostics.filter(d => d.severity === 'error').length;
+    const warnings = diagnostics.filter(d => d.severity === 'warning').length;
+
+    if (statusProblems) {
+      statusProblems.innerHTML = `
+        <span style="${errors > 0 ? 'color:var(--vscode-red);font-weight:700;' : ''}">${errors} ⨂</span>
+        <span style="${warnings > 0 ? 'color:var(--vscode-yellow);font-weight:700;' : ''}">${warnings} ⚠</span>
+      `;
+    }
+
+    if (problemsTab) {
+      problemsTab.innerHTML = `<span>Problems (${diagnostics.length})</span>`;
+    }
+
+    if (problemsPane) {
+      if (diagnostics.length === 0) {
+        problemsPane.innerHTML = `
+          <div style="padding:14px;color:var(--vscode-text-muted);font-size:12px;">
+            ✓ No problems detected in workspace file <b>${activeFile}</b>. Clean grammar invariants satisfied.
+          </div>
+        `;
+      } else {
+        problemsPane.innerHTML = '';
+        diagnostics.forEach(diag => {
+          const row = document.createElement('div');
+          row.className = 'problem-item-row';
+          row.innerHTML = `
+            <span class="problem-severity ${diag.severity}">${diag.severity === 'error' ? '⨂' : '⚠'}</span>
+            <span class="problem-msg">${escapeHtml(diag.message)}</span>
+            <span class="problem-source">[${escapeHtml(diag.source)}]</span>
+            <span class="problem-pos">${activeFile} [Ln ${diag.line}, Col ${diag.col}]</span>
+          `;
+          row.addEventListener('click', () => {
+            jumpToLine(diag.line, diag.col);
+          });
+          problemsPane.appendChild(row);
+        });
+      }
+    }
+  }
+
+  function jumpToLine(targetLine, col = 1) {
+    if (!codeEditor) return;
+    const lines = codeEditor.value.split('\n');
+    let charIndex = 0;
+    for (let i = 0; i < Math.min(targetLine - 1, lines.length); i++) {
+      charIndex += lines[i].length + 1;
+    }
+    charIndex += Math.min(col - 1, (lines[targetLine - 1] || '').length);
+
+    codeEditor.focus();
+    codeEditor.setSelectionRange(charIndex, charIndex);
+
+    const lineHeight = 19;
+    codeEditor.scrollTop = Math.max(0, (targetLine - 5) * lineHeight);
+    updateCursorPos();
+  }
+
+  // 5. Command Palette System (Ctrl+Shift+P / F1)
+  const COMMAND_PALETTE_ITEMS = [
+    {
+      category: 'Preferences',
+      label: 'Preferences: Color Theme',
+      shortcut: 'Ctrl+K Ctrl+T',
+      action: () => openThemePicker()
+    },
+    {
+      category: 'Edit',
+      label: 'Format Document (Prettier)',
+      shortcut: 'Shift+Alt+F',
+      action: () => formatDocument()
+    },
+    {
+      category: 'Terminal',
+      label: 'Terminal: Create New Terminal',
+      shortcut: 'Ctrl+Shift+`',
+      action: () => createTerminal()
+    },
+    {
+      category: 'Terminal',
+      label: 'Terminal: Clear Active Terminal',
+      shortcut: '',
+      action: () => handleMenuAction('clearTerminal')
+    },
+    {
+      category: 'View',
+      label: 'View: Toggle Terminal Dock',
+      shortcut: 'Ctrl+`',
+      action: () => { if (bottomDock) bottomDock.classList.toggle('collapsed'); }
+    },
+    {
+      category: 'View',
+      label: 'View: Toggle Primary Sidebar',
+      shortcut: 'Ctrl+B',
+      action: () => { if (mainSidebar) mainSidebar.classList.toggle('collapsed'); }
+    },
+    {
+      category: 'View',
+      label: 'View: Show Problems Dock',
+      shortcut: '',
+      action: () => {
+        if (bottomDock) bottomDock.classList.remove('collapsed');
+        switchDockTab('dockProblems');
+      }
+    },
+    {
+      category: 'View',
+      label: 'View: Show Explorer',
+      shortcut: 'Ctrl+Shift+E',
+      action: () => handleMenuAction('viewExplorer')
+    },
+    {
+      category: 'View',
+      label: 'View: Show Extensions Marketplace (Open VSX)',
+      shortcut: 'Ctrl+Shift+X',
+      action: () => handleMenuAction('viewExtensions')
+    },
+    {
+      category: 'View',
+      label: 'View: Show EnlangDB Explorer',
+      shortcut: 'Ctrl+Shift+D',
+      action: () => handleMenuAction('viewDatabase')
+    },
+    {
+      category: 'View',
+      label: 'View: Toggle Enlangg Copilot (AI)',
+      shortcut: 'Ctrl+Shift+A',
+      action: () => { if (copilotPanel) copilotPanel.classList.toggle('open'); }
+    },
+    {
+      category: 'File',
+      label: 'File: New File...',
+      shortcut: 'Ctrl+N',
+      action: () => handleMenuAction('newFile')
+    },
+    {
+      category: 'File',
+      label: 'File: Save Active File',
+      shortcut: 'Ctrl+S',
+      action: () => saveActiveFile()
+    },
+    {
+      category: 'File',
+      label: 'File: Save All Files',
+      shortcut: 'Ctrl+Shift+S',
+      action: () => saveAllFiles()
+    },
+    {
+      category: 'Workspace',
+      label: 'Workspace: Reset to Sovereign Banking Default',
+      shortcut: '',
+      action: () => handleMenuAction('resetWorkspace')
+    },
+    {
+      category: 'Workspace',
+      label: 'Workspace: Export Project as JSON',
+      shortcut: '',
+      action: () => handleMenuAction('exportProject')
+    },
+    {
+      category: 'Help',
+      label: 'Help: Keyboard Shortcuts Reference',
+      shortcut: 'F1',
+      action: () => {
+        const sm = document.getElementById('shortcutsModal');
+        if (sm) sm.classList.add('open');
+      }
+    },
+    {
+      category: 'Help',
+      label: 'Help: About Sovereign Studio',
+      shortcut: '',
+      action: () => {
+        const am = document.getElementById('aboutModal');
+        if (am) am.classList.add('open');
+      }
+    }
+  ];
+
+  let selectedPaletteIndex = 0;
+  let activePaletteMatches = [];
+
+  function openCommandPalette() {
+    const modal = document.getElementById('commandPaletteModal');
+    const input = document.getElementById('commandPaletteInput');
+    if (!modal) return;
+    modal.classList.add('open');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+    renderCommandPaletteList('');
+  }
+
+  function closeCommandPalette() {
+    const modal = document.getElementById('commandPaletteModal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  function renderCommandPaletteList(query = '') {
+    const list = document.getElementById('commandPaletteList');
+    if (!list) return;
+    list.innerHTML = '';
+    const lq = (query || '').toLowerCase().trim();
+
+    activePaletteMatches = COMMAND_PALETTE_ITEMS.filter(cmd => {
+      if (!lq) return true;
+      return cmd.label.toLowerCase().includes(lq) || cmd.category.toLowerCase().includes(lq);
+    });
+
+    selectedPaletteIndex = 0;
+
+    if (activePaletteMatches.length === 0) {
+      list.innerHTML = `<div style="padding:16px;text-align:center;color:var(--vscode-text-muted);font-size:12px;">No matching commands found.</div>`;
+      return;
+    }
+
+    activePaletteMatches.forEach((cmd, idx) => {
+      const item = document.createElement('div');
+      item.className = `command-palette-item ${idx === selectedPaletteIndex ? 'selected' : ''}`;
+      item.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="cmd-category-tag">${escapeHtml(cmd.category)}</span>
+          <span style="font-weight:600;color:var(--vscode-text-bright);">${escapeHtml(cmd.label)}</span>
+        </div>
+        ${cmd.shortcut ? `<span class="cmd-shortcut-tag">${escapeHtml(cmd.shortcut)}</span>` : ''}
+      `;
+      item.addEventListener('click', () => {
+        closeCommandPalette();
+        cmd.action();
+      });
+      list.appendChild(item);
+    });
+  }
+
+  // 6. Extension Activation Engine
+  function activateExtension(ext, isInstall) {
+    const name = ((ext.name || '') + ' ' + (ext.displayName || '') + ' ' + (ext.description || '')).toLowerCase();
+
+    if (!isInstall) {
+      appendTerminal(`\n<span class="term-yellow">[Extensions] Deactivated hooks for ${ext.displayName || ext.name}.</span>`);
+      return;
+    }
+
+    appendTerminal(`\n<span class="term-green">[Extensions] Activating ${ext.displayName || ext.name}...</span>`);
+
+    // Theme extension detection
+    if (name.includes('theme') || name.includes('dracula') || name.includes('one dark') || name.includes('tokyo') || name.includes('nord') || name.includes('monokai') || name.includes('cyberpunk') || name.includes('github')) {
+      let themeKey = 'dracula';
+      if (name.includes('one dark')) themeKey = 'one-dark-pro';
+      else if (name.includes('tokyo')) themeKey = 'tokyo-night';
+      else if (name.includes('nord')) themeKey = 'nord';
+      else if (name.includes('monokai')) themeKey = 'monokai';
+      else if (name.includes('cyberpunk')) themeKey = 'cyberpunk';
+      else if (name.includes('github')) themeKey = 'github-dark';
+      else if (name.includes('dracula')) themeKey = 'dracula';
+
+      const th = STUDIO_THEMES[themeKey] || STUDIO_THEMES['dracula'];
+      applyTheme(themeKey);
+      showStudioToast(`Theme '${th.name}' installed and activated!`, 'Switch Themes', () => openThemePicker());
+      return;
+    }
+
+    // Formatter extension detection (Prettier / Beautify)
+    if (name.includes('prettier') || name.includes('formatter') || name.includes('beautify')) {
+      showStudioToast('Prettier Formatter activated! Press Shift+Alt+F to format document.', 'Format Document', () => formatDocument());
+      return;
+    }
+
+    // Material Icon Theme detection
+    if (name.includes('material') || name.includes('icon')) {
+      localStorage.setItem('enlangg_icons_active', 'true');
+      renderFileTree();
+      renderTabs();
+      showStudioToast('Material Icon Theme activated! File tree icons updated.', null);
+      return;
+    }
+
+    // Linter / Language Tooling (Python, Rust, ESLint, Java, Go)
+    if (name.includes('python') || name.includes('rust') || name.includes('eslint') || name.includes('java') || name.includes('go') || name.includes('linter')) {
+      runDiagnostics();
+      showStudioToast(`Language extension '${ext.displayName || ext.name}' active with live diagnostics.`, 'View Problems', () => {
+        if (bottomDock) bottomDock.classList.remove('collapsed');
+        switchDockTab('dockProblems');
+      });
+      return;
+    }
+
+    // Default extension
+    showStudioToast(`Extension '${ext.displayName || ext.name}' installed and activated successfully.`, null);
   }
 
   // Dock Tabs Switching
@@ -1863,6 +2682,18 @@ Provide code in fenced code blocks.`;
         break;
       }
 
+      case 'formatDocument':
+        formatDocument();
+        break;
+
+      case 'openCommandPalette':
+        openCommandPalette();
+        break;
+
+      case 'changeColorTheme':
+        openThemePicker();
+        break;
+
       default:
         console.warn('Unknown menu action:', action);
         break;
@@ -1951,6 +2782,8 @@ Provide code in fenced code blocks.`;
           saveVfs();
         }
         updateLineNumbers();
+        clearTimeout(diagnosticsDebounceTimer);
+        diagnosticsDebounceTimer = setTimeout(runDiagnostics, 350);
       });
 
       codeEditor.addEventListener('keydown', (e) => {
@@ -1987,11 +2820,25 @@ Provide code in fenced code blocks.`;
       codeEditor.addEventListener('keyup', updateCursorPos);
     }
 
-    // 3. Top Titlebar Buttons
+    // 3. Top Titlebar & Editor Action Buttons
     const topRunBtn = document.getElementById('topRunBtn');
     if (topRunBtn) topRunBtn.addEventListener('click', executeActiveFile);
     const editorRunBtn = document.getElementById('editorRunBtn');
     if (editorRunBtn) editorRunBtn.addEventListener('click', executeActiveFile);
+
+    const formatDocBtn = document.getElementById('formatDocBtn');
+    if (formatDocBtn) formatDocBtn.addEventListener('click', formatDocument);
+
+    // Status bar Problems Click Handler
+    const statusProblems = document.getElementById('statusProblems');
+    if (statusProblems) {
+      statusProblems.addEventListener('click', () => {
+        if (bottomDock && bottomDock.classList.contains('collapsed')) {
+          bottomDock.classList.remove('collapsed');
+        }
+        switchDockTab('dockProblems');
+      });
+    }
 
     // 4. Toggle Preview
     const togglePreviewBtn = document.getElementById('togglePreviewBtn');
@@ -2386,17 +3233,82 @@ Provide code in fenced code blocks.`;
       });
     }
 
+    // Command Palette Modal & Input
+    const commandPaletteModal = document.getElementById('commandPaletteModal');
+    const commandPaletteInput = document.getElementById('commandPaletteInput');
+    if (commandPaletteInput) {
+      commandPaletteInput.addEventListener('input', () => {
+        renderCommandPaletteList(commandPaletteInput.value);
+      });
+      commandPaletteInput.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (activePaletteMatches.length > 0) {
+            selectedPaletteIndex = (selectedPaletteIndex + 1) % activePaletteMatches.length;
+            const items = document.querySelectorAll('.command-palette-item');
+            items.forEach((it, idx) => it.classList.toggle('selected', idx === selectedPaletteIndex));
+            if (items[selectedPaletteIndex]) items[selectedPaletteIndex].scrollIntoView({ block: 'nearest' });
+          }
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (activePaletteMatches.length > 0) {
+            selectedPaletteIndex = (selectedPaletteIndex - 1 + activePaletteMatches.length) % activePaletteMatches.length;
+            const items = document.querySelectorAll('.command-palette-item');
+            items.forEach((it, idx) => it.classList.toggle('selected', idx === selectedPaletteIndex));
+            if (items[selectedPaletteIndex]) items[selectedPaletteIndex].scrollIntoView({ block: 'nearest' });
+          }
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (activePaletteMatches[selectedPaletteIndex]) {
+            closeCommandPalette();
+            activePaletteMatches[selectedPaletteIndex].action();
+          }
+        }
+      });
+    }
+    if (commandPaletteModal) {
+      commandPaletteModal.addEventListener('click', (e) => {
+        if (e.target === commandPaletteModal) closeCommandPalette();
+      });
+    }
+
+    // Theme Picker Modal & Input
+    const themePickerModal = document.getElementById('themePickerModal');
+    const closeThemePickerModal = document.getElementById('closeThemePickerModal');
+    const themeSearchInput = document.getElementById('themeSearchInput');
+    if (closeThemePickerModal) closeThemePickerModal.addEventListener('click', closeThemePicker);
+    if (themeSearchInput) {
+      themeSearchInput.addEventListener('input', () => {
+        renderThemePickerList(themeSearchInput.value);
+      });
+    }
+    if (themePickerModal) {
+      themePickerModal.addEventListener('click', (e) => {
+        if (e.target === themePickerModal) closeThemePicker();
+      });
+    }
+
     // 14. Global Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
-      // F1 for Shortcuts
+      // F1 for Command Palette or Shortcuts
       if (e.key === 'F1') {
         e.preventDefault();
-        if (shortcutsModal) shortcutsModal.classList.add('open');
+        openCommandPalette();
       }
       // F5 for DB console execute
       if (e.key === 'F5') {
         e.preventDefault();
         handleMenuAction('openDbConsole');
+      }
+      // Ctrl + Shift + P (Command Palette)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'P' || e.key === 'p')) {
+        e.preventDefault();
+        openCommandPalette();
+      }
+      // Shift + Alt + F (Format Document)
+      if (e.shiftKey && e.altKey && (e.key === 'F' || e.key === 'f')) {
+        e.preventDefault();
+        formatDocument();
       }
       // Ctrl + P
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'p') {
@@ -2472,6 +3384,8 @@ Provide code in fenced code blocks.`;
         closeAbout();
         closePwa();
         closeExtModal();
+        closeThemePicker();
+        closeCommandPalette();
       }
     });
 
@@ -2506,6 +3420,10 @@ Provide code in fenced code blocks.`;
 
   // Initialization
   function init() {
+    // Apply active theme immediately
+    const savedTheme = localStorage.getItem('enlangg_studio_theme') || 'vs-dark';
+    applyTheme(savedTheme);
+
     renderFileTree();
     renderTabs();
     loadActiveFileContent();
@@ -2514,6 +3432,7 @@ Provide code in fenced code blocks.`;
     renderTerminalTabs();
     updateExtensionBadges();
     searchOpenVsx('');
+    runDiagnostics();
     setupEventListeners();
 
     // Check status AI

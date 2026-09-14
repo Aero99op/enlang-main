@@ -1550,6 +1550,150 @@ html, body {
   color: #fff;
 }
 
+/* ==============================================================================
+   EXTENSION RUNTIME UI: COMMAND PALETTE, THEME SELECTOR, TOASTS, PROBLEMS
+   ============================================================================== */
+
+/* Floating Studio Toast Notification */
+.studio-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 24px;
+  z-index: 9999;
+  background: #252526;
+  border: 1px solid var(--vscode-accent);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--vscode-text-bright);
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.studio-toast.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.toast-action-btn {
+  background: var(--vscode-accent);
+  color: #fff;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.toast-action-btn:hover {
+  background: var(--vscode-accent-hover);
+}
+
+.toast-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--vscode-text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+.toast-close-btn:hover {
+  color: #fff;
+}
+
+/* Command Palette Items */
+.command-palette-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--vscode-text-main);
+  font-size: 12px;
+  transition: background 0.1s;
+}
+
+.command-palette-item:hover,
+.command-palette-item.selected {
+  background: var(--vscode-selected);
+  color: #fff;
+}
+
+.cmd-category-tag {
+  color: var(--vscode-text-muted);
+  font-size: 11px;
+  margin-right: 6px;
+}
+
+.cmd-shortcut-tag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--vscode-text-muted);
+}
+
+/* Theme Option Rows */
+.theme-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.15s;
+}
+
+.theme-option-row:hover,
+.theme-option-row.active {
+  background: var(--vscode-hover);
+  border-color: var(--vscode-accent);
+}
+
+.theme-swatches {
+  display: flex;
+  gap: 4px;
+}
+
+.theme-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Problems Rows */
+.problem-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 11.5px;
+  transition: background 0.1s;
+}
+
+.problem-item-row:hover {
+  background: var(--vscode-hover);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .sidebar {
