@@ -303,9 +303,15 @@
           </div>
           <!-- Contributed Extension Activity Icons (Docker, SonarQube, GitLens, Testing) -->
           <div id="activityBarExtensionsGroup" style="display:contents;"></div>
-          <div class="activity-icon" id="actCopilot" title="AI Copilot (BYOK)">
+          <div class="activity-icon" id="actKiloCode" title="Kilo Code: AI Coding Assistant">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#eab308"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+            <span class="activity-badge" style="background:#eab308;color:#000;font-weight:700;">AI</span>
+          </div>
+          <div class="activity-icon" id="actGitHub" title="GitHub: Pull Requests &amp; Issues">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          </div>
+          <div class="activity-icon" id="actCopilot" title="AI Copilot Drawer (BYOK)">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12"/><path d="M12 8v4"/><path d="M12 16h.01"/><path d="M16 12h-4"/></svg>
-            <span class="activity-badge">AI</span>
           </div>
         </div>
 
@@ -582,6 +588,120 @@
             </div>
             <div id="testingSuitesList" style="display:flex;flex-direction:column;gap:6px;font-size:11.5px;">
               <!-- Populated dynamically with individual Run buttons -->
+            </div>
+          </div>
+        </div>
+
+        <!-- View: Kilo Code (AI Coding Assistant - Exact 1:1 Match to User Video) -->
+        <div class="sidebar-pane" id="paneKiloCode" style="display:none;">
+          <div class="sidebar-header">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-weight:600;font-size:12px;color:var(--vscode-text-bright);">Kilo Code</span>
+            </div>
+            <div class="sidebar-header-actions">
+              <button class="sidebar-action-btn" id="kiloNewChatBtn" title="New Chat Session">+</button>
+              <button class="sidebar-action-btn" id="kiloClearBtn" title="Clear Chat History">✕</button>
+            </div>
+          </div>
+          <div class="sidebar-content" style="padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;flex:1;">
+            
+            <!-- HI LO Card -->
+            <div style="background:rgba(234,179,8,0.06);border:1px solid rgba(234,179,8,0.25);border-radius:8px;padding:14px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;">
+              <div style="background:#eab308;color:#0f172a;font-weight:900;font-size:15px;line-height:1.1;letter-spacing:1px;width:48px;height:48px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(234,179,8,0.35);">
+                <span>HI</span>
+                <span>LO</span>
+              </div>
+              <div style="font-size:12px;line-height:1.45;color:var(--vscode-text-bright);">
+                <strong>Kilo Code</strong> is an AI coding assistant. Ask it to build features, fix bugs, or explain your codebase.
+              </div>
+            </div>
+
+            <!-- Recent Sessions Section -->
+            <div>
+              <div class="tree-section-title">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
+                <span>RECENT TASKS</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;margin-top:6px;">
+                <div class="kilo-task-item" style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:4px;cursor:pointer;font-size:11.5px;color:var(--vscode-text-bright);border:1px solid var(--vscode-border);">
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Enlang code engine handover</span>
+                  <span style="font-size:10px;color:var(--vscode-text-muted);white-space:nowrap;">1mo ago</span>
+                </div>
+                <div class="kilo-task-item" style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:4px;cursor:pointer;font-size:11.5px;color:var(--vscode-text-bright);border:1px solid var(--vscode-border);">
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Codebase scan request</span>
+                  <span style="font-size:10px;color:var(--vscode-text-muted);white-space:nowrap;">1mo ago</span>
+                </div>
+                <div class="kilo-task-item" style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:4px;cursor:pointer;font-size:11.5px;color:var(--vscode-text-bright);border:1px solid var(--vscode-border);">
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Enlang core engine benchmark</span>
+                  <span style="font-size:10px;color:var(--vscode-text-muted);white-space:nowrap;">5mo ago</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Kilo Stream Output -->
+            <div id="kiloChatMessages" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;font-size:12px;line-height:1.45;color:var(--vscode-text-bright);min-height:80px;">
+              <!-- Dynamic chat turns appended here -->
+            </div>
+
+            <!-- Interactive Prompt Input -->
+            <div style="background:rgba(255,255,255,0.02);border:1px solid var(--vscode-border);border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:6px;margin-top:auto;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:10.5px;padding:2px 6px;border-radius:3px;background:rgba(234,179,8,0.15);color:#eab308;font-weight:600;">GLM 4.0 / Gemini</span>
+                <span style="font-size:10.5px;color:var(--vscode-text-muted);">New Task</span>
+              </div>
+              <textarea id="kiloPromptInput" placeholder="Type a message, @ to mention files, / for commands..." class="modal-input" style="font-size:11.5px;height:54px;resize:none;padding:6px;"></textarea>
+              <div style="display:flex;justify-content:flex-end;">
+                <button class="titlebar-btn primary" id="kiloSendBtn" style="padding:3px 12px;font-size:11px;">
+                  <span>Send</span>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- View: GitHub (Contributed by GitHub Pull Requests & Issues Extension) -->
+        <div class="sidebar-pane" id="paneGitHub" style="display:none;">
+          <div class="sidebar-header">
+            <span>GitHub</span>
+            <div class="sidebar-header-actions">
+              <button class="sidebar-action-btn" id="refreshGithubBtn" title="Sync GitHub">↻</button>
+            </div>
+          </div>
+          <div class="sidebar-content" style="padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <div class="tree-section-title">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
+                <span>PULL REQUESTS (2)</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;margin-top:6px;font-size:11.5px;">
+                <div style="padding:6px 8px;background:rgba(255,255,255,0.02);border:1px solid var(--vscode-border);border-radius:4px;">
+                  <div style="color:var(--vscode-text-bright);font-weight:600;">#12 feat: sovereign b-tree indexing</div>
+                  <div style="font-size:10px;color:#4ec9b0;margin-top:2px;">● Open · 3 commits · updated 2h ago</div>
+                </div>
+                <div style="padding:6px 8px;background:rgba(255,255,255,0.02);border:1px solid var(--vscode-border);border-radius:4px;">
+                  <div style="color:var(--vscode-text-bright);font-weight:600;">#11 fix: memory bounds on dynamic lists</div>
+                  <div style="font-size:10px;color:#a855f7;margin-top:2px;">✔ Merged into main · 1 day ago</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="tree-section-title">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
+                <span>ISSUES (2)</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;margin-top:6px;font-size:11.5px;">
+                <div style="padding:6px 8px;background:rgba(255,255,255,0.02);border:1px solid var(--vscode-border);border-radius:4px;">
+                  <div style="color:var(--vscode-text-bright);font-weight:600;">#45 syntax error on unterminated strings</div>
+                  <div style="font-size:10px;color:#f97316;margin-top:2px;">● Open · Priority High</div>
+                </div>
+                <div style="padding:6px 8px;background:rgba(255,255,255,0.02);border:1px solid var(--vscode-border);border-radius:4px;">
+                  <div style="color:var(--vscode-text-bright);font-weight:600;">#44 support for mobile wallet .enlngm</div>
+                  <div style="font-size:10px;color:#4ec9b0;margin-top:2px;">✔ Closed · Completed in v2.0</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

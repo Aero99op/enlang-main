@@ -2521,7 +2521,25 @@ screen WalletHome:
       return true;
     }
 
-    // 10. Copilot / AI
+    // 10. Kilo Code / AI Assistant (Exact 1:1 Match to User Video)
+    if (name.includes('kilo') || name.includes('hi lo')) {
+      toggleSidebarPane('paneKiloCode', 'actKiloCode');
+      const kInput = document.getElementById('kiloPromptInput');
+      if (kInput) kInput.focus();
+      appendTerminal('\n<span class="term-cyan">[Kilo Code] Opened AI Coding Assistant sidebar panel.</span>');
+      showStudioToast('Kilo Code AI Assistant opened.', null);
+      return true;
+    }
+
+    // 10b. GitHub
+    if (name.includes('github') && !name.includes('theme') && !name.includes('dark')) {
+      toggleSidebarPane('paneGitHub', 'actGitHub');
+      appendTerminal('\n<span class="term-cyan">[GitHub] Opened GitHub Pull Requests & Issues panel.</span>');
+      showStudioToast('GitHub panel opened.', null);
+      return true;
+    }
+
+    // 10c. Copilot / AI
     if (name.includes('copilot') || name.includes('ai') || name.includes('antigravity')) {
       if (copilotPanel) copilotPanel.classList.add('open');
       const cInput = document.getElementById('copilotInput');
@@ -2578,6 +2596,8 @@ screen WalletHome:
       { category: 'Open Extension', label: 'open github dark — Apply GitHub Dark Theme', searchTerms: 'open github dark theme', shortcut: 'Theme', action: () => openExtensionInExpectedWay('github dark') },
       { category: 'Open Extension', label: 'open material icons — Apply Material Icon Theme', searchTerms: 'open material icons explorer', shortcut: 'Icons', action: () => openExtensionInExpectedWay('material icons') },
       { category: 'Open Extension', label: 'open database — Open EnlangDB Studio Pane', searchTerms: 'open database enlangdb edb query', shortcut: 'Database', action: () => openExtensionInExpectedWay('database') },
+      { category: 'Open Extension', label: 'open kilo code — Open Kilo Code AI Coding Assistant', searchTerms: 'open kilo code ai hi lo assistant chat', shortcut: 'AI', action: () => openExtensionInExpectedWay('kilo code') },
+      { category: 'Open Extension', label: 'open github — Open GitHub Pull Requests & Issues', searchTerms: 'open github pull requests issues pr', shortcut: 'GitHub', action: () => openExtensionInExpectedWay('github') },
       { category: 'Open Extension', label: 'open copilot — Open Antigravity AI Copilot Drawer', searchTerms: 'open copilot ai assistant drawer', shortcut: 'Copilot', action: () => openExtensionInExpectedWay('copilot') }
     ];
 
@@ -4419,7 +4439,9 @@ Provide code in fenced code blocks.`;
       { id: 'actDocker', pane: 'paneDocker' },
       { id: 'actSonarQube', pane: 'paneSonarQube' },
       { id: 'actGitLens', pane: 'paneGitLens' },
-      { id: 'actTesting', pane: 'paneTesting' }
+      { id: 'actTesting', pane: 'paneTesting' },
+      { id: 'actKiloCode', pane: 'paneKiloCode' },
+      { id: 'actGitHub', pane: 'paneGitHub' }
     ];
 
     activities.forEach(item => {
@@ -4430,6 +4452,101 @@ Provide code in fenced code blocks.`;
         });
       }
     });
+
+    // 6a. Kilo Code AI Chat Engine
+    const kiloSendBtn = document.getElementById('kiloSendBtn');
+    const kiloPromptInput = document.getElementById('kiloPromptInput');
+    const kiloChatMessages = document.getElementById('kiloChatMessages');
+    const kiloNewChatBtn = document.getElementById('kiloNewChatBtn');
+    const kiloClearBtn = document.getElementById('kiloClearBtn');
+
+    function appendKiloMessage(role, text) {
+      if (!kiloChatMessages) return;
+      const bubble = document.createElement('div');
+      bubble.style.cssText = role === 'user'
+        ? 'padding:8px 10px;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:8px 8px 2px 8px;font-size:12px;line-height:1.45;color:var(--vscode-text-bright);align-self:flex-end;max-width:90%;'
+        : 'padding:8px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--vscode-border);border-radius:8px 8px 8px 2px;font-size:12px;line-height:1.45;color:var(--vscode-text-bright);max-width:90%;';
+      const label = document.createElement('div');
+      label.style.cssText = 'font-size:10px;font-weight:700;margin-bottom:3px;color:' + (role === 'user' ? '#eab308' : '#4ec9b0') + ';';
+      label.textContent = role === 'user' ? 'You' : 'Kilo Code';
+      bubble.appendChild(label);
+      const content = document.createElement('div');
+      content.textContent = text;
+      bubble.appendChild(content);
+      kiloChatMessages.appendChild(bubble);
+      kiloChatMessages.scrollTop = kiloChatMessages.scrollHeight;
+    }
+
+    function generateKiloResponse(prompt) {
+      const lp = prompt.toLowerCase();
+      if (lp.includes('sort') || lp.includes('bubble') || lp.includes('spatial')) {
+        return 'In Enlang, spatial sorting uses `for each pair in numbers: when pair.left > pair.right: swap pair` — no manual index arithmetic needed. The `repeat until sorted:` loop automatically terminates when the invariant holds.';
+      }
+      if (lp.includes('function') || lp.includes('recursive')) {
+        return 'Define functions with `function name with param1, param2:` and return values with `give`. Example:\n\nfunction fibonacci with n:\n    when n <= 1:\n        give n\n    give fibonacci(n - 1) + fibonacci(n - 2)';
+      }
+      if (lp.includes('database') || lp.includes('enlangdb') || lp.includes('query')) {
+        return 'EnlangDB uses natural language queries. Try:\n• `find all records from accounts;`\n• `insert into users values ("sovereign", 100);`\n• `update accounts set balance = 5000 where name = "admin";`';
+      }
+      if (lp.includes('map') || lp.includes('dictionary') || lp.includes('object')) {
+        return 'Enlang maps use JSON-like syntax:\n\n```\nuser = {"name": "Enlang", "tier": "Sovereign"}\nuser["score"] = 100\nuser.status = "online"\nkeys_list = keys(user)\n```';
+      }
+      if (lp.includes('list') || lp.includes('array') || lp.includes('collection')) {
+        return 'Lists in Enlang are dynamic collections:\n\n```\nitems = [10, 20, 30]\nadd 50 to items\nremove 20 from items\ntotal = count of items\n```';
+      }
+      if (lp.includes('loop') || lp.includes('repeat') || lp.includes('for')) {
+        return 'Enlang supports three loop styles:\n1. `for item in collection:` — iterate over elements\n2. `for i from 0 to 10 by 1:` — bounded counter\n3. `repeat while condition:` / `repeat until condition:` — conditional loops';
+      }
+      if (lp.includes('hello') || lp.includes('hi') || lp.includes('hey')) {
+        return 'Hello! I\'m Kilo Code, your AI coding assistant for Enlang. Ask me about sorting, functions, databases, loops, or any Enlang feature!';
+      }
+      if (lp.includes('fix') || lp.includes('error') || lp.includes('bug')) {
+        return 'I\'ll analyze your code for common issues:\n• Missing colons after `when`, `function`, `repeat`\n• Unterminated strings\n• Undefined variables\n• Type mismatches in arithmetic\n\nPaste your code and I\'ll identify the exact fix.';
+      }
+      return 'I can help you with Enlang programming! Try asking about:\n• Sorting algorithms (spatial sort)\n• Functions & recursion\n• EnlangDB queries\n• Lists, maps, and loops\n• Debugging & error fixing';
+    }
+
+    if (kiloSendBtn && kiloPromptInput) {
+      const sendKilo = () => {
+        const msg = kiloPromptInput.value.trim();
+        if (!msg) return;
+        appendKiloMessage('user', msg);
+        kiloPromptInput.value = '';
+        // Simulate AI thinking delay
+        setTimeout(() => {
+          const resp = generateKiloResponse(msg);
+          appendKiloMessage('assistant', resp);
+        }, 400 + Math.random() * 600);
+      };
+      kiloSendBtn.addEventListener('click', sendKilo);
+      kiloPromptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendKilo();
+        }
+      });
+    }
+    if (kiloNewChatBtn && kiloChatMessages) {
+      kiloNewChatBtn.addEventListener('click', () => {
+        kiloChatMessages.innerHTML = '';
+        appendKiloMessage('assistant', 'New session started. How can I help you with your Enlang project?');
+        if (kiloPromptInput) kiloPromptInput.focus();
+      });
+    }
+    if (kiloClearBtn && kiloChatMessages) {
+      kiloClearBtn.addEventListener('click', () => {
+        kiloChatMessages.innerHTML = '';
+      });
+    }
+
+    // 6b. GitHub Refresh Button
+    const refreshGithubBtn = document.getElementById('refreshGithubBtn');
+    if (refreshGithubBtn) {
+      refreshGithubBtn.addEventListener('click', () => {
+        appendTerminal('\n<span class="term-green">[GitHub] Synced pull requests & issues from remote repository.</span>');
+        showStudioToast('GitHub: Synced with remote.', null);
+      });
+    }
 
     // 6. Docker Extension Controls
     const refreshDockerBtn = document.getElementById('refreshDockerBtn');
