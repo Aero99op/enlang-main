@@ -2389,7 +2389,17 @@ screen WalletHome:
     list.innerHTML = '';
     const lq = (query || '').toLowerCase().trim();
 
-    activePaletteMatches = COMMAND_PALETTE_ITEMS.filter(cmd => {
+    const installed = getInstalledExtensions();
+    const dynamicInstalledCmds = installed.map(ext => ({
+      category: 'Extension',
+      label: `${ext.displayName || ext.name}: Inspect Extension Details`,
+      shortcut: 'Open VSX',
+      action: () => openExtensionModal(ext, true)
+    }));
+
+    const combinedCommands = [...COMMAND_PALETTE_ITEMS, ...dynamicInstalledCmds];
+
+    activePaletteMatches = combinedCommands.filter(cmd => {
       if (!lq) return true;
       return cmd.label.toLowerCase().includes(lq) || cmd.category.toLowerCase().includes(lq);
     });
