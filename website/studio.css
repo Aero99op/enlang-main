@@ -1721,3 +1721,119 @@ html, body {
     z-index: 95;
   }
 }
+
+/* ==============================================================================
+   EXTENSION CONTRIBUTIONS (Activity Bar, Sidebar Panes, Statusbar, Dock Panes)
+   ============================================================================== */
+.activity-icon .ext-subbadge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--vscode-accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 8px;
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* Docker Styles */
+.docker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--vscode-border);
+  border-radius: 4px;
+  font-size: 11.5px;
+}
+.docker-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.docker-status-dot.running {
+  background: #4ec9b0;
+  box-shadow: 0 0 6px #4ec9b0;
+}
+.docker-status-dot.stopped {
+  background: var(--vscode-text-muted);
+}
+.docker-tool-btn {
+  background: transparent;
+  border: none;
+  color: var(--vscode-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.docker-tool-btn:hover {
+  background: var(--vscode-hover);
+  color: var(--vscode-text-bright);
+}
+
+/* SonarQube Styles */
+.sonar-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--vscode-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sonar-num {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.sonar-label {
+  font-size: 10px;
+  color: var(--vscode-text-muted);
+  text-transform: uppercase;
+}
+
+/* Ports Pane Styles */
+.dock-port-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--vscode-border);
+  border-radius: 4px;
+}
+.dock-port-badge {
+  background: rgba(86, 156, 214, 0.2);
+  color: #569cd6;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+/* Statusbar Extension Item Highlights */
+.statusbar-item.live-server {
+  background: rgba(0, 122, 204, 0.25);
+  border-radius: 3px;
+  padding: 0 6px;
+  color: #ffffff;
+}
+.statusbar-item.live-server:hover {
+  background: rgba(0, 122, 204, 0.45);
+}
+.statusbar-item.prettier-active {
+  color: #4ec9b0;
+  font-weight: 600;
+}
+.statusbar-item.antigravity-active {
+  color: #c586c0;
+  font-weight: 600;
+}
+

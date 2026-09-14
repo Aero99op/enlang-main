@@ -301,6 +301,8 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5a2.5 2.5 0 0 0-5 0V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5a2.5 2.5 0 0 0 0-5z"/></svg>
             <span class="activity-badge" id="extensionsBadge" style="display:none;">5</span>
           </div>
+          <!-- Contributed Extension Activity Icons (Docker, SonarQube, GitLens, Testing) -->
+          <div id="activityBarExtensionsGroup" style="display:contents;"></div>
           <div class="activity-icon" id="actCopilot" title="AI Copilot (BYOK)">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12"/><path d="M12 8v4"/><path d="M12 16h.01"/><path d="M16 12h-4"/></svg>
             <span class="activity-badge">AI</span>
@@ -426,6 +428,170 @@
             </div>
           </div>
         </div>
+
+        <!-- View: Docker Container & Image Manager (Contributed by Docker Extension) -->
+        <div class="sidebar-pane" id="paneDocker" style="display:none;">
+          <div class="sidebar-header">
+            <span>Docker: Containers &amp; Images</span>
+            <div class="sidebar-header-actions">
+              <button class="sidebar-action-btn" id="refreshDockerBtn" title="Refresh Containers">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="sidebar-content" style="padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <div class="tree-section-title">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
+                <span>CONTAINERS (2 RUNNING)</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+                <div class="docker-item">
+                  <span class="docker-status-dot running"></span>
+                  <div style="flex:1;">
+                    <div style="font-weight:600;color:var(--vscode-text-bright);">sovereign-api:8080</div>
+                    <div style="font-size:10px;color:var(--vscode-text-muted);">Up 2h · 0.0.0.0:8080-&gt;8080/tcp</div>
+                  </div>
+                  <button class="docker-tool-btn" title="Restart Container">↻</button>
+                  <button class="docker-tool-btn" title="View Logs">📄</button>
+                </div>
+                <div class="docker-item">
+                  <span class="docker-status-dot running"></span>
+                  <div style="flex:1;">
+                    <div style="font-weight:600;color:var(--vscode-text-bright);">enlangdb-engine:5432</div>
+                    <div style="font-size:10px;color:var(--vscode-text-muted);">Up 2h · 0.0.0.0:5432-&gt;5432/tcp</div>
+                  </div>
+                  <button class="docker-tool-btn" title="Restart Container">↻</button>
+                  <button class="docker-tool-btn" title="View Logs">📄</button>
+                </div>
+                <div class="docker-item">
+                  <span class="docker-status-dot stopped"></span>
+                  <div style="flex:1;">
+                    <div style="font-weight:600;color:var(--vscode-text-muted);">redis-cache:6379</div>
+                    <div style="font-size:10px;color:var(--vscode-text-muted);">Exited (0) 4 hours ago</div>
+                  </div>
+                  <button class="docker-tool-btn" title="Start Container">▶</button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="tree-section-title">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
+                <span>IMAGES (3)</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11.5px;">
+                <div style="display:flex;justify-content:space-between;padding:4px 6px;background:rgba(255,255,255,0.03);border-radius:4px;">
+                  <span>enlangg/core:latest</span>
+                  <span style="color:var(--vscode-text-muted);">38.2 MB</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:4px 6px;background:rgba(255,255,255,0.03);border-radius:4px;">
+                  <span>alpine:3.19</span>
+                  <span style="color:var(--vscode-text-muted);">7.3 MB</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View: SonarQube Code Quality & Security (Contributed by SonarLint/SonarQube) -->
+        <div class="sidebar-pane" id="paneSonarQube" style="display:none;">
+          <div class="sidebar-header">
+            <span>SonarQube: Quality &amp; Security</span>
+          </div>
+          <div class="sidebar-content" style="padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
+            <div style="background:rgba(78,201,176,0.1);border:1px solid rgba(78,201,176,0.3);border-radius:6px;padding:10px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:24px;">🛡️</span>
+              <div>
+                <div style="font-weight:700;color:#4ec9b0;">Quality Gate: PASSED</div>
+                <div style="font-size:10.5px;color:var(--vscode-text-muted);">0 New Conditions Failed · Clean Architecture</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="sonar-card">
+                <div class="sonar-num" style="color:#4ec9b0;">0</div>
+                <div class="sonar-label">Bugs (A)</div>
+              </div>
+              <div class="sonar-card">
+                <div class="sonar-num" style="color:#4ec9b0;">0</div>
+                <div class="sonar-label">Vulnerabilities (A)</div>
+              </div>
+              <div class="sonar-card">
+                <div class="sonar-num" style="color:#4ec9b0;">0</div>
+                <div class="sonar-label">Security Hotspots</div>
+              </div>
+              <div class="sonar-card">
+                <div class="sonar-num" style="color:#dcdcaa;">0</div>
+                <div class="sonar-label">Code Smells</div>
+              </div>
+              <div class="sonar-card">
+                <div class="sonar-num" style="color:#4ec9b0;">100%</div>
+                <div class="sonar-label">Coverage (Zero GC)</div>
+              </div>
+              <div class="sonar-card">
+                <div class="sonar-num" style="color:#4ec9b0;">0.0%</div>
+                <div class="sonar-label">Duplications</div>
+              </div>
+            </div>
+
+            <button class="titlebar-btn primary" id="sonarScanBtn" style="margin-top:6px;width:100%;text-align:center;justify-content:center;">
+              🔍 Analyze Active File with SonarQube
+            </button>
+          </div>
+        </div>
+
+        <!-- View: GitLens (Contributed by GitLens Extension) -->
+        <div class="sidebar-pane" id="paneGitLens" style="display:none;">
+          <div class="sidebar-header">
+            <span>GitLens: Source Control Supercharged</span>
+          </div>
+          <div class="sidebar-content" style="padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+            <div class="tree-section-title">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
+              <span>COMMITS (main)</span>
+            </div>
+            <div id="gitlensCommitsList" style="display:flex;flex-direction:column;gap:6px;font-size:11.5px;">
+              <div style="padding:6px;background:rgba(255,255,255,0.03);border-radius:4px;">
+                <div style="font-weight:600;color:var(--vscode-text-bright);">● feat: functional extension runtime...</div>
+                <div style="font-size:10px;color:var(--vscode-text-muted);">Aero Henderson · Active</div>
+              </div>
+              <div style="padding:6px;background:rgba(255,255,255,0.03);border-radius:4px;">
+                <div style="font-weight:600;color:var(--vscode-text-bright);">● feat: full Open VSX marketplace...</div>
+                <div style="font-size:10px;color:var(--vscode-text-muted);">Wolvestorm11 · 45m ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View: Testing (Contributed by Test Explorer Extension) -->
+        <div class="sidebar-pane" id="paneTesting" style="display:none;">
+          <div class="sidebar-header">
+            <span>Testing &amp; Benchmarks</span>
+            <div class="sidebar-header-actions">
+              <button class="sidebar-action-btn" id="runAllTestsBtn" title="Run All Tests">▶</button>
+            </div>
+          </div>
+          <div class="sidebar-content" style="padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
+            <div class="tree-section-title">
+              <span>SOVEREIGN TEST SUITES</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:11.5px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:6px;background:rgba(255,255,255,0.03);border-radius:4px;">
+                <span>✓ test_spatial_sort.enlng</span>
+                <span style="color:#4ec9b0;font-size:10px;">Passed (1.2ms)</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:6px;background:rgba(255,255,255,0.03);border-radius:4px;">
+                <span>✓ test_banking_ledger.enlng</span>
+                <span style="color:#4ec9b0;font-size:10px;">Passed (0.9ms)</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:6px;background:rgba(255,255,255,0.03);border-radius:4px;">
+                <span>✓ test_enlangdb_schema.enlngdb</span>
+                <span style="color:#4ec9b0;font-size:10px;">Passed (0.4ms)</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- Resizer Handle X (between Sidebar and Editor) -->
@@ -518,6 +684,15 @@
               <div class="dock-tab" data-pane="dockOutput">
                 <span>Output</span>
               </div>
+              <div class="dock-tab" data-pane="dockPorts" id="tabDockPorts">
+                <span>Ports (3)</span>
+              </div>
+              <div class="dock-tab" data-pane="dockSonarQube" id="tabDockSonarQube">
+                <span>SonarQube (123)</span>
+              </div>
+              <div class="dock-tab" data-pane="dockDebugConsole" id="tabDockDebugConsole">
+                <span>Debug Console</span>
+              </div>
             </div>
             <div class="dock-actions">
               <button class="sidebar-action-btn" id="clearTerminalBtn" title="Clear Terminal">
@@ -582,6 +757,70 @@
 [Enlangg Studio] EnlangDB Active Engine: database1.edb
               </div>
             </div>
+
+            <!-- Pane 5: Ports (Contributed by Ports View Container) -->
+            <div class="dock-pane" id="dockPorts">
+              <div style="padding:12px;display:flex;flex-direction:column;gap:8px;font-size:12px;font-family:var(--font-mono);">
+                <div style="font-weight:700;color:var(--vscode-text-bright);margin-bottom:2px;font-family:var(--font-ui);">Forwarded Ports:</div>
+                <div class="dock-port-row">
+                  <span class="dock-port-badge">8080</span>
+                  <span style="flex:1;">HTTP · Enlangg Reactive Network Service (.enlngs)</span>
+                  <span style="color:#4ec9b0;">Running</span>
+                  <a href="http://localhost:8080" target="_blank" style="color:var(--vscode-blue);text-decoration:none;">Open in Browser ↗</a>
+                </div>
+                <div class="dock-port-row">
+                  <span class="dock-port-badge">5500</span>
+                  <span style="flex:1;">HTTP · Live Server Viewport (.enlngf / .enlngd)</span>
+                  <span style="color:#4ec9b0;">Live</span>
+                  <a href="javascript:void(0)" onclick="handleMenuAction('togglePreview')" style="color:var(--vscode-blue);text-decoration:none;">Open Live View ↗</a>
+                </div>
+                <div class="dock-port-row">
+                  <span class="dock-port-badge">5432</span>
+                  <span style="flex:1;">TCP · EnlangDB Embedded Engine (database1.edb)</span>
+                  <span style="color:#4ec9b0;">Mounted (sub-0.05ms)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pane 6: SonarQube Detailed Report -->
+            <div class="dock-pane" id="dockSonarQube">
+              <div style="padding:12px;display:flex;flex-direction:column;gap:8px;font-size:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="font-weight:700;color:#fff;">SonarLint / SonarQube Workspace Rules &amp; Inspection:</span>
+                  <span class="domain-badge domain-enlng">SonarQube 10.4 Active</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;font-family:var(--font-mono);font-size:11.5px;">
+                  <div class="problem-item-row" style="border-left:3px solid #4ec9b0;">
+                    <span class="problem-severity info">✔</span>
+                    <span class="problem-msg">Sovereign Grammar Invariant: All functions have explicit returns</span>
+                    <span class="problem-source">[Sonar:enlng:S101]</span>
+                    <span class="problem-pos">src/main.enlng:L28</span>
+                  </div>
+                  <div class="problem-item-row" style="border-left:3px solid #4ec9b0;">
+                    <span class="problem-severity info">✔</span>
+                    <span class="problem-msg">Zero GC Guarantee: No manual pointers or memory leak hazard detected</span>
+                    <span class="problem-source">[Sonar:sys:S204]</span>
+                    <span class="problem-pos">Workspace:PASS</span>
+                  </div>
+                  <div class="problem-item-row" style="border-left:3px solid #4ec9b0;">
+                    <span class="problem-severity info">✔</span>
+                    <span class="problem-msg">Database Concurrency: Sub-millisecond flat-file read lock confirmed</span>
+                    <span class="problem-source">[Sonar:edb:S305]</span>
+                    <span class="problem-pos">db/schema.enlngdb:L69</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pane 7: Debug Console -->
+            <div class="dock-pane" id="dockDebugConsole">
+              <div class="terminal-output" id="debugConsoleOutput" style="color:#cccccc;">
+[Debugger] Sovereign Debugger attached to active VM.
+[Debugger] Breakpoints: 0 active.
+[Debugger] Call stack: global-scope -&gt; main()
+[Debugger] Ready for expressions.
+              </div>
+            </div>
           </div>
         </div>
 
@@ -632,7 +871,7 @@
     <!-- 3. Status Bar (Bottom 22px) -->
     <footer class="statusbar">
       <div class="statusbar-left">
-        <div class="statusbar-item" id="statusGitBranch">
+        <div class="statusbar-item" id="statusGitBranch" title="Source Control: main branch (Click to sync)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a3 3 0 0 0-3 3c0 1.3.84 2.4 2 2.82V14.18A3 3 0 0 0 9 17a3 3 0 1 0 6 0 3 3 0 0 0-2-2.82V7.82A3.003 3.003 0 0 0 12 2zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0 16a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
           <span>main*</span>
         </div>
@@ -640,12 +879,22 @@
           <span>0 ⨂</span>
           <span>0 ⚠</span>
         </div>
-        <div class="statusbar-item" id="statusDomainPill" style="font-weight:600;color:#fff;">
+        <div class="statusbar-item" id="statusDomainPill" style="font-weight:600;color:#fff;" title="Active Sovereign Domain">
           Domain: Core Backend (.enlng)
         </div>
+        <div class="statusbar-item" id="statusDebugBtn" title="Start Debugging (F5)">
+          <span>🐞 Debug</span>
+        </div>
+        <div class="statusbar-item" id="statusGitBtn" title="Git Source Control Status">
+          <span>⟳ Git</span>
+        </div>
+        <!-- Dynamic Extension Status Items Left (SonarQube, Docker, etc.) -->
+        <div id="statusExtensionsLeft" style="display:inline-flex;align-items:center;gap:10px;"></div>
       </div>
 
       <div class="statusbar-right">
+        <!-- Dynamic Extension Status Items Right (Prettier, Go Live, Antigravity, Autocomplete) -->
+        <div id="statusExtensionsRight" style="display:inline-flex;align-items:center;gap:10px;"></div>
         <div class="statusbar-item" id="cursorPosStatus">Ln 1, Col 1</div>
         <div class="statusbar-item">Spaces: 4</div>
         <div class="statusbar-item">UTF-8</div>

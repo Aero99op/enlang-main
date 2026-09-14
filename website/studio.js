@@ -967,6 +967,90 @@ screen WalletHome:
       averageRating: 5.0,
       builtin: true,
       installed: true
+    },
+    {
+      id: 'ms-azuretools.vscode-docker',
+      name: 'vscode-docker',
+      namespace: 'ms-azuretools',
+      displayName: 'Docker',
+      version: '1.29.0',
+      description: 'Easily build, manage, and deploy containerized applications from the sidebar and bottom status bar.',
+      icon: '🐳',
+      verified: true,
+      downloadCount: 38900000,
+      averageRating: 4.8,
+      builtin: true,
+      installed: true
+    },
+    {
+      id: 'SonarSource.sonarlint-vscode',
+      name: 'sonarlint-vscode',
+      namespace: 'SonarSource',
+      displayName: 'SonarQube & SonarLint',
+      version: '4.4.2',
+      description: 'Clean Code linter that highlights security vulnerabilities and code smells on-the-fly in status bar and dock panel.',
+      icon: '🛡️',
+      verified: true,
+      downloadCount: 19400000,
+      averageRating: 4.9,
+      builtin: true,
+      installed: true
+    },
+    {
+      id: 'ritwickdey.LiveServer',
+      name: 'LiveServer',
+      namespace: 'ritwickdey',
+      displayName: 'Live Server',
+      version: '5.7.9',
+      description: 'Launch a local development server with live reload feature for static & dynamic pages.',
+      icon: '📡',
+      verified: true,
+      downloadCount: 46200000,
+      averageRating: 4.8,
+      builtin: true,
+      installed: true
+    },
+    {
+      id: 'esbenp.prettier-vscode',
+      name: 'prettier-vscode',
+      namespace: 'esbenp',
+      displayName: 'Prettier - Code Formatter',
+      version: '10.4.0',
+      description: 'Code formatter using Prettier with bottom status bar integration.',
+      icon: '✨',
+      verified: true,
+      downloadCount: 45200000,
+      averageRating: 4.7,
+      builtin: true,
+      installed: true
+    },
+    {
+      id: 'eamodio.gitlens',
+      name: 'gitlens',
+      namespace: 'eamodio',
+      displayName: 'GitLens — Git supercharged',
+      version: '15.2.1',
+      description: 'Supercharge Git with commit graph, file blame, and repository timeline in sidebar activity bar.',
+      icon: '⎇',
+      verified: true,
+      downloadCount: 32100000,
+      averageRating: 4.9,
+      builtin: true,
+      installed: true
+    },
+    {
+      id: 'enlangg.testing-suite',
+      name: 'testing-suite',
+      namespace: 'enlangg.org',
+      displayName: 'Testing & Test Explorer',
+      version: '1.0.0',
+      description: 'Visual test runner and invariant assertion suite for all Enlang modules.',
+      icon: '🧪',
+      verified: true,
+      downloadCount: 65100,
+      averageRating: 4.9,
+      builtin: true,
+      installed: true
     }
   ];
 
@@ -1134,10 +1218,24 @@ screen WalletHome:
     try {
       const saved = localStorage.getItem('enlangg_installed_extensions');
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Ensure new built-in extensions (Docker, SonarQube, Live Server, Prettier, GitLens, Test Explorer) are merged if missing
+        const existingIds = new Set(parsed.map(e => (e.namespace ? `${e.namespace}.${e.name}` : e.id)));
+        let changed = false;
+        BUILTIN_EXTENSIONS.forEach(builtin => {
+          const bId = builtin.namespace ? `${builtin.namespace}.${builtin.name}` : builtin.id;
+          if (!existingIds.has(bId) && !existingIds.has(builtin.id)) {
+            parsed.push(builtin);
+            changed = true;
+          }
+        });
+        if (changed) {
+          localStorage.setItem('enlangg_installed_extensions', JSON.stringify(parsed));
+        }
+        return parsed;
       }
     } catch (_) {}
-    return BUILTIN_EXTENSIONS;
+    return [...BUILTIN_EXTENSIONS];
   }
 
   function saveInstalledExtensions(list) {
@@ -1155,6 +1253,204 @@ screen WalletHome:
     if (badge) {
       badge.textContent = list.length;
       badge.style.display = list.length > 0 ? 'inline-block' : 'none';
+    }
+    updateExtensionContributions();
+  }
+
+  function toggleSidebarPane(paneId, activityId) {
+    const act = document.getElementById(activityId);
+    const target = document.getElementById(paneId);
+
+    // If clicking already active activity icon and sidebar is visible, collapse it
+    if (act && act.classList.contains('active') && mainSidebar && !mainSidebar.classList.contains('collapsed')) {
+      mainSidebar.classList.add('collapsed');
+      act.classList.remove('active');
+      return;
+    }
+
+    document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
+    if (act) act.classList.add('active');
+    if (mainSidebar && mainSidebar.classList.contains('collapsed')) {
+      mainSidebar.classList.remove('collapsed');
+    }
+    document.querySelectorAll('.sidebar-pane').forEach(p => p.style.display = 'none');
+    if (target) target.style.display = 'flex';
+  }
+
+  function updateExtensionContributions() {
+    const installed = getInstalledExtensions();
+    const installedStr = installed.map(e => (e.id || '') + ' ' + (e.name || '') + ' ' + (e.displayName || '')).join(' ').toLowerCase();
+
+    const hasDocker = installedStr.includes('docker');
+    const hasSonar = installedStr.includes('sonar');
+    const hasGitLens = installedStr.includes('gitlens');
+    const hasTesting = installedStr.includes('test');
+    const hasLiveServer = installedStr.includes('liveserver') || installedStr.includes('live-server') || installedStr.includes('live server');
+    const hasPrettier = installedStr.includes('prettier');
+
+    // 1. Dynamic Activity Bar Extensions Group
+    const actGroup = document.getElementById('activityBarExtensionsGroup');
+    if (actGroup) {
+      let actHtml = '';
+      if (hasDocker) {
+        actHtml += `
+          <div class="activity-icon" id="actDocker" title="Docker: Containers & Images (ms-azuretools.vscode-docker)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13.98 10.02h2.24v2.24h-2.24zm-3 0h2.24v2.24h-2.24zm-3 0h2.24v2.24h-2.24zm6-3h2.24v2.24h-2.24zm-3 0h2.24v2.24h-2.24zm-3 0h2.24v2.24h-2.24zm9 3h2.24v2.24h-2.24zm-12 0h2.24v2.24h-2.24zm18.3 1.93c-.4-.3-1.02-.38-1.57-.22-.24-.65-.74-1.18-1.4-1.48-.31-.14-.65-.21-.99-.21h-2.32v4c0 .28-.22.5-.5.5s-.5-.22-.5-.5v-4H2.07c-.05.52-.07 1.05-.07 1.58 0 4.28 3.52 7.77 7.84 7.88.94 1.14 2.37 1.87 3.97 1.87 2.21 0 4.09-1.39 4.81-3.35.32-.08.64-.19.93-.34 1.25-.63 2.05-1.92 2.05-3.33 0-.96-.4-1.84-1.07-2.45z"/>
+            </svg>
+            <span class="activity-badge">2</span>
+          </div>
+        `;
+      }
+      if (hasSonar) {
+        actHtml += `
+          <div class="activity-icon" id="actSonarQube" title="SonarQube & SonarLint (SonarSource.sonarlint-vscode)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 16l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z"/>
+            </svg>
+            <span class="activity-badge ext-subbadge">✓</span>
+          </div>
+        `;
+      }
+      if (hasGitLens) {
+        actHtml += `
+          <div class="activity-icon" id="actGitLens" title="GitLens — Git supercharged (eamodio.gitlens)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+          </div>
+        `;
+      }
+      if (hasTesting) {
+        actHtml += `
+          <div class="activity-icon" id="actTesting" title="Testing (Sovereign Test Explorer)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 2v6h.01L10 13v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-7l3.99-5H18V2H6z"/>
+              <line x1="6" y1="2" x2="18" y2="2"/>
+            </svg>
+          </div>
+        `;
+      }
+      actGroup.innerHTML = actHtml;
+
+      // Bind dynamic Activity Bar clicks
+      if (hasDocker) {
+        const actD = document.getElementById('actDocker');
+        if (actD) actD.addEventListener('click', () => toggleSidebarPane('paneDocker', 'actDocker'));
+      }
+      if (hasSonar) {
+        const actS = document.getElementById('actSonarQube');
+        if (actS) actS.addEventListener('click', () => toggleSidebarPane('paneSonarQube', 'actSonarQube'));
+      }
+      if (hasGitLens) {
+        const actG = document.getElementById('actGitLens');
+        if (actG) actG.addEventListener('click', () => toggleSidebarPane('paneGitLens', 'actGitLens'));
+      }
+      if (hasTesting) {
+        const actT = document.getElementById('actTesting');
+        if (actT) actT.addEventListener('click', () => toggleSidebarPane('paneTesting', 'actTesting'));
+      }
+    }
+
+    // 2. Dynamic Status Bar Items (Left)
+    const statusLeft = document.getElementById('statusExtensionsLeft');
+    if (statusLeft) {
+      let leftHtml = '';
+      if (hasSonar) {
+        leftHtml += `
+          <div class="statusbar-item" id="statusSonarItem" title="SonarQube: Quality Gate PASSED (Click to inspect rules)">
+            <span>🛡️ SonarQube</span>
+          </div>
+        `;
+      }
+      if (hasDocker) {
+        leftHtml += `
+          <div class="statusbar-item" id="statusDockerItem" title="Docker: 2 Containers Running (Click to manage)">
+            <span>🐳 Docker (2)</span>
+          </div>
+        `;
+      }
+      statusLeft.innerHTML = leftHtml;
+
+      const sonItem = document.getElementById('statusSonarItem');
+      if (sonItem) {
+        sonItem.addEventListener('click', () => {
+          if (bottomDock && bottomDock.classList.contains('collapsed')) {
+            bottomDock.classList.remove('collapsed');
+          }
+          switchDockTab('dockSonarQube');
+        });
+      }
+
+      const docItem = document.getElementById('statusDockerItem');
+      if (docItem) {
+        docItem.addEventListener('click', () => {
+          toggleSidebarPane('paneDocker', 'actDocker');
+        });
+      }
+    }
+
+    // 3. Dynamic Status Bar Items (Right)
+    const statusRight = document.getElementById('statusExtensionsRight');
+    if (statusRight) {
+      let rightHtml = `
+        <div class="statusbar-item" title="IntelliSense & Autocomplete Active">
+          <span>⚡ Autocomplete (0)</span>
+        </div>
+        <div class="statusbar-item" title="Sovereign Auto Retry Compiler Daemon">
+          <span>🔄 Auto Retry</span>
+        </div>
+      `;
+      if (hasLiveServer) {
+        rightHtml += `
+          <div class="statusbar-item live-server" id="statusLiveServerItem" title="Live Server on port 5500 (Click to toggle Live Preview)">
+            <span>📡 Go Live: 5500</span>
+          </div>
+        `;
+      }
+      if (hasPrettier) {
+        rightHtml += `
+          <div class="statusbar-item prettier-active" id="statusPrettierItem" title="Prettier Formatter Active (Click to format document)">
+            <span>✨ Prettier</span>
+          </div>
+        `;
+      }
+      rightHtml += `
+        <div class="statusbar-item antigravity-active" id="statusAntigravityItem" title="Antigravity Settings & AI Copilot">
+          <span>✦ Antigravity - Settings</span>
+        </div>
+      `;
+      statusRight.innerHTML = rightHtml;
+
+      const liveBtn = document.getElementById('statusLiveServerItem');
+      if (liveBtn) {
+        liveBtn.addEventListener('click', () => {
+          handleMenuAction('togglePreview');
+          showStudioToast('Live Server toggled on http://localhost:5500', null);
+        });
+      }
+
+      const pretBtn = document.getElementById('statusPrettierItem');
+      if (pretBtn) {
+        pretBtn.addEventListener('click', () => {
+          formatDocument();
+          showStudioToast('Prettier formatted document successfully.', null);
+        });
+      }
+
+      const agBtn = document.getElementById('statusAntigravityItem');
+      if (agBtn) {
+        agBtn.addEventListener('click', () => {
+          const byokModal = document.getElementById('byokModal');
+          if (byokModal) byokModal.classList.add('open');
+        });
+      }
+    }
+
+    // 4. Update Dock SonarQube Tab visibility
+    const dockSonarTab = document.getElementById('tabDockSonarQube');
+    if (dockSonarTab) {
+      dockSonarTab.style.display = hasSonar ? 'flex' : 'none';
     }
   }
 
@@ -2167,6 +2463,30 @@ screen WalletHome:
       return;
     }
 
+    // Docker extension detection
+    if (name.includes('docker')) {
+      showStudioToast('Docker extension active! Container views loaded in Activity Bar & Status Bar.', 'View Containers', () => toggleSidebarPane('paneDocker', 'actDocker'));
+      return;
+    }
+
+    // SonarQube / SonarLint detection
+    if (name.includes('sonar')) {
+      showStudioToast('SonarQube Clean Code active! Quality Gate: PASSED in status bar & dock.', 'View Quality Gate', () => toggleSidebarPane('paneSonarQube', 'actSonarQube'));
+      return;
+    }
+
+    // GitLens detection
+    if (name.includes('gitlens')) {
+      showStudioToast('GitLens activated! Visual git commit timeline added to Activity Bar.', 'Open GitLens', () => toggleSidebarPane('paneGitLens', 'actGitLens'));
+      return;
+    }
+
+    // Live Server detection
+    if (name.includes('liveserver') || name.includes('live-server') || name.includes('live server')) {
+      showStudioToast('Live Server active on port 5500! Click "Go Live" in status bar to preview.', 'Go Live', () => handleMenuAction('togglePreview'));
+      return;
+    }
+
     // Default extension
     showStudioToast(`Extension '${ext.displayName || ext.name}' installed and activated successfully.`, null);
   }
@@ -2840,6 +3160,35 @@ Provide code in fenced code blocks.`;
       });
     }
 
+    // Status bar Git Branch Click Handler
+    const statusGitBranch = document.getElementById('statusGitBranch');
+    if (statusGitBranch) {
+      statusGitBranch.addEventListener('click', () => {
+        toggleSidebarPane('paneGitLens', 'actGitLens');
+        showStudioToast('Git: Repository synced on main branch.', null);
+      });
+    }
+
+    // Status bar Debug Button Handler
+    const statusDebugBtn = document.getElementById('statusDebugBtn');
+    if (statusDebugBtn) {
+      statusDebugBtn.addEventListener('click', () => {
+        if (bottomDock && bottomDock.classList.contains('collapsed')) {
+          bottomDock.classList.remove('collapsed');
+        }
+        switchDockTab('dockDebugConsole');
+        appendTerminal('\n<span class="term-cyan">[Debugger] Attached Sovereign Debugger VM to active thread. Breakpoints: 0 active.</span>');
+      });
+    }
+
+    // Status bar Git Button Handler
+    const statusGitBtn = document.getElementById('statusGitBtn');
+    if (statusGitBtn) {
+      statusGitBtn.addEventListener('click', () => {
+        toggleSidebarPane('paneGitLens', 'actGitLens');
+      });
+    }
+
     // 4. Toggle Preview
     const togglePreviewBtn = document.getElementById('togglePreviewBtn');
     if (togglePreviewBtn) {
@@ -2877,26 +3226,47 @@ Provide code in fenced code blocks.`;
       { id: 'actSearch', pane: 'paneSearch' },
       { id: 'actDatabase', pane: 'paneDatabase' },
       { id: 'actExtensions', pane: 'paneExtensions' },
-      { id: 'actDomains', pane: 'paneDomains' }
+      { id: 'actDomains', pane: 'paneDomains' },
+      { id: 'actDocker', pane: 'paneDocker' },
+      { id: 'actSonarQube', pane: 'paneSonarQube' },
+      { id: 'actGitLens', pane: 'paneGitLens' },
+      { id: 'actTesting', pane: 'paneTesting' }
     ];
 
     activities.forEach(item => {
       const icon = document.getElementById(item.id);
       if (icon) {
         icon.addEventListener('click', () => {
-          document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
-          icon.classList.add('active');
-
-          if (mainSidebar.classList.contains('collapsed')) {
-            mainSidebar.classList.remove('collapsed');
-          }
-
-          document.querySelectorAll('.sidebar-pane').forEach(p => p.style.display = 'none');
-          const target = document.getElementById(item.pane);
-          if (target) target.style.display = 'flex';
+          toggleSidebarPane(item.pane, item.id);
         });
       }
     });
+
+    // Docker and Testing Panes Controls
+    const refreshDockerBtn = document.getElementById('refreshDockerBtn');
+    if (refreshDockerBtn) {
+      refreshDockerBtn.addEventListener('click', () => {
+        showStudioToast('Docker: Container states synced (2 running, 1 stopped)', null);
+      });
+    }
+
+    const runAllTestsBtn = document.getElementById('runAllTestsBtn');
+    if (runAllTestsBtn) {
+      runAllTestsBtn.addEventListener('click', () => {
+        if (bottomDock && bottomDock.classList.contains('collapsed')) {
+          bottomDock.classList.remove('collapsed');
+        }
+        switchDockTab('dockTerminal');
+        appendTerminal('\n<span class="term-green">[Test Explorer] Running sovereign invariant test suites...</span>');
+        setTimeout(() => {
+          appendTerminal('<span class="term-green">✓ test_spatial_sort.enlng (1.2ms)</span>');
+          appendTerminal('<span class="term-green">✓ test_banking_ledger.enlng (0.9ms)</span>');
+          appendTerminal('<span class="term-green">✓ test_enlangdb_schema.enlngdb (0.4ms)</span>');
+          appendTerminal('<span class="term-cyan">All 3 test suites passed (100% assertions satisfied).</span>\n');
+          showStudioToast('All 3 test suites passed! 0 regressions.', null);
+        }, 300);
+      });
+    }
 
     // 7. Copilot Toggle & Send
     const actCopilot = document.getElementById('actCopilot');
