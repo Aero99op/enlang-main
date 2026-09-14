@@ -1,0 +1,1154 @@
+/* ==============================================================================
+   👑 ENLANGG STUDIO - 1:1 VS CODE NATIVE CLONE & HOME IDE
+   Theme: VS Code Dark Modern · Zero-GC · Hardware Accelerated
+   ============================================================================== */
+
+:root {
+  --vscode-bg: #1e1e1e;
+  --vscode-activity-bg: #181818;
+  --vscode-sidebar-bg: #1f1f1f;
+  --vscode-dock-bg: #181818;
+  --vscode-header-bg: #181818;
+  --vscode-statusbar-bg: #007acc;
+  --vscode-statusbar-text: #ffffff;
+  --vscode-border: #2d2d2d;
+  --vscode-active-border: #007acc;
+  --vscode-tab-bg: #181818;
+  --vscode-tab-active-bg: #1e1e1e;
+  --vscode-text-main: #cccccc;
+  --vscode-text-bright: #ffffff;
+  --vscode-text-muted: #858585;
+  --vscode-text-disabled: #555555;
+  --vscode-hover: #2a2d2e;
+  --vscode-selected: #04395e;
+  --vscode-accent: #007acc;
+  --vscode-accent-hover: #0e639c;
+  --vscode-badge: #4d4d4d;
+  --vscode-green: #4ec9b0;
+  --vscode-yellow: #dcdcaa;
+  --vscode-orange: #ce9178;
+  --vscode-blue: #569cd6;
+  --vscode-purple: #c586c0;
+  --vscode-red: #f14c4c;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--vscode-bg);
+  color: var(--vscode-text-main);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Base Layout Container */
+.studio-root {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 1. Title Bar */
+.titlebar {
+  height: 35px;
+  background: var(--vscode-header-bg);
+  border-bottom: 1px solid var(--vscode-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  font-size: 12px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.titlebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--vscode-text-bright);
+  text-decoration: none;
+  letter-spacing: 0.5px;
+}
+
+.titlebar-logo svg {
+  width: 18px;
+  height: 18px;
+  fill: var(--vscode-accent);
+}
+
+.titlebar-menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.menu-item {
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--vscode-text-main);
+  transition: background 0.15s;
+}
+
+.menu-item:hover {
+  background: var(--vscode-hover);
+  color: var(--vscode-text-bright);
+}
+
+.titlebar-center {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 480px;
+  margin: 0 16px;
+}
+
+.titlebar-search {
+  width: 100%;
+  background: #252526;
+  border: 1px solid var(--vscode-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  color: var(--vscode-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 11.5px;
+  transition: border-color 0.2s;
+}
+
+.titlebar-search:hover {
+  border-color: var(--vscode-accent);
+  color: var(--vscode-text-main);
+}
+
+.titlebar-search kbd {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 10px;
+}
+
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titlebar-btn {
+  background: transparent;
+  border: none;
+  color: var(--vscode-text-main);
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.titlebar-btn:hover {
+  background: var(--vscode-hover);
+  color: var(--vscode-text-bright);
+}
+
+.titlebar-btn.primary {
+  background: var(--vscode-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.titlebar-btn.primary:hover {
+  background: var(--vscode-accent-hover);
+}
+
+/* 2. Main Workspace Layout */
+.workspace-body {
+  display: flex;
+  flex: 1;
+  height: calc(100vh - 35px - 22px);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Activity Bar (Far Left) */
+.activity-bar {
+  width: 48px;
+  background: var(--vscode-activity-bg);
+  border-right: 1px solid var(--vscode-border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  flex-shrink: 0;
+  z-index: 50;
+}
+
+.activity-bar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  align-items: center;
+}
+
+.activity-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--vscode-text-muted);
+  position: relative;
+  transition: color 0.15s;
+}
+
+.activity-icon:hover {
+  color: var(--vscode-text-bright);
+}
+
+.activity-icon.active {
+  color: var(--vscode-text-bright);
+}
+
+.activity-icon.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--vscode-accent);
+}
+
+.activity-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--vscode-accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 8px;
+  min-width: 14px;
+  text-align: center;
+}
+
+/* Primary Sidebar */
+.sidebar {
+  width: 260px;
+  min-width: 180px;
+  max-width: 500px;
+  background: var(--vscode-sidebar-bg);
+  border-right: 1px solid var(--vscode-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.sidebar.collapsed {
+  display: none;
+}
+
+.sidebar-header {
+  height: 35px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--vscode-text-muted);
+  border-bottom: 1px solid var(--vscode-border);
+  flex-shrink: 0;
+}
+
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--vscode-text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-action-btn:hover {
+  background: var(--vscode-hover);
+  color: var(--vscode-text-bright);
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* File Tree Styles */
+.tree-section-title {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vscode-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tree-section-title:hover {
+  color: var(--vscode-text-bright);
+}
+
+.tree-item {
+  padding: 4px 12px 4px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--vscode-text-main);
+  font-size: 12.5px;
+  transition: background 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+
+.tree-item:hover {
+  background: var(--vscode-hover);
+}
+
+.tree-item.active {
+  background: var(--vscode-selected);
+  color: var(--vscode-text-bright);
+}
+
+.tree-item.folder {
+  font-weight: 600;
+  color: var(--vscode-text-bright);
+}
+
+.tree-item .tree-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tree-item .domain-badge {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.domain-enlng { background: rgba(78, 201, 176, 0.2); color: #4ec9b0; }
+.domain-enlngdb { background: rgba(206, 145, 120, 0.2); color: #ce9178; }
+.domain-enlngf { background: rgba(86, 156, 214, 0.2); color: #569cd6; }
+.domain-enlngd { background: rgba(197, 134, 192, 0.2); color: #c586c0; }
+.domain-enlngs { background: rgba(220, 220, 170, 0.2); color: #dcdcaa; }
+.domain-enlngm { background: rgba(241, 76, 76, 0.2); color: #f14c4c; }
+
+/* Resizer Handle */
+.resizer-x {
+  width: 4px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.resizer-x:hover, .resizer-x.resizing {
+  background: var(--vscode-accent);
+}
+
+.resizer-y {
+  height: 4px;
+  cursor: row-resize;
+  background: transparent;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.resizer-y:hover, .resizer-y.resizing {
+  background: var(--vscode-accent);
+}
+
+/* 3. Main Center Workspace (Editor + Bottom Dock) */
+.center-workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Editor Section */
+.editor-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 180px;
+  background: var(--vscode-bg);
+  overflow: hidden;
+}
+
+/* Tab Bar */
+.editor-tabs-bar {
+  height: 35px;
+  background: var(--vscode-tab-bg);
+  border-bottom: 1px solid var(--vscode-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.editor-tabs-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.editor-tabs-list {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.tab {
+  height: 100%;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--vscode-tab-bg);
+  color: var(--vscode-text-muted);
+  border-right: 1px solid var(--vscode-border);
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+  position: relative;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab:hover {
+  background: #1c1c1c;
+  color: var(--vscode-text-bright);
+}
+
+.tab.active {
+  background: var(--vscode-tab-active-bg);
+  color: var(--vscode-text-bright);
+  border-top: 2px solid var(--vscode-accent);
+}
+
+.tab-close {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  color: var(--vscode-text-muted);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.tab-close:hover {
+  background: var(--vscode-hover);
+  color: var(--vscode-text-bright);
+}
+
+.tab-dirty {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--vscode-text-muted);
+  display: none;
+}
+
+.tab.dirty .tab-dirty {
+  display: block;
+}
+
+.tab.dirty .tab-close {
+  display: none;
+}
+
+.tab.dirty:hover .tab-dirty {
+  display: none;
+}
+
+.tab.dirty:hover .tab-close {
+  display: flex;
+}
+
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  background: var(--vscode-tab-bg);
+  border-left: 1px solid var(--vscode-border);
+}
+
+.editor-action-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--vscode-text-main);
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.editor-action-btn:hover {
+  background: var(--vscode-hover);
+  color: var(--vscode-text-bright);
+}
+
+.editor-action-btn.run-btn {
+  background: rgba(78, 201, 176, 0.15);
+  border-color: rgba(78, 201, 176, 0.4);
+  color: #4ec9b0;
+  font-weight: 600;
+}
+
+.editor-action-btn.run-btn:hover {
+  background: rgba(78, 201, 176, 0.25);
+  border-color: #4ec9b0;
+}
+
+/* Breadcrumbs */
+.editor-breadcrumbs {
+  height: 22px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--vscode-text-muted);
+  background: var(--vscode-bg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.breadcrumb-part {
+  cursor: pointer;
+}
+
+.breadcrumb-part:hover {
+  color: var(--vscode-text-bright);
+}
+
+/* Editor Main Split (Code Editor + Live Canvas / Mobile Preview) */
+.editor-split-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.editor-code-pane {
+  display: flex;
+  flex: 1;
+  min-width: 250px;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.line-numbers {
+  width: 48px;
+  padding: 10px 8px 10px 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--vscode-text-disabled);
+  user-select: none;
+  background: var(--vscode-bg);
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.code-textarea {
+  flex: 1;
+  height: 100%;
+  padding: 10px 14px;
+  background: var(--vscode-bg);
+  color: #d4d4d4;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+  border: none;
+  outline: none;
+  resize: none;
+  white-space: pre;
+  overflow: auto;
+  tab-size: 4;
+  caret-color: #aeafad;
+}
+
+/* Live Canvas / Simulator Pane */
+.preview-pane {
+  width: 45%;
+  min-width: 280px;
+  background: #141414;
+  border-left: 1px solid var(--vscode-border);
+  display: none;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.preview-pane.visible {
+  display: flex;
+}
+
+.preview-header {
+  height: 35px;
+  background: #181818;
+  border-bottom: 1px solid var(--vscode-border);
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--vscode-text-muted);
+}
+
+.preview-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 16px;
+  position: relative;
+}
+
+/* Mobile Smartphone Mockup Frame (.enlngm Simulator) */
+.mobile-device-frame {
+  width: 340px;
+  height: 620px;
+  background: #000;
+  border: 10px solid #2b2b2e;
+  border-radius: 42px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 2px #444;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.mobile-notch {
+  width: 120px;
+  height: 22px;
+  background: #2b2b2e;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  z-index: 10;
+}
+
+.mobile-screen {
+  flex: 1;
+  background: #fff;
+  color: #111;
+  overflow: auto;
+  position: relative;
+}
+
+/* 4. Bottom Dock (Terminal, DB Console, Problems, Output) */
+.bottom-dock {
+  height: 220px;
+  min-height: 100px;
+  max-height: 70vh;
+  background: var(--vscode-dock-bg);
+  border-top: 1px solid var(--vscode-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.bottom-dock.collapsed {
+  display: none;
+}
+
+.dock-header {
+  height: 32px;
+  background: #181818;
+  border-bottom: 1px solid var(--vscode-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  flex-shrink: 0;
+}
+
+.dock-tabs {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+}
+
+.dock-tab {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--vscode-text-muted);
+  cursor: pointer;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.dock-tab:hover {
+  color: var(--vscode-text-bright);
+}
+
+.dock-tab.active {
+  color: var(--vscode-text-bright);
+  border-bottom-color: var(--vscode-accent);
+}
+
+.dock-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dock-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.dock-pane {
+  display: none;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.dock-pane.active {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Terminal Content */
+.terminal-output {
+  flex: 1;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 19px;
+  color: #cccccc;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-y: auto;
+}
+
+.term-green { color: #4ec9b0; }
+.term-blue { color: #569cd6; }
+.term-yellow { color: #dcdcaa; }
+.term-err { color: #f14c4c; }
+.term-dim { color: #777777; }
+
+/* EnlangDB Table Inspector */
+.db-inspector-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 10px;
+  gap: 8px;
+}
+
+.db-query-bar {
+  display: flex;
+  gap: 8px;
+}
+
+.db-query-input {
+  flex: 1;
+  background: #1e1e1e;
+  border: 1px solid var(--vscode-border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.db-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+.db-grid-table th, .db-grid-table td {
+  padding: 6px 10px;
+  border: 1px solid var(--vscode-border);
+  text-align: left;
+}
+
+.db-grid-table th {
+  background: #252526;
+  color: var(--vscode-text-bright);
+  font-weight: 600;
+}
+
+.db-grid-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* 5. AI Copilot Drawer (BYOK Model) */
+.copilot-panel {
+  width: 320px;
+  min-width: 240px;
+  max-width: 600px;
+  background: var(--vscode-sidebar-bg);
+  border-left: 1px solid var(--vscode-border);
+  display: none;
+  flex-direction: column;
+  flex-shrink: 0;
+  z-index: 60;
+  position: relative;
+}
+
+.copilot-panel.open {
+  display: flex;
+}
+
+.copilot-header {
+  height: 40px;
+  padding: 0 12px;
+  background: var(--vscode-header-bg);
+  border-bottom: 1px solid var(--vscode-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.copilot-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--vscode-text-bright);
+}
+
+.byok-badge {
+  font-size: 10px;
+  background: rgba(78, 201, 176, 0.15);
+  color: #4ec9b0;
+  padding: 2px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(78, 201, 176, 0.3);
+}
+
+.copilot-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.copilot-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.copilot-msg.user {
+  background: var(--vscode-selected);
+  color: #fff;
+  align-self: flex-end;
+  max-width: 85%;
+}
+
+.copilot-msg.assistant {
+  background: #252526;
+  border: 1px solid var(--vscode-border);
+  color: var(--vscode-text-main);
+  align-self: flex-start;
+  width: 100%;
+}
+
+.copilot-msg pre {
+  background: #181818;
+  border: 1px solid var(--vscode-border);
+  border-radius: 4px;
+  padding: 8px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  margin: 6px 0;
+  position: relative;
+}
+
+.msg-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.msg-action-btn {
+  background: #333;
+  border: none;
+  color: #ccc;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.msg-action-btn:hover {
+  background: var(--vscode-accent);
+  color: #fff;
+}
+
+.copilot-input-box {
+  padding: 10px;
+  border-top: 1px solid var(--vscode-border);
+  background: #1e1e1e;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.copilot-textarea {
+  width: 100%;
+  height: 60px;
+  background: #252526;
+  border: 1px solid var(--vscode-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  resize: none;
+  outline: none;
+}
+
+.copilot-textarea:focus {
+  border-color: var(--vscode-accent);
+}
+
+.copilot-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.model-selector {
+  background: #252526;
+  color: var(--vscode-text-muted);
+  border: 1px solid var(--vscode-border);
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 6px;
+  outline: none;
+}
+
+/* BYOK Settings Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-backdrop.open {
+  display: flex;
+}
+
+.modal-box {
+  background: #252526;
+  border: 1px solid var(--vscode-border);
+  border-radius: 8px;
+  width: 480px;
+  max-width: 90vw;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--vscode-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  color: #fff;
+}
+
+.modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--vscode-text-main);
+  font-size: 12.5px;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: #1e1e1e;
+  border: 1px solid var(--vscode-border);
+  border-radius: 4px;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+}
+
+.modal-footer {
+  padding: 12px 16px;
+  background: #1e1e1e;
+  border-top: 1px solid var(--vscode-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* 6. Status Bar (Bottom) */
+.statusbar {
+  height: 22px;
+  background: var(--vscode-statusbar-bg);
+  color: var(--vscode-statusbar-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  font-size: 11px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.statusbar-left, .statusbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.statusbar-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 2px;
+  height: 100%;
+}
+
+.statusbar-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar {
+    position: absolute;
+    left: 48px;
+    top: 0;
+    bottom: 0;
+    z-index: 90;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+  }
+  .preview-pane {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: 80;
+  }
+  .copilot-panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: 95;
+  }
+}

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enlangg Studio - The Sovereign Home IDE</title>
+  <meta name="description" content="Dedicated 1:1 VS Code Native Web IDE for the Enlangg Sovereign Fullstack Ecosystem. Multi-file virtual workspace, AI Copilot (BYOK), and native runtimes for .enlng, .enlngdb, .enlngf, .enlngd, .enlngs, .enlngm." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="studio.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="studio-root">
+    
+    <!-- 1. VS Code Title Bar -->
+    <header class="titlebar" id="titleBar">
+      <div class="titlebar-left">
+        <a href="index.html" class="titlebar-logo" title="Back to Enlangg Portal">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <span>Enlangg Studio</span>
+        </a>
+        <nav class="titlebar-menu">
+          <div class="menu-item" id="menuFile">File</div>
+          <div class="menu-item" id="menuEdit">Edit</div>
+          <div class="menu-item" id="menuSelection">Selection</div>
+          <div class="menu-item" id="menuView">View</div>
+          <div class="menu-item" id="menuRun">Run</div>
+          <div class="menu-item" id="menuTerminal">Terminal</div>
+          <div class="menu-item" id="menuHelp">Help</div>
+        </nav>
+      </div>
+
+      <div class="titlebar-center">
+        <div class="titlebar-search" id="quickOpenTrigger" title="Quick Open (Ctrl + P)">
+          <span><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px;vertical-align:-1px;"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg> enlangg-workspace — Quick Open</span>
+          <kbd>Ctrl+P</kbd>
+        </div>
+      </div>
+
+      <div class="titlebar-right">
+        <button class="titlebar-btn primary" id="topRunBtn" title="Execute Active File (Ctrl + Enter)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span>Run</span>
+        </button>
+        <button class="titlebar-btn" id="byokConfigBtn" title="Configure AI API Key (BYOK)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+          <span>AI Key</span>
+        </button>
+        <button class="titlebar-btn" id="pwaInstallBtn" title="Install Desktop App" style="display:none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+          <span>Install App</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. Workspace Body -->
+    <div class="workspace-body">
+      
+      <!-- Activity Bar (Far Left 48px) -->
+      <aside class="activity-bar">
+        <div class="activity-bar-group">
+          <div class="activity-icon active" id="actExplorer" title="Explorer (Ctrl+Shift+E)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          </div>
+          <div class="activity-icon" id="actSearch" title="Search (Ctrl+Shift+F)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <div class="activity-icon" id="actDatabase" title="EnlangDB Explorer">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <div class="activity-icon" id="actDomains" title="Enlangg 6-Domain Hub">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <div class="activity-icon" id="actCopilot" title="AI Copilot (BYOK)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12"/><path d="M12 8v4"/><path d="M12 16h.01"/><path d="M16 12h-4"/></svg>
+            <span class="activity-badge">AI</span>
+          </div>
+        </div>
+
+        <div class="activity-bar-group">
+          <div class="activity-icon" id="actSettings" title="Settings & Keyboard Shortcuts">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Primary Sidebar (260px) -->
+      <section class="sidebar" id="mainSidebar">
+        <!-- View 1: Explorer -->
+        <div class="sidebar-pane" id="paneExplorer">
+          <div class="sidebar-header">
+            <span>Explorer</span>
+            <div class="sidebar-header-actions">
+              <button class="sidebar-action-btn" id="newFileBtn" title="New Enlangg File">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+              </button>
+              <button class="sidebar-action-btn" id="newFolderBtn" title="New Folder">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+              </button>
+              <button class="sidebar-action-btn" id="resetProjectBtn" title="Reset / Load Template">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="sidebar-content">
+            <div class="tree-section-title">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
+              <span>ENLANGG-WORKSPACE</span>
+            </div>
+            <div id="fileTreeRoot">
+              <!-- Dynamically populated file tree -->
+            </div>
+          </div>
+        </div>
+
+        <!-- View 2: Search -->
+        <div class="sidebar-pane" id="paneSearch" style="display:none;">
+          <div class="sidebar-header">
+            <span>Search Workspace</span>
+          </div>
+          <div class="sidebar-content" style="padding:12px;">
+            <input type="text" id="globalSearchInput" class="modal-input" placeholder="Search across all files..." />
+            <div id="searchResults" style="margin-top:12px;font-size:12px;color:var(--vscode-text-muted);">
+              Type to search in workspace files...
+            </div>
+          </div>
+        </div>
+
+        <!-- View 3: EnlangDB Inspector -->
+        <div class="sidebar-pane" id="paneDatabase" style="display:none;">
+          <div class="sidebar-header">
+            <span>EnlangDB Explorer</span>
+          </div>
+          <div class="sidebar-content">
+            <div class="tree-section-title">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
+              <span>ACTIVE DATABASE: <b style="color:#4ec9b0;">database1</b></span>
+            </div>
+            <div style="padding:10px 14px;" id="dbExplorerTree">
+              <!-- Tables tree -->
+            </div>
+          </div>
+        </div>
+
+        <!-- View 4: 6-Domain Ecosystem -->
+        <div class="sidebar-pane" id="paneDomains" style="display:none;">
+          <div class="sidebar-header">
+            <span>Sovereign Domains</span>
+          </div>
+          <div class="sidebar-content" style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+            <div class="tree-item" onclick="loadSampleTemplate('banking')"><span class="domain-badge domain-enlng">.enlng</span> Core Backend Logic</div>
+            <div class="tree-item" onclick="loadSampleTemplate('database')"><span class="domain-badge domain-enlngdb">.enlngdb</span> Embedded DB Engine</div>
+            <div class="tree-item" onclick="loadSampleTemplate('subway')"><span class="domain-badge domain-enlngd">.enlngd</span> Design Tokens & CSS</div>
+            <div class="tree-item" onclick="loadSampleTemplate('subway')"><span class="domain-badge domain-enlngf">.enlngf</span> Semantic UI Trees</div>
+            <div class="tree-item" onclick="loadSampleTemplate('server')"><span class="domain-badge domain-enlngs">.enlngs</span> Network & API Routes</div>
+            <div class="tree-item" onclick="loadSampleTemplate('mobile')"><span class="domain-badge domain-enlngm">.enlngm</span> Mobile Smartphone HAL</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Resizer Handle X (between Sidebar and Editor) -->
+      <div class="resizer-x" id="sidebarResizer"></div>
+
+      <!-- Center Workspace (Editor + Bottom Dock) -->
+      <main class="center-workspace">
+        
+        <!-- Editor Area -->
+        <div class="editor-container">
+          <!-- Editor Tabs Bar -->
+          <div class="editor-tabs-bar">
+            <div class="editor-tabs-list" id="editorTabsList">
+              <!-- Tabs populated dynamically -->
+            </div>
+            <div class="editor-actions">
+              <button class="editor-action-btn run-btn" id="editorRunBtn" title="Run Entire File (Ctrl+Enter)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Run File</span>
+              </button>
+              <button class="editor-action-btn" id="togglePreviewBtn" title="Toggle Live Preview / Simulator">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                <span>Live View</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Breadcrumbs Bar -->
+          <div class="editor-breadcrumbs" id="editorBreadcrumbs">
+            <span class="breadcrumb-part">enlangg-workspace</span>
+            <span>&gt;</span>
+            <span class="breadcrumb-part" id="breadcrumbFolder">src</span>
+            <span>&gt;</span>
+            <span class="breadcrumb-part" id="breadcrumbFile" style="color:var(--vscode-text-bright);font-weight:600;">main.enlng</span>
+          </div>
+
+          <!-- Split Body: Code Editor + Live Canvas / Mobile Simulator -->
+          <div class="editor-split-body">
+            
+            <!-- Code Editor Pane -->
+            <div class="editor-code-pane">
+              <div class="line-numbers" id="lineNumbers">1</div>
+              <textarea id="codeEditor" class="code-textarea" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+            </div>
+
+            <!-- Preview Pane (for .enlngf, .enlngd, and .enlngm) -->
+            <div class="preview-pane" id="previewPane">
+              <div class="preview-header">
+                <span id="previewTitle">Live UI Preview (.enlngf / .enlngd)</span>
+                <button class="sidebar-action-btn" id="closePreviewBtn" title="Close Preview">✕</button>
+              </div>
+              <div class="preview-body" id="previewBody">
+                <iframe id="livePreviewFrame" style="width:100%;height:100%;border:none;background:#fff;border-radius:4px;"></iframe>
+                
+                <!-- Mobile Simulator Frame (Hidden by default, shown for .enlngm) -->
+                <div class="mobile-device-frame" id="mobileSimulator" style="display:none;">
+                  <div class="mobile-notch"></div>
+                  <div class="mobile-screen" id="mobileScreenContent">
+                    <!-- Mobile interactive app rendered here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Resizer Handle Y (between Editor and Bottom Dock) -->
+        <div class="resizer-y" id="dockResizer"></div>
+
+        <!-- Bottom Dock (Terminal, DB Console, Problems, Output) -->
+        <div class="bottom-dock" id="bottomDock">
+          <div class="dock-header">
+            <div class="dock-tabs">
+              <div class="dock-tab active" data-pane="dockTerminal">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                <span>Terminal (Micro-VM)</span>
+              </div>
+              <div class="dock-tab" data-pane="dockDatabase">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                <span>EnlangDB Console</span>
+              </div>
+              <div class="dock-tab" data-pane="dockProblems">
+                <span>Problems (0)</span>
+              </div>
+              <div class="dock-tab" data-pane="dockOutput">
+                <span>Output</span>
+              </div>
+            </div>
+            <div class="dock-actions">
+              <button class="sidebar-action-btn" id="clearTerminalBtn" title="Clear Terminal">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+              <button class="sidebar-action-btn" id="closeDockBtn" title="Toggle Terminal (Ctrl+`)">✕</button>
+            </div>
+          </div>
+
+          <div class="dock-body">
+            <!-- Pane 1: Terminal -->
+            <div class="dock-pane active" id="dockTerminal">
+              <div class="terminal-output" id="terminalOutput">
+<span class="term-green">👑 Enlangg Sovereign Studio Micro-VM Ready.</span>
+<span class="term-dim">Type or select code and press </span><span class="term-yellow">Ctrl + Enter</span><span class="term-dim"> to execute with Zero GC pauses.</span>
+              </div>
+            </div>
+
+            <!-- Pane 2: EnlangDB Console -->
+            <div class="dock-pane" id="dockDatabase">
+              <div class="db-inspector-container">
+                <div class="db-query-bar">
+                  <input type="text" id="dbQueryInput" class="db-query-input" placeholder="Enter natural EnlangDB query (e.g. find all records from student; show tables;)" />
+                  <button class="titlebar-btn primary" id="dbExecuteBtn">Execute</button>
+                </div>
+                <div id="dbGridContainer" style="flex:1;overflow:auto;">
+                  <!-- Dynamic SQL / EnlangDB Table rendered here -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Pane 3: Problems -->
+            <div class="dock-pane" id="dockProblems" style="padding:14px;color:var(--vscode-text-muted);">
+              No problems have been detected in the workspace. Clean grammar invariants satisfied.
+            </div>
+
+            <!-- Pane 4: Output Logs -->
+            <div class="dock-pane" id="dockOutput">
+              <div class="terminal-output" id="dockOutputLogs">
+[Enlangg Studio] Initialized VFS Workspace.
+[Enlangg Studio] Mounted native Sovereign Transpiler v5.4.0.
+[Enlangg Studio] EnlangDB Active Engine: database1.edb
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- AI Copilot Panel (BYOK Model - Far Right) -->
+      <aside class="copilot-panel" id="copilotPanel">
+        <div class="copilot-header">
+          <div class="copilot-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12"/><path d="M12 8v4"/><path d="M12 16h.01"/><path d="M16 12h-4"/></svg>
+            <span>Enlangg Copilot</span>
+            <span class="byok-badge" id="aiModelBadge">BYOK</span>
+          </div>
+          <div style="display:flex;gap:4px;">
+            <button class="sidebar-action-btn" id="copilotSettingsBtn" title="Configure API Key">⚙️</button>
+            <button class="sidebar-action-btn" id="closeCopilotBtn" title="Close Copilot">✕</button>
+          </div>
+        </div>
+
+        <div class="copilot-messages" id="copilotMessages">
+          <div class="copilot-msg assistant">
+            <b>👑 Enlangg Copilot</b>
+            <span>Hello! I am your native Enlangg pair programmer. I know all 6 sovereign domains (<code>.enlng</code>, <code>.enlngdb</code>, <code>.enlngf</code>, <code>.enlngd</code>, <code>.enlngs</code>, <code>.enlngm</code>) and strictly write authentic grammar (<code>remember</code>, <code>freeze</code>, <code>when</code>, <code>for each pair in</code>, <code>swap pair</code>).</span>
+            <div class="msg-actions">
+              <button class="msg-action-btn" onclick="askCopilot('Write a binary search algorithm in pure Enlng')">Binary Search</button>
+              <button class="msg-action-btn" onclick="askCopilot('Create an EnlangDB schema for a fintech wallet')">Wallet DB</button>
+              <button class="msg-action-btn" onclick="askCopilot('Fix runtime errors in active file')">Fix File</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="copilot-input-box">
+          <textarea id="copilotPromptInput" class="copilot-textarea" placeholder="Ask Copilot (e.g. Generate a spatial sort function or fix my code)..."></textarea>
+          <div class="copilot-submit-row">
+            <select id="copilotModelSelect" class="model-selector">
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash (Recommended)</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+              <option value="openai-gpt4o">OpenAI GPT-4o</option>
+              <option value="ollama-local">Local Ollama (localhost:11434)</option>
+            </select>
+            <button class="titlebar-btn primary" id="sendCopilotBtn">Send</button>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- 3. Status Bar (Bottom 22px) -->
+    <footer class="statusbar">
+      <div class="statusbar-left">
+        <div class="statusbar-item" id="statusGitBranch">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a3 3 0 0 0-3 3c0 1.3.84 2.4 2 2.82V14.18A3 3 0 0 0 9 17a3 3 0 1 0 6 0 3 3 0 0 0-2-2.82V7.82A3.003 3.003 0 0 0 12 2zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0 16a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+          <span>main*</span>
+        </div>
+        <div class="statusbar-item">
+          <span>0 ⨂</span>
+          <span>0 ⚠</span>
+        </div>
+        <div class="statusbar-item" id="statusDomainPill" style="font-weight:600;color:#fff;">
+          Domain: Core Backend (.enlng)
+        </div>
+      </div>
+
+      <div class="statusbar-right">
+        <div class="statusbar-item" id="cursorPosStatus">Ln 1, Col 1</div>
+        <div class="statusbar-item">Spaces: 4</div>
+        <div class="statusbar-item">UTF-8</div>
+        <div class="statusbar-item" id="statusAiConnection">AI: BYOK Active</div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Modal: BYOK API Key Configuration -->
+  <div class="modal-backdrop" id="byokModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>🔑 Configure AI Copilot (BYOK Model)</span>
+        <button class="sidebar-action-btn" id="closeByokModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Enlangg Studio is 100% sovereign and client-side. Enter your personal API Key to enable the AI Copilot. Your key is stored securely in your browser's <code>localStorage</code> and never passes through any intermediary server.</p>
+        
+        <div>
+          <label style="display:block;margin-bottom:4px;font-weight:600;">API Provider</label>
+          <select id="modalProviderSelect" class="modal-input">
+            <option value="gemini">Google Gemini API (Free tier available at aistudio.google.com)</option>
+            <option value="openai">OpenAI API</option>
+            <option value="ollama">Local Ollama (Zero cost, offline)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display:block;margin-bottom:4px;font-weight:600;">API Key</label>
+          <input type="password" id="modalApiKeyInput" class="modal-input" placeholder="AIzaSy... or sk-..." />
+        </div>
+
+        <div id="ollamaEndpointRow" style="display:none;">
+          <label style="display:block;margin-bottom:4px;font-weight:600;">Ollama Endpoint</label>
+          <input type="text" id="modalOllamaInput" class="modal-input" value="http://localhost:11434/api/generate" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="titlebar-btn" id="cancelByokBtn">Cancel</button>
+        <button class="titlebar-btn primary" id="saveByokBtn">Save &amp; Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Quick Open File (Ctrl + P) -->
+  <div class="modal-backdrop" id="quickOpenModal">
+    <div class="modal-box" style="width:520px;">
+      <div class="modal-body" style="padding:10px;">
+        <input type="text" id="quickOpenInput" class="modal-input" placeholder="Type name of file to open..." />
+        <div id="quickOpenList" style="margin-top:8px;max-height:240px;overflow-y:auto;">
+          <!-- Quick open file matches -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=5.4.0"></script>
+  <script src="studio.js?v=1.0.0"></script>
+</body>
+</html>
