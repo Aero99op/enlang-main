@@ -1837,3 +1837,108 @@ html, body {
   font-weight: 600;
 }
 
+/* IntelliSense Popup Styles */
+.intellisense-popup {
+  position: absolute;
+  background: var(--vscode-editor-bg);
+  border: 1px solid var(--vscode-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  width: 280px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+.intellisense-item {
+  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+.intellisense-item:hover, .intellisense-item.selected {
+  background: var(--vscode-item-active);
+  color: #ffffff;
+}
+.intellisense-type-icon {
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-weight: 700;
+}
+.intellisense-type-icon.kw { background: #569cd6; color: #fff; }
+.intellisense-type-icon.fn { background: #dcdcaa; color: #1e1e1e; }
+.intellisense-type-icon.var { background: #9cdcfe; color: #1e1e1e; }
+
+/* Line Number Breakpoint Dots */
+.line-num-item {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+.line-num-item:hover::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(229, 20, 0, 0.4);
+}
+.line-num-item.has-breakpoint::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e51400;
+  box-shadow: 0 0 6px rgba(229, 20, 0, 0.8);
+  z-index: 2;
+}
+
+/* Test Suite Styles */
+.test-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--vscode-border);
+  border-radius: 4px;
+}
+.test-item-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.test-status-tag.pass { color: #4ec9b0; font-weight: 600; font-size: 11px; }
+.test-status-tag.fail { color: #f44747; font-weight: 600; font-size: 11px; }
+.test-status-tag.running { color: #dcdcaa; font-weight: 600; font-size: 11px; }
+
+/* SonarQube Issue Rows */
+.sonar-issue-row {
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--vscode-border);
+  border-left: 3px solid #dcdcaa;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+}
+.sonar-issue-row:hover {
+  background: var(--vscode-hover);
+}
+.sonar-issue-row.bug { border-left-color: #f44747; }
+.sonar-issue-row.hotspot { border-left-color: #ce9178; }
+.sonar-issue-row.smell { border-left-color: #dcdcaa; }
+
+

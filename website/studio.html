@@ -434,61 +434,40 @@
           <div class="sidebar-header">
             <span>Docker: Containers &amp; Images</span>
             <div class="sidebar-header-actions">
+              <button class="sidebar-action-btn" id="addDockerBtn" title="Launch New Container">+</button>
               <button class="sidebar-action-btn" id="refreshDockerBtn" title="Refresh Containers">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
               </button>
             </div>
           </div>
           <div class="sidebar-content" style="padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
-            <div>
-              <div class="tree-section-title">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
-                <span>CONTAINERS (2 RUNNING)</span>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
-                <div class="docker-item">
-                  <span class="docker-status-dot running"></span>
-                  <div style="flex:1;">
-                    <div style="font-weight:600;color:var(--vscode-text-bright);">sovereign-api:8080</div>
-                    <div style="font-size:10px;color:var(--vscode-text-muted);">Up 2h · 0.0.0.0:8080-&gt;8080/tcp</div>
-                  </div>
-                  <button class="docker-tool-btn" title="Restart Container">↻</button>
-                  <button class="docker-tool-btn" title="View Logs">📄</button>
-                </div>
-                <div class="docker-item">
-                  <span class="docker-status-dot running"></span>
-                  <div style="flex:1;">
-                    <div style="font-weight:600;color:var(--vscode-text-bright);">enlangdb-engine:5432</div>
-                    <div style="font-size:10px;color:var(--vscode-text-muted);">Up 2h · 0.0.0.0:5432-&gt;5432/tcp</div>
-                  </div>
-                  <button class="docker-tool-btn" title="Restart Container">↻</button>
-                  <button class="docker-tool-btn" title="View Logs">📄</button>
-                </div>
-                <div class="docker-item">
-                  <span class="docker-status-dot stopped"></span>
-                  <div style="flex:1;">
-                    <div style="font-weight:600;color:var(--vscode-text-muted);">redis-cache:6379</div>
-                    <div style="font-size:10px;color:var(--vscode-text-muted);">Exited (0) 4 hours ago</div>
-                  </div>
-                  <button class="docker-tool-btn" title="Start Container">▶</button>
-                </div>
+            <div id="dockerAddForm" style="display:none;background:rgba(255,255,255,0.03);border:1px solid var(--vscode-border);border-radius:4px;padding:8px;">
+              <div style="font-weight:600;font-size:11px;margin-bottom:6px;color:var(--vscode-text-bright);">Launch New Container</div>
+              <input type="text" id="newDockerName" placeholder="Container name (e.g. nginx-lb)" class="modal-input" style="font-size:11px;margin-bottom:4px;" />
+              <input type="text" id="newDockerPort" placeholder="Port map (e.g. 3000->3000/tcp)" class="modal-input" style="font-size:11px;margin-bottom:6px;" />
+              <div style="display:flex;gap:6px;">
+                <button class="titlebar-btn primary" id="confirmAddDockerBtn" style="flex:1;justify-content:center;">Run</button>
+                <button class="titlebar-btn" id="cancelAddDockerBtn" style="flex:1;justify-content:center;">Cancel</button>
               </div>
             </div>
 
             <div>
               <div class="tree-section-title">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
-                <span>IMAGES (3)</span>
+                <span id="dockerRunningTitle">CONTAINERS (2 RUNNING)</span>
               </div>
-              <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11.5px;">
-                <div style="display:flex;justify-content:space-between;padding:4px 6px;background:rgba(255,255,255,0.03);border-radius:4px;">
-                  <span>enlangg/core:latest</span>
-                  <span style="color:var(--vscode-text-muted);">38.2 MB</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;padding:4px 6px;background:rgba(255,255,255,0.03);border-radius:4px;">
-                  <span>alpine:3.19</span>
-                  <span style="color:var(--vscode-text-muted);">7.3 MB</span>
-                </div>
+              <div id="dockerContainersList" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+                <!-- Populated dynamically by renderDockerContainers() -->
+              </div>
+            </div>
+
+            <div>
+              <div class="tree-section-title">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
+                <span id="dockerImagesTitle">IMAGES (3)</span>
+              </div>
+              <div id="dockerImagesList" style="display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11.5px;">
+                <!-- Populated dynamically -->
               </div>
             </div>
           </div>
@@ -498,31 +477,34 @@
         <div class="sidebar-pane" id="paneSonarQube" style="display:none;">
           <div class="sidebar-header">
             <span>SonarQube: Quality &amp; Security</span>
+            <div class="sidebar-header-actions">
+              <button class="sidebar-action-btn" id="sonarRescanBtn" title="Rescan Workspace">↻</button>
+            </div>
           </div>
           <div class="sidebar-content" style="padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
-            <div style="background:rgba(78,201,176,0.1);border:1px solid rgba(78,201,176,0.3);border-radius:6px;padding:10px;display:flex;align-items:center;gap:10px;">
-              <span style="font-size:24px;">🛡️</span>
+            <div id="sonarQualityGateBox" style="background:rgba(78,201,176,0.1);border:1px solid rgba(78,201,176,0.3);border-radius:6px;padding:10px;display:flex;align-items:center;gap:10px;">
+              <span id="sonarGateIcon" style="font-size:24px;">🛡️</span>
               <div>
-                <div style="font-weight:700;color:#4ec9b0;">Quality Gate: PASSED</div>
-                <div style="font-size:10.5px;color:var(--vscode-text-muted);">0 New Conditions Failed · Clean Architecture</div>
+                <div id="sonarGateStatus" style="font-weight:700;color:#4ec9b0;">Quality Gate: PASSED</div>
+                <div id="sonarGateSubtext" style="font-size:10.5px;color:var(--vscode-text-muted);">0 New Conditions Failed · Clean Architecture</div>
               </div>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-              <div class="sonar-card">
-                <div class="sonar-num" style="color:#4ec9b0;">0</div>
+              <div class="sonar-card" id="sonarCardBugs">
+                <div class="sonar-num" id="sonarBugsNum" style="color:#4ec9b0;">0</div>
                 <div class="sonar-label">Bugs (A)</div>
               </div>
-              <div class="sonar-card">
-                <div class="sonar-num" style="color:#4ec9b0;">0</div>
+              <div class="sonar-card" id="sonarCardVulns">
+                <div class="sonar-num" id="sonarVulnsNum" style="color:#4ec9b0;">0</div>
                 <div class="sonar-label">Vulnerabilities (A)</div>
               </div>
-              <div class="sonar-card">
-                <div class="sonar-num" style="color:#4ec9b0;">0</div>
+              <div class="sonar-card" id="sonarCardHotspots">
+                <div class="sonar-num" id="sonarHotspotsNum" style="color:#4ec9b0;">0</div>
                 <div class="sonar-label">Security Hotspots</div>
               </div>
-              <div class="sonar-card">
-                <div class="sonar-num" style="color:#dcdcaa;">0</div>
+              <div class="sonar-card" id="sonarCardSmells">
+                <div class="sonar-num" id="sonarSmellsNum" style="color:#dcdcaa;">0</div>
                 <div class="sonar-label">Code Smells</div>
               </div>
               <div class="sonar-card">
@@ -535,9 +517,18 @@
               </div>
             </div>
 
-            <button class="titlebar-btn primary" id="sonarScanBtn" style="margin-top:6px;width:100%;text-align:center;justify-content:center;">
-              🔍 Analyze Active File with SonarQube
+            <button class="titlebar-btn primary" id="sonarScanBtn" style="margin-top:2px;width:100%;text-align:center;justify-content:center;">
+              🔍 Analyze Workspace with SonarQube
             </button>
+
+            <div>
+              <div class="tree-section-title">
+                <span>DETECTED ISSUES &amp; HOTSPOTS</span>
+              </div>
+              <div id="sonarIssuesList" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;font-size:11.5px;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
           </div>
         </div>
 
@@ -545,21 +536,33 @@
         <div class="sidebar-pane" id="paneGitLens" style="display:none;">
           <div class="sidebar-header">
             <span>GitLens: Source Control Supercharged</span>
+            <div class="sidebar-header-actions">
+              <button class="sidebar-action-btn" id="refreshGitBtn" title="Sync &amp; Refresh Git">↻</button>
+            </div>
           </div>
           <div class="sidebar-content" style="padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <label style="font-size:11px;color:var(--vscode-text-muted);">Current Branch</label>
+              <select id="gitBranchSelect" class="modal-input" style="font-size:11.5px;padding:4px 6px;">
+                <option value="main">main (Default)</option>
+                <option value="feature/spatial-sort">feature/spatial-sort</option>
+                <option value="v2.0-release">v2.0-release</option>
+              </select>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.02);border:1px solid var(--vscode-border);border-radius:4px;padding:8px;display:flex;flex-direction:column;gap:6px;">
+              <div style="font-size:11px;font-weight:600;color:var(--vscode-text-bright);">Commit Changes</div>
+              <input type="text" id="gitCommitInput" placeholder="Message (e.g. fix: optimize token parser)..." class="modal-input" style="font-size:11.5px;" />
+              <button class="titlebar-btn primary" id="gitCommitBtn" style="width:100%;justify-content:center;">Commit Changes</button>
+              <button class="titlebar-btn" id="toggleBlameBtn" style="width:100%;justify-content:center;">Toggle File Blame (Off)</button>
+            </div>
+
             <div class="tree-section-title">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"/></svg>
-              <span>COMMITS (main)</span>
+              <span>COMMIT HISTORY</span>
             </div>
             <div id="gitlensCommitsList" style="display:flex;flex-direction:column;gap:6px;font-size:11.5px;">
-              <div style="padding:6px;background:rgba(255,255,255,0.03);border-radius:4px;">
-                <div style="font-weight:600;color:var(--vscode-text-bright);">● feat: functional extension runtime...</div>
-                <div style="font-size:10px;color:var(--vscode-text-muted);">Aero Henderson · Active</div>
-              </div>
-              <div style="padding:6px;background:rgba(255,255,255,0.03);border-radius:4px;">
-                <div style="font-weight:600;color:var(--vscode-text-bright);">● feat: full Open VSX marketplace...</div>
-                <div style="font-size:10px;color:var(--vscode-text-muted);">Wolvestorm11 · 45m ago</div>
-              </div>
+              <!-- Populated dynamically -->
             </div>
           </div>
         </div>
@@ -573,22 +576,12 @@
             </div>
           </div>
           <div class="sidebar-content" style="padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
-            <div class="tree-section-title">
-              <span>SOVEREIGN TEST SUITES</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="tree-section-title" style="margin:0;">SOVEREIGN TEST SUITES</span>
+              <span id="testSummaryBadge" style="font-size:10.5px;color:#4ec9b0;font-weight:600;">3 Passing</span>
             </div>
-            <div style="display:flex;flex-direction:column;gap:6px;font-size:11.5px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:6px;background:rgba(255,255,255,0.03);border-radius:4px;">
-                <span>✓ test_spatial_sort.enlng</span>
-                <span style="color:#4ec9b0;font-size:10px;">Passed (1.2ms)</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:6px;background:rgba(255,255,255,0.03);border-radius:4px;">
-                <span>✓ test_banking_ledger.enlng</span>
-                <span style="color:#4ec9b0;font-size:10px;">Passed (0.9ms)</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:6px;background:rgba(255,255,255,0.03);border-radius:4px;">
-                <span>✓ test_enlangdb_schema.enlngdb</span>
-                <span style="color:#4ec9b0;font-size:10px;">Passed (0.4ms)</span>
-              </div>
+            <div id="testingSuitesList" style="display:flex;flex-direction:column;gap:6px;font-size:11.5px;">
+              <!-- Populated dynamically with individual Run buttons -->
             </div>
           </div>
         </div>
@@ -636,9 +629,10 @@
           <div class="editor-split-body">
             
             <!-- Code Editor Pane -->
-            <div class="editor-code-pane">
-              <div class="line-numbers" id="lineNumbers">1</div>
+            <div class="editor-code-pane" style="position:relative;">
+              <div class="line-numbers" id="lineNumbers" title="Click line number to toggle breakpoint">1</div>
               <textarea id="codeEditor" class="code-textarea" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+              <div id="intellisensePopup" class="intellisense-popup" style="display:none;"></div>
             </div>
 
             <!-- Preview Pane (for .enlngf, .enlngd, and .enlngm) -->
@@ -761,23 +755,17 @@
             <!-- Pane 5: Ports (Contributed by Ports View Container) -->
             <div class="dock-pane" id="dockPorts">
               <div style="padding:12px;display:flex;flex-direction:column;gap:8px;font-size:12px;font-family:var(--font-mono);">
-                <div style="font-weight:700;color:var(--vscode-text-bright);margin-bottom:2px;font-family:var(--font-ui);">Forwarded Ports:</div>
-                <div class="dock-port-row">
-                  <span class="dock-port-badge">8080</span>
-                  <span style="flex:1;">HTTP · Enlangg Reactive Network Service (.enlngs)</span>
-                  <span style="color:#4ec9b0;">Running</span>
-                  <a href="http://localhost:8080" target="_blank" style="color:var(--vscode-blue);text-decoration:none;">Open in Browser ↗</a>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="font-weight:700;color:var(--vscode-text-bright);font-family:var(--font-ui);">Forwarded Ports &amp; Local Services:</span>
+                  <span style="color:var(--vscode-text-muted);font-size:11px;">Sub-millisecond Local IPC</span>
                 </div>
-                <div class="dock-port-row">
-                  <span class="dock-port-badge">5500</span>
-                  <span style="flex:1;">HTTP · Live Server Viewport (.enlngf / .enlngd)</span>
-                  <span style="color:#4ec9b0;">Live</span>
-                  <a href="javascript:void(0)" onclick="handleMenuAction('togglePreview')" style="color:var(--vscode-blue);text-decoration:none;">Open Live View ↗</a>
+                <div id="dockPortsTable" style="display:flex;flex-direction:column;gap:6px;">
+                  <!-- Dynamic ports table rendered here -->
                 </div>
-                <div class="dock-port-row">
-                  <span class="dock-port-badge">5432</span>
-                  <span style="flex:1;">TCP · EnlangDB Embedded Engine (database1.edb)</span>
-                  <span style="color:#4ec9b0;">Mounted (sub-0.05ms)</span>
+                <div style="display:flex;gap:6px;margin-top:8px;align-items:center;">
+                  <input type="number" id="forwardPortInput" placeholder="Port (e.g. 3000)" class="modal-input" style="width:130px;font-size:11px;" />
+                  <input type="text" id="forwardPortName" placeholder="Service label (e.g. GraphQL Endpoint)" class="modal-input" style="flex:1;font-size:11px;" />
+                  <button class="titlebar-btn primary" id="addPortBtn" style="white-space:nowrap;">+ Forward Port</button>
                 </div>
               </div>
             </div>
@@ -787,38 +775,30 @@
               <div style="padding:12px;display:flex;flex-direction:column;gap:8px;font-size:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
                   <span style="font-weight:700;color:#fff;">SonarLint / SonarQube Workspace Rules &amp; Inspection:</span>
-                  <span class="domain-badge domain-enlng">SonarQube 10.4 Active</span>
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    <span class="domain-badge domain-enlng">SonarQube 10.4 Active</span>
+                    <button class="sidebar-action-btn" id="dockSonarRefreshBtn" title="Rerun Inspection">↻</button>
+                  </div>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:4px;font-family:var(--font-mono);font-size:11.5px;">
-                  <div class="problem-item-row" style="border-left:3px solid #4ec9b0;">
-                    <span class="problem-severity info">✔</span>
-                    <span class="problem-msg">Sovereign Grammar Invariant: All functions have explicit returns</span>
-                    <span class="problem-source">[Sonar:enlng:S101]</span>
-                    <span class="problem-pos">src/main.enlng:L28</span>
-                  </div>
-                  <div class="problem-item-row" style="border-left:3px solid #4ec9b0;">
-                    <span class="problem-severity info">✔</span>
-                    <span class="problem-msg">Zero GC Guarantee: No manual pointers or memory leak hazard detected</span>
-                    <span class="problem-source">[Sonar:sys:S204]</span>
-                    <span class="problem-pos">Workspace:PASS</span>
-                  </div>
-                  <div class="problem-item-row" style="border-left:3px solid #4ec9b0;">
-                    <span class="problem-severity info">✔</span>
-                    <span class="problem-msg">Database Concurrency: Sub-millisecond flat-file read lock confirmed</span>
-                    <span class="problem-source">[Sonar:edb:S305]</span>
-                    <span class="problem-pos">db/schema.enlngdb:L69</span>
-                  </div>
+                <div id="dockSonarInspectionList" style="display:flex;flex-direction:column;gap:4px;font-family:var(--font-mono);font-size:11.5px;">
+                  <!-- Dynamic rule inspections -->
                 </div>
               </div>
             </div>
 
             <!-- Pane 7: Debug Console -->
-            <div class="dock-pane" id="dockDebugConsole">
-              <div class="terminal-output" id="debugConsoleOutput" style="color:#cccccc;">
+            <div class="dock-pane" id="dockDebugConsole" style="display:flex;flex-direction:column;height:100%;">
+              <div class="terminal-output" id="debugConsoleOutput" style="flex:1;overflow-y:auto;color:#cccccc;padding:8px 12px;font-family:var(--font-mono);font-size:12px;line-height:1.5;">
 [Debugger] Sovereign Debugger attached to active VM.
-[Debugger] Breakpoints: 0 active.
+[Debugger] Breakpoints: 0 active. Click line numbers in gutter to set breakpoints.
 [Debugger] Call stack: global-scope -&gt; main()
-[Debugger] Ready for expressions.
+[Debugger] Ready. Type expressions below to evaluate live.
+              </div>
+              <div style="display:flex;gap:8px;padding:6px 12px;background:var(--vscode-bg);border-top:1px solid var(--vscode-border);align-items:center;">
+                <span style="color:var(--vscode-blue);font-weight:700;font-family:var(--font-mono);font-size:13px;">&gt;</span>
+                <input type="text" id="debugConsoleInput" placeholder="Evaluate Enlang expression or inspect variable (e.g. x, 2 + 2, items)..." class="modal-input" style="flex:1;font-family:var(--font-mono);font-size:12px;padding:4px 8px;" />
+                <button class="titlebar-btn primary" id="debugEvalBtn">Evaluate</button>
+                <button class="sidebar-action-btn" id="clearDebugConsoleBtn" title="Clear Debug Output">✕</button>
               </div>
             </div>
           </div>
