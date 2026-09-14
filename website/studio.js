@@ -68,14 +68,18 @@ show "All Sovereign Grammar Invariants 100% Satisfied!"
 
 use database database1;
 
--- 1. View registered accounts
-find all records from accounts;
+-- 1. Discover active schema tables
+show tables;
 
 -- 2. View student registry
 find all records from student;
 
--- 3. Discover active schema
-show tables;
+-- 3. View faculty directory
+find all records from faculty;
+
+-- 4. Switch to main database and view accounts
+use database main_db;
+find all records from accounts;
 `,
 
     'ui/dashboard.enlngf': `type enlngf
@@ -588,7 +592,15 @@ screen WalletHome:
         outList.push(res.join(''));
       };
 
-      const fn = new Function('display', 'smartDisplay', 'cat', 'enlng_count', 'append', jsCode);
+      // 🛡️ Sovereign Loop Guard: Prevents runaway while loops from freezing the browser UI thread
+      let loopId = 0;
+      const MAX_LOOP_CYCLES = 500000;
+      const guardedJs = jsCode.replace(/\bwhile\s*\(([^)]+)\)\s*\{/g, (match, cond) => {
+        const g = `__loopGuard_${++loopId}`;
+        return `let ${g} = 0; while (${cond}) { if (++${g} > ${MAX_LOOP_CYCLES}) throw new Error("Infinite loop detected: loop exceeded ${MAX_LOOP_CYCLES.toLocaleString()} iterations. Execution halted to protect IDE responsiveness.");`;
+      });
+
+      const fn = new Function('display', 'smartDisplay', 'cat', 'enlng_count', 'append', guardedJs);
       fn(smartDisplay, smartDisplay, (...args) => args.join(''), enlng_count, append);
       const t1 = performance.now();
 
@@ -599,39 +611,238 @@ screen WalletHome:
       }
       appendTerminal(`<span class="term-green">✔ Execution completed in ${(t1 - t0).toFixed(2)}ms (Zero GC Pauses).</span>`);
     } catch (err) {
-      appendTerminal(`<span class="term-err">Enlng Runtime Error: ${err.message}</span>`);
+      appendTerminal(`<span class="term-err">Enlng Runtime Error: ${escapeHtml(err.message)}</span>`);
       appendTerminal(`<span class="term-yellow">💡 Tip: Click Copilot icon on the right to ask AI to fix this error.</span>`);
     }
   }
 
-  // Execute .enlngdb in Studio
-  function executeEnlngDbInStudio(sqlCode) {
-    switchDockTab('dockDatabase');
-    const dbGridContainer = document.getElementById('dbGridContainer');
-    if (!dbGridContainer) return;
+  // Execute .enlngdb in Studio against Sovereign In-Memory Engine
+  function executeEnlngDbInStudio(sqlCode, options = {}) {
+    if (!sqlCode || !sqlCode.trim()) {
+      appendTerminal(`<span class="term-warn">[EnlangDB] Empty query or script provided.</span>`);
+      return;
+    }
 
-    appendTerminal(`\n<span class="term-blue">[EnlangDB] Executed database script ${activeFile}</span>`);
-    
-    // Sample table render
-    dbGridContainer.innerHTML = `
-      <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;">Result: <b>accounts</b> (4 rows returned in 0.03ms)</div>
-      <table class="db-grid-table">
-        <thead>
-          <tr>
-            <th>id</th>
-            <th>holder</th>
-            <th>balance</th>
-            <th>tier</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>1</td><td>Aero Henderson</td><td>$85,000.00</td><td><span class="domain-badge domain-enlng">VIP</span></td></tr>
-          <tr><td>2</td><td>Apex Global</td><td>$89,000.00</td><td><span class="domain-badge domain-enlngdb">Platinum</span></td></tr>
-          <tr><td>3</td><td>Zenith Studio</td><td>$12,500.00</td><td><span class="domain-badge domain-enlngf">Silver</span></td></tr>
-          <tr><td>4</td><td>Nova Labs</td><td>$230,000.00</td><td><span class="domain-badge domain-enlng">Gold</span></td></tr>
-        </tbody>
-      </table>
+    const dbState = (typeof sovereignDB !== 'undefined') ? sovereignDB : (window.sovereignDB || null);
+    if (!dbState) {
+      appendTerminal(`<span class="term-err">[EnlangDB] SovereignDB engine state not initialized. Check app.js.</span>`);
+      return;
+    }
+
+    // Determine statement extractor
+    const stmts = (typeof extractStatements === 'function') 
+      ? extractStatements(sqlCode)
+      : (typeof window.extractStatements === 'function' ? window.extractStatements(sqlCode) : sqlCode.split(';').map(s => s.trim()).filter(Boolean));
+
+    if (stmts.length === 0) {
+      appendTerminal(`<span class="term-dim">// 0 executable EnlangDB statements found.</span>`);
+      return;
+    }
+
+    const t0 = performance.now();
+    appendTerminal(`\n<span class="term-cyan">----------------- EnlangDB: Executing ${activeFile || 'Query'} -----------------</span>`);
+
+    let lastResult = null;
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < stmts.length; i++) {
+      const stmt = stmts[i].trim();
+      if (!stmt) continue;
+
+      const prefix = stmts.length > 1 ? `[${i + 1}/${stmts.length}] ` : '';
+      appendTerminal(`<span class="term-stmt">${prefix}enlangdb&gt; ${escapeHtml(stmt)};</span>`);
+
+      try {
+        const execFn = (typeof executeEnlngDBStatement === 'function')
+          ? executeEnlngDBStatement
+          : (window.executeEnlngDBStatement || null);
+
+        if (!execFn) {
+          appendTerminal(`<span class="term-err">[EnlangDB] executeEnlngDBStatement function not found.</span>`);
+          break;
+        }
+
+        const res = execFn(stmt, dbState);
+        if (!res) continue;
+        lastResult = { stmt, res };
+
+        if (res.error || res.type === 'ERROR') {
+          failCount++;
+          appendTerminal(`<span class="term-err">${escapeHtml(res.error)}</span>`);
+        } else {
+          successCount++;
+          appendTerminal(`<span class="term-success">${escapeHtml(res.output)}</span>`);
+        }
+      } catch (err) {
+        failCount++;
+        appendTerminal(`<span class="term-err">EnlangDB Execution Error: ${escapeHtml(err.message)}</span>`);
+      }
+    }
+
+    const t1 = performance.now();
+    const elapsedMs = (t1 - t0).toFixed(2);
+    appendTerminal(`<span class="term-dim">// EnlangDB Finished: ${successCount} succeeded, ${failCount} failed (${elapsedMs} ms)</span>`);
+
+    // Render interactive view into dockDatabase / dbGridContainer
+    renderEnlngDbGridResult(lastResult, dbState);
+
+    // Switch to dockDatabase unless silent or from terminal command
+    if (!options.fromTerminal) {
+      switchDockTab('dockDatabase');
+      if (bottomDock && bottomDock.classList.contains('collapsed')) {
+        bottomDock.classList.remove('collapsed');
+      }
+    }
+  }
+
+  // Render EnlangDB query results into dockDatabase / dbGridContainer
+  function renderEnlngDbGridResult(lastResult, dbState) {
+    const dbGridContainer = document.getElementById('dbGridContainer');
+    if (!dbGridContainer || !dbState) return;
+
+    if (!lastResult || !lastResult.res) {
+      dbGridContainer.innerHTML = `
+        <div style="padding:16px;color:var(--vscode-text-muted);font-size:12px;">
+          No query executed yet. Type a query above (e.g. <code style="color:#4ec9b0;">show tables;</code> or <code style="color:#4ec9b0;">find all records from student;</code>) and click Execute.
+        </div>
+      `;
+      return;
+    }
+
+    const { stmt, res } = lastResult;
+    const activeDb = dbState.activeDb || 'database1';
+    const currentDbObj = dbState.databases[activeDb] || { name: activeDb, tables: {} };
+    const tablesCount = Object.keys(currentDbObj.tables || {}).length;
+
+    // Handle error case
+    if (res.error || res.type === 'ERROR') {
+      dbGridContainer.innerHTML = `
+        <div style="padding:12px;background:rgba(244,71,71,0.08);border:1px solid rgba(244,71,71,0.3);border-radius:6px;margin:8px 0;">
+          <div style="font-weight:600;color:#f44747;font-size:12px;margin-bottom:4px;">EnlangDB Execution Error</div>
+          <div style="color:var(--vscode-text-bright);font-size:11.5px;font-family:var(--font-mono);">${escapeHtml(res.error)}</div>
+        </div>
+      `;
+      return;
+    }
+
+    // Determine query type and extract tabular data if applicable
+    let headers = [];
+    let rows = [];
+    let resultTitle = '';
+
+    if (res.type === 'SHOW_TABLES') {
+      resultTitle = `Tables in '${activeDb}'`;
+      headers = ['Table', 'Columns', 'Row Count'];
+      const tableNames = Object.keys(currentDbObj.tables);
+      rows = tableNames.map(name => {
+        const tbl = currentDbObj.tables[name];
+        return {
+          Table: name,
+          Columns: (tbl.columns || []).join(', '),
+          'Row Count': (tbl.rows || []).length
+        };
+      });
+    } else if (res.type === 'SHOW_DATABASES') {
+      resultTitle = 'Registered Databases';
+      headers = ['Database', 'Status', 'Tables'];
+      rows = Object.keys(dbState.databases).map(name => ({
+        Database: name,
+        Status: name === activeDb ? 'Active' : 'Ready',
+        Tables: Object.keys(dbState.databases[name].tables).length
+      }));
+    } else if (res.type === 'FIND') {
+      const findMatch = stmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)/i);
+      const tableName = findMatch ? findMatch[1] : '';
+      const tableObj = currentDbObj.tables[tableName];
+      if (tableObj) {
+        resultTitle = `Records: ${tableName}`;
+        headers = tableObj.columns || (tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []);
+        const whereMatch = stmt.match(/\s+where\s+(.+)$/i);
+        const whereClause = whereMatch ? whereMatch[1].trim() : null;
+        rows = (tableObj.rows || []).filter(r => (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition(r, whereClause) : true);
+      }
+    } else if (res.type === 'COUNT') {
+      resultTitle = 'Record Count';
+      const countMatch = stmt.match(/^count\s+records\s+in\s+([a-zA-Z0-9_]+)/i);
+      const tableName = countMatch ? countMatch[1] : 'table';
+      headers = ['Table', 'Count'];
+      const tableObj = currentDbObj.tables[tableName];
+      rows = [{ Table: tableName, Count: tableObj ? tableObj.rows.length : 0 }];
+    }
+
+    // Build HTML representation
+    let html = `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--vscode-border);margin-bottom:8px;font-size:11px;">
+        <div>
+          <span style="color:var(--vscode-text-muted);">Active DB:</span> 
+          <span class="domain-badge domain-enlngdb" style="font-weight:600;">${escapeHtml(activeDb)}</span>
+          <span style="color:var(--vscode-text-muted);margin-left:8px;">Tables:</span> <b>${tablesCount}</b>
+        </div>
+        <div style="color:var(--vscode-text-muted);">
+          Query: <code style="color:#4ec9b0;font-family:var(--font-mono);">${escapeHtml(stmt)}</code>
+          <span style="margin-left:8px;color:#858585;">(&lt;0.05ms)</span>
+        </div>
+      </div>
     `;
+
+    // Status message for DDL/DML mutations (INSERT, UPDATE, DELETE, CREATE, USE)
+    if (res.type === 'INSERT' || res.type === 'UPDATE' || res.type === 'CREATE_TABLE' || res.type === 'USE_DATABASE' || res.type === 'DROP_TABLE' || res.type === 'DELETE_COLUMN') {
+      html += `
+        <div style="padding:10px 14px;background:rgba(78,201,176,0.1);border:1px solid rgba(78,201,176,0.3);border-radius:6px;color:#4ec9b0;font-size:11.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+          <span>✔</span>
+          <span>${escapeHtml(res.output)}</span>
+        </div>
+      `;
+
+      // If an insert/update/delete affected a table, show that table automatically!
+      const targetTableMatch = stmt.match(/(?:into|in|table|from)\s+([a-zA-Z0-9_]+)/i);
+      if (targetTableMatch) {
+        const tblName = targetTableMatch[1];
+        const tblObj = currentDbObj.tables[tblName];
+        if (tblObj) {
+          headers = tblObj.columns;
+          rows = tblObj.rows;
+          resultTitle = `Table: ${tblName}`;
+        }
+      }
+    }
+
+    // Render Table if headers exist
+    if (headers && headers.length > 0) {
+      html += `
+        <div style="font-size:11.5px;font-weight:600;color:var(--vscode-text-bright);margin-bottom:6px;">
+          ${escapeHtml(resultTitle)} <span style="font-weight:normal;color:var(--vscode-text-muted);">(${rows ? rows.length : 0} rows)</span>
+        </div>
+        <table class="db-grid-table">
+          <thead>
+            <tr>
+              ${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${(!rows || rows.length === 0) ? `<tr><td colspan="${headers.length}" style="text-align:center;color:var(--vscode-text-muted);padding:14px;">Empty set (0 records)</td></tr>` : 
+              rows.map(row => `
+                <tr>
+                  ${headers.map(h => {
+                    const val = row[h];
+                    const displayVal = val !== undefined && val !== null ? escapeHtml(String(val)) : '<span style="color:#666;">NULL</span>';
+                    return `<td>${displayVal}</td>`;
+                  }).join('')}
+                </tr>
+              `).join('')
+            }
+          </tbody>
+        </table>
+      `;
+    } else if (!html.includes('domain-badge')) {
+      // Fallback display raw output text
+      html += `
+        <pre style="font-family:var(--font-mono);font-size:11.5px;color:#d4d4d4;padding:8px;background:rgba(0,0,0,0.2);border-radius:4px;overflow-x:auto;">${escapeHtml(res.output || 'Query executed successfully.')}</pre>
+      `;
+    }
+
+    dbGridContainer.innerHTML = html;
   }
 
   // ==============================================================================
@@ -841,10 +1052,10 @@ screen WalletHome:
 
       case 'db': {
         if (!arg) {
-          appendTerminal('<span class="term-err">Usage: db &lt;query&gt; (e.g. db find all records from accounts;)</span>');
+          appendTerminal('<span class="term-err">Usage: db &lt;query&gt; (e.g. db find all records from student; or db show tables;)</span>');
           break;
         }
-        executeEnlngDbInStudio(arg);
+        executeEnlngDbInStudio(arg, { fromTerminal: true });
         break;
       }
 
@@ -3149,7 +3360,8 @@ screen WalletHome:
       try {
         appendTerminal(`\n<span class="term-cyan">[ExtensionHost] Fetching manifest for ${ext.displayName || ext.name}...</span>`);
 
-        const response = await fetch(manifestUrl);
+        const controller = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined;
+        const response = await fetch(manifestUrl, { signal: controller });
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -6689,10 +6901,17 @@ Provide code in fenced code blocks.`;
     const dbExecuteBtn = document.getElementById('dbExecuteBtn');
     const dbQueryInput = document.getElementById('dbQueryInput');
     if (dbExecuteBtn && dbQueryInput) {
-      dbExecuteBtn.addEventListener('click', () => {
+      const runQuery = () => {
         const q = dbQueryInput.value.trim();
         if (q) {
           executeEnlngDbInStudio(q);
+        }
+      };
+      dbExecuteBtn.addEventListener('click', runQuery);
+      dbQueryInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          runQuery();
         }
       });
     }

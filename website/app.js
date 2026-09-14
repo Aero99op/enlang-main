@@ -416,9 +416,16 @@ const INITIAL_SOVEREIGN_DB = {
 };
 
 let sovereignDB = JSON.parse(JSON.stringify(INITIAL_SOVEREIGN_DB));
+if (typeof window !== 'undefined') {
+  window.sovereignDB = sovereignDB;
+  window.INITIAL_SOVEREIGN_DB = INITIAL_SOVEREIGN_DB;
+}
 
 function resetSovereignDB() {
   sovereignDB = JSON.parse(JSON.stringify(INITIAL_SOVEREIGN_DB));
+  if (typeof window !== 'undefined') {
+    window.sovereignDB = sovereignDB;
+  }
 }
 
 // Formats tabular data as exact, aligned ASCII grid tables like modern CLI / SQL tools
@@ -1063,6 +1070,12 @@ function extractStatements(text) {
     stmts.push(t);
   }
   return stmts;
+}
+
+if (typeof window !== 'undefined') {
+  window.extractStatements = extractStatements;
+  window.executeEnlngDBStatement = executeEnlngDBStatement;
+  window.formatAsciiTable = formatAsciiTable;
 }
 
 // Identifies if source code belongs to EnlngDB database engine
