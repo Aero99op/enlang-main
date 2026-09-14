@@ -591,11 +591,594 @@ screen WalletHome:
     `;
   }
 
-  // Append text to terminal
+  // ==============================================================================
+  // MULTIPLE TERMINALS SYSTEM (simply named terminal)
+  // ==============================================================================
+  let terminals = [
+    {
+      id: 1,
+      name: 'terminal',
+      outputHtml: `<span class="term-green">👑 Enlangg Sovereign Studio Terminal [1: terminal] Ready.</span>\n<span class="term-dim">Type </span><span class="term-yellow">help</span><span class="term-dim"> for CLI commands, or run .enlng files with </span><span class="term-yellow">run</span><span class="term-dim">.</span>`,
+      history: []
+    }
+  ];
+  let activeTerminalId = 1;
+  let terminalCmdHistory = [];
+  let terminalCmdIndex = -1;
+
+  function getActiveTerminal() {
+    return terminals.find(t => t.id === activeTerminalId) || terminals[0];
+  }
+
+  // Append text to active terminal
   function appendTerminal(html) {
-    if (!terminalOutput) return;
-    terminalOutput.innerHTML += '\n' + html;
-    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    const activeTerm = getActiveTerminal();
+    if (activeTerm) {
+      activeTerm.outputHtml += '\n' + html;
+    }
+    if (terminalOutput) {
+      terminalOutput.innerHTML = activeTerm ? activeTerm.outputHtml : html;
+      terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    }
+  }
+
+  function renderTerminalTabs() {
+    const container = document.getElementById('terminalTabsGroup');
+    if (!container) return;
+    container.innerHTML = '';
+
+    terminals.forEach(t => {
+      const tab = document.createElement('div');
+      tab.className = `terminal-tab-badge ${t.id === activeTerminalId ? 'active' : ''}`;
+      tab.innerHTML = `
+        <span class="term-dot"></span>
+        <span>${t.id}: terminal</span>
+        ${terminals.length > 1 ? `<span class="term-close-x" data-kill-id="${t.id}" title="Kill Terminal">✕</span>` : ''}
+      `;
+
+      tab.addEventListener('click', (e) => {
+        if (e.target.classList.contains('term-close-x')) {
+          e.stopPropagation();
+          const killId = parseInt(e.target.getAttribute('data-kill-id'), 10);
+          killTerminal(killId);
+          return;
+        }
+        switchTerminal(t.id);
+      });
+
+      container.appendChild(tab);
+    });
+
+    const activeTerm = getActiveTerminal();
+    if (terminalOutput && activeTerm) {
+      terminalOutput.innerHTML = activeTerm.outputHtml;
+      terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    }
+  }
+
+  function switchTerminal(id) {
+    activeTerminalId = id;
+    renderTerminalTabs();
+    const cmdInput = document.getElementById('terminalCmdInput');
+    if (cmdInput) cmdInput.focus();
+  }
+
+  function createTerminal() {
+    const nextId = terminals.length > 0 ? Math.max(...terminals.map(t => t.id)) + 1 : 1;
+    terminals.push({
+      id: nextId,
+      name: 'terminal',
+      outputHtml: `<span class="term-green">👑 Enlangg Sovereign Studio Terminal [${nextId}: terminal] Ready.</span>\n<span class="term-dim">Type </span><span class="term-yellow">help</span><span class="term-dim"> for CLI commands, or run .enlng files with </span><span class="term-yellow">run</span><span class="term-dim">.</span>`,
+      history: []
+    });
+    activeTerminalId = nextId;
+    renderTerminalTabs();
+    if (bottomDock && bottomDock.classList.contains('collapsed')) {
+      bottomDock.classList.remove('collapsed');
+    }
+    switchDockTab('dockTerminal');
+    const cmdInput = document.getElementById('terminalCmdInput');
+    if (cmdInput) cmdInput.focus();
+  }
+
+  function killTerminal(id) {
+    if (terminals.length <= 1) {
+      terminals[0].outputHtml = `<span class="term-dim">// Terminal reset. Type help for commands.</span>`;
+      renderTerminalTabs();
+      return;
+    }
+
+    terminals = terminals.filter(t => t.id !== id);
+    if (activeTerminalId === id) {
+      activeTerminalId = terminals[terminals.length - 1].id;
+    }
+    renderTerminalTabs();
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function executeTerminalCommand(rawCmd) {
+    const cmd = rawCmd.trim();
+    if (!cmd) return;
+
+    terminalCmdHistory.push(cmd);
+    terminalCmdIndex = terminalCmdHistory.length;
+
+    appendTerminal(`<span class="term-prompt-label">enlangg@studio:~$</span> <span style="color:#ffffff;">${escapeHtml(cmd)}</span>`);
+
+    const parts = cmd.split(/\s+/);
+    const primary = parts[0].toLowerCase();
+    const arg = parts.slice(1).join(' ');
+
+    switch (primary) {
+      case 'help': {
+        appendTerminal(`
+<span class="term-yellow">👑 Enlangg Sovereign Terminal Commands:</span>
+  <span class="term-blue">run [file]</span>        Execute active file or specified .enlng/.enlngdb script
+  <span class="term-blue">clear</span>             Clear active terminal screen
+  <span class="term-blue">ls</span> / <span class="term-blue">dir</span>          List all virtual workspace files with sizes
+  <span class="term-blue">cat &lt;file&gt;</span>        Display contents of a workspace file
+  <span class="term-blue">new &lt;file&gt;</span>        Create and open a new workspace file
+  <span class="term-blue">db &lt;query&gt;</span>        Execute an embedded EnlangDB SQL query
+  <span class="term-blue">terminals</span>         List all active terminal sessions
+  <span class="term-blue">extensions</span>        List all installed sovereign extensions
+  <span class="term-blue">echo &lt;text&gt;</span>       Print text to terminal
+  <span class="term-blue">date</span>              Show current date and timestamp
+  <span class="term-blue">whoami</span>            Show current sovereign user profile
+  <span class="term-blue">version</span>           Show Enlangg Studio runtime version
+`);
+        break;
+      }
+
+      case 'clear':
+      case 'cls': {
+        const t = getActiveTerminal();
+        if (t) t.outputHtml = '<span class="term-dim">// Terminal cleared</span>';
+        if (terminalOutput) terminalOutput.innerHTML = '<span class="term-dim">// Terminal cleared</span>';
+        break;
+      }
+
+      case 'ls':
+      case 'dir': {
+        const fileNames = Object.keys(vfs);
+        let listStr = `<span class="term-dim">Workspace files (${fileNames.length} items):</span>\n`;
+        fileNames.forEach(f => {
+          const info = getDomainInfo(f);
+          const bytes = (vfs[f] || '').length;
+          listStr += `  <span class="domain-badge domain-${info.badge}">${info.badge}</span> <b style="color:#fff;">${f}</b> <span class="term-dim">(${bytes} bytes)</span>\n`;
+        });
+        appendTerminal(listStr.trimEnd());
+        break;
+      }
+
+      case 'cat': {
+        if (!arg) {
+          appendTerminal('<span class="term-err">Usage: cat &lt;filepath&gt; (e.g. cat src/main.enlng)</span>');
+          break;
+        }
+        const target = arg.trim();
+        if (vfs[target] !== undefined) {
+          appendTerminal(`<span class="term-dim">--- Content of ${target} ---</span>\n${escapeHtml(vfs[target])}`);
+        } else {
+          appendTerminal(`<span class="term-err">Error: File '${target}' not found in workspace. Type 'ls' to see files.</span>`);
+        }
+        break;
+      }
+
+      case 'run': {
+        if (arg.trim()) {
+          const target = arg.trim();
+          if (vfs[target] !== undefined) {
+            openFile(target);
+            executeActiveFile();
+          } else {
+            appendTerminal(`<span class="term-err">Error: File '${target}' does not exist in workspace.</span>`);
+          }
+        } else {
+          executeActiveFile();
+        }
+        break;
+      }
+
+      case 'new': {
+        if (!arg) {
+          appendTerminal('<span class="term-err">Usage: new &lt;filepath&gt; (e.g. new src/test.enlng)</span>');
+          break;
+        }
+        const cleanName = arg.trim();
+        vfs[cleanName] = `type enlng\n\n# New Enlangg script\nshow "Hello from ${cleanName}"\n`;
+        saveVfs();
+        renderFileTree();
+        openFile(cleanName);
+        appendTerminal(`<span class="term-green">Created and opened '${cleanName}'</span>`);
+        break;
+      }
+
+      case 'db': {
+        if (!arg) {
+          appendTerminal('<span class="term-err">Usage: db &lt;query&gt; (e.g. db find all records from accounts;)</span>');
+          break;
+        }
+        executeEnlngDbInStudio(arg);
+        break;
+      }
+
+      case 'terminals': {
+        let msg = `<span class="term-yellow">Active Terminals (${terminals.length}):</span>\n`;
+        terminals.forEach(t => {
+          msg += `  ${t.id === activeTerminalId ? '● <b style="color:#4ec9b0;">' : '○ '} ${t.id}: terminal ${t.id === activeTerminalId ? '(ACTIVE)</b>' : ''}\n`;
+        });
+        appendTerminal(msg.trimEnd());
+        break;
+      }
+
+      case 'extensions': {
+        const installed = getInstalledExtensions();
+        let msg = `<span class="term-yellow">Installed Extensions (${installed.length}):</span>\n`;
+        installed.forEach(ext => {
+          msg += `  • <b style="color:#fff;">${ext.displayName || ext.name}</b> <span class="term-dim">v${ext.version || '1.0.0'} (${ext.namespace || 'marketplace'})</span>\n`;
+        });
+        appendTerminal(msg.trimEnd());
+        break;
+      }
+
+      case 'whoami':
+        appendTerminal('sovereign-developer (uid=0, gid=0, perms=rwx)');
+        break;
+
+      case 'version':
+        appendTerminal('<span class="term-green">Enlangg Studio v1.0.0 (Sovereign Edition) · High-Performance Native Web IDE</span>');
+        break;
+
+      case 'date':
+        appendTerminal(new Date().toString());
+        break;
+
+      case 'echo':
+        appendTerminal(escapeHtml(arg));
+        break;
+
+      default:
+        if (typeof transpileEnlngToJS === 'function') {
+          try {
+            const js = transpileEnlngToJS([cmd]);
+            let output = '';
+            const testFn = new Function('display', 'smartDisplay', 'cat', 'enlng_count', 'append', js);
+            testFn((...a) => { output += a.join(' ') + '\n'; }, (...a) => { output += a.join(' ') + '\n'; }, (...a) => a.join(''), enlng_count, append);
+            if (output.trim()) {
+              appendTerminal(output.trimEnd());
+              break;
+            }
+          } catch (_) {}
+        }
+        appendTerminal(`<span class="term-err">bash: ${escapeHtml(primary)}: command not found. Type </span><span class="term-yellow">help</span><span class="term-err"> for valid commands.</span>`);
+        break;
+    }
+  }
+
+  // ==============================================================================
+  // EXTENSIONS MARKETPLACE SYSTEM (Open VSX Registry)
+  // ==============================================================================
+  const BUILTIN_EXTENSIONS = [
+    {
+      id: 'enlangg.core-lang',
+      name: 'core-lang',
+      namespace: 'enlangg.org',
+      displayName: 'Enlangg Core Language Support',
+      version: '1.0.0',
+      description: 'Official language server, spatial pairs syntax highlighting, AST parser, and validation for the Enlangg language family.',
+      icon: '👑',
+      verified: true,
+      downloadCount: 154200,
+      averageRating: 5.0,
+      builtin: true,
+      installed: true
+    },
+    {
+      id: 'enlangg.database-studio',
+      name: 'database-studio',
+      namespace: 'enlangg.org',
+      displayName: 'EnlangDB Explorer & Query Studio',
+      version: '1.0.0',
+      description: 'Sub-millisecond embedded flat-file relational database studio, visual table editor, and schema inspector.',
+      icon: '📊',
+      verified: true,
+      downloadCount: 98400,
+      averageRating: 4.9,
+      builtin: true,
+      installed: true
+    },
+    {
+      id: 'enlangg.subway-3d',
+      name: 'subway-3d',
+      namespace: 'enlangg.org',
+      displayName: 'Subway Surfers 3D Live Viewport',
+      version: '1.0.0',
+      description: 'Hardware-accelerated 3D canvas viewport and real-time game simulator for .enlngd tokens and .enlgf layout trees.',
+      icon: '🎮',
+      verified: true,
+      downloadCount: 84100,
+      averageRating: 4.9,
+      builtin: true,
+      installed: true
+    },
+    {
+      id: 'enlangg.mobile-hal',
+      name: 'mobile-hal',
+      namespace: 'enlangg.org',
+      displayName: 'Sovereign Mobile Phone Simulator',
+      version: '1.0.0',
+      description: 'Real-time mobile smartphone frame emulator with notch, touch emulation, and gesture support for .enlngm files.',
+      icon: '📱',
+      verified: true,
+      downloadCount: 72300,
+      averageRating: 4.8,
+      builtin: true,
+      installed: true
+    },
+    {
+      id: 'enlangg.ai-copilot',
+      name: 'ai-copilot',
+      namespace: 'enlangg.org',
+      displayName: 'Enlangg Copilot (BYOK AI Assistant)',
+      version: '1.0.0',
+      description: 'Client-side autonomous code intelligence connecting Gemini, OpenAI, and local Ollama directly with zero server telemetry.',
+      icon: '🤖',
+      verified: true,
+      downloadCount: 120500,
+      averageRating: 5.0,
+      builtin: true,
+      installed: true
+    }
+  ];
+
+  let currentExtensionFilter = 'marketplace';
+  let cachedMarketplaceExtensions = [];
+
+  function getInstalledExtensions() {
+    try {
+      const saved = localStorage.getItem('enlangg_installed_extensions');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (_) {}
+    return BUILTIN_EXTENSIONS;
+  }
+
+  function saveInstalledExtensions(list) {
+    try {
+      localStorage.setItem('enlangg_installed_extensions', JSON.stringify(list));
+    } catch (_) {}
+    updateExtensionBadges();
+  }
+
+  function updateExtensionBadges() {
+    const list = getInstalledExtensions();
+    const countSpan = document.getElementById('installedCount');
+    const badge = document.getElementById('extensionsBadge');
+    if (countSpan) countSpan.textContent = list.length;
+    if (badge) {
+      badge.textContent = list.length;
+      badge.style.display = list.length > 0 ? 'inline-block' : 'none';
+    }
+  }
+
+  async function searchOpenVsx(query) {
+    const container = document.getElementById('extensionListContainer');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div style="padding:20px;text-align:center;color:var(--vscode-text-muted);font-size:12px;">
+        <div style="display:inline-block;animation:spin 1s linear infinite;margin-bottom:8px;">⏳</div>
+        <div>Searching Open VSX Registry...</div>
+      </div>
+    `;
+
+    const searchQuery = query && query.trim() ? query.trim() : 'python';
+    try {
+      const resp = await fetch(`https://open-vsx.org/api/-/search?q=${encodeURIComponent(searchQuery)}&size=15`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (data && data.extensions && Array.isArray(data.extensions)) {
+        cachedMarketplaceExtensions = data.extensions;
+        renderExtensionsList('marketplace');
+        return;
+      }
+    } catch (err) {
+      console.warn('Open VSX fetch fallback:', err);
+    }
+
+    // Curated Fallback
+    cachedMarketplaceExtensions = [
+      {
+        displayName: 'Python Language Tooling',
+        name: 'python',
+        namespace: 'ms-python',
+        version: '2026.8.0',
+        description: 'IntelliSense, linting, debugging, code navigation, code formatting, refactoring, and test explorer for Python.',
+        downloadCount: 82921500,
+        averageRating: 4.8,
+        files: { icon: '' }
+      },
+      {
+        displayName: 'Prettier - Code Formatter',
+        name: 'prettier-vscode',
+        namespace: 'esbenp',
+        version: '10.4.0',
+        description: 'Code formatter using Prettier for JavaScript, TypeScript, CSS, HTML, JSON, and Markdown.',
+        downloadCount: 45200000,
+        averageRating: 4.7,
+        files: { icon: '' }
+      },
+      {
+        displayName: 'Rust Analyzer',
+        name: 'rust-analyzer',
+        namespace: 'rust-lang',
+        version: '0.4.2026',
+        description: 'Rust language support with fast code completion, goto definition, syntax trees, and diagnostics.',
+        downloadCount: 18400000,
+        averageRating: 4.9,
+        files: { icon: '' }
+      },
+      {
+        displayName: 'Dracula Official Theme',
+        name: 'theme-dracula',
+        namespace: 'dracula-theme',
+        version: '2.24.3',
+        description: 'Official Dracula Theme. A dark theme for 200+ apps, crafted for maximal readability and aesthetic elegance.',
+        downloadCount: 12800000,
+        averageRating: 4.9,
+        files: { icon: '' }
+      },
+      {
+        displayName: 'Markdown All in One',
+        name: 'markdown-all-in-one',
+        namespace: 'yzhang',
+        version: '3.6.2',
+        description: 'All you need for Markdown: keyboard shortcuts, table of contents, auto preview, and math formulas.',
+        downloadCount: 9800000,
+        averageRating: 4.8,
+        files: { icon: '' }
+      }
+    ];
+    renderExtensionsList('marketplace');
+  }
+
+  function renderExtensionsList(mode) {
+    const container = document.getElementById('extensionListContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const installed = getInstalledExtensions();
+    const installedIds = new Set(installed.map(e => (e.namespace ? `${e.namespace}.${e.name}` : e.id)));
+
+    let list = [];
+    if (mode === 'installed') {
+      list = installed;
+    } else {
+      list = cachedMarketplaceExtensions;
+    }
+
+    if (list.length === 0) {
+      container.innerHTML = `
+        <div style="padding:24px;text-align:center;color:var(--vscode-text-muted);font-size:12px;">
+          No extensions found. Try searching for "theme", "python", "rust", or "prettier".
+        </div>
+      `;
+      return;
+    }
+
+    list.forEach(ext => {
+      const extId = ext.namespace ? `${ext.namespace}.${ext.name}` : (ext.id || ext.name);
+      const isInstalled = installedIds.has(extId) || ext.builtin || ext.installed;
+      const downloads = ext.downloadCount ? (ext.downloadCount > 1000000 ? (ext.downloadCount / 1000000).toFixed(1) + 'M' : (ext.downloadCount / 1000).toFixed(0) + 'k') : 'Popular';
+      const rating = ext.averageRating ? '★ ' + Number(ext.averageRating).toFixed(1) : '★ 5.0';
+      const iconSrc = ext.files && ext.files.icon ? ext.files.icon : '';
+
+      const card = document.createElement('div');
+      card.className = 'extension-item';
+      card.innerHTML = `
+        <div class="extension-icon-wrap">
+          ${iconSrc ? `<img src="${iconSrc}" alt="${ext.displayName || ext.name}" onerror="this.outerHTML='🧩'" />` : (ext.icon || '🧩')}
+        </div>
+        <div class="extension-details">
+          <div class="extension-title-row">
+            <span class="extension-name">${ext.displayName || ext.name}</span>
+            <button class="extension-install-btn ${isInstalled ? 'installed' : ''}" data-ext-id="${extId}">
+              ${isInstalled ? (ext.builtin ? 'Built-in' : 'Installed') : 'Install'}
+            </button>
+          </div>
+          <span class="extension-publisher">${ext.namespace || 'Open VSX'}${ext.verified ? ' ✔' : ''}</span>
+          <p class="extension-desc">${ext.description || 'Extension from Open VSX Registry for modern development.'}</p>
+          <div class="extension-stats-row">
+            <div class="extension-meta-info">
+              <span>⬇ ${downloads}</span>
+              <span>${rating}</span>
+            </div>
+            <span style="font-size:10px;color:var(--vscode-text-muted);">v${ext.version || '1.0.0'}</span>
+          </div>
+        </div>
+      `;
+
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.extension-install-btn')) return;
+        openExtensionModal(ext, isInstalled);
+      });
+
+      const actionBtn = card.querySelector('.extension-install-btn');
+      if (actionBtn && !ext.builtin) {
+        actionBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleExtensionInstall(ext);
+        });
+      }
+
+      container.appendChild(card);
+    });
+  }
+
+  function toggleExtensionInstall(ext) {
+    const extId = ext.namespace ? `${ext.namespace}.${ext.name}` : (ext.id || ext.name);
+    let installed = getInstalledExtensions();
+    const existingIndex = installed.findIndex(e => (e.namespace ? `${e.namespace}.${e.name}` : e.id) === extId);
+
+    if (existingIndex >= 0) {
+      installed.splice(existingIndex, 1);
+      saveInstalledExtensions(installed);
+      appendTerminal(`\n<span class="term-yellow">[Extensions] Uninstalled ${ext.displayName || ext.name}</span>`);
+    } else {
+      installed.push({
+        id: extId,
+        name: ext.name,
+        namespace: ext.namespace || 'marketplace',
+        displayName: ext.displayName || ext.name,
+        version: ext.version || '1.0.0',
+        description: ext.description || '',
+        icon: ext.files && ext.files.icon ? ext.files.icon : '🧩',
+        downloadCount: ext.downloadCount || 1000,
+        averageRating: ext.averageRating || 5.0,
+        installed: true
+      });
+      saveInstalledExtensions(installed);
+      appendTerminal(`\n<span class="term-green">[Extensions] Installed ${ext.displayName || ext.name} (v${ext.version || '1.0.0'}) from Open VSX Registry.</span>`);
+    }
+
+    renderExtensionsList(currentExtensionFilter);
+  }
+
+  function openExtensionModal(ext, isInstalled) {
+    const modal = document.getElementById('extensionModal');
+    if (!modal) return;
+
+    document.getElementById('modalExtTitle').textContent = ext.displayName || ext.name;
+    document.getElementById('modalExtDisplayName').textContent = ext.displayName || ext.name;
+    document.getElementById('modalExtNamespace').textContent = ext.namespace || 'Open VSX';
+    document.getElementById('modalExtVersion').textContent = `v${ext.version || '1.0.0'} · Verified Extension`;
+    document.getElementById('modalExtDescription').textContent = ext.description || 'Extension package from the Open VSX Registry.';
+    document.getElementById('modalExtDownloads').textContent = ext.downloadCount ? ext.downloadCount.toLocaleString() : '10,000+';
+    document.getElementById('modalExtRating').textContent = ext.averageRating ? '★ ' + Number(ext.averageRating).toFixed(1) : '★ 5.0';
+
+    const urlElem = document.getElementById('modalExtUrl');
+    if (urlElem) {
+      urlElem.href = ext.url || `https://open-vsx.org/extension/${ext.namespace || 'meta'}/${ext.name || 'pkg'}`;
+      urlElem.textContent = ext.url || `https://open-vsx.org/extension/${ext.namespace || 'meta'}/${ext.name || 'pkg'}`;
+    }
+
+    const modalBtn = document.getElementById('modalExtInstallBtn');
+    if (modalBtn) {
+      modalBtn.textContent = isInstalled ? (ext.builtin ? 'Built-in Extension' : 'Uninstall') : 'Install Extension';
+      modalBtn.disabled = !!ext.builtin;
+      modalBtn.onclick = () => {
+        if (!ext.builtin) {
+          toggleExtensionInstall(ext);
+          modal.classList.remove('open');
+        }
+      };
+    }
+
+    modal.classList.add('open');
   }
 
   // Dock Tabs Switching
@@ -1020,11 +1603,25 @@ Provide code in fenced code blocks.`;
         break;
       }
 
+      case 'viewExtensions': {
+        const actExtensions = document.getElementById('actExtensions');
+        if (actExtensions) actExtensions.click();
+        break;
+      }
+
       case 'viewDomains': {
         const actDomains = document.getElementById('actDomains');
         if (actDomains) actDomains.click();
         break;
       }
+
+      case 'newTerminal':
+        createTerminal();
+        break;
+
+      case 'killTerminal':
+        killTerminal(activeTerminalId);
+        break;
 
       case 'viewCopilot':
         if (copilotPanel) copilotPanel.classList.toggle('open');
@@ -1056,14 +1653,20 @@ Provide code in fenced code blocks.`;
         if (dbQueryInput) dbQueryInput.focus();
         break;
 
-      case 'clearTerminal':
+      case 'clearTerminal': {
+        const t = getActiveTerminal();
+        if (t) t.outputHtml = '<span class="term-dim">// Terminal cleared</span>';
         if (terminalOutput) terminalOutput.innerHTML = '<span class="term-dim">// Terminal cleared</span>';
         break;
+      }
 
-      case 'focusTerminal':
+      case 'focusTerminal': {
         if (bottomDock) bottomDock.classList.remove('collapsed');
         switchDockTab('dockTerminal');
+        const cmdInput = document.getElementById('terminalCmdInput');
+        if (cmdInput) cmdInput.focus();
         break;
+      }
 
       case 'openDocs':
         window.open('docs.html', '_blank');
@@ -1255,6 +1858,7 @@ Provide code in fenced code blocks.`;
       { id: 'actExplorer', pane: 'paneExplorer' },
       { id: 'actSearch', pane: 'paneSearch' },
       { id: 'actDatabase', pane: 'paneDatabase' },
+      { id: 'actExtensions', pane: 'paneExtensions' },
       { id: 'actDomains', pane: 'paneDomains' }
     ];
 
@@ -1315,6 +1919,104 @@ Provide code in fenced code blocks.`;
     if (clearTerminalBtn) {
       clearTerminalBtn.addEventListener('click', () => {
         if (terminalOutput) terminalOutput.innerHTML = '<span class="term-dim">// Terminal cleared</span>';
+      });
+    }
+
+    // Multiple Terminal Dock Subbar Controls
+    const newTerminalBtn = document.getElementById('newTerminalBtn');
+    if (newTerminalBtn) newTerminalBtn.addEventListener('click', () => createTerminal());
+
+    const killTerminalBtn = document.getElementById('killTerminalBtn');
+    if (killTerminalBtn) killTerminalBtn.addEventListener('click', () => killTerminal(activeTerminalId));
+
+    const clearActiveTerminalBtn = document.getElementById('clearActiveTerminalBtn');
+    if (clearActiveTerminalBtn) clearActiveTerminalBtn.addEventListener('click', () => handleMenuAction('clearTerminal'));
+
+    // Terminal Interactive CLI Input
+    const terminalCmdInput = document.getElementById('terminalCmdInput');
+    if (terminalCmdInput) {
+      terminalCmdInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const cmd = terminalCmdInput.value;
+          terminalCmdInput.value = '';
+          executeTerminalCommand(cmd);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (terminalCmdHistory.length > 0) {
+            if (terminalCmdIndex > 0) {
+              terminalCmdIndex--;
+            } else {
+              terminalCmdIndex = 0;
+            }
+            terminalCmdInput.value = terminalCmdHistory[terminalCmdIndex] || '';
+          }
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (terminalCmdIndex < terminalCmdHistory.length - 1) {
+            terminalCmdIndex++;
+            terminalCmdInput.value = terminalCmdHistory[terminalCmdIndex] || '';
+          } else {
+            terminalCmdIndex = terminalCmdHistory.length;
+            terminalCmdInput.value = '';
+          }
+        }
+      });
+    }
+
+    // Extensions Search & Filter Controls
+    const extSearchInput = document.getElementById('extensionSearchInput');
+    let extDebounceTimer = null;
+    if (extSearchInput) {
+      extSearchInput.addEventListener('input', () => {
+        clearTimeout(extDebounceTimer);
+        extDebounceTimer = setTimeout(() => {
+          searchOpenVsx(extSearchInput.value.trim());
+        }, 400);
+      });
+      extSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          clearTimeout(extDebounceTimer);
+          searchOpenVsx(extSearchInput.value.trim());
+        }
+      });
+    }
+
+    const filterMarketplaceBtn = document.getElementById('filterMarketplaceBtn');
+    const filterInstalledBtn = document.getElementById('filterInstalledBtn');
+    if (filterMarketplaceBtn && filterInstalledBtn) {
+      filterMarketplaceBtn.addEventListener('click', () => {
+        filterMarketplaceBtn.classList.add('active');
+        filterInstalledBtn.classList.remove('active');
+        currentExtensionFilter = 'marketplace';
+        renderExtensionsList('marketplace');
+      });
+      filterInstalledBtn.addEventListener('click', () => {
+        filterInstalledBtn.classList.add('active');
+        filterMarketplaceBtn.classList.remove('active');
+        currentExtensionFilter = 'installed';
+        renderExtensionsList('installed');
+      });
+    }
+
+    const refreshExtensionsBtn = document.getElementById('refreshExtensionsBtn');
+    if (refreshExtensionsBtn) {
+      refreshExtensionsBtn.addEventListener('click', () => {
+        const q = extSearchInput ? extSearchInput.value.trim() : '';
+        searchOpenVsx(q);
+      });
+    }
+
+    // Extension Details Modal Handlers
+    const extensionModal = document.getElementById('extensionModal');
+    const closeExtensionModal = document.getElementById('closeExtensionModal');
+    const dismissExtensionModalBtn = document.getElementById('dismissExtensionModalBtn');
+    const closeExtModal = () => { if (extensionModal) extensionModal.classList.remove('open'); };
+    if (closeExtensionModal) closeExtensionModal.addEventListener('click', closeExtModal);
+    if (dismissExtensionModalBtn) dismissExtensionModalBtn.addEventListener('click', closeExtModal);
+    if (extensionModal) {
+      extensionModal.addEventListener('click', (e) => {
+        if (e.target === extensionModal) closeExtModal();
       });
     }
 
@@ -1534,6 +2236,16 @@ Provide code in fenced code blocks.`;
         e.preventDefault();
         handleMenuAction('viewDatabase');
       }
+      // Ctrl + Shift + X (Extensions)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'X' || e.key === 'x')) {
+        e.preventDefault();
+        handleMenuAction('viewExtensions');
+      }
+      // Ctrl + Shift + ` (New Terminal)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === '`') {
+        e.preventDefault();
+        handleMenuAction('newTerminal');
+      }
       // Escape
       if (e.key === 'Escape') {
         closeAllMenus();
@@ -1542,6 +2254,7 @@ Provide code in fenced code blocks.`;
         closeShortcuts();
         closeAbout();
         closePwa();
+        closeExtModal();
       }
     });
 
@@ -1581,6 +2294,9 @@ Provide code in fenced code blocks.`;
     loadActiveFileContent();
     updateBreadcrumbs();
     updateDomainPill();
+    renderTerminalTabs();
+    updateExtensionBadges();
+    searchOpenVsx('');
     setupEventListeners();
 
     // Check status AI

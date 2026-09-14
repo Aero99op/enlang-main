@@ -1188,6 +1188,286 @@ html, body {
   background: rgba(255, 255, 255, 0.15);
 }
 
+/* ==============================================================================
+   MULTIPLE TERMINAL SUPPORT (simply named terminal)
+   ============================================================================== */
+.terminal-subbar {
+  height: 30px;
+  background: #181818;
+  border-bottom: 1px solid var(--vscode-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+.terminal-tabs-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  max-width: calc(100% - 100px);
+}
+
+.terminal-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  color: var(--vscode-text-muted);
+  background: transparent;
+  cursor: pointer;
+  border: 1px solid transparent;
+  user-select: none;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.terminal-tab-badge:hover {
+  background: var(--vscode-hover);
+  color: var(--vscode-text-bright);
+}
+
+.terminal-tab-badge.active {
+  background: #252526;
+  color: var(--vscode-text-bright);
+  border-color: var(--vscode-border);
+  font-weight: 600;
+}
+
+.terminal-tab-badge .term-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ec9b0;
+}
+
+.terminal-tab-badge .term-close-x {
+  font-size: 11px;
+  opacity: 0.6;
+  padding: 0 2px;
+  border-radius: 2px;
+  margin-left: 2px;
+}
+
+.terminal-tab-badge .term-close-x:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.terminal-subbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.terminal-tool-btn {
+  background: transparent;
+  border: none;
+  color: var(--vscode-text-muted);
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.terminal-tool-btn:hover {
+  background: var(--vscode-hover);
+  color: var(--vscode-text-bright);
+}
+
+.terminal-prompt-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 14px 10px 14px;
+  background: #181818;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.term-prompt-label {
+  color: #4ec9b0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.term-cmd-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* ==============================================================================
+   EXTENSIONS MARKETPLACE & OPEN VSX
+   ============================================================================== */
+.extension-search-wrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.extension-filter-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.ext-filter-btn {
+  background: #252526;
+  border: 1px solid var(--vscode-border);
+  color: var(--vscode-text-muted);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ext-filter-btn:hover {
+  color: #fff;
+  background: #2a2d2e;
+}
+
+.ext-filter-btn.active {
+  background: var(--vscode-accent);
+  color: #fff;
+  border-color: var(--vscode-accent);
+  font-weight: 600;
+}
+
+.extension-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.extension-item:hover {
+  background: #252526;
+}
+
+.extension-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  background: #2a2d2e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.extension-icon-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.extension-icon-wrap svg {
+  width: 22px;
+  height: 22px;
+  color: var(--vscode-accent);
+}
+
+.extension-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.extension-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.extension-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.extension-publisher {
+  font-size: 10.5px;
+  color: var(--vscode-accent);
+}
+
+.extension-desc {
+  font-size: 11px;
+  color: var(--vscode-text-muted);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.extension-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.extension-meta-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--vscode-text-muted);
+}
+
+.extension-install-btn {
+  background: var(--vscode-accent);
+  border: none;
+  color: #fff;
+  padding: 3px 9px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.extension-install-btn:hover {
+  background: var(--vscode-accent-hover);
+}
+
+.extension-install-btn.installed {
+  background: transparent;
+  border: 1px solid #4d4d4d;
+  color: var(--vscode-text-muted);
+}
+
+.extension-install-btn.installed:hover {
+  background: #333;
+  color: #fff;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .sidebar {
