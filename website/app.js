@@ -1218,6 +1218,10 @@ function executeEnlngDB(statementsToRun, terminal, executionMeta = { mode: 'all'
   }
 }
 
+if (typeof window !== 'undefined') {
+  window.executeEnlngDB = executeEnlngDB;
+}
+
 function initPlayground() {
   const editor = document.getElementById('codeEditor');
   const terminal = document.getElementById('terminalOutput');

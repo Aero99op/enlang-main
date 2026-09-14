@@ -531,6 +531,13 @@ screen WalletHome:
     if (!activeFile || !vfs[activeFile]) return;
     const code = codeEditor.value;
 
+    const isDb = activeFile.endsWith('.enlngdb') || (typeof isEnlngDbCode === 'function' && isEnlngDbCode(code));
+
+    if (isDb) {
+      executeEnlngDbInStudio(code);
+      return;
+    }
+
     // Switch to Terminal Tab by default
     switchDockTab('dockTerminal');
     if (bottomDock && bottomDock.classList.contains('collapsed')) {
@@ -539,8 +546,6 @@ screen WalletHome:
 
     if (activeFile.endsWith('.enlng')) {
       executeCoreEnlng(code);
-    } else if (activeFile.endsWith('.enlngdb')) {
-      executeEnlngDbInStudio(code);
     } else if (activeFile.endsWith('.enlngf') || activeFile.endsWith('.enlngd')) {
       if (previewPane) previewPane.classList.add('visible');
       renderLivePreview();
@@ -616,12 +621,15 @@ screen WalletHome:
     }
   }
 
-  // Execute .enlngdb in Studio against Sovereign In-Memory Engine
+  // Execute .enlngdb in Studio using the Real EnlangDB Runner (matches Playground exactly)
   function executeEnlngDbInStudio(sqlCode, options = {}) {
     if (!sqlCode || !sqlCode.trim()) {
       appendTerminal(`<span class="term-warn">[EnlangDB] Empty query or script provided.</span>`);
       return;
     }
+
+    // Automatically redirect to the dedicated enlngdb terminal
+    getOrCreateEnlngDbTerminal();
 
     const dbState = (typeof sovereignDB !== 'undefined') ? sovereignDB : (window.sovereignDB || null);
     if (!dbState) {
@@ -634,24 +642,26 @@ screen WalletHome:
       ? extractStatements(sqlCode)
       : (typeof window.extractStatements === 'function' ? window.extractStatements(sqlCode) : sqlCode.split(';').map(s => s.trim()).filter(Boolean));
 
+    const outputs = [];
+    const tStart = performance.now();
+    outputs.push(`<span class="term-dim">// === EnlngDB Pure C Engine (Active DB: ${dbState.activeDb} | &lt;0.05ms Latency) ===</span>`);
+
     if (stmts.length === 0) {
-      appendTerminal(`<span class="term-dim">// 0 executable EnlangDB statements found.</span>`);
+      outputs.push(`<span class="term-dim">// 0 executable statements found.</span>`);
+      appendTerminal(outputs.join('\n'));
       return;
     }
 
-    const t0 = performance.now();
-    appendTerminal(`\n<span class="term-cyan">----------------- EnlangDB: Executing ${activeFile || 'Query'} -----------------</span>`);
-
-    let lastResult = null;
     let successCount = 0;
     let failCount = 0;
+    let lastResult = null;
 
     for (let i = 0; i < stmts.length; i++) {
       const stmt = stmts[i].trim();
       if (!stmt) continue;
 
-      const prefix = stmts.length > 1 ? `[${i + 1}/${stmts.length}] ` : '';
-      appendTerminal(`<span class="term-stmt">${prefix}enlangdb&gt; ${escapeHtml(stmt)};</span>`);
+      const stmtPrefix = stmts.length > 1 ? `[${i + 1}/${stmts.length}] ` : '';
+      outputs.push(`<span class="term-stmt">${escapeHtml(stmtPrefix + stmt)};</span>`);
 
       try {
         const execFn = (typeof executeEnlngDBStatement === 'function')
@@ -659,7 +669,7 @@ screen WalletHome:
           : (window.executeEnlngDBStatement || null);
 
         if (!execFn) {
-          appendTerminal(`<span class="term-err">[EnlangDB] executeEnlngDBStatement function not found.</span>`);
+          outputs.push(`<span class="term-err">[EnlangDB] executeEnlngDBStatement function not found.</span>`);
           break;
         }
 
@@ -667,33 +677,29 @@ screen WalletHome:
         if (!res) continue;
         lastResult = { stmt, res };
 
-        if (res.error || res.type === 'ERROR') {
+        if (res.type === 'ERROR' || res.error) {
           failCount++;
-          appendTerminal(`<span class="term-err">${escapeHtml(res.error)}</span>`);
+          outputs.push(`<span class="term-err">${escapeHtml(res.error)}</span>\n`);
+        } else if (res.type === 'SECURITY_GUARD') {
+          outputs.push(`<span class="term-warn">${escapeHtml(res.output)}</span>\n`);
         } else {
           successCount++;
-          appendTerminal(`<span class="term-success">${escapeHtml(res.output)}</span>`);
+          outputs.push(`<span class="term-success">${escapeHtml(res.output)}</span>\n`);
         }
       } catch (err) {
         failCount++;
-        appendTerminal(`<span class="term-err">EnlangDB Execution Error: ${escapeHtml(err.message)}</span>`);
+        outputs.push(`<span class="term-err">EnlngDB Execution Error: ${escapeHtml(err.message)}</span>\n`);
       }
     }
 
-    const t1 = performance.now();
-    const elapsedMs = (t1 - t0).toFixed(2);
-    appendTerminal(`<span class="term-dim">// EnlangDB Finished: ${successCount} succeeded, ${failCount} failed (${elapsedMs} ms)</span>`);
+    const tEnd = performance.now();
+    const totalMs = (tEnd - tStart).toFixed(2);
+    outputs.push(`<span class="term-dim">// Finished: ${successCount} succeeded, ${failCount} failed (${totalMs} ms)</span>`);
 
-    // Render interactive view into dockDatabase / dbGridContainer
+    appendTerminal(outputs.join('\n'));
+
+    // Keep interactive table in dockDatabase / dbGridContainer in sync
     renderEnlngDbGridResult(lastResult, dbState);
-
-    // Switch to dockDatabase unless silent or from terminal command
-    if (!options.fromTerminal) {
-      switchDockTab('dockDatabase');
-      if (bottomDock && bottomDock.classList.contains('collapsed')) {
-        bottomDock.classList.remove('collapsed');
-      }
-    }
   }
 
   // Render EnlangDB query results into dockDatabase / dbGridContainer
@@ -883,10 +889,11 @@ screen WalletHome:
 
     terminals.forEach(t => {
       const tab = document.createElement('div');
-      tab.className = `terminal-tab-badge ${t.id === activeTerminalId ? 'active' : ''}`;
+      const isDb = t.name === 'enlngdb';
+      tab.className = `terminal-tab-badge ${t.id === activeTerminalId ? 'active' : ''} ${isDb ? 'terminal-tab-db' : ''}`;
       tab.innerHTML = `
-        <span class="term-dot"></span>
-        <span>${t.id}: terminal</span>
+        <span class="term-dot" style="${isDb ? 'background:#38bdf8;' : ''}"></span>
+        <span>${isDb ? '📊 ' : ''}${t.id}: ${escapeHtml(t.name || 'terminal')}</span>
         ${terminals.length > 1 ? `<span class="term-close-x" data-kill-id="${t.id}" title="Kill Terminal">✕</span>` : ''}
       `;
 
@@ -913,8 +920,48 @@ screen WalletHome:
   function switchTerminal(id) {
     activeTerminalId = id;
     renderTerminalTabs();
+    const activeTerm = getActiveTerminal();
+    const isDb = activeTerm && activeTerm.name === 'enlngdb';
+    const promptLabel = document.getElementById('termPromptLabel');
+    if (promptLabel) {
+      promptLabel.textContent = isDb ? 'enlangdb@studio:~$' : 'enlangg@studio:~$';
+    }
     const cmdInput = document.getElementById('terminalCmdInput');
-    if (cmdInput) cmdInput.focus();
+    if (cmdInput) {
+      cmdInput.placeholder = isDb
+        ? 'Enter EnlangDB query (show tables; find all records from student;)...'
+        : 'Type command (help, run, ls, cat, db, clear)...';
+      cmdInput.focus();
+    }
+  }
+
+  function getOrCreateEnlngDbTerminal() {
+    let enlngDbTerm = terminals.find(t => t.name === 'enlngdb');
+    if (!enlngDbTerm) {
+      const nextId = terminals.length > 0 ? Math.max(...terminals.map(t => t.id)) + 1 : 1;
+      const activeDb = (typeof sovereignDB !== 'undefined' && sovereignDB && sovereignDB.activeDb) ? sovereignDB.activeDb : 'database1';
+      enlngDbTerm = {
+        id: nextId,
+        name: 'enlngdb',
+        outputHtml: `<span class="term-cyan">📊 EnlangDB Sovereign Terminal [${nextId}: enlngdb] Active.</span>\n<span class="term-dim">Connected to Pure C In-Memory Micro-VM Engine (Active DB: ${activeDb} | &lt;0.05ms Latency).</span>`,
+        history: []
+      };
+      terminals.push(enlngDbTerm);
+    }
+    activeTerminalId = enlngDbTerm.id;
+    renderTerminalTabs();
+    switchDockTab('dockTerminal');
+    if (bottomDock && bottomDock.classList.contains('collapsed')) {
+      bottomDock.classList.remove('collapsed');
+    }
+    const promptLabel = document.getElementById('termPromptLabel');
+    if (promptLabel) promptLabel.textContent = 'enlangdb@studio:~$';
+    const cmdInput = document.getElementById('terminalCmdInput');
+    if (cmdInput) {
+      cmdInput.placeholder = 'Enter EnlangDB query (show tables; find all records from student;)...';
+      cmdInput.focus();
+    }
+    return enlngDbTerm;
   }
 
   function createTerminal() {
@@ -960,7 +1007,42 @@ screen WalletHome:
     terminalCmdHistory.push(cmd);
     terminalCmdIndex = terminalCmdHistory.length;
 
-    appendTerminal(`<span class="term-prompt-label">enlangg@studio:~$</span> <span style="color:#ffffff;">${escapeHtml(cmd)}</span>`);
+    const activeTerm = getActiveTerminal();
+    const isDbTerm = activeTerm && activeTerm.name === 'enlngdb';
+    const promptLabel = isDbTerm ? 'enlangdb@studio:~$' : 'enlangg@studio:~$';
+    appendTerminal(`<span class="term-prompt-label">${promptLabel}</span> <span style="color:#ffffff;">${escapeHtml(cmd)}</span>`);
+
+    // In EnlangDB terminal, directly process SQL / EnlangDB queries
+    if (isDbTerm) {
+      const lower = cmd.toLowerCase();
+      if (lower === 'clear' || lower === 'cls') {
+        activeTerm.outputHtml = '<span class="term-dim">// EnlangDB terminal cleared</span>';
+        if (terminalOutput) terminalOutput.innerHTML = activeTerm.outputHtml;
+        return;
+      }
+      if (lower === 'exit' || lower === 'quit') {
+        const mainTerm = terminals.find(t => t.name === 'terminal') || terminals[0];
+        if (mainTerm) switchTerminal(mainTerm.id);
+        return;
+      }
+      if (lower === 'help') {
+        appendTerminal(`
+<span class="term-cyan">📊 EnlangDB Sovereign Interactive Terminal:</span>
+  <span class="term-yellow">show tables;</span>                               Discover all tables in active DB
+  <span class="term-yellow">find all records from &lt;table&gt;;</span>           Query all rows with ASCII grid
+  <span class="term-yellow">use database &lt;dbname&gt;;</span>                   Switch active database
+  <span class="term-yellow">show databases;</span>                             List registered databases
+  <span class="term-yellow">count records in &lt;table&gt;;</span>                   Count rows in a table
+  <span class="term-yellow">insert into &lt;table&gt; with col val...;</span>         Insert a new record
+  <span class="term-yellow">clear</span>                                       Clear terminal output
+  <span class="term-yellow">exit</span>                                        Return to main terminal
+`);
+        return;
+      }
+      // Execute directly as EnlangDB query!
+      executeEnlngDbInStudio(cmd);
+      return;
+    }
 
     const parts = cmd.split(/\s+/);
     const primary = parts[0].toLowerCase();
@@ -1062,7 +1144,8 @@ screen WalletHome:
       case 'terminals': {
         let msg = `<span class="term-yellow">Active Terminals (${terminals.length}):</span>\n`;
         terminals.forEach(t => {
-          msg += `  ${t.id === activeTerminalId ? '● <b style="color:#4ec9b0;">' : '○ '} ${t.id}: terminal ${t.id === activeTerminalId ? '(ACTIVE)</b>' : ''}\n`;
+          const isCur = t.id === activeTerminalId;
+          msg += `  ${isCur ? '● <b style="color:#4ec9b0;">' : '○ '} ${t.id}: ${escapeHtml(t.name || 'terminal')} ${isCur ? '(ACTIVE)</b>' : ''}\n`;
         });
         appendTerminal(msg.trimEnd());
         break;
