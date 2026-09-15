@@ -31,9 +31,22 @@ venv/
 *.log
 scratch/
 
-# Loose test output images and raw videos in root
+# Loose test output images in root
 /*.png
-/*.mp4
+
+# Video files, screen recordings, and media directories
+*.mp4
+*.webm
+*.mov
+*.avi
+*.mkv
+*.wmv
+*.flv
+*.m4v
+*.gifv
+videos/
+website/videos/
+recordings/
 
 # Local deployment bundles
 .vercel/

@@ -794,15 +794,15 @@ screen WalletHome:
       bottomDock.classList.remove('collapsed');
     }
 
+    if (isDb) {
+      executeEnlngDbInStudio(code);
+      return;
+    }
+
     // ⚡ If Native Bridge is connected, execute using ~/.enlangg/bin installed binaries!
     if (isNativeBridgeConnected) {
       const ext = activeFile.split('.').pop();
       executeViaNativeBridge(activeFile, code, ext);
-      return;
-    }
-
-    if (isDb) {
-      executeEnlngDbInStudio(code);
       return;
     }
 
@@ -926,6 +926,15 @@ screen WalletHome:
 
     // Automatically redirect to the dedicated enlngdb terminal
     getOrCreateEnlngDbTerminal();
+
+    // Ensure preview pane is open showing EnlangDB results
+    if (previewPane) previewPane.classList.add('visible');
+    const previewTitle = document.getElementById('previewTitle');
+    if (previewTitle) previewTitle.innerHTML = '🗄️ EnlangDB Live Workbench &amp; Results Grid';
+    if (livePreviewFrame) livePreviewFrame.style.display = 'none';
+    if (mobileSimulator) mobileSimulator.style.display = 'none';
+    const dbResultsPane = document.getElementById('dbWorkbenchResultsPane');
+    if (dbResultsPane) dbResultsPane.style.display = 'flex';
 
     // ⚡ If Native Bridge is connected, execute using ~/.enlangg/bin/enlngdb.exe!
     if (isNativeBridgeConnected) {
@@ -1307,54 +1316,144 @@ find all records from student where grade is "A";
       }
     }
 
-    // Statement enclosing the cursor
     const lines = text.split('\n');
     const textBefore = text.substring(0, selStart);
-    const lineIndex = textBefore.split('\n').length - 1; // 0-indexed
-    const cursorLine = lines[lineIndex] || '';
+    const currentLineIndex = textBefore.split('\n').length - 1; // 0-indexed
+    const currentLineNum = currentLineIndex + 1; // 1-indexed
+    const cursorLine = lines[currentLineIndex] || '';
     const trimmedLine = cursorLine.trim();
 
-    // Check if current line is "type enlngdb" or "type enlngdb;" (sentence with or without semicolon)
-    if (/^type\s+[a-zA-Z0-9_]+;?$/i.test(trimmedLine)) {
-      return { text: trimmedLine, mode: 'line', lineNum: lineIndex + 1 };
+    // 2. Parse all statements accurately respecting quotes and line comments
+    const statements = [];
+    let curStmtChars = [];
+    let stmtStartLine = 1;
+    let stmtStartIdx = -1;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let inLineComment = false;
+    let lineCounter = 1;
+
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      const nextCh = text[i + 1] || '';
+
+      if (ch === '\n') {
+        inLineComment = false;
+        if (curStmtChars.length > 0) {
+          curStmtChars.push('\n');
+        }
+        lineCounter++;
+        continue;
+      }
+
+      if (inLineComment) {
+        continue;
+      }
+
+      // Check comment start (# or --)
+      if (!inSingleQuote && !inDoubleQuote) {
+        if (ch === '#' || (ch === '-' && nextCh === '-')) {
+          inLineComment = true;
+          continue;
+        }
+      }
+
+      // Check quotes
+      if (ch === "'" && !inDoubleQuote) {
+        inSingleQuote = !inSingleQuote;
+        if (stmtStartIdx === -1) {
+          stmtStartIdx = i;
+          stmtStartLine = lineCounter;
+        }
+        curStmtChars.push(ch);
+        continue;
+      }
+      if (ch === '"' && !inSingleQuote) {
+        inDoubleQuote = !inDoubleQuote;
+        if (stmtStartIdx === -1) {
+          stmtStartIdx = i;
+          stmtStartLine = lineCounter;
+        }
+        curStmtChars.push(ch);
+        continue;
+      }
+
+      // Semicolon statement terminator outside quotes
+      if (ch === ';' && !inSingleQuote && !inDoubleQuote) {
+        curStmtChars.push(';');
+        const raw = curStmtChars.join('');
+        const cleaned = raw.split('\n')
+          .map(l => l.replace(/#.*$/, '').replace(/--.*$/, '').trim())
+          .filter(Boolean)
+          .join(' ');
+        if (cleaned.length > 0) {
+          statements.push({
+            text: cleaned,
+            startIdx: stmtStartIdx !== -1 ? stmtStartIdx : i,
+            endIdx: i + 1,
+            startLine: stmtStartLine,
+            endLine: lineCounter
+          });
+        }
+        curStmtChars = [];
+        stmtStartIdx = -1;
+        stmtStartLine = lineCounter;
+        continue;
+      }
+
+      // Regular characters
+      if (stmtStartIdx === -1 && !/\s/.test(ch)) {
+        stmtStartIdx = i;
+        stmtStartLine = lineCounter;
+      }
+      if (stmtStartIdx !== -1) {
+        curStmtChars.push(ch);
+      }
     }
 
-    // If cursor line has a query statement
-    if (trimmedLine && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('--')) {
-      const prevSemi = text.lastIndexOf(';', selStart - 1);
-      const startIdx = prevSemi === -1 ? 0 : prevSemi + 1;
-      let nextSemi = text.indexOf(';', selStart);
-      if (nextSemi === -1) nextSemi = text.length;
-      else nextSemi = nextSemi + 1;
-
-      const candidate = text.substring(startIdx, nextSemi).trim();
-      const cleanStmt = candidate.split('\n')
-        .map(l => l.trim())
-        .filter(l => l && !l.startsWith('#') && !l.startsWith('--'))
+    // Trailing statement without semicolon
+    if (curStmtChars.length > 0) {
+      const raw = curStmtChars.join('');
+      const cleaned = raw.split('\n')
+        .map(l => l.replace(/#.*$/, '').replace(/--.*$/, '').trim())
+        .filter(Boolean)
         .join(' ');
-
-      if (cleanStmt) {
-        return { text: cleanStmt, mode: 'line', lineNum: lineIndex + 1 };
+      if (cleaned.length > 0) {
+        statements.push({
+          text: cleaned.endsWith(';') ? cleaned : cleaned + ';',
+          startIdx: stmtStartIdx !== -1 ? stmtStartIdx : text.length,
+          endIdx: text.length,
+          startLine: stmtStartLine,
+          endLine: lineCounter
+        });
       }
     }
 
-    // Scan backwards from cursor line to nearest query
-    for (let i = lineIndex; i >= 0; i--) {
-      const l = lines[i].trim();
-      if (l && !l.startsWith('#') && !l.startsWith('--')) {
-        return { text: l, mode: 'line', lineNum: i + 1 };
+    // 3. Match the statement corresponding to current cursor position or line
+    // Find statements that overlap this line
+    const matchingStmtsOnLine = statements.filter(s => s.startLine <= currentLineNum && currentLineNum <= s.endLine);
+
+    if (matchingStmtsOnLine.length === 1) {
+      return { text: matchingStmtsOnLine[0].text, mode: 'line', lineNum: matchingStmtsOnLine[0].startLine };
+    } else if (matchingStmtsOnLine.length > 1) {
+      // If multiple statements on same line (e.g. `use db; show tables;`), use character position
+      for (let s of matchingStmtsOnLine) {
+        if (selStart >= s.startIdx && selStart <= s.endIdx) {
+          return { text: s.text, mode: 'line', lineNum: s.startLine };
+        }
       }
+      // If cursor is at the end of the line, select the last statement on this line
+      const lastStmt = matchingStmtsOnLine[matchingStmtsOnLine.length - 1];
+      return { text: lastStmt.text, mode: 'line', lineNum: lastStmt.startLine };
     }
 
-    // Scan forward from cursor line
-    for (let i = lineIndex; i < lines.length; i++) {
-      const l = lines[i].trim();
-      if (l && !l.startsWith('#') && !l.startsWith('--')) {
-        return { text: l, mode: 'line', lineNum: i + 1 };
-      }
+    // 4. Fallback: If line has query content not ending in semicolon
+    if (trimmedLine && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('--')) {
+      const cleanLine = trimmedLine.endsWith(';') ? trimmedLine : trimmedLine + ';';
+      return { text: cleanLine, mode: 'line', lineNum: currentLineNum };
     }
 
-    return { text: text, mode: 'all', lineNum: 1 };
+    return { text: '', mode: 'empty', lineNum: currentLineNum };
   }
 
   // ⚡ Robust ASCII box table parser for enlngdb.exe and CLI outputs
@@ -1498,8 +1597,8 @@ ${escapeHtml(rawOutput || 'Query executed successfully with zero errors.')}
       const line = lines[i].trim();
       if (!line || line.startsWith('#') || line.startsWith('--')) continue;
 
-      // Extract setup commands: database selection, table creation, data insertion, updates
-      if (/^(?:use\s+(?:database\s+)?[a-zA-Z0-9_\-.]+|create\s+table|insert\s+(?:record\s+into|into)|update\s+(?:records\s+in|in)|in\s+[a-zA-Z0-9_]+\s+change|drop\s+table)/i.test(line)) {
+      // Extract setup commands: database creation, database selection, table creation, data insertion, updates, alter, drops
+      if (/^(?:create\s+(?:database|table)|use\s+(?:database\s+)?[a-zA-Z0-9_\-.]+|insert\s+(?:record\s+into|records\s+into|row\s+into|into)|update\s+(?:records\s+in|rows\s+in|in|table)?|in\s+[a-zA-Z0-9_]+\s+(?:change|update|set|modify)|alter\s+table|add\s+column|delete\s+(?:column|from)|drop\s+table)/i.test(line)) {
         setupStatements.push(line.endsWith(';') ? line : line + ';');
       }
     }
@@ -1517,9 +1616,13 @@ ${escapeHtml(rawOutput || 'Query executed successfully with zero errors.')}
     if (!codeEditor) return;
     const q = extractQueryAtCursor();
     if (!q || !q.text || !q.text.trim()) {
-      appendTerminal(`<span class="term-warn">[EnlangDB Workbench] No query found at cursor line. Place cursor on a query or highlight statements.</span>`);
+      const lineNumInfo = q && q.lineNum ? ` line ${q.lineNum}` : '';
+      appendTerminal(`<span class="term-warn">[EnlangDB Workbench] No executable query found on${lineNumInfo}. Place cursor on a query or highlight statements.</span>`);
       return;
     }
+
+    // Automatically switch / connect to dedicated enlngdb terminal
+    getOrCreateEnlngDbTerminal();
 
     // Ensure preview pane is open showing EnlangDB results
     if (previewPane) previewPane.classList.add('visible');
@@ -1644,7 +1747,8 @@ ${escapeHtml(rawOutput || 'Query executed successfully with zero errors.')}
       activeDbName.textContent = dbState.activeDb;
     }
 
-    // Render interactive HTML grid and ASCII views
+    // Render interactive HTML grid and ASCII views in Workbench and dockDatabase
+    renderEnlngDbGridResult(lastRes, dbState);
     renderEnlngDbWorkbenchResults(lastRes, dbState, elapsedMs);
   }
 
@@ -1700,52 +1804,66 @@ ${escapeHtml(rawOutput || 'Query executed successfully with zero errors.')}
     let rows = [];
     let title = `Query Result`;
 
-    if (res.type === 'SHOW_TABLES') {
-      title = `Tables in database '${activeDb}'`;
-      headers = ['Table', 'Columns', 'Row Count'];
-      rows = Object.keys(currentDbObj.tables).map(name => {
-        const tbl = currentDbObj.tables[name];
-        return {
-          Table: name,
-          Columns: (tbl.columns || []).join(', '),
-          'Row Count': (tbl.rows || []).length
-        };
-      });
-    } else if (res.type === 'SHOW_DATABASES') {
-      title = 'Registered Databases';
-      headers = ['Database', 'Status', 'Tables'];
-      rows = Object.keys(dbState.databases).map(name => ({
-        Database: name,
-        Status: name === activeDb ? 'Active' : 'Ready',
-        Tables: Object.keys(dbState.databases[name].tables).length
-      }));
-    } else if (res.type === 'FIND') {
-      const findMatch = stmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)/i);
-      const tableName = findMatch ? findMatch[1] : '';
-      const tableObj = currentDbObj.tables[tableName];
-      if (tableObj) {
-        title = `Table: ${tableName}`;
-        headers = tableObj.columns || (tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []);
-        const whereMatch = stmt.match(/\s+where\s+(.+)$/i);
-        const evalWhere = (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition : (window.evaluateWhereCondition || null);
-        rows = (tableObj.rows || []).filter(r => evalWhere ? evalWhere(r, whereClause) : true);
+    // ⚡ 1. Primary path: If res.output contains formatted ASCII table (+---+), parse directly for 100% terminal parity!
+    if (res.output && res.output.includes('+---')) {
+      const parsedTables = parseAsciiTables(res.output);
+      if (parsedTables.length > 0) {
+        headers = parsedTables[0].headers;
+        rows = parsedTables[0].rows;
+        title = parsedTables[0].title || `Query Result`;
       }
-    } else if (res.type === 'COUNT') {
-      title = 'Record Count';
-      const countMatch = stmt.match(/^count\s+records\s+in\s+([a-zA-Z0-9_]+)/i);
-      const tableName = countMatch ? countMatch[1] : 'table';
-      headers = ['Table', 'Count'];
-      const tableObj = currentDbObj.tables[tableName];
-      rows = [{ Table: tableName, Count: tableObj ? tableObj.rows.length : 0 }];
-    } else if (res.type === 'INSERT' || res.type === 'UPDATE' || res.type === 'CREATE_TABLE' || res.type === 'USE_DATABASE' || res.type === 'DROP_TABLE' || res.type === 'DELETE_COLUMN') {
-      const targetTableMatch = stmt.match(/(?:into|in|table|from)\s+([a-zA-Z0-9_]+)/i);
-      if (targetTableMatch) {
-        const tblName = targetTableMatch[1];
-        const tblObj = currentDbObj.tables[tblName];
-        if (tblObj) {
-          title = `Updated Table: ${tblName}`;
-          headers = tblObj.columns;
-          rows = tblObj.rows;
+    }
+
+    // ⚡ 2. Secondary fallback path: Extract from in-memory dbState if not already parsed from ASCII
+    if (headers.length === 0) {
+      if (res.type === 'SHOW_TABLES') {
+        title = `Tables in database '${activeDb}'`;
+        headers = ['Table', 'Columns', 'Row Count'];
+        rows = Object.keys(currentDbObj.tables || {}).map(name => {
+          const tbl = currentDbObj.tables[name];
+          return {
+            Table: name,
+            Columns: (tbl.columns || []).join(', '),
+            'Row Count': (tbl.rows || []).length
+          };
+        });
+      } else if (res.type === 'SHOW_DATABASES') {
+        title = 'Registered Databases';
+        headers = ['Database', 'Status', 'Tables'];
+        rows = Object.keys(dbState.databases || {}).map(name => ({
+          Database: name,
+          Status: name === activeDb ? 'Active' : 'Ready',
+          Tables: Object.keys((dbState.databases[name] && dbState.databases[name].tables) || {}).length
+        }));
+      } else if (res.type === 'FIND') {
+        const findMatch = stmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)/i);
+        const tableName = findMatch ? findMatch[1] : '';
+        const tableObj = currentDbObj.tables ? currentDbObj.tables[tableName] : null;
+        if (tableObj) {
+          title = `Table: ${tableName}`;
+          headers = tableObj.columns || (tableObj.rows && tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []);
+          const whereMatch = stmt.match(/\s+where\s+(.+)$/i);
+          const whereClause = whereMatch ? whereMatch[1].trim() : null;
+          const evalWhere = (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition : (window.evaluateWhereCondition || null);
+          rows = (tableObj.rows || []).filter(r => (evalWhere && whereClause) ? evalWhere(r, whereClause) : true);
+        }
+      } else if (res.type === 'COUNT') {
+        title = 'Record Count';
+        const countMatch = stmt.match(/^count\s+records\s+in\s+([a-zA-Z0-9_]+)/i);
+        const tableName = countMatch ? countMatch[1] : 'table';
+        headers = ['Table', 'Count'];
+        const tableObj = currentDbObj.tables ? currentDbObj.tables[tableName] : null;
+        rows = [{ Table: tableName, Count: tableObj && tableObj.rows ? tableObj.rows.length : 0 }];
+      } else if (res.type === 'INSERT' || res.type === 'UPDATE' || res.type === 'CREATE_TABLE' || res.type === 'USE_DATABASE' || res.type === 'DROP_TABLE' || res.type === 'DELETE_COLUMN') {
+        const targetTableMatch = stmt.match(/(?:into|in|table|from)\s+([a-zA-Z0-9_]+)/i);
+        if (targetTableMatch) {
+          const tblName = targetTableMatch[1];
+          const tblObj = currentDbObj.tables ? currentDbObj.tables[tblName] : null;
+          if (tblObj) {
+            title = `Updated Table: ${tblName}`;
+            headers = tblObj.columns || [];
+            rows = tblObj.rows || [];
+          }
         }
       }
     }
@@ -1801,6 +1919,27 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
     }
 
     gridContainer.innerHTML = html;
+
+    // Sync Workbench header elements
+    const execStatus = document.getElementById('dbResultsExecStatus');
+    const queryPreview = document.getElementById('dbResultsQueryPreview');
+    const timingPill = document.getElementById('dbResultsTiming');
+    const activeDbBadge = document.getElementById('dbWorkbenchActiveDbName');
+
+    if (execStatus) {
+      const isErr = res && (res.error || res.type === 'ERROR');
+      execStatus.textContent = isErr ? '✖ ERROR' : '✔ SUCCESS';
+      execStatus.style.background = isErr ? '#f85149' : '#238636';
+    }
+    if (queryPreview && stmt) {
+      queryPreview.textContent = `enlangdb> ${stmt.replace(/[\r\n]+/g, ' ').slice(0, 80)}`;
+    }
+    if (timingPill && elapsedMs) {
+      timingPill.textContent = `${elapsedMs}ms`;
+    }
+    if (activeDbBadge && activeDb) {
+      activeDbBadge.textContent = activeDb;
+    }
 
     // Cache current result for CSV export and clipboard
     window._lastEnlngDbResultData = { headers, rows, title, output: res.output };
