@@ -305,6 +305,25 @@ screen WalletHome:
     editorTabsList.innerHTML = '';
 
     for (const file of openTabs) {
+      if (file === 'Settings') {
+        const tab = document.createElement('div');
+        tab.className = `tab ${file === activeFile ? 'active' : ''}`;
+        tab.innerHTML = `
+          <span class="tab-icon" style="display:inline-flex;align-items:center;margin-right:4px;">⚙️</span>
+          <span>Settings</span>
+          <span class="tab-close" title="Close Settings">✕</span>
+        `;
+        tab.addEventListener('click', (e) => {
+          if (e.target.classList.contains('tab-close')) {
+            closeTab('Settings');
+            return;
+          }
+          openSettingsEditor();
+        });
+        editorTabsList.appendChild(tab);
+        continue;
+      }
+
       const info = getDomainInfo(file);
       const tab = document.createElement('div');
       tab.className = `tab ${file === activeFile ? 'active' : ''} ${dirtyFiles.has(file) ? 'dirty' : ''}`;
@@ -330,6 +349,10 @@ screen WalletHome:
 
   // Open / Switch File
   function openFile(filepath) {
+    if (filepath === 'Settings') {
+      openSettingsEditor();
+      return;
+    }
     if (!vfs[filepath]) return;
     if (!openTabs.includes(filepath)) {
       openTabs.push(filepath);
@@ -357,6 +380,31 @@ screen WalletHome:
 
   // Load Content into Editor
   function loadActiveFileContent() {
+    const settingsPane = document.getElementById('settingsEditorPane');
+    const splitBody = document.querySelector('.editor-split-body');
+    const wbBar = document.getElementById('enlngdbWorkbenchBar');
+    const dbPane = document.getElementById('dbWorkbenchResultsPane');
+
+    if (activeFile === 'Settings') {
+      if (splitBody) splitBody.style.display = 'none';
+      if (settingsPane) settingsPane.style.display = 'flex';
+      if (wbBar) wbBar.style.display = 'none';
+      if (dbPane) dbPane.style.display = 'none';
+      renderSettingsUI();
+      if (breadcrumbFolder && breadcrumbFile) {
+        breadcrumbFolder.textContent = 'Preferences';
+        breadcrumbFile.textContent = 'Settings';
+      }
+      if (statusDomainPill) {
+        statusDomainPill.innerHTML = '<span>IDE Settings</span>';
+        statusDomainPill.title = 'Enlangg Studio Workspace & User Preferences';
+      }
+      return;
+    } else {
+      if (splitBody) splitBody.style.display = 'flex';
+      if (settingsPane) settingsPane.style.display = 'none';
+    }
+
     if (!codeEditor) return;
     if (!activeFile || !vfs[activeFile]) {
       codeEditor.value = '// No file open. Select or create a file from the Explorer.';
@@ -377,9 +425,7 @@ screen WalletHome:
     } else if (activeFile.endsWith('.enlngdb')) {
       syncEnlngDbWorkbenchView();
     } else {
-      const wbBar = document.getElementById('enlngdbWorkbenchBar');
       if (wbBar) wbBar.style.display = 'none';
-      const dbPane = document.getElementById('dbWorkbenchResultsPane');
       if (dbPane) dbPane.style.display = 'none';
       const previewTitle = document.getElementById('previewTitle');
       if (previewPane && previewPane.classList.contains('visible') && previewTitle && previewTitle.innerHTML.includes('EnlangDB')) {
@@ -396,6 +442,11 @@ screen WalletHome:
       breadcrumbFile.textContent = 'Welcome';
       return;
     }
+    if (activeFile === 'Settings') {
+      breadcrumbFolder.textContent = 'Preferences';
+      breadcrumbFile.textContent = 'Settings';
+      return;
+    }
     const parts = activeFile.split('/');
     if (parts.length > 1) {
       breadcrumbFolder.textContent = parts[0];
@@ -406,15 +457,25 @@ screen WalletHome:
     }
   }
 
-  // Update Domain Pill in Status Bar
+  // Update Domain Pill in Status Bar (Compact & Single-Line Safe)
   function updateDomainPill() {
     if (!statusDomainPill) return;
     if (!activeFile) {
-      statusDomainPill.textContent = 'Enlangg Sovereign Studio';
+      statusDomainPill.innerHTML = '<span>Enlangg Studio</span>';
+      statusDomainPill.title = 'Sovereign Fullstack IDE';
+      return;
+    }
+    if (activeFile === 'Settings') {
+      statusDomainPill.innerHTML = '<span>Settings</span>';
+      statusDomainPill.title = 'Enlangg Studio Workspace & User Preferences';
       return;
     }
     const info = getDomainInfo(activeFile);
-    statusDomainPill.textContent = `Domain: ${info.domain}`;
+    const shortDomain = info.domain.includes('(') ? info.domain.split('(')[0].trim() : info.domain;
+    const extMatch = activeFile.match(/\.[a-z0-9]+$/i);
+    const ext = extMatch ? extMatch[0] : '';
+    statusDomainPill.innerHTML = `<span>${shortDomain} (${ext})</span>`;
+    statusDomainPill.title = `Active Sovereign Domain: ${info.domain}`;
   }
 
   // Line Numbers Sync with Gutter Breakpoints & Git Blame
@@ -626,7 +687,11 @@ screen WalletHome:
           }
           if (text) {
             const foundCount = Object.values(data.binaries || {}).filter(b => b.found).length;
-            text.textContent = `Native: ~/.enlangg/bin (${foundCount}/7 Binaries)`;
+            text.textContent = `Native: ${foundCount}/7`;
+            const pillEl = document.getElementById('statusNativeEngine');
+            if (pillEl) {
+              pillEl.title = `Native Compilers: ${foundCount}/7 active in ${data.defaultBinDir || '~/.enlangg/bin'} (Click to test or open Settings)`;
+            }
           }
           if (userInitiated) {
             appendTerminal(`\n<span class="term-green">✔ [Native Bridge] Connected to system compilers at ${escapeHtml(data.defaultBinDir)}</span>`);
@@ -646,7 +711,11 @@ screen WalletHome:
       dot.style.boxShadow = 'none';
     }
     if (text) {
-      text.textContent = 'Engine: Web Sandbox';
+      text.textContent = 'Engine: Web';
+      const pillEl = document.getElementById('statusNativeEngine');
+      if (pillEl) {
+        pillEl.title = 'Running in Web Sandbox mode. Run enlangg-bridge to enable local machine native binaries.';
+      }
     }
     if (userInitiated) {
       appendTerminal(`\n<span class="term-warn">[Native Bridge] Daemon is not running on port 5999.</span>`);
@@ -2364,14 +2433,14 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
       if (hasSonar) {
         leftHtml += `
           <div class="statusbar-item" id="statusSonarItem" title="SonarQube: Quality Gate PASSED (Click to inspect rules)">
-            <span>🛡️ SonarQube</span>
+            <span>🛡️ Sonar</span>
           </div>
         `;
       }
       if (hasDocker) {
         leftHtml += `
           <div class="statusbar-item" id="statusDockerItem" title="Docker: 2 Containers Running (Click to manage)">
-            <span>🐳 Docker (2)</span>
+            <span>🐳 Docker</span>
           </div>
         `;
       }
@@ -2400,16 +2469,13 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
     if (statusRight) {
       let rightHtml = `
         <div class="statusbar-item" title="IntelliSense & Autocomplete Active">
-          <span>⚡ Autocomplete (0)</span>
-        </div>
-        <div class="statusbar-item" title="Sovereign Auto Retry Compiler Daemon">
-          <span>🔄 Auto Retry</span>
+          <span>⚡ Auto</span>
         </div>
       `;
       if (hasLiveServer) {
         rightHtml += `
           <div class="statusbar-item live-server" id="statusLiveServerItem" title="Live Server on port 5500 (Click to toggle Live Preview)">
-            <span>📡 Go Live: 5500</span>
+            <span>📡 Port: 5500</span>
           </div>
         `;
       }
@@ -2421,8 +2487,8 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
         `;
       }
       rightHtml += `
-        <div class="statusbar-item antigravity-active" id="statusAntigravityItem" title="Antigravity Settings & AI Copilot">
-          <span>✦ Antigravity - Settings</span>
+        <div class="statusbar-item antigravity-active" id="statusAntigravityItem" title="Antigravity Settings & AI Copilot (Click to open Settings Ctrl+,)">
+          <span>✦ Settings</span>
         </div>
       `;
       statusRight.innerHTML = rightHtml;
@@ -2446,8 +2512,7 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
       const agBtn = document.getElementById('statusAntigravityItem');
       if (agBtn) {
         agBtn.addEventListener('click', () => {
-          const byokModal = document.getElementById('byokModal');
-          if (byokModal) byokModal.classList.add('open');
+          openSettingsEditor();
         });
       }
     }
@@ -3022,6 +3087,641 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
     }, 6000);
   }
 
+  // ==============================================================================
+  // ⚙️ REAL VS CODE SETTINGS ARCHITECTURE (Preferences: Settings UI & JSON)
+  // ==============================================================================
+  const DEFAULT_SETTINGS = {
+    // 📝 Text Editor
+    "editor.fontSize": 13,
+    "editor.fontFamily": "'Cascadia Code', 'Fira Code', 'Consolas', monospace",
+    "editor.lineHeight": 20,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.wordWrap": "off",
+    "editor.lineNumbers": "on",
+    "editor.formatOnSave": true,
+    "editor.autoSave": "afterDelay",
+    "editor.bracketPairColorization": true,
+
+    // 🎨 Workbench & Appearance
+    "workbench.colorTheme": "vs-dark",
+    "workbench.statusBar.visible": true,
+    "workbench.activityBar.visible": true,
+    "workbench.fontZoom": 100,
+
+    // ⚡ Enlangg Core & Compilers
+    "enlang.executionEngine": "auto",
+    "enlang.nativeBridgeUrl": "http://127.0.0.1:5999",
+    "enlang.autoCompileOnSave": true,
+    "enlang.executionTimeout": 10,
+    "enlang.defaultDomain": "core",
+
+    // 🤖 AI & Copilot
+    "ai.provider": "gemini",
+    "ai.apiKey": "",
+    "ai.model": "gemini-2.5-flash",
+    "ai.autoSuggest": true,
+    "ai.temperature": 0.2,
+
+    // 🧩 Community Extensions
+    "prettier.singleQuote": false,
+    "prettier.tabWidth": 4,
+    "sonarqube.strictMode": true,
+    "liveServer.port": 5500
+  };
+
+  let currentSettings = { ...DEFAULT_SETTINGS };
+
+  const SETTINGS_METADATA = [
+    // --- Text Editor ---
+    {
+      id: 'editor.fontSize',
+      category: 'sectionEditor',
+      categoryLabel: 'Text Editor',
+      title: 'Editor: Font Size',
+      description: 'Controls the font size in pixels for the code editor and gutter line numbers. Default: <code>13</code>.',
+      type: 'number',
+      min: 9,
+      max: 32,
+      defaultVal: 13
+    },
+    {
+      id: 'editor.fontFamily',
+      category: 'sectionEditor',
+      categoryLabel: 'Text Editor',
+      title: 'Editor: Font Family',
+      description: 'Controls the monospace font family used across the editor. Default: <code>\'Cascadia Code\', \'Fira Code\', \'Consolas\', monospace</code>.',
+      type: 'text',
+      defaultVal: "'Cascadia Code', 'Fira Code', 'Consolas', monospace"
+    },
+    {
+      id: 'editor.tabSize',
+      category: 'sectionEditor',
+      categoryLabel: 'Text Editor',
+      title: 'Editor: Tab Size',
+      description: 'The number of spaces a tab is equal to. This setting is overridden based on the file contents when <code>editor.detectIndentation</code> is on.',
+      type: 'select',
+      options: [
+        { label: '2 spaces', value: 2 },
+        { label: '4 spaces (Recommended)', value: 4 },
+        { label: '8 spaces', value: 8 }
+      ],
+      defaultVal: 4
+    },
+    {
+      id: 'editor.insertSpaces',
+      category: 'sectionEditor',
+      categoryLabel: 'Text Editor',
+      title: 'Editor: Insert Spaces',
+      description: 'Insert spaces when pressing <code>Tab</code>.',
+      type: 'boolean',
+      defaultVal: true
+    },
+    {
+      id: 'editor.wordWrap',
+      category: 'sectionEditor',
+      categoryLabel: 'Text Editor',
+      title: 'Editor: Word Wrap',
+      description: 'Controls how lines should wrap. When set to <code>on</code>, long code lines wrap to the viewport width instead of horizontal scrolling.',
+      type: 'select',
+      options: [
+        { label: 'off (Never wrap lines)', value: 'off' },
+        { label: 'on (Wrap at viewport width)', value: 'on' },
+        { label: 'wordWrapColumn (Wrap at column)', value: 'wordWrapColumn' }
+      ],
+      defaultVal: 'off'
+    },
+    {
+      id: 'editor.lineNumbers',
+      category: 'sectionEditor',
+      categoryLabel: 'Text Editor',
+      title: 'Editor: Line Numbers',
+      description: 'Controls the display of line numbers in the gutter.',
+      type: 'select',
+      options: [
+        { label: 'on (Show line numbers & breakpoints)', value: 'on' },
+        { label: 'off (Hide gutter)', value: 'off' }
+      ],
+      defaultVal: 'on'
+    },
+    {
+      id: 'editor.formatOnSave',
+      category: 'sectionEditor',
+      categoryLabel: 'Text Editor',
+      title: 'Editor: Format On Save',
+      description: 'Format a file on save with Prettier code formatter. A formatter must be available, the file must not be saved after delay.',
+      type: 'boolean',
+      defaultVal: true
+    },
+    {
+      id: 'editor.autoSave',
+      category: 'sectionEditor',
+      categoryLabel: 'Text Editor',
+      title: 'Editor: Auto Save',
+      description: 'Controls auto save of dirty files to browser virtual file system (VFS).',
+      type: 'select',
+      options: [
+        { label: 'afterDelay (Automatically save after 1s)', value: 'afterDelay' },
+        { label: 'off (Manual save with Ctrl+S)', value: 'off' }
+      ],
+      defaultVal: 'afterDelay'
+    },
+    {
+      id: 'editor.bracketPairColorization',
+      category: 'sectionEditor',
+      categoryLabel: 'Text Editor',
+      title: 'Editor: Bracket Pair Colorization',
+      description: 'Controls whether bracket pair colorization is enabled or not. Use bracket pair coloring to identify matching pairs.',
+      type: 'boolean',
+      defaultVal: true
+    },
+
+    // --- Workbench & Appearance ---
+    {
+      id: 'workbench.colorTheme',
+      category: 'sectionWorkbench',
+      categoryLabel: 'Workbench & Appearance',
+      title: 'Workbench: Color Theme',
+      description: 'Specifies the color theme used in the workbench and code editor.',
+      type: 'select',
+      options: [
+        { label: 'Dark+ (default dark)', value: 'vs-dark' },
+        { label: 'Dracula Official (Vampire Night)', value: 'dracula' },
+        { label: 'One Dark Pro (Atom Classic)', value: 'one-dark-pro' },
+        { label: 'Monokai Pro (Sublime Heritage)', value: 'monokai' },
+        { label: 'Tokyo Night (Storm)', value: 'tokyo-night' },
+        { label: 'Nord (Arctic Elegance)', value: 'nord' },
+        { label: 'GitHub Dark (Primer Clean)', value: 'github-dark' },
+        { label: 'Cyberpunk 2077 (Neon Cyan/Magenta)', value: 'cyberpunk' }
+      ],
+      defaultVal: 'vs-dark'
+    },
+    {
+      id: 'workbench.statusBar.visible',
+      category: 'sectionWorkbench',
+      categoryLabel: 'Workbench & Appearance',
+      title: 'Workbench > Status Bar: Visible',
+      description: 'Controls the visibility of the status bar at the bottom of the workbench.',
+      type: 'boolean',
+      defaultVal: true
+    },
+    {
+      id: 'workbench.activityBar.visible',
+      category: 'sectionWorkbench',
+      categoryLabel: 'Workbench & Appearance',
+      title: 'Workbench > Activity Bar: Visible',
+      description: 'Controls the visibility of the primary activity bar on the left.',
+      type: 'boolean',
+      defaultVal: true
+    },
+    {
+      id: 'workbench.fontZoom',
+      category: 'sectionWorkbench',
+      categoryLabel: 'Workbench & Appearance',
+      title: 'Workbench: Zoom Level',
+      description: 'Adjust the zoom level of the entire window in percentage.',
+      type: 'select',
+      options: [
+        { label: '90%', value: 90 },
+        { label: '100% (Default)', value: 100 },
+        { label: '110%', value: 110 },
+        { label: '120%', value: 120 }
+      ],
+      defaultVal: 100
+    },
+
+    // --- Enlangg Core & Compilers ---
+    {
+      id: 'enlang.executionEngine',
+      category: 'sectionEnlangg',
+      categoryLabel: 'Enlangg Core & Compilers',
+      title: 'Enlangg: Execution Strategy',
+      description: 'Choose whether code execution runs natively on your machine via <code>~/.enlangg/bin</code> or through the browser Micro-VM sandbox.',
+      type: 'select',
+      options: [
+        { label: 'auto (Auto-Detect: Native if daemon running, else Web Sandbox)', value: 'auto' },
+        { label: 'native (Strict Native: Require ~/.enlangg/bin local executables)', value: 'native' },
+        { label: 'sandbox (Pure Client-Side Web Sandbox)', value: 'sandbox' }
+      ],
+      defaultVal: 'auto'
+    },
+    {
+      id: 'enlang.nativeBridgeUrl',
+      category: 'sectionEnlangg',
+      categoryLabel: 'Enlangg Core & Compilers',
+      title: 'Enlangg: Native Bridge Daemon URL',
+      description: 'The local HTTP REST daemon URL connecting Enlangg Studio to your system compilers (<code>enlangg.exe</code>, <code>enlngdb.exe</code>, etc.). Default: <code>http://127.0.0.1:5999</code>.',
+      type: 'text',
+      defaultVal: 'http://127.0.0.1:5999',
+      hasTestAction: true
+    },
+    {
+      id: 'enlang.autoCompileOnSave',
+      category: 'sectionEnlangg',
+      categoryLabel: 'Enlangg Core & Compilers',
+      title: 'Enlangg: Auto Compile & Lint on Save',
+      description: 'Automatically trigger syntax check, AST verification, and type checking when saving a file.',
+      type: 'boolean',
+      defaultVal: true
+    },
+    {
+      id: 'enlang.executionTimeout',
+      category: 'sectionEnlangg',
+      categoryLabel: 'Enlangg Core & Compilers',
+      title: 'Enlangg: Execution Timeout',
+      description: 'Maximum runtime in seconds allowed for a native compilation or query process before safely aborting.',
+      type: 'number',
+      min: 1,
+      max: 60,
+      defaultVal: 10
+    },
+    {
+      id: 'enlang.defaultDomain',
+      category: 'sectionEnlangg',
+      categoryLabel: 'Enlangg Core & Compilers',
+      title: 'Enlangg: Default New File Domain',
+      description: 'The default domain extension selected when creating new files.',
+      type: 'select',
+      options: [
+        { label: 'Core Backend (.enlng)', value: 'core' },
+        { label: 'Frontend UI (.enlgf)', value: 'frontend' },
+        { label: 'Design Tokens (.enlngd)', value: 'design' },
+        { label: 'Microservice Reactive (.enlngs)', value: 'micro' },
+        { label: 'Mobile Architecture (.enlngm)', value: 'mobile' },
+        { label: 'Sovereign Database (.enlngdb)', value: 'db' }
+      ],
+      defaultVal: 'core'
+    },
+
+    // --- AI & Copilot ---
+    {
+      id: 'ai.provider',
+      category: 'sectionAi',
+      categoryLabel: 'AI & Copilot',
+      title: 'AI: Model Provider',
+      description: 'Select the AI provider used for inline ghost code suggestions, chat, and automated refactoring.',
+      type: 'select',
+      options: [
+        { label: 'Google Gemini (Free tier at aistudio.google.com)', value: 'gemini' },
+        { label: 'OpenAI (GPT-4o / GPT-4o-mini)', value: 'openai' },
+        { label: 'Anthropic Claude (Claude 3.5 Sonnet)', value: 'anthropic' },
+        { label: 'Local Ollama (100% Offline, Zero Cost)', value: 'ollama' },
+        { label: 'Custom BYOK (Bring Your Own Key)', value: 'custom' }
+      ],
+      defaultVal: 'gemini'
+    },
+    {
+      id: 'ai.apiKey',
+      category: 'sectionAi',
+      categoryLabel: 'AI & Copilot',
+      title: 'AI: Personal API Key',
+      description: 'Your secret API key. Stored strictly client-side in your browser\'s <code>localStorage</code>. Never sent to any third-party intermediary.',
+      type: 'password',
+      defaultVal: ''
+    },
+    {
+      id: 'ai.model',
+      category: 'sectionAi',
+      categoryLabel: 'AI & Copilot',
+      title: 'AI: Model Identifier',
+      description: 'Specific model slug to invoke (e.g. <code>gemini-2.5-flash</code>, <code>gpt-4o</code>, <code>claude-3-5-sonnet-20241022</code>).',
+      type: 'text',
+      defaultVal: 'gemini-2.5-flash'
+    },
+    {
+      id: 'ai.autoSuggest',
+      category: 'sectionAi',
+      categoryLabel: 'AI & Copilot',
+      title: 'AI: Inline Ghost Code Autocomplete',
+      description: 'Enable AI-driven inline ghost text completions as you type in Enlang and EnlangDB files.',
+      type: 'boolean',
+      defaultVal: true
+    },
+    {
+      id: 'ai.temperature',
+      category: 'sectionAi',
+      categoryLabel: 'AI & Copilot',
+      title: 'AI: Temperature',
+      description: 'Controls sampling temperature (0.0 = deterministic/precise, 1.0 = creative). Default: <code>0.2</code>.',
+      type: 'number',
+      min: 0,
+      max: 1,
+      step: 0.1,
+      defaultVal: 0.2
+    },
+
+    // --- Community Extensions ---
+    {
+      id: 'prettier.singleQuote',
+      category: 'sectionExtensions',
+      categoryLabel: 'Community Extensions',
+      title: 'Prettier: Single Quote',
+      description: 'Use single quotes instead of double quotes in formatted JavaScript and Enlang string literals.',
+      type: 'boolean',
+      defaultVal: false
+    },
+    {
+      id: 'sonarqube.strictMode',
+      category: 'sectionExtensions',
+      categoryLabel: 'Community Extensions',
+      title: 'SonarQube: Strict Security Scanning',
+      description: 'Enable strict OWASP vulnerability checking and cognitive complexity audits.',
+      type: 'boolean',
+      defaultVal: true
+    },
+    {
+      id: 'liveServer.port',
+      category: 'sectionExtensions',
+      categoryLabel: 'Community Extensions',
+      title: 'Live Server: Port',
+      description: 'Port number used by the Live Server extension for simulated HTML preview.',
+      type: 'number',
+      min: 1024,
+      max: 65535,
+      defaultVal: 5500
+    }
+  ];
+
+  let activeSettingsCategory = 'all';
+  let currentSettingsSearch = '';
+
+  function loadStudioSettings() {
+    try {
+      const raw = localStorage.getItem('enlangg_studio_settings');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        currentSettings = { ...DEFAULT_SETTINGS, ...parsed };
+      }
+    } catch (e) {
+      console.warn('Could not load enlangg_studio_settings:', e);
+    }
+  }
+
+  function saveStudioSettings() {
+    try {
+      localStorage.setItem('enlangg_studio_settings', JSON.stringify(currentSettings, null, 2));
+    } catch (e) {
+      console.warn('Could not save enlangg_studio_settings:', e);
+    }
+  }
+
+  function getStudioSetting(key) {
+    return currentSettings[key] !== undefined ? currentSettings[key] : DEFAULT_SETTINGS[key];
+  }
+
+  function setStudioSetting(key, val, applyImmediately = true) {
+    currentSettings[key] = val;
+    saveStudioSettings();
+    if (applyImmediately) {
+      applyStudioSetting(key, val);
+    }
+  }
+
+  function applyStudioSetting(key, val) {
+    if (key === 'editor.fontSize') {
+      const px = parseInt(val, 10) || 13;
+      if (codeEditor) codeEditor.style.fontSize = px + 'px';
+      if (lineNumbers) lineNumbers.style.fontSize = px + 'px';
+      const hl = document.getElementById('editorHighlightLayer');
+      if (hl) hl.style.fontSize = px + 'px';
+    } else if (key === 'editor.fontFamily') {
+      if (codeEditor) codeEditor.style.fontFamily = val;
+      const hl = document.getElementById('editorHighlightLayer');
+      if (hl) hl.style.fontFamily = val;
+    } else if (key === 'editor.lineHeight') {
+      const lh = parseInt(val, 10) || 20;
+      if (codeEditor) codeEditor.style.lineHeight = lh + 'px';
+      if (lineNumbers) lineNumbers.style.lineHeight = lh + 'px';
+      const hl = document.getElementById('editorHighlightLayer');
+      if (hl) hl.style.lineHeight = lh + 'px';
+    } else if (key === 'editor.wordWrap') {
+      const wrap = (val === 'on' || val === 'wordWrapColumn') ? 'pre-wrap' : 'pre';
+      if (codeEditor) codeEditor.style.whiteSpace = wrap;
+      const hl = document.getElementById('editorHighlightLayer');
+      if (hl) hl.style.whiteSpace = wrap;
+    } else if (key === 'editor.lineNumbers') {
+      if (lineNumbers) lineNumbers.style.display = (val === 'off') ? 'none' : 'block';
+    } else if (key === 'workbench.colorTheme') {
+      if (typeof applyTheme === 'function') applyTheme(val);
+    } else if (key === 'workbench.statusBar.visible') {
+      const sb = document.querySelector('.statusbar');
+      if (sb) sb.style.display = val ? 'flex' : 'none';
+    } else if (key === 'workbench.activityBar.visible') {
+      const ab = document.querySelector('.activity-bar');
+      if (ab) ab.style.display = val ? 'flex' : 'none';
+    } else if (key === 'workbench.fontZoom') {
+      const zoom = parseInt(val, 10) || 100;
+      document.body.style.zoom = (zoom / 100);
+    } else if (key === 'enlang.nativeBridgeUrl') {
+      if (typeof checkNativeBridge === 'function') checkNativeBridge(false);
+    } else if (key === 'ai.apiKey') {
+      const statusAi = document.getElementById('statusAiConnection');
+      if (statusAi) {
+        statusAi.innerHTML = val ? '<span>AI: Active</span>' : '<span>AI: BYOK</span>';
+        statusAi.title = val ? 'AI Copilot Ready (Key Configured)' : 'Configure AI Key in Settings (Ctrl+,)';
+      }
+    }
+  }
+
+  function applyAllStudioSettings() {
+    for (const [k, v] of Object.entries(currentSettings)) {
+      applyStudioSetting(k, v);
+    }
+  }
+
+  function openSettingsEditor() {
+    if (!openTabs.includes('Settings')) {
+      openTabs.push('Settings');
+    }
+    activeFile = 'Settings';
+    renderTabs();
+    renderFileTree();
+    loadActiveFileContent();
+    updateBreadcrumbs();
+    updateDomainPill();
+  }
+
+  function openSettingsJson() {
+    vfs['settings.json'] = JSON.stringify(currentSettings, null, 2);
+    openFile('settings.json');
+  }
+
+  function renderSettingsUI() {
+    const container = document.getElementById('settingsContentPane') || document.getElementById('settingsListContainer');
+    if (!container) return;
+
+    const query = (currentSettingsSearch || '').toLowerCase().trim();
+    let filtered = SETTINGS_METADATA;
+
+    if (activeSettingsCategory !== 'all') {
+      filtered = filtered.filter(item => item.category === activeSettingsCategory);
+    }
+
+    if (query) {
+      filtered = filtered.filter(item => {
+        const str = `${item.id} ${item.title} ${item.description} ${item.categoryLabel}`.toLowerCase();
+        return str.includes(query);
+      });
+    }
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div style="padding:40px 20px;text-align:center;color:var(--vscode-text-muted);">
+          <div style="font-size:32px;margin-bottom:12px;">🔍</div>
+          <div style="font-size:14px;font-weight:600;color:var(--vscode-text-bright);margin-bottom:6px;">No matching settings found</div>
+          <div style="font-size:12px;">No settings match <code>"${escapeHtml(query)}"</code></div>
+        </div>
+      `;
+      return;
+    }
+
+    const groups = {};
+    filtered.forEach(item => {
+      if (!groups[item.categoryLabel]) groups[item.categoryLabel] = [];
+      groups[item.categoryLabel].push(item);
+    });
+
+    let html = '';
+    for (const [catLabel, items] of Object.entries(groups)) {
+      html += `
+        <div class="settings-group">
+          <div class="settings-group-header">
+            <h3>${catLabel}</h3>
+          </div>
+      `;
+
+      items.forEach(item => {
+        const val = getStudioSetting(item.id);
+        const isModified = val !== item.defaultVal;
+
+        html += `
+          <div class="setting-item ${isModified ? 'is-modified' : ''}" data-setting-id="${item.id}">
+            <div class="setting-header">
+              <span class="setting-title">${escapeHtml(item.title)}</span>
+              <span class="setting-id">${escapeHtml(item.id)}</span>
+              ${isModified ? `<button class="setting-reset-btn" title="Reset to default (${escapeHtml(String(item.defaultVal))})">Reset</button>` : ''}
+            </div>
+            <div class="setting-desc">${item.description}</div>
+            <div class="setting-control-row">
+        `;
+
+        if (item.type === 'boolean') {
+          html += `
+            <label class="setting-checkbox-label">
+              <input type="checkbox" class="setting-input-checkbox" ${val ? 'checked' : ''} data-setting-id="${item.id}">
+              <span>Enable</span>
+            </label>
+          `;
+        } else if (item.type === 'select') {
+          html += `
+            <select class="setting-select" data-setting-id="${item.id}">
+              ${item.options.map(opt => `
+                <option value="${opt.value}" ${String(opt.value) === String(val) ? 'selected' : ''}>${escapeHtml(opt.label)}</option>
+              `).join('')}
+            </select>
+          `;
+        } else if (item.type === 'number') {
+          html += `
+            <input type="number" class="setting-input" style="max-width:160px;" value="${escapeHtml(String(val))}" min="${item.min || 0}" max="${item.max || 9999}" step="${item.step || 1}" data-setting-id="${item.id}">
+          `;
+        } else if (item.type === 'password') {
+          html += `
+            <div style="display:flex;align-items:center;gap:8px;width:100%;max-width:440px;">
+              <input type="password" class="setting-input" style="flex:1;" value="${escapeHtml(String(val || ''))}" placeholder="Enter secret API key..." data-setting-id="${item.id}">
+              <button class="setting-toggle-pw-btn" style="background:var(--vscode-hover);border:1px solid var(--vscode-border);color:var(--vscode-text-muted);border-radius:3px;padding:4px 8px;font-size:11px;cursor:pointer;">Show</button>
+            </div>
+          `;
+        } else {
+          html += `
+            <div style="display:flex;align-items:center;gap:8px;width:100%;max-width:440px;">
+              <input type="text" class="setting-input" style="flex:1;" value="${escapeHtml(String(val || ''))}" data-setting-id="${item.id}">
+              ${item.hasTestAction ? `<button class="setting-test-bridge-btn" style="background:#0e639c;border:none;color:#fff;border-radius:3px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚡ Test Daemon</button>` : ''}
+            </div>
+          `;
+        }
+
+        html += `
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    }
+
+    container.innerHTML = html;
+    attachSettingsEvents(container);
+  }
+
+  function attachSettingsEvents(container) {
+    container.querySelectorAll('.setting-input-checkbox').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const id = cb.getAttribute('data-setting-id');
+        setStudioSetting(id, cb.checked);
+        renderSettingsUI();
+        showStudioToast(`Setting '${id}' updated to ${cb.checked}`, null);
+      });
+    });
+
+    container.querySelectorAll('.setting-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const id = sel.getAttribute('data-setting-id');
+        let val = sel.value;
+        if (id === 'editor.tabSize' || id === 'workbench.fontZoom') val = parseInt(val, 10);
+        setStudioSetting(id, val);
+        renderSettingsUI();
+        showStudioToast(`Setting '${id}' updated`, null);
+      });
+    });
+
+    container.querySelectorAll('.setting-input').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const id = inp.getAttribute('data-setting-id');
+        let val = inp.value;
+        if (inp.type === 'number') val = parseFloat(val);
+        setStudioSetting(id, val);
+        renderSettingsUI();
+        showStudioToast(`Setting '${id}' updated`, null);
+      });
+    });
+
+    container.querySelectorAll('.setting-reset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('.setting-item');
+        if (!card) return;
+        const id = card.getAttribute('data-setting-id');
+        const meta = SETTINGS_METADATA.find(m => m.id === id);
+        if (meta) {
+          setStudioSetting(id, meta.defaultVal);
+          renderSettingsUI();
+          showStudioToast(`Reset '${id}' to default`, null);
+        }
+      });
+    });
+
+    container.querySelectorAll('.setting-toggle-pw-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = btn.previousElementSibling;
+        if (input && input.type === 'password') {
+          input.type = 'text';
+          btn.textContent = 'Hide';
+        } else if (input) {
+          input.type = 'password';
+          btn.textContent = 'Show';
+        }
+      });
+    });
+
+    container.querySelectorAll('.setting-test-bridge-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.textContent = 'Testing...';
+        const connected = await checkNativeBridge(true);
+        btn.textContent = connected ? '✔ Online' : '✖ Offline';
+        setTimeout(() => { btn.textContent = '⚡ Test Daemon'; }, 3000);
+      });
+    });
+  }
+
   // 3. Prettier & Code Formatter Engine
   function formatDocument() {
     if (!activeFile || !codeEditor || codeEditor.readOnly) return;
@@ -3248,6 +3948,18 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
 
   // 5. Command Palette System (Ctrl+Shift+P / F1)
   const COMMAND_PALETTE_ITEMS = [
+    {
+      category: 'Preferences',
+      label: 'Preferences: Open Settings (UI)',
+      shortcut: 'Ctrl+,',
+      action: () => openSettingsEditor()
+    },
+    {
+      category: 'Preferences',
+      label: 'Preferences: Open Settings (JSON)',
+      shortcut: '',
+      action: () => openSettingsJson()
+    },
     {
       category: 'Preferences',
       label: 'Preferences: Color Theme',
@@ -6319,6 +7031,17 @@ Provide code in fenced code blocks.`;
       dirtyFiles.delete(activeFile);
       renderTabs();
       saveVfs();
+      if (activeFile === 'settings.json') {
+        try {
+          const parsed = JSON.parse(vfs[activeFile]);
+          Object.assign(currentSettings, parsed);
+          saveSettings();
+          applyAllSettings();
+          appendTerminal(`\n<span class="term-green">[Settings] Applied updated configuration from settings.json</span>`);
+        } catch (err) {
+          appendTerminal(`\n<span class="term-err">[Settings] JSON Syntax Error: ${err.message}</span>`);
+        }
+      }
       appendTerminal(`\n<span class="term-green">[Workspace] Saved ${activeFile}</span>`);
     }
   }
@@ -6702,6 +7425,16 @@ Provide code in fenced code blocks.`;
         openThemePicker();
         break;
 
+      case 'openSettings':
+      case 'openSettingsUI':
+      case 'settings':
+        openSettingsEditor();
+        break;
+
+      case 'openSettingsJson':
+        openSettingsJson();
+        break;
+
       default:
         console.warn('Unknown menu action:', action);
         break;
@@ -7067,6 +7800,49 @@ Provide code in fenced code blocks.`;
         });
       }
     });
+
+    // 5b. Settings Activity & Navigation Listeners
+    const actSettings = document.getElementById('actSettings');
+    if (actSettings) {
+      actSettings.addEventListener('click', () => {
+        openSettingsEditor();
+      });
+    }
+
+    const statusSettingsBtn = document.getElementById('statusSettingsBtn');
+    if (statusSettingsBtn) {
+      statusSettingsBtn.addEventListener('click', () => {
+        openSettingsEditor();
+      });
+    }
+
+    // Settings Categories Navigation
+    const navItems = document.querySelectorAll('.settings-nav-item');
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        navItems.forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+        activeSettingsCategory = item.getAttribute('data-settings-nav') || item.getAttribute('data-category') || 'all';
+        renderSettingsUI();
+      });
+    });
+
+    // Settings Search Bar
+    const settingsSearchInput = document.getElementById('settingsSearchInput');
+    if (settingsSearchInput) {
+      settingsSearchInput.addEventListener('input', () => {
+        currentSettingsSearch = settingsSearchInput.value;
+        renderSettingsUI();
+      });
+    }
+
+    // Open Settings JSON button
+    const btnOpenSettingsJson = document.getElementById('btnOpenSettingsJson');
+    if (btnOpenSettingsJson) {
+      btnOpenSettingsJson.addEventListener('click', () => {
+        openSettingsJson();
+      });
+    }
 
     // 6a. Kilo Code AI Chat Engine
     const kiloSendBtn = document.getElementById('kiloSendBtn');
@@ -7775,6 +8551,11 @@ Provide code in fenced code blocks.`;
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'p') {
         e.preventDefault();
         openQuickModal();
+      }
+      // Ctrl + , (Settings)
+      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault();
+        openSettingsEditor();
       }
       // Ctrl + S (Save)
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 's') {

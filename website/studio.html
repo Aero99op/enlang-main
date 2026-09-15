@@ -66,6 +66,11 @@
                 <span>Reset Workspace to Default</span>
               </div>
               <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="openSettings">
+                <span>Preferences: Settings</span>
+                <span class="menu-shortcut">Ctrl+,</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
               <div class="menu-dropdown-item" data-action="closeTab">
                 <span>Close Active Editor</span>
                 <span class="menu-shortcut">Ctrl+W</span>
@@ -916,6 +921,41 @@
             </div>
 
           </div>
+          
+          <!-- VS Code Real Settings Editor Pane -->
+          <div class="settings-editor-pane" id="settingsEditorPane" style="display:none;">
+            <!-- Header Bar with Search & JSON toggle -->
+            <div class="settings-header-bar">
+              <div class="settings-search-wrapper">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--vscode-text-muted);flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="settingsSearchInput" class="settings-search-input" placeholder="Search settings (e.g. font size, theme, compiler, native bridge, copilot)..." />
+              </div>
+              <button class="settings-action-btn" id="btnOpenSettingsJson" title="Open raw settings.json in Code Editor">
+                <span>{ }</span>
+                <span>Open Settings (JSON)</span>
+              </button>
+            </div>
+
+            <!-- Body: Left Categories Navigation + Right Settings Content -->
+            <div class="settings-body-split">
+              <!-- Left Sidebar -->
+              <nav class="settings-nav-sidebar">
+                <div class="settings-nav-group-title">Commonly Used</div>
+                <div class="settings-nav-item active" data-settings-nav="sectionEditor">📝 Text Editor</div>
+                <div class="settings-nav-item" data-settings-nav="sectionWorkbench">🎨 Workbench &amp; Appearance</div>
+                
+                <div class="settings-nav-group-title">Sovereign Architecture</div>
+                <div class="settings-nav-item" data-settings-nav="sectionEnlangg">⚡ Enlangg Core &amp; Compilers</div>
+                <div class="settings-nav-item" data-settings-nav="sectionAi">🤖 AI &amp; Copilot</div>
+                <div class="settings-nav-item" data-settings-nav="sectionExtensions">🧩 Community Extensions</div>
+              </nav>
+
+              <!-- Right Content -->
+              <div class="settings-content-pane" id="settingsContentPane">
+                <!-- Settings cards will be mounted dynamically here -->
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Resizer Handle Y (between Editor and Bottom Dock) -->
@@ -1117,15 +1157,14 @@
           <span>main*</span>
         </div>
         <div class="statusbar-item" id="statusProblems" style="cursor:pointer;" title="Click to view workspace problems">
-          <span>0 ⨂</span>
-          <span>0 ⚠</span>
+          <span>0 ⨂ 0 ⚠</span>
         </div>
-        <div class="statusbar-item" id="statusDomainPill" style="font-weight:600;color:#fff;" title="Active Sovereign Domain">
-          Domain: Core Backend (.enlng)
+        <div class="statusbar-item" id="statusDomainPill" style="font-weight:600;color:#fff;" title="Active Sovereign Domain: Core Backend (.enlng)">
+          <span>Core (.enlng)</span>
         </div>
-        <div class="statusbar-item" id="statusNativeEngine" style="cursor:pointer;font-weight:600;" title="Click to test or reconnect local native compilers (~/.enlangg/bin)">
-          <span id="statusNativeEngineDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e5c07b;margin-right:6px;"></span>
-          <span id="statusNativeEngineText">Engine: Checking...</span>
+        <div class="statusbar-item" id="statusNativeEngine" style="cursor:pointer;font-weight:600;" title="Native Engine: Click to test or reconnect local compilers (~/.enlangg/bin)">
+          <span id="statusNativeEngineDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5c07b;margin-right:4px;"></span>
+          <span id="statusNativeEngineText">Native: 7/7</span>
         </div>
         <div class="statusbar-item" id="statusDebugBtn" title="Start Debugging (F5)">
           <span>🐞 Debug</span>
@@ -1134,16 +1173,17 @@
           <span>⟳ Git</span>
         </div>
         <!-- Dynamic Extension Status Items Left (SonarQube, Docker, etc.) -->
-        <div id="statusExtensionsLeft" style="display:inline-flex;align-items:center;gap:10px;"></div>
+        <div id="statusExtensionsLeft" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;"></div>
       </div>
 
       <div class="statusbar-right">
         <!-- Dynamic Extension Status Items Right (Prettier, Go Live, Antigravity, Autocomplete) -->
-        <div id="statusExtensionsRight" style="display:inline-flex;align-items:center;gap:10px;"></div>
-        <div class="statusbar-item" id="cursorPosStatus">Ln 1, Col 1</div>
-        <div class="statusbar-item">Spaces: 4</div>
-        <div class="statusbar-item">UTF-8</div>
-        <div class="statusbar-item" id="statusAiConnection">AI: BYOK Active</div>
+        <div id="statusExtensionsRight" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;"></div>
+        <div class="statusbar-item" id="cursorPosStatus"><span>Ln 1, Col 1</span></div>
+        <div class="statusbar-item"><span>Spaces: 4</span></div>
+        <div class="statusbar-item"><span>UTF-8</span></div>
+        <div class="statusbar-item" id="statusAiConnection" title="Configure AI Provider &amp; API Key in Settings (Ctrl+,)"><span>AI: BYOK</span></div>
+        <div class="statusbar-item" id="statusSettingsBtn" title="Open Settings (Ctrl+,)"><span>⚙️</span></div>
       </div>
     </footer>
 
