@@ -61,25 +61,37 @@ show "After Spatial Sort:" amounts
 show "All Sovereign Grammar Invariants 100% Satisfied!"
 `,
 
-    'db/schema.enlngdb': `type enlngdb
+    'db/schema.enlngdb': `type enlngdb;
 
 -- 📊 EnlangDB Embedded Flat-File Relational Database
--- Demonstrating ultra-fast sub-0.05ms in-memory queries
+-- Demonstrating ultra-fast sub-0.05ms native query execution
 
-use database database1;
+use database default_db;
 
--- 1. Discover active schema tables
+-- 1. Initialize Student Registry Table
+create table student with roll_no, name, marks, grade;
+insert into student with roll_no 101, name "Aarav Sharma", marks 92, grade "A";
+insert into student with roll_no 102, name "Ananya Iyer", marks 96, grade "A+";
+insert into student with roll_no 103, name "Kabir Mehta", marks 78, grade "B";
+insert into student with roll_no 104, name "Rhea Sengupta", marks 85, grade "A";
+insert into student with roll_no 105, name "Arjun Rao", marks 64, grade "C";
+
+-- 2. Initialize Faculty Directory Table
+create table faculty with id, name, department, salary;
+insert into faculty with id 1, name "Dr. Sunita Sen", department "Computer Science", salary 115000;
+insert into faculty with id 2, name "Prof. Rajesh Nair", department "Mathematics", salary 98000;
+
+-- 3. Discover Active Schema Tables
 show tables;
 
--- 2. View student registry
+-- 4. View Student Registry
 find all records from student;
 
--- 3. View faculty directory
-find all records from faculty;
+-- 5. Filter High-Scoring Students (Marks >= 85)
+find records from student where marks >= 85;
 
--- 4. Switch to main database and view accounts
-use database main_db;
-find all records from accounts;
+-- 6. View Faculty Directory
+find all records from faculty;
 `,
 
     'ui/dashboard.enlngf': `type enlngf
@@ -917,7 +929,16 @@ screen WalletHome:
 
     // ⚡ If Native Bridge is connected, execute using ~/.enlangg/bin/enlngdb.exe!
     if (isNativeBridgeConnected) {
-      executeViaNativeBridge(activeFile || 'script.enlngdb', sqlCode, 'enlngdb');
+      executeViaNativeBridge(activeFile || 'script.enlngdb', sqlCode, 'enlngdb').then(result => {
+        if (result && result.output) {
+          const tables = parseAsciiTables(result.output);
+          if (tables.length > 0) {
+            renderParsedWorkbenchTable(tables[tables.length - 1], 'All Statements', result.timeMs, result.output);
+          } else {
+            renderParsedWorkbenchTable(null, 'All Statements', result.timeMs, result.output);
+          }
+        }
+      });
       return;
     }
 
@@ -1056,8 +1077,8 @@ screen WalletHome:
         resultTitle = `Records: ${tableName}`;
         headers = tableObj.columns || (tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []);
         const whereMatch = stmt.match(/\s+where\s+(.+)$/i);
-        const whereClause = whereMatch ? whereMatch[1].trim() : null;
-        rows = (tableObj.rows || []).filter(r => (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition(r, whereClause) : true);
+        const evalWhere = (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition : (window.evaluateWhereCondition || null);
+        rows = (tableObj.rows || []).filter(r => evalWhere ? evalWhere(r, whereClause) : true);
       }
     } else if (res.type === 'COUNT') {
       resultTitle = 'Record Count';
@@ -1314,6 +1335,161 @@ find all records from student where grade is "A";
     return { text: text, mode: 'all', lineNum: 1 };
   }
 
+  // ⚡ Robust ASCII box table parser for enlngdb.exe and CLI outputs
+  function parseAsciiTables(text) {
+    if (!text || typeof text !== 'string') return [];
+    const tables = [];
+    const lines = text.split(/\r?\n/);
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i].trim();
+      if (line.startsWith('+') && line.endsWith('+') && line.includes('-')) {
+        // Table header boundary
+        if (i + 2 < lines.length && lines[i + 1].trim().startsWith('|') && lines[i + 2].trim().startsWith('+')) {
+          const headerLine = lines[i + 1].trim();
+          const headers = headerLine.split('|').slice(1, -1).map(h => h.trim());
+          const rows = [];
+          let j = i + 3;
+          while (j < lines.length) {
+            const rowLine = lines[j].trim();
+            if (rowLine.startsWith('+') && rowLine.endsWith('+') && rowLine.includes('-')) {
+              j++;
+              break;
+            }
+            if (rowLine.startsWith('|') && rowLine.endsWith('|')) {
+              const cells = rowLine.split('|').slice(1, -1).map(c => c.trim());
+              const rowObj = {};
+              headers.forEach((h, idx) => {
+                const val = cells[idx] !== undefined ? cells[idx] : '';
+                rowObj[h] = (!isNaN(Number(val)) && val !== '') ? Number(val) : val;
+              });
+              rows.push(rowObj);
+            }
+            j++;
+          }
+          let countText = '';
+          if (j < lines.length && (lines[j].includes('row(s) in set') || lines[j].includes('table(s) in set') || lines[j].includes('database(s) in set'))) {
+            countText = lines[j].trim();
+          }
+          tables.push({
+            headers,
+            rows,
+            countText,
+            title: headers.length === 1 && headers[0].startsWith('Tables_in_') ? 'Tables in Database' : (headers[0] === 'Database' ? 'Registered Databases' : 'Query Result')
+          });
+          i = j;
+          continue;
+        }
+      }
+      i++;
+    }
+    return tables;
+  }
+
+  // ⚡ Renders a parsed table or status output into EnlangDB Live Workbench grid & ASCII view
+  function renderParsedWorkbenchTable(tableData, queryText, elapsedMs, rawOutput) {
+    const gridContainer = document.getElementById('dbResultsGridContainer');
+    const asciiContainer = document.getElementById('dbResultsAsciiContainer');
+    const execStatus = document.getElementById('dbResultsExecStatus');
+    const queryPreview = document.getElementById('dbResultsQueryPreview');
+    const timingPill = document.getElementById('dbResultsTiming');
+
+    if (execStatus) {
+      execStatus.textContent = '✔ SUCCESS';
+      execStatus.style.background = '#238636';
+    }
+    if (queryPreview && queryText) {
+      queryPreview.textContent = `enlangdb> ${queryText.replace(/[\r\n]+/g, ' ').slice(0, 80)}`;
+    }
+    if (timingPill) {
+      timingPill.textContent = `${elapsedMs || '<0.05'}ms (Native Engine)`;
+    }
+    if (asciiContainer && rawOutput) {
+      asciiContainer.textContent = rawOutput;
+    }
+
+    if (!gridContainer) return;
+
+    if (!tableData || !tableData.headers || tableData.headers.length === 0) {
+      gridContainer.innerHTML = `
+        <div style="padding:16px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#3fb950;font-family:var(--font-mono);font-size:11.5px;white-space:pre-wrap;">
+${escapeHtml(rawOutput || 'Query executed successfully with zero errors.')}
+        </div>
+      `;
+      return;
+    }
+
+    const { headers, rows, countText, title } = tableData;
+    let html = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:12px;font-weight:700;color:#f0f6fc;">${escapeHtml(title || 'Query Result')}</span>
+        <span style="font-size:11px;color:#8b949e;font-family:var(--font-mono);">${rows ? rows.length : 0} record(s) ${countText ? `• ${escapeHtml(countText)}` : ''}</span>
+      </div>
+      <table class="sovereign-db-table">
+        <thead>
+          <tr>
+            ${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${(!rows || rows.length === 0) ? `<tr><td colspan="${headers.length}" style="text-align:center;color:#8b949e;padding:16px;">Empty set (0 records)</td></tr>` :
+            rows.map(row => `
+              <tr>
+                ${headers.map((h, colIdx) => {
+                  const val = row[h];
+                  const isNum = typeof val === 'number' || (!isNaN(Number(val)) && val !== '' && val !== null && val !== undefined);
+                  const isKey = colIdx === 0 && (h.includes('id') || h.includes('roll_no') || h.includes('code') || h === 'Table' || h === 'Database');
+                  const cls = isKey ? 'cell-key' : (isNum ? 'cell-num' : 'cell-str');
+                  const displayVal = val !== undefined && val !== null ? escapeHtml(String(val)) : '<span style="color:#6e7681;">NULL</span>';
+                  return `<td class="${cls}">${displayVal}</td>`;
+                }).join('')}
+              </tr>
+            `).join('')
+          }
+        </tbody>
+      </table>
+    `;
+    gridContainer.innerHTML = html;
+  }
+
+  // ⚡ Builds a self-contained execution script for single queries by including preceding DDL/DML context
+  function buildContextualScriptForQuery(fullText, targetQuery, targetLineNum) {
+    if (!fullText) return targetQuery;
+    const lines = fullText.split('\n');
+    const setupStatements = [];
+
+    // Always include type header
+    let hasTypeHeader = false;
+    for (let i = 0; i < Math.min(5, lines.length); i++) {
+      if (/^\s*type\s+(?:enlngdb|enlgdb)\b/i.test(lines[i])) {
+        hasTypeHeader = true;
+        setupStatements.push(lines[i].trim().endsWith(';') ? lines[i].trim() : lines[i].trim() + ';');
+        break;
+      }
+    }
+    if (!hasTypeHeader) {
+      setupStatements.push('type enlngdb;');
+    }
+
+    const limit = (targetLineNum && targetLineNum > 1) ? targetLineNum - 1 : lines.length;
+    for (let i = 0; i < limit; i++) {
+      const line = lines[i].trim();
+      if (!line || line.startsWith('#') || line.startsWith('--')) continue;
+
+      // Extract setup commands: database selection, table creation, data insertion, updates
+      if (/^(?:use\s+(?:database\s+)?[a-zA-Z0-9_\-.]+|create\s+table|insert\s+(?:record\s+into|into)|update\s+(?:records\s+in|in)|in\s+[a-zA-Z0-9_]+\s+change|drop\s+table)/i.test(line)) {
+        setupStatements.push(line.endsWith(';') ? line : line + ';');
+      }
+    }
+
+    const cleanQuery = targetQuery.trim();
+    if (cleanQuery) {
+      setupStatements.push(cleanQuery.endsWith(';') ? cleanQuery : cleanQuery + ';');
+    }
+
+    return setupStatements.join('\n');
+  }
+
   // Executes ONLY the query under the cursor or highlighted text (MySQL Workbench style)
   function executeCurrentQueryAtCursor() {
     if (!codeEditor) return;
@@ -1344,13 +1520,43 @@ find all records from student where grade is "A";
     // ⚡ If Native Bridge is connected, execute query with native enlngdb.exe!
     if (isNativeBridgeConnected) {
       appendTerminal(`\n<span class="term-dim">// [Native Workbench Line ${q.lineNum}] Executing: ${escapeHtml(q.text)}</span>`);
-      executeViaNativeBridge('query.enlngdb', q.text, 'enlngdb').then(result => {
-        if (result && result.output) {
-          const asciiContainer = document.getElementById('dbResultsAsciiContainer');
-          if (asciiContainer) asciiContainer.textContent = result.output;
-          const gridContainer = document.getElementById('dbResultsGridContainer');
+      const contextualScript = buildContextualScriptForQuery(codeEditor.value, q.text, q.lineNum);
+      executeViaNativeBridge('query.enlngdb', contextualScript, 'enlngdb').then(result => {
+        if (!result) return;
+        const asciiContainer = document.getElementById('dbResultsAsciiContainer');
+        const gridContainer = document.getElementById('dbResultsGridContainer');
+        const execStatus = document.getElementById('dbResultsExecStatus');
+        const queryPreview = document.getElementById('dbResultsQueryPreview');
+        const timingPill = document.getElementById('dbResultsTiming');
+
+        if (result.success) {
+          const tables = parseAsciiTables(result.output);
+          if (tables.length > 0) {
+            renderParsedWorkbenchTable(tables[tables.length - 1], q.text, result.timeMs, result.output);
+          } else {
+            renderParsedWorkbenchTable(null, q.text, result.timeMs, result.output);
+          }
+        } else {
+          if (execStatus) {
+            execStatus.textContent = '✖ ERROR';
+            execStatus.style.background = '#f85149';
+          }
+          if (queryPreview) {
+            queryPreview.textContent = `enlangdb> ${q.text.replace(/[\r\n]+/g, ' ').slice(0, 80)}`;
+          }
+          if (timingPill) {
+            timingPill.textContent = `${result.timeMs || '0.00'}ms`;
+          }
+          if (asciiContainer) {
+            asciiContainer.textContent = result.output || result.error || 'Execution failed';
+          }
           if (gridContainer) {
-            gridContainer.innerHTML = `<div style="padding:14px;"><div style="font-size:11px;color:#8b949e;margin-bottom:8px;">⚡ Native Result from ${escapeHtml(result.executor)} (${result.timeMs}ms)</div><pre style="color:#4ec9b0;font-family:var(--font-mono);font-size:12px;white-space:pre;line-height:1.4;">${escapeHtml(result.output)}</pre></div>`;
+            gridContainer.innerHTML = `
+              <div style="padding:14px;background:rgba(248,81,73,0.1);border:1px solid rgba(248,81,73,0.3);border-radius:6px;margin:8px 0;">
+                <div style="font-weight:700;color:#f85149;font-size:12px;margin-bottom:6px;">EnlangDB Execution Error</div>
+                <div style="color:#e6edf3;font-size:11.5px;font-family:var(--font-mono);white-space:pre-wrap;">${escapeHtml(result.output || result.error || 'Unknown error')}</div>
+              </div>
+            `;
           }
         }
       });
@@ -1423,11 +1629,17 @@ find all records from student where grade is "A";
   // Executes all queries in the active .enlngdb file
   function executeAllQueriesInActiveFile() {
     if (!codeEditor) return;
+
+    // Ensure preview pane is open showing EnlangDB results
+    if (previewPane) previewPane.classList.add('visible');
+    const previewTitle = document.getElementById('previewTitle');
+    if (previewTitle) previewTitle.innerHTML = '🗄️ EnlangDB Live Workbench &amp; Results Grid';
+    if (livePreviewFrame) livePreviewFrame.style.display = 'none';
+    if (mobileSimulator) mobileSimulator.style.display = 'none';
+    const dbResultsPane = document.getElementById('dbWorkbenchResultsPane');
+    if (dbResultsPane) dbResultsPane.style.display = 'flex';
+
     executeEnlngDbInStudio(codeEditor.value);
-    const q = extractQueryAtCursor();
-    if (q && q.text) {
-      executeCurrentQueryAtCursor();
-    }
   }
 
   // Renders the interactive phpMyAdmin / Workbench HTML table and ASCII views
@@ -1493,8 +1705,8 @@ find all records from student where grade is "A";
         title = `Table: ${tableName}`;
         headers = tableObj.columns || (tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []);
         const whereMatch = stmt.match(/\s+where\s+(.+)$/i);
-        const whereClause = whereMatch ? whereMatch[1].trim() : null;
-        rows = (tableObj.rows || []).filter(r => (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition(r, whereClause) : true);
+        const evalWhere = (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition : (window.evaluateWhereCondition || null);
+        rows = (tableObj.rows || []).filter(r => evalWhere ? evalWhere(r, whereClause) : true);
       }
     } else if (res.type === 'COUNT') {
       title = 'Record Count';

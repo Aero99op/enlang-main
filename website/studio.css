@@ -2580,3 +2580,78 @@ html, body {
 .setting-btn-action:hover {
   opacity: 0.9;
 }
+
+/* ==============================================================================
+   CUSTOM EXTENSION WEBVIEW & ACTIVITY BAR INTEGRATION
+   ============================================================================== */
+.activity-icon.dynamic-ext-icon {
+  position: relative;
+}
+
+.activity-icon.dynamic-ext-icon img {
+  border-radius: 4px;
+}
+
+.ext-custom-sidebar-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--vscode-sidebar-bg);
+  overflow: hidden;
+}
+
+.ext-custom-sidebar-header {
+  height: 35px;
+  min-height: 35px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--vscode-border);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--vscode-text-muted);
+}
+
+.ext-custom-view-panel {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--vscode-border);
+}
+
+.ext-custom-view-title {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--vscode-text-muted);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  user-select: none;
+}
+
+.ext-custom-view-title:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--vscode-text-bright);
+}
+
+.ext-webview-body {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background: var(--vscode-sidebar-bg);
+}
+
+.ext-webview-body iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: var(--vscode-sidebar-bg);
+}

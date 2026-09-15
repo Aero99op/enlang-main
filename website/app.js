@@ -1267,6 +1267,7 @@ if (typeof window !== 'undefined') {
   window.extractStatements = extractStatements;
   window.executeEnlngDBStatement = executeEnlngDBStatement;
   window.formatAsciiTable = formatAsciiTable;
+  window.evaluateWhereCondition = evaluateWhereCondition;
 }
 
 // Identifies if source code belongs to EnlngDB database engine
