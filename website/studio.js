@@ -966,6 +966,7 @@ screen WalletHome:
     let successCount = 0;
     let failCount = 0;
     let lastResult = null;
+    let lastTableResult = null;
 
     for (let i = 0; i < stmts.length; i++) {
       const stmt = stmts[i].trim();
@@ -988,6 +989,13 @@ screen WalletHome:
         if (!res) continue;
         lastResult = { stmt, res };
 
+        // If this statement returned an ASCII table or was a query statement, remember it
+        if (res.output && res.output.includes('+---')) {
+          lastTableResult = { stmt, res };
+        } else if (res.type === 'FIND' || res.type === 'SHOW_TABLES' || res.type === 'SHOW_DATABASES' || res.type === 'COUNT') {
+          lastTableResult = { stmt, res };
+        }
+
         if (res.type === 'ERROR' || res.error) {
           failCount++;
           outputs.push(`<span class="term-err">${escapeHtml(res.error)}</span>\n`);
@@ -1009,9 +1017,10 @@ screen WalletHome:
 
     appendTerminal(outputs.join('\n'));
 
-    // Keep interactive table in dockDatabase / dbGridContainer in sync
-    renderEnlngDbGridResult(lastResult, dbState);
-    renderEnlngDbWorkbenchResults(lastResult, dbState, totalMs);
+    // Keep interactive table in dockDatabase / dbGridContainer and Live Workbench in sync
+    const resultToDisplay = lastTableResult || lastResult;
+    renderEnlngDbGridResult(resultToDisplay, dbState);
+    renderEnlngDbWorkbenchResults(resultToDisplay, dbState, totalMs);
   }
 
   // Render EnlangDB query results into dockDatabase / dbGridContainer
@@ -1049,44 +1058,57 @@ screen WalletHome:
     let rows = [];
     let resultTitle = '';
 
-    if (res.type === 'SHOW_TABLES') {
-      resultTitle = `Tables in '${activeDb}'`;
-      headers = ['Table', 'Columns', 'Row Count'];
-      const tableNames = Object.keys(currentDbObj.tables);
-      rows = tableNames.map(name => {
-        const tbl = currentDbObj.tables[name];
-        return {
-          Table: name,
-          Columns: (tbl.columns || []).join(', '),
-          'Row Count': (tbl.rows || []).length
-        };
-      });
-    } else if (res.type === 'SHOW_DATABASES') {
-      resultTitle = 'Registered Databases';
-      headers = ['Database', 'Status', 'Tables'];
-      rows = Object.keys(dbState.databases).map(name => ({
-        Database: name,
-        Status: name === activeDb ? 'Active' : 'Ready',
-        Tables: Object.keys(dbState.databases[name].tables).length
-      }));
-    } else if (res.type === 'FIND') {
-      const findMatch = stmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)/i);
-      const tableName = findMatch ? findMatch[1] : '';
-      const tableObj = currentDbObj.tables[tableName];
-      if (tableObj) {
-        resultTitle = `Records: ${tableName}`;
-        headers = tableObj.columns || (tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []);
-        const whereMatch = stmt.match(/\s+where\s+(.+)$/i);
-        const evalWhere = (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition : (window.evaluateWhereCondition || null);
-        rows = (tableObj.rows || []).filter(r => evalWhere ? evalWhere(r, whereClause) : true);
+    // If res.output contains formatted ASCII table, parse directly for 100% terminal parity
+    if (res.output && res.output.includes('+---')) {
+      const parsedTables = parseAsciiTables(res.output);
+      if (parsedTables.length > 0) {
+        headers = parsedTables[0].headers;
+        rows = parsedTables[0].rows;
+        resultTitle = parsedTables[0].title || `Query Result: ${stmt}`;
       }
-    } else if (res.type === 'COUNT') {
-      resultTitle = 'Record Count';
-      const countMatch = stmt.match(/^count\s+records\s+in\s+([a-zA-Z0-9_]+)/i);
-      const tableName = countMatch ? countMatch[1] : 'table';
-      headers = ['Table', 'Count'];
-      const tableObj = currentDbObj.tables[tableName];
-      rows = [{ Table: tableName, Count: tableObj ? tableObj.rows.length : 0 }];
+    }
+
+    if (headers.length === 0) {
+      if (res.type === 'SHOW_TABLES') {
+        resultTitle = `Tables in '${activeDb}'`;
+        headers = ['Table', 'Columns', 'Row Count'];
+        const tableNames = Object.keys(currentDbObj.tables);
+        rows = tableNames.map(name => {
+          const tbl = currentDbObj.tables[name];
+          return {
+            Table: name,
+            Columns: (tbl.columns || []).join(', '),
+            'Row Count': (tbl.rows || []).length
+          };
+        });
+      } else if (res.type === 'SHOW_DATABASES') {
+        resultTitle = 'Registered Databases';
+        headers = ['Database', 'Status', 'Tables'];
+        rows = Object.keys(dbState.databases).map(name => ({
+          Database: name,
+          Status: name === activeDb ? 'Active' : 'Ready',
+          Tables: Object.keys(dbState.databases[name].tables).length
+        }));
+      } else if (res.type === 'FIND') {
+        const findMatch = stmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)/i);
+        const tableName = findMatch ? findMatch[1] : '';
+        const tableObj = currentDbObj.tables[tableName];
+        if (tableObj) {
+          resultTitle = `Records: ${tableName}`;
+          headers = tableObj.columns || (tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []);
+          const whereMatch = stmt.match(/\s+where\s+(.+)$/i);
+          const whereClause = whereMatch ? whereMatch[1].trim() : null;
+          const evalWhere = (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition : (window.evaluateWhereCondition || null);
+          rows = (tableObj.rows || []).filter(r => evalWhere ? evalWhere(r, whereClause) : true);
+        }
+      } else if (res.type === 'COUNT') {
+        resultTitle = 'Record Count';
+        const countMatch = stmt.match(/^count\s+records\s+in\s+([a-zA-Z0-9_]+)/i);
+        const tableName = countMatch ? countMatch[1] : 'table';
+        headers = ['Table', 'Count'];
+        const tableObj = currentDbObj.tables[tableName];
+        rows = [{ Table: tableName, Count: tableObj ? tableObj.rows.length : 0 }];
+      }
     }
 
     // Build HTML representation
