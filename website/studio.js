@@ -593,6 +593,113 @@ screen WalletHome:
     }
   }
 
+  // =========================================================================
+  // ⚡ SOVEREIGN NATIVE BRIDGE CLIENT (Connects Studio to ~/.enlangg/bin)
+  // =========================================================================
+  const NATIVE_BRIDGE_URL = 'http://127.0.0.1:5999';
+  let isNativeBridgeConnected = false;
+  let nativeBridgeData = null;
+
+  async function checkNativeBridge(userInitiated = false) {
+    const dot = document.getElementById('statusNativeEngineDot');
+    const text = document.getElementById('statusNativeEngineText');
+    if (userInitiated && text) text.textContent = 'Engine: Connecting...';
+
+    try {
+      const ctrl = new AbortController();
+      const timeoutId = setTimeout(() => ctrl.abort(), 2000);
+      const res = await fetch(`${NATIVE_BRIDGE_URL}/health`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        signal: ctrl.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'online') {
+          isNativeBridgeConnected = true;
+          nativeBridgeData = data;
+          if (dot) {
+            dot.style.background = '#4ec9b0';
+            dot.style.boxShadow = '0 0 8px #4ec9b0';
+          }
+          if (text) {
+            const foundCount = Object.values(data.binaries || {}).filter(b => b.found).length;
+            text.textContent = `Native: ~/.enlangg/bin (${foundCount}/7 Binaries)`;
+          }
+          if (userInitiated) {
+            appendTerminal(`\n<span class="term-green">✔ [Native Bridge] Connected to system compilers at ${escapeHtml(data.defaultBinDir)}</span>`);
+            appendTerminal(`<span class="term-dim">All code execution is now routed directly to your installed native binaries.</span>`);
+          }
+          return true;
+        }
+      }
+    } catch (err) {
+      // Bridge offline
+    }
+
+    isNativeBridgeConnected = false;
+    nativeBridgeData = null;
+    if (dot) {
+      dot.style.background = '#e5c07b';
+      dot.style.boxShadow = 'none';
+    }
+    if (text) {
+      text.textContent = 'Engine: Web Sandbox';
+    }
+    if (userInitiated) {
+      appendTerminal(`\n<span class="term-warn">[Native Bridge] Daemon is not running on port 5999.</span>`);
+      appendTerminal(`<span class="term-cyan">To connect Enlangg Studio to your system's installed compilers (~/.enlangg/bin):</span>`);
+      appendTerminal(`<span class="term-dim">  1. Open a terminal and run: <strong style="color:#fff;">enlangg-bridge</strong> (or <strong style="color:#fff;">python enlangg-bridge.py</strong>)</span>`);
+      appendTerminal(`<span class="term-dim">  2. Click 'Engine: Web Sandbox' in the bottom statusbar to reconnect.</span>`);
+    }
+    return false;
+  }
+
+  // Hook statusNativeEngine click
+  setTimeout(() => {
+    const statusNativeEngineElem = document.getElementById('statusNativeEngine');
+    if (statusNativeEngineElem) {
+      statusNativeEngineElem.addEventListener('click', () => {
+        checkNativeBridge(true);
+      });
+    }
+    checkNativeBridge(false);
+  }, 500);
+
+  // Helper to execute code via Native Bridge (~/.enlangg/bin)
+  async function executeViaNativeBridge(filename, content, lang) {
+    appendTerminal(`\n<span class="term-cyan">⚡ [Native Engine ~/.enlangg/bin] Executing ${escapeHtml(filename)}...</span>`);
+    const t0 = performance.now();
+    try {
+      const res = await fetch(`${NATIVE_BRIDGE_URL}/api/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, content, lang })
+      });
+      const result = await res.json();
+      const elapsed = (performance.now() - t0).toFixed(2);
+      if (result.success) {
+        if (result.output) {
+          appendTerminal(result.output);
+        }
+        appendTerminal(`<span class="term-green">✔ [${escapeHtml(result.executor)}] Succeeded in ${result.timeMs || elapsed}ms (Exit 0)</span>`);
+      } else {
+        if (result.output || result.error) {
+          appendTerminal(`<span class="term-err">${escapeHtml(result.output || result.error)}</span>`);
+        }
+        appendTerminal(`<span class="term-warn">⚠ [${escapeHtml(result.executor)}] Exited with code ${result.exitCode} (${result.timeMs || elapsed}ms)</span>`);
+      }
+      return result;
+    } catch (e) {
+      appendTerminal(`<span class="term-warn">[Native Bridge] Execution error: ${escapeHtml(e.message)}. Falling back to Web Sandbox...</span>`);
+      isNativeBridgeConnected = false;
+      checkNativeBridge(false);
+      return null;
+    }
+  }
+
   // Execution Engine (Routes to correct domain)
   function executeActiveFile() {
     if (!activeFile || !vfs[activeFile]) return;
@@ -600,15 +707,22 @@ screen WalletHome:
 
     const isDb = activeFile.endsWith('.enlngdb') || (typeof isEnlngDbCode === 'function' && isEnlngDbCode(code));
 
-    if (isDb) {
-      executeEnlngDbInStudio(code);
-      return;
-    }
-
     // Switch to Terminal Tab by default
     switchDockTab('dockTerminal');
     if (bottomDock && bottomDock.classList.contains('collapsed')) {
       bottomDock.classList.remove('collapsed');
+    }
+
+    // ⚡ If Native Bridge is connected, execute using ~/.enlangg/bin installed binaries!
+    if (isNativeBridgeConnected) {
+      const ext = activeFile.split('.').pop();
+      executeViaNativeBridge(activeFile, code, ext);
+      return;
+    }
+
+    if (isDb) {
+      executeEnlngDbInStudio(code);
+      return;
     }
 
     if (activeFile.endsWith('.enlng')) {
@@ -731,6 +845,12 @@ screen WalletHome:
 
     // Automatically redirect to the dedicated enlngdb terminal
     getOrCreateEnlngDbTerminal();
+
+    // ⚡ If Native Bridge is connected, execute using ~/.enlangg/bin/enlngdb.exe!
+    if (isNativeBridgeConnected) {
+      executeViaNativeBridge(activeFile || 'script.enlngdb', sqlCode, 'enlngdb');
+      return;
+    }
 
     const dbState = (typeof sovereignDB !== 'undefined') ? sovereignDB : (window.sovereignDB || null);
     if (!dbState) {
@@ -1150,6 +1270,22 @@ find all records from student where grade is "A";
         lineEl.classList.add('executing-query-flash');
         setTimeout(() => lineEl.classList.remove('executing-query-flash'), 800);
       }
+    }
+
+    // ⚡ If Native Bridge is connected, execute query with native enlngdb.exe!
+    if (isNativeBridgeConnected) {
+      appendTerminal(`\n<span class="term-dim">// [Native Workbench Line ${q.lineNum}] Executing: ${escapeHtml(q.text)}</span>`);
+      executeViaNativeBridge('query.enlngdb', q.text, 'enlngdb').then(result => {
+        if (result && result.output) {
+          const asciiContainer = document.getElementById('dbResultsAsciiContainer');
+          if (asciiContainer) asciiContainer.textContent = result.output;
+          const gridContainer = document.getElementById('dbResultsGridContainer');
+          if (gridContainer) {
+            gridContainer.innerHTML = `<div style="padding:14px;"><div style="font-size:11px;color:#8b949e;margin-bottom:8px;">⚡ Native Result from ${escapeHtml(result.executor)} (${result.timeMs}ms)</div><pre style="color:#4ec9b0;font-family:var(--font-mono);font-size:12px;white-space:pre;line-height:1.4;">${escapeHtml(result.output)}</pre></div>`;
+          }
+        }
+      });
+      return;
     }
 
     const t0 = performance.now();

@@ -42,7 +42,7 @@ function Install-EnlanggCore($targetBase, $addToPath, $associateFiles, $statusCa
     & $statusCallback "Extracting and verifying core binaries..."
     & $progressCallback 25
 
-    $binList = @("enlangg.exe", "enlng.exe", "enlngdb.exe", "enlngf.exe", "enlngd.exe", "enlngs.exe", "enlngm.exe")
+    $binList = @("enlangg.exe", "enlng.exe", "enlngdb.exe", "enlngf.exe", "enlngd.exe", "enlngs.exe", "enlngm.exe", "enlangg-bridge.py", "enlangg-bridge.cmd")
     $scriptDir = $PSScriptRoot
     $primaryUrl = "https://enlangg.vercel.app"
 
