@@ -1,0 +1,235 @@
+type enlng
+
+# =====================================================================
+#   ENLANG OFFICIAL STANDARD LIBRARY: lib_net.enlng
+#   Complete Sovereign Networking, URL Parsing, HTTP Protocol Wireframes,
+#   Headers, Query Strings, REST Clients, Webhooks, and Socket Framing.
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# URL Parsing & Composition
+# ---------------------------------------------------------------------
+action parse_url(url):
+    proto = "http"
+    rest = url
+    n = len(url)
+    colon_idx = 0 - 1
+    for i from 0 to n - 3:
+        when "" + url[i] == ":" and "" + url[i + 1] == "/" and "" + url[i + 2] == "/":
+            when colon_idx < 0:
+                colon_idx = i
+    when colon_idx >= 0:
+        proto = ""
+        for i from 0 to colon_idx - 1:
+            proto = proto + url[i]
+        rest = ""
+        for i from colon_idx + 3 to n - 1:
+            rest = rest + url[i]
+
+    rest_len = len(rest)
+    slash_idx = 0 - 1
+    for i from 0 to rest_len - 1:
+        when "" + rest[i] == "/" and slash_idx < 0:
+            slash_idx = i
+
+    host_port = rest
+    path_query = "/"
+    when slash_idx >= 0:
+        host_port = ""
+        for i from 0 to slash_idx - 1:
+            host_port = host_port + rest[i]
+        path_query = ""
+        for i from slash_idx to rest_len - 1:
+            path_query = path_query + rest[i]
+
+    host = host_port
+    port = "80"
+    when proto == "https":
+        port = "443"
+    hp_len = len(host_port)
+    hp_colon_idx = 0 - 1
+    for i from 0 to hp_len - 1:
+        when "" + host_port[i] == ":" and hp_colon_idx < 0:
+            hp_colon_idx = i
+    when hp_colon_idx >= 0:
+        host = ""
+        for i from 0 to hp_colon_idx - 1:
+            host = host + host_port[i]
+        port = ""
+        for i from hp_colon_idx + 1 to hp_len - 1:
+            port = port + host_port[i]
+
+    path = path_query
+    query = ""
+    pq_len = len(path_query)
+    q_mark_idx = 0 - 1
+    for i from 0 to pq_len - 1:
+        when "" + path_query[i] == "?" and q_mark_idx < 0:
+            q_mark_idx = i
+    when q_mark_idx >= 0:
+        path = ""
+        for i from 0 to q_mark_idx - 1:
+            path = path + path_query[i]
+        query = ""
+        for i from q_mark_idx + 1 to pq_len - 1:
+            query = query + path_query[i]
+
+    return { "protocol": proto, "host": host, "port": port, "path": path, "query": query }
+
+action build_url(url_obj):
+    res = url_obj.protocol + "://" + url_obj.host
+    default_port = "80"
+    when url_obj.protocol == "https":
+        default_port = "443"
+    when url_obj.port != default_port:
+        res = res + ":" + url_obj.port
+    res = res + url_obj.path
+    when len(url_obj.query) > 0:
+        res = res + "?" + url_obj.query
+    return res
+
+# ---------------------------------------------------------------------
+# Query String Parser & Builder
+# ---------------------------------------------------------------------
+action build_query_string(params_map):
+    ks = keys(params_map)
+    pairs = []
+    for k in ks:
+        v = params_map[k]
+        append(pairs, k + "=" + v)
+    return join(pairs, "&")
+
+action parse_query_string(qs):
+    res = {}
+    when len(qs) == 0:
+        return res
+    raw_pairs = split(qs, "&")
+    for p in raw_pairs:
+        when contains(p, "="):
+            eq_idx = 0 - 1
+            n = len(p)
+            for i from 0 to n - 1:
+                when "" + p[i] == "=" and eq_idx < 0:
+                    eq_idx = i
+            k = ""
+            for i from 0 to eq_idx - 1:
+                k = k + p[i]
+            v = ""
+            for i from eq_idx + 1 to n - 1:
+                v = v + p[i]
+            res[k] = v
+    return res
+
+# ---------------------------------------------------------------------
+# HTTP Headers
+# ---------------------------------------------------------------------
+action create_headers():
+    return { "fields": {} }
+
+action header_set(h, name, val):
+    f = h.fields
+    f[name] = val
+    h.fields = f
+
+action header_get(h, name):
+    f = h.fields
+    when has_key(f, name):
+        return f[name]
+    return ""
+
+action format_headers_block(h):
+    f = h.fields
+    ks = keys(f)
+    lines = []
+    for k in ks:
+        v = f[k]
+        append(lines, k + ": " + v)
+    return join(lines, "\r\n")
+
+# ---------------------------------------------------------------------
+# HTTP Status Codes
+# ---------------------------------------------------------------------
+action http_status_text(code):
+    when code == 200: return "OK"
+    when code == 201: return "Created"
+    when code == 202: return "Accepted"
+    when code == 204: return "No Content"
+    when code == 301: return "Moved Permanently"
+    when code == 302: return "Found"
+    when code == 304: return "Not Modified"
+    when code == 400: return "Bad Request"
+    when code == 401: return "Unauthorized"
+    when code == 403: return "Forbidden"
+    when code == 404: return "Not Found"
+    when code == 405: return "Method Not Allowed"
+    when code == 500: return "Internal Server Error"
+    when code == 502: return "Bad Gateway"
+    when code == 503: return "Service Unavailable"
+    return "Unknown"
+
+# ---------------------------------------------------------------------
+# HTTP Request & Response Serializers
+# ---------------------------------------------------------------------
+action create_http_request(method, url_str, headers_obj, body):
+    url_info = parse_url(url_str)
+    return { "method": method, "url": url_str, "url_info": url_info, "headers": headers_obj, "body": body }
+
+action serialize_http_request(req):
+    u = req.url_info
+    line1 = req.method + " " + u.path
+    when len(u.query) > 0:
+        line1 = line1 + "?" + u.query
+    line1 = line1 + " HTTP/1.1"
+
+    h = req.headers
+    f = h.fields
+    when not has_key(f, "Host"):
+        header_set(h, "Host", u.host)
+    when len(req.body) > 0 and not has_key(f, "Content-Length"):
+        header_set(h, "Content-Length", "" + len(req.body))
+
+    hdr_block = format_headers_block(h)
+    return line1 + "\r\n" + hdr_block + "\r\n\r\n" + req.body
+
+# ---------------------------------------------------------------------
+# REST Client & Webhook Utilities
+# ---------------------------------------------------------------------
+action create_rest_client(base_url):
+    return { "base_url": base_url, "default_headers": create_headers() }
+
+action rest_prepare_get(client, endpoint, params_map):
+    full_url = client.base_url + endpoint
+    qs = build_query_string(params_map)
+    when len(qs) > 0:
+        full_url = full_url + "?" + qs
+    req = create_http_request("GET", full_url, client.default_headers, "")
+    return serialize_http_request(req)
+
+action rest_prepare_post(client, endpoint, body):
+    full_url = client.base_url + endpoint
+    h = client.default_headers
+    header_set(h, "Content-Type", "application/json")
+    req = create_http_request("POST", full_url, h, body)
+    return serialize_http_request(req)
+
+action create_webhook_payload(event_type, source_id, data_str):
+    return "{ \"event\": \"" + event_type + "\", \"source\": \"" + source_id + "\", \"timestamp\": " + time_now() + ", \"payload\": \"" + data_str + "\" }"
+
+# ---------------------------------------------------------------------
+# Socket Packet Framing (Length-Prefixed Protocol)
+# ---------------------------------------------------------------------
+action packet_encode(payload):
+    return "" + len(payload) + ":" + payload
+
+action packet_decode(packet_str):
+    colon_idx = 0 - 1
+    n = len(packet_str)
+    for i from 0 to n - 1:
+        when "" + packet_str[i] == ":" and colon_idx < 0:
+            colon_idx = i
+    when colon_idx >= 0:
+        res = ""
+        for i from colon_idx + 1 to n - 1:
+            res = res + packet_str[i]
+        return res
+    return packet_str

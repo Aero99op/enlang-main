@@ -1,0 +1,203 @@
+type enlng
+
+# =====================================================================
+#   ENLANG OFFICIAL STANDARD LIBRARY: lib_concurrency.enlng
+#   Complete Sovereign Concurrency, Asynchronous Patterns & Message Passing:
+#   Task Queues, Worker Pools, CSP Channels, Mutex Synchronization,
+#   Promises/Futures, and Pub-Sub Event Emitters.
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# 1. Task Queue (FIFO Asynchronous Task Dispatcher)
+# ---------------------------------------------------------------------
+action create_task_queue():
+    return { "tasks": [], "front": 0 }
+
+action task_queue_push(tq, name, payload):
+    task_obj = { "id": len(tq.tasks) + 1, "name": name, "payload": payload, "status": "PENDING", "created_at": time_now() }
+    tasks = tq.tasks
+    append(tasks, task_obj)
+    tq.tasks = tasks
+    return task_obj.id
+
+action task_queue_pop(tq):
+    when tq.front >= len(tq.tasks):
+        return null
+    items = tq.tasks
+    task_obj = items[tq.front]
+    tq.front = tq.front + 1
+    return task_obj
+
+action task_queue_size(tq):
+    return len(tq.tasks) - tq.front
+
+action task_queue_is_empty(tq):
+    return tq.front >= len(tq.tasks)
+
+action task_queue_clear(tq):
+    tq.tasks = []
+    tq.front = 0
+
+# ---------------------------------------------------------------------
+# 2. Worker Pool
+# ---------------------------------------------------------------------
+action create_worker_pool(num_workers):
+    return { "num_workers": num_workers, "queue": create_task_queue(), "completed": [], "active_tasks": 0 }
+
+action worker_pool_dispatch(pool, task_name, payload):
+    return task_queue_push(pool.queue, task_name, payload)
+
+action worker_pool_step(pool):
+    when task_queue_is_empty(pool.queue):
+        return null
+    task_obj = task_queue_pop(pool.queue)
+    task_obj.status = "COMPLETED"
+    task_obj.completed_at = time_now()
+    comp = pool.completed
+    append(comp, task_obj)
+    pool.completed = comp
+    return task_obj
+
+action worker_pool_completed_count(pool):
+    return len(pool.completed)
+
+action worker_pool_pending_count(pool):
+    return task_queue_size(pool.queue)
+
+# ---------------------------------------------------------------------
+# 3. Channel (Go-Style CSP Message Passing)
+# ---------------------------------------------------------------------
+action create_channel(capacity):
+    when capacity <= 0:
+        capacity = 10
+    return { "capacity": capacity, "messages": [], "is_closed": false }
+
+action channel_send(ch, msg):
+    when ch.is_closed:
+        return false
+    msgs = ch.messages
+    when len(msgs) >= ch.capacity:
+        return false
+    append(msgs, msg)
+    ch.messages = msgs
+    return true
+
+action channel_receive(ch):
+    msgs = ch.messages
+    when len(msgs) == 0:
+        return null
+    first_msg = msgs[0]
+    new_messages = []
+    n = len(msgs)
+    for i from 1 to n - 1:
+        m = msgs[i]
+        append(new_messages, m)
+    ch.messages = new_messages
+    return first_msg
+
+action channel_is_full(ch):
+    return len(ch.messages) >= ch.capacity
+
+action channel_is_empty(ch):
+    return len(ch.messages) == 0
+
+action channel_close(ch):
+    ch.is_closed = true
+
+action channel_size(ch):
+    return len(ch.messages)
+
+# ---------------------------------------------------------------------
+# 4. Mutex (Mutual Exclusion Lock for Critical Sections)
+# ---------------------------------------------------------------------
+action create_mutex():
+    return { "locked": false, "owner": null }
+
+action mutex_acquire(m, owner_id):
+    when m.locked:
+        when m.owner == owner_id:
+            return true
+        return false
+    m.locked = true
+    m.owner = owner_id
+    return true
+
+action mutex_release(m, owner_id):
+    when not m.locked:
+        return false
+    when m.owner != owner_id:
+        return false
+    m.locked = false
+    m.owner = null
+    return true
+
+action mutex_is_locked(m):
+    return m.locked
+
+action mutex_owner(m):
+    return m.owner
+
+# ---------------------------------------------------------------------
+# 5. Promise / Future (Asynchronous Value Resolution)
+# ---------------------------------------------------------------------
+action create_promise():
+    return { "state": "PENDING", "value": null, "error": null }
+
+action promise_resolve(p, val):
+    when p.state != "PENDING":
+        return false
+    p.state = "FULFILLED"
+    p.value = val
+    return true
+
+action promise_reject(p, err_msg):
+    when p.state != "PENDING":
+        return false
+    p.state = "REJECTED"
+    p.error = err_msg
+    return true
+
+action promise_is_settled(p):
+    return p.state != "PENDING"
+
+action promise_is_fulfilled(p):
+    return p.state == "FULFILLED"
+
+action promise_is_rejected(p):
+    return p.state == "REJECTED"
+
+action promise_value(p):
+    return p.value
+
+action promise_error(p):
+    return p.error
+
+# ---------------------------------------------------------------------
+# 6. Event Emitter (Pub-Sub Event Loop)
+# ---------------------------------------------------------------------
+action create_event_emitter():
+    return { "listeners": {} }
+
+action event_on(emitter, event_name, subscriber_name):
+    listeners = emitter.listeners
+    when not has_key(listeners, event_name):
+        listeners[event_name] = []
+        emitter.listeners = listeners
+    subs = listeners[event_name]
+    append(subs, subscriber_name)
+    listeners[event_name] = subs
+    emitter.listeners = listeners
+
+action event_emit(emitter, event_name, payload):
+    listeners = emitter.listeners
+    when not has_key(listeners, event_name):
+        return 0
+    subs = listeners[event_name]
+    return len(subs)
+
+action event_listener_count(emitter, event_name):
+    listeners = emitter.listeners
+    when not has_key(listeners, event_name):
+        return 0
+    subs = listeners[event_name]
+    return len(subs)

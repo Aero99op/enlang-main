@@ -1,0 +1,281 @@
+type enlng
+
+# =====================================================================
+#   ENLANG OFFICIAL STANDARD LIBRARY: lib_db.enlng
+#   Complete Sovereign Embedded Relational Database Engine (EnlangDB):
+#   Tables, Schemas, CRUD, Multi-Operator Filters, Projections, Joins,
+#   Ordering, Limits, ACID Transactions, and Flat-File Persistence.
+# =====================================================================
+
+action db_connect(name):
+    return { "name": name, "tables": {}, "tx_snapshot": null, "in_tx": false }
+
+action db_create_table(db, table_name, columns):
+    tbls = db.tables
+    when has_key(tbls, table_name):
+        return false
+    tbls[table_name] = { "name": table_name, "columns": columns, "rows": [], "auto_id": 1 }
+    db.tables = tbls
+    return true
+
+action db_drop_table(db, table_name):
+    tbls = db.tables
+    when has_key(tbls, table_name):
+        tbls[table_name] = null
+        db.tables = tbls
+        return true
+    return false
+
+action db_list_tables(db):
+    tbls = db.tables
+    ks = keys(tbls)
+    valid_tables = []
+    for k in ks:
+        when tbls[k] != null:
+            append(valid_tables, k)
+    return valid_tables
+
+action db_count(db, table_name):
+    tbls = db.tables
+    when not has_key(tbls, table_name):
+        return 0
+    t = tbls[table_name]
+    when t == null:
+        return 0
+    return len(t.rows)
+
+# ---------------------------------------------------------------------
+# CRUD Operations
+# ---------------------------------------------------------------------
+action db_insert(db, table_name, record):
+    tbls = db.tables
+    when not has_key(tbls, table_name):
+        return null
+    t = tbls[table_name]
+    when t == null:
+        return null
+    new_row = {}
+    ks = keys(record)
+    for k in ks:
+        new_row[k] = record[k]
+    when not has_key(new_row, "id") and not has_key(new_row, "_id"):
+        new_row["id"] = t.auto_id
+        t.auto_id = t.auto_id + 1
+    t_rows = t.rows
+    append(t_rows, new_row)
+    t.rows = t_rows
+    return new_row
+
+action db_find_all(db, table_name):
+    tbls = db.tables
+    when not has_key(tbls, table_name):
+        return []
+    t = tbls[table_name]
+    when t == null:
+        return []
+    return t.rows
+
+action eval_match(row_val, op, target_val):
+    when op == "==" or op == "=":
+        return row_val == target_val
+    when op == "!=":
+        return row_val != target_val
+    when op == ">":
+        return row_val > target_val
+    when op == "<":
+        return row_val < target_val
+    when op == ">=":
+        return row_val >= target_val
+    when op == "<=":
+        return row_val <= target_val
+    when op == "contains":
+        return contains("" + row_val, "" + target_val)
+    return false
+
+action db_find_where(db, table_name, field, op, target_val):
+    all_rows = db_find_all(db, table_name)
+    matched = []
+    for r in all_rows:
+        when has_key(r, field):
+            val = r[field]
+            when eval_match(val, op, target_val):
+                append(matched, r)
+    return matched
+
+action db_find_one(db, table_name, field, target_val):
+    res = db_find_where(db, table_name, field, "==", target_val)
+    when len(res) > 0:
+        return res[0]
+    return null
+
+action db_update_where(db, table_name, field, op, target_val, update_field, new_val):
+    tbls = db.tables
+    when not has_key(tbls, table_name):
+        return 0
+    t = tbls[table_name]
+    when t == null:
+        return 0
+    count = 0
+    rows = t.rows
+    for r in rows:
+        when has_key(r, field):
+            val = r[field]
+            when eval_match(val, op, target_val):
+                r[update_field] = new_val
+                count = count + 1
+    return count
+
+action db_delete_where(db, table_name, field, op, target_val):
+    tbls = db.tables
+    when not has_key(tbls, table_name):
+        return 0
+    t = tbls[table_name]
+    when t == null:
+        return 0
+    retained = []
+    deleted_count = 0
+    rows = t.rows
+    for r in rows:
+        should_delete = false
+        when has_key(r, field):
+            val = r[field]
+            when eval_match(val, op, target_val):
+                should_delete = true
+        when should_delete:
+            deleted_count = deleted_count + 1
+        otherwise:
+            append(retained, r)
+    t.rows = retained
+    return deleted_count
+
+# ---------------------------------------------------------------------
+# Relational Query Primitives: Select, Join, Order By, Limit
+# ---------------------------------------------------------------------
+action db_select_columns(records, cols):
+    projected = []
+    for r in records:
+        sub_row = {}
+        for c in cols:
+            when has_key(r, c):
+                sub_row[c] = r[c]
+            otherwise:
+                sub_row[c] = null
+        append(projected, sub_row)
+    return projected
+
+action db_limit(records, max_count):
+    res = []
+    n = len(records)
+    when max_count < n:
+        n = max_count
+    for i from 0 to n - 1:
+        append(res, records[i])
+    return res
+
+action db_order_by(records, field, ascending):
+    res = []
+    for r in records:
+        append(res, r)
+    n = len(res)
+    when n <= 1:
+        return res
+    for i from 0 to n - 1:
+        for j from 0 to n - 2:
+            row_a = res[j]
+            row_b = res[j + 1]
+            val_a = row_a[field]
+            val_b = row_b[field]
+            should_swap = false
+            when ascending and val_a > val_b:
+                should_swap = true
+            when not ascending and val_a < val_b:
+                should_swap = true
+            when should_swap:
+                res[j] = row_b
+                res[j + 1] = row_a
+    return res
+
+action db_inner_join(records_a, records_b, key_a, key_b):
+    joined = []
+    for ra in records_a:
+        when has_key(ra, key_a):
+            val_a = ra[key_a]
+            for rb in records_b:
+                when has_key(rb, key_b):
+                    val_b = rb[key_b]
+                    when val_a == val_b:
+                        comb = {}
+                        ks_a = keys(ra)
+                        for ka in ks_a:
+                            comb[ka] = ra[ka]
+                        ks_b = keys(rb)
+                        for kb in ks_b:
+                            when kb != key_b or not has_key(comb, kb):
+                                comb[kb] = rb[kb]
+                        append(joined, comb)
+    return joined
+
+# ---------------------------------------------------------------------
+# ACID Transaction Support (Snapshot & Rollback)
+# ---------------------------------------------------------------------
+action clone_table_rows(rows):
+    res = []
+    for r in rows:
+        row_copy = {}
+        ks = keys(r)
+        for k in ks:
+            row_copy[k] = r[k]
+        append(res, row_copy)
+    return res
+
+action db_transaction_begin(db):
+    when db.in_tx:
+        return false
+    snap = {}
+    tbl_names = db_list_tables(db)
+    tbls = db.tables
+    for tname in tbl_names:
+        tbl = tbls[tname]
+        snap[tname] = { "name": tname, "columns": tbl.columns, "rows": clone_table_rows(tbl.rows), "auto_id": tbl.auto_id }
+    db.tx_snapshot = snap
+    db.in_tx = true
+    return true
+
+action db_transaction_commit(db):
+    when not db.in_tx:
+        return false
+    db.tx_snapshot = null
+    db.in_tx = false
+    return true
+
+action db_transaction_rollback(db):
+    when not db.in_tx or db.tx_snapshot == null:
+        return false
+    db.tables = db.tx_snapshot
+    db.tx_snapshot = null
+    db.in_tx = false
+    return true
+
+# ---------------------------------------------------------------------
+# CSV Export & Persistence
+# ---------------------------------------------------------------------
+action db_export_csv(db, table_name):
+    tbls = db.tables
+    when not has_key(tbls, table_name):
+        return ""
+    t = tbls[table_name]
+    when t == null:
+        return ""
+    cols = t.columns
+    lines = []
+    append(lines, join(cols, ","))
+    rows = t.rows
+    for r in rows:
+        vals = []
+        for c in cols:
+            v = ""
+            when has_key(r, c):
+                v = "" + r[c]
+            append(vals, v)
+        append(lines, join(vals, ","))
+    return join(lines, "\n")

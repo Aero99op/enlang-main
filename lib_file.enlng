@@ -1,0 +1,177 @@
+type enlng
+
+# =====================================================================
+#   ENLANG OFFICIAL STANDARD LIBRARY: lib_file.enlng
+#   Complete Sovereign File Management, Path Utilities, Line Streaming,
+#   CSV Serialization, and Configuration Parsing.
+# =====================================================================
+
+action file_read(filepath):
+    return read_file(filepath)
+
+action file_write(filepath, content):
+    return write_file(filepath, content)
+
+action file_append(filepath, content):
+    return append_file(filepath, content)
+
+action file_exists_check(filepath):
+    return file_exists(filepath)
+
+action file_read_lines_str(content):
+    raw_lines = split(content, "\n")
+    clean_lines = []
+    for line in raw_lines:
+        l = line
+        n = len(l)
+        when n > 0 and "" + l[n - 1] == "\r":
+            sub_l = ""
+            for i from 0 to n - 2:
+                sub_l = sub_l + l[i]
+            l = sub_l
+        append(clean_lines, l)
+    return clean_lines
+
+action file_read_lines(filepath):
+    content = read_file(filepath)
+    return file_read_lines_str(content)
+
+action file_write_lines(filepath, lines):
+    content = join(lines, "\n")
+    return write_file(filepath, content)
+
+action file_append_line(filepath, line):
+    return append_file(filepath, line + "\n")
+
+action file_copy(src_path, dest_path):
+    data = read_file(src_path)
+    return write_file(dest_path, data)
+
+action file_line_count(filepath):
+    lines = file_read_lines(filepath)
+    return len(lines)
+
+action file_word_count(filepath):
+    content = read_file(filepath)
+    words = split(content, " ")
+    return len(words)
+
+# ---------------------------------------------------------------------
+# Path Utilities
+# ---------------------------------------------------------------------
+action path_basename(filepath):
+    n = len(filepath)
+    when n == 0:
+        return ""
+    last_slash = 0 - 1
+    for i from 0 to n - 1:
+        ch = "" + filepath[i]
+        when ch == "/" or ch == "\\":
+            last_slash = i
+    when last_slash < 0:
+        return filepath
+    res = ""
+    for i from last_slash + 1 to n - 1:
+        res = res + filepath[i]
+    return res
+
+action path_dirname(filepath):
+    n = len(filepath)
+    when n == 0:
+        return "."
+    last_slash = 0 - 1
+    for i from 0 to n - 1:
+        ch = "" + filepath[i]
+        when ch == "/" or ch == "\\":
+            last_slash = i
+    when last_slash <= 0:
+        return "."
+    res = ""
+    for i from 0 to last_slash - 1:
+        res = res + filepath[i]
+    return res
+
+action path_extension(filepath):
+    base = path_basename(filepath)
+    n = len(base)
+    last_dot = 0 - 1
+    for i from 0 to n - 1:
+        when "" + base[i] == ".":
+            last_dot = i
+    when last_dot < 0:
+        return ""
+    res = ""
+    for i from last_dot + 1 to n - 1:
+        res = res + base[i]
+    return res
+
+action path_join(dir_path, filename):
+    when len(dir_path) == 0:
+        return filename
+    when len(filename) == 0:
+        return dir_path
+    last_ch = "" + dir_path[len(dir_path) - 1]
+    when last_ch == "/" or last_ch == "\\":
+        return dir_path + filename
+    return dir_path + "/" + filename
+
+# ---------------------------------------------------------------------
+# CSV Record Parsing & Serialization
+# ---------------------------------------------------------------------
+action csv_parse_records(csv_text):
+    raw_lines = split(csv_text, "\n")
+    when len(raw_lines) == 0:
+        return []
+    header_line = raw_lines[0]
+    headers = split(header_line, ",")
+    records = []
+    n = len(raw_lines)
+    for i from 1 to n - 1:
+        line = raw_lines[i]
+        when len(line) > 0:
+            cols = split(line, ",")
+            row = {}
+            for j from 0 to len(headers) - 1:
+                h = headers[j]
+                val = ""
+                when j < len(cols):
+                    val = cols[j]
+                row[h] = val
+            append(records, row)
+    return records
+
+action csv_serialize_records(headers, records):
+    lines = []
+    append(lines, join(headers, ","))
+    for r in records:
+        row_vals = []
+        for h in headers:
+            v = ""
+            when has_key(r, h):
+                v = "" + r[h]
+            append(row_vals, v)
+        append(lines, join(row_vals, ","))
+    return join(lines, "\n")
+
+# ---------------------------------------------------------------------
+# Key-Value / .env Config Parsing & Serialization
+# ---------------------------------------------------------------------
+action kv_parse_text(kv_text):
+    lines = split(kv_text, "\n")
+    config = {}
+    for line in lines:
+        when len(line) > 0 and "" + line[0] != "#":
+            parts = split(line, "=")
+            when len(parts) >= 2:
+                key = parts[0]
+                val = parts[1]
+                config[key] = val
+    return config
+
+action kv_serialize_map(kv_map):
+    ks = keys(kv_map)
+    lines = []
+    for k in ks:
+        val = kv_map[k]
+        append(lines, k + "=" + val)
+    return join(lines, "\n")

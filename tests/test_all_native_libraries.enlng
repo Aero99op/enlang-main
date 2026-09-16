@@ -1,0 +1,302 @@
+type enlng
+
+# =====================================================================
+#   MASTER VERIFICATION SUITE: 6-DOMAIN STANDARD LIBRARY AUDIT
+#   Verifies lib_ds, lib_strings, lib_file, lib_net, lib_db, and lib_concurrency
+#   Strict 100% Native Pure Enlang Code - Zero Engine Core Modifications.
+# =====================================================================
+
+use "lib_math.enlng"
+use "lib_strings.enlng"
+use "lib_ds.enlng"
+use "lib_file.enlng"
+use "lib_net.enlng"
+use "lib_db.enlng"
+use "lib_concurrency.enlng"
+
+show "========================================================="
+show "  ENLANG 6-DOMAIN STANDARD LIBRARY SUITE VERIFICATION    "
+show "========================================================="
+
+# ---------------------------------------------------------------------
+# 1. TEST DATA STRUCTURES (lib_ds.enlng)
+# ---------------------------------------------------------------------
+show "--- 1. Testing lib_ds.enlng ---"
+ll = create_linked_list()
+ll_append(ll, "alpha")
+ll_append(ll, "beta")
+ll_prepend(ll, "omega")
+ll_items = ll_to_list(ll)
+ll_found = ll_find(ll, "beta")
+show "Linked List items:" ll_items "Found beta:" ll_found
+
+# Doubly Linked List
+dll = create_doubly_linked_list()
+dll_append(dll, 10)
+dll_append(dll, 20)
+dll_prepend(dll, 5)
+dll_rev = dll_to_list_reverse(dll)
+show "Doubly Linked List reversed:" dll_rev
+
+# Set
+s1 = create_set()
+set_add(s1, "apple")
+set_add(s1, "banana")
+s2 = create_set()
+set_add(s2, "banana")
+set_add(s2, "cherry")
+s_inter = set_intersection(s1, s2)
+show "Set Intersection:" set_to_list(s_inter)
+
+# Trie
+tr = create_trie()
+trie_insert(tr, "enlang")
+trie_insert(tr, "enterprise")
+trie_has_enlang = trie_search(tr, "enlang")
+trie_has_py = trie_search(tr, "python")
+trie_pre = trie_starts_with(tr, "ent")
+show "Trie search enlang:" trie_has_enlang "python:" trie_has_py "prefix ent:" trie_pre
+
+# LRU Cache
+lru = create_lru_cache(2)
+lru_put(lru, "k1", "v1")
+lru_put(lru, "k2", "v2")
+lru_get(lru, "k1") # k1 accessed, k2 should be evicted next
+lru_put(lru, "k3", "v3") # evicts k2
+lru_has_k2 = lru_get(lru, "k2")
+lru_val_k1 = lru_get(lru, "k1")
+show "LRU k2 (evicted):" lru_has_k2 "k1 (retained):" lru_val_k1
+
+# Graph BFS & DFS
+g = create_graph()
+graph_add_edge(g, "A", "B")
+graph_add_edge(g, "A", "C")
+graph_add_edge(g, "B", "D")
+bfs_res = graph_bfs(g, "A")
+dfs_res = graph_dfs(g, "A")
+show "Graph BFS from A:" bfs_res
+show "Graph DFS from A:" dfs_res
+
+ds_pass = false
+when ll_found and trie_has_enlang and not trie_has_py and trie_pre and lru_has_k2 == null and lru_val_k1 == "v1":
+    ds_pass = true
+show "Data Structures Test Status:" ds_pass
+
+# ---------------------------------------------------------------------
+# 2. TEST STRING MANIPULATION (lib_strings.enlng)
+# ---------------------------------------------------------------------
+show "--- 2. Testing lib_strings.enlng ---"
+raw_s = "  hello sovereign world  "
+s_trimmed = trim(raw_s)
+s_upper = to_upper(s_trimmed)
+s_lower = to_lower(s_upper)
+s_title = title_case(s_trimmed)
+s_snake = to_snake_case("Hello Sovereign World")
+s_camel = to_camel_case("hello_sovereign_world")
+s_kebab = to_kebab_case("Hello Sovereign World")
+s_replaced = string_replace_all("alpha-beta-gamma", "-", "_")
+s_sub = string_substring("EnlangStudio", 0, 6)
+s_fmt = string_format_2("Hello {0}, Welcome to {1}!", "Developer", "Enlang")
+s_rot = rot13("hello")
+s_unrot = rot13(s_rot)
+
+show "Trimmed:" s_trimmed
+show "Upper:" s_upper
+show "Snake Case:" s_snake
+show "Camel Case:" s_camel
+show "Kebab Case:" s_kebab
+show "Replaced:" s_replaced
+show "Substring:" s_sub
+show "Formatted:" s_fmt
+show "ROT13 roundtrip:" s_unrot
+
+str_pass = false
+when s_trimmed == "hello sovereign world" and s_upper == "HELLO SOVEREIGN WORLD" and s_snake == "hello_sovereign_world" and s_camel == "helloSovereignWorld" and s_kebab == "hello-sovereign-world" and s_replaced == "alpha_beta_gamma" and s_sub == "Enlang" and s_unrot == "hello":
+    str_pass = true
+show "String Manipulation Test Status:" str_pass
+
+# ---------------------------------------------------------------------
+# 3. TEST FILE MANAGEMENT & UTILITIES (lib_file.enlng & lib_fs.enlng)
+# ---------------------------------------------------------------------
+show "--- 3. Testing lib_file.enlng ---"
+# File line splitting & joined lines
+test_file_content = "line1\nline2\nline3"
+f_lines = file_read_lines_str(test_file_content)
+f_line_cnt = len(f_lines)
+first_l = f_lines[0]
+show "File lines count:" f_line_cnt "First line:" first_l
+
+# Path manipulation
+p_base = path_basename("C:/projects/enlang/main.enlng")
+p_dir = path_dirname("C:/projects/enlang/main.enlng")
+p_ext = path_extension("main.enlng")
+p_joined = path_join("usr/local", "bin")
+show "Path Base:" p_base "Dir:" p_dir "Ext:" p_ext "Joined:" p_joined
+
+# CSV parsing
+csv_sample = "id,name,role\n1,Alice,Admin\n2,Bob,User\n"
+csv_recs = csv_parse_records(csv_sample)
+rec_first = csv_recs[0]
+rec_name = rec_first["name"]
+show "Parsed CSV records count:" len(csv_recs) "User 1 name:" rec_name
+
+# KV parsing
+kv_sample = "PORT=8080\nHOST=localhost\nDEBUG=true\n"
+kv_cfg = kv_parse_text(kv_sample)
+cfg_port = kv_cfg["PORT"]
+cfg_host = kv_cfg["HOST"]
+show "Parsed KV Config PORT:" cfg_port "HOST:" cfg_host
+
+file_pass = false
+when f_line_cnt >= 3 and p_base == "main.enlng" and p_ext == "enlng" and p_joined == "usr/local/bin" and cfg_port == "8080":
+    file_pass = true
+show "File Management Test Status:" file_pass
+
+# ---------------------------------------------------------------------
+# 4. TEST NETWORKING (lib_net.enlng)
+# ---------------------------------------------------------------------
+show "--- 4. Testing lib_net.enlng ---"
+parsed_url = parse_url("https://api.enlang.org:8443/v1/users?search=dev&limit=10")
+show "Parsed Protocol:" parsed_url.protocol "Host:" parsed_url.host "Port:" parsed_url.port "Path:" parsed_url.path "Query:" parsed_url.query
+
+built_url = build_url(parsed_url)
+show "Rebuilt URL:" built_url
+
+# HTTP Request Wireframe Serialization
+hdrs = create_headers()
+header_set(hdrs, "Accept", "application/json")
+req = create_http_request("POST", "https://api.enlang.org/submit", hdrs, "{\"status\": \"ok\"}")
+wire_req = serialize_http_request(req)
+show "Serialized HTTP Request Wireframe preview:"
+show wire_req
+
+# HTTP Status Texts
+st200 = http_status_text(200)
+st404 = http_status_text(404)
+st500 = http_status_text(500)
+show "HTTP Status 200:" st200 "404:" st404 "500:" st500
+
+# Packet Framing
+pkt = packet_encode("PING_PAYLOAD")
+pkt_dec = packet_decode(pkt)
+show "Socket Packet Encoded:" pkt "Decoded:" pkt_dec
+
+net_pass = false
+when parsed_url.protocol == "https" and parsed_url.host == "api.enlang.org" and parsed_url.port == "8443" and st200 == "OK" and st404 == "Not Found" and pkt_dec == "PING_PAYLOAD":
+    net_pass = true
+show "Networking Test Status:" net_pass
+
+# ---------------------------------------------------------------------
+# 5. TEST ENLANGDB & DATABASE CONNECTIVITY (lib_db.enlng)
+# ---------------------------------------------------------------------
+show "--- 5. Testing lib_db.enlng ---"
+db = db_connect("enterprise_db")
+db_create_table(db, "users", ["id", "username", "department", "salary"])
+db_create_table(db, "departments", ["dept_id", "dept_name", "location"])
+
+# Inserts
+db_insert(db, "users", { "username": "Spand", "department": "Core Engine", "salary": 150000 })
+db_insert(db, "users", { "username": "Aero", "department": "AI Studio", "salary": 140000 })
+db_insert(db, "users", { "username": "Kilo", "department": "AI Studio", "salary": 120000 })
+
+db_insert(db, "departments", { "dept_id": "Core Engine", "dept_name": "Compiler Team", "location": "Bangalore" })
+db_insert(db, "departments", { "dept_id": "AI Studio", "dept_name": "IDE Team", "location": "Silicon Valley" })
+
+user_count = db_count(db, "users")
+show "Total Users in DB:" user_count
+
+# Query with where filter
+high_earners = db_find_where(db, "users", "salary", ">=", 140000)
+show "High Earners count:" len(high_earners)
+
+# Update
+updated_count = db_update_where(db, "users", "username", "==", "Kilo", "salary", 135000)
+kilo_record = db_find_one(db, "users", "username", "Kilo")
+kilo_sal = kilo_record["salary"]
+show "Updated Kilo salary:" kilo_sal
+
+# Inner Join
+joined_data = db_inner_join(db_find_all(db, "users"), db_find_all(db, "departments"), "department", "dept_id")
+first_j = joined_data[0]
+first_loc = first_j["location"]
+show "Inner Join count:" len(joined_data) "First join record location:" first_loc
+
+# ACID Transactions Test (Begin, Modify, Rollback)
+db_transaction_begin(db)
+db_insert(db, "users", { "username": "GhostUser", "department": "Temp", "salary": 10000 })
+count_in_tx = db_count(db, "users")
+show "Users count inside transaction:" count_in_tx
+db_transaction_rollback(db)
+count_after_rollback = db_count(db, "users")
+show "Users count after rollback:" count_after_rollback
+
+db_pass = false
+when user_count == 3 and len(high_earners) == 2 and kilo_sal == 135000 and len(joined_data) == 3 and count_in_tx == 4 and count_after_rollback == 3:
+    db_pass = true
+show "EnlangDB Test Status:" db_pass
+
+# ---------------------------------------------------------------------
+# 6. TEST CONCURRENCY SUPPORT (lib_concurrency.enlng)
+# ---------------------------------------------------------------------
+show "--- 6. Testing lib_concurrency.enlng ---"
+# Task Queue
+tq = create_task_queue()
+t1 = task_queue_push(tq, "COMPILE_AST", { "module": "main.enlng" })
+t2 = task_queue_push(tq, "OPTIMIZE_CIR", { "level": "O3" })
+q_size = task_queue_size(tq)
+popped_task = task_queue_pop(tq)
+show "Task Queue size before pop:" q_size "Popped task:" popped_task.name
+
+# Worker Pool
+pool = create_worker_pool(4)
+worker_pool_dispatch(pool, "LINT_SOURCE", "lib_math.enlng")
+worker_pool_dispatch(pool, "EMIT_C", "lib_ds.enlng")
+w_res = worker_pool_step(pool)
+w_comp = worker_pool_completed_count(pool)
+w_pend = worker_pool_pending_count(pool)
+show "Worker pool completed count:" w_comp "Pending count:" w_pend
+
+# Channel
+ch = create_channel(5)
+channel_send(ch, "MESSAGE_1")
+channel_send(ch, "MESSAGE_2")
+msg1 = channel_receive(ch)
+show "Channel received message:" msg1 "Remaining in channel:" channel_size(ch)
+
+# Mutex
+mtx = create_mutex()
+locked_by_worker1 = mutex_acquire(mtx, "worker_1")
+locked_by_worker2 = mutex_acquire(mtx, "worker_2")
+show "Mutex acquired by worker 1:" locked_by_worker1 "Acquired by worker 2 (expected false):" locked_by_worker2
+mutex_release(mtx, "worker_1")
+locked_after_release = mutex_is_locked(mtx)
+show "Mutex locked after release (expected false):" locked_after_release
+
+# Promise
+prom = create_promise()
+promise_resolve(prom, 42)
+prom_fulfilled = promise_is_fulfilled(prom)
+prom_val = promise_value(prom)
+show "Promise fulfilled:" prom_fulfilled "Resolved value:" prom_val
+
+# Event Emitter
+emitter = create_event_emitter()
+event_on(emitter, "onBuildComplete", "notificationService")
+event_on(emitter, "onBuildComplete", "loggerService")
+dispatched_count = event_emit(emitter, "onBuildComplete", { "status": "SUCCESS" })
+show "Event Emitter dispatched to listeners count:" dispatched_count
+
+concurrency_pass = false
+when q_size == 2 and popped_task.name == "COMPILE_AST" and msg1 == "MESSAGE_1" and locked_by_worker1 and not locked_by_worker2 and not locked_after_release and prom_fulfilled and prom_val == 42 and dispatched_count == 2:
+    concurrency_pass = true
+show "Concurrency Test Status:" concurrency_pass
+
+# ---------------------------------------------------------------------
+# FINAL SUMMARY AUDIT
+# ---------------------------------------------------------------------
+show "========================================================="
+all_passed = false
+when ds_pass and str_pass and file_pass and net_pass and db_pass and concurrency_pass:
+    all_passed = true
+show "ALL 6 STANDARD LIBRARIES MASTER AUDIT PASSED:" all_passed
+show "========================================================="

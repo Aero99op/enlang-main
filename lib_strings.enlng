@@ -2,7 +2,9 @@ type enlng
 
 # =====================================================================
 #   ENLANG OFFICIAL STANDARD LIBRARY: lib_strings.enlng
-#   Text Formatting, Parsing, Concatenation, and String Primitives
+#   Complete Sovereign String Manipulation & Text Processing Primitives:
+#   Trimming, Slicing, Casing (Upper, Lower, Title, Camel, Snake, Kebab),
+#   Replace, Substring, Format, Search, Ciphers, and Delimiters.
 # =====================================================================
 
 action banner(title):
@@ -51,3 +53,321 @@ action string_split(str, sep):
 
 action string_join(arr, sep):
     return join(arr, sep)
+
+# ---------------------------------------------------------------------
+# Slicing & Substrings
+# ---------------------------------------------------------------------
+action char_at(str, index):
+    when index < 0 or index >= len(str):
+        return ""
+    return "" + str[index]
+
+action string_substring(str, start_idx, end_idx):
+    n = len(str)
+    when start_idx < 0:
+        start_idx = 0
+    when end_idx > n:
+        end_idx = n
+    when start_idx >= end_idx:
+        return ""
+    res = ""
+    for i from start_idx to end_idx - 1:
+        res = res + str[i]
+    return res
+
+action string_slice(str, start_idx, count):
+    return string_substring(str, start_idx, start_idx + count)
+
+action string_starts_with(str, prefix):
+    plen = len(prefix)
+    when plen > len(str):
+        return false
+    sub = string_substring(str, 0, plen)
+    return sub == prefix
+
+action string_ends_with(str, suffix):
+    slen = len(suffix)
+    n = len(str)
+    when slen > n:
+        return false
+    sub = string_substring(str, n - slen, n)
+    return sub == suffix
+
+action string_index_of(str, substr):
+    slen = len(substr)
+    n = len(str)
+    when slen == 0:
+        return 0
+    when slen > n:
+        return 0 - 1
+    for i from 0 to n - slen:
+        candidate = string_substring(str, i, i + slen)
+        when candidate == substr:
+            return i
+    return 0 - 1
+
+action string_count_char(str, target_ch):
+    n = len(str)
+    cnt = 0
+    for i from 0 to n - 1:
+        when "" + str[i] == target_ch:
+            cnt = cnt + 1
+    return cnt
+
+# ---------------------------------------------------------------------
+# Trimming & Stripping
+# ---------------------------------------------------------------------
+action trim_left(str):
+    n = len(str)
+    start_idx = 0
+    repeat while start_idx < n:
+        ch = "" + str[start_idx]
+        when ch != " " and ch != "\t" and ch != "\n" and ch != "\r":
+            stop
+        start_idx = start_idx + 1
+    return string_substring(str, start_idx, n)
+
+action trim_right(str):
+    n = len(str)
+    end_idx = n
+    repeat while end_idx > 0:
+        ch = "" + str[end_idx - 1]
+        when ch != " " and ch != "\t" and ch != "\n" and ch != "\r":
+            stop
+        end_idx = end_idx - 1
+    return string_substring(str, 0, end_idx)
+
+action trim(str):
+    return trim_right(trim_left(str))
+
+action strip_prefix(str, prefix):
+    when string_starts_with(str, prefix):
+        return string_substring(str, len(prefix), len(str))
+    return str
+
+action strip_suffix(str, suffix):
+    when string_ends_with(str, suffix):
+        return string_substring(str, 0, len(str) - len(suffix))
+    return str
+
+# ---------------------------------------------------------------------
+# Case Conversions (Upper, Lower, Title, Camel, Snake, Kebab)
+# ---------------------------------------------------------------------
+action char_to_upper(ch):
+    when ch == "a": return "A"
+    when ch == "b": return "B"
+    when ch == "c": return "C"
+    when ch == "d": return "D"
+    when ch == "e": return "E"
+    when ch == "f": return "F"
+    when ch == "g": return "G"
+    when ch == "h": return "H"
+    when ch == "i": return "I"
+    when ch == "j": return "J"
+    when ch == "k": return "K"
+    when ch == "l": return "L"
+    when ch == "m": return "M"
+    when ch == "n": return "N"
+    when ch == "o": return "O"
+    when ch == "p": return "P"
+    when ch == "q": return "Q"
+    when ch == "r": return "R"
+    when ch == "s": return "S"
+    when ch == "t": return "T"
+    when ch == "u": return "U"
+    when ch == "v": return "V"
+    when ch == "w": return "W"
+    when ch == "x": return "X"
+    when ch == "y": return "Y"
+    when ch == "z": return "Z"
+    return ch
+
+action char_to_lower(ch):
+    when ch == "A": return "a"
+    when ch == "B": return "b"
+    when ch == "C": return "c"
+    when ch == "D": return "d"
+    when ch == "E": return "e"
+    when ch == "F": return "f"
+    when ch == "G": return "g"
+    when ch == "H": return "h"
+    when ch == "I": return "i"
+    when ch == "J": return "j"
+    when ch == "K": return "k"
+    when ch == "L": return "l"
+    when ch == "M": return "m"
+    when ch == "N": return "n"
+    when ch == "O": return "o"
+    when ch == "P": return "p"
+    when ch == "Q": return "q"
+    when ch == "R": return "r"
+    when ch == "S": return "s"
+    when ch == "T": return "t"
+    when ch == "U": return "u"
+    when ch == "V": return "v"
+    when ch == "W": return "w"
+    when ch == "X": return "x"
+    when ch == "Y": return "y"
+    when ch == "Z": return "z"
+    return ch
+
+action to_upper(str):
+    n = len(str)
+    res = ""
+    for i from 0 to n - 1:
+        res = res + char_to_upper("" + str[i])
+    return res
+
+action to_lower(str):
+    n = len(str)
+    res = ""
+    for i from 0 to n - 1:
+        res = res + char_to_lower("" + str[i])
+    return res
+
+action capitalize(str):
+    when len(str) == 0:
+        return ""
+    first_ch = char_to_upper("" + str[0])
+    rest = to_lower(string_substring(str, 1, len(str)))
+    return first_ch + rest
+
+action title_case(str):
+    words = split(str, " ")
+    res_words = []
+    for w in words:
+        append(res_words, capitalize(w))
+    return join(res_words, " ")
+
+action to_snake_case(str):
+    s = trim(str)
+    n = len(s)
+    res = ""
+    for i from 0 to n - 1:
+        ch = "" + s[i]
+        when ch == " " or ch == "-" or ch == "_":
+            when len(res) > 0 and not string_ends_with(res, "_"):
+                res = res + "_"
+        otherwise:
+            res = res + char_to_lower(ch)
+    return res
+
+action to_kebab_case(str):
+    s = trim(str)
+    n = len(s)
+    res = ""
+    for i from 0 to n - 1:
+        ch = "" + s[i]
+        when ch == " " or ch == "_" or ch == "-":
+            when len(res) > 0 and not string_ends_with(res, "-"):
+                res = res + "-"
+        otherwise:
+            res = res + char_to_lower(ch)
+    return res
+
+action to_camel_case(str):
+    words = split(to_snake_case(str), "_")
+    when len(words) == 0:
+        return ""
+    res = to_lower(words[0])
+    n = len(words)
+    for i from 1 to n - 1:
+        res = res + capitalize(words[i])
+    return res
+
+# ---------------------------------------------------------------------
+# Replacements & Formatting
+# ---------------------------------------------------------------------
+action string_replace_first(str, target, replacement):
+    idx = string_index_of(str, target)
+    when idx < 0:
+        return str
+    before_part = string_substring(str, 0, idx)
+    after_part = string_substring(str, idx + len(target), len(str))
+    return before_part + replacement + after_part
+
+action string_replace_all(str, target, replacement):
+    when len(target) == 0:
+        return str
+    parts = split(str, target)
+    return join(parts, replacement)
+
+action string_format_1(template, arg1):
+    return string_replace_all(template, "{0}", "" + arg1)
+
+action string_format_2(template, arg1, arg2):
+    t1 = string_replace_all(template, "{0}", "" + arg1)
+    return string_replace_all(t1, "{1}", "" + arg2)
+
+action string_format_3(template, arg1, arg2, arg3):
+    t1 = string_replace_all(template, "{0}", "" + arg1)
+    t2 = string_replace_all(t1, "{1}", "" + arg2)
+    return string_replace_all(t2, "{2}", "" + arg3)
+
+# ---------------------------------------------------------------------
+# Ciphers & Slugs
+# ---------------------------------------------------------------------
+action rot13_char(ch):
+    when ch == "a": return "n"
+    when ch == "b": return "o"
+    when ch == "c": return "p"
+    when ch == "d": return "q"
+    when ch == "e": return "r"
+    when ch == "f": return "s"
+    when ch == "g": return "t"
+    when ch == "h": return "u"
+    when ch == "i": return "v"
+    when ch == "j": return "w"
+    when ch == "k": return "x"
+    when ch == "l": return "y"
+    when ch == "m": return "z"
+    when ch == "n": return "a"
+    when ch == "o": return "b"
+    when ch == "p": return "c"
+    when ch == "q": return "d"
+    when ch == "r": return "e"
+    when ch == "s": return "f"
+    when ch == "t": return "g"
+    when ch == "u": return "h"
+    when ch == "v": return "i"
+    when ch == "w": return "j"
+    when ch == "x": return "k"
+    when ch == "y": return "l"
+    when ch == "z": return "m"
+    when ch == "A": return "N"
+    when ch == "B": return "O"
+    when ch == "C": return "P"
+    when ch == "D": return "Q"
+    when ch == "E": return "R"
+    when ch == "F": return "S"
+    when ch == "G": return "T"
+    when ch == "H": return "U"
+    when ch == "I": return "V"
+    when ch == "J": return "W"
+    when ch == "K": return "X"
+    when ch == "L": return "Y"
+    when ch == "M": return "Z"
+    when ch == "N": return "A"
+    when ch == "O": return "B"
+    when ch == "P": return "C"
+    when ch == "Q": return "D"
+    when ch == "R": return "E"
+    when ch == "S": return "F"
+    when ch == "T": return "G"
+    when ch == "U": return "H"
+    when ch == "V": return "I"
+    when ch == "W": return "J"
+    when ch == "X": return "K"
+    when ch == "Y": return "L"
+    when ch == "Z": return "M"
+    return ch
+
+action rot13(str):
+    n = len(str)
+    res = ""
+    for i from 0 to n - 1:
+        res = res + rot13_char("" + str[i])
+    return res
+
+action slugify(str):
+    return to_kebab_case(str)

@@ -1,0 +1,41 @@
+type enlng
+
+# =====================================================================
+#   ENLANG OFFICIAL STANDARD LIBRARY: lib_fs.enlng
+#   Companion module for Sovereign File System & File Management.
+# =====================================================================
+
+use "lib_file.enlng"
+
+action file_read_lines_str(content):
+    raw_lines = split(content, "\n")
+    clean_lines = []
+    for line in raw_lines:
+        l = line
+        n = len(l)
+        when n > 0 and "" + l[n - 1] == "\r":
+            sub_l = ""
+            for i from 0 to n - 2:
+                sub_l = sub_l + l[i]
+            l = sub_l
+        append(clean_lines, l)
+    return clean_lines
+
+action file_read_lines(filepath):
+    content = file_read(filepath)
+    return file_read_lines_str(content)
+
+action fs_read(path):
+    return file_read(path)
+
+action fs_write(path, data):
+    return file_write(path, data)
+
+action fs_append(path, data):
+    return file_append(path, data)
+
+action fs_exists(path):
+    return file_exists_check(path)
+
+action fs_copy(src, dest):
+    return file_copy(src, dest)

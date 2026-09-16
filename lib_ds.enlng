@@ -2,10 +2,14 @@ type enlng
 
 # =====================================================================
 #   ENLANG OFFICIAL STANDARD LIBRARY: lib_ds.enlng
-#   Core Data Structures: Stack, Queue, Deque, Priority Queue, BST, Graph
+#   Complete Sovereign Data Structures & Algorithmic Primitives:
+#   Stack, Queue, Deque, Priority Queue, BST, Graph, Singly Linked List,
+#   Doubly Linked List, Hash Set, Trie, LRU Cache, Ring Buffer, BFS, DFS
 # =====================================================================
 
-# 1. Stack (LIFO)
+# ---------------------------------------------------------------------
+# 1. Stack (LIFO - Last In First Out)
+# ---------------------------------------------------------------------
 action create_stack():
     return []
 
@@ -27,74 +31,100 @@ action stack_is_empty(s):
 action stack_size(s):
     return len(s)
 
-# 2. Queue (FIFO)
+# ---------------------------------------------------------------------
+# 2. Queue (FIFO - First In First Out)
+# ---------------------------------------------------------------------
 action create_queue():
     return { "items": [], "front": 0 }
 
 action queue_enqueue(q, val):
-    append(q.items, val)
+    items = q.items
+    append(items, val)
 
 action queue_dequeue(q):
-    when q.front >= len(q.items):
-        return null
     items = q.items
+    when q.front >= len(items):
+        return null
     val = items[q.front]
     q.front = q.front + 1
     return val
 
 action queue_peek(q):
-    when q.front >= len(q.items):
-        return null
     items = q.items
+    when q.front >= len(items):
+        return null
     return items[q.front]
 
 action queue_is_empty(q):
-    return q.front >= len(q.items)
+    items = q.items
+    return q.front >= len(items)
 
 action queue_size(q):
-    return len(q.items) - q.front
+    items = q.items
+    return len(items) - q.front
 
+# ---------------------------------------------------------------------
 # 3. Deque (Double-Ended Queue)
+# ---------------------------------------------------------------------
 action create_deque():
     return { "items": [], "front": 0 }
 
 action deque_push_back(dq, val):
-    append(dq.items, val)
+    items = dq.items
+    append(items, val)
 
 action deque_pop_front(dq):
-    when dq.front >= len(dq.items):
-        return null
     items = dq.items
+    when dq.front >= len(items):
+        return null
     val = items[dq.front]
     dq.front = dq.front + 1
     return val
 
-action deque_peek_front(dq):
-    when dq.front >= len(dq.items):
-        return null
+action deque_push_front(dq, val):
+    new_list = [val]
     items = dq.items
+    for i from dq.front to len(items) - 1:
+        append(new_list, items[i])
+    dq.items = new_list
+    dq.front = 0
+
+action deque_pop_back(dq):
+    items = dq.items
+    when dq.front >= len(items):
+        return null
+    return pop(items)
+
+action deque_peek_front(dq):
+    items = dq.items
+    when dq.front >= len(items):
+        return null
     return items[dq.front]
 
 action deque_peek_back(dq):
-    n = len(dq.items)
+    items = dq.items
+    n = len(items)
     when dq.front >= n:
         return null
-    items = dq.items
     return items[n - 1]
 
 action deque_is_empty(dq):
-    return dq.front >= len(dq.items)
+    items = dq.items
+    return dq.front >= len(items)
 
 action deque_size(dq):
-    return len(dq.items) - dq.front
+    items = dq.items
+    return len(items) - dq.front
 
+# ---------------------------------------------------------------------
 # 4. Priority Queue (Sorted List Min-Heap)
+# ---------------------------------------------------------------------
 action create_priority_queue():
     return { "items": [] }
 
 action pq_insert(pq, val):
-    append(pq.items, val)
     items = pq.items
+    append(items, val)
     repeat until sorted:
         for each pair in items:
             when pair.left > pair.right:
@@ -120,12 +150,16 @@ action pq_extract_min(pq):
     return min_val
 
 action pq_size(pq):
-    return len(pq.items)
+    items = pq.items
+    return len(items)
 
 action pq_is_empty(pq):
-    return len(pq.items) == 0
+    items = pq.items
+    return len(items) == 0
 
+# ---------------------------------------------------------------------
 # 5. Binary Search Tree (BST)
+# ---------------------------------------------------------------------
 action bst_node(val):
     return { "val": val, "left": null, "right": null }
 
@@ -163,7 +197,9 @@ action bst_max(root):
         curr = curr.right
     return curr.val
 
-# 6. Graph (Adjacency List)
+# ---------------------------------------------------------------------
+# 6. Graph (Adjacency List with BFS & DFS)
+# ---------------------------------------------------------------------
 action create_graph():
     return {}
 
@@ -188,3 +224,320 @@ action graph_has_edge(g, u, v):
         return false
     neighbors = g[u]
     return contains(neighbors, v)
+
+action graph_bfs(g, start_node):
+    visited = {}
+    order = []
+    q = create_queue()
+    queue_enqueue(q, start_node)
+    visited[start_node] = true
+
+    repeat while not queue_is_empty(q):
+        curr = queue_dequeue(q)
+        append(order, curr)
+        neighbors = graph_neighbors(g, curr)
+        for next_node in neighbors:
+            when not has_key(visited, next_node):
+                visited[next_node] = true
+                queue_enqueue(q, next_node)
+    return order
+
+action graph_dfs(g, start_node):
+    visited = {}
+    order = []
+    stk = create_stack()
+    stack_push(stk, start_node)
+
+    repeat while not stack_is_empty(stk):
+        curr = stack_pop(stk)
+        when not has_key(visited, curr):
+            visited[curr] = true
+            append(order, curr)
+            neighbors = graph_neighbors(g, curr)
+            for next_node in neighbors:
+                when not has_key(visited, next_node):
+                    stack_push(stk, next_node)
+    return order
+
+# ---------------------------------------------------------------------
+# 7. Singly Linked List
+# ---------------------------------------------------------------------
+action ll_node(val):
+    return { "val": val, "next": null }
+
+action create_linked_list():
+    return { "head": null, "size": 0 }
+
+action ll_append(ll, val):
+    node = ll_node(val)
+    when ll.head == null:
+        ll.head = node
+    otherwise:
+        curr = ll.head
+        repeat while curr.next != null:
+            curr = curr.next
+        curr.next = node
+    ll.size = ll.size + 1
+
+action ll_prepend(ll, val):
+    node = ll_node(val)
+    node.next = ll.head
+    ll.head = node
+    ll.size = ll.size + 1
+
+action ll_find(ll, val):
+    curr = ll.head
+    repeat while curr != null:
+        when curr.val == val:
+            return true
+        curr = curr.next
+    return false
+
+action ll_to_list(ll):
+    res = []
+    curr = ll.head
+    repeat while curr != null:
+        append(res, curr.val)
+        curr = curr.next
+    return res
+
+action ll_size(ll):
+    return ll.size
+
+# ---------------------------------------------------------------------
+# 8. Doubly Linked List
+# ---------------------------------------------------------------------
+action dll_node(val):
+    return { "val": val, "prev": null, "next": null }
+
+action create_doubly_linked_list():
+    return { "head": null, "tail": null, "size": 0 }
+
+action dll_append(dll, val):
+    node = dll_node(val)
+    when dll.head == null:
+        dll.head = node
+        dll.tail = node
+    otherwise:
+        t = dll.tail
+        node.prev = t
+        t.next = node
+        dll.tail = node
+    dll.size = dll.size + 1
+
+action dll_prepend(dll, val):
+    node = dll_node(val)
+    when dll.head == null:
+        dll.head = node
+        dll.tail = node
+    otherwise:
+        h = dll.head
+        node.next = h
+        h.prev = node
+        dll.head = node
+    dll.size = dll.size + 1
+
+action dll_to_list(dll):
+    res = []
+    curr = dll.head
+    repeat while curr != null:
+        append(res, curr.val)
+        curr = curr.next
+    return res
+
+action dll_to_list_reverse(dll):
+    res = []
+    curr = dll.tail
+    repeat while curr != null:
+        append(res, curr.val)
+        curr = curr.prev
+    return res
+
+action dll_size(dll):
+    return dll.size
+
+# ---------------------------------------------------------------------
+# 9. Hash Set (Mathematical Sets: Union, Intersection, Difference)
+# ---------------------------------------------------------------------
+action create_set():
+    return { "elements": {}, "count": 0 }
+
+action set_add(s, item):
+    key = "" + item
+    elems = s.elements
+    when not has_key(elems, key):
+        elems[key] = item
+        s.elements = elems
+        s.count = s.count + 1
+
+action set_has(s, item):
+    key = "" + item
+    elems = s.elements
+    return has_key(elems, key)
+
+action set_remove(s, item):
+    key = "" + item
+    elems = s.elements
+    when has_key(elems, key):
+        elems[key] = null
+        s.elements = elems
+        s.count = s.count - 1
+
+action set_size(s):
+    return s.count
+
+action set_to_list(s):
+    elems = s.elements
+    return values(elems)
+
+action set_union(s1, s2):
+    res = create_set()
+    items1 = set_to_list(s1)
+    for elem in items1:
+        when elem != null:
+            set_add(res, elem)
+    items2 = set_to_list(s2)
+    for elem in items2:
+        when elem != null:
+            set_add(res, elem)
+    return res
+
+action set_intersection(s1, s2):
+    res = create_set()
+    items1 = set_to_list(s1)
+    for elem in items1:
+        when elem != null and set_has(s2, elem):
+            set_add(res, elem)
+    return res
+
+action set_difference(s1, s2):
+    res = create_set()
+    items1 = set_to_list(s1)
+    for elem in items1:
+        when elem != null and not set_has(s2, elem):
+            set_add(res, elem)
+    return res
+
+# ---------------------------------------------------------------------
+# 10. Trie (Prefix Tree for Dictionary Lookups)
+# ---------------------------------------------------------------------
+action trie_node():
+    return { "is_word": false, "children": {} }
+
+action create_trie():
+    return trie_node()
+
+action trie_insert(root, word):
+    curr = root
+    n = len(word)
+    for i from 0 to n - 1:
+        ch = "" + word[i]
+        kids = curr.children
+        when not has_key(kids, ch):
+            kids[ch] = trie_node()
+            curr.children = kids
+        curr = kids[ch]
+    curr.is_word = true
+
+action trie_search(root, word):
+    curr = root
+    n = len(word)
+    for i from 0 to n - 1:
+        ch = "" + word[i]
+        kids = curr.children
+        when not has_key(kids, ch):
+            return false
+        curr = kids[ch]
+    return curr.is_word
+
+action trie_starts_with(root, prefix):
+    curr = root
+    n = len(prefix)
+    for i from 0 to n - 1:
+        ch = "" + prefix[i]
+        kids = curr.children
+        when not has_key(kids, ch):
+            return false
+        curr = kids[ch]
+    return true
+
+# ---------------------------------------------------------------------
+# 11. LRU Cache (Least Recently Used Key-Value Store)
+# ---------------------------------------------------------------------
+action create_lru_cache(capacity):
+    return { "capacity": capacity, "store": {}, "order": [] }
+
+action lru_get(lru, key):
+    st = lru.store
+    when not has_key(st, key):
+        return null
+    val = st[key]
+    # Move key to end of order (most recently used)
+    new_order = []
+    order_keys = lru.order
+    for k in order_keys:
+        when k != key:
+            append(new_order, k)
+    append(new_order, key)
+    lru.order = new_order
+    return val
+
+action lru_put(lru, key, val):
+    st = lru.store
+    when has_key(st, key):
+        st[key] = val
+        lru.store = st
+        lru_get(lru, key)
+        return true
+    # If over capacity, evict least recently used (first item in order)
+    when len(lru.order) >= lru.capacity:
+        curr_order = lru.order
+        lru_key = curr_order[0]
+        new_order = []
+        n = len(curr_order)
+        for i from 1 to n - 1:
+            item_val = curr_order[i]
+            append(new_order, item_val)
+        lru.order = new_order
+        st[lru_key] = null
+    st[key] = val
+    lru.store = st
+    fin_order = lru.order
+    append(fin_order, key)
+    lru.order = fin_order
+    return true
+
+action lru_size(lru):
+    return len(lru.order)
+
+# ---------------------------------------------------------------------
+# 12. Ring Buffer (Circular Bounded Buffer)
+# ---------------------------------------------------------------------
+action create_ring_buffer(capacity):
+    return { "capacity": capacity, "items": [], "head": 0, "tail": 0, "count": 0 }
+
+action ring_push(rb, val):
+    when rb.count >= rb.capacity:
+        return false
+    items = rb.items
+    append(items, val)
+    rb.count = rb.count + 1
+    return true
+
+action ring_pop(rb):
+    when rb.count == 0:
+        return null
+    items = rb.items
+    val = items[rb.head]
+    rb.head = rb.head + 1
+    rb.count = rb.count - 1
+    return val
+
+action ring_is_full(rb):
+    return rb.count >= rb.capacity
+
+action ring_is_empty(rb):
+    return rb.count == 0
+
+action ring_size(rb):
+    return rb.count

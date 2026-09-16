@@ -1,0 +1,29 @@
+type enlng
+
+# =====================================================================
+#   ENLANG OFFICIAL STANDARD LIBRARY: lib_enlngdb.enlng
+#   Companion module for Sovereign EnlangDB Engine.
+# =====================================================================
+
+use "lib_db.enlng"
+
+action enlngdb_connect(name):
+    return db_connect(name)
+
+action enlngdb_create_table(db, table_name, columns):
+    return db_create_table(db, table_name, columns)
+
+action enlngdb_insert(db, table_name, record):
+    return db_insert(db, table_name, record)
+
+action enlngdb_find_all(db, table_name):
+    return db_find_all(db, table_name)
+
+action enlngdb_find_where(db, table_name, field, op, val):
+    return db_find_where(db, table_name, field, op, val)
+
+action enlngdb_update_where(db, table_name, field, op, val, u_field, u_val):
+    return db_update_where(db, table_name, field, op, val, u_field, u_val)
+
+action enlngdb_delete_where(db, table_name, field, op, val):
+    return db_delete_where(db, table_name, field, op, val)
