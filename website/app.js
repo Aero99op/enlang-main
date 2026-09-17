@@ -599,9 +599,15 @@ function formatAsciiTable(headers, rows) {
   return [border, headerRow, border, ...dataRows, border].join('\n');
 }
 
-// Normalizes sugar phrases like BETWEEN and FROM...TO before boolean tokenization
+// Normalizes sugar phrases like BETWEEN, FROM...TO, and natural English 'field of [the] table'
 function normalizeWhereClause(clause) {
   let normalized = clause.trim();
+
+  // Normalize 'col of [the] table' -> 'col'
+  normalized = normalized.replace(/\b([a-zA-Z0-9_]+)\s+of\s+(?:the\s+)?([a-zA-Z0-9_]+)\b/gi, '$1');
+
+  // Normalize 'table.col' -> 'col'
+  normalized = normalized.replace(/\b([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)\b/gi, '$2');
 
   // Normalize BETWEEN: col [is] between A and B -> (col >= A and col <= B)
   normalized = normalized.replace(/\b([a-zA-Z0-9_]+)\s+(?:is\s+)?between\s+([^\s]+)\s+and\s+([^\s,;)]+)/gi, (m, col, a, b) => {
@@ -971,9 +977,12 @@ function executeEnlngDBStatement(statement, engineState) {
   let findStmt = stmt;
   let sortCol = null;
   let sortDir = null;
-  const orderMatch = findStmt.match(/\s+order\s+by\s+([a-zA-Z0-9_]+)(?:\s+(ascending|descending|asc|desc))?$/i);
+  const orderMatch = findStmt.match(/\s+order\s+by\s+(.+?)(?:\s+(ascending|descending|asc|desc))?$/i);
   if (orderMatch) {
-    sortCol = orderMatch[1];
+    let rawCol = orderMatch[1].trim();
+    rawCol = rawCol.replace(/^([a-zA-Z0-9_]+)\s+of\s+(?:the\s+)?([a-zA-Z0-9_]+)$/i, '$1');
+    rawCol = rawCol.replace(/^([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)$/i, '$2');
+    sortCol = rawCol;
     sortDir = orderMatch[2];
     findStmt = findStmt.substring(0, orderMatch.index).trim();
   }
@@ -985,7 +994,24 @@ function executeEnlngDBStatement(statement, engineState) {
     findStmt = findStmt.substring(0, whereMatch.index).trim();
   }
 
-  const findMatch = findStmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)$/i);
+  let projFields = null;
+  let findMatch = findStmt.match(/^(?:find|show|select|fetch|get)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)$/i);
+  if (!findMatch) {
+    const customColsMatch = findStmt.match(/^(?:find|show|select|fetch|get)\s+(.+?)\s+(?:from|in)\s+([a-zA-Z0-9_]+)$/i);
+    if (customColsMatch) {
+      const rawCols = customColsMatch[1].trim();
+      if (!/^(?:all\s+)?(?:records|values)?$/i.test(rawCols)) {
+        findMatch = [customColsMatch[0], customColsMatch[2]];
+        projFields = rawCols.split(',').map(c => {
+          let s = c.trim();
+          s = s.replace(/^([a-zA-Z0-9_]+)\s+of\s+(?:the\s+)?([a-zA-Z0-9_]+)$/i, '$1');
+          s = s.replace(/^([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)$/i, '$2');
+          return s;
+        }).filter(Boolean);
+      }
+    }
+  }
+
   if (findMatch) {
     const tableName = findMatch[1];
 
@@ -1015,8 +1041,9 @@ function executeEnlngDBStatement(statement, engineState) {
       });
     }
 
+    const displayCols = (projFields && projFields.length > 0) ? projFields : table.columns;
     const t0 = performance.now();
-    const tableAscii = formatAsciiTable(table.columns, matchedRows);
+    const tableAscii = formatAsciiTable(displayCols, matchedRows);
     const ms = (performance.now() - t0).toFixed(2);
     return {
       type: 'FIND',

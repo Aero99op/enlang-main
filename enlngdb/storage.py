@@ -95,7 +95,10 @@ class Table:
     def _sort_rows(rows: List[Dict[str, Any]], order_by: OrderByNode):
         reverse = (order_by.direction.upper() == "DESC")
         def sort_key(r):
-            val = r.get(order_by.field)
+            field = order_by.field
+            val = r.get(field)
+            if val is None and "." in field:
+                val = r.get(field.split(".", 1)[1])
             if isinstance(val, LiteralNode):
                 val = val.value
             if val is None:
@@ -108,7 +111,18 @@ class Table:
     @staticmethod
     def _project_fields(rows: List[Dict[str, Any]], fields: Optional[List[str]]) -> List[Dict[str, Any]]:
         if fields and fields != ["*"]:
-            return [{f: row.get(f) for f in fields} for row in rows]
+            projected = []
+            for row in rows:
+                proj_row = {}
+                for f in fields:
+                    if f in row:
+                        proj_row[f] = row[f]
+                    elif "." in f and f.split(".", 1)[1] in row:
+                        proj_row[f] = row[f.split(".", 1)[1]]
+                    else:
+                        proj_row[f] = None
+                projected.append(proj_row)
+            return projected
         return [dict(r) for r in rows]
 
     def update(self, filter_fn: Optional[Callable[[Dict[str, Any]], bool]], assignments: Dict[str, Any]) -> int:
@@ -116,7 +130,8 @@ class Table:
         for row in self.rows:
             if filter_fn is None or filter_fn(row):
                 for k, v in assignments.items():
-                    row[k] = v
+                    target_k = k if k in row else (k.split(".", 1)[1] if ("." in k and k.split(".", 1)[1] in row) else k)
+                    row[target_k] = v
                 row["_version"] = row.get("_version", 1) + 1
                 updated_count += 1
 
@@ -221,7 +236,11 @@ class ExpressionEvaluator:
         if isinstance(expr, LiteralNode):
             return expr.value
         if isinstance(expr, IdentifierNode):
-            return cls._unwrap(row.get(expr.name))
+            name = expr.name
+            val = row.get(name)
+            if val is None and "." in name:
+                val = row.get(name.split(".", 1)[1])
+            return cls._unwrap(val)
         if isinstance(expr, BinaryOpNode):
             left = cls._unwrap(cls.evaluate(expr.left, row))
             right = cls._unwrap(cls.evaluate(expr.right, row))

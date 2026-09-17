@@ -996,10 +996,16 @@ class Parser:
         elif self.match(TokenType.IDENTIFIER):
             self.consume(TokenType.IDENTIFIER)
             name = str(tok.value)
+            self.skip_silent_words()
             if self.match(TokenType.DOT):
                 self.consume(TokenType.DOT)
                 sub_tok = self.consume(TokenType.IDENTIFIER, "Expected column name after '.'")
                 name = f"{name}.{sub_tok.value}"
+            elif self.match(TokenType.OF):
+                self.consume(TokenType.OF)
+                self.skip_silent_words()
+                parent_tok = self.consume(TokenType.IDENTIFIER, "Expected parent table/object after 'of'")
+                name = f"{parent_tok.value}.{name}"
             return IdentifierNode(name=name)
         elif self.match(TokenType.LPAREN):
             self.consume(TokenType.LPAREN)
@@ -1034,11 +1040,17 @@ class Parser:
         if self.match(TokenType.STRING_LITERAL, TokenType.IDENTIFIER):
             self.pos += 1
             name = str(tok.value)
-            # Dot notation support (table.column)
+            self.skip_silent_words()
+            # Dot notation support (table.column) or natural English 'of' (column of table)
             if self.match(TokenType.DOT):
                 self.consume(TokenType.DOT)
                 sub_tok = self.consume(TokenType.IDENTIFIER, "Expected column name after '.'")
                 name = f"{name}.{sub_tok.value}"
+            elif self.match(TokenType.OF):
+                self.consume(TokenType.OF)
+                self.skip_silent_words()
+                parent_tok = self.consume(TokenType.IDENTIFIER, "Expected parent table/object after 'of'")
+                name = f"{parent_tok.value}.{name}"
             return name
         raise ParserError(f"Expected {context}, but found '{tok.value}'", tok,
                           f"Provide a valid {context} (e.g. \"users\" or users).")

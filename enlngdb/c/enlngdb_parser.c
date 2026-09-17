@@ -361,9 +361,25 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
                 // Parse condition: col op value
                 char cname[64];
                 if (sscanf(cond, "%63s", cname) == 1) {
-                    strncpy(filter_col, cname, sizeof(filter_col) - 1);
+                    char* dot = strchr(cname, '.');
+                    if (dot) {
+                        strncpy(filter_col, dot + 1, sizeof(filter_col) - 1);
+                    } else {
+                        strncpy(filter_col, cname, sizeof(filter_col) - 1);
+                    }
                     char* op_start = cond + strlen(cname);
                     while (isspace((unsigned char)*op_start)) op_start++;
+
+                    if (str_starts_with_ci(op_start, "of ")) {
+                        op_start += 3;
+                        while (isspace((unsigned char)*op_start)) op_start++;
+                        if (str_starts_with_ci(op_start, "the ")) {
+                            op_start += 4;
+                            while (isspace((unsigned char)*op_start)) op_start++;
+                        }
+                        while (*op_start && !isspace((unsigned char)*op_start)) op_start++;
+                        while (isspace((unsigned char)*op_start)) op_start++;
+                    }
 
                     int op_len = 0;
                     op = parse_op_phrase(op_start, &op_len);

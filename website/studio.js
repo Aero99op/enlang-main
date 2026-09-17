@@ -1099,12 +1099,25 @@ screen WalletHome:
           Tables: Object.keys(dbState.databases[name].tables).length
         }));
       } else if (res.type === 'FIND') {
-        const findMatch = stmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)/i);
+        let findMatch = stmt.match(/^(?:find|show|select|fetch|get)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)/i);
+        let projCols = null;
+        if (!findMatch) {
+          const customColsMatch = stmt.match(/^(?:find|show|select|fetch|get)\s+(.+?)\s+(?:from|in)\s+([a-zA-Z0-9_]+)/i);
+          if (customColsMatch) {
+            findMatch = [customColsMatch[0], customColsMatch[2]];
+            projCols = customColsMatch[1].split(',').map(c => {
+              let s = c.trim();
+              s = s.replace(/^([a-zA-Z0-9_]+)\s+of\s+(?:the\s+)?([a-zA-Z0-9_]+)$/i, '$1');
+              s = s.replace(/^([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)$/i, '$2');
+              return s;
+            }).filter(Boolean);
+          }
+        }
         const tableName = findMatch ? findMatch[1] : '';
         const tableObj = currentDbObj.tables[tableName];
         if (tableObj) {
           resultTitle = `Records: ${tableName}`;
-          headers = tableObj.columns || (tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []);
+          headers = (projCols && projCols.length > 0) ? projCols : (tableObj.columns || (tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []));
           const whereMatch = stmt.match(/\s+where\s+(.+)$/i);
           const whereClause = whereMatch ? whereMatch[1].trim() : null;
           const evalWhere = (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition : (window.evaluateWhereCondition || null);
@@ -1836,12 +1849,25 @@ ${escapeHtml(rawOutput || 'Query executed successfully with zero errors.')}
           Tables: Object.keys((dbState.databases[name] && dbState.databases[name].tables) || {}).length
         }));
       } else if (res.type === 'FIND') {
-        const findMatch = stmt.match(/^(?:find|show)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)/i);
+        let findMatch = stmt.match(/^(?:find|show|select|fetch|get)\s+(?:all\s+)?(?:records|values)?\s*(?:from|in)\s+([a-zA-Z0-9_]+)/i);
+        let projCols = null;
+        if (!findMatch) {
+          const customColsMatch = stmt.match(/^(?:find|show|select|fetch|get)\s+(.+?)\s+(?:from|in)\s+([a-zA-Z0-9_]+)/i);
+          if (customColsMatch) {
+            findMatch = [customColsMatch[0], customColsMatch[2]];
+            projCols = customColsMatch[1].split(',').map(c => {
+              let s = c.trim();
+              s = s.replace(/^([a-zA-Z0-9_]+)\s+of\s+(?:the\s+)?([a-zA-Z0-9_]+)$/i, '$1');
+              s = s.replace(/^([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)$/i, '$2');
+              return s;
+            }).filter(Boolean);
+          }
+        }
         const tableName = findMatch ? findMatch[1] : '';
         const tableObj = currentDbObj.tables ? currentDbObj.tables[tableName] : null;
         if (tableObj) {
           title = `Table: ${tableName}`;
-          headers = tableObj.columns || (tableObj.rows && tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []);
+          headers = (projCols && projCols.length > 0) ? projCols : (tableObj.columns || (tableObj.rows && tableObj.rows.length > 0 ? Object.keys(tableObj.rows[0]) : []));
           const whereMatch = stmt.match(/\s+where\s+(.+)$/i);
           const whereClause = whereMatch ? whereMatch[1].trim() : null;
           const evalWhere = (typeof evaluateWhereCondition === 'function') ? evaluateWhereCondition : (window.evaluateWhereCondition || null);

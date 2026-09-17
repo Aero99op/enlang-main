@@ -58,6 +58,7 @@ class Lexer:
         "change": TokenType.CHANGE,
         "remove": TokenType.REMOVE,
         "all": TokenType.ALL,
+        "of": TokenType.OF,
         "from": TokenType.FROM,
         "where": TokenType.WHERE,
         "order": TokenType.ORDER,

@@ -874,10 +874,16 @@ class Parser:
         elif self.match(TokenType.IDENTIFIER):
             self.consume(TokenType.IDENTIFIER)
             name = str(tok.value)
+            self.skip_silent_words()
             if self.match(TokenType.DOT):
                 self.consume(TokenType.DOT)
                 sub_tok = self.consume(TokenType.IDENTIFIER, "Expected sub-field after '.'")
                 name = f"{name}.{sub_tok.value}"
+            elif self.match(TokenType.OF):
+                self.consume(TokenType.OF)
+                self.skip_silent_words()
+                parent_tok = self.consume(TokenType.IDENTIFIER, "Expected parent table/object after 'of'")
+                name = f"{parent_tok.value}.{name}"
             return IdentifierNode(name=name)
         elif self.match(TokenType.LPAREN):
             self.consume(TokenType.LPAREN)
@@ -887,16 +893,31 @@ class Parser:
         else:
             raise ParserError(f"Unexpected token in expression: '{tok.value}'", tok)
 
-    def parse_identifier_or_string(self, context: str = "identifier") -> str:
+    def parse_identifier_or_string(self, context: str = "identifier", allow_qualification: bool = True) -> str:
         self.skip_silent_words()
         if self.match(TokenType.TABLE):
             self.consume(TokenType.TABLE)
+            self.skip_silent_words()
+        elif self.match(TokenType.COLUMN):
+            self.consume(TokenType.COLUMN)
             self.skip_silent_words()
 
         tok = self.current_token()
         if self.match(TokenType.STRING_LITERAL, TokenType.IDENTIFIER):
             self.pos += 1
-            return str(tok.value)
+            name = str(tok.value)
+            if allow_qualification:
+                self.skip_silent_words()
+                if self.match(TokenType.DOT):
+                    self.consume(TokenType.DOT)
+                    sub_tok = self.consume(TokenType.IDENTIFIER, "Expected column name after '.'")
+                    name = f"{name}.{sub_tok.value}"
+                elif self.match(TokenType.OF):
+                    self.consume(TokenType.OF)
+                    self.skip_silent_words()
+                    parent_tok = self.consume(TokenType.IDENTIFIER, "Expected parent table/object after 'of'")
+                    name = f"{parent_tok.value}.{name}"
+            return name
         elif tok.type not in (TokenType.WITH, TokenType.WHERE, TokenType.FROM, TokenType.INTO, TokenType.SET, TokenType.EOF, TokenType.SEMICOLON, TokenType.NEWLINE, TokenType.COLON, TokenType.COMMA) and isinstance(tok.value, str):
             self.pos += 1
             return str(tok.value)
@@ -908,9 +929,9 @@ class Parser:
         if self.match(TokenType.STRING_LITERAL):
             self.pos += 1
             return str(tok.value)
-        base = self.parse_identifier_or_string(context)
+        base = self.parse_identifier_or_string(context, allow_qualification=False)
         if self.match(TokenType.DOT):
             self.consume(TokenType.DOT)
-            ext = self.parse_identifier_or_string("file extension")
+            ext = self.parse_identifier_or_string("file extension", allow_qualification=False)
             return f"{base}.{ext}"
         return base

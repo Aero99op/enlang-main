@@ -46,6 +46,7 @@ class TokenType(Enum):
     CHANGE = auto()
     REMOVE = auto()
     ALL = auto()
+    OF = auto()
     FROM = auto()
     WHERE = auto()
     ORDER = auto()

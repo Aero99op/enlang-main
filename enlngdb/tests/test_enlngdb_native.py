@@ -248,4 +248,53 @@ def test_delete_row_column_table_and_database(tmp_path):
     assert "DROP_DATABASE" in types
 
 
+def test_field_of_table_syntax():
+    code = """
+    type enlngdb
+    create table users with user_id, name, score
+    insert record into users with user_id 101, name "Bibhu", score 95
+    insert record into users with user_id 102, name "Aero", score 88
+    insert record into users with user_id 103, name "Chao", score 92
+    """
+    engine = NativeExecutionEngine(stream_output=False)
+    run_enlngdb_source(code, engine=engine, stream_output=False)
 
+    # 1. Field projection using 'user_id of users'
+    q1 = "find user_id of users, name of users from users"
+    rep1 = run_enlngdb_source(q1, engine=engine, stream_output=False)[0]
+    assert rep1["success"] is True
+    assert rep1["count"] == 3
+    assert rep1["rows"][0]["users.user_id"] == 101
+    assert rep1["rows"][0]["users.name"] == "Bibhu"
+
+    # 2. Field projection with silent word 'the'
+    q2 = "find user_id of the users, score of the users from users"
+    rep2 = run_enlngdb_source(q2, engine=engine, stream_output=False)[0]
+    assert rep2["success"] is True
+    assert rep2["rows"][1]["users.user_id"] == 102
+    assert rep2["rows"][1]["users.score"] == 88
+
+    # 3. Filtering in WHERE with 'user_id of users'
+    q3 = "find records from users where user_id of users is 102"
+    rep3 = run_enlngdb_source(q3, engine=engine, stream_output=False)[0]
+    assert rep3["success"] is True
+    assert rep3["count"] == 1
+    assert rep3["rows"][0]["name"] == "Aero"
+
+    # 4. Filtering in WHERE with silent word 'the'
+    q4 = "find records from users where score of the users is greater than 90"
+    rep4 = run_enlngdb_source(q4, engine=engine, stream_output=False)[0]
+    assert rep4["success"] is True
+    assert rep4["count"] == 2
+
+    # 5. Sorting with 'user_id of users desc'
+    q5 = "find records from users order by user_id of users desc"
+    rep5 = run_enlngdb_source(q5, engine=engine, stream_output=False)[0]
+    assert rep5["success"] is True
+    assert rep5["rows"][0]["user_id"] == 103
+    assert rep5["rows"][2]["user_id"] == 101
+
+    # 6. Equivalence with canonical dot notation
+    q_dot = "find records from users where users.user_id is 102"
+    rep_dot = run_enlngdb_source(q_dot, engine=engine, stream_output=False)[0]
+    assert rep3["rows"] == rep_dot["rows"]
