@@ -27,16 +27,22 @@ HOME_DIR = os.path.expanduser("~")
 DEFAULT_ENLANG_BIN = os.path.join(HOME_DIR, ".enlangg", "bin")
 
 def find_binary(name):
-    # 1. Check ~/.enlangg/bin
     target_ext = ".exe" if platform.system() == "Windows" else ""
     local_bin = os.path.join(DEFAULT_ENLANG_BIN, f"{name}{target_ext}")
-    if os.path.exists(local_bin):
-        return local_bin
-
-    # 2. Check repo root
     repo_bin = os.path.join(BASE_DIR, f"{name}{target_ext}")
+
+    # Prioritize whichever binary is newer between repo build and installed build
+    if os.path.exists(repo_bin) and os.path.exists(local_bin):
+        try:
+            if os.path.getmtime(repo_bin) >= os.path.getmtime(local_bin):
+                return repo_bin
+            return local_bin
+        except Exception:
+            return repo_bin
     if os.path.exists(repo_bin):
         return repo_bin
+    if os.path.exists(local_bin):
+        return local_bin
 
     # 3. Check system PATH
     which_bin = shutil.which(name)

@@ -352,6 +352,14 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
 
             char* where_pos = strstr(rest, " where ");
             if (!where_pos) where_pos = strstr(rest, " WHERE ");
+            char* order_pos = strstr(rest, " order by ");
+            if (!order_pos) order_pos = strstr(rest, " ORDER BY ");
+
+            if (order_pos) {
+                if (!where_pos || order_pos > where_pos) {
+                    *order_pos = '\0';
+                }
+            }
 
             if (where_pos) {
                 *where_pos = '\0';

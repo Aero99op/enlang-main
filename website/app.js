@@ -1462,6 +1462,110 @@ function initPlayground() {
   const statusActiveDb = document.getElementById('statusActiveDb');
   const statusEngineText = document.getElementById('statusEngineText');
 
+  let isPlaygroundBridgeConnected = false;
+  const PLAYGROUND_BRIDGE_URL = 'http://127.0.0.1:5999';
+
+  async function checkPlaygroundBridge(userInitiated = false) {
+    const dot = document.getElementById('statusNativeEngineDot');
+    const text = document.getElementById('statusNativeEngineText');
+    const pill = document.getElementById('statusNativeEnginePlayground');
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
+      const res = await fetch(`${PLAYGROUND_BRIDGE_URL}/api/health`, {
+        signal: controller.signal,
+        headers: { 'X-Enlang-Source': 'Playground' }
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.status === 'online') {
+          isPlaygroundBridgeConnected = true;
+          if (dot) {
+            dot.style.background = '#4ec9b0';
+            dot.style.boxShadow = '0 0 8px #4ec9b0';
+          }
+          if (text) {
+            text.textContent = 'Engine: Native (~/.enlangg/bin)';
+            text.style.color = '#4ec9b0';
+          }
+          if (pill) {
+            pill.title = `Connected to local native compilers in ${data.defaultBinDir || '~/.enlangg/bin'}. Code executes directly via native binary!`;
+          }
+          if (userInitiated && terminal) {
+            terminal.innerHTML = `<span class="term-green">✔ [Native Bridge] Connected to system compilers at ${data.defaultBinDir || '~/.enlangg/bin'}</span>\n<span class="term-dim">Execution is now routed directly to native compiler binaries.</span>`;
+          }
+          return true;
+        }
+      }
+    } catch (e) {
+      // Offline
+    }
+
+    isPlaygroundBridgeConnected = false;
+    if (dot) {
+      dot.style.background = '#e5c07b';
+      dot.style.boxShadow = 'none';
+    }
+    if (text) {
+      text.textContent = 'Engine: Web Sandbox';
+      text.style.color = 'var(--text-muted)';
+    }
+    if (pill) {
+      pill.title = 'Running in Web Sandbox mode. Run enlangg-bridge to enable local machine native binaries.';
+    }
+    if (userInitiated && terminal) {
+      terminal.innerHTML = `<span class="term-warn">[Native Bridge] Daemon is not running on port 5999.</span>\n<span class="term-dim">Run: <strong>python enlangg-bridge.py</strong> to connect playground to native compiler binaries.</span>`;
+    }
+    return false;
+  }
+
+  // Hook pill click
+  const statusNativeEnginePlayground = document.getElementById('statusNativeEnginePlayground');
+  if (statusNativeEnginePlayground) {
+    statusNativeEnginePlayground.addEventListener('click', () => checkPlaygroundBridge(true));
+  }
+  setTimeout(() => checkPlaygroundBridge(false), 300);
+
+  // Helper to execute via Native Bridge in Playground
+  async function executeViaPlaygroundBridge(filename, content, lang) {
+    const isDb = lang === 'enlngdb' || isEnlngDbCode(content);
+    terminal.innerHTML = `<span class="term-cyan">⚡ [Native Engine ~/.enlangg/bin] Executing ${filename}...</span>\n`;
+    const t0 = performance.now();
+    try {
+      const res = await fetch(`${PLAYGROUND_BRIDGE_URL}/api/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, content, lang: isDb ? 'enlngdb' : 'enlng' })
+      });
+      const result = await res.json();
+      const elapsed = (performance.now() - t0).toFixed(2);
+      if (result.success) {
+        let output = '';
+        if (result.output) {
+          output += escapeHtml(result.output) + '\n';
+        }
+        output += `<span class="term-green">✔ [${escapeHtml(result.executor || 'Native')}] Succeeded in ${result.timeMs || result.executionTimeMs || elapsed}ms (Exit 0)</span>`;
+        terminal.innerHTML = output;
+      } else {
+        let output = '';
+        if (result.output || result.error) {
+          output += `<span class="term-err">${escapeHtml(result.output || result.error)}</span>\n`;
+        }
+        output += `<span class="term-warn">⚠ [${escapeHtml(result.executor || 'Native')}] Exited with code ${result.exitCode} (${result.timeMs || result.executionTimeMs || elapsed}ms)</span>`;
+        terminal.innerHTML = output;
+      }
+      return true;
+    } catch (err) {
+      terminal.innerHTML += `<span class="term-warn">[Native Bridge] Communication error: ${escapeHtml(err.message)}. Falling back to Web Sandbox...</span>\n`;
+      isPlaygroundBridgeConnected = false;
+      checkPlaygroundBridge(false);
+      return false;
+    }
+  }
+
   function updateLineNumbers() {
     if (!editor || !lineNumbersElem) return;
     const lines = editor.value.split('\n');
@@ -1616,14 +1720,22 @@ function initPlayground() {
   }
 
   // Execute Entire Script (Run All)
-  const runAll = () => {
+  const runAll = async () => {
     if (!editor || !terminal) return;
     if (runBtn) {
       runBtn.classList.add('running');
       setTimeout(() => runBtn.classList.remove('running'), 200);
     }
     const code = editor.value;
-    if (isEnlngDbCode(code)) {
+    const isDb = isEnlngDbCode(code);
+
+    if (isPlaygroundBridgeConnected) {
+      const filename = isDb ? 'sandbox.enlngdb' : 'sandbox.enlng';
+      const ok = await executeViaPlaygroundBridge(filename, code, isDb ? 'enlngdb' : 'enlng');
+      if (ok) return;
+    }
+
+    if (isDb) {
       const stmts = extractStatements(code);
       executeEnlngDB(stmts, terminal, { mode: 'all' });
     } else {
@@ -1632,7 +1744,7 @@ function initPlayground() {
   };
 
   // Execute Selection or Current Line
-  const runSelection = () => {
+  const runSelection = async () => {
     if (!editor || !terminal) return;
     if (runSelectionBtn) {
       runSelectionBtn.classList.add('running');
@@ -1644,7 +1756,15 @@ function initPlayground() {
       return;
     }
 
-    if (isEnlngDbCode(editor.value) || isEnlngDbCode(queryData.text)) {
+    const isDb = isEnlngDbCode(editor.value) || isEnlngDbCode(queryData.text);
+
+    if (isPlaygroundBridgeConnected) {
+      const filename = isDb ? 'selection.enlngdb' : 'selection.enlng';
+      const ok = await executeViaPlaygroundBridge(filename, queryData.text, isDb ? 'enlngdb' : 'enlng');
+      if (ok) return;
+    }
+
+    if (isDb) {
       const stmts = extractStatements(queryData.text);
       executeEnlngDB(stmts, terminal, queryData);
     } else {
