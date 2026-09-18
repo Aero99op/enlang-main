@@ -73,6 +73,10 @@
               <div class="menu-dropdown-item" data-action="resetWorkspace">
                 <span>Reset Workspace to Default</span>
               </div>
+              <div class="menu-dropdown-item" data-action="openSetup">
+                <span>Setup Wizard...</span>
+                <span class="menu-shortcut">Ctrl+Shift+U</span>
+              </div>
               <div class="menu-dropdown-divider"></div>
               <div class="menu-dropdown-item" data-action="openSettings">
                 <span>Preferences: Settings</span>
@@ -261,6 +265,10 @@
                 <span>Keyboard Shortcuts Reference</span>
                 <span class="menu-shortcut">F1</span>
               </div>
+              <div class="menu-dropdown-divider"></div>
+              <div class="menu-dropdown-item" data-action="openSetup">
+                <span>Setup Wizard &amp; Environment...</span>
+              </div>
               <div class="menu-dropdown-item" data-action="openAboutModal">
                 <span>About Enlangg Studio</span>
               </div>
@@ -280,6 +288,10 @@
         <button class="titlebar-btn primary" id="topRunBtn" title="Execute Active File (Ctrl + Enter)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           <span>Run</span>
+        </button>
+        <button class="titlebar-btn" id="openSetupWizardBtn" title="Enlangg Studio Setup &amp; Environment Center">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          <span>Setup</span>
         </button>
         <button class="titlebar-btn" id="byokConfigBtn" title="Configure AI API Key (BYOK)">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
@@ -1174,6 +1186,9 @@
           <span id="statusNativeEngineDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5c07b;margin-right:4px;"></span>
           <span id="statusNativeEngineText">Native: 7/7</span>
         </div>
+        <div class="statusbar-item" id="statusSetupBtn" style="cursor:pointer;font-weight:600;" title="Open Enlangg Studio Setup Wizard &amp; Environment Center">
+          <span>⚙️ Setup</span>
+        </div>
         <div class="statusbar-item" id="statusDebugBtn" title="Start Debugging (F5)">
           <span>🐞 Debug</span>
         </div>
@@ -1394,6 +1409,256 @@
           <!-- Dynamically populated themes -->
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal: Enlangg Studio Environment & Setup Wizard -->
+  <div class="modal-backdrop" id="setupWizardModal">
+    <div class="modal-box setup-wizard-box" style="width:840px;max-width:92vw;height:580px;display:flex;flex-direction:column;padding:0;overflow:hidden;border:1px solid rgba(16,185,129,0.3);box-shadow:0 16px 56px rgba(0,0,0,0.85),0 0 24px rgba(16,185,129,0.18);">
+      
+      <!-- Wizard Header -->
+      <div class="modal-header" style="background:#18181b;padding:12px 18px;border-bottom:1px solid var(--vscode-border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:26px;height:26px;border-radius:6px;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;color:var(--accent-emerald);">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          </div>
+          <div>
+            <h3 style="margin:0;font-size:14px;font-weight:700;color:#fff;">Enlangg Studio — Environment &amp; Setup Center</h3>
+            <span style="font-size:11px;color:var(--vscode-text-muted);">Configure toolchain, verify compilers, customize IDE preferences, and link Windows OS</span>
+          </div>
+        </div>
+        <button class="sidebar-action-btn" id="closeSetupWizardModal" style="font-size:16px;">✕</button>
+      </div>
+
+      <!-- Wizard Main Body (Split into Left Tabs & Right Content) -->
+      <div style="display:flex;flex:1;min-height:0;background:#141416;">
+        
+        <!-- Left Tab Navigation -->
+        <div class="setup-nav-col" style="width:205px;background:#18181b;border-right:1px solid var(--vscode-border);padding:10px 0;display:flex;flex-direction:column;gap:2px;flex-shrink:0;">
+          <button type="button" class="setup-tab-btn active" data-setup-tab="toolchain">
+            <span class="setup-tab-icon">⚡</span>
+            <span>1. Compilers &amp; Toolchain</span>
+          </button>
+          <button type="button" class="setup-tab-btn" data-setup-tab="selftest">
+            <span class="setup-tab-icon">🧪</span>
+            <span>2. 1-Click Self-Test</span>
+          </button>
+          <button type="button" class="setup-tab-btn" data-setup-tab="workspace">
+            <span class="setup-tab-icon">⚙️</span>
+            <span>3. Workspace &amp; Editor</span>
+          </button>
+          <button type="button" class="setup-tab-btn" data-setup-tab="theme">
+            <span class="setup-tab-icon">🎨</span>
+            <span>4. Themes &amp; Appearance</span>
+          </button>
+          <button type="button" class="setup-tab-btn" data-setup-tab="ai">
+            <span class="setup-tab-icon">🤖</span>
+            <span>5. AI Copilot (BYOK)</span>
+          </button>
+          <button type="button" class="setup-tab-btn" data-setup-tab="windows">
+            <span class="setup-tab-icon">🖥️</span>
+            <span>6. Windows OS &amp; Shell</span>
+          </button>
+        </div>
+
+        <!-- Right Content Panels -->
+        <div class="setup-content-col" style="flex:1;min-height:0;overflow-y:auto;padding:20px;background:#121214;">
+          
+          <!-- Panel 1: Compilers & Toolchain -->
+          <div class="setup-pane active" id="setupPaneToolchain">
+            <div style="margin-bottom:16px;">
+              <h4 style="margin:0 0 4px;font-size:15px;color:#fff;">⚡ Native C99 Compiler Engine Status</h4>
+              <p style="margin:0;font-size:12px;color:var(--vscode-text-muted);">Enlangg Studio bundles pre-compiled native machine binaries. Zero Python, Node.js, or external runtimes required.</p>
+            </div>
+
+            <!-- Path & Installation Badge -->
+            <div style="background:#18181b;border:1px solid var(--vscode-border);border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:11.5px;font-weight:700;color:var(--vscode-text-bright);text-transform:uppercase;letter-spacing:0.04em;">Installation Source</span>
+                <span id="setupInstallTypeBadge" style="font-size:10.5px;padding:2px 8px;border-radius:4px;background:rgba(16,185,129,0.15);color:var(--accent-emerald);font-weight:600;">Standalone Desktop Application</span>
+              </div>
+              <div id="setupInstallDir" style="font-family:var(--font-mono);font-size:11.5px;color:#a1a1aa;word-break:break-all;">Detecting binary path...</div>
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <button type="button" class="titlebar-btn" id="setupAddToPathBtn" style="padding:4px 10px;font-size:11px;background:rgba(16,185,129,0.15);color:var(--accent-emerald);border-color:rgba(16,185,129,0.3);">
+                  <span>Add to Windows PATH</span>
+                </button>
+                <button type="button" class="titlebar-btn" id="setupOpenBinFolderBtn" style="padding:4px 10px;font-size:11px;">
+                  <span>Open Compilers Folder</span>
+                </button>
+                <button type="button" class="titlebar-btn" id="setupRefreshToolchainBtn" style="padding:4px 10px;font-size:11px;">
+                  <span>⟳ Re-scan</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Compilers Grid List -->
+            <div id="setupCompilersList" style="display:flex;flex-direction:column;gap:6px;">
+              <!-- Populated dynamically with each compiler, path, version, and status badge -->
+            </div>
+          </div>
+
+          <!-- Panel 2: 1-Click Self-Test -->
+          <div class="setup-pane" id="setupPaneSelftest" style="display:none;">
+            <div style="margin-bottom:16px;">
+              <h4 style="margin:0 0 4px;font-size:15px;color:#fff;">🧪 Compiler &amp; Runtime Self-Diagnostics</h4>
+              <p style="margin:0;font-size:12px;color:var(--vscode-text-muted);">Execute an automated sub-millisecond smoke test across all native engines to verify 100% operational status.</p>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-bottom:14px;">
+              <button type="button" class="titlebar-btn primary" id="setupRunSelfTestBtn" style="padding:6px 16px;font-size:12px;background:var(--accent-emerald);border-color:var(--accent-emerald);">
+                <span>▶ Run Full System Diagnostics</span>
+              </button>
+            </div>
+
+            <div id="setupSelfTestOutput" style="background:#09090b;border:1px solid #27272a;border-radius:8px;padding:14px;font-family:var(--font-mono);font-size:11.5px;color:#e4e4e7;min-height:220px;max-height:260px;overflow-y:auto;line-height:1.6;">
+              <div style="color:#71717a;">Click "Run Full System Diagnostics" to test pure C logic engine, microsecond database, spatial primitives, and native IPC pipe.</div>
+            </div>
+          </div>
+
+          <!-- Panel 3: Workspace & Editor -->
+          <div class="setup-pane" id="setupPaneWorkspace" style="display:none;">
+            <div style="margin-bottom:16px;">
+              <h4 style="margin:0 0 4px;font-size:15px;color:#fff;">⚙️ Workspace &amp; Editor Configuration</h4>
+              <p style="margin:0;font-size:12px;color:var(--vscode-text-muted);">Tailor the code editor indentation, font scaling, auto-save policies, and default starter template.</p>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div class="setup-config-row">
+                <label style="font-size:12px;color:#fff;font-weight:600;display:block;margin-bottom:4px;">Default Project Template on Launch</label>
+                <select id="setupDefaultTemplate" class="modal-input" style="width:100%;max-width:360px;">
+                  <option value="banking">Sovereign Banking Core (.enlng)</option>
+                  <option value="subway">Subway Surfers 3D (.enlngd / .enlngf)</option>
+                  <option value="database">EnlangDB High-Speed Tables (.enlngdb)</option>
+                  <option value="mobile">Mobile Smartphone Wallet (.enlngm)</option>
+                </select>
+              </div>
+
+              <div class="setup-config-row">
+                <label style="font-size:12px;color:#fff;font-weight:600;display:block;margin-bottom:4px;">Editor Font Size</label>
+                <select id="setupFontSize" class="modal-input" style="width:100%;max-width:180px;">
+                  <option value="12">12 px (Compact)</option>
+                  <option value="14" selected>14 px (Default)</option>
+                  <option value="16">16 px (Comfortable)</option>
+                  <option value="18">18 px (Large)</option>
+                </select>
+              </div>
+
+              <div class="setup-config-row">
+                <label style="font-size:12px;color:#fff;font-weight:600;display:block;margin-bottom:4px;">Indentation Style</label>
+                <select id="setupTabSize" class="modal-input" style="width:100%;max-width:180px;">
+                  <option value="4" selected>4 Spaces (Standard)</option>
+                  <option value="2">2 Spaces</option>
+                </select>
+              </div>
+
+              <div class="setup-config-row">
+                <label style="font-size:12px;color:#fff;font-weight:600;display:block;margin-bottom:4px;">Word Wrap</label>
+                <select id="setupWordWrap" class="modal-input" style="width:100%;max-width:180px;">
+                  <option value="on" selected>On (Soft wrap lines)</option>
+                  <option value="off">Off (Horizontal scroll)</option>
+                </select>
+              </div>
+
+              <div style="margin-top:8px;">
+                <button type="button" class="titlebar-btn" id="setupResetWorkspaceBtn" style="color:#ef4444;border-color:rgba(239,68,68,0.3);">
+                  <span>Reset Virtual Workspace to Default Files</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 4: Themes & Appearance -->
+          <div class="setup-pane" id="setupPaneTheme" style="display:none;">
+            <div style="margin-bottom:16px;">
+              <h4 style="margin:0 0 4px;font-size:15px;color:#fff;">🎨 Color Themes &amp; Aesthetics</h4>
+              <p style="margin:0;font-size:12px;color:var(--vscode-text-muted);">Switch between official dark modes, high-contrast themes, or sleek modern palettes.</p>
+            </div>
+
+            <div id="setupThemeCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));gap:10px;">
+              <!-- Dynamically populated theme cards -->
+            </div>
+          </div>
+
+          <!-- Panel 5: AI Copilot (BYOK) -->
+          <div class="setup-pane" id="setupPaneAi" style="display:none;">
+            <div style="margin-bottom:16px;">
+              <h4 style="margin:0 0 4px;font-size:15px;color:#fff;">🤖 AI Copilot (Bring-Your-Own-Key)</h4>
+              <p style="margin:0;font-size:12px;color:var(--vscode-text-muted);">Connect state-of-the-art LLMs directly to your editor with zero middleman servers.</p>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:12px;max-width:440px;">
+              <div>
+                <label style="font-size:12px;color:#fff;font-weight:600;display:block;margin-bottom:4px;">AI Provider</label>
+                <select id="setupAiProvider" class="modal-input" style="width:100%;">
+                  <option value="gemini">Google Gemini API (Free tier available)</option>
+                  <option value="openai">OpenAI API (GPT-4o / GPT-4o-mini)</option>
+                  <option value="ollama">Local Ollama (Offline / Zero Cost)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="font-size:12px;color:#fff;font-weight:600;display:block;margin-bottom:4px;">API Key</label>
+                <input type="password" id="setupAiKeyInput" class="modal-input" placeholder="Enter API Key (AIzaSy... or sk-...)" style="width:100%;" />
+              </div>
+
+              <div style="display:flex;gap:8px;margin-top:6px;">
+                <button type="button" class="titlebar-btn primary" id="setupSaveAiBtn">
+                  <span>Save AI Configuration</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 6: Windows OS & Shell -->
+          <div class="setup-pane" id="setupPaneWindows" style="display:none;">
+            <div style="margin-bottom:16px;">
+              <h4 style="margin:0 0 4px;font-size:15px;color:#fff;">🖥️ Windows Desktop &amp; Shell Integration</h4>
+              <p style="margin:0;font-size:12px;color:var(--vscode-text-muted);">Manage Windows shell associations, explorer context shortcuts, and local storage directories.</p>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="background:#18181b;border:1px solid var(--vscode-border);border-radius:6px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:12.5px;font-weight:600;color:#fff;">File Associations (.enlng, .enlngdb, .enlngf)</div>
+                  <div style="font-size:11px;color:#71717a;">Registered to open automatically with Enlangg Studio</div>
+                </div>
+                <span style="color:var(--accent-emerald);font-weight:700;font-size:12px;">✔ Registered</span>
+              </div>
+
+              <div style="background:#18181b;border:1px solid var(--vscode-border);border-radius:6px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:12.5px;font-weight:600;color:#fff;">Desktop &amp; Start Menu Shortcuts</div>
+                  <div style="font-size:11px;color:#71717a;">Enlangg Studio quick launch shortcuts</div>
+                </div>
+                <span style="color:var(--accent-emerald);font-weight:700;font-size:12px;">✔ Installed</span>
+              </div>
+
+              <div style="display:flex;gap:10px;margin-top:8px;">
+                <button type="button" class="titlebar-btn" id="setupOpenUserDataBtn">
+                  <span>Open AppData Folder</span>
+                </button>
+                <button type="button" class="titlebar-btn" id="setupOpenInstallFolderBtn">
+                  <span>Open Program Files Folder</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Wizard Footer -->
+      <div class="modal-footer" style="background:#18181b;padding:10px 18px;border-top:1px solid var(--vscode-border);display:flex;align-items:center;justify-content:space-between;">
+        <span id="setupFooterStatus" style="font-size:11.5px;color:var(--vscode-text-muted);display:flex;align-items:center;gap:6px;">
+          <span style="color:var(--accent-emerald);">●</span> Enlangg Studio Setup Center Active
+        </span>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="titlebar-btn primary" id="dismissSetupWizardBtn" style="padding:6px 18px;font-size:12px;">
+            <span>Done &amp; Close</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 

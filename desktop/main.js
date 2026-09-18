@@ -276,6 +276,93 @@ ipcMain.handle('shell:showInFolder', async (event, filePath) => {
   return shell.showItemInFolder(filePath);
 });
 
+// --- IPC: Environment & Setup Wizard ---
+ipcMain.handle('env:getToolchainStatus', async () => {
+  const compilers = [
+    { name: 'enlng', desc: 'Pure C99 Logic Engine (.enlng)' },
+    { name: 'enlngdb', desc: 'Pure C Microsecond Database Engine (.enlngdb)' },
+    { name: 'enlangg', desc: 'Sovereign Master CLI Runner' },
+    { name: 'enlngf', desc: 'Sovereign Frontend UI Markup Engine (.enlngf)' },
+    { name: 'enlngd', desc: 'Sovereign Design Token CSS Compiler (.enlngd)' },
+    { name: 'enlngs', desc: 'Sovereign Browser Reactivity Engine (.enlngs)' },
+    { name: 'enlngm', desc: 'Sovereign Mobile & Math Engine (.enlngm)' }
+  ];
+
+  const binaries = [];
+  for (const c of compilers) {
+    const binPath = findBinary(c.name);
+    const exists = fs.existsSync(binPath);
+    let details = 'Not Found';
+    if (exists) {
+      try {
+        const stats = fs.statSync(binPath);
+        details = `${(stats.size / 1024).toFixed(0)} KB · Ready`;
+      } catch (_) {
+        details = 'Ready';
+      }
+    }
+    binaries.push({
+      name: c.name,
+      desc: c.desc,
+      path: binPath,
+      exists,
+      details
+    });
+  }
+
+  const bundledBinDir = process.resourcesPath ? path.join(process.resourcesPath, 'bin') : path.join(__dirname, 'bin');
+  const userHomeBin = path.join(process.env.USERPROFILE || process.env.HOME || '', '.enlangg', 'bin');
+  const userPath = process.env.PATH || '';
+  const inPath = userPath.toLowerCase().includes(bundledBinDir.toLowerCase()) || userPath.toLowerCase().includes(userHomeBin.toLowerCase());
+
+  return {
+    isPackaged: app.isPackaged,
+    installPath: process.resourcesPath ? path.dirname(process.resourcesPath) : path.join(__dirname, '..'),
+    bundledBinDir,
+    userHomeBin,
+    inPath,
+    binaries,
+    platform: process.platform,
+    arch: process.arch,
+    electronVersion: process.versions.electron,
+    nodeVersion: process.versions.node
+  };
+});
+
+ipcMain.handle('env:addToPath', async () => {
+  if (process.platform !== 'win32') return { success: false, message: 'Only supported on Windows' };
+  try {
+    const bundledBinDir = process.resourcesPath ? path.join(process.resourcesPath, 'bin') : path.join(__dirname, 'bin');
+    const { execSync } = require('child_process');
+    const currentPath = execSync('powershell -NoProfile -Command "[Environment]::GetEnvironmentVariable(\'Path\', \'User\')"').toString().trim();
+    if (!currentPath.toLowerCase().includes(bundledBinDir.toLowerCase())) {
+      const newPath = currentPath ? `${currentPath};${bundledBinDir}` : bundledBinDir;
+      execSync(`powershell -NoProfile -Command "[Environment]::SetEnvironmentVariable('Path', '${newPath.replace(/'/g, "''")}', 'User')"`);
+      return { success: true, message: `Successfully registered ${bundledBinDir} in Windows User PATH.` };
+    } else {
+      return { success: true, message: 'Compilers folder is already configured in Windows User PATH.' };
+    }
+  } catch (err) {
+    return { success: false, message: `Failed to register PATH: ${err.message}` };
+  }
+});
+
+ipcMain.handle('env:openFolder', async (event, target) => {
+  let targetPath = '';
+  if (target === 'install') {
+    targetPath = process.resourcesPath ? path.dirname(process.resourcesPath) : path.join(__dirname, '..');
+  } else if (target === 'bin') {
+    targetPath = process.resourcesPath ? path.join(process.resourcesPath, 'bin') : path.join(__dirname, 'bin');
+  } else if (target === 'userData') {
+    targetPath = app.getPath('userData');
+  }
+  if (targetPath && fs.existsSync(targetPath)) {
+    shell.openPath(targetPath);
+    return true;
+  }
+  return false;
+});
+
 // App Lifecycle
 app.whenReady().then(createWindow);
 

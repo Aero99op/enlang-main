@@ -19,5 +19,11 @@ contextBridge.exposeInMainWorld('EnlangElectron', {
 
   // 3. System Shell APIs
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
-  showInFolder: (filePath) => ipcRenderer.invoke('shell:showInFolder', filePath)
+  showInFolder: (filePath) => ipcRenderer.invoke('shell:showInFolder', filePath),
+
+  // 4. Setup & Environment APIs
+  getToolchainStatus: () => ipcRenderer.invoke('env:getToolchainStatus'),
+  addToPath: () => ipcRenderer.invoke('env:addToPath'),
+  openSystemFolder: (target) => ipcRenderer.invoke('env:openFolder', target)
 });
+
