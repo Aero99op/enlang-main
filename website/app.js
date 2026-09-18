@@ -1553,7 +1553,7 @@ function initPlayground() {
       } else {
         let output = '';
         if (result.output || result.error) {
-          output += `<span class="term-err">${escapeHtml(result.output || result.error)}</span>\n`;
+          output += formatTerminalErrorHtml(result.output || result.error) + '\n';
         }
         output += `<span class="term-warn">⚠ [${escapeHtml(result.executor || 'Native')}] Exited with code ${result.exitCode} (${result.timeMs || result.executionTimeMs || elapsed}ms)</span>`;
         terminal.innerHTML = output;
@@ -1754,7 +1754,7 @@ function initPlayground() {
           terminal.innerHTML = output;
         } else {
           let output = '';
-          if (result.output || result.error) output += `<pre class="term-err" style="margin:0;white-space:pre-wrap;">${escapeHtml(result.output || result.error)}</pre>\n`;
+          if (result.output || result.error) output += formatTerminalErrorHtml(result.output || result.error) + '\n';
           output += `<span class="term-warn">⚠ [${escapeHtml(result.executor || 'WASM Engine')}] Exited with code ${result.exitCode} (${result.timeMs}ms)</span>`;
           terminal.innerHTML = output;
         }
@@ -1811,7 +1811,7 @@ function initPlayground() {
           terminal.innerHTML = output;
         } else {
           let output = '';
-          if (result.output || result.error) output += `<pre class="term-err" style="margin:0;white-space:pre-wrap;">${escapeHtml(result.output || result.error)}</pre>\n`;
+          if (result.output || result.error) output += formatTerminalErrorHtml(result.output || result.error) + '\n';
           output += `<span class="term-warn">⚠ [${escapeHtml(result.executor || 'WASM Engine')}] Exited with code ${result.exitCode} (${result.timeMs}ms)</span>`;
           terminal.innerHTML = output;
         }
@@ -2409,14 +2409,114 @@ function executeEnlngInBrowser(sourceCode, terminal) {
     }
   } catch (err) {
     const rawMsg = err.message || String(err);
-    const card = `--- Enlang Sandbox Error -----------------------------------------------------\nWhat: ${escapeHtml(rawMsg)}\nWhy:  Syntax or runtime constraint encountered in Web Sandbox mode.\n\nSuggestions:\n  * Run "python enlangg-bridge.py" in your terminal to enable full Native C Compilers.\n  * Check your statement syntax against Enlang documentation.\n-----------------------------------------------------------------------------`;
-    terminal.innerHTML = `<pre class="term-err" style="margin:0;white-space:pre-wrap;">${card}</pre>`;
+    const card = `── Enlang Sandbox Error ──────────────────────────────────────────────\nLocation: sandbox:1:1\n\nWhat: ${rawMsg}\nWhy:  Syntax or runtime constraint encountered in Web Sandbox mode.\n\nSuggestions:\n  • Run "python enlangg-bridge.py" in your terminal to enable full Native C Compilers.\n  • Check your statement syntax against Enlang documentation.\n──────────────────────────────────────────────────────────────────────`;
+    terminal.innerHTML = formatTerminalErrorHtml(card);
     const timePill = document.getElementById('runtimeExecTime');
     if (timePill) {
       timePill.textContent = 'Execution: Interrupted';
     }
   }
 }
+
+function formatTerminalErrorHtml(rawText) {
+  if (!rawText) return '';
+  const text = String(rawText).trim();
+  const hasEnlangCard = (text.includes('-- Enlang') || text.includes('── Enlang') || text.includes('Location:') || text.includes('What:')) && (text.includes('Suggestions:') || text.includes('Why:'));
+  if (!hasEnlangCard) {
+    return `<span class="term-err" style="white-space:pre-wrap;">${escapeHtml(text)}</span>`;
+  }
+
+  const lines = text.split('\n');
+  const out = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // 1. Top border: -- Enlang SyntaxError ---- or ── Enlang SyntaxError ────
+    if ((trimmed.startsWith('--') || trimmed.startsWith('──')) && (trimmed.includes('Error') || trimmed.includes('Enlang'))) {
+      const match = trimmed.match(/^(?:--|──)\s+([A-Za-z0-9_ ]+Error)\s+([-─]*)$/);
+      if (match) {
+        const title = escapeHtml(match[1]);
+        out.push(`<div class="term-diag-header"><span class="term-err-badge">${title}</span> <span class="term-dim">${escapeHtml(match[2] || '────────────────────────────────')}</span></div>`);
+        continue;
+      }
+    }
+
+    // 2. Bottom border: ---------------- or ───────────────
+    if (/^[-─]{8,}$/.test(trimmed)) {
+      out.push(`<div class="term-diag-footer"><span class="term-dim">${escapeHtml(trimmed)}</span></div>`);
+      continue;
+    }
+
+    // 3. Location line: Location: filepath:line:col
+    if (trimmed.startsWith('Location:')) {
+      const locPart = trimmed.substring('Location:'.length).trim();
+      out.push(`<div class="term-diag-loc"><span class="term-dim">Location: </span><span class="term-cyan">${escapeHtml(locPart)}</span></div>`);
+      continue;
+    }
+
+    // 4. Code gutter lines: e.g. "   2 | when x = 10:" or "     |        ^"
+    const gutterMatch = line.match(/^(\s*\d+\s*\|\s?)(.*)$/);
+    if (gutterMatch) {
+      const gutter = escapeHtml(gutterMatch[1]);
+      const code = escapeHtml(gutterMatch[2]);
+      out.push(`<div class="term-diag-line"><span class="term-dim">${gutter}</span><span class="term-code-text">${code}</span></div>`);
+      continue;
+    }
+
+    const caretMatch = line.match(/^(\s*\|\s?)(.*)$/);
+    if (caretMatch) {
+      const gutter = escapeHtml(caretMatch[1]);
+      const caret = escapeHtml(caretMatch[2]);
+      out.push(`<div class="term-diag-line"><span class="term-dim">${gutter}</span><span class="term-yellow" style="font-weight:bold;">${caret}</span></div>`);
+      continue;
+    }
+
+    // 5. What:
+    if (trimmed.startsWith('What:')) {
+      const whatContent = escapeHtml(line.substring(line.indexOf('What:') + 5).trim());
+      out.push(`<div class="term-diag-sec"><span class="term-err-bold">What:</span> <span class="term-bold">${whatContent}</span></div>`);
+      continue;
+    }
+
+    // 6. Why:
+    if (trimmed.startsWith('Why:')) {
+      const whyContent = escapeHtml(line.substring(line.indexOf('Why:') + 4).trim());
+      out.push(`<div class="term-diag-sec"><span class="term-cyan-bold">Why: </span> <span class="term-dim-text">${whyContent}</span></div>`);
+      continue;
+    }
+
+    // 7. Suggestions:
+    if (trimmed === 'Suggestions:') {
+      out.push(`<div class="term-diag-sec" style="margin-top:6px;"><span class="term-green-bold">Suggestions:</span></div>`);
+      continue;
+    }
+
+    // 8. Bullet items: "  • ..." or "  * ..."
+    if (/^\s*[•\*]\s+/.test(line)) {
+      const bulletContent = line.replace(/^\s*[•\*]\s+/, '');
+      out.push(`<div class="term-diag-bullet"><span class="term-green">•</span> <span>${escapeHtml(bulletContent)}</span></div>`);
+      continue;
+    }
+
+    // 9. Arrow sub-lines: "      --> ..."
+    if (trimmed.startsWith('-->')) {
+      out.push(`<div class="term-diag-arrow"><span class="term-cyan">&nbsp;&nbsp;&nbsp;&nbsp;↳</span> <code class="term-code-fix">${escapeHtml(trimmed.substring(3).trim())}</code></div>`);
+      continue;
+    }
+
+    // Empty line or default
+    if (!trimmed) {
+      out.push('<div class="term-diag-spacer"></div>');
+    } else {
+      out.push(`<div>${escapeHtml(line)}</div>`);
+    }
+  }
+
+  return `<div class="term-diag-card">${out.join('')}</div>`;
+}
+window.formatTerminalErrorHtml = formatTerminalErrorHtml;
 
 function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

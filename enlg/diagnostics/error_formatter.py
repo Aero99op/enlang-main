@@ -186,11 +186,31 @@ def analyze_error(source: str, line_num: int, col_num: int, raw_msg: str, domain
     return what, why, suggestions
 
 
+DOMAIN_NAMES = {
+    "enlng": "Enlang",
+    "enlg": "Enlang",
+    "enlngdb": "EnlangDB",
+    "enlgdb": "EnlangDB",
+    "enlngd": "Enlang Design",
+    "enlgd": "Enlang Design",
+    "enlngf": "Enlang UI",
+    "enlgf": "Enlang UI",
+    "enlngs": "Enlang Script",
+    "enlgs": "Enlang Script",
+    "enlngm": "Enlang Mobile",
+    "enlgm": "Enlang Mobile",
+}
+
+
 def _can_encode_unicode() -> bool:
     try:
         import sys
-        encoding = sys.stderr.encoding or sys.stdout.encoding or "ascii"
-        "─── 📍 ❌ 🔍 💡 •".encode(encoding)
+        if hasattr(sys.stderr, 'reconfigure'):
+            sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        encoding = sys.stderr.encoding or sys.stdout.encoding or "utf-8"
+        "── •".encode(encoding)
         return True
     except Exception:
         return False
@@ -202,41 +222,34 @@ def format_human_diagnostic(
     col: Optional[int] = None,
     file_path: Optional[str] = None,
     domain: str = "enlng",
-    error_type: str = "SYNTAX ERROR",
+    error_type: str = "SyntaxError",
     what: Optional[str] = None,
     why: Optional[str] = None,
     suggestions: Optional[List[str]] = None,
     raw_error: Optional[str] = None
 ) -> str:
-    """Renders the standard human-friendly diagnostic box."""
+    """Renders a clean, modern human-friendly diagnostic message."""
     use_unicode = _can_encode_unicode()
-    border_char = "─" if use_unicode else "-"
-    loc_icon = "📍 " if use_unicode else "--> "
-    what_icon = "❌ " if use_unicode else "[What]: "
-    why_icon = "🔍 " if use_unicode else "[Why]:  "
-    sugg_icon = "💡 " if use_unicode else "[Suggestions]:"
-    bullet_char = "•" if use_unicode else "*"
+    bar = "─" if use_unicode else "-"
+    bullet = "•" if use_unicode else "*"
 
-    domain_label = domain.upper().replace(".", "")
-    if not domain_label.startswith("EN"):
-        domain_label = f"ENLANG {domain_label}"
+    clean_dom = domain.lower().replace(".", "").strip()
+    domain_name = DOMAIN_NAMES.get(clean_dom, f"Enlang {clean_dom.capitalize()}")
     
-    clean_type = error_type.upper()
-    header_title = f" {domain_label} {clean_type} "
-    box_width = 75
-    pad_left = (box_width - len(header_title)) // 2
-    pad_right = box_width - len(header_title) - pad_left
-    header_bar = border_char * pad_left + f"[{header_title.strip()}]" + border_char * (pad_right - 2)
+    clean_type = error_type.replace("Error", "") + "Error" if not error_type.endswith("Error") else error_type
+    
+    box_width = 72
+    title = f"{domain_name} {clean_type}"
+    top_line = f"{bar * 2} {title} "
+    top_line += bar * max(4, box_width - len(top_line))
 
-    lines_out: List[str] = [""]
-    lines_out.append(f"{border_char * 3}{header_bar}")
+    lines_out: List[str] = ["", top_line]
 
     # 1. Location line
     file_display = file_path or "source"
     line_display = line if line is not None and line > 0 else 1
     col_display = col if col is not None and col > 0 else 1
 
-    # Check if analyze_error can refine col_display
     auto_what, auto_why, auto_suggs = analyze_error(
         source, line_display, col_display, raw_error or what or "Syntax error", domain
     )
@@ -251,10 +264,10 @@ def format_human_diagnostic(
             if eq_pos >= 0:
                 col_display = eq_pos + 1
 
-    lines_out.append(f"{loc_icon}Location: {file_display}:{line_display}:{col_display}")
+    lines_out.append(f"Location: {file_display}:{line_display}:{col_display}")
     lines_out.append("")
 
-    # 2. Code Snippet Preview with Caret
+    # 2. Code Snippet Preview with Gutter & Caret
     if source_lines and line_display <= len(source_lines):
         start_idx = max(0, line_display - 2)
         end_idx = min(len(source_lines), line_display + 1)
@@ -262,19 +275,16 @@ def format_human_diagnostic(
         for idx in range(start_idx, end_idx):
             cur_line_num = idx + 1
             line_str = source_lines[idx]
+            lines_out.append(f"  {cur_line_num:3d} | {line_str}")
             if cur_line_num == line_display:
-                lines_out.append(f">>>{cur_line_num:4d} | {line_str}")
-                # Compute caret pointer
                 pointer_col = max(1, col_display)
                 pointer_indent = " " * (pointer_col - 1)
                 lines_out.append(f"      | {pointer_indent}^")
-            else:
-                lines_out.append(f"   {cur_line_num:4d} | {line_str}")
         lines_out.append("")
     elif source_lines and line_display > len(source_lines):
         last_line_num = len(source_lines)
-        lines_out.append(f">>>{last_line_num:4d} | {source_lines[-1]}")
-        lines_out.append(f"      | {' ' * len(source_lines[-1])}^ [End of input]")
+        lines_out.append(f"  {last_line_num:3d} | {source_lines[-1]}")
+        lines_out.append(f"      | {' ' * len(source_lines[-1])}^")
         lines_out.append("")
 
     # 3. What and Why
@@ -282,26 +292,18 @@ def format_human_diagnostic(
     final_why = why or auto_why
     final_suggestions = suggestions if suggestions is not None else auto_suggs
 
-    if use_unicode:
-        lines_out.append(f"❌ What: {final_what}")
-        lines_out.append(f"🔍 Why:  {final_why}")
-    else:
-        lines_out.append(f"What: {final_what}")
-        lines_out.append(f"Why:  {final_why}")
+    lines_out.append(f"What: {final_what}")
+    lines_out.append(f"Why:  {final_why}")
     lines_out.append("")
 
     # 4. Suggestions
-    if use_unicode:
-        lines_out.append("💡 Suggestions:")
-    else:
-        lines_out.append("Suggestions:")
-    
+    lines_out.append("Suggestions:")
     if final_suggestions:
         for s in final_suggestions:
-            lines_out.append(f"   {bullet_char} {s}")
+            lines_out.append(f"  {bullet} {s}")
     else:
-        lines_out.append(f"   {bullet_char} Check syntax against standard Enlang conventions.")
+        lines_out.append(f"  {bullet} Check syntax against standard Enlang conventions.")
 
-    lines_out.append(border_char * box_width)
+    lines_out.append(bar * box_width)
     lines_out.append("")
     return "\n".join(lines_out)

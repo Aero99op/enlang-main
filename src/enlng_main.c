@@ -44,8 +44,7 @@ static char* read_file_string(const char* filepath) {
 }
 
 static void print_human_error_c(const char* filepath, const char* source, int target_line, const char* raw_msg) {
-    fprintf(stderr, "\n---------------------------------------------------------------------------\n");
-    fprintf(stderr, "--- [ENLNG COMPILER ERROR: SYNTAX] ----------------------------------------\n");
+    fprintf(stderr, "\n-- Enlang SyntaxError ---------------------------------------------------\n");
     fprintf(stderr, "Location: %s:%d\n\n", filepath, target_line > 0 ? target_line : 1);
 
     if (source && target_line > 0) {
@@ -79,7 +78,7 @@ static void print_human_error_c(const char* filepath, const char* source, int ta
             if (len > 0 && buf[len - 1] == '\r') buf[len - 1] = '\0';
 
             if (i == target_idx) {
-                fprintf(stderr, ">>> %3d | %s\n", i + 1, buf);
+                fprintf(stderr, "  %3d | %s\n", i + 1, buf);
                 int caret_col = 1;
                 char* eq = strstr(buf, " = ");
                 if (eq) {
@@ -93,7 +92,7 @@ static void print_human_error_c(const char* filepath, const char* source, int ta
                 for (int c = 1; c < caret_col; c++) fputc(' ', stderr);
                 fprintf(stderr, "^\n");
             } else {
-                fprintf(stderr, "    %3d | %s\n", i + 1, buf);
+                fprintf(stderr, "  %3d | %s\n", i + 1, buf);
             }
         }
         fprintf(stderr, "\n");
@@ -103,22 +102,22 @@ static void print_human_error_c(const char* filepath, const char* source, int ta
     if (strstr(raw_msg, "Expected ':'") != NULL) {
         fprintf(stderr, "Why:  Block headers in Enlang (when, if, while, for, function) must terminate with ':'.\n\n");
         fprintf(stderr, "Suggestions:\n");
-        fprintf(stderr, "   * Did you mean to end the condition with a colon, e.g. 'when score == 90:'?\n");
-        fprintf(stderr, "   * Ensure comparison operators use '==' or 'is' instead of '=' inside conditions.\n");
+        fprintf(stderr, "  * Did you mean to end the condition with a colon, e.g. 'when score == 90:'?\n");
+        fprintf(stderr, "  * Ensure comparison operators use '==' or 'is' instead of '=' inside conditions.\n");
     } else if (strstr(raw_msg, "Expected 'as'") != NULL) {
         fprintf(stderr, "Why:  Variable bindings require 'as' or '=' to specify the initial value.\n\n");
         fprintf(stderr, "Suggestions:\n");
-        fprintf(stderr, "   * Bind initial value with 'as', e.g. 'remember count as 0'.\n");
+        fprintf(stderr, "  * Bind initial value with 'as', e.g. 'remember count as 0'.\n");
     } else if (strstr(raw_msg, "type enlng") != NULL) {
         fprintf(stderr, "Why:  Sovereign native Enlang compilation units must declare domain type on line 1.\n\n");
         fprintf(stderr, "Suggestions:\n");
-        fprintf(stderr, "   * Add 'type enlng' at the very top of your file.\n");
+        fprintf(stderr, "  * Add 'type enlng' at the very top of your file.\n");
     } else {
-        fprintf(stderr, "Why:  The native compiler encountered unexpected syntax at this position.\n\n");
+        fprintf(stderr, "Why:  The compiler encountered an unexpected token during syntax evaluation.\n\n");
         fprintf(stderr, "Suggestions:\n");
-        fprintf(stderr, "   * Check statement syntax against standard Enlang conventions.\n");
+        fprintf(stderr, "  * Check statement syntax against Enlang language conventions.\n");
     }
-    fprintf(stderr, "---------------------------------------------------------------------------\n\n");
+    fprintf(stderr, "------------------------------------------------------------------------\n\n");
 }
 
 int main(int argc, char* argv[]) {

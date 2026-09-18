@@ -212,12 +212,17 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
             )
 
             dt = (time.perf_counter() - t0) * 1000
+            if proc.returncode != 0:
+                out_msg = proc.stderr if not proc.stdout else f"{proc.stdout}\n{proc.stderr}".strip()
+            else:
+                out_msg = proc.stdout or proc.stderr
+
             return {
                 "success": proc.returncode == 0,
                 "exitCode": proc.returncode,
                 "stdout": proc.stdout,
                 "stderr": proc.stderr,
-                "output": proc.stdout or proc.stderr,
+                "output": out_msg,
                 "timeMs": round(dt, 2),
                 "executor": executor_name,
                 "tempFile": temp_file

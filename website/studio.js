@@ -769,7 +769,8 @@ screen WalletHome:
         appendTerminal(`<span class="term-green">✔ [${escapeHtml(result.executor)}] Succeeded in ${result.timeMs || elapsed}ms (Exit 0)</span>`);
       } else {
         if (result.output || result.error) {
-          appendTerminal(`<span class="term-err">${escapeHtml(result.output || result.error)}</span>`);
+          const fmt = typeof formatTerminalErrorHtml === 'function' ? formatTerminalErrorHtml : (window.formatTerminalErrorHtml || ((x) => `<span class="term-err">${escapeHtml(x)}</span>`));
+          appendTerminal(fmt(result.output || result.error));
         }
         appendTerminal(`<span class="term-warn">⚠ [${escapeHtml(result.executor)}] Exited with code ${result.exitCode} (${result.timeMs || elapsed}ms)</span>`);
       }
@@ -817,7 +818,8 @@ screen WalletHome:
             if (result.output) appendTerminal(`\n${escapeHtml(result.output)}`);
             appendTerminal(`\n<span class="term-green">✔ [${escapeHtml(result.executor || 'WASM Engine')}] Succeeded in ${result.timeMs}ms (Exit 0)</span>`);
           } else {
-            appendTerminal(`\n<pre class="term-err" style="margin:0;white-space:pre-wrap;">${escapeHtml(result.output || result.error)}</pre>`);
+            const fmt = typeof formatTerminalErrorHtml === 'function' ? formatTerminalErrorHtml : (window.formatTerminalErrorHtml || ((x) => `<span class="term-err">${escapeHtml(x)}</span>`));
+            appendTerminal(`\n${fmt(result.output || result.error)}`);
             appendTerminal(`\n<span class="term-warn">⚠ [${escapeHtml(result.executor || 'WASM Engine')}] Exited with code ${result.exitCode} (${result.timeMs}ms)</span>`);
           }
         }
