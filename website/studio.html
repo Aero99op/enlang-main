@@ -25,6 +25,10 @@
           <div class="menu-item" id="menuFile" tabindex="0">
             <span class="menu-label">File</span>
             <div class="menu-dropdown">
+              <div class="menu-dropdown-item" data-action="openWelcome">
+                <span>Welcome / Get Started</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
               <div class="menu-dropdown-item" data-action="newFile">
                 <span>New File...</span>
                 <span class="menu-shortcut">Ctrl+N</span>
@@ -251,6 +255,10 @@
           <div class="menu-item" id="menuHelp" tabindex="0">
             <span class="menu-label">Help</span>
             <div class="menu-dropdown">
+              <div class="menu-dropdown-item" data-action="openWelcome">
+                <span>Welcome / Get Started</span>
+              </div>
+              <div class="menu-dropdown-divider"></div>
               <div class="menu-dropdown-item" data-action="openDocs">
                 <span>Enlangg Documentation &amp; Spec</span>
               </div>
@@ -288,6 +296,9 @@
         <button class="titlebar-btn primary" id="topRunBtn" title="Execute Active File (Ctrl + Enter)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           <span>Run</span>
+        </button>
+        <button class="titlebar-btn" id="openWelcomeBtn" title="Get Started / Onboarding Walkthrough">
+          <span>✨ Welcome</span>
         </button>
         <button class="titlebar-btn" id="openSetupWizardBtn" title="Enlangg Studio Setup &amp; Environment Center">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
@@ -976,6 +987,267 @@
               </div>
             </div>
           </div>
+
+          <!-- VS Code Real "Get Started" / Onboarding Editor Pane -->
+          <div class="welcome-editor-pane" id="welcomeEditorPane" style="display:none;">
+            <div class="welcome-scroll-container">
+              
+              <!-- Hero Header -->
+              <div class="welcome-hero">
+                <div class="welcome-hero-left">
+                  <div class="welcome-title-row">
+                    <svg class="welcome-logo-svg" viewBox="0 0 24 24"><path fill="#38bdf8" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    <h1 class="welcome-title">Enlangg Studio</h1>
+                    <span class="welcome-version-tag">v2.0.0 Sovereign AG</span>
+                  </div>
+                  <p class="welcome-subtitle">Code editing. Redefined for Sovereign Systems.</p>
+                  <div class="welcome-tags-row">
+                    <span class="welcome-tag"><span class="welcome-dot dot-cyan"></span> Zero Garbage Collection</span>
+                    <span class="welcome-tag"><span class="welcome-dot dot-green"></span> Native C99 Execution</span>
+                    <span class="welcome-tag"><span class="welcome-dot dot-yellow"></span> Natural Spoken Syntax</span>
+                    <span class="welcome-tag"><span class="welcome-dot dot-purple"></span> In-Memory SQL &lt;0.05ms</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Main 2-Column Split -->
+              <div class="welcome-grid">
+                
+                <!-- Left Column: Start & Templates -->
+                <div class="welcome-col-start">
+                  
+                  <!-- Start Actions -->
+                  <div class="welcome-section">
+                    <h2 class="welcome-section-title">Start</h2>
+                    <div class="welcome-links-list">
+                      <button class="welcome-link-item" id="welcomeNewFileBtn">
+                        <span class="welcome-link-icon">📄</span>
+                        <div class="welcome-link-text">
+                          <span class="welcome-link-title">New File...</span>
+                          <span class="welcome-link-shortcut">Ctrl+N</span>
+                        </div>
+                      </button>
+                      <button class="welcome-link-item" id="welcomeOpenFileBtn">
+                        <span class="welcome-link-icon">📂</span>
+                        <div class="welcome-link-text">
+                          <span class="welcome-link-title">Open File...</span>
+                          <span class="welcome-link-shortcut">Ctrl+O</span>
+                        </div>
+                      </button>
+                      <button class="welcome-link-item" id="welcomeOpenFolderBtn">
+                        <span class="welcome-link-icon">📁</span>
+                        <div class="welcome-link-text">
+                          <span class="welcome-link-title">Open Folder / Workspace...</span>
+                          <span class="welcome-link-shortcut">Ctrl+K Ctrl+O</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Starter Projects / Templates -->
+                  <div class="welcome-section">
+                    <h2 class="welcome-section-title">Starter Projects</h2>
+                    <div class="welcome-templates-list">
+                      <div class="welcome-template-card" id="welcomeTplBanking">
+                        <div class="welcome-tpl-icon" style="background:rgba(56,189,248,0.15);color:#38bdf8;">🏛️</div>
+                        <div class="welcome-tpl-info">
+                          <div class="welcome-tpl-title">Sovereign Banking App</div>
+                          <div class="welcome-tpl-desc">Pure computational logic, balances, transfers &amp; spatial loops (.enlng)</div>
+                        </div>
+                      </div>
+
+                      <div class="welcome-template-card" id="welcomeTplSubway">
+                        <div class="welcome-tpl-icon" style="background:rgba(234,179,8,0.15);color:#eab308;">🏃</div>
+                        <div class="welcome-tpl-info">
+                          <div class="welcome-tpl-title">Subway Surfers 3D Canvas</div>
+                          <div class="welcome-tpl-desc">Hardware-accelerated layout tokens &amp; reactive UI tree (.enlngd / .enlngf)</div>
+                        </div>
+                      </div>
+
+                      <div class="welcome-template-card" id="welcomeTplDatabase">
+                        <div class="welcome-tpl-icon" style="background:rgba(78,201,176,0.15);color:#4ec9b0;">🗄️</div>
+                        <div class="welcome-tpl-info">
+                          <div class="welcome-tpl-title">EnlangDB Relational Tables</div>
+                          <div class="welcome-tpl-desc">Instant SQL queries, microsecond tables &amp; schema workbench (.enlngdb)</div>
+                        </div>
+                      </div>
+
+                      <div class="welcome-template-card" id="welcomeTplMobile">
+                        <div class="welcome-tpl-icon" style="background:rgba(168,85,247,0.15);color:#c084fc;">📱</div>
+                        <div class="welcome-tpl-info">
+                          <div class="welcome-tpl-title">Mobile Wallet Simulator</div>
+                          <div class="welcome-tpl-desc">Smartphone HAL layout, biometric auth &amp; touch event loop (.enlngm)</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Help & Shortcuts -->
+                  <div class="welcome-section">
+                    <h2 class="welcome-section-title">Help &amp; Community</h2>
+                    <div class="welcome-links-list">
+                      <button class="welcome-link-item" id="welcomeOpenDocsBtn">
+                        <span class="welcome-link-icon">📖</span>
+                        <div class="welcome-link-text">
+                          <span class="welcome-link-title">Documentation &amp; Language Spec</span>
+                        </div>
+                      </button>
+                      <button class="welcome-link-item" id="welcomeOpenShortcutsBtn">
+                        <span class="welcome-link-icon">⌨️</span>
+                        <div class="welcome-link-text">
+                          <span class="welcome-link-title">Keyboard Shortcuts Cheat Sheet</span>
+                          <span class="welcome-link-shortcut">F1</span>
+                        </div>
+                      </button>
+                      <button class="welcome-link-item" id="welcomeOpenMarketplaceBtn">
+                        <span class="welcome-link-icon">🧩</span>
+                        <div class="welcome-link-text">
+                          <span class="welcome-link-title">Extensions Marketplace (17,000+)</span>
+                          <span class="welcome-link-shortcut">Ctrl+Shift+X</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Right Column: Walkthroughs (The Onboarding Steps) -->
+                <div class="welcome-col-walkthrough">
+                  <div class="walkthrough-header">
+                    <h2 class="welcome-section-title" style="margin-bottom:2px;">Walkthrough: Get Started with Enlangg</h2>
+                    <p class="walkthrough-subtitle">Complete these interactive steps to configure your sovereign environment.</p>
+                  </div>
+
+                  <!-- Step 1: Themes -->
+                  <div class="walkthrough-card expanded" id="wtCardThemes">
+                    <div class="walkthrough-card-header" data-wt-target="wtCardThemes">
+                      <div class="walkthrough-check" id="wtCheckTheme">✓</div>
+                      <div class="walkthrough-title-group">
+                        <div class="walkthrough-step-label">Step 1</div>
+                        <div class="walkthrough-step-title">Choose the look you want</div>
+                      </div>
+                      <div class="walkthrough-caret">▼</div>
+                    </div>
+                    <div class="walkthrough-card-body">
+                      <p class="walkthrough-desc">Select your preferred color theme. The IDE updates live instantly.</p>
+                      <div class="theme-swatches-grid" id="onboardingThemeGrid">
+                        <!-- Theme swatches rendered here dynamically -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Step 2: Native Toolchain -->
+                  <div class="walkthrough-card" id="wtCardToolchain">
+                    <div class="walkthrough-card-header" data-wt-target="wtCardToolchain">
+                      <div class="walkthrough-check" id="wtCheckToolchain">○</div>
+                      <div class="walkthrough-title-group">
+                        <div class="walkthrough-step-label">Step 2</div>
+                        <div class="walkthrough-step-title">Verify Native C99 Compilers &amp; Toolchain</div>
+                      </div>
+                      <div class="walkthrough-caret">▼</div>
+                    </div>
+                    <div class="walkthrough-card-body">
+                      <p class="walkthrough-desc">Enlangg Studio includes precompiled, zero-dependency C99 compiler binaries for Windows.</p>
+                      <div class="onboarding-binaries-list" id="onboardingBinList">
+                        <!-- enlng.exe, enlngdb.exe, enlangg.exe status badges -->
+                      </div>
+                      <div class="onboarding-btn-row">
+                        <button class="titlebar-btn primary" id="onboardingRunSelfTestBtn">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                          <span>Run Compiler Self-Test</span>
+                        </button>
+                        <button class="titlebar-btn" id="onboardingAddToPathBtn">
+                          <span>➕ Add to Windows PATH</span>
+                        </button>
+                      </div>
+                      <div id="onboardingSelfTestLog" class="onboarding-test-log" style="display:none;"></div>
+                    </div>
+                  </div>
+
+                  <!-- Step 3: Natural Spoken Syntax -->
+                  <div class="walkthrough-card" id="wtCardSyntax">
+                    <div class="walkthrough-card-header" data-wt-target="wtCardSyntax">
+                      <div class="walkthrough-check" id="wtCheckSyntax">○</div>
+                      <div class="walkthrough-title-group">
+                        <div class="walkthrough-step-label">Step 3</div>
+                        <div class="walkthrough-step-title">Learn Natural Spoken Syntax in 60 Seconds</div>
+                      </div>
+                      <div class="walkthrough-caret">▼</div>
+                    </div>
+                    <div class="walkthrough-card-body">
+                      <p class="walkthrough-desc">Enlang eliminates brackets and cognitive traps. Express intent naturally:</p>
+                      <div class="syntax-preview-box">
+                        <div class="syntax-row"><span class="syntax-kw">remember</span> balance <span class="syntax-kw">as</span> 1000 <span class="syntax-comment"># Declare variable</span></div>
+                        <div class="syntax-row">balance <span class="syntax-kw">increases by</span> 250 <span class="syntax-comment"># Natural math</span></div>
+                        <div class="syntax-row"><span class="syntax-kw">repeat until it is sorted:</span> <span class="syntax-comment"># 'it', 'is' are silent</span></div>
+                        <div class="syntax-row">&nbsp;&nbsp;<span class="syntax-kw">for each pair in</span> items: <span class="syntax-comment"># Spatial loop</span></div>
+                        <div class="syntax-row">&nbsp;&nbsp;&nbsp;&nbsp;<span class="syntax-kw">when</span> pair.left &gt; pair.right:</div>
+                        <div class="syntax-row">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="syntax-kw">swap pair</span></div>
+                      </div>
+                      <div class="onboarding-btn-row">
+                        <button class="titlebar-btn primary" id="onboardingTrySyntaxBtn">
+                          <span>🚀 Open Playground in Editor</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Step 4: EnlangDB Database Workbench -->
+                  <div class="walkthrough-card" id="wtCardDatabase">
+                    <div class="walkthrough-card-header" data-wt-target="wtCardDatabase">
+                      <div class="walkthrough-check" id="wtCheckDatabase">○</div>
+                      <div class="walkthrough-title-group">
+                        <div class="walkthrough-step-label">Step 4</div>
+                        <div class="walkthrough-step-title">Explore Sovereign EnlangDB Micro-VM</div>
+                      </div>
+                      <div class="walkthrough-caret">▼</div>
+                    </div>
+                    <div class="walkthrough-card-body">
+                      <p class="walkthrough-desc">Experience in-memory SQL with &lt;0.05ms latency and zero database server installation.</p>
+                      <div class="onboarding-btn-row">
+                        <button class="titlebar-btn primary" id="onboardingOpenDbWorkbenchBtn">
+                          <span>📊 Open EnlangDB Studio Workbench</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Step 5: AI Copilot -->
+                  <div class="walkthrough-card" id="wtCardAi">
+                    <div class="walkthrough-card-header" data-wt-target="wtCardAi">
+                      <div class="walkthrough-check" id="wtCheckAi">○</div>
+                      <div class="walkthrough-title-group">
+                        <div class="walkthrough-step-label">Step 5</div>
+                        <div class="walkthrough-step-title">Connect AI Copilot (BYOK)</div>
+                      </div>
+                      <div class="walkthrough-caret">▼</div>
+                    </div>
+                    <div class="walkthrough-card-body">
+                      <p class="walkthrough-desc">Bring your own API key for Google Gemini, OpenAI, or Ollama local inference.</p>
+                      <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="password" id="onboardingAiKeyInput" placeholder="Paste Gemini / OpenAI Key..." class="modal-input" style="flex:1;" />
+                        <button class="titlebar-btn primary" id="onboardingSaveAiKeyBtn">Save</button>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              <!-- Footer -->
+              <div class="welcome-footer">
+                <label class="welcome-checkbox-label">
+                  <input type="checkbox" id="chkShowWelcomeOnStartup" checked />
+                  <span>Show Welcome page on startup</span>
+                </label>
+                <div class="welcome-footer-info">
+                  <span>Enlangg Studio v2.0.0 · Electron Native Desktop &amp; Web</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
 
         <!-- Resizer Handle Y (between Editor and Bottom Dock) -->
@@ -1185,6 +1457,9 @@
         <div class="statusbar-item" id="statusNativeEngine" style="cursor:pointer;font-weight:600;" title="Native Engine: Click to test or reconnect local compilers (~/.enlangg/bin)">
           <span id="statusNativeEngineDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5c07b;margin-right:4px;"></span>
           <span id="statusNativeEngineText">Native: 7/7</span>
+        </div>
+        <div class="statusbar-item" id="statusWelcomeBtn" style="cursor:pointer;font-weight:600;" title="Get Started / Onboarding Walkthrough">
+          <span>✨ Get Started</span>
         </div>
         <div class="statusbar-item" id="statusSetupBtn" style="cursor:pointer;font-weight:600;" title="Open Enlangg Studio Setup Wizard &amp; Environment Center">
           <span>⚙️ Setup</span>
