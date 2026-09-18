@@ -621,13 +621,44 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         }
     }
 
-    return true;
+    if (print_output) {
+        fprintf(stderr, "\n---------------------------------------------------------------------------\n");
+        fprintf(stderr, "--- [ENLNGDB PARSER ERROR: SYNTAX] ----------------------------------------\n");
+        fprintf(stderr, "\n>>> %s\n", stmt);
+        fprintf(stderr, "    ^\n\n");
+        if (str_starts_with_ci(stmt, "create table")) {
+            fprintf(stderr, "What: Incomplete 'create table' statement.\n");
+            fprintf(stderr, "Why:  EnlngDB tables require column definitions after the 'with' keyword.\n\n");
+            fprintf(stderr, "Suggestions:\n");
+            fprintf(stderr, "   * Specify table columns, e.g.: create table users with id, name, email\n");
+        } else if (str_starts_with_ci(stmt, "find") || str_starts_with_ci(stmt, "select")) {
+            fprintf(stderr, "What: Malformed query statement.\n");
+            fprintf(stderr, "Why:  EnlngDB queries require a target table specified via 'from <table>' or 'in <table>'.\n\n");
+            fprintf(stderr, "Suggestions:\n");
+            fprintf(stderr, "   * Add the source table, e.g.: find records from users\n");
+            fprintf(stderr, "   * Or project columns: find user_id of users from users\n");
+        } else if (str_starts_with_ci(stmt, "insert")) {
+            fprintf(stderr, "What: Malformed 'insert' statement.\n");
+            fprintf(stderr, "Why:  Records require target table and values specified via 'with' or 'values'.\n\n");
+            fprintf(stderr, "Suggestions:\n");
+            fprintf(stderr, "   * Insert key-value pairs: insert into users with id 1, name \"Aero\"\n");
+        } else {
+            fprintf(stderr, "What: Unrecognized or malformed database statement: '%s'\n", stmt);
+            fprintf(stderr, "Why:  Statement does not match any valid conversational EnlngDB grammar.\n\n");
+            fprintf(stderr, "Suggestions:\n");
+            fprintf(stderr, "   * Supported commands: create table, insert into, find records from, update, delete\n");
+            fprintf(stderr, "   * Run 'enlngdb --help' to view command reference.\n");
+        }
+        fprintf(stderr, "---------------------------------------------------------------------------\n\n");
+    }
+    return false;
 }
 
 int enlngdb_execute_script(EnlngDatabase* db, const char* script_content, bool print_output) {
     if (!db || !script_content) return 0;
     char* copy = strdup(script_content);
     int executed = 0;
+    int failed = 0;
 
     char* ptr = copy;
     while (*ptr) {
@@ -665,11 +696,13 @@ int enlngdb_execute_script(EnlngDatabase* db, const char* script_content, bool p
         if (*trimmed && *trimmed != '#') {
             if (enlngdb_execute_statement(db, trimmed, print_output)) {
                 executed++;
+            } else {
+                failed++;
             }
         }
     }
     free(copy);
-    return executed;
+    return failed > 0 ? -failed : executed;
 }
 
 int enlngdb_run_file(const char* filepath) {
@@ -711,10 +744,12 @@ int enlngdb_run_file(const char* filepath) {
 
     int count = enlngdb_execute_script(db, buffer, true);
 
-    // Auto-save updated state to binary format
-    enlngdb_save(db, edb_file);
+    // Auto-save updated state to binary format only if no failures occurred
+    if (count >= 0) {
+        enlngdb_save(db, edb_file);
+    }
 
     free(buffer);
     enlngdb_free(db);
-    return count > 0 ? 0 : 1;
+    return count >= 0 ? 0 : 1;
 }

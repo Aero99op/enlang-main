@@ -43,6 +43,84 @@ static char* read_file_string(const char* filepath) {
     return buf;
 }
 
+static void print_human_error_c(const char* filepath, const char* source, int target_line, const char* raw_msg) {
+    fprintf(stderr, "\n---------------------------------------------------------------------------\n");
+    fprintf(stderr, "--- [ENLNG COMPILER ERROR: SYNTAX] ----------------------------------------\n");
+    fprintf(stderr, "Location: %s:%d\n\n", filepath, target_line > 0 ? target_line : 1);
+
+    if (source && target_line > 0) {
+        const char* p = source;
+        const char* line_starts[2048];
+        int line_lens[2048];
+        int total_lines = 0;
+
+        line_starts[0] = p;
+        while (*p && total_lines < 2040) {
+            if (*p == '\n') {
+                line_lens[total_lines] = (int)(p - line_starts[total_lines]);
+                total_lines++;
+                line_starts[total_lines] = p + 1;
+            }
+            p++;
+        }
+        if (p > line_starts[total_lines]) {
+            line_lens[total_lines] = (int)(p - line_starts[total_lines]);
+            total_lines++;
+        }
+
+        int target_idx = target_line - 1;
+        int start_idx = target_idx > 1 ? target_idx - 1 : 0;
+        int end_idx = target_idx + 1 < total_lines ? target_idx + 1 : total_lines - 1;
+
+        for (int i = start_idx; i <= end_idx; i++) {
+            char buf[512] = {0};
+            int len = line_lens[i] < 511 ? line_lens[i] : 511;
+            strncpy(buf, line_starts[i], len);
+            if (len > 0 && buf[len - 1] == '\r') buf[len - 1] = '\0';
+
+            if (i == target_idx) {
+                fprintf(stderr, ">>> %3d | %s\n", i + 1, buf);
+                int caret_col = 1;
+                char* eq = strstr(buf, " = ");
+                if (eq) {
+                    caret_col = (int)(eq - buf) + 2;
+                } else if (strlen(buf) > 0) {
+                    char* trim_p = buf;
+                    while (*trim_p && isspace((unsigned char)*trim_p)) trim_p++;
+                    caret_col = (int)(trim_p - buf) + 1;
+                }
+                fprintf(stderr, "      | ");
+                for (int c = 1; c < caret_col; c++) fputc(' ', stderr);
+                fprintf(stderr, "^\n");
+            } else {
+                fprintf(stderr, "    %3d | %s\n", i + 1, buf);
+            }
+        }
+        fprintf(stderr, "\n");
+    }
+
+    fprintf(stderr, "What: %s\n", raw_msg);
+    if (strstr(raw_msg, "Expected ':'") != NULL) {
+        fprintf(stderr, "Why:  Block headers in Enlang (when, if, while, for, function) must terminate with ':'.\n\n");
+        fprintf(stderr, "Suggestions:\n");
+        fprintf(stderr, "   * Did you mean to end the condition with a colon, e.g. 'when score == 90:'?\n");
+        fprintf(stderr, "   * Ensure comparison operators use '==' or 'is' instead of '=' inside conditions.\n");
+    } else if (strstr(raw_msg, "Expected 'as'") != NULL) {
+        fprintf(stderr, "Why:  Variable bindings require 'as' or '=' to specify the initial value.\n\n");
+        fprintf(stderr, "Suggestions:\n");
+        fprintf(stderr, "   * Bind initial value with 'as', e.g. 'remember count as 0'.\n");
+    } else if (strstr(raw_msg, "type enlng") != NULL) {
+        fprintf(stderr, "Why:  Sovereign native Enlang compilation units must declare domain type on line 1.\n\n");
+        fprintf(stderr, "Suggestions:\n");
+        fprintf(stderr, "   * Add 'type enlng' at the very top of your file.\n");
+    } else {
+        fprintf(stderr, "Why:  The native compiler encountered unexpected syntax at this position.\n\n");
+        fprintf(stderr, "Suggestions:\n");
+        fprintf(stderr, "   * Check statement syntax against standard Enlang conventions.\n");
+    }
+    fprintf(stderr, "---------------------------------------------------------------------------\n\n");
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         print_help();
@@ -100,7 +178,7 @@ int main(int argc, char* argv[]) {
     ASTNode* prog = parser_parse_program(&parser);
 
     if (parser.has_error || !prog) {
-        fprintf(stderr, "\n[ENLANG COMPILER ERROR] in '%s', Line %d:\n    %s\n\n", input_file, parser.error_line, parser.error_msg);
+        print_human_error_c(input_file, source, parser.error_line, parser.error_msg);
         lexer_free(&lexer);
         free(source);
         return 1;

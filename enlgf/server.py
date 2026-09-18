@@ -23,7 +23,24 @@ def compile_enlgf_file(filepath: str, style_path: str = None, script_path: str =
     import re
     with open(filepath, "r", encoding="utf-8") as f:
         source = f.read()
-    html = compile_enlgf_source(source)
+    try:
+        html = compile_enlgf_source(source)
+    except Exception as e:
+        from enlg.diagnostics.error_formatter import format_human_diagnostic
+        token = getattr(e, "token", None)
+        line_num = getattr(token, "line", None) or getattr(e, "line", None)
+        col_num = getattr(token, "column", None) or getattr(e, "col", None) or getattr(e, "column", None)
+        card = format_human_diagnostic(
+            source=source,
+            line=line_num,
+            col=col_num,
+            file_path=filepath,
+            domain="enlngf",
+            error_type=e.__class__.__name__,
+            raw_error=str(e)
+        )
+        print(card, file=sys.stderr)
+        sys.exit(1)
     
     handled_styles = set()
     handled_scripts = set()

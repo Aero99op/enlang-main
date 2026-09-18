@@ -39,6 +39,25 @@ def run_enlngdb_file(input_file: str,
         source = f.read()
 
     target_db = db_path or Path(input_file).with_suffix(".edb").as_posix()
-    engine = NativeExecutionEngine(db_path=target_db, stream_output=stream_output)
-    reports = run_enlngdb_source(source, db_path=target_db, engine=engine, stream_output=stream_output)
-    return reports
+    try:
+        engine = NativeExecutionEngine(db_path=target_db, stream_output=stream_output)
+        reports = run_enlngdb_source(source, db_path=target_db, engine=engine, stream_output=stream_output)
+        return reports
+    except Exception as e:
+        import sys
+        from enlg.diagnostics.error_formatter import format_human_diagnostic
+        token = getattr(e, "token", None)
+        line_num = getattr(token, "line", None) or getattr(e, "line", None)
+        col_num = getattr(token, "column", None) or getattr(e, "col", None) or getattr(e, "column", None)
+        card = format_human_diagnostic(
+            source=source,
+            line=line_num,
+            col=col_num,
+            file_path=input_file,
+            domain="enlngdb",
+            error_type=e.__class__.__name__,
+            what=getattr(e, "message", None) or str(e),
+            raw_error=str(e)
+        )
+        print(card, file=sys.stderr)
+        sys.exit(1)

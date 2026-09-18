@@ -229,7 +229,20 @@ def run_file(filepath: str):
     try:
         run_source(source)
     except Exception as e:
-        print(f"Runtime Error: {e}", file=sys.stderr)
+        from enlg.diagnostics.error_formatter import format_human_diagnostic
+        line_num = getattr(e, "line_num", None) or getattr(e, "lineno", None) or getattr(e, "line", None)
+        col_num = getattr(e, "col_num", None) or getattr(e, "column", None) or getattr(e, "col", None)
+        ext = os.path.splitext(filepath)[1].lower().lstrip(".")
+        card = format_human_diagnostic(
+            source=source,
+            line=line_num,
+            col=col_num,
+            file_path=filepath,
+            domain=ext or "enlng",
+            error_type=e.__class__.__name__,
+            raw_error=str(e)
+        )
+        print(card, file=sys.stderr)
         sys.exit(1)
 
 def start_repl():

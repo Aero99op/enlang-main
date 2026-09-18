@@ -64,9 +64,28 @@ def run_enlgdb_file(input_file: str, db_path: Optional[str] = None) -> List[Dict
     # Determine database path (default to same name with .db extension, or in-memory)
     target_db = db_path or f"{os.path.splitext(input_file)[0]}.db"
     
-    ast, sql_tuples = compile_enlgdb_source(source, dialect="sqlite")
-    emitter = SQLEmitter(dialect="sqlite")
-    engine = DatabaseEngine(db_path=target_db)
-    reports = engine.execute_program(ast, emitter)
-    engine.print_reports(reports)
-    return reports
+    try:
+        ast, sql_tuples = compile_enlgdb_source(source, dialect="sqlite")
+        emitter = SQLEmitter(dialect="sqlite")
+        engine = DatabaseEngine(db_path=target_db)
+        reports = engine.execute_program(ast, emitter)
+        engine.print_reports(reports)
+        return reports
+    except Exception as e:
+        import sys
+        from enlg.diagnostics.error_formatter import format_human_diagnostic
+        token = getattr(e, "token", None)
+        line_num = getattr(token, "line", None) or getattr(e, "line", None)
+        col_num = getattr(token, "column", None) or getattr(e, "col", None) or getattr(e, "column", None)
+        card = format_human_diagnostic(
+            source=source,
+            line=line_num,
+            col=col_num,
+            file_path=input_file,
+            domain="enlgdb",
+            error_type=e.__class__.__name__,
+            what=getattr(e, "message", None) or str(e),
+            raw_error=str(e)
+        )
+        print(card, file=sys.stderr)
+        sys.exit(1)

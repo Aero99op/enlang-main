@@ -19,7 +19,25 @@ def compile_enlgs_file(filepath: str) -> str:
     """Reads a .enlgs file and compiles it into JavaScript."""
     with open(filepath, "r", encoding="utf-8") as f:
         source = f.read()
-    return compile_enlgs_source(source)
+    try:
+        return compile_enlgs_source(source)
+    except Exception as e:
+        import sys
+        from enlg.diagnostics.error_formatter import format_human_diagnostic
+        token = getattr(e, "token", None)
+        line_num = getattr(token, "line", None) or getattr(e, "line", None)
+        col_num = getattr(token, "column", None) or getattr(e, "col", None) or getattr(e, "column", None)
+        card = format_human_diagnostic(
+            source=source,
+            line=line_num,
+            col=col_num,
+            file_path=filepath,
+            domain="enlngs",
+            error_type=e.__class__.__name__,
+            raw_error=str(e)
+        )
+        print(card, file=sys.stderr)
+        sys.exit(1)
 
 def build_enlgs_file(input_path: str, output_path: str = None) -> str:
     """Compiles a .enlgs file and writes the resulting .js file to disk."""

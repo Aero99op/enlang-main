@@ -19,7 +19,25 @@ def compile_enlgd_file(filepath: str) -> str:
     """Reads a .enlgd file and compiles it into standard CSS."""
     with open(filepath, "r", encoding="utf-8") as f:
         source = f.read()
-    return compile_enlgd_source(source)
+    try:
+        return compile_enlgd_source(source)
+    except Exception as e:
+        import sys
+        from enlg.diagnostics.error_formatter import format_human_diagnostic
+        token = getattr(e, "token", None)
+        line_num = getattr(token, "line", None) or getattr(e, "line", None)
+        col_num = getattr(token, "column", None) or getattr(e, "col", None) or getattr(e, "column", None)
+        card = format_human_diagnostic(
+            source=source,
+            line=line_num,
+            col=col_num,
+            file_path=filepath,
+            domain="enlngd",
+            error_type=e.__class__.__name__,
+            raw_error=str(e)
+        )
+        print(card, file=sys.stderr)
+        sys.exit(1)
 
 def build_enlgd_file(input_path: str, output_path: str = None) -> str:
     """Compiles a .enlgd file and writes the resulting CSS to disk."""
