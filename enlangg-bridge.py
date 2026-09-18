@@ -185,15 +185,15 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
                     cmd = [enlngm_bin, temp_file]
                     executor_name = enlngm_bin
             else:
-                # Default core Enlang (.enlng)
-                enlangg_bin = find_binary("enlangg")
+                # Default core Enlang (.enlng) - use pure C native compiler enlng
                 enlng_bin = find_binary("enlng")
-                if enlangg_bin:
-                    cmd = [enlangg_bin, "run", temp_file]
-                    executor_name = enlangg_bin
-                elif enlng_bin:
+                enlangg_bin = find_binary("enlangg")
+                if enlng_bin:
                     cmd = [enlng_bin, temp_file]
                     executor_name = enlng_bin
+                elif enlangg_bin:
+                    cmd = [enlangg_bin, "run", temp_file]
+                    executor_name = enlangg_bin
 
             if not cmd:
                 # Fallback to running via Python compiler in repo

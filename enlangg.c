@@ -127,6 +127,7 @@ const char* EMBEDDED_RUNNER =
 "        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)(?=[,\\):]|$)', r'\\1(\\2)', expr)\n"
 "        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\b', r'\\1()', expr)\n"
 "        expr = re.sub(r'\\b(?:count of|length of)\\s+([a-zA-Z0-9_\\[\\]\"\\'\\(\\)]+)', r'len(\\1)', expr)\n"
+"        expr = re.sub(r'\\breverse\\s+(?:of\\s+)?([a-zA-Z0-9_\\[\\]\"\\'\\(\\)]+)', r'(\\1[::-1] if hasattr(\\1, \"__getitem__\") else \\1)', expr)\n"
 "        return expr\n"
 "\n"
 "    # 1. Loop controls: break / continue / pass\n"
@@ -193,6 +194,8 @@ const char* EMBEDDED_RUNNER =
 "    if m: return f'{indent}{m.group(1)} /= {fix_expr(m.group(2))}'\n"
 "    m = re.match(r'^set\\s+([a-zA-Z0-9_\\[\\]\"\\.]+)\\s*(\\+=|-=|\\*=|/=|%=)\\s*(.*)$', trimmed)\n"
 "    if m: return f'{indent}{m.group(1)} {m.group(2)} {fix_expr(m.group(3))}'\n"
+"    m = re.match(r'^reverse\\s+([a-zA-Z0-9_]+)$', trimmed, re.I)\n"
+"    if m: return f'{indent}{m.group(1)} = {m.group(1)}[::-1]'\n"
 "\n"
 "    # 9. Output Display (display / show / output / print)\n"
 "    m = re.match(r'^(?:display|show|output|print)\\s+(.*)$', trimmed, re.I)\n"
@@ -367,6 +370,14 @@ void print_help() {
 }
 
 int run_script(const char* filepath) {
+    // 0. Check if pure Enlang core script (.enlng, .enlg)
+    if (strstr(filepath, ".enlng") != NULL || strstr(filepath, ".enlg") != NULL) {
+        char cmd[1024];
+        snprintf(cmd, sizeof(cmd), "enlng \"%s\"", filepath);
+        int res = system(cmd);
+        if (res == 0) return 0;
+    }
+
     // 1. Check if database script (.enlngdb, .enlgdb)
     if (strstr(filepath, ".enlngdb") != NULL || strstr(filepath, ".enlgdb") != NULL) {
         return enlngdb_run_file(filepath);
@@ -474,6 +485,11 @@ int main(int argc, char* argv[]) {
     if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
         print_help();
         return 0;
+    }
+
+    if (strcmp(argv[1], "bridge") == 0 || strcmp(argv[1], "daemon") == 0) {
+        printf("[ENLANGG] Starting Sovereign Native Bridge Daemon on port 5999...\n");
+        return system("python enlangg-bridge.py");
     }
 
     if (strcmp(argv[1], "compile") == 0) {

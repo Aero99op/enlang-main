@@ -1527,7 +1527,8 @@ function initPlayground() {
   if (statusNativeEnginePlayground) {
     statusNativeEnginePlayground.addEventListener('click', () => checkPlaygroundBridge(true));
   }
-  setTimeout(() => checkPlaygroundBridge(false), 300);
+  setTimeout(() => checkPlaygroundBridge(false), 200);
+  setInterval(() => checkPlaygroundBridge(false), 2000);
 
   // Helper to execute via Native Bridge in Playground
   async function executeViaPlaygroundBridge(filename, content, lang) {
@@ -1729,7 +1730,12 @@ function initPlayground() {
     const code = editor.value;
     const isDb = isEnlngDbCode(code);
 
-    if (isPlaygroundBridgeConnected) {
+    let bridgeOk = isPlaygroundBridgeConnected;
+    if (!bridgeOk) {
+      bridgeOk = await checkPlaygroundBridge(false);
+    }
+
+    if (bridgeOk) {
       const filename = isDb ? 'sandbox.enlngdb' : 'sandbox.enlng';
       const ok = await executeViaPlaygroundBridge(filename, code, isDb ? 'enlngdb' : 'enlng');
       if (ok) return;
@@ -1758,7 +1764,12 @@ function initPlayground() {
 
     const isDb = isEnlngDbCode(editor.value) || isEnlngDbCode(queryData.text);
 
-    if (isPlaygroundBridgeConnected) {
+    let bridgeOk = isPlaygroundBridgeConnected;
+    if (!bridgeOk) {
+      bridgeOk = await checkPlaygroundBridge(false);
+    }
+
+    if (bridgeOk) {
       const filename = isDb ? 'selection.enlngdb' : 'selection.enlng';
       const ok = await executeViaPlaygroundBridge(filename, queryData.text, isDb ? 'enlngdb' : 'enlng');
       if (ok) return;
@@ -1897,6 +1908,9 @@ function transpileExpressionRaw(res) {
 
   // 3. Universal property access: <field> of <object>
   res = res.replace(/\b([a-zA-Z0-9_]+)\s+of\s+([a-zA-Z0-9_\[\]\.]+)/gi, '$2.$1');
+
+  // 3b. Universal reverse expression: reverse (of)? <expr>
+  res = res.replace(/\breverse\s+(?:of\s+)?([a-zA-Z0-9_\[\]\.]+)/gi, 'enlng_reverse($1)');
 
   // 4. Universal indexing: <container> at <index>
   res = res.replace(/\b([a-zA-Z0-9_\[\]\.]+)\s+at\s+([a-zA-Z0-9_\"\'\.]+|__STR_\d+__)/gi, '$1[$2]');
@@ -2056,6 +2070,21 @@ function transpileEnlngToJS(lines) {
         type: 'stmt',
         indent: indentLen,
         code: `let ${tmpVar} = ${left}; ${left} = ${right}; ${right} = ${tmpVar};`
+      });
+      continue;
+    }
+
+    // 2f. Reverse Statement: reverse <target>
+    const revStmtMatch = trimmed.match(/^reverse\s+([a-zA-Z0-9_\[\]\.]+)$/i);
+    if (revStmtMatch) {
+      const target = revStmtMatch[1];
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(target)) {
+        declaredVars.add(target);
+      }
+      intermediateLines.push({
+        type: 'stmt',
+        indent: indentLen,
+        code: `${target} = enlng_reverse(${target});`
       });
       continue;
     }
@@ -2266,6 +2295,13 @@ function enlng_count(obj) {
   return Object.keys(obj).length;
 }
 
+function enlng_reverse(obj) {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'string') return obj.split('').reverse().join('');
+  if (Array.isArray(obj)) return [...obj].reverse();
+  return obj;
+}
+
 function append(list, item) {
   if (Array.isArray(list)) list.push(item);
   return list;
@@ -2284,7 +2320,7 @@ function executeEnlngInBrowser(sourceCode, terminal) {
     const jsCode = transpileEnlngToJS(lines);
     
     // Sandbox execution context
-    const sandboxFunction = new Function('display', 'smartDisplay', 'cat', 'enlng_count', 'append', jsCode);
+    const sandboxFunction = new Function('display', 'smartDisplay', 'cat', 'enlng_count', 'append', 'enlng_reverse', jsCode);
     
     const smartDisplay = (...args) => {
       let sep = ' ';
@@ -2312,12 +2348,12 @@ function executeEnlngInBrowser(sourceCode, terminal) {
     const cat = (...args) => args.map(a => String(a)).join('');
 
     const t0 = performance.now();
-    sandboxFunction(smartDisplay, smartDisplay, cat, enlng_count, append);
+    sandboxFunction(smartDisplay, smartDisplay, cat, enlng_count, append, enlng_reverse);
     const t1 = performance.now();
 
     const timePill = document.getElementById('runtimeExecTime');
     if (timePill) {
-      timePill.textContent = `Execution: ${(t1 - t0).toFixed(2)}ms (Zero GC)`;
+      timePill.textContent = `Execution: ${(t1 - t0).toFixed(2)}ms (Sandbox)`;
     }
 
     if (outputLines.length === 0) {
@@ -2326,7 +2362,9 @@ function executeEnlngInBrowser(sourceCode, terminal) {
       terminal.textContent = outputLines.join('\n');
     }
   } catch (err) {
-    terminal.innerHTML = `<span class="term-err">Enlng Runtime Error: ${escapeHtml(err.message)}</span>`;
+    const rawMsg = err.message || String(err);
+    const card = `--- Enlang Sandbox Error -----------------------------------------------------\nWhat: ${escapeHtml(rawMsg)}\nWhy:  Syntax or runtime constraint encountered in Web Sandbox mode.\n\nSuggestions:\n  * Run "python enlangg-bridge.py" in your terminal to enable full Native C Compilers.\n  * Check your statement syntax against Enlang documentation.\n-----------------------------------------------------------------------------`;
+    terminal.innerHTML = `<pre class="term-err" style="margin:0;white-space:pre-wrap;">${card}</pre>`;
     const timePill = document.getElementById('runtimeExecTime');
     if (timePill) {
       timePill.textContent = 'Execution: Interrupted';

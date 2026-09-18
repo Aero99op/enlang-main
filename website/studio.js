@@ -747,6 +747,7 @@ screen WalletHome:
       });
     }
     checkNativeBridge(false);
+    setInterval(() => checkNativeBridge(false), 2000);
   }, 500);
 
   // Helper to execute code via Native Bridge (~/.enlangg/bin)
