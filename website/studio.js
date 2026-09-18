@@ -321,9 +321,9 @@ screen WalletHome:
         const tab = document.createElement('div');
         tab.className = `tab ${file === activeFile ? 'active' : ''}`;
         tab.innerHTML = `
-          <span class="tab-icon" style="display:inline-flex;align-items:center;margin-right:4px;">👑</span>
-          <span>Get Started</span>
-          <span class="tab-close" title="Close Get Started">✕</span>
+          <span class="tab-icon" style="display:inline-flex;align-items:center;margin-right:4px;">🏆</span>
+          <span>Onboarding</span>
+          <span class="tab-close" title="Close Onboarding">✕</span>
         `;
         tab.addEventListener('click', (e) => {
           if (e.target.classList.contains('tab-close')) {
@@ -430,11 +430,11 @@ screen WalletHome:
       renderOnboardingUI();
       if (breadcrumbFolder && breadcrumbFile) {
         breadcrumbFolder.textContent = 'Help';
-        breadcrumbFile.textContent = 'Get Started';
+        breadcrumbFile.textContent = 'Onboarding';
       }
       if (statusDomainPill) {
-        statusDomainPill.innerHTML = '<span>👑 Walkthrough</span>';
-        statusDomainPill.title = 'Get Started with Enlangg Studio';
+        statusDomainPill.innerHTML = '<span>🏆 Onboarding</span>';
+        statusDomainPill.title = 'Interactive Onboarding Walkthrough';
       }
       return;
     } else {
@@ -4351,6 +4351,17 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
       const actExt = document.getElementById('actExtensions');
       if (actExt) actExt.click();
     });
+
+    // Complete Onboarding Handlers
+    const finishOnboarding = () => {
+      localStorage.setItem('enlangg_studio_onboarding_completed', 'true');
+      showStudioToast('🏆 Onboarding complete! Ready to build sovereign systems.', null);
+      openFile('src/main.enlng');
+    };
+    const completeOnboardingTopBtn = document.getElementById('completeOnboardingTopBtn');
+    if (completeOnboardingTopBtn) completeOnboardingTopBtn.addEventListener('click', finishOnboarding);
+    const completeOnboardingBottomBtn = document.getElementById('completeOnboardingBottomBtn');
+    if (completeOnboardingBottomBtn) completeOnboardingBottomBtn.addEventListener('click', finishOnboarding);
   }
 
   function openSettingsEditor() {
@@ -4774,7 +4785,13 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
   const COMMAND_PALETTE_ITEMS = [
     {
       category: 'Help',
-      label: 'Help: Welcome (Get Started)',
+      label: 'Help: 🏆 Interactive Onboarding Walkthrough',
+      shortcut: '',
+      action: () => openWelcomeTab()
+    },
+    {
+      category: 'Help',
+      label: 'Help: Onboarding (Get Started)',
       shortcut: '',
       action: () => openWelcomeTab()
     },
@@ -8305,6 +8322,8 @@ Provide code in fenced code blocks.`;
         openThemePicker();
         break;
 
+      case 'onboarding':
+      case 'openOnboarding':
       case 'openWelcome':
       case 'welcome':
         openWelcomeTab();
@@ -9316,6 +9335,19 @@ Provide code in fenced code blocks.`;
     const dismissPwaBtn = document.getElementById('dismissPwaBtn');
     const triggerPwaPromptBtn = document.getElementById('triggerPwaPromptBtn');
 
+    // Never show PWA install button in desktop application (Electron) or standalone mode
+    if (window.EnlangElectron || window.matchMedia('(display-mode: standalone)').matches) {
+      if (pwaInstallBtn) pwaInstallBtn.style.display = 'none';
+    } else {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (pwaInstallBtn && !window.EnlangElectron) {
+          pwaInstallBtn.style.display = 'inline-flex';
+        }
+      });
+    }
+
     const openPwaModal = () => {
       if (deferredPrompt) {
         deferredPrompt.prompt();
@@ -9924,8 +9956,9 @@ Provide code in fenced code blocks.`;
     applyTheme(savedTheme);
 
     // Check if Welcome / Onboarding Walkthrough page should be shown on startup
+    const isNewUser = !localStorage.getItem('enlangg_studio_onboarding_completed');
     const showWelcome = localStorage.getItem('enlangg_show_welcome_on_startup') !== 'false';
-    if (showWelcome) {
+    if (isNewUser || showWelcome) {
       if (!openTabs.includes('Get Started')) {
         openTabs.unshift('Get Started');
       }
@@ -9973,10 +10006,7 @@ Provide code in fenced code blocks.`;
     if (window.EnlangElectron && !localStorage.getItem('enlangg_studio_setup_seen')) {
       localStorage.setItem('enlangg_studio_setup_seen', 'true');
       setTimeout(() => {
-        if (typeof openSetupWizard === 'function') {
-          openSetupWizard();
-          showStudioToast('Welcome to Enlangg Studio! All 7 native C99 compilers verified.', null);
-        }
+        showStudioToast('🏆 Welcome to Enlangg Studio! Complete your interactive onboarding walkthrough.', null);
       }, 500);
     }
 
