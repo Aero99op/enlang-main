@@ -807,6 +807,24 @@ screen WalletHome:
       return;
     }
 
+    // ⚡ If offline, execute via in-browser Real WebAssembly Compiler Engine!
+    if (window.EnlangWasm) {
+      const ext = activeFile.split('.').pop() || 'enlng';
+      appendTerminal(`\n<span class="term-cyan">⚡ [Enlang WebAssembly] Compiling ${escapeHtml(activeFile)} with Real Compiler...</span>`);
+      window.EnlangWasm.execute(activeFile, code, ext).then(result => {
+        if (result) {
+          if (result.success) {
+            if (result.output) appendTerminal(`\n${escapeHtml(result.output)}`);
+            appendTerminal(`\n<span class="term-green">✔ [${escapeHtml(result.executor || 'WASM Engine')}] Succeeded in ${result.timeMs}ms (Exit 0)</span>`);
+          } else {
+            appendTerminal(`\n<pre class="term-err" style="margin:0;white-space:pre-wrap;">${escapeHtml(result.output || result.error)}</pre>`);
+            appendTerminal(`\n<span class="term-warn">⚠ [${escapeHtml(result.executor || 'WASM Engine')}] Exited with code ${result.exitCode} (${result.timeMs}ms)</span>`);
+          }
+        }
+      });
+      return;
+    }
+
     if (activeFile.endsWith('.enlng')) {
       executeCoreEnlng(code);
     } else if (activeFile.endsWith('.enlngf') || activeFile.endsWith('.enlngd')) {

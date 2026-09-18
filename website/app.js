@@ -1741,6 +1741,29 @@ function initPlayground() {
       if (ok) return;
     }
 
+    // ⚡ Execute using in-browser REAL WebAssembly Compiler Engine
+    if (window.EnlangWasm) {
+      const filename = isDb ? 'sandbox.enlngdb' : 'sandbox.enlng';
+      terminal.innerHTML = `<span class="term-cyan">⚡ [Enlang WebAssembly] Compiling ${filename} with Real Compiler...</span>\n`;
+      const result = await window.EnlangWasm.execute(filename, code, isDb ? 'enlngdb' : 'enlng');
+      if (result) {
+        if (result.success) {
+          let output = '';
+          if (result.output) output += escapeHtml(result.output) + '\n';
+          output += `<span class="term-green">✔ [${escapeHtml(result.executor || 'WASM Engine')}] Succeeded in ${result.timeMs}ms (Exit 0)</span>`;
+          terminal.innerHTML = output;
+        } else {
+          let output = '';
+          if (result.output || result.error) output += `<pre class="term-err" style="margin:0;white-space:pre-wrap;">${escapeHtml(result.output || result.error)}</pre>\n`;
+          output += `<span class="term-warn">⚠ [${escapeHtml(result.executor || 'WASM Engine')}] Exited with code ${result.exitCode} (${result.timeMs}ms)</span>`;
+          terminal.innerHTML = output;
+        }
+        const timePill = document.getElementById('runtimeExecTime');
+        if (timePill) timePill.textContent = `Execution: ${result.timeMs}ms (WASM)`;
+        return;
+      }
+    }
+
     if (isDb) {
       const stmts = extractStatements(code);
       executeEnlngDB(stmts, terminal, { mode: 'all' });
@@ -1773,6 +1796,29 @@ function initPlayground() {
       const filename = isDb ? 'selection.enlngdb' : 'selection.enlng';
       const ok = await executeViaPlaygroundBridge(filename, queryData.text, isDb ? 'enlngdb' : 'enlng');
       if (ok) return;
+    }
+
+    // ⚡ Execute selection using in-browser REAL WebAssembly Compiler Engine
+    if (window.EnlangWasm) {
+      const filename = isDb ? 'selection.enlngdb' : 'selection.enlng';
+      terminal.innerHTML = `<span class="term-cyan">⚡ [Enlang WebAssembly] Compiling ${filename} with Real Compiler...</span>\n`;
+      const result = await window.EnlangWasm.execute(filename, queryData.text, isDb ? 'enlngdb' : 'enlng');
+      if (result) {
+        if (result.success) {
+          let output = '';
+          if (result.output) output += escapeHtml(result.output) + '\n';
+          output += `<span class="term-green">✔ [${escapeHtml(result.executor || 'WASM Engine')}] Succeeded in ${result.timeMs}ms (Exit 0)</span>`;
+          terminal.innerHTML = output;
+        } else {
+          let output = '';
+          if (result.output || result.error) output += `<pre class="term-err" style="margin:0;white-space:pre-wrap;">${escapeHtml(result.output || result.error)}</pre>\n`;
+          output += `<span class="term-warn">⚠ [${escapeHtml(result.executor || 'WASM Engine')}] Exited with code ${result.exitCode} (${result.timeMs}ms)</span>`;
+          terminal.innerHTML = output;
+        }
+        const timePill = document.getElementById('runtimeExecTime');
+        if (timePill) timePill.textContent = `Execution: ${result.timeMs}ms (WASM)`;
+        return;
+      }
     }
 
     if (isDb) {
