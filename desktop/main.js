@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -38,15 +38,26 @@ function createWindow() {
 
   const iconPath = path.join(__dirname, 'icon.ico');
 
+  let winWidth = 1440;
+  let winHeight = 900;
+  try {
+    const primaryDisplay = screen.getPrimaryDisplay();
+    if (primaryDisplay && primaryDisplay.workAreaSize) {
+      winWidth = Math.min(1440, Math.max(1024, Math.floor(primaryDisplay.workAreaSize.width * 0.92)));
+      winHeight = Math.min(900, Math.max(640, Math.floor(primaryDisplay.workAreaSize.height * 0.9)));
+    }
+  } catch (_) {}
+
   mainWindow = new BrowserWindow({
-    width: 1440,
-    height: 900,
+    width: winWidth,
+    height: winHeight,
     minWidth: 1024,
     minHeight: 640,
+    center: true,
     title: 'Enlangg Studio',
     icon: fs.existsSync(iconPath) ? iconPath : undefined,
     backgroundColor: '#0d1117',
-    show: false, // Wait until ready-to-show for zero flicker
+    show: true, // Immediately show window to prevent hidden process hang
     titleBarStyle: 'hidden',
     titleBarOverlay: {
       color: '#18181b',
@@ -67,8 +78,24 @@ function createWindow() {
   const studioHtmlPath = fs.existsSync(bundledStudioPath) ? bundledStudioPath : devStudioPath;
   mainWindow.loadFile(studioHtmlPath);
 
+  // Guarantee window is shown and focused even if ready-to-show event is delayed
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+    if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  });
+
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[Enlangg Studio] Failed to load ${validatedURL}: ${errorCode} - ${errorDescription}`);
+    if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -363,17 +390,31 @@ ipcMain.handle('env:openFolder', async (event, target) => {
   return false;
 });
 
-// App Lifecycle
-app.whenReady().then(createWindow);
+// App Lifecycle with Single Instance Lock
+const gotTheLock = app.requestSingleInstanceLock();
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
 
-app.on('activate', () => {
-  if (mainWindow === null) {
-    createWindow();
-  }
-});
+  app.whenReady().then(createWindow);
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
+  });
+
+  app.on('activate', () => {
+    if (mainWindow === null) {
+      createWindow();
+    }
+  });
+}
