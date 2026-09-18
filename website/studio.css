@@ -73,12 +73,23 @@ html, body {
   font-size: 12px;
   flex-shrink: 0;
   z-index: 100;
+  -webkit-app-region: drag;
+  user-select: none;
 }
 
 .titlebar-left {
   display: flex;
   align-items: center;
   gap: 12px;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+  margin-right: 140px; /* Leave room for native Windows minimize/maximize/close buttons */
 }
 
 .titlebar-logo {

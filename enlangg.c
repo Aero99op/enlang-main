@@ -492,6 +492,18 @@ int main(int argc, char* argv[]) {
         return system("python enlangg-bridge.py");
     }
 
+    if (strcmp(argv[1], "studio") == 0 || strcmp(argv[1], "ide") == 0) {
+        printf("[ENLANGG] Starting Sovereign Desktop Studio (Electron)...\n");
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(NULL, exePath, MAX_PATH);
+        char* lastSlash = strrchr(exePath, '\\');
+        if (lastSlash) *lastSlash = '\0';
+
+        char cmd[2048];
+        snprintf(cmd, sizeof(cmd), "cmd /c \"cd /d \"%s\\desktop\" && npx electron .\"", exePath);
+        return system(cmd);
+    }
+
     if (strcmp(argv[1], "compile") == 0) {
         if (argc < 3) {
             fprintf(stderr, "[ERROR] Usage: enlangg compile <file.enlng> [-o <output.exe>]\n");

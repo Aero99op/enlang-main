@@ -801,6 +801,25 @@ screen WalletHome:
       return;
     }
 
+    // ⚡ 0. Direct Native Electron Execution (Zero localhost bridge, direct OS process pipe)
+    if (window.EnlangElectron && window.EnlangElectron.isElectron) {
+      const ext = activeFile.split('.').pop() || (isDb ? 'enlngdb' : 'enlng');
+      appendTerminal(`\n<span class="term-cyan">⚡ [Electron Native OS Engine] Executing ${escapeHtml(activeFile)}...</span>`);
+      window.EnlangElectron.runCompiler({ filename: activeFile, content: code, domain: ext }).then(result => {
+        if (result) {
+          if (result.success) {
+            if (result.output) appendTerminal(`\n${escapeHtml(result.output)}`);
+            appendTerminal(`\n<span class="term-green">✔ [${escapeHtml(result.executor)}] Succeeded in ${result.timeMs}ms (Exit 0)</span>`);
+          } else {
+            const fmt = typeof formatTerminalErrorHtml === 'function' ? formatTerminalErrorHtml : (window.formatTerminalErrorHtml || ((x) => `<span class="term-err">${escapeHtml(x)}</span>`));
+            appendTerminal(`\n${fmt(result.output || result.error)}`);
+            appendTerminal(`\n<span class="term-warn">⚠ [${escapeHtml(result.executor)}] Exited with code ${result.exitCode} (${result.timeMs}ms)</span>`);
+          }
+        }
+      });
+      return;
+    }
+
     // ⚡ If Native Bridge is connected, execute using ~/.enlangg/bin installed binaries!
     if (isNativeBridgeConnected) {
       const ext = activeFile.split('.').pop();
@@ -7513,6 +7532,52 @@ Provide code in fenced code blocks.`;
           saveVfs();
           renderFileTree();
           openFile(placeholder);
+        }
+        break;
+      }
+
+      case 'openFile': {
+        if (window.EnlangElectron && window.EnlangElectron.openFileDialog) {
+          window.EnlangElectron.openFileDialog().then(res => {
+            if (res && res.path) {
+              vfs[res.path] = res.content;
+              saveVfs();
+              renderFileTree();
+              openFile(res.path);
+              appendTerminal(`\n<span class="term-green">📂 Opened file: ${escapeHtml(res.path)}</span>`);
+            }
+          });
+        } else {
+          handleMenuAction('quickOpen');
+        }
+        break;
+      }
+
+      case 'openFolder': {
+        if (window.EnlangElectron && window.EnlangElectron.openDirectoryDialog) {
+          window.EnlangElectron.openDirectoryDialog().then(async (folderPath) => {
+            if (folderPath) {
+              const files = await window.EnlangElectron.listDirectory(folderPath);
+              if (files && files.length > 0) {
+                for (const f of files) {
+                  if (!f.isDirectory) {
+                    try {
+                      const content = await window.EnlangElectron.readFile(f.path);
+                      const relName = f.path.replace(folderPath, '').replace(/^[\\\/]/, '');
+                      vfs[relName] = content;
+                    } catch (_) {}
+                  }
+                }
+                saveVfs();
+                renderFileTree();
+                const first = Object.keys(vfs)[0];
+                if (first) openFile(first);
+                appendTerminal(`\n<span class="term-green">📂 Opened workspace folder: ${escapeHtml(folderPath)}</span>`);
+              }
+            }
+          });
+        } else {
+          alert('Open Folder is available in the Enlangg Studio Desktop App.');
         }
         break;
       }

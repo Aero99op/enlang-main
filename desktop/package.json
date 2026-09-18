@@ -1,0 +1,50 @@
+{
+  "name": "enlangg-studio",
+  "productName": "Enlangg Studio",
+  "version": "2.0.0",
+  "description": "Sovereign Native Desktop IDE for Enlang Ecosystem",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win"
+  },
+  "keywords": [
+    "enlang",
+    "enlangg",
+    "ide",
+    "compiler",
+    "studio"
+  ],
+  "author": "Enlang Sovereign Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "org.enlangg.studio",
+    "productName": "Enlangg Studio",
+    "directories": {
+      "output": "../dist-desktop"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "../website/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Enlangg Studio"
+    }
+  }
+}
