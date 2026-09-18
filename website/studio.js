@@ -976,6 +976,30 @@ screen WalletHome:
     const dbResultsPane = document.getElementById('dbWorkbenchResultsPane');
     if (dbResultsPane) dbResultsPane.style.display = 'flex';
 
+    // ⚡ Direct Native Electron Execution for EnlangDB (Bundled enlngdb.exe)
+    if (window.EnlangElectron && window.EnlangElectron.isElectron) {
+      appendTerminal(`\n<span class="term-cyan">⚡ [Electron Native OS Engine] Executing EnlangDB script with bundled enlngdb.exe...</span>`);
+      window.EnlangElectron.runCompiler({ filename: activeFile || 'script.enlngdb', content: sqlCode, domain: 'enlngdb' }).then(result => {
+        if (result) {
+          if (result.success) {
+            if (result.output) appendTerminal(`\n${escapeHtml(result.output)}`);
+            appendTerminal(`\n<span class="term-green">✔ [${escapeHtml(result.executor)}] Succeeded in ${result.timeMs}ms (Exit 0)</span>`);
+            const tables = parseAsciiTables(result.output);
+            if (tables.length > 0) {
+              renderParsedWorkbenchTable(tables[tables.length - 1], 'All Statements', result.timeMs, result.output);
+            } else {
+              renderParsedWorkbenchTable(null, 'All Statements', result.timeMs, result.output);
+            }
+          } else {
+            const fmt = typeof formatTerminalErrorHtml === 'function' ? formatTerminalErrorHtml : (window.formatTerminalErrorHtml || ((x) => `<span class="term-err">${escapeHtml(x)}</span>`));
+            appendTerminal(`\n${fmt(result.output || result.error)}`);
+            appendTerminal(`\n<span class="term-warn">⚠ [${escapeHtml(result.executor)}] Exited with code ${result.exitCode} (${result.timeMs}ms)</span>`);
+          }
+        }
+      });
+      return;
+    }
+
     // ⚡ If Native Bridge is connected, execute using ~/.enlangg/bin/enlngdb.exe!
     if (isNativeBridgeConnected) {
       executeViaNativeBridge(activeFile || 'script.enlngdb', sqlCode, 'enlngdb').then(result => {

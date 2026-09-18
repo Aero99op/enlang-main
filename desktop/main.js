@@ -10,21 +10,33 @@ function findBinary(name) {
   const isWin = process.platform === 'win32';
   const targetName = isWin ? `${name}.exe` : name;
 
-  // 1. Check user installed ~/.enlangg/bin
+  // 1. Packaged App resources/bin directory (Standalone installer installation)
+  if (process.resourcesPath) {
+    const packagedBin = path.join(process.resourcesPath, 'bin', targetName);
+    if (fs.existsSync(packagedBin)) return packagedBin;
+  }
+
+  // 2. Desktop bin directory (development / local bundled)
+  const localBin = path.join(__dirname, 'bin', targetName);
+  if (fs.existsSync(localBin)) return localBin;
+
+  // 3. User installed ~/.enlangg/bin
   const homeDir = process.env.USERPROFILE || process.env.HOME || '';
   const userBin = path.join(homeDir, '.enlangg', 'bin', targetName);
   if (fs.existsSync(userBin)) return userBin;
 
-  // 2. Check repo root
+  // 4. Repo root binary
   const repoBin = path.join(__dirname, '..', targetName);
   if (fs.existsSync(repoBin)) return repoBin;
 
-  // 3. Fall back to name for PATH lookup
-  return name;
+  // 5. Fall back to targetName for PATH lookup
+  return targetName;
 }
 
 function createWindow() {
   Menu.setApplicationMenu(null); // Remove default retro menu bar
+
+  const iconPath = path.join(__dirname, 'icon.ico');
 
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -32,6 +44,7 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 640,
     title: 'Enlangg Studio',
+    icon: fs.existsSync(iconPath) ? iconPath : undefined,
     backgroundColor: '#0d1117',
     show: false, // Wait until ready-to-show for zero flicker
     titleBarStyle: 'hidden',
@@ -49,7 +62,9 @@ function createWindow() {
     }
   });
 
-  const studioHtmlPath = path.join(__dirname, '..', 'website', 'studio.html');
+  const bundledStudioPath = path.join(__dirname, 'ui', 'studio.html');
+  const devStudioPath = path.join(__dirname, '..', 'website', 'studio.html');
+  const studioHtmlPath = fs.existsSync(bundledStudioPath) ? bundledStudioPath : devStudioPath;
   mainWindow.loadFile(studioHtmlPath);
 
   mainWindow.once('ready-to-show', () => {

@@ -50,3 +50,7 @@ recordings/
 
 # Local deployment bundles
 .vercel/
+dist-desktop/
+desktop/ui/
+website/enlangg-studio-setup.exe
+*.blockmap

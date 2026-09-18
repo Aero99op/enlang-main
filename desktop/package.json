@@ -5,9 +5,10 @@
   "description": "Sovereign Native Desktop IDE for Enlang Ecosystem",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder --win"
+    "prep": "node prep-ui.js",
+    "start": "node prep-ui.js && electron .",
+    "pack": "node prep-ui.js && electron-builder --dir",
+    "dist": "node prep-ui.js && electron-builder --win"
   },
   "keywords": [
     "enlang",
@@ -31,20 +32,55 @@
     "files": [
       "main.js",
       "preload.js",
-      "../website/**/*"
+      "icon.ico",
+      "ui/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": ["**/*"]
+      }
     ],
     "win": {
       "target": [
         "nsis",
         "portable"
-      ]
+      ],
+      "icon": "icon.ico",
+      "legalTrademarks": "Enlang Sovereign Ecosystem"
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
+      "allowElevation": true,
+      "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "Enlangg Studio"
-    }
+      "shortcutName": "Enlangg Studio",
+      "runAfterFinish": true,
+      "license": "LICENSE.txt",
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "installerHeaderIcon": "icon.ico",
+      "uninstallDisplayName": "Enlangg Studio",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "fileAssociations": [
+      {
+        "ext": "enlng",
+        "name": "Enlang Source File",
+        "description": "Enlang Language Source File",
+        "icon": "icon.ico",
+        "role": "Editor"
+      },
+      {
+        "ext": "enlngdb",
+        "name": "Enlang Database File",
+        "description": "Enlang Flat-File Database Script",
+        "icon": "icon.ico",
+        "role": "Editor"
+      }
+    ]
   }
 }

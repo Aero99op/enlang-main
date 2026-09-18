@@ -106,12 +106,31 @@
     <section class="install-platform-section" id="platform-windows" style="display: block;">
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px;">
         
-        <!-- Method 1: GUI Setup -->
-        <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 28px; display: flex; flex-direction: column;">
-          <span style="font-size: 0.76rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Recommended for Windows 10/11</span>
-          <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Windows All-in-One Installer</h3>
+        <!-- Method 1: Enlangg Studio Desktop IDE Setup (VS Code Style Experience) -->
+        <div style="background: var(--bg-card); border: 1px solid var(--accent-emerald); border-radius: var(--radius-lg); padding: 28px; display: flex; flex-direction: column; position: relative; box-shadow: 0 8px 32px rgba(16, 185, 129, 0.12);">
+          <span style="font-size: 0.76rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">★ Flagship Desktop IDE (VS Code Experience)</span>
+          <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Enlangg Studio Desktop Setup</h3>
           <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
-            Standalone setup wizard that installs the complete <strong>All-in-One Sovereign Suite</strong> bundling all 6 domain engines (<code>enlng</code>, <code>enlngdb</code>, <code>enlngf</code>, <code>enlngd</code>, <code>enlngs</code>, <code>enlngm</code>) + Master Runner (<code>enlangg</code>) into <code>%USERPROFILE%\.enlangg\bin</code>, configures User PATH automatically, and registers all file associations.
+            Standalone Windows Setup Wizard (<code>.exe</code>) that installs <strong>Enlangg Studio</strong> — the pure native desktop IDE. Bundles the complete VS Code UI clone, dark theme, native file dialogs, integrated terminal, and all 7 C99 compilers. <strong>100% offline, zero Node.js required, zero Python required.</strong>
+          </p>
+          <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">
+            Package: Enlangg-Studio-Setup-2.0.0.exe (or enlangg-studio-setup.exe)<br>
+            Payload: Pure Windows 64-bit Desktop Application + All 7 Native C99 Compilers<br>
+            Setup Wizard: Custom install directory, Desktop shortcut, Start menu, File associations (.enlng, .enlngdb)<br>
+            Requirements: Windows 10 / 11 · Zero Prerequisites · Zero Configuration
+          </div>
+          <a href="enlangg-studio-setup.exe" download="Enlangg-Studio-Setup-2.0.0.exe" class="btn btn-primary" style="margin-top: auto; justify-content: center; font-weight: 700; background: var(--accent-emerald); border-color: var(--accent-emerald);">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Download Enlangg Studio Setup (.exe)</span>
+          </a>
+        </div>
+
+        <!-- Method 2: CLI Suite GUI Setup -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 28px; display: flex; flex-direction: column;">
+          <span style="font-size: 0.76rem; font-weight: 700; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Lightweight Terminal Toolchain</span>
+          <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Windows All-in-One CLI Suite</h3>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+            Lightweight setup wizard that installs the complete <strong>All-in-One Sovereign Suite</strong> bundling all 6 domain engines (<code>enlng</code>, <code>enlngdb</code>, <code>enlngf</code>, <code>enlngd</code>, <code>enlngs</code>, <code>enlngm</code>) + Master Runner (<code>enlangg</code>) into <code>%USERPROFILE%\.enlangg\bin</code>, configures User PATH automatically, and registers all file associations.
           </p>
           <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">
             Package: enlangg-setup.exe (or setup.exe)<br>
@@ -121,7 +140,7 @@
           </div>
           <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="btn btn-primary" style="margin-top: auto; justify-content: center;">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            <span>Download All-in-One Suite (.exe)</span>
+            <span>Download CLI Toolchain (.exe)</span>
           </a>
         </div>
 
