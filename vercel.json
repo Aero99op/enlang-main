@@ -25,6 +25,23 @@
       ]
     },
     {
+      "source": "/enlangg-studio-setup.exe",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/octet-stream"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment; filename=\"Enlangg-Studio-Setup-2.0.0.exe\""
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/enlangg-setup.exe",
       "headers": [
         {
