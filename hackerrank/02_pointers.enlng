@@ -1,0 +1,67 @@
+type enlng
+
+# HackerRank Challenge: "Pointers in C" (Sovereign Enlang Track)
+# Task:
+# Implement 'update' function that takes references to a and b.
+# Set 'a' to their sum (a + b), and 'b' to their absolute difference (|a - b|).
+# Modifies values in place (simulating pointer dereference *a and *b).
+
+function parse_int with s:
+    remember digits as {
+        "0": 0, "1": 1, "2": 2, "3": 3, "4": 4,
+        "5": 5, "6": 6, "7": 7, "8": 8, "9": 9
+    }
+    remember chars as split(s, "")
+    remember res as 0
+    remember is_neg as false
+    for ch in chars:
+        when ch is "-":
+            is_neg = true
+        otherwise:
+            when has_key(digits, ch):
+                res = (res * 10) + digits[ch]
+    when is_neg:
+        res = 0 - res
+    give res
+
+# Function: update(int *a, int *b)
+# Receives container reference holding [a, b] and updates values in place
+function update with ptr:
+    remember val_a as ptr[0]
+    remember val_b as ptr[1]
+    
+    # *a = a + b
+    ptr[0] = val_a + val_b
+    
+    # *b = |a - b|
+    remember diff as val_a - val_b
+    when diff < 0:
+        diff = 0 - diff
+    ptr[1] = diff
+
+# --- Code Stub (main) ---
+ask line1
+remember tokens as split(line1, " ")
+remember a_str as ""
+remember b_str as ""
+
+when len(tokens) >= 2:
+    a_str = tokens[0]
+    b_str = tokens[1]
+otherwise:
+    a_str = line1
+    ask line2
+    b_str = line2
+
+remember a as parse_int with a_str
+remember b as parse_int with b_str
+
+# Allocate pointer container [a, b]
+remember ptr as [a, b]
+
+# Call update in place
+remember _ as update with ptr
+
+# Print modified values (main stub)
+show ptr[0]
+show ptr[1]

@@ -1,0 +1,12 @@
+type enlng
+
+# HackerRank Challenge: "Playing With Characters"
+# Reads a character, a word/string, and a full sentence from standard input
+# and outputs each on a separate line.
+
+ask ch
+ask s
+ask sen
+show ch
+show s
+show sen

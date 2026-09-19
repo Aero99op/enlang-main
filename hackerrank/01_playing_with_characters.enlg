@@ -1,0 +1,13 @@
+# HackerRank Challenge: "Playing With Characters" (Enlang Language Track)
+# Reads a character, a string, and a sentence from standard input
+# and outputs each on a separate line.
+
+import sys
+
+declare ch = call sys.stdin.readline
+declare s = call sys.stdin.readline
+declare sen = call sys.stdin.readline
+
+show call ch.strip
+show call s.strip
+show call sen.strip

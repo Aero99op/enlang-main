@@ -1,0 +1,70 @@
+type enlng
+
+# ==============================================================================
+# Sovereign Enlang Official Test Suite
+# Test: test_stdlib_student_pointers.enlng
+# Validates lib_std.enlng pointer primitives, in-place memory mutations,
+# math helpers, and connected natural English syntax.
+# ==============================================================================
+
+use "lib_std.enlng"
+
+show "=== 1. Validating Pointer Creation and Dereference ==="
+remember p1 as pointer with 42
+show value of p1
+
+show "=== 2. Validating In-Place Mutation via Pointer ==="
+change value of p1 to 100
+show value of p1
+
+set_pointer with p1, 250
+show get_pointer with p1
+
+show "=== 3. Validating In-Place Multi-Pointer Operations ==="
+function transfer with from_acc, to_acc, amt:
+    remember s_bal as value of from_acc
+    remember r_bal as value of to_acc
+    change value of from_acc to (s_bal minus amt)
+    change value of to_acc to (r_bal plus amt)
+
+remember alice as pointer with 500
+remember bob as pointer with 200
+
+transfer with alice, bob, 150
+
+show value of alice    # 350
+show value of bob      # 350
+
+show "=== 4. Validating Pointer Swapping ==="
+remember x as pointer with 10
+remember y as pointer with 99
+
+swap_pointers with x, y
+
+show value of x    # 99
+show value of y    # 10
+
+show "=== 5. Validating Container Cell Primitives ==="
+remember c1 as make_cell with 77
+remember c2 as make_cell with 88
+
+set_cell with c1, 777
+show get_cell with c1
+
+swap_cells with c1, c2
+show get_cell with c1    # 88
+show get_cell with c2    # 777
+
+show "=== 6. Validating Mathematical & List Helpers ==="
+show difference with 50, 80    # 30
+show max_of with 10, 45        # 45
+show min_of with 10, 45        # 10
+show abs_val with (0 minus 25) # 25
+
+remember numbers as [5, 2, 8, 1, 9]
+remember sorted_nums as sort_list with numbers
+show sorted_nums[0]            # 1
+show sorted_nums[4]            # 9
+show sum_of_list with sorted_nums # 25
+
+show "=== All Pointer & Standard Student Library Tests Passed Successfully ==="

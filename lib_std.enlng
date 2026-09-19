@@ -1,0 +1,119 @@
+type enlng
+
+# ==============================================================================
+# 👑 ENLANG SOVEREIGN STANDARD STUDENT LIBRARY (lib_std.enlng)
+# High-Level Natural English Primitives — Zero Boilerplate, Pure Enlang
+# ==============================================================================
+
+# --- 1. Robust Type Parsers ---
+function parse_int with text:
+    remember digits as {
+        "0": 0, "1": 1, "2": 2, "3": 3, "4": 4,
+        "5": 5, "6": 6, "7": 7, "8": 8, "9": 9
+    }
+    remember chars as split(text, "")
+    remember result as 0
+    remember is_neg as false
+    for ch in chars:
+        when ch is "-":
+            is_neg = true
+        otherwise:
+            when has_key(digits, ch):
+                result = (result times 10) plus digits[ch]
+    when is_neg:
+        result = 0 minus result
+    give result
+
+# --- 2. High-Level Natural Input Readers ---
+function read_number:
+    ask raw
+    give parse_int with raw
+
+function read_numbers_line:
+    ask raw
+    remember tokens as split(raw, " ")
+    remember nums as []
+    for token in tokens:
+        when len(token) is greater than 0:
+            append(nums, parse_int with token)
+    give nums
+
+# --- 3. Mathematical Helpers ---
+function abs_val with n:
+    when n is less than 0:
+        give 0 minus n
+    give n
+
+function difference with a, b:
+    remember diff as a minus b
+    when diff is less than 0:
+        diff = 0 minus diff
+    give diff
+
+function max_of with a, b:
+    when a is greater than b:
+        give a
+    give b
+
+function min_of with a, b:
+    when a is less than b:
+        give a
+    give b
+
+function is_even with n:
+    when n modulo 2 is 0:
+        give true
+    give false
+
+function is_odd with n:
+    when n modulo 2 is 1:
+        give true
+    give false
+
+# --- 4. Pointer & Memory Reference Helpers ---
+# 4.1 Named Reference Entity (Pure English Flow)
+function pointer with val:
+    give {"value": val}
+
+function ref with val:
+    give {"val": val}
+
+function get_pointer with ptr:
+    give value of ptr
+
+function set_pointer with ptr, new_val:
+    change value of ptr to new_val
+
+function swap_pointers with a, b:
+    remember temp as value of a
+    change value of a to (value of b)
+    change value of b to temp
+
+# 4.2 Minimalist Container Cells (Index 0 Flow)
+function make_cell with val:
+    give [val]
+
+function get_cell with cell:
+    give cell at 0
+
+function set_cell with cell, new_val:
+    cell at 0 = new_val
+
+function swap_cells with a, b:
+    remember temp as a at 0
+    a at 0 = b at 0
+    b at 0 = temp
+
+# --- 5. Collection & List Helpers ---
+function sum_of_list with items:
+    remember total as 0
+    for item in items:
+        total = total plus item
+    give total
+
+function sort_list with items:
+    repeat until sorted:
+        for each pair in items:
+            when left of pair is greater than right of pair:
+                swap pair
+    give items
