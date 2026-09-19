@@ -437,6 +437,9 @@
           <div class="sidebar-header">
             <span>Extensions: Marketplace</span>
             <div class="sidebar-header-actions">
+              <button class="sidebar-action-btn" id="openManifestModalBtn" title="Load Custom Extension Manifest (package.json) / VSIX">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
               <button class="sidebar-action-btn" id="refreshExtensionsBtn" title="Refresh Extensions List">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
               </button>
@@ -1549,6 +1552,11 @@ balance <span class="syn-kw">increases by</span> 250
             </div>
 
           </div>
+
+          <!-- Extension Webview Editor Panes Container (Full VS Code Editor Tab Webviews) -->
+          <div class="extension-editor-panes-container" id="extensionEditorPanesContainer" style="display:none;flex:1;height:100%;width:100%;position:relative;">
+            <!-- Dynamically mounted full-editor webview panels go here -->
+          </div>
         </div>
 
         <!-- Resizer Handle Y (between Editor and Bottom Dock) -->
@@ -1824,13 +1832,79 @@ balance <span class="syn-kw">increases by</span> 250
     </div>
   </div>
 
-  <!-- Modal: Quick Open File (Ctrl + P) -->
+  <!-- Modal: Quick Open File (Ctrl + P) / Command Palette (Ctrl + Shift + P) -->
   <div class="modal-backdrop" id="quickOpenModal">
-    <div class="modal-box" style="width:520px;">
+    <div class="modal-box" style="width:560px;">
       <div class="modal-body" style="padding:10px;">
-        <input type="text" id="quickOpenInput" class="modal-input" placeholder="Type name of file to open..." />
-        <div id="quickOpenList" style="margin-top:8px;max-height:240px;overflow-y:auto;">
-          <!-- Quick open file matches -->
+        <input type="text" id="quickOpenInput" class="modal-input" placeholder="Type file to open or '>' for commands..." />
+        <div id="quickOpenList" style="margin-top:8px;max-height:280px;overflow-y:auto;">
+          <!-- Quick open file / command matches -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Load Custom Extension Manifest (package.json / VSIX) -->
+  <div class="modal-backdrop" id="extensionManifestModal">
+    <div class="modal-box" style="width:720px;max-width:92vw;max-height:88vh;display:flex;flex-direction:column;">
+      <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--vscode-border);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:16px;">🧩</span>
+          <span style="font-weight:700;color:var(--vscode-text-bright);font-size:13px;">Load Extension Manifest (package.json) / VSIX</span>
+        </div>
+        <button class="sidebar-action-btn" id="closeExtManifestModalBtn">✕</button>
+      </div>
+      <div class="modal-body" style="padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;flex:1;">
+        <div style="font-size:11.5px;color:var(--vscode-text-muted);line-height:1.5;">
+          Paste any VS Code or Enlangg extension <code style="color:#4ec9b0;">package.json</code> manifest below. Enlangg Studio will automatically parse declarative <code style="color:#38bdf8;">contributes</code> (Activity Bar icons, Sidebar Views, Command Palette entries, and full Editor Webview Panels).
+        </div>
+        
+        <!-- Action buttons row: Sample Manifests & File Upload -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <button class="titlebar-btn" id="loadSampleExtInspectorBtn" style="font-size:11px;">
+            <span>⚡ Sample 1: Sovereign Visual Inspector</span>
+          </button>
+          <button class="titlebar-btn" id="loadSampleExtDbWebviewBtn" style="font-size:11px;">
+            <span>🗄️ Sample 2: Interactive Database Studio Webview</span>
+          </button>
+          <label class="titlebar-btn" style="font-size:11px;cursor:pointer;">
+            <span>📂 Upload package.json...</span>
+            <input type="file" id="uploadManifestFileInput" accept=".json,.vsix" style="display:none;" />
+          </label>
+        </div>
+
+        <!-- JSON Textarea -->
+        <div style="position:relative;flex:1;min-height:240px;display:flex;flex-direction:column;">
+          <textarea id="manifestJsonInput" class="modal-input" spellcheck="false" style="font-family:'Cascadia Code','Fira Code',monospace;font-size:11.5px;height:240px;resize:vertical;line-height:1.45;color:#9cdcfe;background:rgba(0,0,0,0.35);padding:10px;border:1px solid var(--vscode-border);border-radius:4px;" placeholder='{
+  "name": "my-sovereign-tool",
+  "displayName": "My Sovereign Tool",
+  "version": "1.0.0",
+  "publisher": "developer",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        { "id": "my-tool", "title": "My Tool", "icon": "⚡" }
+      ]
+    },
+    "views": {
+      "my-tool": [
+        { "id": "my-tool.view", "name": "Dashboard", "type": "webview" }
+      ]
+    },
+    "commands": [
+      { "command": "my-tool.openPanel", "title": "Open Editor Webview Panel" }
+    ]
+  }
+}'></textarea>
+        </div>
+        
+        <div id="manifestParseError" style="display:none;color:#f87171;font-size:11.5px;padding:6px 10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:4px;"></div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--vscode-border);">
+        <span style="font-size:11px;color:var(--vscode-text-muted);">Supports VS Code Manifest RFC v1.85+</span>
+        <div style="display:flex;gap:8px;">
+          <button class="titlebar-btn" id="cancelExtManifestBtn">Cancel</button>
+          <button class="titlebar-btn primary" id="applyExtManifestBtn" style="font-weight:700;">Install &amp; Activate Manifest</button>
         </div>
       </div>
     </div>

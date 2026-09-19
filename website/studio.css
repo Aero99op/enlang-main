@@ -3929,3 +3929,63 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
 }
+
+/* ==========================================================================
+   EXTENSION EDITOR TAB WEBVIEW PANES & MANIFEST SYSTEM
+   ========================================================================== */
+
+.extension-editor-panes-container {
+  display: none;
+  flex: 1;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  background: var(--vscode-editor-bg, #18181b);
+}
+
+.extension-editor-pane {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--vscode-editor-bg, #18181b);
+  z-index: 10;
+}
+
+.extension-editor-header {
+  height: 35px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--vscode-border, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  flex-shrink: 0;
+}
+
+.extension-editor-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-text-bright, #fff);
+}
+
+.extension-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.extension-editor-iframe {
+  flex: 1;
+  width: 100%;
+  height: calc(100% - 35px);
+  border: none;
+  background: var(--vscode-editor-bg, #18181b);
+}
+

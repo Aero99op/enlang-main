@@ -355,6 +355,28 @@ screen WalletHome:
         continue;
       }
 
+      if (file.startsWith('ext:')) {
+        const panelId = file.substring(4);
+        const panel = (typeof extensionHostRuntime !== 'undefined' && extensionHostRuntime._editorPanels) ? extensionHostRuntime._editorPanels.get(panelId) : null;
+        const tabTitle = panel ? panel.title : 'Webview Panel';
+        const tab = document.createElement('div');
+        tab.className = `tab ${file === activeFile ? 'active' : ''}`;
+        tab.innerHTML = `
+          <span class="tab-icon" style="display:inline-flex;align-items:center;margin-right:4px;">🧩</span>
+          <span>${escapeHtml(tabTitle)}</span>
+          <span class="tab-close" title="Close Webview Tab">✕</span>
+        `;
+        tab.addEventListener('click', (e) => {
+          if (e.target.classList.contains('tab-close')) {
+            closeTab(file);
+            return;
+          }
+          openFile(file);
+        });
+        editorTabsList.appendChild(tab);
+        continue;
+      }
+
       const info = getDomainInfo(file);
       const tab = document.createElement('div');
       tab.className = `tab ${file === activeFile ? 'active' : ''} ${dirtyFiles.has(file) ? 'dirty' : ''}`;
@@ -388,6 +410,18 @@ screen WalletHome:
       openSettingsEditor();
       return;
     }
+    if (filepath.startsWith('ext:')) {
+      if (!openTabs.includes(filepath)) {
+        openTabs.push(filepath);
+      }
+      activeFile = filepath;
+      renderTabs();
+      renderFileTree();
+      loadActiveFileContent();
+      updateBreadcrumbs();
+      updateDomainPill();
+      return;
+    }
     if (!vfs[filepath]) return;
     if (!openTabs.includes(filepath)) {
       openTabs.push(filepath);
@@ -403,6 +437,12 @@ screen WalletHome:
   // Close Tab
   function closeTab(filepath) {
     openTabs = openTabs.filter(t => t !== filepath);
+    if (filepath.startsWith('ext:')) {
+      const panelId = filepath.substring(4);
+      if (typeof extensionHostRuntime !== 'undefined' && extensionHostRuntime.disposeEditorPanel) {
+        extensionHostRuntime.disposeEditorPanel(panelId, true);
+      }
+    }
     if (activeFile === filepath) {
       activeFile = openTabs.length > 0 ? openTabs[openTabs.length - 1] : '';
     }
@@ -420,6 +460,35 @@ screen WalletHome:
     const splitBody = document.querySelector('.editor-split-body');
     const wbBar = document.getElementById('enlngdbWorkbenchBar');
     const dbPane = document.getElementById('dbWorkbenchResultsPane');
+    const extPanesContainer = document.getElementById('extensionEditorPanesContainer');
+
+    if (activeFile.startsWith('ext:')) {
+      if (splitBody) splitBody.style.display = 'none';
+      if (settingsPane) settingsPane.style.display = 'none';
+      if (welcomePane) welcomePane.style.display = 'none';
+      if (wbBar) wbBar.style.display = 'none';
+      if (dbPane) dbPane.style.display = 'none';
+      if (extPanesContainer) {
+        extPanesContainer.style.display = 'flex';
+        const targetPanelId = activeFile.substring(4);
+        document.querySelectorAll('.extension-editor-pane').forEach(p => {
+          p.style.display = p.id === `ext_pane_${targetPanelId}` ? 'flex' : 'none';
+        });
+      }
+      const panel = (typeof extensionHostRuntime !== 'undefined' && extensionHostRuntime._editorPanels) ? extensionHostRuntime._editorPanels.get(activeFile.substring(4)) : null;
+      const pTitle = panel ? panel.title : 'Extension Webview';
+      if (breadcrumbFolder && breadcrumbFile) {
+        breadcrumbFolder.textContent = 'Extensions';
+        breadcrumbFile.textContent = pTitle;
+      }
+      if (statusDomainPill) {
+        statusDomainPill.innerHTML = `<span>🧩 ${escapeHtml(pTitle)}</span>`;
+        statusDomainPill.title = 'Extension Webview Panel';
+      }
+      return;
+    } else {
+      if (extPanesContainer) extPanesContainer.style.display = 'none';
+    }
 
     if (activeFile === 'Get Started') {
       if (splitBody) splitBody.style.display = 'none';
@@ -476,7 +545,7 @@ screen WalletHome:
     updateEditorHighlight();
 
     // If active file is frontend or mobile, optionally refresh live preview
-    if (activeFile.endsWith('.enlngf') || activeFile.endsWith('.enlngd') || activeFile.endsWith('.enlngm')) {
+    if (activeFile.endsWith('.enlngf') || activeFile.endsWith('.enlngd') || activeFile.endsWith('.enlngs')) {
       renderLivePreview();
     } else if (activeFile.endsWith('.enlngdb')) {
       syncEnlngDbWorkbenchView();
@@ -508,6 +577,12 @@ screen WalletHome:
       breadcrumbFile.textContent = 'Settings';
       return;
     }
+    if (activeFile.startsWith('ext:')) {
+      const panel = (typeof extensionHostRuntime !== 'undefined' && extensionHostRuntime._editorPanels) ? extensionHostRuntime._editorPanels.get(activeFile.substring(4)) : null;
+      breadcrumbFolder.textContent = 'Extensions';
+      breadcrumbFile.textContent = panel ? panel.title : 'Webview Panel';
+      return;
+    }
     const parts = activeFile.split('/');
     if (parts.length > 1) {
       breadcrumbFolder.textContent = parts[0];
@@ -534,6 +609,13 @@ screen WalletHome:
     if (activeFile === 'Settings') {
       statusDomainPill.innerHTML = '<span>Settings</span>';
       statusDomainPill.title = 'Enlangg Studio Workspace & User Preferences';
+      return;
+    }
+    if (activeFile.startsWith('ext:')) {
+      const panel = (typeof extensionHostRuntime !== 'undefined' && extensionHostRuntime._editorPanels) ? extensionHostRuntime._editorPanels.get(activeFile.substring(4)) : null;
+      const pTitle = panel ? panel.title : 'Webview Panel';
+      statusDomainPill.innerHTML = `<span>🧩 ${escapeHtml(pTitle)}</span>`;
+      statusDomainPill.title = 'Extension Webview Panel';
       return;
     }
     const info = getDomainInfo(activeFile);
@@ -5699,7 +5781,22 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
       { category: 'Open Extension', label: 'open copilot — Open Antigravity AI Copilot Drawer', searchTerms: 'open copilot ai assistant drawer', shortcut: 'Copilot', action: () => openExtensionInExpectedWay('copilot') }
     ];
 
+    // Contributed commands from extension manifests (extensionHostRuntime._commands)
+    const contributedExtensionCmds = [];
+    if (typeof extensionHostRuntime !== 'undefined' && extensionHostRuntime._commands) {
+      extensionHostRuntime._commands.forEach((cmd, cmdId) => {
+        contributedExtensionCmds.push({
+          category: cmd.category || 'Extension',
+          label: `${cmd.title || cmdId}`,
+          searchTerms: `${cmd.category || ''} ${cmd.title || ''} ${cmdId}`,
+          shortcut: cmd.extId || 'Extension',
+          action: () => extensionHostRuntime.executeCommand(cmdId)
+        });
+      });
+    }
+
     const combinedCommands = [
+      ...contributedExtensionCmds,
       ...dynamicOpenInstalledCmds,
       ...builtinOpenCmds,
       ...COMMAND_PALETTE_ITEMS
@@ -5866,6 +5963,10 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
       this._webviewProviders = new Map();
       /** @type {Set<string>} Set of extIds that have been manifest-activated */
       this._activatedExtensions = new Set();
+      /** @type {Map<string, Object>} Open editor tab webview panels keyed by panelId */
+      this._editorPanels = new Map();
+      /** @type {Map<string, Object>} Registered commands keyed by commandId */
+      this._commands = new Map();
       /** @type {number} Counter for generating unique DOM IDs */
       this._idCounter = 0;
 
@@ -6019,6 +6120,31 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
 
       // Also parse commands if present
       if (contributes.commands && Array.isArray(contributes.commands)) {
+        contributes.commands.forEach(cmd => {
+          if (!cmd || !cmd.command) return;
+          const cmdId = cmd.command;
+          const cmdTitle = cmd.title || cmdId;
+          const cmdCategory = cmd.category || (manifest.displayName || manifest.name || 'Extension');
+          this.registerCommand(cmdId, () => {
+            // If command name implies opening an editor panel or workbench
+            if (cmdId.toLowerCase().includes('open') || cmdId.toLowerCase().includes('panel') || cmdId.toLowerCase().includes('canvas') || cmdId.toLowerCase().includes('workbench')) {
+              this.createWebviewPanel(
+                cmdId,
+                cmdTitle,
+                1,
+                { enableScripts: true }
+              );
+            } else {
+              showStudioToast(`Executed extension command: ${cmdTitle}`, null);
+              appendTerminal(`\n<span class="term-green">[ExtensionHost] Command executed: "${cmdId}"</span>`);
+            }
+          }, {
+            id: cmdId,
+            title: cmdTitle,
+            category: cmdCategory,
+            extId: extId
+          });
+        });
         const cmdCount = contributes.commands.length;
         appendTerminal(`<span class="term-cyan">[ExtensionHost] Registered ${cmdCount} command(s) from ${extId}</span>`);
       }
@@ -6501,10 +6627,11 @@ window.addEventListener('message', function(e) {
     <div class="wv-title" style="font-size:11.5px;">Message Console</div>
     <div class="wv-subtitle">Send messages to the extension host runtime</div>
     <input type="text" class="wv-input" id="msgInput" placeholder="Type a message to send to host...">
-    <div style="margin-top:8px;">
+    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
       <button class="wv-btn" id="sendMsgBtn">Send to Host</button>
       <button class="wv-btn secondary" id="pingBtn">Ping Host</button>
       <button class="wv-btn secondary" id="getStateBtn">Get State</button>
+      <button class="wv-btn secondary" id="openEditorBtn" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;font-weight:600;">🚀 Open Editor Tab</button>
     </div>
     <div class="wv-log" id="msgLog">
       <div class="wv-log-entry" style="color:#4ec9b0;">[init] Webview mounted. acquireVsCodeApi() ready.</div>
@@ -6619,6 +6746,17 @@ window.addEventListener('message', function(e) {
       const state = vscode.getState();
       logMessage('info', 'State: ' + JSON.stringify(state));
     });
+
+    const openEditorBtn = document.getElementById('openEditorBtn');
+    if (openEditorBtn) {
+      openEditorBtn.addEventListener('click', function() {
+        vscode.postMessage({
+          type: 'open-editor-panel',
+          viewId: '${viewId}',
+          title: '${this._escapeHtml(extName)} Workbench'
+        });
+      });
+    }
   </script>
 </body>
 </html>`;
@@ -6678,9 +6816,49 @@ window.addEventListener('message', function(e) {
     _handleWebviewMessage(event) {
       if (!event.data || event.data.type !== 'webview-rpc') return;
 
-      const { direction, viewId, payload } = event.data;
+      const { direction, viewId, panelId, payload } = event.data;
 
+      // 1. Handle messages from Editor Tab Webview Panels
+      if (panelId) {
+        const panel = this._editorPanels.get(panelId);
+        if (panel && direction === 'webview-to-host') {
+          panel.messageCbs.forEach(cb => {
+            try { cb(payload); } catch (err) { console.error('[ExtensionHost] Panel message callback error:', err); }
+          });
+
+          if (payload && payload.type === 'ping') {
+            this.postMessageToEditorPanel(panelId, {
+              type: 'pong',
+              timestamp: Date.now(),
+              originalTimestamp: payload.timestamp
+            });
+          }
+
+          if (payload && payload.type === 'user-action') {
+            appendTerminal(`\n<span class="term-cyan">[ExtensionEditor:${this._escapeHtml(panel.title)}] Message: "${this._escapeHtml(payload.text || '')}"</span>`);
+            this.postMessageToEditorPanel(panelId, {
+              type: 'host-reply',
+              text: `Enlangg Studio Host processed: "${payload.text}"`,
+              timestamp: Date.now()
+            });
+          }
+        }
+        return;
+      }
+
+      // 2. Handle messages from Sidebar Webview Views
       if (direction === 'webview-to-host') {
+        // Handle request to open full editor tab
+        if (payload && payload.type === 'open-editor-panel') {
+          this.createWebviewPanel(
+            payload.viewId || viewId,
+            payload.title || `${viewId} Workbench`,
+            1,
+            { enableScripts: true }
+          );
+          return;
+        }
+
         // Route to registered callbacks
         const callbacks = this._messageCallbacks.get(viewId);
         if (callbacks) {
@@ -6947,6 +7125,538 @@ window.addEventListener('message', function(e) {
         }
       });
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 8. EDITOR WEBVIEW PANELS (Full VS Code Editor Tab Integration)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Create and open a full editor tab Webview Panel in the main editor area.
+     * Matches standard vscode.window.createWebviewPanel API.
+     * @param {string} viewType - Identifies the type of the webview
+     * @param {string} title - Title of the editor tab
+     * @param {number|Object} showOptions - ViewColumn (1, 2, etc.)
+     * @param {Object} options - Webview options ({ enableScripts, retainContextWhenHidden })
+     * @returns {Object} WebviewPanel instance
+     */
+    createWebviewPanel(viewType, title, showOptions = 1, options = {}) {
+      const panelId = `panel_${Date.now()}_${++this._idCounter}`;
+      const tabId = `ext:${panelId}`;
+      const runtime = this;
+
+      // Ensure container exists
+      let container = document.getElementById('extensionEditorPanesContainer');
+      if (!container) {
+        container = document.createElement('div');
+        container.className = 'extension-editor-panes-container';
+        container.id = 'extensionEditorPanesContainer';
+        container.style.cssText = 'display:none;flex:1;height:100%;width:100%;position:relative;';
+        const editorMain = document.querySelector('.editor-main');
+        if (editorMain) editorMain.appendChild(container);
+      }
+
+      const paneEl = document.createElement('div');
+      paneEl.className = 'extension-editor-pane';
+      paneEl.id = `ext_pane_${panelId}`;
+      paneEl.style.display = 'none';
+
+      // Header with title and controls
+      const header = document.createElement('div');
+      header.className = 'extension-editor-header';
+      header.innerHTML = `
+        <div class="extension-editor-title">
+          <span style="font-size:14px;">🧩</span>
+          <span>${this._escapeHtml(title)}</span>
+          <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(56,189,248,0.15);color:#38bdf8;font-weight:700;">WEBVIEW</span>
+        </div>
+        <div class="extension-editor-actions">
+          <button class="sidebar-action-btn" data-action="refresh" title="Reload Webview">↻</button>
+          <button class="sidebar-action-btn" data-action="close" title="Close Panel">✕</button>
+        </div>
+      `;
+      paneEl.appendChild(header);
+
+      // Create sandboxed iframe
+      const iframe = document.createElement('iframe');
+      iframe.className = 'extension-editor-iframe';
+      iframe.id = `ext_iframe_${panelId}`;
+      iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-same-origin');
+      iframe.setAttribute('title', title);
+      paneEl.appendChild(iframe);
+
+      container.appendChild(paneEl);
+
+      // Default HTML content
+      const defaultHtml = this._generateEditorWebviewHtml(panelId, title, viewType);
+      iframe.srcdoc = defaultHtml;
+
+      const onDisposeCbs = new Set();
+      const messageCbs = new Set();
+
+      const panelRecord = {
+        id: panelId,
+        tabId: tabId,
+        viewType: viewType,
+        title: title,
+        options: options,
+        paneEl: paneEl,
+        iframe: iframe,
+        onDisposeCbs: onDisposeCbs,
+        messageCbs: messageCbs,
+        disposed: false
+      };
+
+      this._editorPanels.set(panelId, panelRecord);
+
+      // Wire header actions
+      const closeBtn = header.querySelector('[data-action="close"]');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          closeTab(tabId);
+        });
+      }
+      const refreshBtn = header.querySelector('[data-action="refresh"]');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+          iframe.srcdoc = iframe.srcdoc;
+          showStudioToast(`${title}: Webview refreshed.`, null);
+        });
+      }
+
+      // Add to openTabs and open file
+      if (!openTabs.includes(tabId)) {
+        openTabs.push(tabId);
+      }
+      openFile(tabId);
+
+      appendTerminal(`\n<span class="term-green">[ExtensionHost] Created Editor Webview Panel: "${title}" (tab: ${tabId})</span>`);
+
+      return {
+        viewType: viewType,
+        title: title,
+        webview: {
+          options: options,
+          get html() {
+            return iframe.srcdoc || '';
+          },
+          set html(newHtml) {
+            runtime.setEditorWebviewHtml(panelId, newHtml);
+          },
+          postMessage: (msg) => {
+            runtime.postMessageToEditorPanel(panelId, msg);
+            return Promise.resolve(true);
+          },
+          onDidReceiveMessage: (callback) => {
+            messageCbs.add(callback);
+            return {
+              dispose: () => messageCbs.delete(callback)
+            };
+          },
+          asWebviewUri: (uri) => uri
+        },
+        reveal: () => {
+          openFile(tabId);
+        },
+        dispose: () => {
+          runtime.disposeEditorPanel(panelId);
+        },
+        onDidDispose: (callback) => {
+          onDisposeCbs.add(callback);
+          return {
+            dispose: () => onDisposeCbs.delete(callback)
+          };
+        }
+      };
+    }
+
+    /**
+     * Set custom HTML for an editor webview panel.
+     */
+    setEditorWebviewHtml(panelId, html) {
+      const panel = this._editorPanels.get(panelId);
+      if (!panel || !panel.iframe) return;
+
+      let processedHtml = html || '';
+      if (!processedHtml.includes('acquireVsCodeApi') && !processedHtml.includes('window.vscode =')) {
+        const shimScript = `
+<script>
+window.acquireVsCodeApi = (function() {
+  let _acquired = false;
+  let _state = {};
+  return function() {
+    if (_acquired && window.vscode) return window.vscode;
+    _acquired = true;
+    return Object.freeze({
+      postMessage: function(msg) {
+        window.parent.postMessage({
+          type: 'webview-rpc',
+          direction: 'webview-to-host',
+          panelId: '${panelId}',
+          payload: msg
+        }, '*');
+      },
+      getState: function() { return _state; },
+      setState: function(s) { _state = s; return s; }
+    });
+  };
+})();
+window.vscode = window.acquireVsCodeApi();
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'webview-rpc' && e.data.direction === 'host-to-webview') {
+    window.dispatchEvent(new MessageEvent('message', { data: e.data.payload }));
+  }
+});
+</script>
+`;
+        if (processedHtml.includes('</head>')) {
+          processedHtml = processedHtml.replace('</head>', shimScript + '</head>');
+        } else if (processedHtml.includes('<body')) {
+          processedHtml = processedHtml.replace(/<body[^>]*>/, '$&' + shimScript);
+        } else {
+          processedHtml = shimScript + processedHtml;
+        }
+      }
+
+      panel.iframe.srcdoc = processedHtml;
+    }
+
+    /**
+     * Dispose an editor tab webview panel.
+     */
+    disposeEditorPanel(panelId, skipCloseTab = false) {
+      const panel = this._editorPanels.get(panelId);
+      if (!panel || panel.disposed) return;
+
+      panel.disposed = true;
+
+      // Fire onDidDispose callbacks
+      panel.onDisposeCbs.forEach(cb => {
+        try { cb(); } catch (err) { console.error(err); }
+      });
+
+      // Remove DOM pane
+      if (panel.paneEl && panel.paneEl.parentNode) {
+        panel.paneEl.parentNode.removeChild(panel.paneEl);
+      }
+
+      this._editorPanels.delete(panelId);
+
+      // Remove tab from openTabs
+      if (!skipCloseTab) {
+        openTabs = openTabs.filter(t => t !== panel.tabId);
+        if (activeFile === panel.tabId) {
+          activeFile = openTabs.length > 0 ? openTabs[openTabs.length - 1] : '';
+        }
+        renderTabs();
+        loadActiveFileContent();
+        updateBreadcrumbs();
+        updateDomainPill();
+      }
+
+      appendTerminal(`\n<span class="term-yellow">[ExtensionHost] Disposed Editor Webview Panel: "${panel.title}"</span>`);
+    }
+
+    /**
+     * Post a message to an editor webview panel.
+     */
+    postMessageToEditorPanel(panelId, data) {
+      const panel = this._editorPanels.get(panelId);
+      if (!panel || !panel.iframe || !panel.iframe.contentWindow) return;
+
+      panel.iframe.contentWindow.postMessage({
+        type: 'webview-rpc',
+        direction: 'host-to-webview',
+        panelId: panelId,
+        payload: data
+      }, '*');
+    }
+
+    /**
+     * Default template for newly created editor webviews.
+     */
+    _generateEditorWebviewHtml(panelId, title, viewType) {
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src https: data:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --vscode-editor-background: #18181b;
+      --vscode-editor-foreground: #d4d4d8;
+      --vscode-button-background: #0284c7;
+      --vscode-button-foreground: #ffffff;
+      --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: var(--vscode-font-family);
+      font-size: 13px;
+      color: var(--vscode-editor-foreground);
+      background: var(--vscode-editor-background);
+      padding: 24px;
+      line-height: 1.6;
+    }
+    .hero {
+      background: linear-gradient(135deg, rgba(56,189,248,0.12) 0%, rgba(14,165,233,0.04) 100%);
+      border: 1px solid rgba(56,189,248,0.25);
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #38bdf8;
+      background: rgba(56,189,248,0.15);
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    h1 { font-size: 20px; color: #fff; margin-bottom: 6px; font-weight: 700; }
+    p { color: #a1a1aa; font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .card {
+      background: #202023;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .card h3 { font-size: 13.5px; color: #fff; margin-bottom: 6px; }
+    .card p { font-size: 12px; color: #71717a; margin-bottom: 12px; }
+    .btn {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #0369a1; }
+    .btn.secondary { background: rgba(255,255,255,0.08); color: #e4e4e7; }
+    .btn.secondary:hover { background: rgba(255,255,255,0.14); }
+    .log-area {
+      background: #101012;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 11.5px;
+      color: #94a3b8;
+      max-height: 180px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    .input-row { display: flex; gap: 8px; margin-top: 10px; }
+    input[type="text"] {
+      flex: 1;
+      background: #141416;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #fff;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <span class="badge">VS CODE COMPATIBLE EXTENSION WEBVIEW</span>
+    <h1>${this._escapeHtml(title)}</h1>
+    <p>ViewType: <code>${this._escapeHtml(viewType)}</code> · Isolated Sandboxed Execution · Theme CSS Synced</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>⚡ Bidirectional RPC Test</h3>
+      <p>Send a message through <code>vscode.postMessage()</code> to Enlangg Studio Host.</p>
+      <div class="input-row">
+        <input type="text" id="customMsgInput" placeholder="Type message for Studio host..." value="Hello from ${this._escapeHtml(title)}!" />
+        <button class="btn" id="sendBtn">Send RPC</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📊 State Persistence</h3>
+      <p>Test <code>vscode.getState()</code> and <code>vscode.setState()</code> across sessions.</p>
+      <div style="display:flex;gap:8px;">
+        <button class="btn secondary" id="pingHostBtn">Ping Host</button>
+        <button class="btn secondary" id="incCounterBtn">Counter: <span id="counterVal">0</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:8px;">Live Webview Message Log</h3>
+    <div class="log-area" id="logBox">[init] Webview mounted with active VS Code API bridge.</div>
+  </div>
+
+  <script>
+    const vscode = window.acquireVsCodeApi ? window.acquireVsCodeApi() : {
+      postMessage: function(m) { window.parent.postMessage({ type: 'webview-rpc', direction: 'webview-to-host', panelId: '${panelId}', payload: m }, '*'); },
+      getState: function() { return {}; },
+      setState: function(s) { return s; }
+    };
+
+    let counter = 0;
+    const logBox = document.getElementById('logBox');
+    function log(msg, color) {
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      div.innerHTML = '<span style="color:' + (color || '#38bdf8') + ';">[' + time + ']</span> ' + msg;
+      logBox.appendChild(div);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    document.getElementById('sendBtn').addEventListener('click', function() {
+      const text = document.getElementById('customMsgInput').value.trim();
+      if (!text) return;
+      vscode.postMessage({ type: 'user-action', text: text });
+      log('→ Sent to host: "' + text + '"', '#38bdf8');
+    });
+
+    document.getElementById('pingHostBtn').addEventListener('click', function() {
+      vscode.postMessage({ type: 'ping', timestamp: Date.now() });
+      log('→ Sent ping to host...', '#eab308');
+    });
+
+    document.getElementById('incCounterBtn').addEventListener('click', function() {
+      counter++;
+      document.getElementById('counterVal').textContent = counter;
+      vscode.setState({ counter: counter });
+      log('✓ State updated: counter=' + counter, '#10b981');
+    });
+
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'webview-rpc' && e.data.direction === 'host-to-webview') {
+        log('← Received from host: ' + JSON.stringify(e.data.payload), '#4ec9b0');
+      }
+    });
+  </script>
+</body>
+</html>`;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 9. COMMAND PALETTE & ARBITRARY MANIFEST REGISTRATION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Register an executable command in the Extension Host.
+     */
+    registerCommand(commandId, handler, metadata = {}) {
+      this._commands.set(commandId, {
+        id: commandId,
+        handler: handler,
+        title: metadata.title || commandId,
+        category: metadata.category || 'Extension',
+        extId: metadata.extId || 'extension'
+      });
+      return {
+        dispose: () => this._commands.delete(commandId)
+      };
+    }
+
+    /**
+     * Execute a registered command.
+     */
+    executeCommand(commandId, ...args) {
+      const cmd = this._commands.get(commandId);
+      if (!cmd || typeof cmd.handler !== 'function') {
+        console.warn(`[ExtensionHost] Command not found: ${commandId}`);
+        return Promise.reject(new Error(`Command ${commandId} not found`));
+      }
+      try {
+        const result = cmd.handler(...args);
+        return Promise.resolve(result);
+      } catch (err) {
+        console.error(`[ExtensionHost] Error executing command ${commandId}:`, err);
+        return Promise.reject(err);
+      }
+    }
+
+    /**
+     * Load, validate, and activate an arbitrary extension package.json manifest.
+     */
+    loadCustomManifest(input) {
+      let manifest;
+      if (typeof input === 'string') {
+        try {
+          manifest = JSON.parse(input);
+        } catch (err) {
+          throw new Error('Invalid JSON syntax: ' + err.message);
+        }
+      } else {
+        manifest = input;
+      }
+
+      if (!manifest || typeof manifest !== 'object') {
+        throw new Error('Manifest must be a valid JSON object.');
+      }
+      if (!manifest.name) {
+        throw new Error('Manifest is missing required "name" field.');
+      }
+
+      const extId = manifest.publisher ? `${manifest.publisher}.${manifest.name}` : manifest.name;
+
+      this._manifests.set(extId, manifest);
+      this._persistManifests();
+      this.parseContributions(extId, manifest);
+
+      const extRecord = {
+        id: extId,
+        name: manifest.name,
+        displayName: manifest.displayName || manifest.name,
+        publisher: manifest.publisher || 'local',
+        version: manifest.version || '1.0.0',
+        description: manifest.description || 'Custom loaded extension',
+        installed: true,
+        custom: true
+      };
+
+      const installed = getInstalledExtensions();
+      const existingIdx = installed.findIndex(e => (e.id === extId || e.name === manifest.name));
+      if (existingIdx >= 0) {
+        installed[existingIdx] = extRecord;
+      } else {
+        installed.push(extRecord);
+      }
+      saveInstalledExtensions(installed);
+
+      const extContainers = [];
+      this._viewContainers.forEach((containerData, containerId) => {
+        if (containerData.extId === extId) {
+          extContainers.push(containerData);
+          this.injectActivityBarIcon(containerData, extRecord);
+        }
+      });
+
+      this._views.forEach((viewData, viewId) => {
+        if (viewData.extId === extId) {
+          this.registerView(viewData.containerId, viewData, extRecord);
+        }
+      });
+
+      this._activatedExtensions.add(extId);
+
+      appendTerminal(`\n<span class="term-green">[ExtensionHost] Successfully installed custom manifest for "${extRecord.displayName}" (${extId})</span>`);
+      showStudioToast(`Extension '${extRecord.displayName}' installed and activated!`, 'Open', () => {
+        if (extContainers.length > 0) {
+          toggleSidebarPane(`pane_manifest_${extContainers[0].id}`, `act_manifest_${extContainers[0].id}`);
+        }
+      });
+
+      return extRecord;
+    }
   }
 
   // Singleton instance — globally accessible within the studio IIFE
@@ -6956,6 +7666,16 @@ window.addEventListener('message', function(e) {
   window.vscode.window = window.vscode.window || {};
   window.vscode.window.registerWebviewViewProvider = function(viewId, provider, options) {
     return extensionHostRuntime.registerWebviewViewProvider(viewId, provider, options);
+  };
+  window.vscode.window.createWebviewPanel = function(viewType, title, showOptions, options) {
+    return extensionHostRuntime.createWebviewPanel(viewType, title, showOptions, options);
+  };
+  window.vscode.commands = window.vscode.commands || {};
+  window.vscode.commands.registerCommand = function(commandId, handler) {
+    return extensionHostRuntime.registerCommand(commandId, handler);
+  };
+  window.vscode.commands.executeCommand = function(commandId, ...args) {
+    return extensionHostRuntime.executeCommand(commandId, ...args);
   };
 
   // Dock Tabs Switching
@@ -9487,7 +10207,77 @@ Provide code in fenced code blocks.`;
     function renderQuickOpenMatches(query) {
       if (!quickOpenList) return;
       quickOpenList.innerHTML = '';
-      const matches = Object.keys(vfs).filter(f => f.toLowerCase().includes(query.toLowerCase()));
+
+      const trimmed = (query || '').trim();
+
+      // Command Palette Mode if starting with '>'
+      if (trimmed.startsWith('>')) {
+        const cmdQuery = trimmed.substring(1).trim().toLowerCase();
+        const availableCommands = [
+          { id: 'enlang.run', title: 'Run Active Enlang Code', category: 'Enlang' },
+          { id: 'enlang.compile', title: 'Compile to Standalone C99 Binary', category: 'Enlang' },
+          { id: 'workbench.openSettings', title: 'Open Preferences: Settings', category: 'Preferences' },
+          { id: 'workbench.openWelcome', title: 'Open Onboarding Walkthrough', category: 'Help' },
+          { id: 'workbench.openExtensions', title: 'Open Extensions Marketplace', category: 'View' },
+          { id: 'workbench.loadManifest', title: 'Load Extension Manifest (package.json / VSIX)', category: 'Extensions' },
+          { id: 'enlangdb.openStudio', title: 'Open EnlangDB Studio Workbench', category: 'EnlangDB' }
+        ];
+
+        // Contributed commands from extensions
+        if (typeof extensionHostRuntime !== 'undefined' && extensionHostRuntime._commands) {
+          extensionHostRuntime._commands.forEach((c, cid) => {
+            availableCommands.push({
+              id: cid,
+              title: c.title || cid,
+              category: c.category || 'Extension'
+            });
+          });
+        }
+
+        const filtered = availableCommands.filter(c => {
+          if (!cmdQuery) return true;
+          return c.title.toLowerCase().includes(cmdQuery) || c.id.toLowerCase().includes(cmdQuery) || c.category.toLowerCase().includes(cmdQuery);
+        });
+
+        if (filtered.length === 0) {
+          const empty = document.createElement('div');
+          empty.style.cssText = 'padding:10px;font-size:12px;color:var(--vscode-text-muted);';
+          empty.textContent = 'No matching commands found.';
+          quickOpenList.appendChild(empty);
+          return;
+        }
+
+        for (const cmd of filtered) {
+          const row = document.createElement('div');
+          row.className = 'tree-item';
+          row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:7px 10px;cursor:pointer;border-radius:4px;';
+          row.innerHTML = `
+            <div>
+              <span style="color:#38bdf8;font-weight:600;font-size:11px;margin-right:6px;">${escapeHtml(cmd.category)}:</span>
+              <span style="color:#fff;font-size:12px;">${escapeHtml(cmd.title)}</span>
+            </div>
+            <code style="font-size:10px;color:#71717a;font-family:var(--font-mono);">${escapeHtml(cmd.id)}</code>
+          `;
+          row.addEventListener('click', () => {
+            closeQuickModal();
+            if (cmd.id === 'enlang.run') handleRunCode();
+            else if (cmd.id === 'enlang.compile') handleCompileCode();
+            else if (cmd.id === 'workbench.openSettings') openSettingsEditor();
+            else if (cmd.id === 'workbench.openWelcome') openWelcomeTab();
+            else if (cmd.id === 'workbench.openExtensions') toggleSidebarPane('paneExtensions', 'actExtensions');
+            else if (cmd.id === 'workbench.loadManifest') openExtManifestModal();
+            else if (cmd.id === 'enlangdb.openStudio') toggleSidebarPane('paneDatabase', 'actDatabase');
+            else if (typeof extensionHostRuntime !== 'undefined') {
+              extensionHostRuntime.executeCommand(cmd.id);
+            }
+          });
+          quickOpenList.appendChild(row);
+        }
+        return;
+      }
+
+      // Normal file search
+      const matches = Object.keys(vfs).filter(f => f.toLowerCase().includes(trimmed.toLowerCase()));
       for (const match of matches) {
         const row = document.createElement('div');
         row.className = 'tree-item';
@@ -9503,13 +10293,164 @@ Provide code in fenced code blocks.`;
     if (quickOpenTrigger) quickOpenTrigger.addEventListener('click', openQuickModal);
     if (quickOpenInput) {
       quickOpenInput.addEventListener('input', () => {
-        renderQuickOpenMatches(quickOpenInput.value.trim());
+        renderQuickOpenMatches(quickOpenInput.value);
       });
     }
 
     if (quickOpenModal) {
       quickOpenModal.addEventListener('click', (e) => {
         if (e.target === quickOpenModal) closeQuickModal();
+      });
+    }
+
+    // 10B. Extension Manifest Loader Modal
+    const extManifestModal = document.getElementById('extensionManifestModal');
+    const openManifestModalBtn = document.getElementById('openManifestModalBtn');
+    const closeExtManifestModalBtn = document.getElementById('closeExtManifestModalBtn');
+    const cancelExtManifestBtn = document.getElementById('cancelExtManifestBtn');
+    const applyExtManifestBtn = document.getElementById('applyExtManifestBtn');
+    const manifestJsonInput = document.getElementById('manifestJsonInput');
+    const manifestParseError = document.getElementById('manifestParseError');
+    const loadSampleExtInspectorBtn = document.getElementById('loadSampleExtInspectorBtn');
+    const loadSampleExtDbWebviewBtn = document.getElementById('loadSampleExtDbWebviewBtn');
+    const uploadManifestFileInput = document.getElementById('uploadManifestFileInput');
+
+    const openExtManifestModal = () => {
+      if (extManifestModal) {
+        extManifestModal.classList.add('open');
+        if (manifestParseError) manifestParseError.style.display = 'none';
+        if (manifestJsonInput && !manifestJsonInput.value.trim()) {
+          // Preload with Sample 1 by default
+          loadSampleInspector();
+        }
+      }
+    };
+
+    const closeExtManifestModal = () => {
+      if (extManifestModal) extManifestModal.classList.remove('open');
+    };
+
+    const loadSampleInspector = () => {
+      if (!manifestJsonInput) return;
+      manifestJsonInput.value = JSON.stringify({
+        name: "sovereign-inspector",
+        displayName: "Sovereign Visual Inspector",
+        version: "2.0.0",
+        publisher: "enlang",
+        description: "Visual AST inspection and memory heap profiler for native C99 execution.",
+        contributes: {
+          viewsContainers: {
+            activitybar: [
+              {
+                id: "sovereign-inspector-panel",
+                title: "Sovereign Inspector",
+                icon: "⚡"
+              }
+            ]
+          },
+          views: {
+            "sovereign-inspector-panel": [
+              {
+                id: "inspector.sidebar",
+                name: "Live Engine Diagnostics",
+                type: "webview"
+              }
+            ]
+          },
+          commands: [
+            {
+              command: "inspector.openWorkbench",
+              title: "Inspector: Open Full Visual Workbench",
+              category: "Enlang Inspector"
+            },
+            {
+              command: "inspector.runMemoryAudit",
+              title: "Inspector: Run Heap Allocation Audit",
+              category: "Enlang Inspector"
+            }
+          ]
+        }
+      }, null, 2);
+    };
+
+    const loadSampleDb = () => {
+      if (!manifestJsonInput) return;
+      manifestJsonInput.value = JSON.stringify({
+        name: "enlangdb-canvas",
+        displayName: "EnlangDB Canvas Studio",
+        version: "2.0.0",
+        publisher: "enlang",
+        description: "Real-time relational database table explorer and in-memory SQL runner.",
+        contributes: {
+          viewsContainers: {
+            activitybar: [
+              {
+                id: "enlangdb-canvas-panel",
+                title: "EnlangDB Canvas",
+                icon: "🗄️"
+              }
+            ]
+          },
+          views: {
+            "enlangdb-canvas-panel": [
+              {
+                id: "enlangdb.canvasView",
+                name: "Fast SQL Queries (<0.05ms)",
+                type: "webview"
+              }
+            ]
+          },
+          commands: [
+            {
+              command: "enlangdb.openQueryCanvas",
+              title: "EnlangDB: Open Full Query Canvas in Editor Tab",
+              category: "EnlangDB"
+            }
+          ]
+        }
+      }, null, 2);
+    };
+
+    if (openManifestModalBtn) openManifestModalBtn.addEventListener('click', openExtManifestModal);
+    if (closeExtManifestModalBtn) closeExtManifestModalBtn.addEventListener('click', closeExtManifestModal);
+    if (cancelExtManifestBtn) cancelExtManifestBtn.addEventListener('click', closeExtManifestModal);
+    if (loadSampleExtInspectorBtn) loadSampleExtInspectorBtn.addEventListener('click', loadSampleInspector);
+    if (loadSampleExtDbWebviewBtn) loadSampleExtDbWebviewBtn.addEventListener('click', loadSampleDb);
+
+    if (uploadManifestFileInput) {
+      uploadManifestFileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            if (manifestJsonInput) manifestJsonInput.value = evt.target.result;
+            showStudioToast(`Loaded manifest from ${file.name}`, null);
+          };
+          reader.readAsText(file);
+        }
+      });
+    }
+
+    if (applyExtManifestBtn) {
+      applyExtManifestBtn.addEventListener('click', () => {
+        if (!manifestJsonInput) return;
+        const text = manifestJsonInput.value.trim();
+        try {
+          if (manifestParseError) manifestParseError.style.display = 'none';
+          extensionHostRuntime.loadCustomManifest(text);
+          closeExtManifestModal();
+        } catch (err) {
+          if (manifestParseError) {
+            manifestParseError.style.display = 'block';
+            manifestParseError.textContent = `Manifest Error: ${err.message}`;
+          }
+        }
+      });
+    }
+
+    if (extManifestModal) {
+      extManifestModal.addEventListener('click', (e) => {
+        if (e.target === extManifestModal) closeExtManifestModal();
       });
     }
 
