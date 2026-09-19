@@ -1020,9 +1020,14 @@
                     <div style="font-size:11.5px;color:#94a3b8;">Welcome to Enlangg Studio! Complete the 5 interactive steps on the right to master the sovereign toolchain.</div>
                   </div>
                 </div>
-                <button class="titlebar-btn primary" id="completeOnboardingTopBtn" style="white-space:nowrap;padding:6px 14px;font-weight:600;">
-                  <span>✓ Mark Completed</span>
-                </button>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <button class="titlebar-btn" id="startOnboardingWizardBtn" style="white-space:nowrap;padding:6px 14px;font-weight:600;background:rgba(56,189,248,0.18);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);">
+                    <span>🚀 Launch Guided Tour</span>
+                  </button>
+                  <button class="titlebar-btn primary" id="completeOnboardingTopBtn" style="white-space:nowrap;padding:6px 14px;font-weight:600;">
+                    <span>✓ Mark Completed</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Main 2-Column Split -->
@@ -1709,6 +1714,396 @@
           <!-- Dynamically populated themes -->
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal: Full-Fledged Multi-Page Onboarding Flow (VS Code & Cursor Style) -->
+  <div class="modal-backdrop" id="onboardingFlowModal" style="z-index:2000;">
+    <div class="onboarding-flow-box">
+      
+      <!-- Top Header -->
+      <div class="onboarding-flow-header">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#10b981);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(56,189,248,0.3);">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
+              <span>Enlangg Studio</span>
+              <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);">SOVEREIGN AG 2.0</span>
+            </div>
+            <div style="font-size:11px;color:#a1a1aa;">Interactive Full-Fledged Onboarding Experience</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span id="onboardingStepIndicatorText" style="font-size:11.5px;font-weight:600;color:#71717a;">Step 1 of 6</span>
+          <button class="sidebar-action-btn" id="closeOnboardingFlowModal" style="font-size:16px;" title="Close / Skip Tour">✕</button>
+        </div>
+      </div>
+
+      <!-- Top Stepper Navigation -->
+      <div class="onboarding-stepper" id="onboardingStepper">
+        <div class="onboarding-step-pill active" data-flow-step="1">
+          <span class="onboarding-step-num">1</span>
+          <span>Welcome</span>
+        </div>
+        <div class="onboarding-step-pill" data-flow-step="2">
+          <span class="onboarding-step-num">2</span>
+          <span>Appearance</span>
+        </div>
+        <div class="onboarding-step-pill" data-flow-step="3">
+          <span class="onboarding-step-num">3</span>
+          <span>Toolchain</span>
+        </div>
+        <div class="onboarding-step-pill" data-flow-step="4">
+          <span class="onboarding-step-num">4</span>
+          <span>Spoken Syntax</span>
+        </div>
+        <div class="onboarding-step-pill" data-flow-step="5">
+          <span class="onboarding-step-num">5</span>
+          <span>AI Engine</span>
+        </div>
+        <div class="onboarding-step-pill" data-flow-step="6">
+          <span class="onboarding-step-num">6</span>
+          <span>Launch</span>
+        </div>
+      </div>
+
+      <!-- Progress Track -->
+      <div class="onboarding-progress-track">
+        <div class="onboarding-progress-bar" id="onboardingProgressBar"></div>
+      </div>
+
+      <!-- Pages Container -->
+      <div class="onboarding-pages-container">
+        
+        <!-- PAGE 1: Welcome & Sovereign Philosophy -->
+        <div class="onboarding-page active" id="flowPage1">
+          <div>
+            <div class="onboarding-page-title">
+              <span>👑</span>
+              <span>Welcome to Sovereign Enlangg Studio</span>
+            </div>
+            <p class="onboarding-page-subtitle">
+              Engineered for uncompromising speed, deterministic memory safety, and cognitive fluency.
+              Configure your environment in 60 seconds.
+            </p>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin:4px 0;">
+            <div style="background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.25);border-radius:6px;padding:6px 12px;font-size:11.5px;color:#38bdf8;font-weight:600;">⚡ Zero Garbage Collection</div>
+            <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:6px;padding:6px 12px;font-size:11.5px;color:#10b981;font-weight:600;">🛡️ Native C99 Direct Compilation</div>
+            <div style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.25);border-radius:6px;padding:6px 12px;font-size:11.5px;color:#eab308;font-weight:600;">🗣️ Bracketless Spoken Grammar</div>
+            <div style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.25);border-radius:6px;padding:6px 12px;font-size:11.5px;color:#c084fc;font-weight:600;">🗄️ In-Memory SQL &lt;0.05ms</div>
+          </div>
+
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.5px;">Select Your Primary Focus</label>
+            <div class="onboarding-persona-grid" id="onboardingPersonaGrid">
+              <div class="onboarding-persona-card selected" data-persona="backend">
+                <div class="onboarding-persona-icon">🏛️</div>
+                <div>
+                  <div class="onboarding-persona-name">Systems, DSA &amp; Backend Logic</div>
+                  <div class="onboarding-persona-desc">High-performance algorithms, spatial loops, and deterministic execution (.enlng)</div>
+                </div>
+              </div>
+              <div class="onboarding-persona-card" data-persona="fullstack">
+                <div class="onboarding-persona-icon">🎨</div>
+                <div>
+                  <div class="onboarding-persona-name">Fullstack Web &amp; GPU Canvas</div>
+                  <div class="onboarding-persona-desc">Semantic UI trees, hardware CSS tokens, and zero-bloat reactivity (.enlngf / .enlngd)</div>
+                </div>
+              </div>
+              <div class="onboarding-persona-card" data-persona="database">
+                <div class="onboarding-persona-icon">🗄️</div>
+                <div>
+                  <div class="onboarding-persona-name">Database Architecture &amp; Analytics</div>
+                  <div class="onboarding-persona-desc">Instant embedded relational tables, microsecond SQL, and flat-file .edb storage</div>
+                </div>
+              </div>
+              <div class="onboarding-persona-card" data-persona="mobile">
+                <div class="onboarding-persona-icon">📱</div>
+                <div>
+                  <div class="onboarding-persona-name">Mobile &amp; Embedded Systems</div>
+                  <div class="onboarding-persona-desc">Smartphone hardware abstraction layer, biometric state, and simulator (.enlngm)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAGE 2: Appearance & Editor Comfort -->
+        <div class="onboarding-page" id="flowPage2">
+          <div>
+            <div class="onboarding-page-title">
+              <span>🎨</span>
+              <span>Personalize Your Look &amp; Feel</span>
+            </div>
+            <p class="onboarding-page-subtitle">
+              Select your color theme and editor preferences. The IDE interface adapts live in real time.
+            </p>
+          </div>
+
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.5px;">Color Themes</label>
+            <div class="onboarding-themes-grid" id="flowThemeCardsGrid">
+              <!-- Rendered dynamically from STUDIO_THEMES -->
+            </div>
+          </div>
+
+          <div style="background:#202023;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:14px 18px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+            <div style="flex:1;min-width:140px;">
+              <label style="font-size:11.5px;color:#a1a1aa;display:block;margin-bottom:4px;">Editor Font Size</label>
+              <select id="flowFontSizeSelect" class="modal-input" style="width:100%;">
+                <option value="12">12 px (Compact)</option>
+                <option value="14" selected>14 px (Default)</option>
+                <option value="16">16 px (Comfortable)</option>
+                <option value="18">18 px (Large)</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:140px;">
+              <label style="font-size:11.5px;color:#a1a1aa;display:block;margin-bottom:4px;">Indentation Style</label>
+              <select id="flowTabSizeSelect" class="modal-input" style="width:100%;">
+                <option value="4" selected>4 Spaces (Standard)</option>
+                <option value="2">2 Spaces</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:140px;">
+              <label style="font-size:11.5px;color:#a1a1aa;display:block;margin-bottom:4px;">Word Wrap</label>
+              <select id="flowWordWrapSelect" class="modal-input" style="width:100%;">
+                <option value="on" selected>On (Soft wrap)</option>
+                <option value="off">Off (Horizontal scroll)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAGE 3: Sovereign Engine & Toolchain -->
+        <div class="onboarding-page" id="flowPage3">
+          <div>
+            <div class="onboarding-page-title">
+              <span>⚡</span>
+              <span>Sovereign Native Toolchain</span>
+            </div>
+            <p class="onboarding-page-subtitle">
+              Enlangg Studio includes precompiled C99 standalone binaries. Zero Node.js, Python, or GCC build tools required.
+            </p>
+          </div>
+
+          <div class="flow-compilers-grid" id="flowCompilersGrid">
+            <div class="flow-compiler-item">
+              <div>
+                <div class="flow-compiler-name">enlng.exe</div>
+                <div style="font-size:11px;color:#71717a;">Pure Logic, AST &amp; Machine Code</div>
+              </div>
+              <span class="flow-compiler-badge">● READY</span>
+            </div>
+            <div class="flow-compiler-item">
+              <div>
+                <div class="flow-compiler-name">enlngdb.exe</div>
+                <div style="font-size:11px;color:#71717a;">In-Memory SQL &amp; Flat-file .edb</div>
+              </div>
+              <span class="flow-compiler-badge">● READY</span>
+            </div>
+            <div class="flow-compiler-item">
+              <div>
+                <div class="flow-compiler-name">enlangg.exe</div>
+                <div style="font-size:11px;color:#71717a;">Universal CLI &amp; Package Orchestrator</div>
+              </div>
+              <span class="flow-compiler-badge">● READY</span>
+            </div>
+            <div class="flow-compiler-item">
+              <div>
+                <div class="flow-compiler-name">enlngf.exe / enlngd.exe</div>
+                <div style="font-size:11px;color:#71717a;">UI Markup &amp; GPU Design Tokens</div>
+              </div>
+              <span class="flow-compiler-badge">● READY</span>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:center;">
+            <button class="titlebar-btn primary" id="flowRunSelfTestBtn" style="padding:8px 16px;font-weight:600;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Run 5-Point Smoke Test</span>
+            </button>
+            <button class="titlebar-btn" id="flowAddToPathBtn" style="padding:8px 16px;border:1px solid rgba(255,255,255,0.15);">
+              <span>➕ Add Enlangg to Windows PATH</span>
+            </button>
+          </div>
+
+          <div id="flowSmokeTestLog" style="display:none;background:#0e0e10;border:1px solid rgba(56,189,248,0.25);border-radius:8px;padding:12px;font-family:var(--font-mono);font-size:11px;line-height:1.6;max-height:140px;overflow-y:auto;white-space:pre-wrap;"></div>
+        </div>
+
+        <!-- PAGE 4: 60-Second Natural Spoken Syntax Tour -->
+        <div class="onboarding-page" id="flowPage4">
+          <div>
+            <div class="onboarding-page-title">
+              <span>🧠</span>
+              <span>Master Natural Spoken Syntax in 60 Seconds</span>
+            </div>
+            <p class="onboarding-page-subtitle">
+              Enlang eliminates nested brackets, index loops, and syntax traps. Words convey pure mathematical intent.
+            </p>
+          </div>
+
+          <div class="flow-syntax-compare">
+            <div class="flow-syntax-col">
+              <div class="flow-syntax-title">❌ Traditional Languages (Boilerplate)</div>
+              <div style="color:#71717a;">// Manual loop counters &amp; bounds</div>
+              <div style="color:#f87171;">let swapped = true;</div>
+              <div style="color:#f87171;">while (swapped) {</div>
+              <div style="color:#f87171;">&nbsp;&nbsp;swapped = false;</div>
+              <div style="color:#f87171;">&nbsp;&nbsp;for (let i = 0; i &lt; arr.length - 1; i++) {</div>
+              <div style="color:#f87171;">&nbsp;&nbsp;&nbsp;&nbsp;if (arr[i] &gt; arr[i + 1]) {</div>
+              <div style="color:#f87171;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;let tmp = arr[i];</div>
+              <div style="color:#f87171;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;arr[i] = arr[i + 1];</div>
+              <div style="color:#f87171;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;arr[i + 1] = tmp;</div>
+              <div style="color:#f87171;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;swapped = true;</div>
+              <div style="color:#f87171;">&nbsp;&nbsp;&nbsp;&nbsp;}</div>
+              <div style="color:#f87171;">&nbsp;&nbsp;}</div>
+              <div style="color:#f87171;">}</div>
+            </div>
+
+            <div class="flow-syntax-col enlang-col">
+              <div class="flow-syntax-title">✓ Sovereign Enlang (Natural Intent)</div>
+              <div style="color:#38bdf8;"><span class="syntax-kw">remember</span> balance <span class="syntax-kw">as</span> 1000</div>
+              <div style="color:#38bdf8;">balance <span class="syntax-kw">increases by</span> 250</div>
+              <br/>
+              <div style="color:#10b981;"><span class="syntax-kw">repeat until it is sorted:</span> <span class="syntax-comment"># 'it', 'is' silent</span></div>
+              <div style="color:#10b981;">&nbsp;&nbsp;<span class="syntax-kw">for each pair in</span> numbers: <span class="syntax-comment"># Spatial loop</span></div>
+              <div style="color:#10b981;">&nbsp;&nbsp;&nbsp;&nbsp;<span class="syntax-kw">when</span> pair.left &gt; pair.right:</div>
+              <div style="color:#10b981;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="syntax-kw">swap pair</span></div>
+              <br/>
+              <div style="color:#eab308;"><span class="syntax-kw">show</span> numbers</div>
+            </div>
+          </div>
+
+          <div style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#94a3b8;display:flex;align-items:center;justify-content:space-between;">
+            <span>💡 <strong>Silent Words:</strong> The lexer automatically discards grammatical helpers (<code>it</code>, <code>is</code>, <code>the</code>, <code>that</code>) without runtime overhead.</span>
+            <button class="titlebar-btn primary" id="flowOpenPlaygroundBtn" style="padding:4px 10px;font-size:11px;">Try Playground</button>
+          </div>
+        </div>
+
+        <!-- PAGE 5: AI Copilot & Assistant -->
+        <div class="onboarding-page" id="flowPage5">
+          <div>
+            <div class="onboarding-page-title">
+              <span>🤖</span>
+              <span>Connect AI Copilot (Bring Your Own Key)</span>
+            </div>
+            <p class="onboarding-page-subtitle">
+              Accelerate development with sovereign AI assistance. Your key is stored locally in client localStorage with zero telemetry.
+            </p>
+          </div>
+
+          <div style="background:#202023;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:14px;">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:#fff;display:block;margin-bottom:6px;">Select AI Model Provider</label>
+              <select id="flowAiProviderSelect" class="modal-input" style="width:100%;max-width:360px;">
+                <option value="gemini" selected>Google Gemini (2.0 Flash / Pro) — Recommended</option>
+                <option value="openai">OpenAI (GPT-4o / o3-mini)</option>
+                <option value="anthropic">Anthropic Claude (Claude 3.5 Sonnet)</option>
+                <option value="ollama">Ollama (Local Offline Inference: localhost:11434)</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="font-size:12px;font-weight:600;color:#fff;display:block;margin-bottom:6px;">API Key</label>
+              <div style="display:flex;gap:10px;">
+                <input type="password" id="flowAiKeyInput" placeholder="Paste your API key here (sk-... or AIza...)" class="modal-input" style="flex:1;" />
+                <button class="titlebar-btn primary" id="flowSaveAiKeyBtn" style="padding:0 18px;font-weight:600;">Save Key</button>
+              </div>
+            </div>
+
+            <div style="font-size:11.5px;color:#71717a;display:flex;align-items:center;gap:6px;">
+              <span>🔒 100% Client-Side Privacy: Your keys are never transmitted to any third-party proxy or telemetry server.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAGE 6: Launch & Starter Project -->
+        <div class="onboarding-page" id="flowPage6">
+          <div>
+            <div class="onboarding-page-title">
+              <span>🚀</span>
+              <span>You're Ready to Build Sovereign Systems!</span>
+            </div>
+            <p class="onboarding-page-subtitle">
+              Your environment is configured and primed. Choose a project template or load a local folder to start coding.
+            </p>
+          </div>
+
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.5px;">Choose Starter Workspace</label>
+            <div class="flow-starters-grid" id="flowStartersGrid">
+              <div class="flow-starter-card selected" data-starter="banking">
+                <div class="flow-starter-icon" style="color:#38bdf8;">🏛️</div>
+                <div class="flow-starter-info">
+                  <div class="flow-starter-title">Sovereign Banking Core</div>
+                  <div class="flow-starter-desc">Pure computational logic, ledger balances, and spatial loops (.enlng)</div>
+                </div>
+              </div>
+              <div class="flow-starter-card" data-starter="database">
+                <div class="flow-starter-icon" style="color:#10b981;">🗄️</div>
+                <div class="flow-starter-info">
+                  <div class="flow-starter-title">EnlangDB Relational Tables</div>
+                  <div class="flow-starter-desc">Instant &lt;0.05ms SQL execution, student registry &amp; table schema (.enlngdb)</div>
+                </div>
+              </div>
+              <div class="flow-starter-card" data-starter="subway">
+                <div class="flow-starter-icon" style="color:#eab308;">🏃</div>
+                <div class="flow-starter-info">
+                  <div class="flow-starter-title">Subway Surfers 3D Canvas</div>
+                  <div class="flow-starter-desc">Hardware-accelerated design tokens &amp; reactive UI tree (.enlngd / .enlngf)</div>
+                </div>
+              </div>
+              <div class="flow-starter-card" data-starter="mobile">
+                <div class="flow-starter-icon" style="color:#c084fc;">📱</div>
+                <div class="flow-starter-info">
+                  <div class="flow-starter-title">Mobile Wallet Simulator</div>
+                  <div class="flow-starter-desc">Smartphone HAL layout, biometric auth &amp; touch events (.enlngm)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:center;margin-top:6px;">
+            <button class="titlebar-btn" id="flowOpenFolderBtn" style="padding:10px 16px;border:1px solid rgba(255,255,255,0.15);font-weight:600;">
+              <span>📂 Open Local Workspace / Folder...</span>
+            </button>
+            <button class="titlebar-btn primary" id="flowLaunchStudioBtn" style="padding:10px 24px;font-size:13px;font-weight:700;flex:1;justify-content:center;box-shadow:0 0 20px rgba(56,189,248,0.35);">
+              <span>🚀 Launch Enlangg Studio</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Footer Navigation Bar -->
+      <div class="onboarding-footer-bar">
+        <button class="titlebar-btn" id="onboardingBackBtn" style="padding:8px 16px;font-weight:600;" disabled>
+          <span>← Back</span>
+        </button>
+
+        <div class="onboarding-dots" id="onboardingFooterDots">
+          <div class="onboarding-dot active" data-flow-step="1"></div>
+          <div class="onboarding-dot" data-flow-step="2"></div>
+          <div class="onboarding-dot" data-flow-step="3"></div>
+          <div class="onboarding-dot" data-flow-step="4"></div>
+          <div class="onboarding-dot" data-flow-step="5"></div>
+          <div class="onboarding-dot" data-flow-step="6"></div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button class="titlebar-btn" id="onboardingSkipBtn" style="color:#71717a;font-size:11.5px;">
+            <span>Skip Tour</span>
+          </button>
+          <button class="titlebar-btn primary" id="onboardingNextBtn" style="padding:8px 20px;font-weight:700;">
+            <span>Continue →</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 
