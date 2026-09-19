@@ -3330,257 +3330,362 @@ html, body {
 }
 
 /* ==========================================================================
-   Full-Fledged Multi-Page Onboarding Flow (VS Code & Cursor Style)
+   Authentic VS Code Native Walkthrough Layout & Onboarding Engine
    ========================================================================== */
 
-.onboarding-flow-box {
-  width: 940px;
-  height: 640px;
-  max-width: 95vw;
-  max-height: 92vh;
+.vscode-walkthrough-view {
+  width: 100%;
+  height: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  background: #18181b;
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  border-radius: 12px;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.9), 0 0 35px rgba(56, 189, 248, 0.16);
+  box-sizing: border-box;
+  padding: 24px 36px 20px 36px;
   overflow: hidden;
-  color: #fff;
-  animation: onboardingFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes onboardingFadeIn {
-  from { opacity: 0; transform: scale(0.97) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.onboarding-flow-header {
+.vscode-wt-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 24px;
-  background: #141416;
+  padding-bottom: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
-.onboarding-stepper {
+.vscode-wt-header-left {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 24px;
-  background: #121214;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  overflow-x: auto;
+  gap: 16px;
 }
 
-.onboarding-step-pill {
-  display: flex;
+.vscode-wt-back-btn {
+  background: none;
+  border: none;
+  color: var(--vscode-text-muted, #94a3b8);
+  font-size: 12.5px;
+  font-weight: 500;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #71717a;
-  background: rgba(255, 255, 255, 0.03);
+  gap: 5px;
   cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
 }
 
-.onboarding-step-pill:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #d4d4d8;
-}
-
-.onboarding-step-pill.active {
-  background: rgba(56, 189, 248, 0.14);
+.vscode-wt-back-btn:hover {
   color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.08);
 }
 
-.onboarding-step-pill.completed {
-  color: #10b981;
+.vscode-wt-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.onboarding-step-num {
-  width: 18px;
-  height: 18px;
+.vscode-wt-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+
+.vscode-wt-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 4px;
+  padding: 2px 7px;
+  letter-spacing: 0.5px;
+}
+
+.vscode-wt-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.vscode-wt-progress-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.vscode-wt-progress-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.vscode-wt-progress-track {
+  width: 130px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.vscode-wt-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #10b981);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 2px;
+}
+
+.vscode-wt-action-link {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #a1a1aa;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vscode-wt-action-link:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.vscode-wt-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 32px;
+  overflow: hidden;
+}
+
+.vscode-wt-steps-rail {
+  width: 300px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 14px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.vscode-wt-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  border-left: 3px solid transparent;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.vscode-wt-step-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.vscode-wt-step-item.active {
+  background: rgba(255, 255, 255, 0.06);
+  border-left-color: #38bdf8;
+}
+
+.vscode-wt-step-check {
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 10px;
+  font-weight: 700;
+  color: #a1a1aa;
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: all 0.2s ease;
 }
 
-.onboarding-step-pill.active .onboarding-step-num {
-  background: #38bdf8;
-  color: #09090b;
-  font-weight: 800;
+.vscode-wt-step-item.active .vscode-wt-step-check {
+  border-color: #38bdf8;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
 }
 
-.onboarding-step-pill.completed .onboarding-step-num {
+.vscode-wt-step-item.completed .vscode-wt-step-check {
   background: #10b981;
-  color: #09090b;
+  border-color: #10b981;
+  color: #fff;
 }
 
-.onboarding-progress-track {
-  width: 100%;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.06);
-  position: relative;
-}
-
-.onboarding-progress-bar {
-  height: 100%;
-  width: 16.66%;
-  background: linear-gradient(90deg, #38bdf8, #10b981);
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.onboarding-pages-container {
+.vscode-wt-step-meta {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 24px 32px;
+  min-width: 0;
 }
 
-.onboarding-page {
+.vscode-wt-step-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d4d4d8;
+  line-height: 1.35;
+}
+
+.vscode-wt-step-item.active .vscode-wt-step-title {
+  color: #fff;
+  font-weight: 700;
+}
+
+.vscode-wt-step-sub {
+  font-size: 11px;
+  color: #71717a;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.vscode-wt-canvas {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.vscode-wt-step-pane {
   display: none;
   flex-direction: column;
-  gap: 20px;
-  animation: pageSlideIn 0.2s ease;
+  gap: 18px;
+  flex: 1;
 }
 
-.onboarding-page.active {
+.vscode-wt-step-pane.active {
   display: flex;
+  animation: wtPaneFade 0.2s ease;
 }
 
-@keyframes pageSlideIn {
-  from { opacity: 0; transform: translateX(8px); }
-  to { opacity: 1; transform: translateX(0); }
+@keyframes wtPaneFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.onboarding-page-title {
-  font-size: 20px;
+.vscode-wt-pane-header {
+  margin-bottom: 2px;
+}
+
+.vscode-wt-pane-title {
+  margin: 0 0 4px 0;
+  font-size: 19px;
   font-weight: 700;
   color: #fff;
-  margin: 0 0 4px 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
-.onboarding-page-subtitle {
-  font-size: 13px;
-  color: #a1a1aa;
+.vscode-wt-pane-desc {
   margin: 0;
+  font-size: 12.5px;
+  color: #a1a1aa;
   line-height: 1.5;
 }
 
-/* Persona Cards */
-.onboarding-persona-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.onboarding-persona-card {
-  background: #202023;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 14px 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  transition: all 0.2s ease;
-}
-
-.onboarding-persona-card:hover {
-  background: #27272a;
-  border-color: rgba(56, 189, 248, 0.3);
-  transform: translateY(-1px);
-}
-
-.onboarding-persona-card.selected {
-  background: rgba(56, 189, 248, 0.1);
-  border-color: #38bdf8;
-}
-
-.onboarding-persona-icon {
-  font-size: 24px;
-  line-height: 1;
-}
-
-.onboarding-persona-name {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 3px;
-}
-
-.onboarding-persona-desc {
+.vscode-wt-label {
   font-size: 11.5px;
-  color: #94a3b8;
-  line-height: 1.4;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #fff;
+  display: block;
+  margin-bottom: 6px;
 }
 
-/* Theme Swatches in Flow */
-.onboarding-themes-grid {
+.vscode-wt-themes-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-top: 6px;
+  gap: 10px;
 }
 
-.flow-theme-card {
+.vscode-wt-theme-card {
   background: #202023;
   border: 2px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  padding: 14px;
+  padding: 10px 12px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  transition: all 0.2s ease;
+  gap: 8px;
+  transition: all 0.15s ease;
 }
 
-.flow-theme-card:hover {
+.vscode-wt-theme-card:hover {
   border-color: rgba(56, 189, 248, 0.4);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
-.flow-theme-card.active {
+.vscode-wt-theme-card.active {
   border-color: #38bdf8;
   background: rgba(56, 189, 248, 0.08);
 }
 
-.flow-theme-preview {
-  height: 48px;
-  border-radius: 6px;
+.vscode-wt-theme-swatches {
+  height: 38px;
+  border-radius: 5px;
   display: flex;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.flow-theme-name {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #fff;
+.vscode-wt-theme-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e4e4e7;
 }
 
-/* Toolchain Badges in Flow */
-.flow-compilers-grid {
+.vscode-wt-prefs-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: #202023;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.vscode-wt-pref-field {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.vscode-wt-pref-field label {
+  font-size: 11px;
+  color: #a1a1aa;
+  font-weight: 500;
+}
+
+.vscode-wt-select, .vscode-wt-input {
+  background: #141416;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 12px;
+  outline: none;
+}
+
+.vscode-wt-compilers-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
-.flow-compiler-item {
+.vscode-wt-compiler-card {
   background: #202023;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
@@ -3590,14 +3695,20 @@ html, body {
   justify-content: space-between;
 }
 
-.flow-compiler-name {
+.vscode-wt-compiler-title {
+  font-family: var(--font-mono);
   font-size: 12.5px;
   font-weight: 700;
   color: #fff;
-  font-family: var(--font-mono);
 }
 
-.flow-compiler-badge {
+.vscode-wt-compiler-desc {
+  font-size: 11px;
+  color: #71717a;
+  margin-top: 2px;
+}
+
+.vscode-wt-badge-green {
   font-size: 10.5px;
   font-weight: 700;
   padding: 2px 8px;
@@ -3606,129 +3717,215 @@ html, body {
   color: #10b981;
 }
 
-/* Syntax Comparison Box */
-.flow-syntax-compare {
+.vscode-wt-actions-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.vscode-wt-log-box {
+  background: #0e0e10;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  max-height: 130px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+.vscode-wt-syntax-comparison {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-top: 6px;
+  gap: 12px;
 }
 
-.flow-syntax-col {
-  background: #121214;
+.vscode-wt-syntax-col {
+  background: #141416;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  padding: 14px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.6;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.flow-syntax-col.enlang-col {
+.vscode-wt-syntax-col.enlang {
   border-color: rgba(56, 189, 248, 0.35);
-  background: rgba(56, 189, 248, 0.04);
+  background: rgba(56, 189, 248, 0.03);
 }
 
-.flow-syntax-title {
-  font-family: var(--font-ui);
-  font-size: 12px;
+.vscode-wt-col-tag {
+  padding: 6px 12px;
+  font-size: 10.5px;
   font-weight: 700;
-  color: #71717a;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.vscode-wt-col-tag.red {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.vscode-wt-col-tag.cyan {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.vscode-wt-code-block {
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.vscode-wt-callout {
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #94a3b8;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.flow-syntax-col.enlang-col .flow-syntax-title {
+.vscode-wt-db-card {
+  background: #141416;
+  border: 1px solid rgba(78, 201, 176, 0.25);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.vscode-wt-db-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: rgba(78, 201, 176, 0.08);
+  border-bottom: 1px solid rgba(78, 201, 176, 0.15);
+}
+
+.vscode-wt-db-code {
+  padding: 8px 14px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
   color: #38bdf8;
+  background: #101012;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Starter Projects Grid */
-.flow-starters-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-top: 6px;
+.vscode-wt-db-table-preview {
+  padding: 8px 14px;
 }
 
-.flow-starter-card {
+.vscode-wt-db-table-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.vscode-wt-db-table-preview th, .vscode-wt-db-table-preview td {
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.vscode-wt-ai-box {
   background: #202023;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  padding: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.vscode-wt-ai-privacy {
+  font-size: 11px;
+  color: #71717a;
+  line-height: 1.4;
+}
+
+.vscode-wt-starters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.vscode-wt-starter-card {
+  background: #202023;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
   cursor: pointer;
   display: flex;
   gap: 12px;
   align-items: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
-.flow-starter-card:hover {
+.vscode-wt-starter-card:hover {
   background: #27272a;
   border-color: rgba(56, 189, 248, 0.4);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
-.flow-starter-card.selected {
+.vscode-wt-starter-card.selected {
   border-color: #38bdf8;
   background: rgba(56, 189, 248, 0.1);
 }
 
-.flow-starter-icon {
-  font-size: 26px;
+.vscode-wt-starter-icon {
+  font-size: 24px;
   line-height: 1;
 }
 
-.flow-starter-info {
+.vscode-wt-starter-meta {
   flex: 1;
+  min-width: 0;
 }
 
-.flow-starter-title {
-  font-size: 13.5px;
+.vscode-wt-starter-title {
+  font-size: 13px;
   font-weight: 700;
   color: #fff;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
-.flow-starter-desc {
+.vscode-wt-starter-desc {
   font-size: 11px;
   color: #94a3b8;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
-/* Onboarding Footer Bar */
-.onboarding-footer-bar {
+.vscode-wt-launch-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.vscode-wt-canvas-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 24px;
-  background: #141416;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 14px;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
-.onboarding-dots {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.vscode-overview-view {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
-
-.onboarding-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.onboarding-dot.active {
-  width: 22px;
-  border-radius: 10px;
-  background: #38bdf8;
-}
-
-
-
