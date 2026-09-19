@@ -46,38 +46,38 @@
     "languages": [
       {
         "id": "enlang",
-        "aliases": ["EnLang Core", "enlang", "enlg"],
-        "extensions": [".enlg"],
+        "aliases": ["EnLang Core", "enlang", "enlng", "enlg"],
+        "extensions": [".enlng", ".enlg"],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "enlangf",
-        "aliases": ["EnLang Markup", "enlangf"],
-        "extensions": [".enlgf"],
+        "aliases": ["EnLang Markup", "enlangf", "enlngf"],
+        "extensions": [".enlngf", ".enlgf"],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "enlangd",
-        "aliases": ["EnLang Design", "enlangd"],
-        "extensions": [".enlgd"],
+        "aliases": ["EnLang Design", "enlangd", "enlngd"],
+        "extensions": [".enlngd", ".enlgd"],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "enlgs",
-        "aliases": ["EnLang Script", "enlgs"],
-        "extensions": [".enlgs"],
+        "aliases": ["EnLang Script", "enlgs", "enlngs"],
+        "extensions": [".enlngs", ".enlgs"],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "enlgm",
-        "aliases": ["EnLang Mobile", "enlgm"],
-        "extensions": [".enlgm"],
+        "aliases": ["EnLang Mobile", "enlgm", "enlngm"],
+        "extensions": [".enlngm", ".enlgm"],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "enlgdb",
-        "aliases": ["EnLang Database", "enlgdb"],
-        "extensions": [".enlgdb"],
+        "aliases": ["EnLang Database", "enlgdb", "enlngdb"],
+        "extensions": [".enlngdb", ".enlgdb"],
         "configuration": "./language-configuration.json"
       }
     ],

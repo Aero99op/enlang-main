@@ -10058,11 +10058,27 @@ Provide code in fenced code blocks.`;
       });
     }
 
-    // 3. Top Titlebar & Editor Action Buttons
     const topRunBtn = document.getElementById('topRunBtn');
     if (topRunBtn) topRunBtn.addEventListener('click', executeActiveFile);
     const editorRunBtn = document.getElementById('editorRunBtn');
     if (editorRunBtn) editorRunBtn.addEventListener('click', executeActiveFile);
+
+    const pureVSCodeBtn = document.getElementById('pureVSCodeBtn');
+    if (pureVSCodeBtn) {
+      pureVSCodeBtn.addEventListener('click', async () => {
+        if (window.EnlangElectron && window.EnlangElectron.launchPureVSCode) {
+          showStudioToast('Launching Pure VS Code Engine (Dedicated Enlangg Profile)...', null);
+          try {
+            await window.EnlangElectron.launchPureVSCode();
+            showStudioToast('Pure VS Code Engine launched successfully!', null);
+          } catch (e) {
+            showStudioToast('Launch failed: ' + e.message, 'error');
+          }
+        } else {
+          showStudioToast('To launch Pure VS Code, run "enlangg-studio" in your Windows terminal or open Enlangg Desktop!', null);
+        }
+      });
+    }
 
     // EnlangDB SQL Studio & Workbench Button Listeners
     const dbRunLineBtn = document.getElementById('dbRunQueryAtCursorBtn');

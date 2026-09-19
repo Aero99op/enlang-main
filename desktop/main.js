@@ -390,6 +390,47 @@ ipcMain.handle('env:openFolder', async (event, target) => {
   return false;
 });
 
+ipcMain.handle('env:launchPureVSCode', async (event, workspacePath) => {
+  const targetDir = workspacePath || path.resolve(__dirname, '..');
+  const codePaths = [
+    'D:\\Microsoft VS Code\\Code.exe',
+    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Microsoft VS Code', 'Code.exe'),
+    'C:\\Program Files\\Microsoft VS Code\\Code.exe',
+    'C:\\Program Files (x86)\\Microsoft VS Code\\Code.exe'
+  ];
+  let codeExe = codePaths.find(p => fs.existsSync(p));
+
+  const studioData = path.join(os.homedir(), '.enlangg', 'studio', 'data');
+  const studioExts = path.join(os.homedir(), '.enlangg', 'studio', 'extensions');
+
+  if (!fs.existsSync(studioData)) fs.mkdirSync(studioData, { recursive: true });
+  if (!fs.existsSync(studioExts)) fs.mkdirSync(studioExts, { recursive: true });
+
+  const env = Object.assign({}, process.env);
+  const userBin = path.join(os.homedir(), '.enlangg', 'bin');
+  if (fs.existsSync(userBin)) {
+    env.PATH = `${userBin};${env.PATH || ''}`;
+  }
+
+  if (codeExe) {
+    const child = spawn(codeExe, [
+      '--user-data-dir', studioData,
+      '--extensions-dir', studioExts,
+      targetDir
+    ], {
+      detached: true,
+      stdio: 'ignore',
+      env
+    });
+    child.unref();
+    return { success: true, path: codeExe, mode: 'direct' };
+  } else {
+    const { exec } = require('child_process');
+    exec(`code --user-data-dir "${studioData}" --extensions-dir "${studioExts}" "${targetDir}"`, { env });
+    return { success: true, mode: 'path' };
+  }
+});
+
 // App Lifecycle with Single Instance Lock
 const gotTheLock = app.requestSingleInstanceLock();
 

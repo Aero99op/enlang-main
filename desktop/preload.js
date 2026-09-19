@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('EnlangElectron', {
   // 4. Setup & Environment APIs
   getToolchainStatus: () => ipcRenderer.invoke('env:getToolchainStatus'),
   addToPath: () => ipcRenderer.invoke('env:addToPath'),
-  openSystemFolder: (target) => ipcRenderer.invoke('env:openFolder', target)
+  openSystemFolder: (target) => ipcRenderer.invoke('env:openFolder', target),
+  launchPureVSCode: (workspacePath) => ipcRenderer.invoke('env:launchPureVSCode', workspacePath)
 });
 
