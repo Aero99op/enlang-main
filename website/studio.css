@@ -3989,3 +3989,372 @@ html, body {
   background: var(--vscode-editor-bg, #18181b);
 }
 
+/* ==========================================================================
+   AUTHENTIC VS CODE EXTENSION DETAILS EDITOR TAB & SECTIONS
+   ========================================================================== */
+
+.ext-details-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--vscode-editor-bg, #18181b);
+  overflow-y: auto;
+  color: var(--vscode-text-main, #d4d4d4);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.ext-details-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 24px 32px 20px 32px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+  border-bottom: 1px solid var(--vscode-border, rgba(255,255,255,0.08));
+  flex-shrink: 0;
+}
+
+.ext-details-icon-large {
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  min-height: 72px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--vscode-border, rgba(255,255,255,0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.ext-details-icon-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ext-details-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ext-details-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ext-details-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+
+.ext-details-id-badge {
+  font-size: 11px;
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--vscode-text-muted, #858585);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.ext-details-pub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.ext-details-pub-name {
+  color: var(--vscode-accent, #38bdf8);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ext-details-verified-badge {
+  color: #38bdf8;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 600;
+}
+
+.ext-details-version {
+  color: var(--vscode-text-muted, #858585);
+}
+
+.ext-details-desc {
+  font-size: 13.5px;
+  color: #a1a1aa;
+  margin: 4px 0 6px 0;
+  line-height: 1.5;
+  max-width: 900px;
+}
+
+.ext-details-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  flex-wrap: wrap;
+}
+
+.ext-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.ext-btn-primary {
+  background: #007acc;
+  color: #fff;
+}
+.ext-btn-primary:hover {
+  background: #0098ff;
+}
+
+.ext-btn-danger {
+  background: rgba(248, 81, 73, 0.15);
+  border-color: rgba(248, 81, 73, 0.35);
+  color: #f85149;
+}
+.ext-btn-danger:hover {
+  background: rgba(248, 81, 73, 0.28);
+  border-color: #f85149;
+}
+
+.ext-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #e4e4e7;
+}
+.ext-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.ext-btn-accent {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+}
+.ext-btn-accent:hover {
+  background: rgba(56, 189, 248, 0.22);
+}
+
+.ext-details-stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 11.5px;
+  color: var(--vscode-text-muted, #858585);
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.ext-category-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1px 8px;
+  border-radius: 12px;
+  color: #d4d4d8;
+}
+
+.ext-details-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 32px;
+  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid var(--vscode-border, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+}
+
+.ext-subtab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--vscode-text-muted, #858585);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ext-subtab-btn:hover {
+  color: #fff;
+}
+
+.ext-subtab-btn.active {
+  color: #fff;
+  border-bottom-color: var(--vscode-accent, #38bdf8);
+}
+
+.ext-details-content-body {
+  flex: 1;
+  padding: 24px 32px 40px 32px;
+  overflow-y: auto;
+  max-width: 1000px;
+}
+
+.ext-doc-section {
+  margin-bottom: 24px;
+}
+
+.ext-doc-section h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ext-feature-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.ext-feature-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--vscode-border, rgba(255, 255, 255, 0.08));
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.ext-feature-card-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #fff;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ext-feature-card-desc {
+  font-size: 12px;
+  color: #a1a1aa;
+  line-height: 1.45;
+}
+
+/* Contributions Table */
+.ext-contributions-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 24px 0;
+  font-size: 12px;
+}
+
+.ext-contributions-table th {
+  text-align: left;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--vscode-border, rgba(255, 255, 255, 0.12));
+  color: #fff;
+  font-weight: 600;
+}
+
+.ext-contributions-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--vscode-border, rgba(255, 255, 255, 0.06));
+  color: #d4d4d8;
+}
+
+.ext-contributions-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.ext-cmd-id-code {
+  font-family: monospace;
+  font-size: 11px;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* Sidebar Collapsible Section Styles */
+.ext-collapsible-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.ext-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--vscode-border, rgba(255, 255, 255, 0.06));
+  border-bottom: 1px solid var(--vscode-border, rgba(255, 255, 255, 0.06));
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vscode-text-muted, #858585);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ext-section-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.ext-section-chevron {
+  font-size: 10px;
+  transition: transform 0.15s ease;
+  width: 12px;
+  display: inline-block;
+  text-align: center;
+}
+
+.ext-section-header.collapsed .ext-section-chevron {
+  transform: rotate(-90deg);
+}
+
+.ext-section-title {
+  flex: 1;
+}
+
+.ext-section-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #d4d4d8;
+  font-weight: 500;
+}
+
+.ext-section-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.ext-section-body.collapsed {
+  display: none;
+}
+
+
