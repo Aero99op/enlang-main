@@ -20,6 +20,22 @@ from enlg.diagnostics.error_formatter import format_human_diagnostic
 def _smart_input(prompt=''):
     return ''
 
+def _enlng_arrange(target, indices):
+    if not isinstance(indices, (list, tuple)):
+        indices = [indices]
+    tlen = len(target)
+    res = []
+    for idx in indices:
+        try:
+            i = int(idx)
+        except Exception:
+            continue
+        if i < 0:
+            i = tlen + i
+        if 0 <= i < tlen:
+            res.append(target[i])
+    return "".join(res) if isinstance(target, str) else res
+
 def _smart_display(*args, sep=' '):
     if not args:
         print()
@@ -44,6 +60,20 @@ def _transpile_enlng_line(line: str) -> str:
     if not trimmed or trimmed.startswith('#'):
         return line
     if trimmed.startswith('type ') or trimmed.startswith('hint '):
+        return f"{indent}# {trimmed}"
+    m_use = re.match(r'^(?:use|import)\s+["\']([^"\']+)["\']$', trimmed, re.I)
+    if m_use:
+        imported_file = m_use.group(1)
+        for search_dir in ['.', 'stdlib', 'lib', 'website']:
+            candidate = os.path.join(search_dir, imported_file)
+            if os.path.exists(candidate):
+                try:
+                    with open(candidate, 'r', encoding='utf-8') as fh:
+                        imported_src = fh.read()
+                    sub_lines = [_transpile_enlng_line(l) for l in imported_src.splitlines()]
+                    return '\n'.join(sub_lines)
+                except Exception:
+                    pass
         return f"{indent}# {trimmed}"
 
     def fix_expr(expr):
@@ -77,6 +107,17 @@ def _transpile_enlng_line(line: str) -> str:
     if m:
         return f"{indent}{m.group(1)} = {m.group(1)}[::-1]"
 
+    # 1b. Arrange statement: arrange target by/with/in indices
+    m = re.match(r'^arrange\s+([a-zA-Z0-9_]+)(?:\s+(?:by|with|to|in|at|of|as))?\s+(.*)$', trimmed, re.I)
+    if m:
+        _tgt, _idx = m.group(1), m.group(2).strip()
+        if _idx.startswith('[') and _idx.endswith(']'):
+            return f"{indent}{_tgt} = _enlng_arrange({_tgt}, {_idx})"
+        elif ',' in _idx:
+            return f"{indent}{_tgt} = _enlng_arrange({_tgt}, [{_idx}])"
+        else:
+            return f"{indent}{_tgt} = _enlng_arrange({_tgt}, {_idx})"
+
     # 2. Variable Declarations
     m = re.match(r'^(?:remember\s+|freeze\s+|create\s+(?:a\s+|an\s+|the\s+)?|declare\s+|let\s+|define\s+)([a-zA-Z0-9_]+)\s+(?:of|as|to|=)\s+(.*)$', trimmed, re.I)
     if m:
@@ -101,13 +142,23 @@ def _transpile_enlng_line(line: str) -> str:
         return f"{indent}{m.group(1)}, {m.group(2)} = {m.group(2)}, {m.group(1)}"
 
     # 6. Conditionals
-    m = re.match(r'^(?:when|if)\s+(.*?):$', trimmed, re.I)
+    m = re.match(r'^(?:when|if)\s+(.*?):\s*(.*)$', trimmed, re.I)
     if m:
-        return f"{indent}if {fix_expr(m.group(1))}:"
-    m = re.match(r'^(?:otherwise\s+when|otherwise\s+if|elif)\s+(.*?):$', trimmed, re.I)
+        cond, rest = m.group(1), m.group(2).strip()
+        if rest:
+            return f"{indent}if {fix_expr(cond)}:\n{indent}    {_transpile_enlng_line(rest)}"
+        return f"{indent}if {fix_expr(cond)}:"
+    m = re.match(r'^(?:otherwise\s+when|otherwise\s+if|elif)\s+(.*?):\s*(.*)$', trimmed, re.I)
     if m:
-        return f"{indent}elif {fix_expr(m.group(1))}:"
-    if re.match(r'^(?:otherwise|else):$', trimmed, re.I):
+        cond, rest = m.group(1), m.group(2).strip()
+        if rest:
+            return f"{indent}elif {fix_expr(cond)}:\n{indent}    {_transpile_enlng_line(rest)}"
+        return f"{indent}elif {fix_expr(cond)}:"
+    if re.match(r'^(?:otherwise|else):\s*(.*)$', trimmed, re.I):
+        m_else = re.match(r'^(?:otherwise|else):\s*(.*)$', trimmed, re.I)
+        rest = m_else.group(1).strip()
+        if rest:
+            return f"{indent}else:\n{indent}    {_transpile_enlng_line(rest)}"
         return f"{indent}else:"
 
     # 7. Loops
@@ -125,10 +176,10 @@ def _transpile_enlng_line(line: str) -> str:
         return f"{indent}for {m.group(1)} in range({start_val}, {end_val} + 1, {step_val}):"
 
     # 8. Function Definition
-    m = re.match(r'^(?:function|define|def)\s+([a-zA-Z0-9_]+)\s+with\s+(.*?):$', trimmed, re.I)
+    m = re.match(r'^(?:function|define|def|action)\s+([a-zA-Z0-9_]+)\s+with\s+(.*?):$', trimmed, re.I)
     if m:
         return f"{indent}def {m.group(1)}({m.group(2)}):"
-    m = re.match(r'^(?:function|define|def)\s+([a-zA-Z0-9_]+)\s*\((.*?)\)\s*:$', trimmed, re.I)
+    m = re.match(r'^(?:function|define|def|action)\s+([a-zA-Z0-9_]+)\s*\((.*?)\)\s*:$', trimmed, re.I)
     if m:
         return f"{indent}def {m.group(1)}({m.group(2)}):"
 
@@ -160,12 +211,17 @@ def _transpile_enlng_line(line: str) -> str:
 def _run_universal_enlng(code: str):
     py_lines = []
     for line in code.split('\n'):
-        py_lines.append(_transpile_enlng_line(line))
+        res = _transpile_enlng_line(line)
+        if '\n' in res:
+            py_lines.extend(res.splitlines())
+        else:
+            py_lines.append(res)
     py_code = '\n'.join(py_lines)
 
     exec_globals = {
         '_smart_display': _smart_display,
         '_smart_input': _smart_input,
+        '_enlng_arrange': _enlng_arrange,
         'true': True, 'false': False, 'null': None,
         'pi': math.pi, 'e': math.e,
         'math': math, 'random': random, 'time': time

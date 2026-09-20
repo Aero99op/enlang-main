@@ -714,7 +714,7 @@ screen WalletHome:
   function highlightEnlangCode(rawCode) {
     if (!rawCode) return '';
 
-    const tokenRegex = /(--[^\r\n]*|#[^\r\n]*|\/\/[^\r\n]*)|("(?:[^"\\\r\n]|\\.)*"|'(?:[^'\\\r\n]|\\.)*')|(\b\d+(?:\.\d+)?\b)|(\b(?:show|find|create|delete|insert|update|use|drop|alter|count|select|swap|add|remove|remember|freeze|give|type|increases|decreases)\b)|(\b(?:when|otherwise|repeat|while|until|for|each|in|from|to|by|with|into|set|where|is|as|and|or|not|order|group|having|limit|offset|asc|desc)\b)|(\b(?:database1|main_db|databases|database|tables|table|records|record|values|value|pair|function|student|accounts)\b)|(\b(?:true|false|null)\b)|(;)/gi;
+    const tokenRegex = /(--[^\r\n]*|#[^\r\n]*|\/\/[^\r\n]*)|("(?:[^"\\\r\n]|\\.)*"|'(?:[^'\\\r\n]|\\.)*')|(\b\d+(?:\.\d+)?\b)|(\b(?:show|find|create|delete|insert|update|use|drop|alter|count|select|swap|arrange|reverse|add|remove|remember|freeze|give|type|increases|decreases|sub_string)\b)|(\b(?:when|otherwise|repeat|while|until|for|each|in|from|to|by|with|into|set|where|is|as|and|or|not|order|group|having|limit|offset|asc|desc)\b)|(\b(?:database1|main_db|databases|database|tables|table|records|record|values|value|pair|function|student|accounts)\b)|(\b(?:true|false|null)\b)|(;)/gi;
 
     let lastIndex = 0;
     let html = '';
@@ -9141,6 +9141,9 @@ window.addEventListener('message', function(e) {
     { text: 'remove', type: 'kw', doc: 'Remove item from list: remove item from list' },
     { text: 'increases by', type: 'kw', doc: 'Increment variable: x increases by 1' },
     { text: 'decreases by', type: 'kw', doc: 'Decrement variable: x decreases by 1' },
+    { text: 'arrange', type: 'kw', doc: 'Native permutation: arrange s by 6, 5, 4, 3, 2, 1, 0' },
+    { text: 'reverse', type: 'kw', doc: 'Reverse collection: reverse text' },
+    { text: 'sub_string', type: 'fn', doc: 'Extract substring: sub_string(str, start, end)' },
 
     // EnlangDB Tables and Identifiers
     { text: 'student', type: 'var', doc: 'Sample EnlangDB table: student (roll_no, name, marks, grade)' },

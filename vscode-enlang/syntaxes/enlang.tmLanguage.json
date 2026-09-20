@@ -33,11 +33,11 @@
     },
     {
       "name": "support.function.enlang",
-      "match": "\\b(show|log|print|display|warn|error|alert|swap pair|swap|sort|keep|count of|count|first|last|keys|values|has_key|pointer|ref|make_cell|get_cell|set_cell)\\b"
+      "match": "\\b(show|log|print|display|warn|error|alert|swap pair|swap|sort|arrange|reverse|keep|count of|count|first|last|keys|values|has_key|sub_string|string_substring|string_slice|pointer|ref|make_cell|get_cell|set_cell)\\b"
     },
     {
       "name": "keyword.operator.enlang",
-      "match": "\\b(increases by|decreases by|swap with|is|is not|equals|is greater than|is less than|plus|minus|times|divided by|modulo|and|or|not|at|of)\\b|(\\+|\\-|\\*|\\/|=|==|!=|>|<|>=|<=)"
+      "match": "\\b(increases by|decreases by|arrange by|arrange with|arrange in|arrange at|swap with|is|is not|equals|is greater than|is less than|plus|minus|times|divided by|modulo|and|or|not|at|of)\\b|(\\+|\\-|\\*|\\/|=|==|!=|>|<|>=|<=)"
     },
     {
       "name": "storage.type.enlang",
