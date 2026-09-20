@@ -1,0 +1,45 @@
+# =====================================================================
+#   TEST SUITE: CONVERSATIONAL OOP & DOT-FREE SYNTAX
+# =====================================================================
+
+blueprint Animal:
+    method speak:
+        show "Animal makes a generic sound"
+
+class Dog inherits from Animal:
+    method __init__ with name, breed:
+        self.name = name
+        self.breed = breed
+
+    method bark with volume:
+        show self.name + " (" + self.breed + ") barks at volume " + str(volume) + "!"
+
+    method fetch with item:
+        show self.name + " fetches the " + item + "!"
+
+class PoliceDog extends Dog:
+    method track with target:
+        show self.name + " is tracking target: " + target
+
+# 1. Object Creation
+d = Dog("Sheru", "Labrador")
+k9 = PoliceDog("Rex", "German Shepherd")
+
+# 2. Method Invocation Without Dot (tell ... to ...)
+show "=== TEST 1: tell ... to ... ==="
+tell d to bark with 10
+tell d to fetch with "tennis ball"
+
+# 3. Method Invocation Without Dot (ask ... to ...)
+show "=== TEST 2: ask ... to ... ==="
+ask d to speak
+ask k9 to speak
+
+# 4. Method Invocation Without Dot (call ... on ...)
+show "=== TEST 3: call ... on ... ==="
+call bark on d with 8
+call track on k9 with "suspect"
+
+show "========================================================="
+show "ALL CONVERSATIONAL OOP TESTS COMPLETED SUCCESSFULLY!"
+show "========================================================="
