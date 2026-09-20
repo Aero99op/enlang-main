@@ -944,7 +944,7 @@ static ASTNode *parse_statement(Parser *p) {
           match(p, ENLNG_TOKEN_IN)) {
         /* optional 'at' */
       }
-      ASTNode *pos_expr = parse_primary(p);
+      ASTNode *pos_expr = parse_unary(p);
 
       ASTNode *call = ast_new(AST_EXPR_CALL, t->line);
       call->as.call_expr.func_name = enlng_strdup("string_remove");
@@ -982,7 +982,7 @@ static ASTNode *parse_statement(Parser *p) {
           match(p, ENLNG_TOKEN_BY) || match(p, ENLNG_TOKEN_TO)) {
         /* optional 'at' */
       }
-      ASTNode *pos_expr = parse_primary(p);
+      ASTNode *pos_expr = parse_unary(p);
 
       ASTNode *call = ast_new(AST_EXPR_CALL, t->line);
       call->as.call_expr.func_name = enlng_strdup("string_replace");
@@ -1022,7 +1022,7 @@ static ASTNode *parse_statement(Parser *p) {
           match(p, ENLNG_TOKEN_BY) || match(p, ENLNG_TOKEN_TO)) {
         /* optional 'at' */
       }
-      ASTNode *pos_expr = parse_primary(p);
+      ASTNode *pos_expr = parse_unary(p);
 
       ASTNode *call = ast_new(AST_EXPR_CALL, t->line);
       call->as.call_expr.func_name = enlng_strdup("string_add");
@@ -1067,7 +1067,7 @@ static ASTNode *parse_statement(Parser *p) {
     if (next_tok->type == ENLNG_TOKEN_AT) {
       advance(p); /* consume ident */
       advance(p); /* consume 'at' */
-      ASTNode *index_expr = parse_primary(p);
+      ASTNode *index_expr = parse_unary(p);
       if (check(p, ENLNG_TOKEN_ASSIGN) || check(p, ENLNG_TOKEN_INC_BY) ||
           check(p, ENLNG_TOKEN_DEC_BY)) {
         EnlngTokenType op = advance(p)->type;
