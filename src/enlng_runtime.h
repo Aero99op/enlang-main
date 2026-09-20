@@ -381,6 +381,69 @@ static inline EnlngVal enlng_val_reverse(EnlngVal v) {
   return v;
 }
 
+/* Permutation / arrangement expression */
+static inline EnlngVal enlng_val_arrange(EnlngVal target, EnlngVal indices) {
+  if (target.type == ENLNG_VAL_STRING && target.as.s) {
+    int n = (int)strlen(target.as.s);
+    if (indices.type == ENLNG_VAL_LIST && indices.as.l) {
+      int count = indices.as.l->count;
+      char *buf = (char *)malloc(count + 1);
+      int out_len = 0;
+      for (int i = 0; i < count; i++) {
+        int64_t idx = enlng_val_to_int(indices.as.l->items[i]);
+        if (idx < 0) idx = n + idx;
+        if (idx >= 0 && idx < n) {
+          buf[out_len++] = target.as.s[idx];
+        }
+      }
+      buf[out_len] = '\0';
+      EnlngVal res;
+      res.type = ENLNG_VAL_STRING;
+      res.as.s = buf;
+      return res;
+    }
+    if (indices.type == ENLNG_VAL_INT) {
+      int64_t idx = indices.as.i;
+      if (idx < 0) idx = n + idx;
+      char *buf = (char *)malloc(2);
+      int out_len = 0;
+      if (idx >= 0 && idx < n) {
+        buf[out_len++] = target.as.s[idx];
+      }
+      buf[out_len] = '\0';
+      EnlngVal res;
+      res.type = ENLNG_VAL_STRING;
+      res.as.s = buf;
+      return res;
+    }
+  }
+  if (target.type == ENLNG_VAL_LIST && target.as.l) {
+    int n = target.as.l->count;
+    if (indices.type == ENLNG_VAL_LIST && indices.as.l) {
+      EnlngList *copy = enlng_list_create();
+      int count = indices.as.l->count;
+      for (int i = 0; i < count; i++) {
+        int64_t idx = enlng_val_to_int(indices.as.l->items[i]);
+        if (idx < 0) idx = n + idx;
+        if (idx >= 0 && idx < n) {
+          enlng_list_push(copy, target.as.l->items[idx]);
+        }
+      }
+      return enlng_make_list(copy);
+    }
+    if (indices.type == ENLNG_VAL_INT) {
+      EnlngList *copy = enlng_list_create();
+      int64_t idx = indices.as.i;
+      if (idx < 0) idx = n + idx;
+      if (idx >= 0 && idx < n) {
+        enlng_list_push(copy, target.as.l->items[idx]);
+      }
+      return enlng_make_list(copy);
+    }
+  }
+  return target;
+}
+
 /* --- Truthiness & Comparison --- */
 static inline bool enlng_is_truthy(EnlngVal v) {
   if (v.type == ENLNG_VAL_BOOL)

@@ -99,6 +99,7 @@ typedef enum {
   ENLNG_TOKEN_SWAP,     /* 'swap' */
   ENLNG_TOKEN_REVERSE,  /* 'reverse' */
   ENLNG_TOKEN_SORT,     /* 'sort' */
+  ENLNG_TOKEN_ARRANGE,  /* 'arrange' */
   ENLNG_TOKEN_KEEP,     /* 'keep' */
   ENLNG_TOKEN_DISCARD,  /* 'discard' */
   ENLNG_TOKEN_WHERE,    /* 'where' */
@@ -170,6 +171,7 @@ typedef enum {
   AST_SWAP,           /* swap a and b / swap pair */
   AST_REVERSE_STMT,   /* reverse data */
   AST_SORT,           /* sort list [ascending/descending] */
+  AST_ARRANGE_STMT,   /* arrange data by/with indices */
   AST_INDEX_MUTATION, /* arr[i] = val */
   AST_SHOW,           /* show stream... */
   AST_ASK,            /* ask var "prompt" */
@@ -306,6 +308,12 @@ struct ASTNode {
       char *target_name;
       bool descending;
     } sort_stmt;
+
+    /* AST_ARRANGE_STMT */
+    struct {
+      char *target_name;
+      ASTNode *indices_expr;
+    } arrange_stmt;
 
     /* AST_INDEX_MUTATION */
     struct {

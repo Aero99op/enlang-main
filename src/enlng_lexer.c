@@ -703,6 +703,10 @@ bool lexer_tokenize(Lexer *lexer) {
       add_token(lexer, ENLNG_TOKEN_SORT, "sort", start_line, start_col);
       continue;
     }
+    if (match_word(lexer, "arrange")) {
+      add_token(lexer, ENLNG_TOKEN_ARRANGE, "arrange", start_line, start_col);
+      continue;
+    }
     if (match_word(lexer, "keep")) {
       add_token(lexer, ENLNG_TOKEN_KEEP, "keep", start_line, start_col);
       continue;

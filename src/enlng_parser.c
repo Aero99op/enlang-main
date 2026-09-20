@@ -819,6 +819,47 @@ static ASTNode *parse_statement(Parser *p) {
     return n;
   }
 
+  /* 10c. Arrange Statement: arrange target [by|with|to|in|at|of|as] idx1, idx2, ... or [indices] or var */
+  if (match(p, ENLNG_TOKEN_ARRANGE)) {
+    Token *target_tok = peek(p, 0);
+    if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+      set_error(p, "Expected identifier after 'arrange'", t->line);
+      return NULL;
+    }
+    char *target_name = enlng_strdup(target_tok->text);
+    if (match(p, ENLNG_TOKEN_BY) || match(p, ENLNG_TOKEN_WITH) ||
+        match(p, ENLNG_TOKEN_TO) || match(p, ENLNG_TOKEN_IN) ||
+        match(p, ENLNG_TOKEN_AT) || match(p, ENLNG_TOKEN_OF) ||
+        match(p, ENLNG_TOKEN_AS)) {
+      /* optional connector */
+    }
+    ASTNode *first_expr = parse_expression(p);
+    ASTNode *indices_expr = NULL;
+    if (match(p, ENLNG_TOKEN_COMMA)) {
+      ASTNode *list_node = ast_new(AST_EXPR_LIST_LITERAL, t->line);
+      int cap = 8;
+      int count = 0;
+      ASTNode **elems = (ASTNode **)malloc(sizeof(ASTNode *) * cap);
+      elems[count++] = first_expr;
+      do {
+        if (count >= cap) {
+          cap *= 2;
+          elems = (ASTNode **)realloc(elems, sizeof(ASTNode *) * cap);
+        }
+        elems[count++] = parse_expression(p);
+      } while (match(p, ENLNG_TOKEN_COMMA));
+      list_node->as.list_literal.elements = elems;
+      list_node->as.list_literal.count = count;
+      indices_expr = list_node;
+    } else {
+      indices_expr = first_expr;
+    }
+    ASTNode *n = ast_new(AST_ARRANGE_STMT, t->line);
+    n->as.arrange_stmt.target_name = target_name;
+    n->as.arrange_stmt.indices_expr = indices_expr;
+    return n;
+  }
+
   /* 11. Output: show / display / print item1 item2 ... (No curly braces!) */
   if (match(p, ENLNG_TOKEN_SHOW)) {
     ASTNode *n = ast_new(AST_SHOW, t->line);

@@ -1,0 +1,39 @@
+type enlng
+
+show "=== TEST 1: Native String Reversal via bare comma numbers ==="
+remember s1 as "spandan"
+arrange s1 by 6, 5, 4, 3, 2, 1, 0
+show s1
+
+show "=== TEST 2: Native String Permutation via connector 'with' and brackets ==="
+remember s2 as "spandan"
+arrange s2 with [6, 4, 5, 3, 2, 1, 0]
+show s2
+
+show "=== TEST 3: Native Subsequence / Even indices with connector 'in' ==="
+remember s3 as "spandan"
+arrange s3 in 0, 2, 4, 6
+show s3
+
+show "=== TEST 4: Native Repetition with connector 'at' ==="
+remember s4 as "spandan"
+arrange s4 at 0, 0, 1, 1, 2, 2
+show s4
+
+show "=== TEST 5: Native Negative indexing ==="
+remember s5 as "spandan"
+arrange s5 by -1, -2, -3, -4, -5, -6, -7
+show s5
+
+show "=== TEST 6: Native List permutation ==="
+remember nums as [10, 20, 30, 40]
+arrange nums by 3, 2, 1, 0
+show nums
+
+show "=== TEST 7: Native Variable list order ==="
+remember s7 as "hello"
+remember order as [4, 3, 2, 1, 0]
+arrange s7 by order
+show s7
+
+show "=== All Native Arrange Tests Passed Successfully ==="

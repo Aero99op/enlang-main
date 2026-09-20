@@ -721,6 +721,14 @@ static void generate_statement(CodeGen *cg, ASTNode *n) {
          n->as.reverse_stmt.target_name);
     break;
 
+  case AST_ARRANGE_STMT:
+    emit_indent(cg);
+    emit(cg, "%s = enlng_val_arrange(%s, ", n->as.arrange_stmt.target_name,
+         n->as.arrange_stmt.target_name);
+    generate_expression(cg, n->as.arrange_stmt.indices_expr);
+    emit(cg, ");\n");
+    break;
+
   case AST_SORT:
     emit_indent(cg);
     emit(cg, "enlng_list_sort(%s, %s);\n", n->as.sort_stmt.target_name,
