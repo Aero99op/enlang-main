@@ -1,0 +1,15 @@
+#!/bin/sh
+# =========================================================================
+# Enlang Sovereign Pre-Commit Hook (100% Local, Zero GitHub Features)
+# =========================================================================
+
+echo "[PRE-COMMIT] Auto-syncing Enlang compiler with WebAssembly bundle..."
+python sync_wasm.py
+if [ $? -ne 0 ]; then
+    echo "[PRE-COMMIT ERROR] WebAssembly sync verification failed! Commit cancelled."
+    exit 1
+fi
+
+git add website/enlang_bundle.json website/*.exe enlng.exe enlangg.exe setup.exe 2>/dev/null || true
+echo "[PRE-COMMIT SUCCESS] WebAssembly bundle refreshed and staged into commit!"
+exit 0

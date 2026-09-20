@@ -1,0 +1,42 @@
+#!/bin/sh
+# =========================================================================
+# Enlang Sovereign Pre-Push Hook (100% Local, Zero GitHub Features)
+# Triggers on 'git push': Ensures WebAssembly is ALWAYS updated before push!
+# =========================================================================
+
+if [ "$ENLANG_PRE_PUSH_RUNNING" = "1" ]; then
+    exit 0
+fi
+export ENLANG_PRE_PUSH_RUNNING=1
+
+echo ""
+echo "================================================================"
+echo "  [LOCAL GIT PUSH DETECTED] Auto-Syncing Native -> WebAssembly..."
+echo "================================================================"
+
+python sync_wasm.py
+SYNC_EXIT=$?
+if [ $SYNC_EXIT -ne 0 ]; then
+    echo "[PRE-PUSH ERROR] WebAssembly sync verification failed! Push cancelled."
+    exit 1
+fi
+
+CHANGES=$(git status --porcelain website/enlang_bundle.json website/enlng.exe website/enlangg.exe enlng.exe enlangg.exe 2>/dev/null)
+
+if [ -n "$CHANGES" ]; then
+    echo "[PRE-PUSH] Detected uncommitted changes in WebAssembly bundle or executables!"
+    echo "[PRE-PUSH] Auto-committing WebAssembly updates before pushing..."
+    
+    git add website/enlang_bundle.json website/enlng.exe website/enlangg.exe enlng.exe enlangg.exe setup.exe website/setup.exe 2>/dev/null || true
+    git commit -m "chore(wasm): auto-sync WebAssembly bundle with latest enlng.exe"
+    
+    REMOTE=${1:-origin}
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    
+    echo "[PRE-PUSH] Pushing updated commit with WebAssembly bundle to $REMOTE/$BRANCH..."
+    git push "$REMOTE" "$BRANCH"
+    exit 1
+fi
+
+echo "[PRE-PUSH SUCCESS] WebAssembly bundle is 100% up to date! Proceeding with push..."
+exit 0
