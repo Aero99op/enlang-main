@@ -19,7 +19,7 @@ use "lib_strings.enlng"
 function palindrome_index with s:
     remember n as count of s
     when n is at most 1:
-        give 0 minus 1
+        give -1
 
     remember l as 0
     remember r as n minus 1
@@ -38,10 +38,10 @@ function palindrome_index with s:
             when is_palindrome with c2:
                 give r
 
-            give 0 minus 1
+            give -1
 
     # Entire string is already a palindrome
-    give 0 minus 1
+    give -1
 
 # --- Test Suite & Live Proofs ---
 show "================================================================="
@@ -61,7 +61,7 @@ remember tests as [
 
 for w in tests:
     remember idx as palindrome_index with w
-    when idx is (0 minus 1):
+    when idx is -1:
         show "String: \"" w "\" -> Already a palindrome (Result: -1)"
     otherwise:
         remember ch as w at idx
