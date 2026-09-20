@@ -936,4 +936,120 @@ static inline EnlngVal enlng_builtin_contains(EnlngVal coll, EnlngVal item) {
   return enlng_make_bool(false);
 }
 
+/* Native String Mutation Primitives: insert, remove, set */
+static inline EnlngVal enlng_builtin_string_add(EnlngVal str, EnlngVal item, EnlngVal pos) {
+  if (str.type != ENLNG_VAL_STRING || !str.as.s)
+    return str;
+  const char *s = str.as.s;
+  size_t slen = strlen(s);
+
+  char temp[64];
+  const char *to_insert = "";
+  if (item.type == ENLNG_VAL_STRING && item.as.s) {
+    to_insert = item.as.s;
+  } else if (item.type == ENLNG_VAL_INT) {
+    snprintf(temp, sizeof(temp), "%lld", (long long)item.as.i);
+    to_insert = temp;
+  }
+  size_t ilen = strlen(to_insert);
+
+  int64_t idx = enlng_val_to_int(pos);
+  if (idx < 0)
+    idx = (int64_t)slen + idx;
+  if (idx < 0)
+    idx = 0;
+  if (idx > (int64_t)slen)
+    idx = (int64_t)slen;
+
+  char *buf = (char *)malloc(slen + ilen + 1);
+  memcpy(buf, s, (size_t)idx);
+  memcpy(buf + idx, to_insert, ilen);
+  strcpy(buf + idx + ilen, s + idx);
+
+  EnlngVal res = enlng_make_string(buf);
+  free(buf);
+  return res;
+}
+
+static inline EnlngVal enlng_builtin_string_insert(EnlngVal str, EnlngVal item, EnlngVal pos) {
+  return enlng_builtin_string_add(str, item, pos);
+}
+
+static inline EnlngVal enlng_builtin_string_remove_at(EnlngVal str, EnlngVal pos) {
+  if (str.type != ENLNG_VAL_STRING || !str.as.s)
+    return str;
+  const char *s = str.as.s;
+  size_t slen = strlen(s);
+  if (slen == 0)
+    return str;
+
+  int64_t idx = enlng_val_to_int(pos);
+  if (idx < 0)
+    idx = (int64_t)slen + idx;
+  if (idx < 0 || idx >= (int64_t)slen)
+    return str;
+
+  char *buf = (char *)malloc(slen);
+  memcpy(buf, s, (size_t)idx);
+  strcpy(buf + idx, s + idx + 1);
+
+  EnlngVal res = enlng_make_string(buf);
+  free(buf);
+  return res;
+}
+
+static inline EnlngVal enlng_builtin_string_remove(EnlngVal str, EnlngVal target) {
+  if (str.type != ENLNG_VAL_STRING || !str.as.s)
+    return str;
+  if (target.type == ENLNG_VAL_INT) {
+    return enlng_builtin_string_remove_at(str, target);
+  }
+  if (target.type == ENLNG_VAL_STRING && target.as.s) {
+    char *p = strstr(str.as.s, target.as.s);
+    if (!p)
+      return str;
+    size_t before_len = (size_t)(p - str.as.s);
+    size_t t_len = strlen(target.as.s);
+    size_t after_len = strlen(p + t_len);
+    char *buf = (char *)malloc(before_len + after_len + 1);
+    memcpy(buf, str.as.s, before_len);
+    strcpy(buf + before_len, p + t_len);
+    EnlngVal res = enlng_make_string(buf);
+    free(buf);
+    return res;
+  }
+  return str;
+}
+
+static inline EnlngVal enlng_builtin_string_set_at(EnlngVal str, EnlngVal pos, EnlngVal new_char) {
+  if (str.type != ENLNG_VAL_STRING || !str.as.s)
+    return str;
+  const char *s = str.as.s;
+  size_t slen = strlen(s);
+  int64_t idx = enlng_val_to_int(pos);
+  if (idx < 0)
+    idx = (int64_t)slen + idx;
+  if (idx < 0 || idx >= (int64_t)slen)
+    return str;
+
+  char temp[64];
+  const char *c = "";
+  if (new_char.type == ENLNG_VAL_STRING && new_char.as.s) {
+    c = new_char.as.s;
+  } else if (new_char.type == ENLNG_VAL_INT) {
+    snprintf(temp, sizeof(temp), "%lld", (long long)new_char.as.i);
+    c = temp;
+  }
+  size_t clen = strlen(c);
+
+  char *buf = (char *)malloc(slen + clen + 1);
+  memcpy(buf, s, (size_t)idx);
+  memcpy(buf + idx, c, clen);
+  strcpy(buf + idx + clen, s + idx + 1);
+
+  EnlngVal res = enlng_make_string(buf);
+  free(buf);
+  return res;
+}
+
 #endif /* ENLNG_RUNTIME_H */

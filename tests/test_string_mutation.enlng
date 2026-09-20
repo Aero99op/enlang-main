@@ -1,0 +1,77 @@
+type enlng
+use "lib_strings.enlng"
+
+# =====================================================================
+#   TEST SUITE: NATIVE STRING MUTATION PRIMITIVES
+#   string_add, string_insert, string_remove_at, string_remove, string_set_at
+# =====================================================================
+
+show "=== TEST 1: string_add & string_insert ==="
+s1 = string_add("helo", "l", 2)
+show "Insert middle:", s1
+when s1 is "hello":
+    show "PASS: insert middle"
+
+s2 = string_insert("world", "hello ", 0)
+show "Insert start:", s2
+when s2 is "hello world":
+    show "PASS: insert start"
+
+s3 = string_add("front", "end", 5)
+show "Insert end:", s3
+when s3 is "frontend":
+    show "PASS: insert end"
+
+show "=== TEST 2: string_remove_at ==="
+w1 = string_remove_at("aaab", 3)
+show "Remove at 3:", w1
+when w1 is "aaa":
+    show "PASS: remove last"
+
+w2 = string_remove_at("baa", 0)
+show "Remove at 0:", w2
+when w2 is "aa":
+    show "PASS: remove first"
+
+w3 = string_remove_at("spandnadnaps", 5)
+show "Remove at 5:", w3
+when w3 is "spandadnaps":
+    show "PASS: remove middle"
+
+show "=== TEST 3: string_remove (by substring or int) ==="
+r1 = string_remove("hello world", "world")
+show "Remove substring:", r1
+when r1 is "hello ":
+    show "PASS: remove substring"
+
+r2 = string_remove("banana", "na")
+show "Remove first match:", r2
+when r2 is "bana":
+    show "PASS: remove first match"
+
+show "=== TEST 4: string_set_at ==="
+c1 = string_set_at("cat", 0, "b")
+show "Set at 0:", c1
+when c1 is "bat":
+    show "PASS: set at 0"
+
+c2 = string_set_at("bold", 3, "t")
+show "Set at 3:", c2
+when c2 is "bolt":
+    show "PASS: set at 3"
+
+show "=== TEST 5: English 'with' Syntax ==="
+msg = "abcde"
+msg = string_remove_at with msg, 2
+show "With syntax remove:", msg
+when msg is "abde":
+    show "PASS: with syntax remove"
+
+msg = string_add with msg, "C", 2
+show "With syntax add:", msg
+when msg is "abCde":
+    show "PASS: with syntax add"
+
+show "========================================================="
+show "ALL STRING MUTATION TESTS COMPLETED SUCCESSFULLY!"
+show "========================================================="

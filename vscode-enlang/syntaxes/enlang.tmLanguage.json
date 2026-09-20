@@ -33,7 +33,7 @@
     },
     {
       "name": "support.function.enlang",
-      "match": "\\b(show|log|print|display|warn|error|alert|swap pair|swap|sort|arrange|reverse|keep|count of|count|first|last|keys|values|has_key|sub_string|string_substring|string_slice|pointer|ref|make_cell|get_cell|set_cell)\\b"
+      "match": "\\b(show|log|print|display|warn|error|alert|swap pair|swap|sort|arrange|reverse|keep|count of|count|first|last|keys|values|has_key|sub_string|string_substring|string_slice|string_add|string_insert|string_remove_at|string_remove|string_set_at|pointer|ref|make_cell|get_cell|set_cell)\\b"
     },
     {
       "name": "keyword.operator.enlang",

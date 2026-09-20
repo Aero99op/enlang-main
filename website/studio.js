@@ -714,7 +714,7 @@ screen WalletHome:
   function highlightEnlangCode(rawCode) {
     if (!rawCode) return '';
 
-    const tokenRegex = /(--[^\r\n]*|#[^\r\n]*|\/\/[^\r\n]*)|("(?:[^"\\\r\n]|\\.)*"|'(?:[^'\\\r\n]|\\.)*')|(\b\d+(?:\.\d+)?\b)|(\b(?:show|find|create|delete|insert|update|use|drop|alter|count|select|swap|arrange|reverse|add|remove|remember|freeze|give|type|increases|decreases|sub_string)\b)|(\b(?:when|otherwise|repeat|while|until|for|each|in|from|to|by|with|into|set|where|is|as|and|or|not|order|group|having|limit|offset|asc|desc)\b)|(\b(?:database1|main_db|databases|database|tables|table|records|record|values|value|pair|function|student|accounts)\b)|(\b(?:true|false|null)\b)|(;)/gi;
+    const tokenRegex = /(--[^\r\n]*|#[^\r\n]*|\/\/[^\r\n]*)|("(?:[^"\\\r\n]|\\.)*"|'(?:[^'\\\r\n]|\\.)*')|(\b\d+(?:\.\d+)?\b)|(\b(?:show|find|create|delete|insert|update|use|drop|alter|count|select|swap|arrange|reverse|add|remove|remember|freeze|give|type|increases|decreases|sub_string|string_add|string_insert|string_remove_at|string_remove|string_set_at)\b)|(\b(?:when|otherwise|repeat|while|until|for|each|in|from|to|by|with|into|set|where|is|as|and|or|not|order|group|having|limit|offset|asc|desc)\b)|(\b(?:database1|main_db|databases|database|tables|table|records|record|values|value|pair|function|student|accounts)\b)|(\b(?:true|false|null)\b)|(;)/gi;
 
     let lastIndex = 0;
     let html = '';
@@ -9144,6 +9144,11 @@ window.addEventListener('message', function(e) {
     { text: 'arrange', type: 'kw', doc: 'Native permutation: arrange s by 6, 5, 4, 3, 2, 1, 0' },
     { text: 'reverse', type: 'kw', doc: 'Reverse collection: reverse text' },
     { text: 'sub_string', type: 'fn', doc: 'Extract substring: sub_string(str, start, end)' },
+    { text: 'string_add', type: 'fn', doc: 'Insert into string: string_add(str, item, pos)' },
+    { text: 'string_insert', type: 'fn', doc: 'Insert into string: string_insert(str, item, pos)' },
+    { text: 'string_remove_at', type: 'fn', doc: 'Remove character at index: string_remove_at(str, pos)' },
+    { text: 'string_remove', type: 'fn', doc: 'Remove character or substring: string_remove(str, target)' },
+    { text: 'string_set_at', type: 'fn', doc: 'Replace character at index: string_set_at(str, pos, new_char)' },
 
     // EnlangDB Tables and Identifiers
     { text: 'student', type: 'var', doc: 'Sample EnlangDB table: student (roll_no, name, marks, grade)' },

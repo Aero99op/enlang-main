@@ -386,3 +386,47 @@ action string_arrange(str, indices):
             res = res + str[real_idx]
     return res
 
+# ---------------------------------------------------------------------
+# Native String Mutation Primitives: insert, remove, set
+# ---------------------------------------------------------------------
+action string_add(str, item, pos):
+    n = len(str)
+    when pos < 0:
+        pos = n + pos
+    when pos < 0:
+        pos = 0
+    when pos > n:
+        pos = n
+    before_part = sub_string(str, 0, pos)
+    after_part = sub_string(str, pos, n)
+    return before_part + item + after_part
+
+action string_insert(str, item, pos):
+    return string_add(str, item, pos)
+
+action string_remove_at(str, pos):
+    n = len(str)
+    when pos < 0:
+        pos = n + pos
+    when pos < 0 or pos >= n:
+        return str
+    before_part = sub_string(str, 0, pos)
+    after_part = sub_string(str, pos + 1, n)
+    return before_part + after_part
+
+action string_remove(str, target):
+    when string_contains(str, target):
+        return string_replace_first(str, target, "")
+    return str
+
+action string_set_at(str, pos, new_char):
+    n = len(str)
+    when pos < 0:
+        pos = n + pos
+    when pos < 0 or pos >= n:
+        return str
+    before_part = sub_string(str, 0, pos)
+    after_part = sub_string(str, pos + 1, n)
+    return before_part + new_char + after_part
+
+
