@@ -236,6 +236,15 @@ static ASTNode *parse_primary(Parser *p) {
   if (match(p, ENLNG_TOKEN_IDENTIFIER) || match(p, ENLNG_TOKEN_PAIR)) {
     char *name = enlng_strdup(t->text);
 
+    /* Special position keywords: at_first and at_last evaluate to string literals */
+    if ((strcmp(name, "at_first") == 0 || strcmp(name, "at_last") == 0) &&
+        !check(p, ENLNG_TOKEN_LPAREN) && !check(p, ENLNG_TOKEN_DOT) &&
+        !check(p, ENLNG_TOKEN_LBRACKET) && !check(p, ENLNG_TOKEN_OF)) {
+      ASTNode *n = ast_new(AST_EXPR_LITERAL_STRING, t->line);
+      n->as.literal.string_val = name;
+      return n;
+    }
+
     /* Field access via 'of': field of object (e.g. resource of request, left of pair) */
     if (match(p, ENLNG_TOKEN_OF)) {
       Token *obj_tok = peek(p, 0);
@@ -904,6 +913,121 @@ static ASTNode *parse_statement(Parser *p) {
   if (check(p, ENLNG_TOKEN_IDENTIFIER)) {
     Token *id_tok = peek(p, 0);
     Token *next_tok = peek(p, 1);
+
+    /* String Mutation Statement: string_remove from s at "1" */
+    if (strcmp(id_tok->text, "string_remove") == 0 && next_tok->type != ENLNG_TOKEN_LPAREN) {
+      advance(p); /* consume 'string_remove' */
+      if (match(p, ENLNG_TOKEN_FROM) || match(p, ENLNG_TOKEN_IN) ||
+          match(p, ENLNG_TOKEN_AT) || match(p, ENLNG_TOKEN_OF)) {
+        /* optional preposition */
+      }
+      Token *var_tok = peek(p, 0);
+      if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+        set_error(p, "Expected string variable after 'string_remove'", t->line);
+        return NULL;
+      }
+      char *var_name = enlng_strdup(var_tok->text);
+      if (match(p, ENLNG_TOKEN_AT) || match(p, ENLNG_TOKEN_FROM) ||
+          match(p, ENLNG_TOKEN_IN)) {
+        /* optional 'at' */
+      }
+      ASTNode *pos_expr = parse_primary(p);
+
+      ASTNode *call = ast_new(AST_EXPR_CALL, t->line);
+      call->as.call_expr.func_name = enlng_strdup("string_remove");
+      call->as.call_expr.arg_count = 2;
+      call->as.call_expr.args = (ASTNode **)malloc(sizeof(ASTNode *) * 2);
+
+      ASTNode *var_node = ast_new(AST_EXPR_VARIABLE, t->line);
+      var_node->as.variable.name = enlng_strdup(var_name);
+      call->as.call_expr.args[0] = var_node;
+      call->as.call_expr.args[1] = pos_expr;
+
+      ASTNode *n = ast_new(AST_MUTATION, t->line);
+      n->as.mutation.name = var_name;
+      n->as.mutation.op = ENLNG_TOKEN_ASSIGN;
+      n->as.mutation.val_expr = call;
+      return n;
+    }
+
+    /* String Mutation Statement: string_replace "s" in s at "1" */
+    if (strcmp(id_tok->text, "string_replace") == 0 && next_tok->type != ENLNG_TOKEN_LPAREN) {
+      advance(p); /* consume 'string_replace' */
+      ASTNode *new_val = parse_primary(p);
+      if (match(p, ENLNG_TOKEN_IN) || match(p, ENLNG_TOKEN_FROM) ||
+          match(p, ENLNG_TOKEN_BY) || match(p, ENLNG_TOKEN_TO) ||
+          match(p, ENLNG_TOKEN_WITH) || match(p, ENLNG_TOKEN_AT)) {
+        /* optional preposition */
+      }
+      Token *var_tok = peek(p, 0);
+      if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+        set_error(p, "Expected string variable in 'string_replace'", t->line);
+        return NULL;
+      }
+      char *var_name = enlng_strdup(var_tok->text);
+      if (match(p, ENLNG_TOKEN_AT) || match(p, ENLNG_TOKEN_IN) ||
+          match(p, ENLNG_TOKEN_BY) || match(p, ENLNG_TOKEN_TO)) {
+        /* optional 'at' */
+      }
+      ASTNode *pos_expr = parse_primary(p);
+
+      ASTNode *call = ast_new(AST_EXPR_CALL, t->line);
+      call->as.call_expr.func_name = enlng_strdup("string_replace");
+      call->as.call_expr.arg_count = 3;
+      call->as.call_expr.args = (ASTNode **)malloc(sizeof(ASTNode *) * 3);
+
+      call->as.call_expr.args[0] = new_val;
+      ASTNode *var_node = ast_new(AST_EXPR_VARIABLE, t->line);
+      var_node->as.variable.name = enlng_strdup(var_name);
+      call->as.call_expr.args[1] = var_node;
+      call->as.call_expr.args[2] = pos_expr;
+
+      ASTNode *n = ast_new(AST_MUTATION, t->line);
+      n->as.mutation.name = var_name;
+      n->as.mutation.op = ENLNG_TOKEN_ASSIGN;
+      n->as.mutation.val_expr = call;
+      return n;
+    }
+
+    /* String Mutation Statement: string_add "p" in s at "7" */
+    if ((strcmp(id_tok->text, "string_add") == 0 || strcmp(id_tok->text, "string_insert") == 0) &&
+        next_tok->type != ENLNG_TOKEN_LPAREN) {
+      advance(p); /* consume 'string_add' */
+      ASTNode *item = parse_primary(p);
+      if (match(p, ENLNG_TOKEN_IN) || match(p, ENLNG_TOKEN_FROM) ||
+          match(p, ENLNG_TOKEN_BY) || match(p, ENLNG_TOKEN_TO) ||
+          match(p, ENLNG_TOKEN_WITH) || match(p, ENLNG_TOKEN_AT)) {
+        /* optional preposition */
+      }
+      Token *var_tok = peek(p, 0);
+      if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+        set_error(p, "Expected string variable in 'string_add'", t->line);
+        return NULL;
+      }
+      char *var_name = enlng_strdup(var_tok->text);
+      if (match(p, ENLNG_TOKEN_AT) || match(p, ENLNG_TOKEN_IN) ||
+          match(p, ENLNG_TOKEN_BY) || match(p, ENLNG_TOKEN_TO)) {
+        /* optional 'at' */
+      }
+      ASTNode *pos_expr = parse_primary(p);
+
+      ASTNode *call = ast_new(AST_EXPR_CALL, t->line);
+      call->as.call_expr.func_name = enlng_strdup("string_add");
+      call->as.call_expr.arg_count = 3;
+      call->as.call_expr.args = (ASTNode **)malloc(sizeof(ASTNode *) * 3);
+
+      call->as.call_expr.args[0] = item;
+      ASTNode *var_node = ast_new(AST_EXPR_VARIABLE, t->line);
+      var_node->as.variable.name = enlng_strdup(var_name);
+      call->as.call_expr.args[1] = var_node;
+      call->as.call_expr.args[2] = pos_expr;
+
+      ASTNode *n = ast_new(AST_MUTATION, t->line);
+      n->as.mutation.name = var_name;
+      n->as.mutation.op = ENLNG_TOKEN_ASSIGN;
+      n->as.mutation.val_expr = call;
+      return n;
+    }
 
     /* Case A: arr[i] = ... or arr[i] += ... */
     if (next_tok->type == ENLNG_TOKEN_LBRACKET) {

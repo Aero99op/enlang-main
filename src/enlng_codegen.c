@@ -75,7 +75,7 @@ static bool is_builtin_func(const char *name) {
       "write_file", "append_file", "file_exists", "time_now",      "sleep",
       "append",     "pop",         "keys",        "values",        "has_key",
       "len",        "split",       "join",        "contains",
-      "string_add", "string_insert", "string_remove_at", "string_remove", "string_set_at",
+      "string_add", "string_insert", "string_remove_at", "string_remove", "string_set_at", "string_replace",
       NULL};
   for (int i = 0; builtins[i]; i++) {
     if (strcmp(name, builtins[i]) == 0)

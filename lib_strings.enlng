@@ -389,44 +389,107 @@ action string_arrange(str, indices):
 # ---------------------------------------------------------------------
 # Native String Mutation Primitives: insert, remove, set
 # ---------------------------------------------------------------------
-action string_add(str, item, pos):
-    n = len(str)
-    when pos < 0:
-        pos = n + pos
+action string_add(arg1, arg2, pos):
+    item = arg1
+    target = arg2
+    l1 = len(arg1)
+    l2 = len(arg2)
+    when l1 == 1 and l2 > 1:
+        item = arg1
+        target = arg2
+    otherwise when l1 > 1 and l2 == 1:
+        target = arg1
+        item = arg2
+    otherwise when l1 > l2:
+        target = arg1
+        item = arg2
+    otherwise when l1 < l2:
+        when pos <= l1:
+            target = arg1
+            item = arg2
+        otherwise:
+            item = arg1
+            target = arg2
+    n = len(target)
+    when pos is "at_first":
+        pos = 0
+    when pos is "at_last":
+        pos = n
     when pos < 0:
         pos = 0
     when pos > n:
         pos = n
-    before_part = sub_string(str, 0, pos)
-    after_part = sub_string(str, pos, n)
+    before_part = sub_string(target, 0, pos)
+    after_part = sub_string(target, pos, n)
     return before_part + item + after_part
 
-action string_insert(str, item, pos):
-    return string_add(str, item, pos)
+action string_insert(arg1, arg2, pos):
+    return string_add(arg1, arg2, pos)
 
 action string_remove_at(str, pos):
     n = len(str)
+    when n == 0:
+        return str
+    when pos is "at_first":
+        pos = 0
+    when pos is "at_last":
+        pos = n - 1
     when pos < 0:
         pos = n + pos
-    when pos < 0 or pos >= n:
-        return str
+    when pos < 0:
+        pos = 0
+    when pos >= n:
+        pos = n - 1
     before_part = sub_string(str, 0, pos)
     after_part = sub_string(str, pos + 1, n)
     return before_part + after_part
 
-action string_remove(str, target):
-    when string_contains(str, target):
-        return string_replace_first(str, target, "")
-    return str
+action string_remove(str, pos):
+    when pos is "at_first" or pos is "at_last":
+        return string_remove_at(str, pos)
+    when string_contains(str, pos):
+        return string_replace_first(str, pos, "")
+    return string_remove_at(str, pos)
 
-action string_set_at(str, pos, new_char):
-    n = len(str)
+action string_replace(arg1, arg2, pos):
+    new_val = arg1
+    target = arg2
+    l1 = len(arg1)
+    l2 = len(arg2)
+    when l1 == 1 and l2 > 1:
+        new_val = arg1
+        target = arg2
+    otherwise when l1 > 1 and l2 == 1:
+        target = arg1
+        new_val = arg2
+    otherwise when l1 > l2:
+        target = arg1
+        new_val = arg2
+    otherwise when l1 < l2:
+        when pos < l1:
+            target = arg1
+            new_val = arg2
+        otherwise:
+            new_val = arg1
+            target = arg2
+    n = len(target)
+    when n == 0:
+        return target
+    when pos is "at_first":
+        pos = 0
+    when pos is "at_last":
+        pos = n - 1
     when pos < 0:
         pos = n + pos
-    when pos < 0 or pos >= n:
-        return str
-    before_part = sub_string(str, 0, pos)
-    after_part = sub_string(str, pos + 1, n)
-    return before_part + new_char + after_part
+    when pos < 0:
+        pos = 0
+    when pos >= n:
+        pos = n - 1
+    before_part = sub_string(target, 0, pos)
+    after_part = sub_string(target, pos + 1, n)
+    return before_part + new_val + after_part
+
+action string_set_at(str, pos, new_char):
+    return string_replace(new_char, str, pos)
 
 
