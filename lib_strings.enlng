@@ -62,7 +62,7 @@ action char_at(str, index):
         return ""
     return "" + str[index]
 
-action string_substring(str, start_idx, end_idx):
+action sub_string(str, start_idx, end_idx):
     n = len(str)
     when start_idx < 0:
         start_idx = 0
@@ -75,14 +75,17 @@ action string_substring(str, start_idx, end_idx):
         res = res + str[i]
     return res
 
+action string_substring(str, start_idx, end_idx):
+    return sub_string(str, start_idx, end_idx)
+
 action string_slice(str, start_idx, count):
-    return string_substring(str, start_idx, start_idx + count)
+    return sub_string(str, start_idx, start_idx + count)
 
 action string_starts_with(str, prefix):
     plen = len(prefix)
     when plen > len(str):
         return false
-    sub = string_substring(str, 0, plen)
+    sub = sub_string(str, 0, plen)
     return sub == prefix
 
 action string_ends_with(str, suffix):
@@ -90,7 +93,7 @@ action string_ends_with(str, suffix):
     n = len(str)
     when slen > n:
         return false
-    sub = string_substring(str, n - slen, n)
+    sub = sub_string(str, n - slen, n)
     return sub == suffix
 
 action string_index_of(str, substr):
@@ -101,7 +104,7 @@ action string_index_of(str, substr):
     when slen > n:
         return 0 - 1
     for i from 0 to n - slen:
-        candidate = string_substring(str, i, i + slen)
+        candidate = sub_string(str, i, i + slen)
         when candidate == substr:
             return i
     return 0 - 1
@@ -125,7 +128,7 @@ action trim_left(str):
         when ch != " " and ch != "\t" and ch != "\n" and ch != "\r":
             stop
         start_idx = start_idx + 1
-    return string_substring(str, start_idx, n)
+    return sub_string(str, start_idx, n)
 
 action trim_right(str):
     n = len(str)
@@ -135,19 +138,19 @@ action trim_right(str):
         when ch != " " and ch != "\t" and ch != "\n" and ch != "\r":
             stop
         end_idx = end_idx - 1
-    return string_substring(str, 0, end_idx)
+    return sub_string(str, 0, end_idx)
 
 action trim(str):
     return trim_right(trim_left(str))
 
 action strip_prefix(str, prefix):
     when string_starts_with(str, prefix):
-        return string_substring(str, len(prefix), len(str))
+        return sub_string(str, len(prefix), len(str))
     return str
 
 action strip_suffix(str, suffix):
     when string_ends_with(str, suffix):
-        return string_substring(str, 0, len(str) - len(suffix))
+        return sub_string(str, 0, len(str) - len(suffix))
     return str
 
 # ---------------------------------------------------------------------
@@ -229,7 +232,7 @@ action capitalize(str):
     when len(str) == 0:
         return ""
     first_ch = char_to_upper("" + str[0])
-    rest = to_lower(string_substring(str, 1, len(str)))
+    rest = to_lower(sub_string(str, 1, len(str)))
     return first_ch + rest
 
 action title_case(str):
@@ -282,8 +285,8 @@ action string_replace_first(str, target, replacement):
     idx = string_index_of(str, target)
     when idx < 0:
         return str
-    before_part = string_substring(str, 0, idx)
-    after_part = string_substring(str, idx + len(target), len(str))
+    before_part = sub_string(str, 0, idx)
+    after_part = sub_string(str, idx + len(target), len(str))
     return before_part + replacement + after_part
 
 action string_replace_all(str, target, replacement):
