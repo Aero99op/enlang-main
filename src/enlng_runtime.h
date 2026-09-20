@@ -303,6 +303,15 @@ static inline EnlngVal enlng_container_get(EnlngVal c, EnlngVal key) {
     return enlng_map_get(c, buf);
   }
   if (c.type == ENLNG_VAL_LIST || c.type == ENLNG_VAL_STRING) {
+    if (key.type == ENLNG_VAL_STRING && key.as.s) {
+      if (strcmp(key.as.s, "at_last") == 0) {
+        int64_t cnt = enlng_count_of(c);
+        return enlng_list_get(c, cnt > 0 ? cnt - 1 : 0);
+      }
+      if (strcmp(key.as.s, "at_first") == 0) {
+        return enlng_list_get(c, 0);
+      }
+    }
     int64_t idx = enlng_val_to_int(key);
     int64_t cnt = enlng_count_of(c);
     if (idx < 0)

@@ -70,6 +70,7 @@ static void skip_ignorable(Parser *p) {
 static ASTNode *parse_statement(Parser *p);
 static ASTNode *parse_expression(Parser *p);
 static ASTNode *parse_additive(Parser *p);
+static ASTNode *parse_unary(Parser *p);
 
 static ASTNode *ast_new(ASTNodeType type, int line) {
   ASTNode *node = (ASTNode *)calloc(1, sizeof(ASTNode));
@@ -282,9 +283,21 @@ static ASTNode *parse_primary(Parser *p) {
       return n;
     }
 
+    /* Direct s at_last or s at_first */
+    if (check(p, ENLNG_TOKEN_IDENTIFIER) &&
+        (strcmp(peek(p, 0)->text, "at_last") == 0 || strcmp(peek(p, 0)->text, "at_first") == 0)) {
+      Token *ptok = advance(p);
+      ASTNode *idx_expr = ast_new(AST_EXPR_LITERAL_STRING, t->line);
+      idx_expr->as.literal.string_val = enlng_strdup(ptok->text);
+      ASTNode *n = ast_new(AST_EXPR_INDEX, t->line);
+      n->as.index_expr.arr_name = name;
+      n->as.index_expr.index_expr = idx_expr;
+      return n;
+    }
+
     /* Array / Map index with English 'at': coll at index */
     if (match(p, ENLNG_TOKEN_AT)) {
-      ASTNode *idx_expr = parse_primary(p);
+      ASTNode *idx_expr = parse_unary(p);
       ASTNode *n = ast_new(AST_EXPR_INDEX, t->line);
       n->as.index_expr.arr_name = name;
       n->as.index_expr.index_expr = idx_expr;
