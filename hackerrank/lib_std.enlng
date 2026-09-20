@@ -117,3 +117,27 @@ function sort_list with items:
             when left of pair is greater than right of pair:
                 swap pair
     give items
+
+# --- 6. Index-Based String & List Permutation ---
+function arrange with text, indices:
+    remember res as ""
+    remember n as len(text)
+    for idx in indices:
+        remember real_idx as idx
+        when real_idx is less than 0:
+            real_idx = n plus real_idx
+        when real_idx >= 0 and real_idx is less than n:
+            res = res + (text at real_idx)
+    give res
+
+function arrange_list with items, indices:
+    remember res as []
+    remember n as len(items)
+    for idx in indices:
+        remember real_idx as idx
+        when real_idx is less than 0:
+            real_idx = n plus real_idx
+        when real_idx >= 0 and real_idx is less than n:
+            append(res, items at real_idx)
+    give res
+

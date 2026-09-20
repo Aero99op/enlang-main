@@ -371,3 +371,15 @@ action rot13(str):
 
 action slugify(str):
     return to_kebab_case(str)
+
+action string_arrange(str, indices):
+    res = ""
+    n = len(str)
+    for idx in indices:
+        real_idx = idx
+        when real_idx < 0:
+            real_idx = n + real_idx
+        when real_idx >= 0 and real_idx < n:
+            res = res + str[real_idx]
+    return res
+
