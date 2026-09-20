@@ -28,11 +28,11 @@ function super_reduced_string with s:
 
         # Check if incoming character matches the last character in our result string:
         when res_len is greater than 0 and (res at (res_len minus 1)) is ch:
-            # Pair found! Delete the last character using sub_string:
-            res = sub_string with res, 0, res_len minus 1
+            # Pair found! Delete the last character using clean English primitive:
+            string_remove from res at_last
         otherwise:
-            # No match: append character to string without '+':
-            res = res plus ch
+            # No match: append character to string using clean English primitive:
+            string_add ch in res at_last
 
     when count of res is 0:
         give "Empty String"
