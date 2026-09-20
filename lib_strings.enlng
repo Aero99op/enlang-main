@@ -397,14 +397,14 @@ action string_add(arg1, arg2, pos):
     when l1 == 1 and l2 > 1:
         item = arg1
         target = arg2
-    otherwise when l1 > 1 and l2 == 1:
+    when l1 > 1 and l2 == 1:
         target = arg1
         item = arg2
-    otherwise when l1 > l2:
+    when l1 > 1 and l2 > 1 and l1 > l2:
         target = arg1
         item = arg2
-    otherwise when l1 < l2:
-        when pos <= l1:
+    when l1 > 1 and l2 > 1 and l1 < l2:
+        when pos > 0 and pos <= l1:
             target = arg1
             item = arg2
         otherwise:
@@ -459,14 +459,14 @@ action string_replace(arg1, arg2, pos):
     when l1 == 1 and l2 > 1:
         new_val = arg1
         target = arg2
-    otherwise when l1 > 1 and l2 == 1:
+    when l1 > 1 and l2 == 1:
         target = arg1
         new_val = arg2
-    otherwise when l1 > l2:
+    when l1 > 1 and l2 > 1 and l1 > l2:
         target = arg1
         new_val = arg2
-    otherwise when l1 < l2:
-        when pos < l1:
+    when l1 > 1 and l2 > 1 and l1 < l2:
+        when pos >= 0 and pos < l1:
             target = arg1
             new_val = arg2
         otherwise:

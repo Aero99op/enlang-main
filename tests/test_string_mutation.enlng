@@ -72,6 +72,46 @@ show "With syntax add:", msg
 when msg is "abCde":
     show "PASS: with syntax add"
 
+show "=== TEST 6: Natural Statement Syntax with at 0 & at -1 ==="
+txt = "pandan"
+string_add "s" in txt at -1
+show "string_add at -1:", txt
+when txt is "spandan":
+    show "PASS: add at -1 prepends"
+
+string_replace "n" in txt at 0
+show "string_replace at 0:", txt
+when txt is "npandan":
+    show "PASS: replace at 0 replaces first"
+
+string_remove from txt at 1
+show "string_remove at 1:", txt
+when txt is "nandan":
+    show "PASS: remove at 1 removes second"
+
+show "=== TEST 7: English Keywords at_first & at_last ==="
+rot = "spandan"
+c_last = rot at_last
+string_add c_last in rot at_first
+string_remove from rot at_last
+show "Rotated right:", rot
+when rot is "nspanda":
+    show "PASS: rotate right using at_first and at_last"
+
+c_first = rot at_first
+string_add c_first in rot at_last
+string_remove from rot at_first
+show "Rotated left:", rot
+when rot is "spandan":
+    show "PASS: rotate left using at_first and at_last"
+
+show "=== TEST 8: Direct Character Index Access ==="
+word = "spandan"
+c0 = word at 0
+c_end = word at -1
+when c0 is "s" and c_end is "n":
+    show "PASS: word at 0 and word at -1"
+
 show "========================================================="
 show "ALL STRING MUTATION TESTS COMPLETED SUCCESSFULLY!"
 show "========================================================="
