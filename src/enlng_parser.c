@@ -221,8 +221,16 @@ static ASTNode *parse_primary(Parser *p) {
 
   /* Count of */
   if (match(p, ENLNG_TOKEN_COUNT_OF)) {
+    ASTNode *tgt = parse_primary(p);
+    if (match(p, ENLNG_TOKEN_IN)) {
+      ASTNode *cont = parse_primary(p);
+      ASTNode *n = ast_new(AST_EXPR_COUNT_IN, t->line);
+      n->as.count_in_expr.target = tgt;
+      n->as.count_in_expr.container = cont;
+      return n;
+    }
     ASTNode *n = ast_new(AST_EXPR_COUNT_OF, t->line);
-    n->as.single_target_expr.target = parse_primary(p);
+    n->as.single_target_expr.target = tgt;
     return n;
   }
 
@@ -236,6 +244,25 @@ static ASTNode *parse_primary(Parser *p) {
   /* Identifiers, Indexing, and Calls */
   if (match(p, ENLNG_TOKEN_IDENTIFIER) || match(p, ENLNG_TOKEN_PAIR)) {
     char *name = enlng_strdup(t->text);
+
+    /* Natural count target in container: count "a" in word */
+    if (strcmp(name, "count") == 0 && !check(p, ENLNG_TOKEN_LPAREN) &&
+        !check(p, ENLNG_TOKEN_DOT) && !check(p, ENLNG_TOKEN_LBRACKET) &&
+        !check(p, ENLNG_TOKEN_OF) && !check(p, ENLNG_TOKEN_ASSIGN) &&
+        !check(p, ENLNG_TOKEN_COLON) && !check(p, ENLNG_TOKEN_COMMA) &&
+        !check(p, ENLNG_TOKEN_NEWLINE) && !check(p, ENLNG_TOKEN_EOF)) {
+      free(name);
+      ASTNode *tgt = parse_primary(p);
+      if (match(p, ENLNG_TOKEN_IN)) {
+        ASTNode *cont = parse_primary(p);
+        ASTNode *n = ast_new(AST_EXPR_COUNT_IN, t->line);
+        n->as.count_in_expr.target = tgt;
+        n->as.count_in_expr.container = cont;
+        return n;
+      }
+      set_error(p, "Expected 'in' after count target expression", t->line);
+      return NULL;
+    }
 
     /* Special position keywords: at_first and at_last evaluate to string literals */
     if ((strcmp(name, "at_first") == 0 || strcmp(name, "at_last") == 0) &&

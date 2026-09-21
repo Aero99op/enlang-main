@@ -208,6 +208,14 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     emit(cg, "))");
     break;
 
+  case AST_EXPR_COUNT_IN:
+    emit(cg, "enlng_make_int(enlng_count_in(");
+    generate_expression(cg, n->as.count_in_expr.target);
+    emit(cg, ", ");
+    generate_expression(cg, n->as.count_in_expr.container);
+    emit(cg, "))");
+    break;
+
   case AST_EXPR_REVERSE:
     emit(cg, "enlng_val_reverse(");
     generate_expression(cg, n->as.single_target_expr.target);

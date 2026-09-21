@@ -180,6 +180,7 @@ def _transpile_enlng_line(line: str) -> str:
         expr = re.sub(r'\b([a-zA-Z0-9_\[\]]+)\s+contains\s+(.*)', r'(\2 in \1)', expr)
         expr = re.sub(r'\bcall\s+([a-zA-Z0-9_]+)\s+with\s+(.*?)(?=[,\):]|$)', r'\1(\2)', expr)
         expr = re.sub(r'\bcall\s+([a-zA-Z0-9_]+)\b', r'\1()', expr)
+        expr = re.sub(r'\bcount\s+(?:of\s+)?(.*?)\s+in\s+([a-zA-Z0-9_\[\]\(\)]+)', r'(\2.count(\1) if hasattr(\2, "count") else 0)', expr)
         expr = re.sub(r'\b(?:count of|length of)\s+([a-zA-Z0-9_\[\]\"\'\(\)]+)', r'len(\1)', expr)
         expr = re.sub(r'\breverse\s+(?:of\s+)?([a-zA-Z0-9_\[\]\"\'\(\)]+)', r'(\1[::-1] if hasattr(\1, "__getitem__") else \1)', expr)
         expr = re.sub(r'\b([a-zA-Z0-9_]+)\s+at_first\b', r'\1[0]', expr)

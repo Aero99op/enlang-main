@@ -190,6 +190,7 @@ typedef enum {
   AST_EXPR_FIELD,        /* pair.left, pair.right */
   AST_EXPR_CALL,         /* func(a, b) */
   AST_EXPR_COUNT_OF,     /* count of list */
+  AST_EXPR_COUNT_IN,     /* count target in container */
   AST_EXPR_REVERSE,      /* reverse word (expression) */
   AST_EXPR_LIST_LITERAL, /* [1, 2, 3] */
   AST_EXPR_MAP_LITERAL,  /* {"key": "val"} */
@@ -389,6 +390,12 @@ struct ASTNode {
     struct {
       ASTNode *target;
     } single_target_expr;
+
+    /* AST_EXPR_COUNT_IN */
+    struct {
+      ASTNode *target;
+      ASTNode *container;
+    } count_in_expr;
 
     /* AST_EXPR_LIST_LITERAL */
     struct {

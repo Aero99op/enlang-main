@@ -1949,6 +1949,9 @@ function transpileExpressionRaw(res) {
   // 1. Silent words stripping
   res = res.replace(/\b(?:the|that|it\s+is|it)\s+/gi, ' ');
 
+  // 1b. Count in: count <target> in <container> or count of <target> in <container>
+  res = res.replace(/\bcount\s+(?:of\s+)?(.*?)\s+in\s+([a-zA-Z0-9_\[\]\.]+)/gi, 'enlng_count($1, $2)');
+
   // 2. Count / length of (must run before general 'of' property access)
   res = res.replace(/\b(?:count of|length of|size of)\s+([a-zA-Z0-9_\[\]\.]+)/gi, 'enlng_count($1)');
 
@@ -2335,7 +2338,30 @@ function transpileEnlngToJS(lines) {
   return finalJS.join('\n');
 }
 
-function enlng_count(obj) {
+function enlng_count(arg1, arg2) {
+  if (arg2 !== undefined) {
+    const target = arg1;
+    const container = arg2;
+    if (container === null || container === undefined) return 0;
+    if (typeof container === 'string') {
+      if (typeof target !== 'string' || target.length === 0) return 0;
+      let count = 0, pos = 0;
+      while ((pos = container.indexOf(target, pos)) !== -1) {
+        count++;
+        pos += target.length;
+      }
+      return count;
+    }
+    if (Array.isArray(container)) {
+      let count = 0;
+      for (let item of container) {
+        if (item === target) count++;
+      }
+      return count;
+    }
+    return 0;
+  }
+  const obj = arg1;
   if (obj === null || obj === undefined) return 0;
   if (Array.isArray(obj) || typeof obj === 'string') return obj.length;
   return Object.keys(obj).length;

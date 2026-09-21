@@ -117,6 +117,35 @@ action string_count_char(str, target_ch):
             cnt = cnt + 1
     return cnt
 
+action count_occurrences(source, target):
+    cnt = 0
+    s_len = len(source)
+    t_len = len(target)
+    when t_len == 0 or s_len == 0:
+        return 0
+    when t_len == 1:
+        for i from 0 to s_len - 1:
+            when "" + source[i] == target:
+                cnt = cnt + 1
+        return cnt
+    when t_len > s_len:
+        return 0
+    for i from 0 to s_len - t_len:
+        sub = sub_string(source, i, i + t_len)
+        when sub == target:
+            cnt = cnt + 1
+    return cnt
+
+action string_count(source, target):
+    return count_occurrences(source, target)
+
+action count(arg1, arg2):
+    when len(arg1) <= len(arg2):
+        return count_occurrences(arg2, arg1)
+    otherwise:
+        return count_occurrences(arg1, arg2)
+
+
 # ---------------------------------------------------------------------
 # Trimming & Stripping
 # ---------------------------------------------------------------------

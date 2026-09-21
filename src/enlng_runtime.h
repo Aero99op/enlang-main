@@ -947,6 +947,33 @@ static inline EnlngVal enlng_builtin_contains(EnlngVal coll, EnlngVal item) {
   return enlng_make_bool(false);
 }
 
+static inline int64_t enlng_count_in(EnlngVal target, EnlngVal container) {
+  if (container.type == ENLNG_VAL_STRING && container.as.s) {
+    if (target.type != ENLNG_VAL_STRING || !target.as.s) return 0;
+    const char *s = container.as.s;
+    const char *sub = target.as.s;
+    size_t sub_len = strlen(sub);
+    if (sub_len == 0) return 0;
+    int64_t count = 0;
+    const char *p = s;
+    while ((p = strstr(p, sub)) != NULL) {
+      count++;
+      p += sub_len;
+    }
+    return count;
+  }
+  if (container.type == ENLNG_VAL_LIST && container.as.l) {
+    int64_t count = 0;
+    for (int i = 0; i < container.as.l->count; i++) {
+      if (enlng_vals_equal(container.as.l->items[i], target)) {
+        count++;
+      }
+    }
+    return count;
+  }
+  return 0;
+}
+
 /* Native String Mutation Primitives: insert, remove, replace, set */
 static inline int64_t enlng_parse_position(EnlngVal pos, int64_t slen, bool is_add) {
   if (pos.type == ENLNG_VAL_STRING && pos.as.s) {
