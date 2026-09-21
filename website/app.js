@@ -1949,6 +1949,31 @@ function transpileExpressionRaw(res) {
   // 1. Silent words stripping
   res = res.replace(/\b(?:the|that|it\s+is|it)\s+/gi, ' ');
 
+  // Action Word Predicates & Comparisons
+  res = res.replace(/\b([a-zA-Z0-9_\[\]\.]+)\s+starts\s+with\s+(.*?)(?=[,\):]|$)/gi, '($1 && typeof $1.startsWith === "function" ? $1.startsWith($2) : false)');
+  res = res.replace(/\b([a-zA-Z0-9_\[\]\.]+)\s+ends\s+with\s+(.*?)(?=[,\):]|$)/gi, '($1 && typeof $1.endsWith === "function" ? $1.endsWith($2) : false)');
+  res = res.replace(/\b([a-zA-Z0-9_\[\]\.]+)\s+is\s+between\s+(.*?)\s+and\s+([a-zA-Z0-9_\[\]\.\(\)]+)/gi, '(($1) >= ($2) && ($1) <= ($3))');
+  res = res.replace(/\b([a-zA-Z0-9_\[\]\.]+)\s+is\s+even\b/gi, '(($1) % 2 === 0)');
+  res = res.replace(/\b([a-zA-Z0-9_\[\]\.]+)\s+is\s+odd\b/gi, '(($1) % 2 !== 0)');
+  res = res.replace(/\b([a-zA-Z0-9_\[\]\.]+)\s+is\s+not\s+empty\b/gi, 'enlng_count($1) > 0');
+  res = res.replace(/\b([a-zA-Z0-9_\[\]\.]+)\s+is\s+empty\b/gi, 'enlng_count($1) === 0');
+
+  // Action Aggregations
+  res = res.replace(/\bsum\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)/gi, 'enlng_sum($1)');
+  res = res.replace(/\b(?:average|avg)\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)/gi, 'enlng_avg($1)');
+  res = res.replace(/\b(?:highest|max)\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)/gi, 'enlng_max($1)');
+  res = res.replace(/\b(?:lowest|min)\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)/gi, 'enlng_min($1)');
+  res = res.replace(/\buppercase\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)/gi, 'enlng_to_upper($1)');
+  res = res.replace(/\blowercase\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)/gi, 'enlng_to_lower($1)');
+  res = res.replace(/\btrim\s+spaces\s+from\s+([a-zA-Z0-9_\[\]\(\)]+)/gi, 'enlng_trim($1)');
+  res = res.replace(/\btrim\s+([a-zA-Z0-9_\[\]\(\)]+)/gi, 'enlng_trim($1)');
+
+  // Action Words: replace, split, join, find
+  res = res.replace(/\breplace\s+(.*?)\s+with\s+(.*?)\s+in\s+([a-zA-Z0-9_\[\]\(\)\.]+)/gi, 'enlng_replace($1, $2, $3)');
+  res = res.replace(/\bsplit\s+(.*?)\s+(?:by|on|with)\s+([a-zA-Z0-9_\[\]\(\)\"\'\.\_]+)/gi, 'enlng_split($1, $2)');
+  res = res.replace(/\bjoin\s+(.*?)\s+(?:with|by)\s+([a-zA-Z0-9_\[\]\(\)\"\'\.\_]+)/gi, 'enlng_join($1, $2)');
+  res = res.replace(/\bfind\s+(.*?)\s+in\s+([a-zA-Z0-9_\[\]\(\)\.]+)/gi, 'enlng_find($1, $2)');
+
   // 1b. Count in: count <target> in <container> or count of <target> in <container>
   res = res.replace(/\bcount\s+(?:of\s+)?(.*?)\s+in\s+([a-zA-Z0-9_\[\]\.]+)/gi, 'enlng_count($1, $2)');
 
@@ -1956,7 +1981,7 @@ function transpileExpressionRaw(res) {
   res = res.replace(/\b(?:count of|length of|size of)\s+([a-zA-Z0-9_\[\]\.]+)/gi, 'enlng_count($1)');
 
   // 3. Universal property access: <field> of <object>
-  res = res.replace(/\b([a-zA-Z0-9_]+)\s+of\s+([a-zA-Z0-9_\[\]\.]+)/gi, '$2.$1');
+  res = res.replace(/\b(?!type\b|out\b|end\b|count\b|length\b|reverse\b|uppercase\b|lowercase\b|sum\b|average\b|highest\b|lowest\b|max\b|min\b)([a-zA-Z0-9_]+)\s+of\s+([a-zA-Z0-9_\[\]\.]+)/gi, '$2.$1');
 
   // 3b. Universal reverse expression: reverse (of)? <expr>
   res = res.replace(/\breverse\s+(?:of\s+)?([a-zA-Z0-9_\[\]\.]+)/gi, 'enlng_reverse($1)');
@@ -2150,6 +2175,16 @@ function transpileEnlngToJS(lines) {
       continue;
     }
 
+    // 4. Repeat N Times
+    const repeatTimesMatch = trimmed.match(/^repeat\s+(.*?)\s+times:$/i);
+    if (repeatTimesMatch) {
+      const countExpr = transpileExpression(repeatTimesMatch[1]);
+      const iterVar = `__rpt_i_${intermediateLines.length}`;
+      const limVar = `__rpt_lim_${intermediateLines.length}`;
+      intermediateLines.push({ type: 'block_open', indent: indentLen, code: `for (let ${iterVar} = 0, ${limVar} = ${countExpr}; ${iterVar} < ${limVar}; ${iterVar}++) {` });
+      continue;
+    }
+
     // 4a. Repeat Until Sorted
     if (/^repeat\s+until\s+(?:it\s+is\s+)?sorted:$/i.test(trimmed)) {
       intermediateLines.push({ type: 'block_open', indent: indentLen, code: `let __sorted = false; while (!__sorted) { __sorted = true;` });
@@ -2262,9 +2297,9 @@ function transpileEnlngToJS(lines) {
       let body = displayMatch[1].trim();
       let sepArg = '';
 
-      if (/\b(?:without spaces?|with no spaces?|joined)\s*$/i.test(body)) {
+      if (/\s+(?:without spaces?|with no spaces?|joined)\s*$/i.test(body) || /^(?:without spaces?|with no spaces?)\s*$/i.test(body)) {
         sepArg = ', {__sep: ""}';
-        body = body.replace(/\b(?:without spaces?|with no spaces?|joined)\s*$/i, '').trim();
+        body = body.replace(/\s+(?:without spaces?|with no spaces?|joined)\s*$/i, '').replace(/^(?:without spaces?|with no spaces?)\s*$/i, '').trim();
       } else {
         const sepMatch = body.match(/\bwith separator\s+(".*?"|'.*?')\s*$/i);
         if (sepMatch) {
@@ -2372,6 +2407,68 @@ function enlng_reverse(obj) {
   if (typeof obj === 'string') return obj.split('').reverse().join('');
   if (Array.isArray(obj)) return [...obj].reverse();
   return obj;
+}
+
+function enlng_split(str, sep) {
+  if (str === null || str === undefined) return [];
+  return String(str).split(sep !== undefined ? sep : '');
+}
+
+function enlng_join(list, sep) {
+  if (!Array.isArray(list)) return String(list);
+  return list.join(sep !== undefined ? sep : '');
+}
+
+function enlng_replace(target, replacement, container) {
+  if (container === null || container === undefined) return '';
+  return String(container).split(target).join(replacement);
+}
+
+function enlng_find(target, container) {
+  if (container === null || container === undefined) return -1;
+  if (typeof container === 'string') return container.indexOf(target);
+  if (Array.isArray(container)) {
+    for (let i = 0; i < container.length; i++) {
+      if (container[i] === target) return i;
+    }
+    return -1;
+  }
+  return -1;
+}
+
+function enlng_trim(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).trim();
+}
+
+function enlng_to_upper(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).toUpperCase();
+}
+
+function enlng_to_lower(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).toLowerCase();
+}
+
+function enlng_sum(list) {
+  if (!Array.isArray(list)) return 0;
+  return list.reduce((acc, v) => acc + (Number(v) || 0), 0);
+}
+
+function enlng_avg(list) {
+  if (!Array.isArray(list) || list.length === 0) return 0;
+  return enlng_sum(list) / list.length;
+}
+
+function enlng_max(list) {
+  if (!Array.isArray(list) || list.length === 0) return null;
+  return Math.max(...list);
+}
+
+function enlng_min(list) {
+  if (!Array.isArray(list) || list.length === 0) return null;
+  return Math.min(...list);
 }
 
 function append(list, item) {

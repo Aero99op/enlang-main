@@ -563,6 +563,14 @@ bool lexer_tokenize(Lexer *lexer) {
       continue;
     }
     if (match_word(lexer, "times")) {
+      size_t save = lexer->cursor;
+      skip_spaces_only(lexer);
+      if (lexer->source[lexer->cursor] == ':') {
+        lexer->cursor = save;
+        add_token(lexer, ENLNG_TOKEN_TIMES, "times", start_line, start_col);
+        continue;
+      }
+      lexer->cursor = save;
       add_token(lexer, ENLNG_TOKEN_MUL, "*", start_line, start_col);
       continue;
     }

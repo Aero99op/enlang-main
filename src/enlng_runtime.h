@@ -974,6 +974,132 @@ static inline int64_t enlng_count_in(EnlngVal target, EnlngVal container) {
   return 0;
 }
 
+static inline EnlngVal enlng_builtin_replace(EnlngVal target, EnlngVal repl, EnlngVal container) {
+  if (container.type != ENLNG_VAL_STRING || !container.as.s) return container;
+  if (target.type != ENLNG_VAL_STRING || !target.as.s) return container;
+  const char *s = container.as.s;
+  const char *t = target.as.s;
+  const char *r = (repl.type == ENLNG_VAL_STRING && repl.as.s) ? repl.as.s : "";
+  size_t tlen = strlen(t);
+  if (tlen == 0) return container;
+  size_t rlen = strlen(r);
+
+  int count = 0;
+  const char *p = s;
+  while ((p = strstr(p, t)) != NULL) { count++; p += tlen; }
+  if (count == 0) return container;
+
+  size_t new_len = strlen(s) + count * (rlen > tlen ? (rlen - tlen) : 0) + 1;
+  char *buf = (char *)malloc(new_len + 64);
+  buf[0] = '\0';
+  p = s;
+  const char *next;
+  while ((next = strstr(p, t)) != NULL) {
+    size_t chunk = (size_t)(next - p);
+    strncat(buf, p, chunk);
+    strcat(buf, r);
+    p = next + tlen;
+  }
+  strcat(buf, p);
+  EnlngVal res = enlng_make_string(buf);
+  free(buf);
+  return res;
+}
+
+static inline EnlngVal enlng_builtin_find(EnlngVal target, EnlngVal container) {
+  if (container.type == ENLNG_VAL_STRING && container.as.s) {
+    if (target.type != ENLNG_VAL_STRING || !target.as.s) return enlng_make_int(-1);
+    const char *p = strstr(container.as.s, target.as.s);
+    if (!p) return enlng_make_int(-1);
+    return enlng_make_int((int64_t)(p - container.as.s));
+  }
+  if (container.type == ENLNG_VAL_LIST && container.as.l) {
+    for (int i = 0; i < container.as.l->count; i++) {
+      if (enlng_vals_equal(container.as.l->items[i], target))
+        return enlng_make_int(i);
+    }
+    return enlng_make_int(-1);
+  }
+  return enlng_make_int(-1);
+}
+
+static inline EnlngVal enlng_builtin_trim(EnlngVal v) {
+  if (v.type != ENLNG_VAL_STRING || !v.as.s) return v;
+  const char *s = v.as.s;
+  while (*s && (*s == ' ' || *s == '\t' || *s == '\n' || *s == '\r')) s++;
+  if (*s == '\0') return enlng_make_string("");
+  const char *e = s + strlen(s) - 1;
+  while (e > s && (*e == ' ' || *e == '\t' || *e == '\n' || *e == '\r')) e--;
+  size_t len = (size_t)(e - s + 1);
+  char *buf = (char *)malloc(len + 1);
+  strncpy(buf, s, len);
+  buf[len] = '\0';
+  EnlngVal res = enlng_make_string(buf);
+  free(buf);
+  return res;
+}
+
+static inline EnlngVal enlng_builtin_to_upper(EnlngVal v) {
+  if (v.type != ENLNG_VAL_STRING || !v.as.s) return v;
+  char *buf = (char *)malloc(strlen(v.as.s) + 1);
+  for (size_t i = 0; v.as.s[i]; i++) buf[i] = (char)toupper((unsigned char)v.as.s[i]);
+  buf[strlen(v.as.s)] = '\0';
+  EnlngVal res = enlng_make_string(buf);
+  free(buf);
+  return res;
+}
+
+static inline EnlngVal enlng_builtin_to_lower(EnlngVal v) {
+  if (v.type != ENLNG_VAL_STRING || !v.as.s) return v;
+  char *buf = (char *)malloc(strlen(v.as.s) + 1);
+  for (size_t i = 0; v.as.s[i]; i++) buf[i] = (char)tolower((unsigned char)v.as.s[i]);
+  buf[strlen(v.as.s)] = '\0';
+  EnlngVal res = enlng_make_string(buf);
+  free(buf);
+  return res;
+}
+
+static inline EnlngVal enlng_builtin_sum(EnlngVal list) {
+  if (list.type != ENLNG_VAL_LIST || !list.as.l) return enlng_make_int(0);
+  double total = 0;
+  bool is_float = false;
+  for (int i = 0; i < list.as.l->count; i++) {
+    EnlngVal v = list.as.l->items[i];
+    if (v.type == ENLNG_VAL_FLOAT) { total += v.as.f; is_float = true; }
+    else if (v.type == ENLNG_VAL_INT) { total += (double)v.as.i; }
+  }
+  return is_float ? enlng_make_float(total) : enlng_make_int((int64_t)total);
+}
+
+static inline EnlngVal enlng_builtin_avg(EnlngVal list) {
+  if (list.type != ENLNG_VAL_LIST || !list.as.l || list.as.l->count == 0) return enlng_make_float(0.0);
+  double total = 0;
+  for (int i = 0; i < list.as.l->count; i++) {
+    EnlngVal v = list.as.l->items[i];
+    if (v.type == ENLNG_VAL_FLOAT) total += v.as.f;
+    else if (v.type == ENLNG_VAL_INT) total += (double)v.as.i;
+  }
+  return enlng_make_float(total / list.as.l->count);
+}
+
+static inline EnlngVal enlng_builtin_list_max(EnlngVal list) {
+  if (list.type != ENLNG_VAL_LIST || !list.as.l || list.as.l->count == 0) return enlng_make_null();
+  EnlngVal m = list.as.l->items[0];
+  for (int i = 1; i < list.as.l->count; i++) {
+    if (enlng_vals_gt(list.as.l->items[i], m)) m = list.as.l->items[i];
+  }
+  return m;
+}
+
+static inline EnlngVal enlng_builtin_list_min(EnlngVal list) {
+  if (list.type != ENLNG_VAL_LIST || !list.as.l || list.as.l->count == 0) return enlng_make_null();
+  EnlngVal m = list.as.l->items[0];
+  for (int i = 1; i < list.as.l->count; i++) {
+    if (enlng_vals_lt(list.as.l->items[i], m)) m = list.as.l->items[i];
+  }
+  return m;
+}
+
 /* Native String Mutation Primitives: insert, remove, replace, set */
 static inline int64_t enlng_parse_position(EnlngVal pos, int64_t slen, bool is_add) {
   if (pos.type == ENLNG_VAL_STRING && pos.as.s) {

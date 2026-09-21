@@ -177,6 +177,31 @@ def _transpile_enlng_line(line: str) -> str:
         expr = re.sub(r'\bplus\b', '+', expr)
         expr = re.sub(r'\bminus\b', '-', expr)
         expr = re.sub(r'\b(mod|modulo|modulus|modulous|modoulous)\b', '%', expr)
+        # Action Word Predicates & Comparisons
+        expr = re.sub(r'\b([a-zA-Z0-9_\[\]\.]+)\s+starts\s+with\s+(.*?)(?=[,\):]|$)', r'(\1.startswith(\2) if hasattr(\1, "startswith") else False)', expr)
+        expr = re.sub(r'\b([a-zA-Z0-9_\[\]\.]+)\s+ends\s+with\s+(.*?)(?=[,\):]|$)', r'(\1.endswith(\2) if hasattr(\1, "endswith") else False)', expr)
+        expr = re.sub(r'\b([a-zA-Z0-9_\[\]\.]+)\s+is\s+between\s+(.*?)\s+and\s+([a-zA-Z0-9_\[\]\.\(\)]+)', r'(\2 <= \1 <= \3)', expr)
+        expr = re.sub(r'\b([a-zA-Z0-9_\[\]\.]+)\s+is\s+even\b', r'(\1 % 2 == 0)', expr)
+        expr = re.sub(r'\b([a-zA-Z0-9_\[\]\.]+)\s+is\s+odd\b', r'(\1 % 2 != 0)', expr)
+        expr = re.sub(r'\b([a-zA-Z0-9_\[\]\.]+)\s+is\s+not\s+empty\b', r'(len(\1) > 0 if hasattr(\1, "__len__") else bool(\1))', expr)
+        expr = re.sub(r'\b([a-zA-Z0-9_\[\]\.]+)\s+is\s+empty\b', r'(len(\1) == 0 if hasattr(\1, "__len__") else not \1)', expr)
+
+        # Action Aggregations
+        expr = re.sub(r'\bsum\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)', r'sum(\1)', expr)
+        expr = re.sub(r'\b(?:average|avg)\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)', r'(sum(\1)/len(\1) if len(\1)>0 else 0)', expr)
+        expr = re.sub(r'\b(?:highest|max)\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)', r'max(\1)', expr)
+        expr = re.sub(r'\b(?:lowest|min)\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)', r'min(\1)', expr)
+        expr = re.sub(r'\buppercase\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)', r'(\1.upper() if hasattr(\1, "upper") else \1)', expr)
+        expr = re.sub(r'\blowercase\s+of\s+([a-zA-Z0-9_\[\]\(\)]+)', r'(\1.lower() if hasattr(\1, "lower") else \1)', expr)
+        expr = re.sub(r'\btrim\s+spaces\s+from\s+([a-zA-Z0-9_\[\]\(\)]+)', r'(\1.strip() if hasattr(\1, "strip") else \1)', expr)
+        expr = re.sub(r'\btrim\s+([a-zA-Z0-9_\[\]\(\)]+)', r'(\1.strip() if hasattr(\1, "strip") else \1)', expr)
+
+        # Action Words: replace, split, join, find
+        expr = re.sub(r'\breplace\s+(.*?)\s+with\s+(.*?)\s+in\s+([a-zA-Z0-9_\[\]\(\)\.]+)', r'(\3.replace(\1, \2) if hasattr(\3, "replace") else \3)', expr)
+        expr = re.sub(r'\bsplit\s+(.*?)\s+(?:by|on|with)\s+([a-zA-Z0-9_\[\]\(\)\"\'\.]+)', r'(\1.split(\2) if hasattr(\1, "split") else [])', expr)
+        expr = re.sub(r'\bjoin\s+(.*?)\s+(?:with|by)\s+([a-zA-Z0-9_\[\]\(\)\"\'\.]+)', r'(\2.join([str(x) for x in \1]) if hasattr(\2, "join") and hasattr(\1, "__iter__") else str(\1))', expr)
+        expr = re.sub(r'\bfind\s+(.*?)\s+in\s+([a-zA-Z0-9_\[\]\(\)\.]+)', r'(\2.find(\1) if hasattr(\2, "find") else (\2.index(\1) if \1 in \2 else -1))', expr)
+
         expr = re.sub(r'\b([a-zA-Z0-9_\[\]]+)\s+contains\s+(.*)', r'(\2 in \1)', expr)
         expr = re.sub(r'\bcall\s+([a-zA-Z0-9_]+)\s+with\s+(.*?)(?=[,\):]|$)', r'\1(\2)', expr)
         expr = re.sub(r'\bcall\s+([a-zA-Z0-9_]+)\b', r'\1()', expr)
@@ -187,7 +212,7 @@ def _transpile_enlng_line(line: str) -> str:
         expr = re.sub(r'\b([a-zA-Z0-9_]+)\s+at_last\b', r'\1[-1]', expr)
         expr = re.sub(r'\b([a-zA-Z0-9_]+)\s+at\s+([^\s,\)]+)', r'\1[\2]', expr)
         expr = re.sub(r"\b([a-zA-Z0-9_]+)'s\s+([a-zA-Z0-9_]+)\b", r"(\1.\2 if hasattr(\1, '\2') else \1['\2'])", expr)
-        expr = re.sub(r"\b(?!type\b|out\b|end\b|count\b|length\b|reverse\b)([a-zA-Z0-9_]+)\s+of\s+([a-zA-Z0-9_]+)\b", r"(\2.\1 if hasattr(\2, '\1') else \2['\1'])", expr)
+        expr = re.sub(r"\b(?!type\b|out\b|end\b|count\b|length\b|reverse\b|uppercase\b|lowercase\b|sum\b|average\b|highest\b|lowest\b|max\b|min\b)([a-zA-Z0-9_]+)\s+of\s+([a-zA-Z0-9_]+)\b", r"(\2.\1 if hasattr(\2, '\1') else \2['\1'])", expr)
 
         for i, s in enumerate(str_literals):
             expr = expr.replace(f"__STR_LITERAL_{i}__", s)
@@ -310,26 +335,47 @@ def _transpile_enlng_line(line: str) -> str:
         return f"{indent}{m.group(1)}, {m.group(2)} = {m.group(2)}, {m.group(1)}"
 
     # 10. Conditionals
-    m = re.match(r'^(?:when|if)\s+(.*?):\s*(.*)$', trimmed, re.I)
-    if m:
-        cond, rest = m.group(1), m.group(2).strip()
-        if rest:
-            return f"{indent}if {fix_expr(cond)}:\n{indent}    {_transpile_enlng_line(rest)}"
-        return f"{indent}if {fix_expr(cond)}:"
-    m = re.match(r'^(?:otherwise\s+when|otherwise\s+if|elif)\s+(.*?):\s*(.*)$', trimmed, re.I)
-    if m:
-        cond, rest = m.group(1), m.group(2).strip()
-        if rest:
-            return f"{indent}elif {fix_expr(cond)}:\n{indent}    {_transpile_enlng_line(rest)}"
-        return f"{indent}elif {fix_expr(cond)}:"
-    if re.match(r'^(?:otherwise|else):\s*(.*)$', trimmed, re.I):
-        m_else = re.match(r'^(?:otherwise|else):\s*(.*)$', trimmed, re.I)
-        rest = m_else.group(1).strip()
-        if rest:
-            return f"{indent}else:\n{indent}    {_transpile_enlng_line(rest)}"
-        return f"{indent}else:"
+    if trimmed.endswith(':'):
+        m = re.match(r'^(?:when|if)\s+(.*):$', trimmed, re.I)
+        if m:
+            return f"{indent}if {fix_expr(m.group(1))}:"
+        m = re.match(r'^(?:otherwise\s+when|otherwise\s+if|elif)\s+(.*):$', trimmed, re.I)
+        if m:
+            return f"{indent}elif {fix_expr(m.group(1))}:"
+        if re.match(r'^(?:otherwise|else):$', trimmed, re.I):
+            return f"{indent}else:"
+    else:
+        colon_idx = -1
+        in_q = False
+        q_c = ''
+        for idx_c, ch in enumerate(trimmed):
+            if not in_q and ch in ('"', "'"):
+                in_q = True
+                q_c = ch
+            elif in_q and ch == q_c:
+                in_q = False
+            elif not in_q and ch == ':':
+                colon_idx = idx_c
+                break
+        if colon_idx != -1:
+            head = trimmed[:colon_idx].strip()
+            rest = trimmed[colon_idx+1:].strip()
+            m = re.match(r'^(?:when|if)\s+(.*)$', head, re.I)
+            if m:
+                return f"{indent}if {fix_expr(m.group(1))}:\n{indent}    {_transpile_enlng_line(rest)}"
+            m = re.match(r'^(?:otherwise\s+when|otherwise\s+if|elif)\s+(.*)$', head, re.I)
+            if m:
+                return f"{indent}elif {fix_expr(m.group(1))}:\n{indent}    {_transpile_enlng_line(rest)}"
+            if re.match(r'^(?:otherwise|else)$', head, re.I):
+                return f"{indent}else:\n{indent}    {_transpile_enlng_line(rest)}"
 
     # 11. Loops
+    m = re.match(r'^repeat\s+(.*?)\s+times:$', trimmed, re.I)
+    if m:
+        return f"{indent}for _ in range({fix_expr(m.group(1))}):"
+    m = re.match(r'^(?:repeat\s+until|until)\s+(.*?):$', trimmed, re.I)
+    if m:
+        return f"{indent}while not ({fix_expr(m.group(1))}):"
     m = re.match(r'^(?:repeat\s+while|while)\s+(.*?):$', trimmed, re.I)
     if m:
         return f"{indent}while {fix_expr(m.group(1))}:"

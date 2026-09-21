@@ -66,6 +66,32 @@ static void skip_ignorable(Parser *p) {
   }
 }
 
+static bool has_token_on_line(Parser *p, EnlngTokenType type) {
+  int i = 0;
+  while (true) {
+    Token *tok = peek(p, i);
+    if (tok->type == ENLNG_TOKEN_NEWLINE || tok->type == ENLNG_TOKEN_EOF ||
+        tok->type == ENLNG_TOKEN_DEDENT) {
+      return false;
+    }
+    if (tok->type == type) {
+      return true;
+    }
+    i++;
+  }
+}
+
+static bool is_operator_or_closing(EnlngTokenType t) {
+  return t == ENLNG_TOKEN_ADD || t == ENLNG_TOKEN_SUB || t == ENLNG_TOKEN_MUL ||
+         t == ENLNG_TOKEN_DIV || t == ENLNG_TOKEN_MOD || t == ENLNG_TOKEN_EQ ||
+         t == ENLNG_TOKEN_NEQ || t == ENLNG_TOKEN_GT || t == ENLNG_TOKEN_LT ||
+         t == ENLNG_TOKEN_GTE || t == ENLNG_TOKEN_LTE || t == ENLNG_TOKEN_AND ||
+         t == ENLNG_TOKEN_OR || t == ENLNG_TOKEN_RPAREN || t == ENLNG_TOKEN_RBRACKET ||
+         t == ENLNG_TOKEN_RBRACE || t == ENLNG_TOKEN_COLON || t == ENLNG_TOKEN_COMMA ||
+         t == ENLNG_TOKEN_NEWLINE || t == ENLNG_TOKEN_EOF || t == ENLNG_TOKEN_ASSIGN ||
+         t == ENLNG_TOKEN_INC_BY || t == ENLNG_TOKEN_DEC_BY || t == ENLNG_TOKEN_DOT;
+}
+
 /* Forward declarations */
 static ASTNode *parse_statement(Parser *p);
 static ASTNode *parse_expression(Parser *p);
@@ -80,7 +106,12 @@ static ASTNode *ast_new(ASTNodeType type, int line) {
 }
 
 /* Expression parsing with Precedence */
-static ASTNode *parse_primary(Parser *p) {
+static ASTNode *parse_primary_internal(Parser *p, bool allow_with);
+static inline ASTNode *parse_primary(Parser *p) {
+  return parse_primary_internal(p, true);
+}
+
+static ASTNode *parse_primary_internal(Parser *p, bool allow_with) {
   Token *t = peek(p, 0);
 
   /* Int Literal */
@@ -246,11 +277,10 @@ static ASTNode *parse_primary(Parser *p) {
     char *name = enlng_strdup(t->text);
 
     /* Natural count target in container: count "a" in word */
-    if (strcmp(name, "count") == 0 && !check(p, ENLNG_TOKEN_LPAREN) &&
+    if (strcmp(name, "count") == 0 && has_token_on_line(p, ENLNG_TOKEN_IN) &&
+        !is_operator_or_closing(peek(p, 0)->type) && !check(p, ENLNG_TOKEN_LPAREN) &&
         !check(p, ENLNG_TOKEN_DOT) && !check(p, ENLNG_TOKEN_LBRACKET) &&
-        !check(p, ENLNG_TOKEN_OF) && !check(p, ENLNG_TOKEN_ASSIGN) &&
-        !check(p, ENLNG_TOKEN_COLON) && !check(p, ENLNG_TOKEN_COMMA) &&
-        !check(p, ENLNG_TOKEN_NEWLINE) && !check(p, ENLNG_TOKEN_EOF)) {
+        !check(p, ENLNG_TOKEN_OF)) {
       free(name);
       ASTNode *tgt = parse_primary(p);
       if (match(p, ENLNG_TOKEN_IN)) {
@@ -262,6 +292,149 @@ static ASTNode *parse_primary(Parser *p) {
       }
       set_error(p, "Expected 'in' after count target expression", t->line);
       return NULL;
+    }
+
+    /* split target by sep */
+    if (strcmp(name, "split") == 0 &&
+        (has_token_on_line(p, ENLNG_TOKEN_BY) || has_token_on_line(p, ENLNG_TOKEN_WITH)) &&
+        !is_operator_or_closing(peek(p, 0)->type) && !check(p, ENLNG_TOKEN_LPAREN) &&
+        !check(p, ENLNG_TOKEN_DOT) && !check(p, ENLNG_TOKEN_LBRACKET) &&
+        !check(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *tgt = parse_primary_internal(p, false);
+      if (match(p, ENLNG_TOKEN_BY) || match(p, ENLNG_TOKEN_WITH)) {
+        ASTNode *sep = parse_primary(p);
+        ASTNode *n = ast_new(AST_EXPR_SPLIT, t->line);
+        n->as.count_in_expr.target = tgt;
+        n->as.count_in_expr.container = sep;
+        return n;
+      }
+      set_error(p, "Expected 'by' or 'with' after split target", t->line);
+      return NULL;
+    }
+
+    /* join list with sep */
+    if (strcmp(name, "join") == 0 &&
+        (has_token_on_line(p, ENLNG_TOKEN_WITH) || has_token_on_line(p, ENLNG_TOKEN_BY)) &&
+        !is_operator_or_closing(peek(p, 0)->type) && !check(p, ENLNG_TOKEN_LPAREN) &&
+        !check(p, ENLNG_TOKEN_DOT) && !check(p, ENLNG_TOKEN_LBRACKET) &&
+        !check(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *lst = parse_primary_internal(p, false);
+      if (match(p, ENLNG_TOKEN_WITH) || match(p, ENLNG_TOKEN_BY)) {
+        ASTNode *sep = parse_primary(p);
+        ASTNode *n = ast_new(AST_EXPR_JOIN, t->line);
+        n->as.count_in_expr.target = lst;
+        n->as.count_in_expr.container = sep;
+        return n;
+      }
+      set_error(p, "Expected 'with' or 'by' after join target", t->line);
+      return NULL;
+    }
+
+    /* replace target with repl in container */
+    if (strcmp(name, "replace") == 0 &&
+        has_token_on_line(p, ENLNG_TOKEN_WITH) && has_token_on_line(p, ENLNG_TOKEN_IN) &&
+        !is_operator_or_closing(peek(p, 0)->type) && !check(p, ENLNG_TOKEN_LPAREN) &&
+        !check(p, ENLNG_TOKEN_DOT) && !check(p, ENLNG_TOKEN_LBRACKET) &&
+        !check(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *tgt = parse_primary_internal(p, false);
+      if (match(p, ENLNG_TOKEN_WITH)) {
+        ASTNode *repl = parse_primary_internal(p, false);
+        if (match(p, ENLNG_TOKEN_IN)) {
+          ASTNode *cont = parse_primary(p);
+          ASTNode *n = ast_new(AST_EXPR_REPLACE, t->line);
+          n->as.replace_expr.target = tgt;
+          n->as.replace_expr.replacement = repl;
+          n->as.replace_expr.container = cont;
+          return n;
+        }
+        set_error(p, "Expected 'in' after replace replacement expression", t->line);
+        return NULL;
+      }
+      set_error(p, "Expected 'with' after replace target expression", t->line);
+      return NULL;
+    }
+
+    /* find target in container */
+    if (strcmp(name, "find") == 0 && has_token_on_line(p, ENLNG_TOKEN_IN) &&
+        !is_operator_or_closing(peek(p, 0)->type) && !check(p, ENLNG_TOKEN_LPAREN) &&
+        !check(p, ENLNG_TOKEN_DOT) && !check(p, ENLNG_TOKEN_LBRACKET) &&
+        !check(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *tgt = parse_primary(p);
+      if (match(p, ENLNG_TOKEN_IN)) {
+        ASTNode *cont = parse_primary(p);
+        ASTNode *n = ast_new(AST_EXPR_FIND, t->line);
+        n->as.count_in_expr.target = tgt;
+        n->as.count_in_expr.container = cont;
+        return n;
+      }
+      set_error(p, "Expected 'in' after find target expression", t->line);
+      return NULL;
+    }
+
+    /* trim target */
+    if (strcmp(name, "trim") == 0 &&
+        !is_operator_or_closing(peek(p, 0)->type) && !check(p, ENLNG_TOKEN_LPAREN) &&
+        !check(p, ENLNG_TOKEN_DOT) && !check(p, ENLNG_TOKEN_LBRACKET) &&
+        !check(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      if (check(p, ENLNG_TOKEN_IDENTIFIER) && strcmp(peek(p, 0)->text, "spaces") == 0) {
+        advance(p);
+        match(p, ENLNG_TOKEN_FROM);
+      }
+      ASTNode *tgt = parse_primary(p);
+      ASTNode *n = ast_new(AST_EXPR_TRIM, t->line);
+      n->as.single_target_expr.target = tgt;
+      return n;
+    }
+
+    /* uppercase of / lowercase of */
+    if (strcmp(name, "uppercase") == 0 && match(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *tgt = parse_primary(p);
+      ASTNode *n = ast_new(AST_EXPR_TO_UPPER, t->line);
+      n->as.single_target_expr.target = tgt;
+      return n;
+    }
+    if (strcmp(name, "lowercase") == 0 && match(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *tgt = parse_primary(p);
+      ASTNode *n = ast_new(AST_EXPR_TO_LOWER, t->line);
+      n->as.single_target_expr.target = tgt;
+      return n;
+    }
+
+    /* sum of / average of / highest of / lowest of */
+    if (strcmp(name, "sum") == 0 && match(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *tgt = parse_primary(p);
+      ASTNode *n = ast_new(AST_EXPR_SUM, t->line);
+      n->as.single_target_expr.target = tgt;
+      return n;
+    }
+    if ((strcmp(name, "average") == 0 || strcmp(name, "avg") == 0) && match(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *tgt = parse_primary(p);
+      ASTNode *n = ast_new(AST_EXPR_AVG, t->line);
+      n->as.single_target_expr.target = tgt;
+      return n;
+    }
+    if ((strcmp(name, "highest") == 0 || strcmp(name, "max") == 0) && match(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *tgt = parse_primary(p);
+      ASTNode *n = ast_new(AST_EXPR_MAX, t->line);
+      n->as.single_target_expr.target = tgt;
+      return n;
+    }
+    if ((strcmp(name, "lowest") == 0 || strcmp(name, "min") == 0) && match(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *tgt = parse_primary(p);
+      ASTNode *n = ast_new(AST_EXPR_MIN, t->line);
+      n->as.single_target_expr.target = tgt;
+      return n;
     }
 
     /* Special position keywords: at_first and at_last evaluate to string literals */
@@ -332,7 +505,7 @@ static ASTNode *parse_primary(Parser *p) {
     }
 
     /* Function Call with English 'with': func with a, b */
-    if (match(p, ENLNG_TOKEN_WITH)) {
+    if (allow_with && match(p, ENLNG_TOKEN_WITH)) {
       ASTNode *n = ast_new(AST_EXPR_CALL, t->line);
       n->as.call_expr.func_name = name;
       int cap = 4;
@@ -726,6 +899,21 @@ static ASTNode *parse_statement(Parser *p) {
       parse_block(p, &n->as.repeat_loop.body, &n->as.repeat_loop.body_count);
       return n;
     }
+    /* repeat N times: */
+    ASTNode *cnt = parse_expression(p);
+    bool is_times = false;
+    if (match(p, ENLNG_TOKEN_TIMES)) {
+      is_times = true;
+    } else if (check(p, ENLNG_TOKEN_IDENTIFIER) && strcmp(peek(p, 0)->text, "times") == 0) {
+      advance(p);
+      is_times = true;
+    }
+    if (is_times) {
+      ASTNode *n = ast_new(AST_REPEAT_TIMES, t->line);
+      n->as.repeat_times.count_expr = cnt;
+      parse_block(p, &n->as.repeat_times.body, &n->as.repeat_times.body_count);
+      return n;
+    }
   }
 
   /* Direct while: while left < right: or 'repeat while' */
@@ -823,7 +1011,7 @@ static ASTNode *parse_statement(Parser *p) {
       return n;
     }
     n->as.swap_stmt.is_pair = false;
-    n->as.swap_stmt.left = parse_primary(p);
+    n->as.swap_stmt.left = parse_primary_internal(p, false);
     if (match(p, ENLNG_TOKEN_AND) || match(p, ENLNG_TOKEN_COMMA) ||
         match(p, ENLNG_TOKEN_WITH)) {
       /* optional 'and', ',', or 'with' */

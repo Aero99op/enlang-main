@@ -216,6 +216,82 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     emit(cg, "))");
     break;
 
+  case AST_EXPR_SPLIT:
+    emit(cg, "enlng_builtin_split(");
+    generate_expression(cg, n->as.count_in_expr.target);
+    emit(cg, ", ");
+    generate_expression(cg, n->as.count_in_expr.container);
+    emit(cg, ")");
+    break;
+
+  case AST_EXPR_JOIN:
+    emit(cg, "enlng_builtin_join(");
+    generate_expression(cg, n->as.count_in_expr.target);
+    emit(cg, ", ");
+    generate_expression(cg, n->as.count_in_expr.container);
+    emit(cg, ")");
+    break;
+
+  case AST_EXPR_REPLACE:
+    emit(cg, "enlng_builtin_replace(");
+    generate_expression(cg, n->as.replace_expr.target);
+    emit(cg, ", ");
+    generate_expression(cg, n->as.replace_expr.replacement);
+    emit(cg, ", ");
+    generate_expression(cg, n->as.replace_expr.container);
+    emit(cg, ")");
+    break;
+
+  case AST_EXPR_FIND:
+    emit(cg, "enlng_builtin_find(");
+    generate_expression(cg, n->as.count_in_expr.target);
+    emit(cg, ", ");
+    generate_expression(cg, n->as.count_in_expr.container);
+    emit(cg, ")");
+    break;
+
+  case AST_EXPR_TRIM:
+    emit(cg, "enlng_builtin_trim(");
+    generate_expression(cg, n->as.single_target_expr.target);
+    emit(cg, ")");
+    break;
+
+  case AST_EXPR_TO_UPPER:
+    emit(cg, "enlng_builtin_to_upper(");
+    generate_expression(cg, n->as.single_target_expr.target);
+    emit(cg, ")");
+    break;
+
+  case AST_EXPR_TO_LOWER:
+    emit(cg, "enlng_builtin_to_lower(");
+    generate_expression(cg, n->as.single_target_expr.target);
+    emit(cg, ")");
+    break;
+
+  case AST_EXPR_SUM:
+    emit(cg, "enlng_builtin_sum(");
+    generate_expression(cg, n->as.single_target_expr.target);
+    emit(cg, ")");
+    break;
+
+  case AST_EXPR_AVG:
+    emit(cg, "enlng_builtin_avg(");
+    generate_expression(cg, n->as.single_target_expr.target);
+    emit(cg, ")");
+    break;
+
+  case AST_EXPR_MAX:
+    emit(cg, "enlng_builtin_list_max(");
+    generate_expression(cg, n->as.single_target_expr.target);
+    emit(cg, ")");
+    break;
+
+  case AST_EXPR_MIN:
+    emit(cg, "enlng_builtin_list_min(");
+    generate_expression(cg, n->as.single_target_expr.target);
+    emit(cg, ")");
+    break;
+
   case AST_EXPR_REVERSE:
     emit(cg, "enlng_val_reverse(");
     generate_expression(cg, n->as.single_target_expr.target);
@@ -648,6 +724,24 @@ static void generate_statement(CodeGen *cg, ASTNode *n) {
       emit_indent(cg);
       emit(cg, "}\n");
     }
+    break;
+  }
+
+  case AST_REPEAT_TIMES: {
+    int lid = cg->temp_var_id++;
+    emit_indent(cg);
+    emit(cg, "int64_t _rpt_lim%d = enlng_val_to_int(", lid);
+    generate_expression(cg, n->as.repeat_times.count_expr);
+    emit(cg, ");\n");
+    emit_indent(cg);
+    emit(cg, "for (int64_t _rpt_i%d = 0; _rpt_i%d < _rpt_lim%d; _rpt_i%d++) {\n", lid, lid, lid, lid);
+    cg->indent_level++;
+    for (int i = 0; i < n->as.repeat_times.body_count; i++) {
+      generate_statement(cg, n->as.repeat_times.body[i]);
+    }
+    cg->indent_level--;
+    emit_indent(cg);
+    emit(cg, "}\n");
     break;
   }
 

@@ -191,6 +191,17 @@ typedef enum {
   AST_EXPR_CALL,         /* func(a, b) */
   AST_EXPR_COUNT_OF,     /* count of list */
   AST_EXPR_COUNT_IN,     /* count target in container */
+  AST_EXPR_SPLIT,        /* split text by sep */
+  AST_EXPR_JOIN,         /* join list with sep */
+  AST_EXPR_REPLACE,      /* replace target with repl in container */
+  AST_EXPR_FIND,         /* find target in container */
+  AST_EXPR_TRIM,         /* trim text */
+  AST_EXPR_TO_UPPER,     /* uppercase of text */
+  AST_EXPR_TO_LOWER,     /* lowercase of text */
+  AST_EXPR_SUM,          /* sum of list */
+  AST_EXPR_AVG,          /* average of list */
+  AST_EXPR_MAX,          /* max/highest of list */
+  AST_EXPR_MIN,          /* min/lowest of list */
   AST_EXPR_REVERSE,      /* reverse word (expression) */
   AST_EXPR_LIST_LITERAL, /* [1, 2, 3] */
   AST_EXPR_MAP_LITERAL,  /* {"key": "val"} */
@@ -391,11 +402,18 @@ struct ASTNode {
       ASTNode *target;
     } single_target_expr;
 
-    /* AST_EXPR_COUNT_IN */
+    /* AST_EXPR_COUNT_IN / AST_EXPR_SPLIT / AST_EXPR_JOIN / AST_EXPR_FIND */
     struct {
       ASTNode *target;
       ASTNode *container;
     } count_in_expr;
+
+    /* AST_EXPR_REPLACE */
+    struct {
+      ASTNode *target;
+      ASTNode *replacement;
+      ASTNode *container;
+    } replace_expr;
 
     /* AST_EXPR_LIST_LITERAL */
     struct {
