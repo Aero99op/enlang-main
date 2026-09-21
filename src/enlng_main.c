@@ -8,11 +8,48 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <windows.h>
+#include <ctype.h>
+
+#ifdef _WIN32
+  #include <windows.h>
+  #include <process.h>
+  #define ENLNG_PATH_SEP '\\'
+  #define ENLNG_EXE_SUFFIX ".exe"
+#else
+  #include <unistd.h>
+  #include <sys/types.h>
+  #define ENLNG_PATH_SEP '/'
+  #define ENLNG_EXE_SUFFIX ""
+  #ifndef MAX_PATH
+    #define MAX_PATH 4096
+  #endif
+#endif
+
 #include "enlng_lexer.h"
 #include "enlng_parser.h"
 #include "enlng_codegen.h"
 #include "enlng_runtime_embed.h"
+
+static void get_temp_directory(char* buf, size_t buf_size) {
+#ifdef _WIN32
+    DWORD len = GetTempPathA((DWORD)buf_size, buf);
+    if (len == 0 || len >= buf_size) {
+        const char* env_t = getenv("TEMP");
+        if (!env_t) env_t = getenv("TMP");
+        if (!env_t) env_t = ".";
+        snprintf(buf, buf_size, "%s", env_t);
+    }
+#else
+    const char* env_t = getenv("TMPDIR");
+    if (!env_t) env_t = "/tmp";
+    snprintf(buf, buf_size, "%s", env_t);
+#endif
+    size_t td_len = strlen(buf);
+    while (td_len > 0 && (buf[td_len - 1] == '\\' || buf[td_len - 1] == '/')) {
+        buf[td_len - 1] = '\0';
+        td_len--;
+    }
+}
 
 static void print_banner(void) {
     printf("Enlang Sovereign Programming Language Compiler v%s\n", ENLNG_VERSION);
@@ -154,7 +191,7 @@ int main(int argc, char* argv[]) {
         if (argc >= 5 && strcmp(argv[3], "-o") == 0) {
             output_exe = argv[4];
         } else {
-            output_exe = "output.exe";
+            output_exe = "output" ENLNG_EXE_SUFFIX;
         }
     } else {
         input_file = argv[1];
@@ -198,20 +235,21 @@ int main(int argc, char* argv[]) {
 
     /* 4. Native Compilation via GCC */
     char temp_dir[MAX_PATH];
-    GetTempPathA(MAX_PATH, temp_dir);
-    size_t td_len = strlen(temp_dir);
-    if (td_len > 0 && (temp_dir[td_len - 1] == '\\' || temp_dir[td_len - 1] == '/')) {
-        temp_dir[td_len - 1] = '\0';
-    }
-    DWORD pid = GetCurrentProcessId();
+    get_temp_directory(temp_dir, sizeof(temp_dir));
+
+#ifdef _WIN32
+    unsigned long pid = (unsigned long)GetCurrentProcessId();
+#else
+    unsigned long pid = (unsigned long)getpid();
+#endif
 
     char temp_c[MAX_PATH];
     char temp_exe[MAX_PATH];
     char temp_runtime[MAX_PATH];
 
-    snprintf(temp_c, sizeof(temp_c), "%s\\enlng_build_%lu.c", temp_dir, pid);
-    snprintf(temp_exe, sizeof(temp_exe), "%s\\enlng_build_%lu.exe", temp_dir, pid);
-    snprintf(temp_runtime, sizeof(temp_runtime), "%s\\enlng_runtime.h", temp_dir);
+    snprintf(temp_c, sizeof(temp_c), "%s%cenlng_build_%lu.c", temp_dir, ENLNG_PATH_SEP, pid);
+    snprintf(temp_exe, sizeof(temp_exe), "%s%cenlng_build_%lu%s", temp_dir, ENLNG_PATH_SEP, pid, ENLNG_EXE_SUFFIX);
+    snprintf(temp_runtime, sizeof(temp_runtime), "%s%cenlng_runtime.h", temp_dir, ENLNG_PATH_SEP);
 
     /* Write embedded runtime header */
     FILE* frh = fopen(temp_runtime, "w");
@@ -232,7 +270,14 @@ int main(int argc, char* argv[]) {
     char cmd[MAX_PATH * 4];
     const char* final_exe_target = (strcmp(mode, "build") == 0 && output_exe) ? output_exe : temp_exe;
 
-    snprintf(cmd, sizeof(cmd), "gcc -O2 -std=c99 -I\"%s\" -I\"src\" -I\"d:\\enlangg\\src\" \"%s\" -o \"%s\"", temp_dir, temp_c, final_exe_target);
+    char extra_inc[512] = "";
+    const char* env_home = getenv("ENLANGG_HOME");
+    if (env_home && strlen(env_home) > 0) {
+        snprintf(extra_inc, sizeof(extra_inc), " -I\"%s%csrc\" -I\"%s\"", env_home, ENLNG_PATH_SEP, env_home);
+    }
+
+    snprintf(cmd, sizeof(cmd), "gcc -O2 -std=c99 -I\"%s\" -I\"src\" -I\".\"%s \"%s\" -o \"%s\"",
+             temp_dir, extra_inc, temp_c, final_exe_target);
     int compile_ret = system(cmd);
 
     if (compile_ret != 0) {
@@ -244,8 +289,16 @@ int main(int argc, char* argv[]) {
     int exec_ret = 0;
     if (strcmp(mode, "run") == 0) {
         /* Run native executable */
-        char run_cmd[MAX_PATH * 2];
+        char run_cmd[MAX_PATH * 2 + 16];
+#ifdef _WIN32
         snprintf(run_cmd, sizeof(run_cmd), "\"%s\"", temp_exe);
+#else
+        if (temp_exe[0] != '/' && temp_exe[0] != '.') {
+            snprintf(run_cmd, sizeof(run_cmd), "\"./%s\"", temp_exe);
+        } else {
+            snprintf(run_cmd, sizeof(run_cmd), "\"%s\"", temp_exe);
+        }
+#endif
         exec_ret = system(run_cmd);
         remove(temp_exe);
     } else if (strcmp(mode, "build") == 0) {

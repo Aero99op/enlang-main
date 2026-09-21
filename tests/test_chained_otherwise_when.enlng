@@ -1,0 +1,9 @@
+type enlng
+
+score = 85
+when score >= 90:
+    show "Grade A"
+otherwise when score >= 75:
+    show "Grade B"
+otherwise:
+    show "Grade C"

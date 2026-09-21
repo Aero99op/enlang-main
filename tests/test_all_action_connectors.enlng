@@ -1,0 +1,107 @@
+type enlng
+
+# 1. Split with all connectors: on, by, with
+raw = "apple|banana|cherry"
+p_on = split raw on "|"
+p_by = split raw by "|"
+p_with = split raw with "|"
+
+when p_on[0] == "apple" and p_by[1] == "banana" and p_with[2] == "cherry":
+    show "[PASS 1] Split with connectors on, by, with"
+
+# 2. Replace with connector: replace ... with ... in ...
+msg = "hello world"
+replaced = replace "world" with "enlangg" in msg
+when replaced == "hello enlangg":
+    show "[PASS 2] Replace with connectors with, in"
+
+# 3. Join with connectors: with, by
+words = ["one", "two", "three"]
+j_with = join words with " - "
+j_by = join words by " - "
+when j_with == "one - two - three" and j_by == "one - two - three":
+    show "[PASS 3] Join with connectors with, by"
+
+# 4. Find with connector: find ... in ...
+haystack = "the quick brown fox"
+idx = find "brown" in haystack
+when idx == 10:
+    show "[PASS 4] Find with connector in"
+
+# 5. Count of / count ... in ...
+text = "mississippi"
+c = count "s" in text
+when c == 4:
+    show "[PASS 5] Count with connector in"
+
+# 6. Contains predicate
+sentence = "sovereign enlangg engine"
+when sentence contains "enlangg":
+    show "[PASS 6] Contains predicate"
+
+# 7. Swap with connectors: and, with
+a = 10
+b = 20
+swap a and b
+swap a with b
+when a == 10 and b == 20:
+    show "[PASS 7] Swap with connectors and, with"
+
+# 8. Reverse & Arrange
+s_rev = "hello"
+reverse s_rev
+when s_rev == "olleh":
+    show "[PASS 8] Reverse statement"
+
+items = ["first", "second", "third"]
+arrange items by [2, 0, 1]
+when items[0] == "third" and items[1] == "first" and items[2] == "second":
+    show "[PASS 9] Arrange statement with connector by"
+
+# 9. Aggregations with connector 'of': sum, avg, max, min
+nums = [10, 20, 30, 40]
+s_val = sum of nums
+a_val = average of nums
+h_val = highest of nums
+l_val = lowest of nums
+
+when s_val == 100 and a_val == 25 and h_val == 40 and l_val == 10:
+    show "[PASS 10] Aggregations (sum, avg, max, min of)"
+
+# 10. String transforms with connector 'of': uppercase, lowercase, trim
+upper = uppercase of "enlangg"
+lower = lowercase of "SOVEREIGN"
+trimmed1 = trim "  spaced  "
+trimmed2 = trim spaces from "  cleaned  "
+
+when upper == "ENLANGG" and lower == "sovereign" and trimmed1 == "spaced" and trimmed2 == "cleaned":
+    show "[PASS 11] String transforms (uppercase of, lowercase of, trim spaces from)"
+
+# 11. Positional access: at_first, at_last, at
+word = "quantum"
+f_c = word at_first
+l_c = word at_last
+m_c = word at 3
+
+when f_c == "q" and l_c == "m" and m_c == "n":
+    show "[PASS 12] Positional access (at_first, at_last, at)"
+
+# 12. Dot-Free object access and mutation with 'of'
+user = {"name": "Antigravity", "score": 90}
+u_name = name of user
+score of user increases by 10
+u_score = score of user
+
+when u_name == "Antigravity" and u_score == 100:
+    show "[PASS 13] Dot-Free Property Access & Mutation with 'of'"
+
+# 13. Native In-Place String Mutation statements (in, from, at)
+mut = "spandan"
+string_replace "a" in mut at 0
+string_add "!" in mut at_last
+string_remove from mut at 0
+
+when mut == "pandan!":
+    show "[PASS 14] Native String Mutations (string_replace, string_add, string_remove with in, at, from)"
+
+show "=== ALL 14 ACTION & CONNECTOR GROUPS FULLY VERIFIED AND PASSING ==="

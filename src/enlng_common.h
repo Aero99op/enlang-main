@@ -139,7 +139,8 @@ typedef enum {
   ENLNG_TOKEN_DOT,      /* '.' */
   ENLNG_TOKEN_USE,      /* 'use' / 'import' */
   ENLNG_TOKEN_AT,       /* 'at' */
-  ENLNG_TOKEN_OF        /* 'of' */
+  ENLNG_TOKEN_OF,       /* 'of' */
+  ENLNG_TOKEN_ON        /* 'on' */
 } EnlngTokenType;
 
 /* --- Token Structure --- */

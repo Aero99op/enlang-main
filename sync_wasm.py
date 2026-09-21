@@ -70,36 +70,104 @@ def verify_parity():
     sys.path.insert(0, os.path.join(ROOT_DIR, 'website'))
     try:
         import enlang_engine
-    except ImportError:
-        log("Warning: Could not import enlang_engine for verification.")
-        return True
+    except ImportError as e:
+        log(f"FATAL ERROR: Could not import enlang_engine for verification: {e}")
+        return False
 
-    test_code = """type enlng
+    native_bin = os.path.join(ROOT_DIR, 'enlng.exe' if sys.platform == 'win32' else 'enlng')
+    if not os.path.exists(native_bin):
+        fallback = os.path.join(ROOT_DIR, 'enlng' if sys.platform == 'win32' else 'enlng.exe')
+        if os.path.exists(fallback):
+            native_bin = fallback
+
+    test_cases = [
+        {
+            "name": "string_mutation",
+            "code": """type enlng
 
 remember n as "spandan"
 show n
 string_replace "a" in n at 0
 show n
-"""
+""",
+            "expected_contains": "spandan\napandan"
+        },
+        {
+            "name": "connector_on_split",
+            "code": """type enlng
 
-    res_raw = enlang_engine.execute_enlang_wasm('sandbox.enlng', test_code, 'enlng')
-    try:
-        res = json.loads(res_raw) if isinstance(res_raw, str) else res_raw
-    except Exception:
-        res = {}
+text = "alpha:beta:gamma"
+p = split text on ":"
+show p[0]
+show p[1]
+show p[2]
+""",
+            "expected_contains": "alpha\nbeta\ngamma"
+        },
+        {
+            "name": "arithmetic_loop",
+            "code": """type enlng
 
-    if not res or not res.get('success'):
-        log(f"ERROR: WebAssembly parity test failed: {res_raw}")
-        return False
+total = 0
+for i from 1 to 5 by 1:
+    total increases by i
+show "total:" total
+""",
+            "expected_contains": "total: 15"
+        }
+    ]
 
+    for tc in test_cases:
+        tname = tc["name"]
+        tcode = tc["code"]
 
-    output = res.get('output', '').strip().replace('\r\n', '\n')
-    expected = "spandan\napandan"
-    if expected not in output:
-        log(f"ERROR: Parity mismatch! Got: {output}, Expected: {expected}")
-        return False
+        # 1. WebAssembly simulated execution
+        res_raw = enlang_engine.execute_enlang_wasm('sandbox.enlng', tcode, 'enlng')
+        try:
+            res = json.loads(res_raw) if isinstance(res_raw, str) else res_raw
+        except Exception:
+            res = {}
 
-    log("PASSED: WebAssembly parity test verified successfully (spandan -> apandan)!")
+        if not res or not res.get('success'):
+            log(f"ERROR: WebAssembly engine failed on {tname}: {res_raw}")
+            return False
+
+        wasm_output = res.get('output', '').strip().replace('\r\n', '\n')
+        if tc.get("expected_contains") and tc["expected_contains"] not in wasm_output:
+            log(f"ERROR: WASM output missing expected assertion in {tname}! Got: {wasm_output}")
+            return False
+
+        # 2. Native C compiler execution
+        if os.path.exists(native_bin):
+            tmp_f = os.path.join(ROOT_DIR, f"temp_parity_{tname}.enlng")
+            try:
+                with open(tmp_f, 'w', encoding='utf-8') as f:
+                    f.write(tcode)
+
+                native_run = subprocess.run(
+                    [native_bin, "run", tmp_f],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if native_run.returncode != 0:
+                    log(f"ERROR: Native compiler failed on {tname} with code {native_run.returncode}!")
+                    log(f"Stderr: {native_run.stderr}")
+                    return False
+
+                native_output = native_run.stdout.strip().replace('\r\n', '\n')
+                if tc.get("expected_contains") and tc["expected_contains"] not in native_output:
+                    log(f"ERROR: Native compiler missing expected assertion in {tname}! Got: {native_output}")
+                    return False
+
+                log(f"PASSED: Dual-engine parity verified for '{tname}' (Native C == WASM)!")
+            finally:
+                if os.path.exists(tmp_f):
+                    try: os.remove(tmp_f)
+                    except Exception: pass
+        else:
+            log(f"Warning: Native compiler {native_bin} not found. Verified WASM engine only.")
+
     return True
 def sync_all():
     log("==================================================")

@@ -553,6 +553,11 @@ bool lexer_tokenize(Lexer *lexer) {
       continue;
     }
 
+    if (match_word(lexer, "on")) {
+      add_token(lexer, ENLNG_TOKEN_ON, "on", start_line, start_col);
+      continue;
+    }
+
     /* Arithmetic Words */
     if (match_word(lexer, "plus")) {
       add_token(lexer, ENLNG_TOKEN_ADD, "+", start_line, start_col);

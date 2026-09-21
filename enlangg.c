@@ -10,7 +10,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
 #include <windows.h>
+#endif
 #include "enlngdb/c/enlngdb.h"
 #include "enlng/c/enlng_emitter.h"
 

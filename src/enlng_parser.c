@@ -294,22 +294,23 @@ static ASTNode *parse_primary_internal(Parser *p, bool allow_with) {
       return NULL;
     }
 
-    /* split target by sep */
+    /* split target by/with/on sep */
     if (strcmp(name, "split") == 0 &&
-        (has_token_on_line(p, ENLNG_TOKEN_BY) || has_token_on_line(p, ENLNG_TOKEN_WITH)) &&
+        (has_token_on_line(p, ENLNG_TOKEN_BY) || has_token_on_line(p, ENLNG_TOKEN_WITH) ||
+         has_token_on_line(p, ENLNG_TOKEN_ON)) &&
         !is_operator_or_closing(peek(p, 0)->type) && !check(p, ENLNG_TOKEN_LPAREN) &&
         !check(p, ENLNG_TOKEN_DOT) && !check(p, ENLNG_TOKEN_LBRACKET) &&
         !check(p, ENLNG_TOKEN_OF)) {
       free(name);
       ASTNode *tgt = parse_primary_internal(p, false);
-      if (match(p, ENLNG_TOKEN_BY) || match(p, ENLNG_TOKEN_WITH)) {
+      if (match(p, ENLNG_TOKEN_BY) || match(p, ENLNG_TOKEN_WITH) || match(p, ENLNG_TOKEN_ON)) {
         ASTNode *sep = parse_primary(p);
         ASTNode *n = ast_new(AST_EXPR_SPLIT, t->line);
         n->as.count_in_expr.target = tgt;
         n->as.count_in_expr.container = sep;
         return n;
       }
-      set_error(p, "Expected 'by' or 'with' after split target", t->line);
+      set_error(p, "Expected 'by', 'with', or 'on' after split target", t->line);
       return NULL;
     }
 
@@ -606,7 +607,20 @@ static ASTNode *parse_comparison(Parser *p) {
   ASTNode *left = parse_additive(p);
   while (check(p, ENLNG_TOKEN_EQ) || check(p, ENLNG_TOKEN_NEQ) ||
          check(p, ENLNG_TOKEN_GT) || check(p, ENLNG_TOKEN_LT) ||
-         check(p, ENLNG_TOKEN_GTE) || check(p, ENLNG_TOKEN_LTE)) {
+         check(p, ENLNG_TOKEN_GTE) || check(p, ENLNG_TOKEN_LTE) ||
+         (check(p, ENLNG_TOKEN_IDENTIFIER) && strcmp(peek(p, 0)->text, "contains") == 0)) {
+    if (check(p, ENLNG_TOKEN_IDENTIFIER) && strcmp(peek(p, 0)->text, "contains") == 0) {
+      Token *op = advance(p);
+      ASTNode *right = parse_additive(p);
+      ASTNode *call = ast_new(AST_EXPR_CALL, op->line);
+      call->as.call_expr.func_name = enlng_strdup("contains");
+      call->as.call_expr.arg_count = 2;
+      call->as.call_expr.args = (ASTNode **)malloc(sizeof(ASTNode *) * 2);
+      call->as.call_expr.args[0] = left;
+      call->as.call_expr.args[1] = right;
+      left = call;
+      continue;
+    }
     Token *op = advance(p);
     ASTNode *right = parse_additive(p);
     ASTNode *n = ast_new(AST_EXPR_BINARY, op->line);
@@ -797,7 +811,14 @@ static ASTNode *parse_statement(Parser *p) {
 
     skip_newlines(p);
     if (match(p, ENLNG_TOKEN_OTHERWISE)) {
-      parse_block(p, &n->as.when_stmt.else_body, &n->as.when_stmt.else_count);
+      if (check(p, ENLNG_TOKEN_WHEN)) {
+        ASTNode *nested_when = parse_statement(p);
+        n->as.when_stmt.else_body = (ASTNode **)malloc(sizeof(ASTNode *));
+        n->as.when_stmt.else_body[0] = nested_when;
+        n->as.when_stmt.else_count = 1;
+      } else {
+        parse_block(p, &n->as.when_stmt.else_body, &n->as.when_stmt.else_count);
+      }
     }
     return n;
   }

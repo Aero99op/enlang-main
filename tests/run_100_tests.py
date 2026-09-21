@@ -5,11 +5,15 @@ import subprocess
 import glob
 
 SUITE_DIR = os.path.abspath("tests/suite100")
-ENLNG_EXE = os.path.abspath("enlng.exe")
+ENLNG_EXE = os.path.abspath("enlng.exe" if sys.platform == "win32" else "enlng")
+if not os.path.exists(ENLNG_EXE):
+    fallback = os.path.abspath("enlng" if sys.platform == "win32" else "enlng.exe")
+    if os.path.exists(fallback):
+        ENLNG_EXE = fallback
 
 def main():
     if not os.path.exists(ENLNG_EXE):
-        print(f"Error: {ENLNG_EXE} not found!")
+        print(f"Error: Neither enlng.exe nor enlng found at {ENLNG_EXE}!")
         sys.exit(1)
 
     test_files = sorted(glob.glob(os.path.join(SUITE_DIR, "test_*.enlng")))

@@ -311,6 +311,16 @@ def _transpile_enlng_line(line: str) -> str:
         return f"{indent}{m.group(1)} = {fix_expr(m.group(2))}"
 
     # 8. Increment / Decrement / Variable Assignments & Mutations
+    m_of_inc = re.match(r'^([a-zA-Z0-9_]+)\s+of\s+([a-zA-Z0-9_]+)\s+(?:increases|increased)\s+by\s+(.*)$', trimmed, re.I)
+    if m_of_inc:
+        return f"{indent}{m_of_inc.group(2)}['{m_of_inc.group(1)}'] += {fix_expr(m_of_inc.group(3))}"
+    m_of_dec = re.match(r'^([a-zA-Z0-9_]+)\s+of\s+([a-zA-Z0-9_]+)\s+(?:decreases|decreased)\s+by\s+(.*)$', trimmed, re.I)
+    if m_of_dec:
+        return f"{indent}{m_of_dec.group(2)}['{m_of_dec.group(1)}'] -= {fix_expr(m_of_dec.group(3))}"
+    m_of_set = re.match(r'^([a-zA-Z0-9_]+)\s+of\s+([a-zA-Z0-9_]+)\s*=\s*(.*)$', trimmed, re.I)
+    if m_of_set:
+        return f"{indent}{m_of_set.group(2)}['{m_of_set.group(1)}'] = {fix_expr(m_of_set.group(3))}"
+
     m = re.match(r'^([a-zA-Z0-9_\[\]\.]+)\s+(?:increases|increased)\s+by\s+(.*)$', trimmed, re.I)
     if m:
         return f"{indent}{m.group(1)} += {fix_expr(m.group(2))}"
