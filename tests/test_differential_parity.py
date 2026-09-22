@@ -129,7 +129,8 @@ show word
 
     def test_universal_expression_and_literal_parity(self):
         """Tests loops over literals, direct literal indexing, dot-free access, first/last of, and string repetition."""
-        code = """total = 0
+        code = """type enlng
+total = 0
 for x in [10, 20, 30]:
     total increases by x
 show "total=" total

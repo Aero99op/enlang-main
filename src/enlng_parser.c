@@ -1483,7 +1483,7 @@ static ASTNode *parse_statement(Parser *p) {
 ASTNode *parser_parse_program(Parser *p) {
   skip_newlines(p);
 
-  /* --- DOMAIN GUARD: Optional 'type enlng' or auto-inferred default --- */
+  /* --- DOMAIN GUARD: First statement must be 'type enlng' --- */
   if (match(p, ENLNG_TOKEN_KW_TYPE)) {
     if (!match(p, ENLNG_TOKEN_DOMAIN_ENLNG)) {
       Token *bad_tok = peek(p, 0);
@@ -1494,6 +1494,10 @@ ASTNode *parser_parse_program(Parser *p) {
       set_error(p, err, bad_tok->line);
       return NULL;
     }
+  } else {
+    set_error(p, "[DOMAIN ERROR] Source must begin with 'type enlng'.",
+              peek(p, 0)->line);
+    return NULL;
   }
 
   skip_newlines(p);

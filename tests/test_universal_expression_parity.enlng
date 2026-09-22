@@ -1,4 +1,4 @@
-# Note: 'type enlng' is omitted to test auto-inferred header!
+type enlng
 
 show "=== UNIVERSAL EXPRESSION PARITY AUDIT ==="
 
