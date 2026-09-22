@@ -127,6 +127,31 @@ show word
         self.assertEqual(wasm_out, "apandan")
         self.assertEqual(native_out, wasm_out)
 
+    def test_universal_expression_and_literal_parity(self):
+        """Tests loops over literals, direct literal indexing, dot-free access, first/last of, and string repetition."""
+        code = """total = 0
+for x in [10, 20, 30]:
+    total increases by x
+show "total=" total
+r_sum = 0
+for i in 1 to 3:
+    r_sum increases by i
+show "r_sum=" r_sum
+show [100, 200, 300][1]
+show "Antigravity"[0]
+show {"tier": "Sovereign"}["tier"]
+show role of {"name": "Enlang", "role": "Architect"}
+show first of [5, 10, 15]
+show last of [5, 10, 15]
+show "abc" * 3
+"""
+        native_out, wasm_out = self.run_on_both_engines(code)
+        expected = "total= 60\nr_sum= 6\n200\nA\nSovereign\nArchitect\n5\n15\nabcabcabc"
+        self.assertEqual(native_out, expected)
+        self.assertEqual(wasm_out, expected)
+        self.assertEqual(native_out, wasm_out)
+
 
 if __name__ == "__main__":
     unittest.main()
+

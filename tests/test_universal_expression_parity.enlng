@@ -1,0 +1,83 @@
+# Note: 'type enlng' is omitted to test auto-inferred header!
+
+show "=== UNIVERSAL EXPRESSION PARITY AUDIT ==="
+
+# 1. Range Loop with 'in' (interchangeable with 'from')
+remember sum_in as 0
+for i in 1 to 5:
+    sum_in increases by i
+when sum_in == 15:
+    show "[PASS 1] Range loop with 'in'"
+otherwise:
+    show "[FAIL 1] sum_in was" sum_in
+
+# 2. Range Loop with 'in' and 'by' step
+remember sum_step as 0
+for i in 0 to 6 by 2:
+    sum_step increases by i
+when sum_step == 12:
+    show "[PASS 2] Range loop with 'in' and 'by' step"
+otherwise:
+    show "[FAIL 2] sum_step was" sum_step
+
+# 3. Collection Loop with Inline List Literal
+remember list_acc as 0
+for item in [10, 20, 30, 40]:
+    list_acc increases by item
+when list_acc == 100:
+    show "[PASS 3] Collection loop with inline list literal [10, 20, 30, 40]"
+otherwise:
+    show "[FAIL 3] list_acc was" list_acc
+
+# 4. Direct Indexing on List Literal
+item_1 = [100, 200, 300][1]
+when item_1 == 200:
+    show "[PASS 4] Direct indexing on list literal [100, 200, 300][1] == 200"
+otherwise:
+    show "[FAIL 4] item_1 was" item_1
+
+# 5. Direct Indexing on String Literal
+char_0 = "Antigravity"[0]
+when char_0 == "A":
+    show "[PASS 5] Direct indexing on string literal \"Antigravity\"[0] == \"A\""
+otherwise:
+    show "[FAIL 5] char_0 was" char_0
+
+# 6. Direct Indexing on Map Literal
+map_val = {"tier": "Sovereign", "code": 99}["tier"]
+when map_val == "Sovereign":
+    show "[PASS 6] Direct indexing on map literal {\"tier\": \"Sovereign\"}[\"tier\"]"
+otherwise:
+    show "[FAIL 6] map_val was" map_val
+
+# 7. Dot-Free Property on Map Literal
+role_val = role of {"name": "Enlang", "role": "Architect"}
+when role_val == "Architect":
+    show "[PASS 7] Dot-free property: role of {\"name\": \"Enlang\", \"role\": \"Architect\"}"
+otherwise:
+    show "[FAIL 7] role_val was" role_val
+
+# 8. First of & Last of on List Literals
+f_val = first of [5, 10, 15]
+l_val = last of [5, 10, 15]
+when f_val == 5 and l_val == 15:
+    show "[PASS 8] First of and last of on list literals (5 and 15)"
+otherwise:
+    show "[FAIL 8] f_val:" f_val "l_val:" l_val
+
+# 9. String Multiplication
+stars = "* " * 4
+when stars == "* * * * ":
+    show "[PASS 9] String multiplication: \"* \" * 4 == \"* * * * \""
+otherwise:
+    show "[FAIL 9] stars was" stars
+
+# 10. Chained Indexing
+matrix = [[1, 2], [3, 4]]
+m_val = matrix[1][0]
+when m_val == 3:
+    show "[PASS 10] Chained indexing matrix[1][0] == 3"
+otherwise:
+    show "[FAIL 10] m_val was" m_val
+
+show "=== ALL 10 UNIVERSAL PARITY CHECKS PASSED ==="

@@ -183,13 +183,19 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     break;
 
   case AST_EXPR_INDEX:
-    emit(cg, "enlng_container_get(%s, ", n->as.index_expr.arr_name);
+    emit(cg, "enlng_container_get(");
+    if (n->as.index_expr.target) {
+      generate_expression(cg, n->as.index_expr.target);
+    } else {
+      emit(cg, "%s", n->as.index_expr.arr_name);
+    }
+    emit(cg, ", ");
     generate_expression(cg, n->as.index_expr.index_expr);
     emit(cg, ")");
     break;
 
   case AST_EXPR_FIELD:
-    if (strcmp(n->as.field_expr.obj_name, "pair") == 0) {
+    if (n->as.field_expr.obj_name && strcmp(n->as.field_expr.obj_name, "pair") == 0) {
       if (strcmp(n->as.field_expr.field_name, "left") == 0)
         emit(cg, "pair_left");
       else if (strcmp(n->as.field_expr.field_name, "right") == 0)
@@ -197,8 +203,13 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
       else
         emit(cg, "enlng_make_null()");
     } else {
-      emit(cg, "enlng_map_get(%s, \"%s\")", n->as.field_expr.obj_name,
-           n->as.field_expr.field_name);
+      emit(cg, "enlng_map_get(");
+      if (n->as.field_expr.target) {
+        generate_expression(cg, n->as.field_expr.target);
+      } else {
+        emit(cg, "%s", n->as.field_expr.obj_name ? n->as.field_expr.obj_name : "enlng_make_null()");
+      }
+      emit(cg, ", \"%s\")", n->as.field_expr.field_name);
     }
     break;
 
@@ -636,21 +647,31 @@ static void generate_statement(CodeGen *cg, ASTNode *n) {
   }
 
   case AST_FOR_EACH: {
+    int lid = cg->temp_var_id++;
     emit_indent(cg);
     emit(cg, "{\n");
     cg->indent_level++;
 
     emit_indent(cg);
-    emit(cg, "int64_t _each_cnt = enlng_count_of(%s);\n",
-         n->as.for_each.list_name);
+    emit(cg, "EnlngVal _coll%d = ", lid);
+    if (n->as.for_each.list_expr) {
+      generate_expression(cg, n->as.for_each.list_expr);
+    } else {
+      emit(cg, "%s", n->as.for_each.list_name);
+    }
+    emit(cg, ";\n");
 
     emit_indent(cg);
-    emit(cg, "for (int64_t _each_i = 0; _each_i < _each_cnt; _each_i++) {\n");
+    emit(cg, "int64_t _each_cnt%d = enlng_count_of(_coll%d);\n", lid, lid);
+
+    emit_indent(cg);
+    emit(cg, "for (int64_t _each_i%d = 0; _each_i%d < _each_cnt%d; _each_i%d++) {\n",
+         lid, lid, lid, lid);
     cg->indent_level++;
 
     emit_indent(cg);
-    emit(cg, "EnlngVal %s = enlng_list_get(%s, _each_i);\n",
-         n->as.for_each.item_name, n->as.for_each.list_name);
+    emit(cg, "EnlngVal %s = enlng_list_get(_coll%d, _each_i%d);\n",
+         n->as.for_each.item_name, lid, lid);
 
     for (int i = 0; i < n->as.for_each.body_count; i++) {
       generate_statement(cg, n->as.for_each.body[i]);

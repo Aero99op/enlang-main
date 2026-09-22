@@ -271,6 +271,7 @@ struct ASTNode {
     struct {
       char *item_name;
       char *list_name;
+      ASTNode *list_expr;
       ASTNode **body;
       int body_count;
     } for_each;
@@ -382,12 +383,14 @@ struct ASTNode {
     /* AST_EXPR_INDEX */
     struct {
       char *arr_name;
+      ASTNode *target;
       ASTNode *index_expr;
     } index_expr;
 
     /* AST_EXPR_FIELD */
     struct {
       char *obj_name;   /* e.g. "pair" */
+      ASTNode *target;
       char *field_name; /* "left" or "right" */
     } field_expr;
 

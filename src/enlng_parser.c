@@ -106,12 +106,13 @@ static ASTNode *ast_new(ASTNodeType type, int line) {
 }
 
 /* Expression parsing with Precedence */
+static ASTNode *parse_atom(Parser *p, bool allow_with);
 static ASTNode *parse_primary_internal(Parser *p, bool allow_with);
 static inline ASTNode *parse_primary(Parser *p) {
   return parse_primary_internal(p, true);
 }
 
-static ASTNode *parse_primary_internal(Parser *p, bool allow_with) {
+static ASTNode *parse_atom(Parser *p, bool allow_with) {
   Token *t = peek(p, 0);
 
   /* Int Literal */
@@ -132,13 +133,15 @@ static ASTNode *parse_primary_internal(Parser *p, bool allow_with) {
   if (match(p, ENLNG_TOKEN_STRING_LITERAL)) {
     char *str = enlng_strdup(t->text);
     if (match(p, ENLNG_TOKEN_OF)) {
-      Token *obj_tok = peek(p, 0);
-      if (match(p, ENLNG_TOKEN_IDENTIFIER) || match(p, ENLNG_TOKEN_PAIR)) {
-        ASTNode *n = ast_new(AST_EXPR_FIELD, t->line);
-        n->as.field_expr.obj_name = enlng_strdup(obj_tok->text);
-        n->as.field_expr.field_name = str;
-        return n;
-      }
+      ASTNode *tgt = parse_primary_internal(p, allow_with);
+      ASTNode *n = ast_new(AST_EXPR_FIELD, t->line);
+      n->as.field_expr.target = tgt;
+      n->as.field_expr.obj_name =
+          (tgt && tgt->type == AST_EXPR_VARIABLE)
+              ? enlng_strdup(tgt->as.variable.name)
+              : NULL;
+      n->as.field_expr.field_name = str;
+      return n;
     }
     ASTNode *n = ast_new(AST_EXPR_LITERAL_STRING, t->line);
     n->as.literal.string_val = str;
@@ -437,6 +440,28 @@ static ASTNode *parse_primary_internal(Parser *p, bool allow_with) {
       n->as.single_target_expr.target = tgt;
       return n;
     }
+    if (strcmp(name, "first") == 0 && match(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *tgt = parse_primary(p);
+      ASTNode *idx_expr = ast_new(AST_EXPR_LITERAL_STRING, t->line);
+      idx_expr->as.literal.string_val = enlng_strdup("at_first");
+      ASTNode *n = ast_new(AST_EXPR_INDEX, t->line);
+      n->as.index_expr.target = tgt;
+      n->as.index_expr.arr_name = (tgt && tgt->type == AST_EXPR_VARIABLE) ? enlng_strdup(tgt->as.variable.name) : NULL;
+      n->as.index_expr.index_expr = idx_expr;
+      return n;
+    }
+    if (strcmp(name, "last") == 0 && match(p, ENLNG_TOKEN_OF)) {
+      free(name);
+      ASTNode *tgt = parse_primary(p);
+      ASTNode *idx_expr = ast_new(AST_EXPR_LITERAL_STRING, t->line);
+      idx_expr->as.literal.string_val = enlng_strdup("at_last");
+      ASTNode *n = ast_new(AST_EXPR_INDEX, t->line);
+      n->as.index_expr.target = tgt;
+      n->as.index_expr.arr_name = (tgt && tgt->type == AST_EXPR_VARIABLE) ? enlng_strdup(tgt->as.variable.name) : NULL;
+      n->as.index_expr.index_expr = idx_expr;
+      return n;
+    }
 
     /* Special position keywords: at_first and at_last evaluate to string literals */
     if ((strcmp(name, "at_first") == 0 || strcmp(name, "at_last") == 0) &&
@@ -447,18 +472,17 @@ static ASTNode *parse_primary_internal(Parser *p, bool allow_with) {
       return n;
     }
 
-    /* Field access via 'of': field of object (e.g. resource of request, left of pair) */
+    /* Field access via 'of': field of object (e.g. resource of request, left of pair, name of user) */
     if (match(p, ENLNG_TOKEN_OF)) {
-      Token *obj_tok = peek(p, 0);
-      if (match(p, ENLNG_TOKEN_IDENTIFIER) || match(p, ENLNG_TOKEN_PAIR)) {
-        ASTNode *n = ast_new(AST_EXPR_FIELD, t->line);
-        n->as.field_expr.obj_name = enlng_strdup(obj_tok->text);
-        n->as.field_expr.field_name = name;
-        return n;
-      } else {
-        set_error(p, "Expected object name after 'of'", t->line);
-        return NULL;
-      }
+      ASTNode *tgt = parse_primary_internal(p, allow_with);
+      ASTNode *n = ast_new(AST_EXPR_FIELD, t->line);
+      n->as.field_expr.target = tgt;
+      n->as.field_expr.obj_name =
+          (tgt && tgt->type == AST_EXPR_VARIABLE)
+              ? enlng_strdup(tgt->as.variable.name)
+              : NULL;
+      n->as.field_expr.field_name = name;
+      return n;
     }
 
     /* Field access: pair.left / pair.right */
@@ -561,6 +585,73 @@ static ASTNode *parse_primary_internal(Parser *p, bool allow_with) {
   set_error(p, "Unexpected token in expression", t->line);
   advance(p);
   return ast_new(AST_EXPR_LITERAL_INT, t->line);
+}
+
+static ASTNode *parse_primary_internal(Parser *p, bool allow_with) {
+  ASTNode *node = parse_atom(p, allow_with);
+  if (!node || p->has_error)
+    return node;
+
+  /* Universal Postfix Chaining: node[index], node.field, node at index, node at_first/at_last */
+  while (!p->has_error) {
+    if (match(p, ENLNG_TOKEN_LBRACKET)) {
+      ASTNode *idx_expr = parse_expression(p);
+      if (!match(p, ENLNG_TOKEN_RBRACKET)) {
+        set_error(p, "Expected ']' after array index", node->line);
+      }
+      ASTNode *idx_node = ast_new(AST_EXPR_INDEX, node->line);
+      idx_node->as.index_expr.target = node;
+      idx_node->as.index_expr.arr_name =
+          (node->type == AST_EXPR_VARIABLE)
+              ? enlng_strdup(node->as.variable.name)
+              : NULL;
+      idx_node->as.index_expr.index_expr = idx_expr;
+      node = idx_node;
+    } else if (match(p, ENLNG_TOKEN_DOT)) {
+      Token *field_tok = peek(p, 0);
+      if (match(p, ENLNG_TOKEN_IDENTIFIER)) {
+        ASTNode *f_node = ast_new(AST_EXPR_FIELD, node->line);
+        f_node->as.field_expr.target = node;
+        f_node->as.field_expr.obj_name =
+            (node->type == AST_EXPR_VARIABLE)
+                ? enlng_strdup(node->as.variable.name)
+                : NULL;
+        f_node->as.field_expr.field_name = enlng_strdup(field_tok->text);
+        node = f_node;
+      } else {
+        set_error(p, "Expected field name after '.'", node->line);
+        break;
+      }
+    } else if (check(p, ENLNG_TOKEN_IDENTIFIER) &&
+               (strcmp(peek(p, 0)->text, "at_last") == 0 ||
+                strcmp(peek(p, 0)->text, "at_first") == 0)) {
+      Token *ptok = advance(p);
+      ASTNode *idx_expr = ast_new(AST_EXPR_LITERAL_STRING, node->line);
+      idx_expr->as.literal.string_val = enlng_strdup(ptok->text);
+      ASTNode *idx_node = ast_new(AST_EXPR_INDEX, node->line);
+      idx_node->as.index_expr.target = node;
+      idx_node->as.index_expr.arr_name =
+          (node->type == AST_EXPR_VARIABLE)
+              ? enlng_strdup(node->as.variable.name)
+              : NULL;
+      idx_node->as.index_expr.index_expr = idx_expr;
+      node = idx_node;
+    } else if (match(p, ENLNG_TOKEN_AT)) {
+      ASTNode *idx_expr = parse_unary(p);
+      ASTNode *idx_node = ast_new(AST_EXPR_INDEX, node->line);
+      idx_node->as.index_expr.target = node;
+      idx_node->as.index_expr.arr_name =
+          (node->type == AST_EXPR_VARIABLE)
+              ? enlng_strdup(node->as.variable.name)
+              : NULL;
+      idx_node->as.index_expr.index_expr = idx_expr;
+      node = idx_node;
+    } else {
+      break;
+    }
+  }
+
+  return node;
 }
 
 static ASTNode *parse_unary(Parser *p) {
@@ -826,63 +917,42 @@ static ASTNode *parse_statement(Parser *p) {
   /* 4. Loops: for each pair in list / for item in list: block */
   if (match(p, ENLNG_TOKEN_FOR)) {
     bool has_each = match(p, ENLNG_TOKEN_EACH);
-    bool has_ident_in = (peek(p, 0)->type == ENLNG_TOKEN_IDENTIFIER &&
-                         peek(p, 1)->type == ENLNG_TOKEN_IN);
 
-    if (has_each || has_ident_in) {
-      if (match(p, ENLNG_TOKEN_PAIR)) {
-        /* for each pair in list: */
-        char *pair_name = enlng_strdup("pair");
-        if (match(p, ENLNG_TOKEN_LPAREN)) {
-          /* optional (a, b) notation */
-          while (!match(p, ENLNG_TOKEN_RPAREN) && !check(p, ENLNG_TOKEN_EOF))
-            advance(p);
-        }
-        if (!match(p, ENLNG_TOKEN_IN)) {
-          set_error(p, "Expected 'in' after 'pair'", t->line);
-        }
-        Token *list_tok = peek(p, 0);
-        if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-          set_error(p, "Expected collection name after 'in'", t->line);
-        }
-        char *list_name = enlng_strdup(list_tok->text);
-
-        ASTNode *n = ast_new(AST_FOR_PAIR, t->line);
-        n->as.for_pair.pair_name = pair_name;
-        n->as.for_pair.list_name = list_name;
-        parse_block(p, &n->as.for_pair.body, &n->as.for_pair.body_count);
-        return n;
-      } else {
-        /* for each item in list: OR for item in list: */
-        Token *item_tok = peek(p, 0);
-        if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-          set_error(p, "Expected variable name after 'for'", t->line);
-        }
-        char *item_name = enlng_strdup(item_tok->text);
-        if (!match(p, ENLNG_TOKEN_IN)) {
-          set_error(p, "Expected 'in' after loop variable", t->line);
-        }
-        Token *list_tok = peek(p, 0);
-        if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-          set_error(p, "Expected collection name after 'in'", t->line);
-        }
-        char *list_name = enlng_strdup(list_tok->text);
-
-        ASTNode *n = ast_new(AST_FOR_EACH, t->line);
-        n->as.for_each.item_name = item_name;
-        n->as.for_each.list_name = list_name;
-        parse_block(p, &n->as.for_each.body, &n->as.for_each.body_count);
-        return n;
+    if (has_each && match(p, ENLNG_TOKEN_PAIR)) {
+      /* for each pair in <expr>: */
+      char *pair_name = enlng_strdup("pair");
+      if (match(p, ENLNG_TOKEN_LPAREN)) {
+        /* optional (a, b) notation */
+        while (!match(p, ENLNG_TOKEN_RPAREN) && !check(p, ENLNG_TOKEN_EOF))
+          advance(p);
       }
-    } else {
-      /* for i from start to end [by step]: */
-      Token *var_tok = peek(p, 0);
-      if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-        set_error(p, "Expected variable name in for range loop", t->line);
+      if (!match(p, ENLNG_TOKEN_IN)) {
+        set_error(p, "Expected 'in' after 'pair'", t->line);
       }
-      char *var_name = enlng_strdup(var_tok->text);
-      if (!match(p, ENLNG_TOKEN_FROM)) {
-        set_error(p, "Expected 'from' after loop variable", t->line);
+      ASTNode *list_expr = parse_expression(p);
+      char *list_name = NULL;
+      if (list_expr && list_expr->type == AST_EXPR_VARIABLE) {
+        list_name = enlng_strdup(list_expr->as.variable.name);
+      }
+
+      ASTNode *n = ast_new(AST_FOR_PAIR, t->line);
+      n->as.for_pair.pair_name = pair_name;
+      n->as.for_pair.list_name = list_name ? list_name : enlng_strdup("_pair_list");
+      parse_block(p, &n->as.for_pair.body, &n->as.for_pair.body_count);
+      return n;
+    }
+
+    Token *var_tok = peek(p, 0);
+    if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+      set_error(p, "Expected variable name after 'for'", t->line);
+      return NULL;
+    }
+    char *var_name = enlng_strdup(var_tok->text);
+
+    /* Case A: Range loop: for i from 1 to 5 [by 1]: OR for i in 1 to 5 [by 1]: */
+    if (match(p, ENLNG_TOKEN_FROM) || (check(p, ENLNG_TOKEN_IN) && has_token_on_line(p, ENLNG_TOKEN_TO))) {
+      if (check(p, ENLNG_TOKEN_IN)) {
+        advance(p); /* consume 'in' */
       }
       ASTNode *start_expr = parse_expression(p);
       if (!match(p, ENLNG_TOKEN_TO)) {
@@ -902,6 +972,25 @@ static ASTNode *parse_statement(Parser *p) {
       parse_block(p, &n->as.for_range.body, &n->as.for_range.body_count);
       return n;
     }
+
+    /* Case B: Collection loop: for [each] item in <expr>: */
+    if (!match(p, ENLNG_TOKEN_IN)) {
+      set_error(p, "Expected 'in' or 'from' after loop variable", t->line);
+      return NULL;
+    }
+
+    ASTNode *coll_expr = parse_expression(p);
+    char *list_name = NULL;
+    if (coll_expr && coll_expr->type == AST_EXPR_VARIABLE) {
+      list_name = enlng_strdup(coll_expr->as.variable.name);
+    }
+
+    ASTNode *n = ast_new(AST_FOR_EACH, t->line);
+    n->as.for_each.item_name = var_name;
+    n->as.for_each.list_name = list_name ? list_name : enlng_strdup("_each_coll");
+    n->as.for_each.list_expr = coll_expr;
+    parse_block(p, &n->as.for_each.body, &n->as.for_each.body_count);
+    return n;
   }
 
   /* 5. Loops: repeat while / repeat until */
@@ -1131,7 +1220,7 @@ static ASTNode *parse_statement(Parser *p) {
         cap *= 2;
         items = (ASTNode **)realloc(items, sizeof(ASTNode *) * cap);
       }
-      items[count++] = parse_primary(p);
+      items[count++] = parse_expression(p);
       match(p, ENLNG_TOKEN_COMMA); /* optional comma between stream items */
     }
     n->as.show_stmt.items = items;
@@ -1394,7 +1483,7 @@ static ASTNode *parse_statement(Parser *p) {
 ASTNode *parser_parse_program(Parser *p) {
   skip_newlines(p);
 
-  /* --- DOMAIN GUARD: First statement must be 'type enlng' --- */
+  /* --- DOMAIN GUARD: Optional 'type enlng' or auto-inferred default --- */
   if (match(p, ENLNG_TOKEN_KW_TYPE)) {
     if (!match(p, ENLNG_TOKEN_DOMAIN_ENLNG)) {
       Token *bad_tok = peek(p, 0);
@@ -1405,10 +1494,6 @@ ASTNode *parser_parse_program(Parser *p) {
       set_error(p, err, bad_tok->line);
       return NULL;
     }
-  } else {
-    set_error(p, "[DOMAIN ERROR] Source must begin with 'type enlng'.",
-              peek(p, 0)->line);
-    return NULL;
   }
 
   skip_newlines(p);

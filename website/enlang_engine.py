@@ -206,13 +206,15 @@ def _transpile_enlng_line(line: str) -> str:
         expr = re.sub(r'\bcall\s+([a-zA-Z0-9_]+)\s+with\s+(.*?)(?=[,\):]|$)', r'\1(\2)', expr)
         expr = re.sub(r'\bcall\s+([a-zA-Z0-9_]+)\b', r'\1()', expr)
         expr = re.sub(r'\bcount\s+(?:of\s+)?(.*?)\s+in\s+([a-zA-Z0-9_\[\]\(\)]+)', r'(\2.count(\1) if hasattr(\2, "count") else 0)', expr)
-        expr = re.sub(r'\b(?:count of|length of)\s+([a-zA-Z0-9_\[\]\"\'\(\)]+)', r'len(\1)', expr)
+        expr = re.sub(r'\b(?:count of|length of)\s+(\[.*?\]|\{.*?\}|[a-zA-Z0-9_\"\'\(\)\.]+)', r'len(\1)', expr)
+        expr = re.sub(r'\bfirst\s+of\s+(\[.*?\]|\{.*?\}|[a-zA-Z0-9_\"\'\(\)\.]+)', r'(\1[0])', expr)
+        expr = re.sub(r'\blast\s+of\s+(\[.*?\]|\{.*?\}|[a-zA-Z0-9_\"\'\(\)\.]+)', r'(\1[-1])', expr)
         expr = re.sub(r'\breverse\s+(?:of\s+)?([a-zA-Z0-9_\[\]\"\'\(\)]+)', r'(\1[::-1] if hasattr(\1, "__getitem__") else \1)', expr)
         expr = re.sub(r'\b([a-zA-Z0-9_]+)\s+at_first\b', r'\1[0]', expr)
         expr = re.sub(r'\b([a-zA-Z0-9_]+)\s+at_last\b', r'\1[-1]', expr)
         expr = re.sub(r'\b([a-zA-Z0-9_]+)\s+at\s+([^\s,\)]+)', r'\1[\2]', expr)
         expr = re.sub(r"\b([a-zA-Z0-9_]+)'s\s+([a-zA-Z0-9_]+)\b", r"(\1.\2 if hasattr(\1, '\2') else \1['\2'])", expr)
-        expr = re.sub(r"\b(?!type\b|out\b|end\b|count\b|length\b|reverse\b|uppercase\b|lowercase\b|sum\b|average\b|highest\b|lowest\b|max\b|min\b)([a-zA-Z0-9_]+)\s+of\s+([a-zA-Z0-9_]+)\b", r"(\2.\1 if hasattr(\2, '\1') else \2['\1'])", expr)
+        expr = re.sub(r"\b(?!type\b|out\b|end\b|count\b|length\b|reverse\b|uppercase\b|lowercase\b|sum\b|average\b|highest\b|lowest\b|max\b|min\b|first\b|last\b)([a-zA-Z0-9_]+)\s+of\s+(\{.*?\}|\[.*?\]|[a-zA-Z0-9_\.]+)", r"(\2.\1 if hasattr(\2, '\1') else \2['\1'])", expr)
 
         for i, s in enumerate(str_literals):
             expr = expr.replace(f"__STR_LITERAL_{i}__", s)
@@ -389,18 +391,18 @@ def _transpile_enlng_line(line: str) -> str:
     m = re.match(r'^(?:repeat\s+while|while)\s+(.*?):$', trimmed, re.I)
     if m:
         return f"{indent}while {fix_expr(m.group(1))}:"
+    m = re.match(r'^for\s+([a-zA-Z0-9_]+)\s+(?:from|in)\s+(.*?)\s+to\s+(.*?)(?:\s+by\s+(.*?))?:$', trimmed, re.I)
+    if m:
+        start_val = fix_expr(m.group(2))
+        end_val = fix_expr(m.group(3))
+        step_val = fix_expr(m.group(4)) if m.group(4) else "1"
+        return f"{indent}for {m.group(1)} in range({start_val}, ({end_val}) + 1, {step_val}):"
     m = re.match(r'^for\s+(?:each|every|all)\s+([a-zA-Z0-9_]+)\s+in\s+(.*?):$', trimmed, re.I)
     if m:
         return f"{indent}for {m.group(1)} in {fix_expr(m.group(2))}:"
     m = re.match(r'^for\s+([a-zA-Z0-9_]+)\s+in\s+(.*?):$', trimmed, re.I)
     if m:
         return f"{indent}for {m.group(1)} in {fix_expr(m.group(2))}:"
-    m = re.match(r'^for\s+([a-zA-Z0-9_]+)\s+from\s+(.*?)\s+to\s+(.*?)(?:\s+by\s+(.*?))?:$', trimmed, re.I)
-    if m:
-        start_val = fix_expr(m.group(2))
-        end_val = fix_expr(m.group(3))
-        step_val = fix_expr(m.group(4)) if m.group(4) else "1"
-        return f"{indent}for {m.group(1)} in range({start_val}, ({end_val}) + 1, {step_val}):"
 
     # 12. Function Definition
     m = re.match(r'^(?:define\s+function|function|routine|procedure|def|action)\s+([a-zA-Z0-9_]+)\s+with\s+(.*?):$', trimmed, re.I)

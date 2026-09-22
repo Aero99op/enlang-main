@@ -609,6 +609,24 @@ static inline EnlngVal enlng_val_sub(EnlngVal a, EnlngVal b) {
 static inline EnlngVal enlng_val_mul(EnlngVal a, EnlngVal b) {
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
     return enlng_make_int(a.as.i * b.as.i);
+  if (a.type == ENLNG_VAL_STRING || b.type == ENLNG_VAL_STRING) {
+    const char *str = (a.type == ENLNG_VAL_STRING) ? (a.as.s ? a.as.s : "") : (b.as.s ? b.as.s : "");
+    int64_t count = (a.type == ENLNG_VAL_STRING) ? enlng_val_to_int(b) : enlng_val_to_int(a);
+    if (count <= 0)
+      return enlng_make_string("");
+    size_t slen = strlen(str);
+    size_t total_len = slen * (size_t)count;
+    char *buf = (char *)malloc(total_len + 1);
+    if (!buf) return enlng_make_string("");
+    for (int64_t i = 0; i < count; i++) {
+      memcpy(buf + (i * slen), str, slen);
+    }
+    buf[total_len] = '\0';
+    EnlngVal res;
+    res.type = ENLNG_VAL_STRING;
+    res.as.s = buf;
+    return res;
+  }
   double da = (a.type == ENLNG_VAL_FLOAT) ? a.as.f : (double)a.as.i;
   double db = (b.type == ENLNG_VAL_FLOAT) ? b.as.f : (double)b.as.i;
   return enlng_make_float(da * db);
