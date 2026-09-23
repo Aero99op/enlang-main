@@ -1,11 +1,12 @@
 type enlng
 
 # =====================================================================
-# ENLANG BELL MEMBERSHIP FUNCTION GRAPH (USING PYTHON LIBRARIES)
-# Zero custom math function. Uses:
-# - skfuzzy (fuzz.gbellmf) for Generalized Bell Membership Function
-# - numpy (np.linspace) for domain grid evaluation
-# - matplotlib.pyplot (plt) for visualization and saving
+# ENLANG BELL MEMBERSHIP FUNCTION GRAPH (DOT-FREE CONVERSATIONAL SYNTAX)
+# 100% Pure English Dot-Free Enlang syntax:
+# - use <func> with <args> from <library>
+# - call <func> on <library> with <args>
+# - call <func> on <library>
+# Zero object dots (fuzz.x, plt.x) in execution code!
 # =====================================================================
 
 use library "numpy" as np
@@ -13,42 +14,42 @@ use library "skfuzzy" as fuzz
 use library "matplotlib.pyplot" as plt
 
 # Generate high-resolution domain from 0 to 10
-x = np.linspace(0.0, 10.0, 500)
+x = (use linspace with 0.0, 10.0, 500 from np)
 
 # Compute Bell MF curves directly using library functions (gbellmf)
 # 1. Standard Bell MF: a=2.0 (width), b=4.0 (slope), c=5.0 (center)
-y_standard = fuzz.gbellmf(x, 2.0, 4.0, 5.0)
+y_standard = (use gbellmf with x, 2.0, 4.0, 5.0 from fuzz)
 
 # 2. Broad Slope Bell MF: a=3.0, b=2.0, c=5.0
-y_broad = fuzz.gbellmf(x, 3.0, 2.0, 5.0)
+y_broad = (use gbellmf with x, 3.0, 2.0, 5.0 from fuzz)
 
 # 3. Steep Narrow Bell MF: a=1.5, b=6.0, c=5.0
-y_steep = fuzz.gbellmf(x, 1.5, 6.0, 5.0)
+y_steep = (use gbellmf with x, 1.5, 6.0, 5.0 from fuzz)
 
 # Create figure
-plt.figure(figsize=[10, 6], dpi=300)
+call figure on plt with figsize=[10, 6], dpi=300
 
 # Plot all membership curves
-plt.plot(x, y_standard, color="#0052cc", linewidth=2.5, label="Standard Bell MF (a=2.0, b=4.0, c=5.0)")
-plt.plot(x, y_broad, color="#ff5630", linewidth=2.0, linestyle="--", label="Broad Slope Bell (a=3.0, b=2.0, c=5.0)")
-plt.plot(x, y_steep, color="#36b37e", linewidth=2.0, linestyle="-.", label="Steep Narrow Bell (a=1.5, b=6.0, c=5.0)")
+call plot on plt with x, y_standard, color="#0052cc", linewidth=2.5, label="Standard Bell MF (a=2.0, b=4.0, c=5.0)"
+call plot on plt with x, y_broad, color="#ff5630", linewidth=2.0, linestyle="--", label="Broad Slope Bell (a=3.0, b=2.0, c=5.0)"
+call plot on plt with x, y_steep, color="#36b37e", linewidth=2.0, linestyle="-.", label="Steep Narrow Bell (a=1.5, b=6.0, c=5.0)"
 
 # Fill area under standard curve
-plt.fill_between(x, y_standard, color="#0052cc", alpha=0.15)
+call fill_between on plt with x, y_standard, color="#0052cc", alpha=0.15
 
 # Add titles, labels, legend, grid
-plt.title("Generalized Bell Membership Function (skfuzzy.gbellmf in Enlang)", fontsize=14, fontweight="bold", pad=14)
-plt.xlabel("Input Variable (x)", fontsize=12, labelpad=8)
-plt.ylabel("Membership Degree \u03bc(x)", fontsize=12, labelpad=8)
-plt.ylim(-0.05, 1.10)
-plt.xlim(0.0, 10.0)
-plt.grid(true, linestyle=":", alpha=0.6)
-plt.legend(loc="upper right", frameon=true, fontsize=10)
+call title on plt with "Generalized Bell Membership Function (Bell MF) in Enlang", fontsize=14, fontweight="bold", pad=14
+call xlabel on plt with "Input Variable (x)", fontsize=12, labelpad=8
+call ylabel on plt with "Membership Degree \u03bc(x)", fontsize=12, labelpad=8
+call ylim on plt with -0.05, 1.10
+call xlim on plt with 0.0, 10.0
+call grid on plt with true, linestyle=":", alpha=0.6
+call legend on plt with loc="upper right", frameon=true, fontsize=10
 
 # Save output
 output_path = "bellmftest1.png"
-plt.savefig(output_path, dpi=300, bbox_inches="tight")
-plt.close()
+call savefig on plt with output_path, dpi=300, bbox_inches="tight"
+call close on plt
 
-show "=== BELL MF GENERATED VIA SKFUZZY ==="
+show "=== BELL MF GENERATED VIA CONVERSATIONAL DOT-FREE SYNTAX ==="
 show "Saved directly to:" output_path
