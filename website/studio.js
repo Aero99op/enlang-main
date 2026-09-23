@@ -1075,6 +1075,7 @@ screen WalletHome:
         if (result) {
           if (result.success) {
             if (result.output) appendTerminal(`\n${escapeHtml(result.output)}`);
+            if (result.imageHtml) appendTerminal(`\n${result.imageHtml}`);
             appendTerminal(`\n<span class="term-green">✔ [${escapeHtml(result.executor || 'WASM Engine')}] Succeeded in ${result.timeMs}ms (Exit 0)</span>`);
           } else {
             const fmt = typeof formatTerminalErrorHtml === 'function' ? formatTerminalErrorHtml : (window.formatTerminalErrorHtml || ((x) => `<span class="term-err">${escapeHtml(x)}</span>`));

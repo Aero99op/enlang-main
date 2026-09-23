@@ -87,6 +87,10 @@ import enlang_engine
     }
   }
 
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   async function executeEnlangWasm(filename, code, domain) {
     const ready = await initEnlangWasm();
     if (!ready) {
@@ -94,6 +98,36 @@ import enlang_engine
     }
 
     try {
+      // 1. Auto-load WebAssembly packages if detected in source code
+      const lower = code.toLowerCase();
+      const neededPkgs = [];
+      if ((lower.includes('numpy') || lower.includes('np.')) && (!pyodideInstance.loadedPackages || !pyodideInstance.loadedPackages['numpy'])) {
+        neededPkgs.push('numpy');
+      }
+      if ((lower.includes('matplotlib') || lower.includes('plt.')) && (!pyodideInstance.loadedPackages || !pyodideInstance.loadedPackages['matplotlib'])) {
+        neededPkgs.push('matplotlib');
+      }
+      if (lower.includes('scipy') && (!pyodideInstance.loadedPackages || !pyodideInstance.loadedPackages['scipy'])) {
+        neededPkgs.push('scipy');
+      }
+      if (neededPkgs.length > 0) {
+        console.log('[Enlang WASM] Loading WebAssembly package dependencies:', neededPkgs);
+        await pyodideInstance.loadPackage(neededPkgs);
+      }
+
+      // If skfuzzy or other pip package is needed in Pyodide WebAssembly
+      if (lower.includes('skfuzzy') || lower.includes('scikit-fuzzy')) {
+        console.log('[Enlang WASM] Installing scikit-fuzzy via micropip into WebAssembly...');
+        await pyodideInstance.loadPackage('micropip');
+        await pyodideInstance.runPythonAsync(`
+import micropip
+try:
+    import skfuzzy
+except ImportError:
+    await micropip.install('scikit-fuzzy')
+`);
+      }
+
       pyodideInstance.globals.set('__exec_file', filename);
       pyodideInstance.globals.set('__exec_code', code);
       pyodideInstance.globals.set('__exec_domain', domain || 'enlng');
@@ -102,7 +136,31 @@ import enlang_engine
 import enlang_engine
 enlang_engine.execute_enlang_wasm(__exec_file, __exec_code, __exec_domain)
 `);
-      return JSON.parse(rawJson);
+      const result = JSON.parse(rawJson);
+
+      // 2. Check Pyodide virtual filesystem for any newly generated plot images (.png, .jpg)
+      try {
+        const rootFiles = pyodideInstance.FS.readdir('/home/pyodide');
+        let imageHtml = '';
+        for (const fname of rootFiles) {
+          if (fname.endsWith('.png') || fname.endsWith('.jpg') || fname.endsWith('.jpeg')) {
+            const data = pyodideInstance.FS.readFile('/home/pyodide/' + fname);
+            if (data && data.length > 0) {
+              const b64 = btoa(Array.from(data, b => String.fromCharCode(b)).join(''));
+              const mime = fname.endsWith('.png') ? 'image/png' : 'image/jpeg';
+              imageHtml += `<div style="margin-top:14px; text-align:center;"><img src="data:${mime};base64,${b64}" style="max-width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.15); box-shadow:0 8px 24px rgba(0,0,0,0.5);" alt="${escapeHtml(fname)}"/><div style="font-size:11px; color:#888; margin-top:4px;">📊 Generated Graph: ${escapeHtml(fname)} (${Math.round(data.length / 1024)} KB)</div></div>`;
+              try { pyodideInstance.FS.unlink('/home/pyodide/' + fname); } catch (_) {}
+            }
+          }
+        }
+        if (imageHtml) {
+          result.imageHtml = imageHtml;
+        }
+      } catch (fsErr) {
+        // Virtual FS read optional
+      }
+
+      return result;
     } catch (err) {
       return {
         success: false,

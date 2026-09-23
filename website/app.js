@@ -1750,6 +1750,7 @@ function initPlayground() {
         if (result.success) {
           let output = '';
           if (result.output) output += escapeHtml(result.output) + '\n';
+          if (result.imageHtml) output += result.imageHtml + '\n';
           output += `<span class="term-green">✔ [${escapeHtml(result.executor || 'WASM Engine')}] Succeeded in ${result.timeMs}ms (Exit 0)</span>`;
           terminal.innerHTML = output;
         } else {
@@ -1807,6 +1808,7 @@ function initPlayground() {
         if (result.success) {
           let output = '';
           if (result.output) output += escapeHtml(result.output) + '\n';
+          if (result.imageHtml) output += result.imageHtml + '\n';
           output += `<span class="term-green">✔ [${escapeHtml(result.executor || 'WASM Engine')}] Succeeded in ${result.timeMs}ms (Exit 0)</span>`;
           terminal.innerHTML = output;
         } else {
