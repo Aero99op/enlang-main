@@ -77,7 +77,8 @@ bool enlng_has_python_dependency(const char* filepath) {
             strstr(t, "\"time\"") || strstr(t, "'time'") ||
             strstr(t, "\"os\"") || strstr(t, "'os'") ||
             strstr(t, "\"sys\"") || strstr(t, "'sys'") ||
-            strstr(t, "\"requests\"") || strstr(t, "'requests'")) {
+            strstr(t, "\"requests\"") || strstr(t, "'requests'") ||
+            strstr(t, "\"matplotlib") || strstr(t, "'matplotlib") || strstr(t, "matplotlib")) {
             has_py = true;
             break;
         }

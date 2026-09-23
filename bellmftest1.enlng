@@ -1,0 +1,68 @@
+type enlng
+
+# =====================================================================
+# ENLANG BELL MEMBERSHIP FUNCTION (BELL MF) GRAPH GENERATOR
+# Generates a publication-quality Generalized Bell MF plot and saves
+# it directly as bellmftest1.png using pure Enlang syntax.
+# =====================================================================
+
+use library "matplotlib.pyplot" as plt
+use library "math" as math
+
+# Generalized Bell Membership Function formula:
+# \mu(x; a, b, c) = 1 / (1 + |(x - c)/a|^(2b))
+function bell_mf with x, a, b, c:
+    diff = x - c
+    ratio = diff / a
+    when ratio < 0:
+        ratio = 0.0 - ratio
+    power_exp = 2.0 * b
+    denom = 1.0 + (ratio ** power_exp)
+    give 1.0 / denom
+
+# Generate data points over range [0.0, 10.0]
+xs = []
+y_standard = []
+y_broad = []
+y_steep = []
+
+for i from 0 to 200 by 1:
+    x = i * 0.05
+    add x to xs
+    # Standard Bell MF: a=2.0, b=4.0, c=5.0
+    ys = bell_mf(x, 2.0, 4.0, 5.0)
+    add ys to y_standard
+    # Broad Bell MF: a=3.0, b=2.0, c=5.0
+    yb = bell_mf(x, 3.0, 2.0, 5.0)
+    add yb to y_broad
+    # Steep Bell MF: a=1.5, b=6.0, c=5.0
+    yt = bell_mf(x, 1.5, 6.0, 5.0)
+    add yt to y_steep
+
+# Configure plot figure with high DPI
+call plt.figure with figsize=[10, 6], dpi=300
+
+# Plot bell curves with distinct styling
+call plt.plot with xs, y_standard, color="#0052cc", linewidth=2.5, label="Standard Bell MF (a=2.0, b=4.0, c=5.0)"
+call plt.plot with xs, y_broad, color="#ff5630", linewidth=2.0, linestyle="--", label="Broad Slope Bell (a=3.0, b=2.0, c=5.0)"
+call plt.plot with xs, y_steep, color="#36b37e", linewidth=2.0, linestyle="-.", label="Steep Narrow Bell (a=1.5, b=6.0, c=5.0)"
+
+# Shade under standard bell curve
+call plt.fill_between with xs, y_standard, color="#0052cc", alpha=0.15
+
+# Annotate center and parameters
+call plt.title with "Generalized Bell Membership Function (Bell MF) in Enlang", fontsize=14, fontweight="bold", pad=14
+call plt.xlabel with "Input Variable (x)", fontsize=12, labelpad=8
+call plt.ylabel with "Membership Degree \u03bc(x)", fontsize=12, labelpad=8
+call plt.ylim with -0.05, 1.10
+call plt.xlim with 0.0, 10.0
+call plt.grid with true, linestyle=":", alpha=0.6
+call plt.legend with loc="upper right", frameon=true, fontsize=10
+
+# Save high-resolution image artifact
+output_image = "bellmftest1.png"
+call plt.savefig with output_image, dpi=300, bbox_inches="tight"
+call plt.close
+
+show "=== BELL MF GRAPH GENERATION COMPLETE ==="
+show "Output saved as:" output_image

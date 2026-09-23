@@ -139,19 +139,19 @@ def _transpile_enlng_line(line: str) -> str:
     if trimmed.startswith('type ') or trimmed.startswith('hint '):
         return f"{indent}# {trimmed}"
     # 0a. Library imports (from library / from module / from ... import ...)
-    m_from = re.match(r'^from\s+(?:library\s+|module\s+)?["\']?([a-zA-Z0-9_]+)["\']?\s+import\s+(.*)$', trimmed, re.I)
+    m_from = re.match(r'^from\s+(?:library\s+|module\s+)?["\']?([a-zA-Z0-9_\.]+)["\']?\s+import\s+(.*)$', trimmed, re.I)
     if m_from:
         return f"{indent}from {m_from.group(1)} import {m_from.group(2).strip()}"
 
     # 0b. Library imports (use library / use python module / import library / load library ...)
-    m_lib = re.match(r'^(?:use\s+python\s+library|use\s+python\s+module|use\s+library|use\s+module|import\s+python\s+module|import\s+library|import\s+module|load\s+library|load\s+module)\s+["\']?([a-zA-Z0-9_]+)["\']?(?:\s+as\s+([a-zA-Z0-9_]+))?$', trimmed, re.I)
+    m_lib = re.match(r'^(?:use\s+python\s+library|use\s+python\s+module|use\s+library|use\s+module|import\s+python\s+module|import\s+library|import\s+module|load\s+library|load\s+module)\s+["\']?([a-zA-Z0-9_\.]+)["\']?(?:\s+as\s+([a-zA-Z0-9_]+))?$', trimmed, re.I)
     if m_lib:
         mod, alias = m_lib.group(1), m_lib.group(2)
         if alias: return f"{indent}import {mod} as {alias}"
         return f"{indent}import {mod}"
 
     # 0c. Direct import statement (import <mod> [as <alias>])
-    m_imp = re.match(r'^import\s+([a-zA-Z0-9_]+)(?:\s+as\s+([a-zA-Z0-9_]+))?$', trimmed, re.I)
+    m_imp = re.match(r'^import\s+([a-zA-Z0-9_\.]+)(?:\s+as\s+([a-zA-Z0-9_]+))?$', trimmed, re.I)
     if m_imp:
         mod, alias = m_imp.group(1), m_imp.group(2)
         if alias: return f"{indent}import {mod} as {alias}"
