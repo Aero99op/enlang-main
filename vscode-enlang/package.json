@@ -1,8 +1,8 @@
 {
   "name": "enlang-official",
   "displayName": "EnLang — Universal Natural English Full-Stack Language",
-  "description": "Official VS Code extension for EnLang: Rich Syntax Highlighting, Snippets, Diagnostics & AI Assistant for .enlg, .enlgf, .enlgd, .enlgs, and .enlgm files.",
-  "version": "1.0.17",
+  "description": "Official VS Code extension for EnLang: LSP Diagnostics, Auto-Formatting, Package Manager, Rich Syntax Highlighting, Snippets & AI Assistant for .enlg, .enlgf, .enlgd, .enlgs, and .enlgm files.",
+  "version": "1.1.0",
   "publisher": "Enlang1234",
   "license": "MIT",
   "homepage": "https://github.com/Aero99op/enlang",
@@ -151,6 +151,26 @@
         "category": "EnLang"
       },
       {
+        "command": "enlang.formatFile",
+        "title": "EnLang: Format Current File (enlangg fmt)",
+        "category": "EnLang"
+      },
+      {
+        "command": "enlang.pkgInit",
+        "title": "EnLang: Initialize Package (enlangg pkg init)",
+        "category": "EnLang"
+      },
+      {
+        "command": "enlang.pkgAdd",
+        "title": "EnLang: Add Package / Library (enlangg pkg add)",
+        "category": "EnLang"
+      },
+      {
+        "command": "enlang.pkgInstall",
+        "title": "EnLang: Install Package Dependencies (enlangg pkg install)",
+        "category": "EnLang"
+      },
+      {
         "command": "enlang.checkFile",
         "title": "EnLang: Check Syntax / Lint File",
         "category": "EnLang"
@@ -171,6 +191,12 @@
         "command": "enlang.runFile",
         "key": "ctrl+f5",
         "mac": "cmd+f5",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "enlang.formatFile",
+        "key": "shift+alt+f",
+        "mac": "shift+alt+f",
         "when": "editorTextFocus"
       },
       {

@@ -427,11 +427,31 @@ const char* EMBEDDED_RUNNER =
 "    if m: return f'{indent}elif {fix_expr(m.group(1))}:'\n"
 "    if re.match(r'^(?:else|otherwise):$', trimmed, re.I): return f'{indent}else:'\n"
 "\n"
-"    # 12. Functions (define function / function / routine / procedure / def)\n"
-"    m = re.match(r'^(?:define\\s+function|function|routine|procedure|def)\\s+([a-zA-Z0-9_]+)(?:\\s+with\\s+(.*?))?:$', trimmed, re.I)\n"
-"    if m: return f'{indent}def {m.group(1)}({m.group(2) or \"\"}):'\n"
+"    # 12. Functions (define function / function / routine / procedure / def / action)\n"
+"    m = re.match(r'^(?:define\\s+function|function|routine|procedure|def|action)\\s+([a-zA-Z0-9_]+)(?:\\s*\\((.*?)\\)|\\s+with\\s+(.*?))?:$', trimmed, re.I)\n"
+"    if m:\n"
+"        _p = m.group(2) if m.group(2) is not None else (m.group(3) or \"\")\n"
+"        return f'{indent}def {m.group(1)}({_p}):'\n"
 "\n"
-"    # 13. Modules & Libraries (Dual-Mode Python Bridge)\n"
+"    # 13. Modules & Libraries (Dual-Mode Python Bridge & Sovereign Modules)\n"
+"    m = re.match(r'^(?:use|import)\\s+[\"\\']([^\"\\']+)[\"\\']$', trimmed, re.I)\n"
+"    if m:\n"
+"        _imp = m.group(1)\n"
+"        _candidates = [_imp, f'{_imp}.enlng', f'lib_{_imp}.enlng']\n"
+"        _found_lines = None\n"
+"        for _sdir in ['.', '.enlang_modules', 'stdlib', 'lib', 'D:\\\\enlangg']:\n"
+"            for _cand in _candidates:\n"
+"                _fp = os.path.join(_sdir, _cand)\n"
+"                if os.path.exists(_fp):\n"
+"                    try:\n"
+"                        with open(_fp, 'r', encoding='utf-8', errors='replace') as _fh:\n"
+"                            _found_lines = [transpile_line(l) for l in _fh.read().splitlines()]\n"
+"                        break\n"
+"                    except: pass\n"
+"            if _found_lines: break\n"
+"        if _found_lines: return '\\n'.join(_found_lines)\n"
+"        if re.match(r'^[a-zA-Z0-9_\\.]+$', _imp): return f'{indent}import {_imp}'\n"
+"        return f'{indent}# use {_imp}'\n"
 "    m = re.match(r'^from\\s+(?:library\\s+|module\\s+)?[\"\\']?([a-zA-Z0-9_\\.]+)[\"\\']?\\s+import\\s+(.*)$', trimmed, re.I)\n"
 "    if m: return f'{indent}from {m.group(1)} import {m.group(2).strip()}'\n"
 "    m = re.match(r'^(?:use\\s+python\\s+library|use\\s+python\\s+module|use\\s+library|use\\s+module|import\\s+python\\s+module|import\\s+library|import\\s+module|load\\s+library|load\\s+module)\\s+[\"\\']?([a-zA-Z0-9_\\.]+)[\"\\']?(?:\\s+as\\s+([a-zA-Z0-9_]+))?$', trimmed, re.I)\n"
@@ -450,6 +470,8 @@ const char* EMBEDDED_RUNNER =
 "if len(sys.argv) > 1:\n"
 "    import sys, os\n"
 "    src_file = sys.argv[1]\n"
+"    if os.path.exists('.enlang_modules') and os.path.abspath('.enlang_modules') not in sys.path:\n"
+"        sys.path.insert(0, os.path.abspath('.enlang_modules'))\n"
 "    for start in [os.getcwd(), os.path.dirname(os.path.abspath(src_file))]:\n"
 "        cur = os.path.abspath(start)\n"
 "        while cur and cur != os.path.dirname(cur):\n"
@@ -526,6 +548,14 @@ void print_help() {
     printf("  enlangg m <app.enlngm>                      Launch Pure C Native Smartphone Simulator (390x844)\n");
     printf("  enlangg m build <app.enlngm> --target apk   Build mobile production package (HAL ARM64)\n");
     printf("  enlangg build <app.enlngm> --target apk     Direct shortcut to mobile production compiler\n\n");
+    printf("Developer Experience & Tooling:\n");
+    printf("  enlangg fmt [file/dir] [-w|--write]         Format Enlang files with Sovereign Formatter\n");
+    printf("  enlangg fmt [file/dir] [-c|--check]         Verify files are formatted (CI check mode)\n");
+    printf("  enlangg pkg init [name]                     Initialize a new enlang.json project manifest\n");
+    printf("  enlangg pkg add <package>                   Add dependency (stdlib or git) & link modules\n");
+    printf("  enlangg pkg install                         Install all dependencies declared in enlang.json\n");
+    printf("  enlangg pkg list                            List all declared and installed dependencies\n");
+    printf("  enlangg lsp                                 Start Language Server Protocol daemon on stdio\n\n");
     printf("Dedicated Standalone Executables in PATH:\n");
     printf("  enlangg   Universal master toolchain dispatcher\n");
     printf("  enlng     Core general-purpose computing with arena memory (.exe)\n");
@@ -678,6 +708,134 @@ int main(int argc, char* argv[]) {
 
         char cmd[2048];
         snprintf(cmd, sizeof(cmd), "cmd /c \"cd /d \"%s\\desktop\" && npx electron .\"", exePath);
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "fmt") == 0 || strcmp(argv[1], "format") == 0) {
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(NULL, exePath, MAX_PATH);
+        char* lastSlash = strrchr(exePath, '\\');
+        if (lastSlash) *lastSlash = '\0';
+
+        char cmd[4096];
+        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_fmt.py\"", exePath);
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "pkg") == 0 || strcmp(argv[1], "package") == 0) {
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(NULL, exePath, MAX_PATH);
+        char* lastSlash = strrchr(exePath, '\\');
+        if (lastSlash) *lastSlash = '\0';
+
+        char cmd[4096];
+        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\"", exePath);
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "init") == 0) {
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(NULL, exePath, MAX_PATH);
+        char* lastSlash = strrchr(exePath, '\\');
+        if (lastSlash) *lastSlash = '\0';
+
+        char cmd[4096];
+        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\" init", exePath);
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "add") == 0) {
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(NULL, exePath, MAX_PATH);
+        char* lastSlash = strrchr(exePath, '\\');
+        if (lastSlash) *lastSlash = '\0';
+
+        char cmd[4096];
+        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\" add", exePath);
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "install") == 0) {
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(NULL, exePath, MAX_PATH);
+        char* lastSlash = strrchr(exePath, '\\');
+        if (lastSlash) *lastSlash = '\0';
+
+        char cmd[4096];
+        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\" install", exePath);
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "list") == 0) {
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(NULL, exePath, MAX_PATH);
+        char* lastSlash = strrchr(exePath, '\\');
+        if (lastSlash) *lastSlash = '\0';
+
+        char cmd[4096];
+        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\" list", exePath);
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "remove") == 0) {
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(NULL, exePath, MAX_PATH);
+        char* lastSlash = strrchr(exePath, '\\');
+        if (lastSlash) *lastSlash = '\0';
+
+        char cmd[4096];
+        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\" remove", exePath);
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
+        return system(cmd);
+    }
+
+    if (strcmp(argv[1], "lsp") == 0 || strcmp(argv[1], "languageserver") == 0) {
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(NULL, exePath, MAX_PATH);
+        char* lastSlash = strrchr(exePath, '\\');
+        if (lastSlash) *lastSlash = '\0';
+
+        char cmd[4096];
+        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_lsp.py\"", exePath);
+        for (int i = 2; i < argc; i++) {
+            strcat(cmd, " \"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+        }
         return system(cmd);
     }
 
