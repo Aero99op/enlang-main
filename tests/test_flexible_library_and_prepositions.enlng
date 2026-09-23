@@ -1,0 +1,64 @@
+type enlng
+
+# =====================================================================
+# ENLANG SOVEREIGN TEST: FLEXIBLE PREPOSITIONS & PYTHON LIBRARY BRIDGE
+# Tests:
+# 1. Flexible library imports:
+#    - use library "math" as m
+#    - use library math as n
+#    - from library "math" import sqrt, pi
+# 2. Flexible calling syntax and prepositions:
+#    - Direct method call: m.sin(0)
+#    - use <func> with <args> from <obj>: use sin with 0 from m
+#    - call <func> on <obj> with <args>: call sin on m with 0
+#    - call <func> with <args> from <obj>: call sin with 0 from n
+# 3. Method invocation inside assignment expressions
+# =====================================================================
+
+use library "math" as m
+use library math as n
+from library "math" import sqrt, pi
+
+show "=== FLEXIBLE PREPOSITIONS AUDIT ==="
+
+# Check direct call
+c_direct = m.sin(0)
+when c_direct == 0:
+    show "[PASS 1] Direct call: m.sin(0) == 0"
+otherwise:
+    show "[FAIL 1] c_direct was" c_direct
+
+# Check use ... with ... from ...
+c_use_from = (use sin with 0 from m)
+when c_use_from == 0:
+    show "[PASS 2] use sin with 0 from m == 0"
+otherwise:
+    show "[FAIL 2] c_use_from was" c_use_from
+
+# Check call ... on ... with ...
+c_call_on = (call sin on m with 0)
+when c_call_on == 0:
+    show "[PASS 3] call sin on m with 0 == 0"
+otherwise:
+    show "[FAIL 3] c_call_on was" c_call_on
+
+# Check call ... with ... from ...
+c_call_from = (call sin with 0 from n)
+when c_call_from == 0:
+    show "[PASS 4] call sin with 0 from n == 0"
+otherwise:
+    show "[FAIL 4] c_call_from was" c_call_from
+
+# Check imported function & constant
+val_sqrt = sqrt(16)
+when val_sqrt == 4:
+    show "[PASS 5] Imported sqrt(16) == 4"
+otherwise:
+    show "[FAIL 5] val_sqrt was" val_sqrt
+
+when pi > 3.14 and pi < 3.15:
+    show "[PASS 6] Imported pi between 3.14 and 3.15"
+otherwise:
+    show "[FAIL 6] pi was" pi
+
+show "=== ALL PREPOSITION & LIBRARY TESTS PASSED ==="

@@ -25,6 +25,12 @@ if not os.path.exists(NATIVE_BIN):
     if os.path.exists(fallback):
         NATIVE_BIN = fallback
 
+CLI_BIN = os.path.join(ROOT_DIR, "enlangg.exe" if sys.platform == "win32" else "enlangg")
+if not os.path.exists(CLI_BIN):
+    fallback_cli = os.path.join(ROOT_DIR, "enlangg" if sys.platform == "win32" else "enlangg.exe")
+    if os.path.exists(fallback_cli):
+        CLI_BIN = fallback_cli
+
 
 class TestDifferentialEngineParity(unittest.TestCase):
     @classmethod
@@ -32,8 +38,8 @@ class TestDifferentialEngineParity(unittest.TestCase):
         if not os.path.exists(NATIVE_BIN):
             raise RuntimeError(f"Native binary not found at {NATIVE_BIN}. Build with build.cmd or gcc.")
 
-    def run_on_both_engines(self, code: str):
-        """Runs code on both Native C and WebAssembly engines and returns (native_out, wasm_out)."""
+    def run_on_both_engines(self, code: str, use_cli: bool = False):
+        """Runs code on both Native C/CLI and WebAssembly engines and returns (native_out, wasm_out)."""
         # 1. WebAssembly engine execution
         wasm_res_raw = enlang_engine.execute_enlang_wasm("differential.enlng", code, "enlng")
         try:
@@ -44,21 +50,22 @@ class TestDifferentialEngineParity(unittest.TestCase):
         self.assertTrue(wasm_res.get("success"), f"WebAssembly execution failed: {wasm_res}")
         wasm_out = wasm_res.get("output", "").strip().replace("\r\n", "\n")
 
-        # 2. Native C engine execution
+        # 2. Native C / CLI engine execution
         with tempfile.NamedTemporaryFile("w", suffix=".enlng", delete=False, encoding="utf-8") as tf:
             tf.write(code)
             temp_path = tf.name
 
+        target_bin = CLI_BIN if (use_cli and os.path.exists(CLI_BIN)) else NATIVE_BIN
         try:
             native_run = subprocess.run(
-                [NATIVE_BIN, "run", temp_path],
+                [target_bin, "run", temp_path],
                 capture_output=True,
                 text=True,
                 timeout=12
             )
             self.assertEqual(
                 native_run.returncode, 0,
-                f"Native execution failed with code {native_run.returncode}:\n{native_run.stderr}"
+                f"Native execution ({target_bin}) failed with code {native_run.returncode}:\n{native_run.stderr}"
             )
             native_out = native_run.stdout.strip().replace("\r\n", "\n")
         finally:
@@ -151,6 +158,16 @@ show "abc" * 3
         self.assertEqual(native_out, expected)
         self.assertEqual(wasm_out, expected)
         self.assertEqual(native_out, wasm_out)
+
+    def test_flexible_library_and_prepositions(self):
+        """Tests flexible prepositions and library imports across CLI and WebAssembly engines."""
+        test_file = os.path.join(ROOT_DIR, "tests", "test_flexible_library_and_prepositions.enlng")
+        with open(test_file, "r", encoding="utf-8") as f:
+            code = f.read()
+        cli_out, wasm_out = self.run_on_both_engines(code, use_cli=True)
+        self.assertIn("ALL PREPOSITION & LIBRARY TESTS PASSED", cli_out)
+        self.assertIn("ALL PREPOSITION & LIBRARY TESTS PASSED", wasm_out)
+        self.assertEqual(cli_out, wasm_out)
 
 
 if __name__ == "__main__":

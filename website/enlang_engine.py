@@ -138,6 +138,26 @@ def _transpile_enlng_line(line: str) -> str:
         return line
     if trimmed.startswith('type ') or trimmed.startswith('hint '):
         return f"{indent}# {trimmed}"
+    # 0a. Library imports (from library / from module / from ... import ...)
+    m_from = re.match(r'^from\s+(?:library\s+|module\s+)?["\']?([a-zA-Z0-9_]+)["\']?\s+import\s+(.*)$', trimmed, re.I)
+    if m_from:
+        return f"{indent}from {m_from.group(1)} import {m_from.group(2).strip()}"
+
+    # 0b. Library imports (use library / use python module / import library / load library ...)
+    m_lib = re.match(r'^(?:use\s+python\s+library|use\s+python\s+module|use\s+library|use\s+module|import\s+python\s+module|import\s+library|import\s+module|load\s+library|load\s+module)\s+["\']?([a-zA-Z0-9_]+)["\']?(?:\s+as\s+([a-zA-Z0-9_]+))?$', trimmed, re.I)
+    if m_lib:
+        mod, alias = m_lib.group(1), m_lib.group(2)
+        if alias: return f"{indent}import {mod} as {alias}"
+        return f"{indent}import {mod}"
+
+    # 0c. Direct import statement (import <mod> [as <alias>])
+    m_imp = re.match(r'^import\s+([a-zA-Z0-9_]+)(?:\s+as\s+([a-zA-Z0-9_]+))?$', trimmed, re.I)
+    if m_imp:
+        mod, alias = m_imp.group(1), m_imp.group(2)
+        if alias: return f"{indent}import {mod} as {alias}"
+        return f"{indent}import {mod}"
+
+    # 0d. Local module file inclusion: use "file.enlng" / import "file.enlng"
     m_use = re.match(r'^(?:use|import)\s+["\']([^"\']+)["\']$', trimmed, re.I)
     if m_use:
         imported_file = m_use.group(1)
@@ -151,6 +171,8 @@ def _transpile_enlng_line(line: str) -> str:
                     return '\n'.join(sub_lines)
                 except Exception:
                     pass
+        if re.match(r'^[a-zA-Z0-9_]+$', imported_file):
+            return f"{indent}import {imported_file}"
         return f"{indent}# {trimmed}"
 
     def fix_expr(expr):
@@ -203,8 +225,16 @@ def _transpile_enlng_line(line: str) -> str:
         expr = re.sub(r'\bfind\s+(.*?)\s+in\s+([a-zA-Z0-9_\[\]\(\)\.]+)', r'(\2.find(\1) if hasattr(\2, "find") else (\2.index(\1) if \1 in \2 else -1))', expr)
 
         expr = re.sub(r'\b([a-zA-Z0-9_\[\]]+)\s+contains\s+(.*)', r'(\2 in \1)', expr)
-        expr = re.sub(r'\bcall\s+([a-zA-Z0-9_]+)\s+with\s+(.*?)(?=[,\):]|$)', r'\1(\2)', expr)
-        expr = re.sub(r'\bcall\s+([a-zA-Z0-9_]+)\b', r'\1()', expr)
+        # Flexible Calling Action Words & Prepositions (use/call/run/invoke/execute/apply)
+        expr = re.sub(r'\b(?:call|use|run|invoke|execute|apply)\s+([a-zA-Z0-9_]+)\s+with\s+(.*?)\s+(?:from|using|on|in)\s+([a-zA-Z0-9_\[\]\.]+)\b', r'\3.\1(\2)', expr)
+        expr = re.sub(r'\b(?:call|use|run|invoke|execute|apply)\s+([a-zA-Z0-9_]+)\s+(?:from|using|on|in)\s+([a-zA-Z0-9_\[\]\.]+)\s+with\s+(.*?)(?=[,\):]|\s+(?:and|or)\b|$)', r'\2.\1(\3)', expr)
+        expr = re.sub(r'\b(?:call|use|run|invoke|execute|apply)\s+([a-zA-Z0-9_]+)\s+(?:from|using|on|in)\s+([a-zA-Z0-9_\[\]\.]+)\b', r'\2.\1()', expr)
+        expr = re.sub(r'\b(?:call|use|run|invoke|execute|apply)\s+([a-zA-Z0-9_\[\]\.]+)\.([a-zA-Z0-9_]+)\s+with\s+(.*?)(?=[,\):]|\s+(?:and|or)\b|$)', r'\1.\2(\3)', expr)
+        expr = re.sub(r'\b(?:call|use|run|invoke|execute|apply)\s+([a-zA-Z0-9_\[\]\.]+)\.([a-zA-Z0-9_]+)\b', r'\1.\2()', expr)
+        expr = re.sub(r'\b(?:tell|ask)\s+([a-zA-Z0-9_\[\]\.]+)\s+to\s+([a-zA-Z0-9_]+)\s+with\s+(.*?)(?=[,\):]|\s+(?:and|or)\b|$)', r'\1.\2(\3)', expr)
+        expr = re.sub(r'\b(?:tell|ask)\s+([a-zA-Z0-9_\[\]\.]+)\s+to\s+([a-zA-Z0-9_]+)\b', r'\1.\2()', expr)
+        expr = re.sub(r'\b(?:call|run|invoke|execute)\s+([a-zA-Z0-9_]+)\s+with\s+(.*?)(?=[,\):]|\s+(?:and|or)\b|$)', r'\1(\2)', expr)
+        expr = re.sub(r'\b(?:call|run|invoke|execute)\s+([a-zA-Z0-9_]+)\b', r'\1()', expr)
         expr = re.sub(r'\bcount\s+(?:of\s+)?(.*?)\s+in\s+([a-zA-Z0-9_\[\]\(\)]+)', r'(\2.count(\1) if hasattr(\2, "count") else 0)', expr)
         expr = re.sub(r'\b(?:count of|length of)\s+(\[.*?\]|\{.*?\}|[a-zA-Z0-9_\"\'\(\)\.]+)', r'len(\1)', expr)
         expr = re.sub(r'\bfirst\s+of\s+(\[.*?\]|\{.*?\}|[a-zA-Z0-9_\"\'\(\)\.]+)', r'(\1[0])', expr)
@@ -281,14 +311,25 @@ def _transpile_enlng_line(line: str) -> str:
         if vis and vis.lower() in ('private', 'secret', 'hidden', 'protected'): mname = f'_{mname}'
         return f"{indent}def {mname}(self, {params}):" if params else f"{indent}def {mname}(self):"
 
-    # 5b. OOP: Method Invocation (tell obj to method / ask obj to method / call method on obj)
-    m = re.match(r'^(?:tell|ask)\s+([a-zA-Z0-9_\.]+)\s+to\s+([a-zA-Z0-9_]+)(?:\s+with\s+(.*))?$', trimmed, re.I)
+    # 5b. Flexible Method Invocation Statements
+    m = re.match(r'^(?:call|use|run|invoke|execute|apply)\s+([a-zA-Z0-9_]+)\s+with\s+(.*?)\s+(?:from|using|on|in)\s+([a-zA-Z0-9_\[\]\.]+)$', trimmed, re.I)
+    if m:
+        meth, args, obj = m.group(1), m.group(2), m.group(3)
+        return f"{indent}{obj}.{meth}({fix_expr(args)})"
+
+    m = re.match(r'^(?:call|use|run|invoke|execute|apply)\s+([a-zA-Z0-9_]+)\s+(?:from|using|on|in)\s+([a-zA-Z0-9_\[\]\.]+)(?:\s+with\s+(.*))?$', trimmed, re.I)
+    if m:
+        meth, obj, args = m.group(1), m.group(2), m.group(3)
+        return f"{indent}{obj}.{meth}({fix_expr(args)})" if args else f"{indent}{obj}.{meth}()"
+
+    m = re.match(r'^(?:call|use|run|invoke|execute|apply)\s+([a-zA-Z0-9_\[\]\.]+)\.([a-zA-Z0-9_]+)(?:\s+with\s+(.*))?$', trimmed, re.I)
     if m:
         obj, meth, args = m.group(1), m.group(2), m.group(3)
         return f"{indent}{obj}.{meth}({fix_expr(args)})" if args else f"{indent}{obj}.{meth}()"
-    m = re.match(r'^call\s+([a-zA-Z0-9_]+)\s+on\s+([a-zA-Z0-9_\.]+)(?:\s+with\s+(.*))?$', trimmed, re.I)
+
+    m = re.match(r'^(?:tell|ask)\s+([a-zA-Z0-9_\.]+)\s+to\s+([a-zA-Z0-9_]+)(?:\s+with\s+(.*))?$', trimmed, re.I)
     if m:
-        meth, obj, args = m.group(1), m.group(2), m.group(3)
+        obj, meth, args = m.group(1), m.group(2), m.group(3)
         return f"{indent}{obj}.{meth}({fix_expr(args)})" if args else f"{indent}{obj}.{meth}()"
 
     # 6. Reverse statement: reverse target

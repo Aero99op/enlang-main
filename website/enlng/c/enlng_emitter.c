@@ -59,11 +59,25 @@ bool enlng_has_python_dependency(const char* filepath) {
     while (fgets(line, sizeof(line), f)) {
         char* t = trim_str(line);
         if (starts_with_ci(t, "import python") ||
+            starts_with_ci(t, "use python") ||
+            starts_with_ci(t, "use library") ||
+            starts_with_ci(t, "load library") ||
+            starts_with_ci(t, "load module") ||
+            starts_with_ci(t, "from library") ||
+            (starts_with_ci(t, "from ") && strstr(t, " import ")) ||
+            (starts_with_ci(t, "import ") && !strstr(t, ".enlng\"") && !strstr(t, ".enlng'") && !strstr(t, ".enlg\"") && !strstr(t, ".enlg'")) ||
             strstr(t, "\"numpy\"") || strstr(t, "'numpy'") ||
             strstr(t, "\"torch\"") || strstr(t, "'torch'") ||
             strstr(t, "\"pandas\"") || strstr(t, "'pandas'") ||
             strstr(t, "\"scipy\"") || strstr(t, "'scipy'") ||
-            strstr(t, "\"sklearn\"") || strstr(t, "'sklearn'")) {
+            strstr(t, "\"sklearn\"") || strstr(t, "'sklearn'") ||
+            strstr(t, "\"math\"") || strstr(t, "'math'") ||
+            strstr(t, "\"random\"") || strstr(t, "'random'") ||
+            strstr(t, "\"json\"") || strstr(t, "'json'") ||
+            strstr(t, "\"time\"") || strstr(t, "'time'") ||
+            strstr(t, "\"os\"") || strstr(t, "'os'") ||
+            strstr(t, "\"sys\"") || strstr(t, "'sys'") ||
+            strstr(t, "\"requests\"") || strstr(t, "'requests'")) {
             has_py = true;
             break;
         }

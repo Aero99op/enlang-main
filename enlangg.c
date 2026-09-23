@@ -221,11 +221,16 @@ const char* EMBEDDED_RUNNER =
 "        expr = re.sub(r'\\bread\\s+from\\s+user\\s+with\\s+\"([^\"]*)\"', r'_smart_input(\"\\1\")', expr)\n"
 "        expr = re.sub(r'\\b(?:ask\\s+user|read\\s+from\\s+user|read\\s+input)\\b', r'_smart_input()', expr)\n"
 "        expr = re.sub(r'\\binput\\s*\\((.*?)\\)', r'_smart_input(\\1)', expr)\n"
-"        expr = re.sub(r'\\binput\\b(?!\\s*\\(|\\s*_)', r'_smart_input()', expr)\n"
-"        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)\\s+from\\s+\"([^\"]+)\"', r'\\3.\\1(\\2)', expr)\n"
-"        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\s+from\\s+\"([^\"]+)\"', r'\\2.\\1()', expr)\n"
-"        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)(?=[,\\):]|$)', r'\\1(\\2)', expr)\n"
-"        expr = re.sub(r'\\bcall\\s+([a-zA-Z0-9_]+)\\b', r'\\1()', expr)\n"
+"        # Flexible Calling Action Words & Prepositions (use/call/run/invoke/execute/apply)\n"
+"        expr = re.sub(r'\\b(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)\\s+(?:from|using|on|in)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\b', r'\\3.\\1(\\2)', expr)\n"
+"        expr = re.sub(r'\\b(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_]+)\\s+(?:from|using|on|in)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\s+with\\s+(.*?)(?=[,\\):]|\\s+(?:and|or)\\b|$)', r'\\2.\\1(\\3)', expr)\n"
+"        expr = re.sub(r'\\b(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_]+)\\s+(?:from|using|on|in)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\b', r'\\2.\\1()', expr)\n"
+"        expr = re.sub(r'\\b(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\.([a-zA-Z0-9_]+)\\s+with\\s+(.*?)(?=[,\\):]|\\s+(?:and|or)\\b|$)', r'\\1.\\2(\\3)', expr)\n"
+"        expr = re.sub(r'\\b(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\.([a-zA-Z0-9_]+)\\b', r'\\1.\\2()', expr)\n"
+"        expr = re.sub(r'\\b(?:tell|ask)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\s+to\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)(?=[,\\):]|\\s+(?:and|or)\\b|$)', r'\\1.\\2(\\3)', expr)\n"
+"        expr = re.sub(r'\\b(?:tell|ask)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\s+to\\s+([a-zA-Z0-9_]+)\\b', r'\\1.\\2()', expr)\n"
+"        expr = re.sub(r'\\b(?:call|run|invoke|execute)\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)(?=[,\\):]|\\s+(?:and|or)\\b|$)', r'\\1(\\2)', expr)\n"
+"        expr = re.sub(r'\\b(?:call|run|invoke|execute)\\s+([a-zA-Z0-9_]+)\\b', r'\\1()', expr)\n"
 "        expr = re.sub(r'\\bcount\\s+(?:of\\s+)?(.*?)\\s+in\\s+([a-zA-Z0-9_\\[\\]\\(\\)]+)', r'(\\2.count(\\1) if hasattr(\\2, \"count\") else 0)', expr)\n"
 "        expr = re.sub(r'\\b(?:count of|length of)\\s+([a-zA-Z0-9_\\[\\]\"\\'\\(\\)]+)', r'len(\\1)', expr)\n"
 "        expr = re.sub(r'\\breverse\\s+(?:of\\s+)?([a-zA-Z0-9_\\[\\]\"\\'\\(\\)]+)', r'(\\1[::-1] if hasattr(\\1, \"__getitem__\") else \\1)', expr)\n"
@@ -295,14 +300,22 @@ const char* EMBEDDED_RUNNER =
 "        if vis and vis.lower() in ('private', 'secret', 'hidden', 'protected'): mname = f'_{mname}'\n"
 "        return f'{indent}def {mname}(self, {params}):' if params else f'{indent}def {mname}(self):'\n"
 "\n"
-"    # 5b. OOP: Method Invocation (tell obj to method / ask obj to method / call method on obj)\n"
-"    m = re.match(r'^(?:tell|ask)\\s+([a-zA-Z0-9_\\.]+)\\s+to\\s+([a-zA-Z0-9_]+)(?:\\s+with\\s+(.*))?$', trimmed, re.I)\n"
+"    # 5b. Flexible Method Invocation Statements\n"
+"    m = re.match(r'^(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)\\s+(?:from|using|on|in)\\s+([a-zA-Z0-9_\\[\\]\\.]+)$', trimmed, re.I)\n"
+"    if m:\n"
+"        meth, args, obj = m.group(1), m.group(2), m.group(3)\n"
+"        return f'{indent}{obj}.{meth}({fix_expr(args)})'\n"
+"    m = re.match(r'^(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_]+)\\s+(?:from|using|on|in)\\s+([a-zA-Z0-9_\\[\\]\\.]+)(?:\\s+with\\s+(.*))?$', trimmed, re.I)\n"
+"    if m:\n"
+"        meth, obj, args = m.group(1), m.group(2), m.group(3)\n"
+"        return f'{indent}{obj}.{meth}({fix_expr(args)})' if args else f'{indent}{obj}.{meth}()'\n"
+"    m = re.match(r'^(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\.([a-zA-Z0-9_]+)(?:\\s+with\\s+(.*))?$', trimmed, re.I)\n"
 "    if m:\n"
 "        obj, meth, args = m.group(1), m.group(2), m.group(3)\n"
 "        return f'{indent}{obj}.{meth}({fix_expr(args)})' if args else f'{indent}{obj}.{meth}()'\n"
-"    m = re.match(r'^call\\s+([a-zA-Z0-9_]+)\\s+on\\s+([a-zA-Z0-9_\\.]+)(?:\\s+with\\s+(.*))?$', trimmed, re.I)\n"
+"    m = re.match(r'^(?:tell|ask)\\s+([a-zA-Z0-9_\\.]+)\\s+to\\s+([a-zA-Z0-9_]+)(?:\\s+with\\s+(.*))?$', trimmed, re.I)\n"
 "    if m:\n"
-"        meth, obj, args = m.group(1), m.group(2), m.group(3)\n"
+"        obj, meth, args = m.group(1), m.group(2), m.group(3)\n"
 "        return f'{indent}{obj}.{meth}({fix_expr(args)})' if args else f'{indent}{obj}.{meth}()'\n"
 "\n"
 "    # 6. Universal Hint Keyword Discovery for 'ask'\n"
@@ -419,10 +432,16 @@ const char* EMBEDDED_RUNNER =
 "    if m: return f'{indent}def {m.group(1)}({m.group(2) or \"\"}):'\n"
 "\n"
 "    # 13. Modules & Libraries (Dual-Mode Python Bridge)\n"
-"    m = re.match(r'^(?:import\\s+python\\s+module|import\\s+module|use\\s+library|import)\\s+[\"\\']?([a-zA-Z0-9_]+)[\"\\']?(?:\\s+as\\s+([a-zA-Z0-9_]+))?', trimmed, re.I)\n"
+"    m = re.match(r'^from\\s+(?:library\\s+|module\\s+)?[\"\\']?([a-zA-Z0-9_]+)[\"\\']?\\s+import\\s+(.*)$', trimmed, re.I)\n"
+"    if m: return f'{indent}from {m.group(1)} import {m.group(2).strip()}'\n"
+"    m = re.match(r'^(?:use\\s+python\\s+library|use\\s+python\\s+module|use\\s+library|use\\s+module|import\\s+python\\s+module|import\\s+library|import\\s+module|load\\s+library|load\\s+module)\\s+[\"\\']?([a-zA-Z0-9_]+)[\"\\']?(?:\\s+as\\s+([a-zA-Z0-9_]+))?$', trimmed, re.I)\n"
 "    if m:\n"
-"        mod = m.group(1)\n"
-"        alias = m.group(2)\n"
+"        mod, alias = m.group(1), m.group(2)\n"
+"        if alias: return f'{indent}import {mod} as {alias}'\n"
+"        return f'{indent}import {mod}'\n"
+"    m = re.match(r'^import\\s+([a-zA-Z0-9_]+)(?:\\s+as\\s+([a-zA-Z0-9_]+))?$', trimmed, re.I)\n"
+"    if m:\n"
+"        mod, alias = m.group(1), m.group(2)\n"
 "        if alias: return f'{indent}import {mod} as {alias}'\n"
 "        return f'{indent}import {mod}'\n"
 "\n"
@@ -518,8 +537,36 @@ void print_help() {
     printf("Documentation & Live Playground: https://enlangg.vercel.app\n");
 }
 
+static int run_python_bridge(const char* filepath) {
+    char temp_script[MAX_PATH];
+    char temp_dir[MAX_PATH];
+    GetTempPathA(MAX_PATH, temp_dir);
+    snprintf(temp_script, sizeof(temp_script), "%senlangg_runner_%lu.py", temp_dir, GetCurrentProcessId());
+
+    FILE* f = fopen(temp_script, "w");
+    if (!f) {
+        fprintf(stderr, "[ENLANGG ERROR] Could not create temp runner script.\n");
+        return 1;
+    }
+
+    fputs(EMBEDDED_RUNNER, f);
+    fclose(f);
+
+    char cmd[MAX_PATH * 2 + 64];
+    snprintf(cmd, sizeof(cmd), "python \"%s\" \"%s\"", temp_script, filepath);
+    int res = system(cmd);
+
+    remove(temp_script);
+    return res;
+}
+
 int run_script(const char* filepath) {
-    // 0. Check if pure Enlang core script (.enlng, .enlg)
+    // 0. If file declares or imports Python libraries, route directly to Python bridge
+    if (enlng_has_python_dependency(filepath)) {
+        return run_python_bridge(filepath);
+    }
+
+    // 0b. Check if pure Enlang core script (.enlng, .enlg)
     if (strstr(filepath, ".enlng") != NULL || strstr(filepath, ".enlg") != NULL) {
         char cmd[1024];
         snprintf(cmd, sizeof(cmd), "enlng \"%s\"", filepath);
@@ -597,27 +644,8 @@ int run_script(const char* filepath) {
         fclose(chk);
     }
 
-    // 7. Universal script runner with God Call and standard library support
-    char temp_script[MAX_PATH];
-    char temp_dir[MAX_PATH];
-    GetTempPathA(MAX_PATH, temp_dir);
-    snprintf(temp_script, sizeof(temp_script), "%senlangg_runner_%lu.py", temp_dir, GetCurrentProcessId());
-
-    FILE* f = fopen(temp_script, "w");
-    if (!f) {
-        fprintf(stderr, "[ENLANGG ERROR] Could not create temp runner script.\n");
-        return 1;
-    }
-
-    fputs(EMBEDDED_RUNNER, f);
-    fclose(f);
-
-    char cmd[MAX_PATH * 2 + 64];
-    snprintf(cmd, sizeof(cmd), "python \"%s\" \"%s\"", temp_script, filepath);
-    int res = system(cmd);
-
-    remove(temp_script);
-    return res;
+    // 7. Universal script runner fallback
+    return run_python_bridge(filepath);
 }
 
 int main(int argc, char* argv[]) {
