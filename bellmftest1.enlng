@@ -14,17 +14,17 @@ use library "skfuzzy" as fuzz
 use library "matplotlib.pyplot" as plt
 
 # Generate high-resolution domain from 0 to 10
-x = (use linspace with 0.0, 10.0, 500 from np)
+x = use linspace with 0.0, 10.0, 500 from np
 
 # Compute Bell MF curves directly using library functions (gbellmf)
 # 1. Standard Bell MF: a=2.0 (width), b=4.0 (slope), c=5.0 (center)
-y_standard = (use gbellmf with x, 2.0, 4.0, 5.0 from fuzz)
+y_standard = use gbellmf with x, 2.0, 4.0, 5.0 from fuzz
 
 # 2. Broad Slope Bell MF: a=3.0, b=2.0, c=5.0
-y_broad = (use gbellmf with x, 3.0, 2.0, 5.0 from fuzz)
+y_broad = use gbellmf with x, 3.0, 2.0, 5.0 from fuzz
 
 # 3. Steep Narrow Bell MF: a=1.5, b=6.0, c=5.0
-y_steep = (use gbellmf with x, 1.5, 6.0, 5.0 from fuzz)
+y_steep = use gbellmf with x, 1.5, 6.0, 5.0 from fuzz
 
 # Create figure
 call figure on plt with figsize=[10, 6], dpi=300

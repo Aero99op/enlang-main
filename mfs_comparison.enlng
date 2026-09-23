@@ -16,49 +16,54 @@ use library "matplotlib.pyplot" as plt
 use library "time" as time
 
 # Domain setup: universe of discourse [0.0, 10.0]
-x = (use linspace with 0.0, 10.0, 1000 from np)
+x = use linspace with 0.0, 10.0, 1000 from np
 
 # Evaluate all 5 standard MFs using skfuzzy
-y_tri   = (use trimf with x, [2.0, 5.0, 8.0] from fuzz)
-y_trap  = (use trapmf with x, [1.0, 3.5, 6.5, 9.0] from fuzz)
-y_gauss = (use gaussmf with x, 5.0, 1.5 from fuzz)
-y_bell  = (use gbellmf with x, 2.0, 4.0, 5.0 from fuzz)
-y_sig   = (use sigmf with x, 5.0, 1.5 from fuzz)
+y_tri   = use trimf with x, [2.0, 5.0, 8.0] from fuzz
+y_trap  = use trapmf with x, [1.0, 3.5, 6.5, 9.0] from fuzz
+y_gauss = use gaussmf with x, 5.0, 1.5 from fuzz
+y_bell  = use gbellmf with x, 2.0, 4.0, 5.0 from fuzz
+y_sig   = use sigmf with x, 5.0, 1.5 from fuzz
 
 # -------------------------------------------------------------
 # Real-World Computational Efficiency Benchmark (500,000 points)
 # -------------------------------------------------------------
-bench_x = (use linspace with 0.0, 10.0, 500000 from np)
+bench_x = use linspace with 0.0, 10.0, 500000 from np
 
 # Benchmark Triangular
-t0 = (call time from time)
+t0 = call time from time
 repeat 5 times:
-    tmp = (use trimf with bench_x, [2.0, 5.0, 8.0] from fuzz)
-t_tri = (((call time from time) - t0) / 5.0) * 1000.0
+    tmp = use trimf with bench_x, [2.0, 5.0, 8.0] from fuzz
+t1 = call time from time
+t_tri = (t1 - t0) * 200.0
 
 # Benchmark Trapezoidal
-t0 = (call time from time)
+t0 = call time from time
 repeat 5 times:
-    tmp = (use trapmf with bench_x, [1.0, 3.5, 6.5, 9.0] from fuzz)
-t_trap = (((call time from time) - t0) / 5.0) * 1000.0
+    tmp = use trapmf with bench_x, [1.0, 3.5, 6.5, 9.0] from fuzz
+t1 = call time from time
+t_trap = (t1 - t0) * 200.0
 
 # Benchmark Gaussian
-t0 = (call time from time)
+t0 = call time from time
 repeat 5 times:
-    tmp = (use gaussmf with bench_x, 5.0, 1.5 from fuzz)
-t_gauss = (((call time from time) - t0) / 5.0) * 1000.0
+    tmp = use gaussmf with bench_x, 5.0, 1.5 from fuzz
+t1 = call time from time
+t_gauss = (t1 - t0) * 200.0
 
 # Benchmark Sigmoidal
-t0 = (call time from time)
+t0 = call time from time
 repeat 5 times:
-    tmp = (use sigmf with bench_x, 5.0, 1.5 from fuzz)
-t_sig = (((call time from time) - t0) / 5.0) * 1000.0
+    tmp = use sigmf with bench_x, 5.0, 1.5 from fuzz
+t1 = call time from time
+t_sig = (t1 - t0) * 200.0
 
 # Benchmark Generalized Bell
-t0 = (call time from time)
+t0 = call time from time
 repeat 5 times:
-    tmp = (use gbellmf with bench_x, 2.0, 4.0, 5.0 from fuzz)
-t_bell = (((call time from time) - t0) / 5.0) * 1000.0
+    tmp = use gbellmf with bench_x, 2.0, 4.0, 5.0 from fuzz
+t1 = call time from time
+t_bell = (t1 - t0) * 200.0
 
 show "======================================================================="
 show "  FUZZY MEMBERSHIP FUNCTIONS COMPUTATIONAL EFFICIENCY BENCHMARK        "
