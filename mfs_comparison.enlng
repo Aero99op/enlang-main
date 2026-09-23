@@ -1,0 +1,111 @@
+type enlng
+
+# =====================================================================
+# ENLANG MULTI-MEMBERSHIP FUNCTION BENCHMARK & COMPARISON
+# Evaluates and visualizes 5 canonical Fuzzy Membership Functions:
+# 1. Triangular MF (trimf)
+# 2. Trapezoidal MF (trapmf)
+# 3. Gaussian MF (gaussmf)
+# 4. Generalized Bell MF (gbellmf)
+# 5. Sigmoidal MF (sigmf)
+# =====================================================================
+
+use library "numpy" as np
+use library "skfuzzy" as fuzz
+use library "matplotlib.pyplot" as plt
+use library "time" as time
+
+# Domain setup: universe of discourse [0.0, 10.0]
+x = (use linspace with 0.0, 10.0, 1000 from np)
+
+# Evaluate all 5 standard MFs using skfuzzy
+y_tri   = (use trimf with x, [2.0, 5.0, 8.0] from fuzz)
+y_trap  = (use trapmf with x, [1.0, 3.5, 6.5, 9.0] from fuzz)
+y_gauss = (use gaussmf with x, 5.0, 1.5 from fuzz)
+y_bell  = (use gbellmf with x, 2.0, 4.0, 5.0 from fuzz)
+y_sig   = (use sigmf with x, 5.0, 1.5 from fuzz)
+
+# -------------------------------------------------------------
+# Real-World Computational Efficiency Benchmark (500,000 points)
+# -------------------------------------------------------------
+bench_x = (use linspace with 0.0, 10.0, 500000 from np)
+
+# Benchmark Triangular
+t0 = (call time from time)
+repeat 5 times:
+    tmp = (use trimf with bench_x, [2.0, 5.0, 8.0] from fuzz)
+t_tri = (((call time from time) - t0) / 5.0) * 1000.0
+
+# Benchmark Trapezoidal
+t0 = (call time from time)
+repeat 5 times:
+    tmp = (use trapmf with bench_x, [1.0, 3.5, 6.5, 9.0] from fuzz)
+t_trap = (((call time from time) - t0) / 5.0) * 1000.0
+
+# Benchmark Gaussian
+t0 = (call time from time)
+repeat 5 times:
+    tmp = (use gaussmf with bench_x, 5.0, 1.5 from fuzz)
+t_gauss = (((call time from time) - t0) / 5.0) * 1000.0
+
+# Benchmark Sigmoidal
+t0 = (call time from time)
+repeat 5 times:
+    tmp = (use sigmf with bench_x, 5.0, 1.5 from fuzz)
+t_sig = (((call time from time) - t0) / 5.0) * 1000.0
+
+# Benchmark Generalized Bell
+t0 = (call time from time)
+repeat 5 times:
+    tmp = (use gbellmf with bench_x, 2.0, 4.0, 5.0 from fuzz)
+t_bell = (((call time from time) - t0) / 5.0) * 1000.0
+
+show "======================================================================="
+show "  FUZZY MEMBERSHIP FUNCTIONS COMPUTATIONAL EFFICIENCY BENCHMARK        "
+show "  (Average Latency over 500,000 points evaluated across 5 iterations) "
+show "======================================================================="
+show "1. Triangular MF (trimf):       ", t_tri, "ms  [FASTEST - Basic Linear Ops]"
+show "2. Trapezoidal MF (trapmf):     ", t_trap, "ms  [FAST - Piecewise Linear]"
+show "3. Gaussian MF (gaussmf):       ", t_gauss, "ms  [MODERATE - exp() Transcendental]"
+show "4. Sigmoidal MF (sigmf):        ", t_sig, "ms  [MODERATE - exp() Logistic]"
+show "5. Generalized Bell MF (gbellmf):", t_bell, "ms  [HEAVIEST - pow() Log+Exp Ops]"
+show "======================================================================="
+
+# -------------------------------------------------------------
+# Visualization: 2-Panel Professional Comparison Figure
+# -------------------------------------------------------------
+call figure on plt with figsize=[13, 8], dpi=300
+
+# Subplot 1: All Membership Functions
+call subplot on plt with 2, 1, 1
+call plot on plt with x, y_tri, color="#d9534f", linewidth=2.2, label="Triangular MF (trimf)"
+call plot on plt with x, y_trap, color="#f0ad4e", linewidth=2.2, linestyle="--", label="Trapezoidal MF (trapmf)"
+call plot on plt with x, y_gauss, color="#0275d8", linewidth=2.2, label="Gaussian MF (gaussmf)"
+call plot on plt with x, y_bell, color="#5cb85c", linewidth=2.2, linestyle="-.", label="Generalized Bell MF (gbellmf)"
+call plot on plt with x, y_sig, color="#6f42c1", linewidth=2.0, linestyle=":", label="Sigmoidal MF (sigmf)"
+
+call title on plt with "Comparison of Fuzzy Membership Functions (MFs)", fontsize=13, fontweight="bold"
+call xlabel on plt with "Input Variable (x)", fontsize=11
+call ylabel on plt with "Membership Degree \u03bc(x)", fontsize=11
+call ylim on plt with -0.05, 1.10
+call xlim on plt with 0.0, 10.0
+call grid on plt with true, linestyle=":", alpha=0.6
+call legend on plt with loc="upper right", frameon=true, fontsize=9
+
+# Subplot 2: Computational Latency Bar Chart
+call subplot on plt with 2, 1, 2
+mf_names = ["Triangular", "Trapezoidal", "Gaussian", "Sigmoidal", "Gen. Bell"]
+mf_times = [t_tri, t_trap, t_gauss, t_sig, t_bell]
+colors = ["#5cb85c", "#5cb85c", "#f0ad4e", "#f0ad4e", "#d9534f"]
+
+call bar on plt with mf_names, mf_times, color=colors, width=0.55
+call title on plt with "Computational Latency (Lower is Better / More Efficient)", fontsize=13, fontweight="bold"
+call ylabel on plt with "Execution Time (ms per 500k pts)", fontsize=11
+call grid on plt with true, axis="y", linestyle=":", alpha=0.6
+
+call tight_layout on plt
+output_chart = "mfs_comparison.png"
+call savefig on plt with output_chart, dpi=300
+call close on plt
+
+show "Comparison visualization saved to:" output_chart
