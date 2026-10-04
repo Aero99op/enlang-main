@@ -18,8 +18,8 @@ jobs:
 
       - name: Build Windows Executables
         run: |
-          gcc -O2 -s enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -o enlangg.exe
-          gcc -O2 -s enlng.c -o enlng.exe
+          gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -o enlangg.exe
+          gcc -O2 -s -I. -Isrc enlng.c -o enlng.exe
           mkdir dist
           copy enlangg.exe dist\
           copy enlng.exe dist\
@@ -41,8 +41,9 @@ jobs:
 
       - name: Build Linux Binaries
         run: |
-          gcc -O2 -s enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o enlangg
-          gcc -O2 -s enlng.c -lm -o enlng
+          set -e -x
+          gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o enlangg
+          gcc -O2 -s -I. -Isrc enlng.c -lm -o enlng
           chmod +x enlangg enlng
           tar -czf enlangg-linux-amd64.tar.gz enlangg enlng install.sh
 
@@ -60,8 +61,9 @@ jobs:
 
       - name: Build macOS Binaries
         run: |
-          clang -O2 enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o enlangg
-          clang -O2 enlng.c -lm -o enlng
+          set -e -x
+          clang -O2 -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o enlangg
+          clang -O2 -I. -Isrc enlng.c -lm -o enlng
           chmod +x enlangg enlng
           tar -czf enlangg-darwin-arm64.tar.gz enlangg enlng install.sh
 
