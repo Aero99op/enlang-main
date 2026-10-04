@@ -7,9 +7,11 @@
  *   enlangg build <file> --target <apk|ipa> -o <out>
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #ifdef _WIN32
 #include <windows.h>
 #elif defined(__APPLE__)
