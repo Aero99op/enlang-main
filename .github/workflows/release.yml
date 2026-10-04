@@ -41,11 +41,19 @@ jobs:
 
       - name: Build Linux Binaries
         run: |
-          set -e -x
-          gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o enlangg
-          gcc -O2 -s -I. -Isrc enlng.c -lm -o enlng
-          chmod +x enlangg enlng
-          tar -czf enlangg-linux-amd64.tar.gz enlangg enlng install.sh
+          gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o enlangg > enlangg.log 2>&1 || true
+          gcc -O2 -s -I. -Isrc enlng.c -lm -o enlng > enlng.log 2>&1 || true
+          if [ -f enlangg ] && [ -f enlng ]; then
+            chmod +x enlangg enlng
+            tar -czf enlangg-linux-amd64.tar.gz enlangg enlng install.sh
+          else
+            echo "### Linux Build Failure Log" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat enlangg.log >> $GITHUB_STEP_SUMMARY
+            cat enlng.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
@@ -61,11 +69,19 @@ jobs:
 
       - name: Build macOS Binaries
         run: |
-          set -e -x
-          clang -O2 -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o enlangg
-          clang -O2 -I. -Isrc enlng.c -lm -o enlng
-          chmod +x enlangg enlng
-          tar -czf enlangg-darwin-arm64.tar.gz enlangg enlng install.sh
+          clang -O2 -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o enlangg > enlangg_mac.log 2>&1 || true
+          clang -O2 -I. -Isrc enlng.c -lm -o enlng > enlng_mac.log 2>&1 || true
+          if [ -f enlangg ] && [ -f enlng ]; then
+            chmod +x enlangg enlng
+            tar -czf enlangg-darwin-arm64.tar.gz enlangg enlng install.sh
+          else
+            echo "### macOS Build Failure Log" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat enlangg_mac.log >> $GITHUB_STEP_SUMMARY
+            cat enlng_mac.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
