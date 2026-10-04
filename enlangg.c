@@ -12,9 +12,20 @@
 #include <string.h>
 #ifdef _WIN32
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <unistd.h>
+#include <sys/types.h>
+#include <mach-o/dyld.h>
+#else
+#include <unistd.h>
+#include <sys/types.h>
 #endif
 #include "enlngdb/c/enlngdb.h"
 #include "enlng/c/enlng_emitter.h"
+
+#ifndef MAX_PATH
+#define MAX_PATH 4096
+#endif
 
 #define VERSION "5.0.0-sovereign-universal"
 
@@ -567,11 +578,55 @@ void print_help() {
     printf("Documentation & Live Playground: https://enlangg.vercel.app\n");
 }
 
+static void get_executable_dir(char* outPath, size_t maxLen) {
+#ifdef _WIN32
+    GetModuleFileNameA(NULL, outPath, (DWORD)maxLen);
+    char* lastSlash = strrchr(outPath, '\\');
+    if (!lastSlash) lastSlash = strrchr(outPath, '/');
+    if (lastSlash) *lastSlash = '\0';
+#elif defined(__APPLE__)
+    uint32_t size = (uint32_t)maxLen;
+    if (_NSGetExecutablePath(outPath, &size) == 0) {
+        char* lastSlash = strrchr(outPath, '/');
+        if (lastSlash) *lastSlash = '\0';
+    } else {
+        strcpy(outPath, ".");
+    }
+#else
+    ssize_t len = readlink("/proc/self/exe", outPath, maxLen - 1);
+    if (len != -1) {
+        outPath[len] = '\0';
+        char* lastSlash = strrchr(outPath, '/');
+        if (lastSlash) *lastSlash = '\0';
+    } else {
+        strcpy(outPath, ".");
+    }
+#endif
+}
+
+static void get_system_temp_dir(char* outDir, size_t maxLen) {
+#ifdef _WIN32
+    GetTempPathA((DWORD)maxLen, outDir);
+#else
+    const char* tmp = getenv("TMPDIR");
+    if (!tmp) tmp = "/tmp";
+    snprintf(outDir, maxLen, "%s/", tmp);
+#endif
+}
+
+static unsigned long get_current_pid(void) {
+#ifdef _WIN32
+    return (unsigned long)GetCurrentProcessId();
+#else
+    return (unsigned long)getpid();
+#endif
+}
+
 static int run_python_bridge(const char* filepath) {
     char temp_script[MAX_PATH];
     char temp_dir[MAX_PATH];
-    GetTempPathA(MAX_PATH, temp_dir);
-    snprintf(temp_script, sizeof(temp_script), "%senlangg_runner_%lu.py", temp_dir, GetCurrentProcessId());
+    get_system_temp_dir(temp_dir, sizeof(temp_dir));
+    snprintf(temp_script, sizeof(temp_script), "%senlangg_runner_%lu.py", temp_dir, get_current_pid());
 
     FILE* f = fopen(temp_script, "w");
     if (!f) {
@@ -702,23 +757,23 @@ int main(int argc, char* argv[]) {
     if (strcmp(argv[1], "studio") == 0 || strcmp(argv[1], "ide") == 0) {
         printf("[ENLANGG] Starting Sovereign Desktop Studio (Electron)...\n");
         char exePath[MAX_PATH];
-        GetModuleFileNameA(NULL, exePath, MAX_PATH);
-        char* lastSlash = strrchr(exePath, '\\');
-        if (lastSlash) *lastSlash = '\0';
+        get_executable_dir(exePath, sizeof(exePath));
 
         char cmd[2048];
+#ifdef _WIN32
         snprintf(cmd, sizeof(cmd), "cmd /c \"cd /d \"%s\\desktop\" && npx electron .\"", exePath);
+#else
+        snprintf(cmd, sizeof(cmd), "sh -c \"cd '%s/desktop' && npx electron .\"", exePath);
+#endif
         return system(cmd);
     }
 
     if (strcmp(argv[1], "fmt") == 0 || strcmp(argv[1], "format") == 0) {
         char exePath[MAX_PATH];
-        GetModuleFileNameA(NULL, exePath, MAX_PATH);
-        char* lastSlash = strrchr(exePath, '\\');
-        if (lastSlash) *lastSlash = '\0';
+        get_executable_dir(exePath, sizeof(exePath));
 
         char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_fmt.py\"", exePath);
+        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_fmt.py\"", exePath);
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -729,12 +784,10 @@ int main(int argc, char* argv[]) {
 
     if (strcmp(argv[1], "pkg") == 0 || strcmp(argv[1], "package") == 0) {
         char exePath[MAX_PATH];
-        GetModuleFileNameA(NULL, exePath, MAX_PATH);
-        char* lastSlash = strrchr(exePath, '\\');
-        if (lastSlash) *lastSlash = '\0';
+        get_executable_dir(exePath, sizeof(exePath));
 
         char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\"", exePath);
+        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\"", exePath);
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -745,12 +798,10 @@ int main(int argc, char* argv[]) {
 
     if (strcmp(argv[1], "init") == 0) {
         char exePath[MAX_PATH];
-        GetModuleFileNameA(NULL, exePath, MAX_PATH);
-        char* lastSlash = strrchr(exePath, '\\');
-        if (lastSlash) *lastSlash = '\0';
+        get_executable_dir(exePath, sizeof(exePath));
 
         char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\" init", exePath);
+        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\" init", exePath);
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -761,12 +812,10 @@ int main(int argc, char* argv[]) {
 
     if (strcmp(argv[1], "add") == 0) {
         char exePath[MAX_PATH];
-        GetModuleFileNameA(NULL, exePath, MAX_PATH);
-        char* lastSlash = strrchr(exePath, '\\');
-        if (lastSlash) *lastSlash = '\0';
+        get_executable_dir(exePath, sizeof(exePath));
 
         char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\" add", exePath);
+        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\" add", exePath);
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -777,12 +826,10 @@ int main(int argc, char* argv[]) {
 
     if (strcmp(argv[1], "install") == 0) {
         char exePath[MAX_PATH];
-        GetModuleFileNameA(NULL, exePath, MAX_PATH);
-        char* lastSlash = strrchr(exePath, '\\');
-        if (lastSlash) *lastSlash = '\0';
+        get_executable_dir(exePath, sizeof(exePath));
 
         char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\" install", exePath);
+        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\" install", exePath);
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -793,12 +840,10 @@ int main(int argc, char* argv[]) {
 
     if (strcmp(argv[1], "list") == 0) {
         char exePath[MAX_PATH];
-        GetModuleFileNameA(NULL, exePath, MAX_PATH);
-        char* lastSlash = strrchr(exePath, '\\');
-        if (lastSlash) *lastSlash = '\0';
+        get_executable_dir(exePath, sizeof(exePath));
 
         char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\" list", exePath);
+        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\" list", exePath);
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -809,12 +854,10 @@ int main(int argc, char* argv[]) {
 
     if (strcmp(argv[1], "remove") == 0) {
         char exePath[MAX_PATH];
-        GetModuleFileNameA(NULL, exePath, MAX_PATH);
-        char* lastSlash = strrchr(exePath, '\\');
-        if (lastSlash) *lastSlash = '\0';
+        get_executable_dir(exePath, sizeof(exePath));
 
         char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_pkg.py\" remove", exePath);
+        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\" remove", exePath);
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -825,12 +868,10 @@ int main(int argc, char* argv[]) {
 
     if (strcmp(argv[1], "lsp") == 0 || strcmp(argv[1], "languageserver") == 0) {
         char exePath[MAX_PATH];
-        GetModuleFileNameA(NULL, exePath, MAX_PATH);
-        char* lastSlash = strrchr(exePath, '\\');
-        if (lastSlash) *lastSlash = '\0';
+        get_executable_dir(exePath, sizeof(exePath));
 
         char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s\\tools\\enlang_lsp.py\"", exePath);
+        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_lsp.py\"", exePath);
         for (int i = 2; i < argc; i++) {
             strcat(cmd, " \"");
             strcat(cmd, argv[i]);
@@ -994,8 +1035,12 @@ int main(int argc, char* argv[]) {
         if (aot_mode) {
             char temp_exe[MAX_PATH];
             char temp_dir[MAX_PATH];
-            GetTempPathA(MAX_PATH, temp_dir);
-            snprintf(temp_exe, sizeof(temp_exe), "%senlng_aot_%lu.exe", temp_dir, GetCurrentProcessId());
+            get_system_temp_dir(temp_dir, sizeof(temp_dir));
+#ifdef _WIN32
+            snprintf(temp_exe, sizeof(temp_exe), "%senlng_aot_%lu.exe", temp_dir, get_current_pid());
+#else
+            snprintf(temp_exe, sizeof(temp_exe), "%senlng_aot_%lu", temp_dir, get_current_pid());
+#endif
             if (enlng_compile_file_to_exe(filepath, temp_exe)) {
                 int res = system(temp_exe);
                 remove(temp_exe);
