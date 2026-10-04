@@ -18,11 +18,9 @@ jobs:
 
       - name: Build Windows Executables
         run: |
-          gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -o enlangg.exe
-          gcc -O2 -s -I. -Isrc enlng.c -o enlng.exe
           mkdir dist
-          copy enlangg.exe dist\
-          copy enlng.exe dist\
+          gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -o dist\enlangg.exe
+          gcc -O2 -s -I. -Isrc enlng.c -o dist\enlng.exe
           copy install.cmd dist\
           copy install.ps1 dist\
           Compress-Archive -Path dist\* -DestinationPath enlangg-windows-amd64.zip
@@ -41,30 +39,12 @@ jobs:
 
       - name: Build Linux Binaries
         run: |
-          gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o enlangg > enlangg.log 2>&1 || true
-          gcc -O2 -s -I. -Isrc enlng.c -lm -o enlng > enlng.log 2>&1 || true
-          if [ -f enlangg ] && [ -f enlng ]; then
-            chmod +x enlangg enlng
-            tar -czf enlangg-linux-amd64.tar.gz enlangg enlng install.sh
-          else
-            echo "=== ENLANGG BUILD LOG ==="
-            cat enlangg.log || true
-            echo "=== ENLNG BUILD LOG ==="
-            cat enlng.log || true
-            echo "### Linux Build Failure Log" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            cat enlangg.log >> $GITHUB_STEP_SUMMARY
-            cat enlng.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-
-      - name: Upload Debug Logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-debug-logs
-          path: "*.log"
+          mkdir -p dist
+          gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o dist/enlangg
+          gcc -O2 -s -I. -Isrc enlng.c -lm -o dist/enlng
+          cp install.sh dist/
+          chmod +x dist/enlangg dist/enlng dist/install.sh
+          tar -czf enlangg-linux-amd64.tar.gz -C dist enlangg enlng install.sh
 
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
@@ -80,30 +60,12 @@ jobs:
 
       - name: Build macOS Binaries
         run: |
-          clang -O2 -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o enlangg > enlangg_mac.log 2>&1 || true
-          clang -O2 -I. -Isrc enlng.c -lm -o enlng > enlng_mac.log 2>&1 || true
-          if [ -f enlangg ] && [ -f enlng ]; then
-            chmod +x enlangg enlng
-            tar -czf enlangg-darwin-arm64.tar.gz enlangg enlng install.sh
-          else
-            echo "=== ENLANGG MAC BUILD LOG ==="
-            cat enlangg_mac.log || true
-            echo "=== ENLNG MAC BUILD LOG ==="
-            cat enlng_mac.log || true
-            echo "### macOS Build Failure Log" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            cat enlangg_mac.log >> $GITHUB_STEP_SUMMARY
-            cat enlng_mac.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-
-      - name: Upload Debug Logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-debug-logs
-          path: "*.log"
+          mkdir -p dist
+          clang -O2 -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o dist/enlangg
+          clang -O2 -I. -Isrc enlng.c -lm -o dist/enlng
+          cp install.sh dist/
+          chmod +x dist/enlangg dist/enlng dist/install.sh
+          tar -czf enlangg-darwin-arm64.tar.gz -C dist enlangg enlng install.sh
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
