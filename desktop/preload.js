@@ -25,6 +25,21 @@ contextBridge.exposeInMainWorld('EnlangElectron', {
   getToolchainStatus: () => ipcRenderer.invoke('env:getToolchainStatus'),
   addToPath: () => ipcRenderer.invoke('env:addToPath'),
   openSystemFolder: (target) => ipcRenderer.invoke('env:openFolder', target),
-  launchPureVSCode: (workspacePath) => ipcRenderer.invoke('env:launchPureVSCode', workspacePath)
+  launchPureVSCode: (workspacePath) => ipcRenderer.invoke('env:launchPureVSCode', workspacePath),
+
+  // 5. Auto-Updater APIs ("Update in a Go")
+  checkForUpdates: () => ipcRenderer.invoke('updater:checkForUpdates'),
+  downloadUpdate: (options) => ipcRenderer.invoke('updater:downloadUpdate', options),
+  installUpdate: (options) => ipcRenderer.invoke('updater:installUpdate', options),
+  onUpdateAvailable: (callback) => {
+    const handler = (event, updateInfo) => callback(updateInfo);
+    ipcRenderer.on('updater:updateAvailable', handler);
+    return () => ipcRenderer.removeListener('updater:updateAvailable', handler);
+  },
+  onDownloadProgress: (callback) => {
+    const handler = (event, progress) => callback(progress);
+    ipcRenderer.on('updater:downloadProgress', handler);
+    return () => ipcRenderer.removeListener('updater:downloadProgress', handler);
+  }
 });
 

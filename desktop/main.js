@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell, Menu, screen } = require('el
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const https = require('https');
 const { spawn } = require('child_process');
 
 let mainWindow = null;
@@ -89,6 +90,17 @@ function createWindow() {
     if (mainWindow && !mainWindow.isVisible()) {
       mainWindow.show();
     }
+    // Automatically check for new releases in background
+    setTimeout(async () => {
+      try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          const updateInfo = await checkLatestRelease();
+          if (updateInfo && updateInfo.hasUpdate) {
+            mainWindow.webContents.send('updater:updateAvailable', updateInfo);
+          }
+        }
+      } catch (_) {}
+    }, 2500);
   });
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
@@ -428,6 +440,194 @@ ipcMain.handle('env:launchPureVSCode', async (event, workspacePath) => {
     const { exec } = require('child_process');
     exec(`code --user-data-dir "${studioData}" --extensions-dir "${studioExts}" "${targetDir}"`, { env });
     return { success: true, mode: 'path' };
+  }
+});
+
+// --- IPC: Auto-Updater ("Update in a Go") ---
+function isNewerVersion(latest, current) {
+  if (!latest || !current) return false;
+  const parse = v => v.toString().replace(/^[vV]/, '').split('.').map(n => parseInt(n, 10) || 0);
+  const [lMaj = 0, lMin = 0, lPatch = 0] = parse(latest);
+  const [cMaj = 0, cMin = 0, cPatch = 0] = parse(current);
+  if (lMaj > cMaj) return true;
+  if (lMaj < cMaj) return false;
+  if (lMin > cMin) return true;
+  if (lMin < cMin) return false;
+  return lPatch > cPatch;
+}
+
+function fetchJson(url) {
+  return new Promise((resolve, reject) => {
+    function get(reqUrl) {
+      const parsed = new URL(reqUrl);
+      const req = https.get(parsed, {
+        headers: {
+          'User-Agent': 'EnlanggStudio-Desktop',
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        timeout: 10000
+      }, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          return get(res.headers.location);
+        }
+        if (res.statusCode !== 200) {
+          return reject(new Error(`GitHub API returned HTTP ${res.statusCode}`));
+        }
+        let data = '';
+        res.on('data', chunk => { data += chunk; });
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(e);
+          }
+        });
+      });
+      req.on('error', reject);
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Update check request timed out'));
+      });
+    }
+    get(url);
+  });
+}
+
+function downloadFileWithProgress(url, destPath, onProgress) {
+  return new Promise((resolve, reject) => {
+    function get(reqUrl) {
+      const parsed = new URL(reqUrl);
+      const req = https.get(parsed, {
+        headers: { 'User-Agent': 'EnlanggStudio-Desktop' },
+        timeout: 60000
+      }, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          return get(res.headers.location);
+        }
+        if (res.statusCode !== 200) {
+          return reject(new Error(`Download failed with HTTP ${res.statusCode}`));
+        }
+        const total = parseInt(res.headers['content-length'] || '0', 10);
+        let transferred = 0;
+        const fileStream = fs.createWriteStream(destPath);
+        res.on('data', (chunk) => {
+          transferred += chunk.length;
+          fileStream.write(chunk);
+          if (onProgress) {
+            const percent = total > 0 ? Math.min(100, Math.round((transferred / total) * 100)) : 0;
+            onProgress({ percent, transferred, total });
+          }
+        });
+        res.on('end', () => {
+          fileStream.end();
+          resolve(destPath);
+        });
+        res.on('error', (err) => {
+          fileStream.destroy();
+          fs.unlink(destPath, () => {});
+          reject(err);
+        });
+      });
+      req.on('error', reject);
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Download timed out'));
+      });
+    }
+    get(url);
+  });
+}
+
+async function checkLatestRelease() {
+  const currentVersion = app.getVersion() || '2.0.0';
+  try {
+    const releases = await fetchJson('https://api.github.com/repos/Aero99op/enlang-main/releases');
+    if (!Array.isArray(releases) || releases.length === 0) {
+      return { hasUpdate: false, currentVersion, message: 'No releases found on repository.' };
+    }
+    const latest = releases[0];
+    const latestVersion = (latest.tag_name || 'v0.0.0').replace(/^[vV]/, '');
+    const hasUpdate = isNewerVersion(latestVersion, currentVersion);
+
+    // Pick best matching asset for current platform
+    let targetAsset = null;
+    if (latest.assets && latest.assets.length > 0) {
+      if (process.platform === 'win32') {
+        targetAsset = latest.assets.find(a => a.name.endsWith('.exe')) ||
+                      latest.assets.find(a => a.name.includes('windows') && a.name.endsWith('.zip')) ||
+                      latest.assets[0];
+      } else if (process.platform === 'darwin') {
+        targetAsset = latest.assets.find(a => a.name.includes('darwin') || a.name.includes('macos')) ||
+                      latest.assets[0];
+      } else {
+        targetAsset = latest.assets.find(a => a.name.includes('linux')) ||
+                      latest.assets[0];
+      }
+    }
+
+    return {
+      hasUpdate,
+      currentVersion,
+      latestVersion,
+      tag: latest.tag_name,
+      releaseName: latest.name || `Enlangg Release ${latest.tag_name}`,
+      releaseNotes: latest.body || 'No release notes provided.',
+      publishedAt: latest.published_at,
+      htmlUrl: latest.html_url,
+      downloadUrl: targetAsset ? targetAsset.browser_download_url : (latest.zipball_url || latest.html_url),
+      assetName: targetAsset ? targetAsset.name : `enlangg-${latest.tag_name}.zip`,
+      assetSize: targetAsset ? targetAsset.size : 0
+    };
+  } catch (err) {
+    return {
+      hasUpdate: false,
+      currentVersion,
+      error: err.message
+    };
+  }
+}
+
+ipcMain.handle('updater:checkForUpdates', async () => {
+  return await checkLatestRelease();
+});
+
+ipcMain.handle('updater:downloadUpdate', async (event, { downloadUrl, assetName }) => {
+  if (!downloadUrl) throw new Error('Missing download URL');
+  const tempDir = path.join(os.tmpdir(), 'enlangg_studio_update');
+  fs.mkdirSync(tempDir, { recursive: true });
+  const filename = assetName || path.basename(new URL(downloadUrl).pathname) || 'enlangg-update.exe';
+  const destPath = path.join(tempDir, filename);
+
+  await downloadFileWithProgress(downloadUrl, destPath, (progress) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('updater:downloadProgress', progress);
+    }
+  });
+
+  return { success: true, filePath: destPath, filename };
+});
+
+ipcMain.handle('updater:installUpdate', async (event, { filePath }) => {
+  if (!filePath || !fs.existsSync(filePath)) {
+    throw new Error('Downloaded update file does not exist on disk.');
+  }
+
+  if (filePath.endsWith('.exe')) {
+    const child = spawn(filePath, [], {
+      detached: true,
+      stdio: 'ignore'
+    });
+    child.unref();
+    setTimeout(() => {
+      app.quit();
+    }, 800);
+    return { success: true, action: 'spawned_installer' };
+  } else if (filePath.endsWith('.zip')) {
+    shell.showItemInFolder(filePath);
+    return { success: true, action: 'show_in_folder' };
+  } else {
+    shell.openPath(filePath);
+    return { success: true, action: 'opened_path' };
   }
 });
 

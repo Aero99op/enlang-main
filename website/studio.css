@@ -489,16 +489,29 @@ html, body {
 }
 
 .resizer-y {
-  height: 4px;
+  height: 5px;
   cursor: row-resize;
   background: transparent;
-  transition: background 0.2s;
+  transition: background 0.15s;
   flex-shrink: 0;
-  z-index: 10;
+  z-index: 20;
+  position: relative;
+}
+
+/* Wider invisible grab area via pseudo-element */
+.resizer-y::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -4px;
+  height: 13px;
+  cursor: row-resize;
 }
 
 .resizer-y:hover, .resizer-y.resizing {
   background: var(--vscode-accent);
+  box-shadow: 0 0 0 1px rgba(56,189,248,0.25);
 }
 
 /* 3. Main Center Workspace (Editor + Bottom Dock) */
@@ -880,18 +893,61 @@ html, body {
 /* 4. Bottom Dock (Terminal, DB Console, Problems, Output) */
 .bottom-dock {
   height: 220px;
-  min-height: 100px;
-  max-height: 70vh;
+  min-height: 80px;
+  max-height: 80vh;
   background: var(--vscode-dock-bg);
   border-top: 1px solid var(--vscode-border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   overflow: hidden;
+  /* Smooth resize transitions */
+  transition: height 0.05s linear;
 }
 
 .bottom-dock.collapsed {
   display: none;
+}
+
+/* Terminal copy-button toolbar */
+.terminal-copy-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 2px 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  height: 26px;
+  background: rgba(0,0,0,0.18);
+}
+
+.terminal-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  color: var(--vscode-text-muted);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.terminal-copy-btn:hover {
+  background: rgba(56,189,248,0.12);
+  border-color: rgba(56,189,248,0.35);
+  color: #38bdf8;
+}
+
+.terminal-copy-btn.copied {
+  color: #10b981;
+  border-color: rgba(16,185,129,0.4);
+  background: rgba(16,185,129,0.1);
 }
 
 .dock-header {
@@ -2929,6 +2985,53 @@ html, body {
 .dot-green { background: #10b981; box-shadow: 0 0 6px #10b981; }
 .dot-yellow { background: #eab308; box-shadow: 0 0 6px #eab308; }
 .dot-purple { background: #c084fc; box-shadow: 0 0 6px #c084fc; }
+.dot-orange { background: #f97316; box-shadow: 0 0 6px #f97316aa; }
+
+/* ── Onboarding Banner ── */
+.welcome-onboard-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 22px;
+  background: linear-gradient(110deg, rgba(56,189,248,0.09) 0%, rgba(16,185,129,0.06) 100%);
+  border: 1px solid rgba(56,189,248,0.22);
+  border-radius: 10px;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-onboard-banner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, #38bdf8, #10b981, transparent);
+  opacity: 0.6;
+}
+
+.welcome-onboard-banner-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.welcome-onboard-banner-text {
+  flex: 1;
+}
+
+.welcome-onboard-banner-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f4f4f5;
+  margin-bottom: 3px;
+}
+
+.welcome-onboard-banner-desc {
+  font-size: 12px;
+  color: #71717a;
+  line-height: 1.45;
+}
 
 .welcome-grid {
   display: grid;
@@ -4356,5 +4459,283 @@ html, body {
 .ext-section-body.collapsed {
   display: none;
 }
+
+/* ==========================================================================
+   Auto-Updater & "Update in a Go" System Styles
+   ========================================================================== */
+
+/* Activity Bar Update Beacon */
+.update-activity-icon {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.update-activity-icon:hover {
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.update-activity-icon svg {
+  animation: updateBeaconSpin 4s linear infinite;
+}
+
+@keyframes updateBeaconSpin {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(180deg); }
+  25% { transform: rotate(360deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.update-badge {
+  background: #10b981 !important;
+  color: #000 !important;
+  font-weight: 800 !important;
+  font-size: 8.5px !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  letter-spacing: 0.5px !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+  animation: updateBadgePulse 1.8s infinite;
+}
+
+@keyframes updateBadgePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 6px rgba(16, 185, 129, 0.6); }
+  50% { transform: scale(1.1); box-shadow: 0 0 12px rgba(16, 185, 129, 0.9); }
+}
+
+/* Pulsing Update Indicator Dot */
+.update-pulse-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  margin-right: 5px;
+  animation: dotPulse 1.6s infinite ease-in-out;
+}
+
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; box-shadow: 0 0 4px #10b981; }
+  50% { transform: scale(1.25); opacity: 1; box-shadow: 0 0 10px #10b981; }
+}
+
+/* Statusbar Update Item */
+.update-statusbar-item {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-radius: 3px;
+  padding: 0 8px !important;
+  transition: all 0.15s ease;
+}
+
+.update-statusbar-item:hover {
+  background: rgba(16, 185, 129, 0.22) !important;
+  color: #fff !important;
+}
+
+/* Titlebar Update Button */
+.update-titlebar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  animation: updateTitlebarGlow 2.5s infinite;
+}
+
+@keyframes updateTitlebarGlow {
+  0%, 100% { border-color: rgba(16, 185, 129, 0.4); }
+  50% { border-color: rgba(16, 185, 129, 0.8); box-shadow: 0 0 12px rgba(16, 185, 129, 0.25); }
+}
+
+/* Update Modal Specifics */
+.update-modal-box {
+  background: #161618 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7), 0 0 24px rgba(16, 185, 129, 0.15) !important;
+}
+
+.update-hero-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(56, 189, 248, 0.05) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.update-hero-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.update-hero-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.update-version-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.update-badge-old {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: #71717a;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.update-arrow {
+  color: #52525b;
+  font-size: 11px;
+}
+
+.update-badge-new {
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.update-badge-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.update-release-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 3px 0;
+}
+
+.update-release-date {
+  font-size: 11px;
+  color: #a1a1aa;
+}
+
+.update-notes-container {
+  background: #0d1117;
+  border: 1px solid var(--vscode-border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.update-notes-header {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.update-notes-body {
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #d4d4d8;
+  max-height: 160px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Update Progress */
+.update-progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.update-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #e4e4e7;
+}
+
+.update-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.update-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #38bdf8);
+  transition: width 0.2s ease;
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.update-progress-bytes {
+  font-size: 10.5px;
+  color: #71717a;
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.update-error-box {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.update-go-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px !important;
+}
+
+.update-go-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5) !important;
+  transform: translateY(-1px);
+}
+
 
 

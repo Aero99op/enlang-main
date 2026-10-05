@@ -9889,6 +9889,11 @@ Provide code in fenced code blocks.`;
         openSettingsJson();
         break;
 
+      case 'checkForUpdates':
+      case 'checkUpdates':
+        checkForStudioUpdates(true);
+        break;
+
       default:
         console.warn('Unknown menu action:', action);
         break;
@@ -10632,6 +10637,104 @@ Provide code in fenced code blocks.`;
       });
     }
 
+    // Dock and Sidebar Drag-to-Resize with LocalStorage Persistence
+    const dockResizer = document.getElementById('dockResizer');
+    if (dockResizer && bottomDock) {
+      const savedDockHeight = localStorage.getItem('enlangg_dock_height');
+      if (savedDockHeight) {
+        const h = parseInt(savedDockHeight, 10);
+        if (h >= 60 && h <= window.innerHeight - 120) {
+          bottomDock.style.height = `${h}px`;
+        }
+      }
+
+      let isDraggingDock = false;
+      let startY = 0;
+      let startHeight = 0;
+
+      dockResizer.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isDraggingDock = true;
+        startY = e.clientY;
+        startHeight = bottomDock.getBoundingClientRect().height;
+        dockResizer.classList.add('resizing');
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+
+        const onMouseMove = (moveEvent) => {
+          if (!isDraggingDock) return;
+          const deltaY = moveEvent.clientY - startY;
+          const newHeight = Math.max(60, Math.min(window.innerHeight - 120, startHeight - deltaY));
+          bottomDock.style.height = `${newHeight}px`;
+          if (bottomDock.classList.contains('collapsed')) {
+            bottomDock.classList.remove('collapsed');
+          }
+        };
+
+        const onMouseUp = () => {
+          if (!isDraggingDock) return;
+          isDraggingDock = false;
+          dockResizer.classList.remove('resizing');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+          const finalHeight = Math.round(bottomDock.getBoundingClientRect().height);
+          localStorage.setItem('enlangg_dock_height', String(finalHeight));
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    const sidebarResizer = document.getElementById('sidebarResizer');
+    if (sidebarResizer && mainSidebar) {
+      const savedSidebarWidth = localStorage.getItem('enlangg_sidebar_width');
+      if (savedSidebarWidth) {
+        const w = parseInt(savedSidebarWidth, 10);
+        if (w >= 160 && w <= Math.min(650, window.innerWidth * 0.5)) {
+          mainSidebar.style.width = `${w}px`;
+        }
+      }
+
+      let isDraggingSidebar = false;
+      let startX = 0;
+      let startWidth = 0;
+
+      sidebarResizer.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isDraggingSidebar = true;
+        startX = e.clientX;
+        startWidth = mainSidebar.getBoundingClientRect().width;
+        sidebarResizer.classList.add('resizing');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        const onMouseMove = (moveEvent) => {
+          if (!isDraggingSidebar) return;
+          const deltaX = moveEvent.clientX - startX;
+          const newWidth = Math.max(160, Math.min(Math.min(650, window.innerWidth * 0.5), startWidth + deltaX));
+          mainSidebar.style.width = `${newWidth}px`;
+        };
+
+        const onMouseUp = () => {
+          if (!isDraggingSidebar) return;
+          isDraggingSidebar = false;
+          sidebarResizer.classList.remove('resizing');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+          const finalWidth = Math.round(mainSidebar.getBoundingClientRect().width);
+          localStorage.setItem('enlangg_sidebar_width', String(finalWidth));
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
     const clearTerminalBtn = document.getElementById('clearTerminalBtn');
     if (clearTerminalBtn) {
       clearTerminalBtn.addEventListener('click', () => {
@@ -10648,6 +10751,55 @@ Provide code in fenced code blocks.`;
 
     const clearActiveTerminalBtn = document.getElementById('clearActiveTerminalBtn');
     if (clearActiveTerminalBtn) clearActiveTerminalBtn.addEventListener('click', () => handleMenuAction('clearTerminal'));
+
+    // Copy Terminal Output to Clipboard
+    const terminalCopyAllBtn = document.getElementById('terminalCopyAllBtn');
+    if (terminalCopyAllBtn) {
+      terminalCopyAllBtn.addEventListener('click', async () => {
+        let textToCopy = '';
+        if (terminalOutput) {
+          textToCopy = terminalOutput.innerText || terminalOutput.textContent || '';
+        } else {
+          const activeTerm = getActiveTerminal();
+          if (activeTerm) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = activeTerm.outputHtml;
+            textToCopy = tempDiv.innerText || tempDiv.textContent || '';
+          }
+        }
+        if (!textToCopy.trim()) {
+          showStudioToast('Terminal output is empty', null);
+          return;
+        }
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(textToCopy);
+          } else {
+            const ta = document.createElement('textarea');
+            ta.value = textToCopy;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          }
+          const origHtml = terminalCopyAllBtn.innerHTML;
+          terminalCopyAllBtn.innerHTML = '<span>✓ Copied!</span>';
+          terminalCopyAllBtn.style.color = '#10b981';
+          terminalCopyAllBtn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+          showStudioToast('📋 Terminal output copied to clipboard', null);
+          setTimeout(() => {
+            terminalCopyAllBtn.innerHTML = origHtml;
+            terminalCopyAllBtn.style.color = '';
+            terminalCopyAllBtn.style.borderColor = '';
+          }, 1500);
+        } catch (err) {
+          console.error('Failed to copy terminal output:', err);
+          showStudioToast('Failed to copy to clipboard', null);
+        }
+      });
+    }
 
     // Terminal Interactive CLI Input
     const terminalCmdInput = document.getElementById('terminalCmdInput');
@@ -11789,15 +11941,309 @@ Provide code in fenced code blocks.`;
       });
     }
 
-    // Automatic First Launch Full-Fledged Onboarding Flow (VS Code & Cursor style)
-    if (isNewUser) {
-      setTimeout(() => {
-        openOnboardingFlow(1);
-      }, 400);
+  // ==========================================================================
+  // Enlangg Studio One-Click Auto-Updater & "Update in a Go" System
+  // ==========================================================================
+  let studioUpdateInfo = null;
+
+  function isNewerSemver(latest, current) {
+    if (!latest || !current) return false;
+    const clean = v => v.toString().replace(/^[vV]/, '').split('.').map(n => parseInt(n, 10) || 0);
+    const [lMaj = 0, lMin = 0, lPatch = 0] = clean(latest);
+    const [cMaj = 0, cMin = 0, cPatch = 0] = clean(current);
+    if (lMaj > cMaj) return true;
+    if (lMaj < cMaj) return false;
+    if (lMin > cMin) return true;
+    if (lMin < cMin) return false;
+    return lPatch > cPatch;
+  }
+
+  function showUpdateIndicators(info) {
+    studioUpdateInfo = info;
+    const ver = info.latestVersion || info.tag || 'New';
+
+    // 1. Activity Bar Update Beacon
+    const actUpdate = document.getElementById('actUpdate');
+    const updateBadge = document.getElementById('updateBadge');
+    if (actUpdate) {
+      actUpdate.style.display = 'flex';
+      actUpdate.title = `New Release Available: Enlangg Studio v${ver} (Click to Update in a Go)`;
+      if (updateBadge) updateBadge.textContent = 'NEW';
     }
 
-    console.log('[Enlangg Studio] Initialized 1:1 VS Code Native IDE.');
+    // 2. Statusbar Update Beacon
+    const statusUpdateBtn = document.getElementById('statusUpdateBtn');
+    const statusUpdateText = document.getElementById('statusUpdateText');
+    if (statusUpdateBtn) {
+      statusUpdateBtn.style.display = 'inline-flex';
+      if (statusUpdateText) statusUpdateText.textContent = `🔄 Update v${ver}`;
+    }
+
+    // 3. Titlebar Update Button
+    const titlebarUpdateBtn = document.getElementById('titlebarUpdateBtn');
+    const titlebarUpdateText = document.getElementById('titlebarUpdateText');
+    if (titlebarUpdateBtn) {
+      titlebarUpdateBtn.style.display = 'inline-flex';
+      if (titlebarUpdateText) titlebarUpdateText.textContent = `Update v${ver} Ready`;
+    }
   }
+
+  function openUpdateStudioModal(info = studioUpdateInfo) {
+    if (!info) return;
+    const modal = document.getElementById('updateStudioModal');
+    if (!modal) return;
+
+    const oldBadge = document.getElementById('updateCurrentVersionBadge');
+    if (oldBadge) oldBadge.textContent = `Current: v${info.currentVersion || '2.0.0'}`;
+
+    const newBadge = document.getElementById('updateLatestVersionBadge');
+    if (newBadge) newBadge.textContent = `Latest: v${info.latestVersion || info.tag}`;
+
+    const titleEl = document.getElementById('updateReleaseTitle');
+    if (titleEl) titleEl.textContent = info.releaseName || `Enlangg Sovereign Toolchain ${info.tag || ''}`;
+
+    const dateEl = document.getElementById('updateReleaseDate');
+    if (dateEl) {
+      const d = info.publishedAt ? new Date(info.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Latest Release';
+      dateEl.textContent = `Released ${d} · Sovereign AG Release Channel`;
+    }
+
+    const notesBody = document.getElementById('updateNotesBody');
+    if (notesBody) {
+      notesBody.textContent = info.releaseNotes || 'No release notes provided.';
+    }
+
+    // Reset progress and action states
+    const progressSection = document.getElementById('updateProgressSection');
+    if (progressSection) progressSection.style.display = 'none';
+
+    const errorBox = document.getElementById('updateErrorBox');
+    if (errorBox) errorBox.style.display = 'none';
+
+    const goBtn = document.getElementById('updateGoBtn');
+    if (goBtn) {
+      goBtn.style.display = 'inline-flex';
+      const goBtnText = document.getElementById('updateGoBtnText');
+      if (goBtnText) goBtnText.textContent = 'Update in a Go';
+    }
+
+    const installBtn = document.getElementById('updateInstallBtn');
+    if (installBtn) installBtn.style.display = 'none';
+
+    modal.style.display = 'flex';
+  }
+
+  function closeUpdateStudioModal() {
+    const modal = document.getElementById('updateStudioModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  async function startUpdateInAGo() {
+    if (!studioUpdateInfo) return;
+
+    const progressSection = document.getElementById('updateProgressSection');
+    const progressStatus = document.getElementById('updateProgressStatus');
+    const progressPercent = document.getElementById('updateProgressPercent');
+    const progressFill = document.getElementById('updateProgressFill');
+    const progressBytes = document.getElementById('updateProgressBytes');
+    const errorBox = document.getElementById('updateErrorBox');
+    const errorText = document.getElementById('updateErrorText');
+    const goBtn = document.getElementById('updateGoBtn');
+    const installBtn = document.getElementById('updateInstallBtn');
+
+    if (errorBox) errorBox.style.display = 'none';
+    if (progressSection) progressSection.style.display = 'flex';
+    if (goBtn) goBtn.style.display = 'none';
+
+    if (progressStatus) progressStatus.textContent = 'Connecting to sovereign release server...';
+    if (progressPercent) progressPercent.textContent = '0%';
+    if (progressFill) progressFill.style.width = '0%';
+    if (progressBytes) progressBytes.textContent = 'Starting payload stream...';
+
+    // If running inside desktop Electron app
+    if (window.EnlangElectron && window.EnlangElectron.downloadUpdate) {
+      let progressUnsub = null;
+      if (window.EnlangElectron.onDownloadProgress) {
+        progressUnsub = window.EnlangElectron.onDownloadProgress((prog) => {
+          if (progressPercent) progressPercent.textContent = `${prog.percent}%`;
+          if (progressFill) progressFill.style.width = `${prog.percent}%`;
+          if (progressStatus) progressStatus.textContent = `Streaming update payload (${prog.percent}%)...`;
+          if (progressBytes && prog.total > 0) {
+            const mbTransferred = (prog.transferred / (1024 * 1024)).toFixed(1);
+            const mbTotal = (prog.total / (1024 * 1024)).toFixed(1);
+            progressBytes.textContent = `${mbTransferred} MB / ${mbTotal} MB`;
+          }
+        });
+      }
+
+      try {
+        const downloadRes = await window.EnlangElectron.downloadUpdate({
+          downloadUrl: studioUpdateInfo.downloadUrl,
+          assetName: studioUpdateInfo.assetName
+        });
+
+        if (progressUnsub) progressUnsub();
+
+        if (progressStatus) progressStatus.textContent = 'Payload downloaded & verified! Ready to apply. 🚀';
+        if (progressPercent) progressPercent.textContent = '100%';
+        if (progressFill) progressFill.style.width = '100%';
+
+        if (installBtn) {
+          installBtn.style.display = 'inline-flex';
+          installBtn.onclick = async () => {
+            installBtn.disabled = true;
+            installBtn.innerHTML = '<span>🚀 Launching Installer & Restarting...</span>';
+            showStudioToast('Launching update installer and restarting Studio...', null);
+            try {
+              await window.EnlangElectron.installUpdate({ filePath: downloadRes.filePath });
+            } catch (err) {
+              if (errorBox && errorText) {
+                errorBox.style.display = 'block';
+                errorText.textContent = `Installation trigger error: ${err.message}`;
+              }
+              installBtn.disabled = false;
+            }
+          };
+        }
+        showStudioToast('🎉 Update ready! Click "Restart & Install Now" to apply.', null);
+      } catch (err) {
+        if (progressUnsub) progressUnsub();
+        if (progressSection) progressSection.style.display = 'none';
+        if (goBtn) goBtn.style.display = 'inline-flex';
+        if (errorBox && errorText) {
+          errorBox.style.display = 'block';
+          errorText.textContent = `Download failed: ${err.message}. Please check connection or download manually.`;
+        }
+        showStudioToast('Update download failed. Check connection.', null);
+      }
+    } else {
+      // Fallback for Web/Browser view: open download URL directly or open release
+      const targetUrl = studioUpdateInfo.downloadUrl || studioUpdateInfo.htmlUrl || 'https://github.com/Aero99op/enlang-main/releases';
+      window.open(targetUrl, '_blank');
+      if (progressSection) progressSection.style.display = 'none';
+      if (goBtn) goBtn.style.display = 'inline-flex';
+      showStudioToast('Opened official release installer download.', null);
+    }
+  }
+
+  async function checkForStudioUpdates(isManual = false) {
+    if (isManual) {
+      showStudioToast('🔍 Checking for Enlangg Studio updates...', null);
+    }
+
+    try {
+      let info = null;
+      if (window.EnlangElectron && window.EnlangElectron.checkForUpdates) {
+        info = await window.EnlangElectron.checkForUpdates();
+      } else {
+        // Web fallback using GitHub Releases API
+        const curVer = '2.0.0';
+        const res = await fetch('https://api.github.com/repos/Aero99op/enlang-main/releases', {
+          headers: { 'Accept': 'application/vnd.github.v3+json' }
+        });
+        if (res.ok) {
+          const releases = await res.json();
+          if (Array.isArray(releases) && releases.length > 0) {
+            const rel = releases[0];
+            const latVer = (rel.tag_name || '').replace(/^[vV]/, '');
+            const hasUpdate = isNewerSemver(latVer, curVer);
+            let asset = null;
+            if (rel.assets && rel.assets.length > 0) {
+              asset = rel.assets.find(a => a.name.endsWith('.exe')) ||
+                      rel.assets.find(a => a.name.includes('windows')) ||
+                      rel.assets[0];
+            }
+            info = {
+              hasUpdate,
+              currentVersion: curVer,
+              latestVersion: latVer,
+              tag: rel.tag_name,
+              releaseName: rel.name || `Enlangg ${rel.tag_name}`,
+              releaseNotes: rel.body || 'No release notes provided.',
+              publishedAt: rel.published_at,
+              htmlUrl: rel.html_url,
+              downloadUrl: asset ? asset.browser_download_url : (rel.zipball_url || rel.html_url),
+              assetName: asset ? asset.name : 'enlangg-release.zip'
+            };
+          }
+        }
+      }
+
+      if (info && info.hasUpdate) {
+        showUpdateIndicators(info);
+        if (isManual) {
+          openUpdateStudioModal(info);
+        } else {
+          showStudioToast(`🚀 New Version Available: Enlangg Studio v${info.latestVersion}! Click Update icon to upgrade.`, null);
+        }
+      } else if (isManual) {
+        const cur = (info && info.currentVersion) || '2.0.0';
+        showStudioToast(`✔ Enlangg Studio is up to date (v${cur}).`, null);
+      }
+    } catch (err) {
+      if (isManual) {
+        showStudioToast(`Could not check updates: ${err.message}`, null);
+      }
+    }
+  }
+
+  function initStudioAutoUpdater() {
+    // 1. Listen for background push from Electron main process
+    if (window.EnlangElectron && window.EnlangElectron.onUpdateAvailable) {
+      window.EnlangElectron.onUpdateAvailable((info) => {
+        showUpdateIndicators(info);
+      });
+    }
+
+    // 2. Wire click triggers
+    const actUpdate = document.getElementById('actUpdate');
+    if (actUpdate) actUpdate.addEventListener('click', () => openUpdateStudioModal());
+
+    const statusUpdateBtn = document.getElementById('statusUpdateBtn');
+    if (statusUpdateBtn) statusUpdateBtn.addEventListener('click', () => openUpdateStudioModal());
+
+    const titlebarUpdateBtn = document.getElementById('titlebarUpdateBtn');
+    if (titlebarUpdateBtn) titlebarUpdateBtn.addEventListener('click', () => openUpdateStudioModal());
+
+    const closeBtn = document.getElementById('closeUpdateModalBtn');
+    if (closeBtn) closeBtn.addEventListener('click', closeUpdateStudioModal);
+
+    const laterBtn = document.getElementById('updateLaterBtn');
+    if (laterBtn) laterBtn.addEventListener('click', closeUpdateStudioModal);
+
+    const viewGithubBtn = document.getElementById('updateViewGithubBtn');
+    if (viewGithubBtn) {
+      viewGithubBtn.addEventListener('click', () => {
+        const url = (studioUpdateInfo && studioUpdateInfo.htmlUrl) || 'https://github.com/Aero99op/enlang-main/releases';
+        if (window.EnlangElectron && window.EnlangElectron.openExternal) {
+          window.EnlangElectron.openExternal(url);
+        } else {
+          window.open(url, '_blank');
+        }
+      });
+    }
+
+    const goBtn = document.getElementById('updateGoBtn');
+    if (goBtn) goBtn.addEventListener('click', startUpdateInAGo);
+
+    // 3. Automated check 3s after startup
+    setTimeout(() => {
+      checkForStudioUpdates(false);
+    }, 3000);
+  }
+
+  // Automatic First Launch Full-Fledged Onboarding Flow (VS Code & Cursor style)
+  if (isNewUser) {
+    setTimeout(() => {
+      openOnboardingFlow(1);
+    }, 400);
+  }
+
+  // Initialize Auto-Updater & One-Click "Update in a Go"
+  initStudioAutoUpdater();
+
+  console.log('[Enlangg Studio] Initialized 1:1 VS Code Native IDE.');
+}
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
