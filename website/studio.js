@@ -10112,8 +10112,11 @@ Provide code in fenced code blocks.`;
     }
     const dbResetBtn = document.getElementById('dbWorkbenchResetBtn');
     if (dbResetBtn) {
-      dbResetBtn.addEventListener('click', () => {
+      dbResetBtn.addEventListener('click', async () => {
         if (typeof resetSovereignDB === 'function') resetSovereignDB();
+        if (window.EnlangWasm && typeof window.EnlangWasm.resetDatabase === 'function') {
+          await window.EnlangWasm.resetDatabase();
+        }
         executeCurrentQueryAtCursor();
         showStudioToast('EnlangDB: Sovereign database reset to initial sample tables.', null);
       });

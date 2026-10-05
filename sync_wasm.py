@@ -44,6 +44,16 @@ def rebuild_wasm_bundle():
         with open(engine_path, 'r', encoding='utf-8') as f:
             bundle['enlang_engine.py'] = f.read()
 
+    # Pack sample sovereign database files into bundle
+    for sample_edb in ['database1.edb', 'main_db.edb', 'university_db.edb']:
+        sp = os.path.join(ROOT_DIR, sample_edb)
+        if os.path.exists(sp):
+            try:
+                with open(sp, 'r', encoding='utf-8') as sf:
+                    bundle[sample_edb] = sf.read()
+            except Exception:
+                pass
+
     out_path = os.path.join(ROOT_DIR, 'website', 'enlang_bundle.json')
     with open(out_path, 'w', encoding='utf-8') as out:
         json.dump(bundle, out)

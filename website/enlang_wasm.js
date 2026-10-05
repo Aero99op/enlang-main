@@ -52,11 +52,27 @@
         pyodideInstance.FS.writeFile(fullPath, content, { encoding: 'utf8' });
       }
 
-      // Initialize Python path and import engine
+      // Initialize Python path, mock fcntl if on WebAssembly, and import engine
       await pyodideInstance.runPythonAsync(`
 import sys
+import types
 if '/home/pyodide' not in sys.path:
     sys.path.insert(0, '/home/pyodide')
+
+# Provide mock fcntl module if missing (e.g. Emscripten / WebAssembly)
+if 'fcntl' not in sys.modules:
+    try:
+        import fcntl
+    except ImportError:
+        mock_fcntl = types.ModuleType('fcntl')
+        mock_fcntl.LOCK_EX = 2
+        mock_fcntl.LOCK_NB = 4
+        mock_fcntl.LOCK_UN = 8
+        mock_fcntl.LOCK_SH = 1
+        mock_fcntl.flock = lambda fd, op: None
+        mock_fcntl.fcntl = lambda fd, cmd, *args: 0
+        sys.modules['fcntl'] = mock_fcntl
+
 import enlang_engine
 `);
 
@@ -172,9 +188,35 @@ enlang_engine.execute_enlang_wasm(__exec_file, __exec_code, __exec_domain)
     }
   }
 
+  async function resetWasmDatabase() {
+    if (!pyodideInstance || !isReady) return false;
+    try {
+      await pyodideInstance.runPythonAsync(`
+import os
+from pathlib import Path
+from enlngdb.engine import NativeExecutionEngine, resolve_db_path, _maybe_seed_sample_database
+
+for db_file in ['database1.edb', 'main_db.edb', 'university_db.edb']:
+    p = '/home/pyodide/' + db_file
+    if os.path.exists(p):
+        try: os.remove(p)
+        except Exception: pass
+    engine = NativeExecutionEngine(db_path=p, stream_output=False)
+    _maybe_seed_sample_database(engine.storage, p)
+    engine.storage.save_to_disk(p)
+`);
+      console.log('[Enlang WASM] In-memory sovereign databases successfully re-seeded!');
+      return true;
+    } catch (e) {
+      console.warn('[Enlang WASM] resetWasmDatabase warning:', e);
+      return false;
+    }
+  }
+
   window.EnlangWasm = {
     init: initEnlangWasm,
     execute: executeEnlangWasm,
+    resetDatabase: resetWasmDatabase,
     isReady: () => isReady
   };
 

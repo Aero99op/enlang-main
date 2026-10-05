@@ -1698,8 +1698,11 @@ function initPlayground() {
 
   // Reset DB button
   if (resetDbBtn) {
-    resetDbBtn.addEventListener('click', () => {
+    resetDbBtn.addEventListener('click', async () => {
       resetSovereignDB();
+      if (window.EnlangWasm && typeof window.EnlangWasm.resetDatabase === 'function') {
+        await window.EnlangWasm.resetDatabase();
+      }
       syncDomainVisuals();
       terminal.innerHTML = `<span class="term-success">[EnlngDB] Sovereign in-memory database storage reset to initial sample seed:\n • database1 (tables: student, faculty)\n • main_db (tables: accounts, system_logs)\n • university_db (tables: courses)\nActive database: ${sovereignDB.activeDb}</span>`;
     });

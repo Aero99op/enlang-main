@@ -113,6 +113,23 @@ class RWLock:
             self.release_write()
 
 
+HAS_MSVCRT = False
+if sys.platform == "win32":
+    try:
+        import msvcrt
+        HAS_MSVCRT = True
+    except ImportError:
+        pass
+
+HAS_FCNTL = False
+if not HAS_MSVCRT:
+    try:
+        import fcntl
+        HAS_FCNTL = True
+    except ImportError:
+        pass
+
+
 class FileLock:
     """Cross-process OS-level advisory file lock with timeout and exponential backoff."""
 
@@ -123,6 +140,10 @@ class FileLock:
 
     def acquire(self) -> bool:
         """Acquires an exclusive OS-level file lock."""
+        if not HAS_MSVCRT and not HAS_FCNTL:
+            # Emscripten / WebAssembly / Pyodide single-threaded sandbox: OS-level locks are no-ops
+            return True
+
         start = time.time()
         backoff = 0.005
 
@@ -131,11 +152,11 @@ class FileLock:
         while True:
             try:
                 self._fd = os.open(self.lock_file_path, os.O_CREAT | os.O_RDWR)
-                if sys.platform == "win32":
+                if HAS_MSVCRT:
                     import msvcrt
                     # Lock 1 byte from the beginning of the file non-blocking
                     msvcrt.locking(self._fd, msvcrt.LK_NBLCK, 1)
-                else:
+                elif HAS_FCNTL:
                     import fcntl
                     fcntl.flock(self._fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 return True
@@ -157,15 +178,18 @@ class FileLock:
 
     def release(self):
         """Releases the exclusive OS-level file lock."""
+        if not HAS_MSVCRT and not HAS_FCNTL:
+            return
+
         if self._fd is not None:
             try:
-                if sys.platform == "win32":
+                if HAS_MSVCRT:
                     import msvcrt
                     try:
                         msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
                     except OSError:
                         pass
-                else:
+                elif HAS_FCNTL:
                     import fcntl
                     try:
                         fcntl.flock(self._fd, fcntl.LOCK_UN)

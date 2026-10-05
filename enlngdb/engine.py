@@ -33,6 +33,45 @@ def resolve_db_path(name: str) -> str:
     return f"{name}.edb"
 
 
+def _maybe_seed_sample_database(storage: NativeStorageEngine, db_path: str) -> bool:
+    """Auto-seeds standard sample tables (student, faculty, accounts, courses) if database is newly initialized or empty."""
+    stem = Path(db_path).stem.lower()
+    if stem in ("database1", "student_db"):
+        if "student" not in storage.tables:
+            storage.create_table("student", hints={"primary_key": "roll_no"})
+            storage.insert("student", {"roll_no": 101, "name": "Vikram Malhotra", "marks": 92, "grade": "A"})
+            storage.insert("student", {"roll_no": 102, "name": "Ananya Iyer", "marks": 96, "grade": "A+"})
+            storage.insert("student", {"roll_no": 103, "name": "Kabir Mehta", "marks": 78, "grade": "B"})
+            storage.insert("student", {"roll_no": 104, "name": "Rhea Sengupta", "marks": 85, "grade": "A"})
+            storage.insert("student", {"roll_no": 105, "name": "Arjun Rao", "marks": 64, "grade": "C"})
+        if "faculty" not in storage.tables:
+            storage.create_table("faculty", hints={"primary_key": "id"})
+            storage.insert("faculty", {"id": 1, "name": "Dr. Sunita Sen", "department": "Computer Science", "salary": 115000})
+            storage.insert("faculty", {"id": 2, "name": "Prof. Rajesh Nair", "department": "Mathematics", "salary": 98000})
+        return True
+    elif stem in ("main_db", "accounts_db"):
+        if "accounts" not in storage.tables:
+            storage.create_table("accounts", hints={"primary_key": "id"})
+            storage.insert("accounts", {"id": 1, "holder": "Aero Technologies", "balance": 450000, "tier": "Gold"})
+            storage.insert("accounts", {"id": 2, "holder": "Apex Global", "balance": 89000, "tier": "Platinum"})
+            storage.insert("accounts", {"id": 3, "holder": "Zenith Studio", "balance": 12500, "tier": "Silver"})
+            storage.insert("accounts", {"id": 4, "holder": "Nova Labs", "balance": 230000, "tier": "Gold"})
+        if "system_logs" not in storage.tables:
+            storage.create_table("system_logs", hints={"primary_key": "log_id"})
+            storage.insert("system_logs", {"log_id": 201, "level": "INFO", "message": "Sovereign cluster online", "source": "kernel"})
+            storage.insert("system_logs", {"log_id": 202, "level": "WARN", "message": "Memory allocation limit near 80%", "source": "worker-1"})
+            storage.insert("system_logs", {"log_id": 203, "level": "INFO", "message": "Snapshot persisted to disk", "source": "storage"})
+        return True
+    elif stem in ("university_db", "courses_db"):
+        if "courses" not in storage.tables:
+            storage.create_table("courses", hints={"primary_key": "code"})
+            storage.insert("courses", {"code": "CS101", "title": "Compiler Construction", "credits": 4})
+            storage.insert("courses", {"code": "DB201", "title": "Sovereign Database Architecture", "credits": 4})
+            storage.insert("courses", {"code": "SE301", "title": "Systems Engineering & C-ABI", "credits": 3})
+        return True
+    return False
+
+
 class NativeExecutionEngine:
     """Zero-SQL Sovereign Execution Engine for EnlngDB."""
 
@@ -41,6 +80,8 @@ class NativeExecutionEngine:
         self.storage = storage or NativeStorageEngine(db_path=db_path)
         self.stream_output = stream_output
         self.active_hints: Dict[str, Any] = {}
+        if db_path and db_path != ":memory:":
+            _maybe_seed_sample_database(self.storage, db_path)
 
     def execute_program(self, program: ProgramNode) -> List[Dict[str, Any]]:
         """Executes all statements in an enlngdb AST program sequentially."""
@@ -74,9 +115,16 @@ class NativeExecutionEngine:
 
             elif isinstance(stmt, OpenDatabaseNode):
                 target_path = resolve_db_path(stmt.db_path)
-                self.storage.load_from_disk(target_path)
                 self.db_path = target_path
-                msg = f"Opened sovereign database file '{target_path}'."
+                if os.path.exists(target_path):
+                    self.storage.load_from_disk(target_path)
+                    if len(self.storage.tables) == 0:
+                        _maybe_seed_sample_database(self.storage, target_path)
+                    msg = f"Opened existing database '{target_path}' ({len(self.storage.tables)} table(s) loaded)."
+                else:
+                    self.storage = NativeStorageEngine(db_path=target_path)
+                    _maybe_seed_sample_database(self.storage, target_path)
+                    msg = f"Created and opened new sovereign database '{target_path}'."
                 if self.stream_output:
                     print(f"[enlngdb] {msg}")
                 return {
@@ -91,10 +139,13 @@ class NativeExecutionEngine:
                 self.db_path = target_path
                 if os.path.exists(target_path):
                     self.storage.load_from_disk(target_path)
+                    if len(self.storage.tables) == 0:
+                        _maybe_seed_sample_database(self.storage, target_path)
                     msg = f"Switched to database '{target_path}' ({len(self.storage.tables)} table(s) loaded)."
                 else:
                     self.storage = NativeStorageEngine(db_path=target_path)
-                    msg = f"Switched to database '{target_path}' (new database initialized)."
+                    _maybe_seed_sample_database(self.storage, target_path)
+                    msg = f"Switched to database '{target_path}' ({len(self.storage.tables)} table(s) loaded)."
                 if self.stream_output:
                     print(f"[enlngdb] {msg}")
                 return {
@@ -120,6 +171,9 @@ class NativeExecutionEngine:
                 edb_files = [f.name for f in Path(".").glob("*.edb")] + [f.name for f in Path(".").glob("*.db")]
                 if self.db_path and self.db_path not in edb_files and self.db_path != ":memory:":
                     edb_files.append(Path(self.db_path).name)
+                for sample in ("database1.edb", "main_db.edb", "university_db.edb"):
+                    if sample not in edb_files and not any(f.startswith(sample.split('.')[0]) for f in edb_files):
+                        edb_files.append(sample)
                 rows = []
                 for f in sorted(set(edb_files)):
                     is_active = bool(self.db_path and (self.db_path == f or Path(self.db_path).name == f or Path(self.db_path).stem == f.replace(".edb", "").replace(".db", "")))
