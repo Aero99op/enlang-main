@@ -297,26 +297,15 @@
       </div>
 
       <div class="titlebar-right">
-        <!-- New Release Update Button -->
-        <button class="titlebar-btn update-titlebar-btn" id="titlebarUpdateBtn" title="New Version Available! Click to Update in a Go" style="display:none;background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.4);color:#10b981;font-weight:700;">
-          <span class="update-pulse-dot"></span>
-          <span id="titlebarUpdateText">Update Available</span>
-        </button>
+        <!-- Sleek Run Action Button -->
         <button class="titlebar-btn primary" id="topRunBtn" title="Execute Active File (Ctrl + Enter)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           <span>Run</span>
         </button>
-        <button class="titlebar-btn" id="openWelcomeBtn" title="Interactive Onboarding Walkthrough" style="background:rgba(56,189,248,0.12);border-color:rgba(56,189,248,0.35);color:#38bdf8;font-weight:600;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-          <span>🏆 Onboarding</span>
-        </button>
-        <button class="titlebar-btn" id="openSetupWizardBtn" title="Enlangg Studio Setup &amp; Environment Center">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-          <span>Setup</span>
-        </button>
-        <button class="titlebar-btn" id="pureVSCodeBtn" title="Launch 100% Pure Visual Studio Code Engine" style="background:rgba(0,122,204,0.18);border-color:rgba(0,122,204,0.45);color:#38bdf8;font-weight:600;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M23.15 2.587L18.21.21a1.494 1.494 0 0 0-1.705.29l-9.46 8.63-4.12-3.128a.999.999 0 0 0-1.276.057L.327 7.261A1 1 0 0 0 .326 8.74L3.899 12 .326 15.26a1 1 0 0 0 .001 1.479L1.65 17.94a.999.999 0 0 0 1.276.057l4.12-3.128 9.46 8.63a1.492 1.492 0 0 0 1.704.29l4.94-2.377A1.5 1.5 0 0 0 24 20.06V3.939a1.5 1.5 0 0 0-.85-1.352zm-5.146 14.861L10.826 12l7.178-5.448v10.896z"/></svg>
-          <span>VS Code Engine</span>
+        <!-- Optional compact update pill (only shown when genuine newer release exists) -->
+        <button class="titlebar-btn update-titlebar-btn" id="titlebarUpdateBtn" title="New Version Available! Click to Update in a Go" style="display:none;background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.35);color:#10b981;font-size:11.5px;padding:3px 10px;">
+          <span class="update-pulse-dot"></span>
+          <span id="titlebarUpdateText">Update Ready</span>
         </button>
         <button class="titlebar-btn" id="pwaInstallBtn" title="Install Desktop App" style="display:none;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
@@ -362,13 +351,9 @@
         </div>
 
         <div class="activity-bar-group">
-          <!-- Update Icon Beacon (Shown when new version released!) -->
-          <div class="activity-icon update-activity-icon" id="actUpdate" title="New Version Available! Click to Update in a Go" style="display:none;position:relative;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-            <span class="activity-badge update-badge" id="updateBadge">NEW</span>
-          </div>
-          <div class="activity-icon" id="actSettings" title="Settings & Keyboard Shortcuts">
+          <div class="activity-icon" id="actSettings" title="Settings &amp; Preferences" style="position:relative;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="update-pulse-dot" id="settingsUpdateDot" style="display:none;position:absolute;top:7px;right:7px;" title="New Version Available! Click to Update in a Go"></span>
           </div>
         </div>
       </aside>
@@ -1555,7 +1540,7 @@ balance <span class="syn-kw">increases by</span> 250
                     <span>Show Welcome page on startup</span>
                   </label>
                   <div class="welcome-footer-info">
-                    <span>Enlangg Studio v2.0.0 · Electron Native Desktop &amp; Web</span>
+                    <span>Enlangg Studio v5.0.0 · Electron Native Desktop &amp; Web</span>
                   </div>
                 </div>
 
@@ -1782,29 +1767,10 @@ balance <span class="syn-kw">increases by</span> 250
         <div class="statusbar-item" id="statusDomainPill" style="font-weight:600;color:#fff;" title="Active Sovereign Domain: Core Backend (.enlng)">
           <span>Core (.enlng)</span>
         </div>
-        <div class="statusbar-item" id="statusNativeEngine" style="cursor:pointer;font-weight:600;" title="Native Engine: Click to test or reconnect local compilers (~/.enlangg/bin)">
-          <span id="statusNativeEngineDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5c07b;margin-right:4px;"></span>
+        <div class="statusbar-item" id="statusNativeEngine" style="cursor:pointer;font-weight:600;" title="Native Engine: 7/7 Sovereign C99 Compilers Active">
+          <span id="statusNativeEngineDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ec9b0;margin-right:4px;"></span>
           <span id="statusNativeEngineText">Native: 7/7</span>
         </div>
-        <!-- Live Update Beacon in Statusbar -->
-        <div class="statusbar-item update-statusbar-item" id="statusUpdateBtn" style="display:none;cursor:pointer;font-weight:700;color:#10b981;" title="New Version Available! Click to Update in a Go">
-          <span class="update-pulse-dot"></span>
-          <span id="statusUpdateText">Update Available</span>
-        </div>
-        <div class="statusbar-item" id="statusWelcomeBtn" style="cursor:pointer;font-weight:600;color:#38bdf8;" title="Interactive Onboarding Walkthrough">
-          <span>🏆 Onboarding</span>
-        </div>
-        <div class="statusbar-item" id="statusSetupBtn" style="cursor:pointer;font-weight:600;" title="Open Enlangg Studio Setup Wizard &amp; Environment Center">
-          <span>⚙️ Setup</span>
-        </div>
-        <div class="statusbar-item" id="statusDebugBtn" title="Start Debugging (F5)">
-          <span>🐞 Debug</span>
-        </div>
-        <div class="statusbar-item" id="statusGitBtn" title="Git Source Control Status">
-          <span>⟳ Git</span>
-        </div>
-        <!-- Dynamic Extension Status Items Left (SonarQube, Docker, etc.) -->
-        <div id="statusExtensionsLeft" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;"></div>
       </div>
 
       <div class="statusbar-right">
@@ -2014,9 +1980,9 @@ balance <span class="syn-kw">increases by</span> 250
           <div class="update-hero-icon">🚀</div>
           <div class="update-hero-info">
             <div class="update-version-row">
-              <span class="update-badge-old" id="updateCurrentVersionBadge">Current: v2.0.0</span>
+              <span class="update-badge-old" id="updateCurrentVersionBadge">Current: v5.0.0</span>
               <span class="update-arrow">➔</span>
-              <span class="update-badge-new" id="updateLatestVersionBadge">Latest: v5.0.0</span>
+              <span class="update-badge-new" id="updateLatestVersionBadge">Latest: Available</span>
               <span class="update-badge-type">Stable Release</span>
             </div>
             <h3 class="update-release-title" id="updateReleaseTitle">Enlangg Sovereign Toolchain &amp; Studio</h3>

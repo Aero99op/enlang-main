@@ -317,55 +317,63 @@ ipcMain.handle('shell:showInFolder', async (event, filePath) => {
 
 // --- IPC: Environment & Setup Wizard ---
 ipcMain.handle('env:getToolchainStatus', async () => {
-  const compilers = [
-    { name: 'enlng', desc: 'Pure C99 Logic Engine (.enlng)' },
-    { name: 'enlngdb', desc: 'Pure C Microsecond Database Engine (.enlngdb)' },
-    { name: 'enlangg', desc: 'Sovereign Master CLI Runner' },
-    { name: 'enlngf', desc: 'Sovereign Frontend UI Markup Engine (.enlngf)' },
-    { name: 'enlngd', desc: 'Sovereign Design Token CSS Compiler (.enlngd)' },
-    { name: 'enlngs', desc: 'Sovereign Browser Reactivity Engine (.enlngs)' },
-    { name: 'enlngm', desc: 'Sovereign Mobile & Math Engine (.enlngm)' }
-  ];
+  try {
+    const compilers = [
+      { name: 'enlng', desc: 'Pure C99 Logic Engine (.enlng)' },
+      { name: 'enlngdb', desc: 'Pure C Microsecond Database Engine (.enlngdb)' },
+      { name: 'enlangg', desc: 'Sovereign Master CLI Runner' },
+      { name: 'enlngf', desc: 'Sovereign Frontend UI Markup Engine (.enlngf)' },
+      { name: 'enlngd', desc: 'Sovereign Design Token CSS Compiler (.enlngd)' },
+      { name: 'enlngs', desc: 'Sovereign Browser Reactivity Engine (.enlngs)' },
+      { name: 'enlngm', desc: 'Sovereign Mobile & Math Engine (.enlngm)' }
+    ];
 
-  const binaries = [];
-  for (const c of compilers) {
-    const binPath = findBinary(c.name);
-    const exists = fs.existsSync(binPath);
-    let details = 'Not Found';
-    if (exists) {
+    const binaries = [];
+    for (const c of compilers) {
+      const binPath = findBinary(c.name);
+      let exists = false;
+      let details = 'Not Found';
       try {
-        const stats = fs.statSync(binPath);
-        details = `${(stats.size / 1024).toFixed(0)} KB · Ready`;
-      } catch (_) {
-        details = 'Ready';
-      }
+        exists = fs.existsSync(binPath);
+        if (exists) {
+          const stats = fs.statSync(binPath);
+          details = `${(stats.size / 1024).toFixed(0)} KB · Ready`;
+        }
+      } catch (_) {}
+
+      binaries.push({
+        name: c.name,
+        desc: c.desc,
+        path: binPath,
+        exists,
+        details
+      });
     }
-    binaries.push({
-      name: c.name,
-      desc: c.desc,
-      path: binPath,
-      exists,
-      details
-    });
+
+    const bundledBinDir = process.resourcesPath ? path.join(process.resourcesPath, 'bin') : path.join(__dirname, 'bin');
+    const userHomeBin = path.join(process.env.USERPROFILE || process.env.HOME || '', '.enlangg', 'bin');
+    const userPath = process.env.PATH || '';
+    const inPath = userPath.toLowerCase().includes(bundledBinDir.toLowerCase()) || userPath.toLowerCase().includes(userHomeBin.toLowerCase());
+
+    return {
+      isPackaged: app.isPackaged,
+      installPath: process.resourcesPath ? path.dirname(process.resourcesPath) : path.join(__dirname, '..'),
+      bundledBinDir,
+      userHomeBin,
+      inPath,
+      binaries,
+      platform: process.platform,
+      arch: process.arch,
+      electronVersion: process.versions.electron,
+      nodeVersion: process.versions.node
+    };
+  } catch (err) {
+    return {
+      isPackaged: app.isPackaged,
+      binaries: [],
+      error: err.message
+    };
   }
-
-  const bundledBinDir = process.resourcesPath ? path.join(process.resourcesPath, 'bin') : path.join(__dirname, 'bin');
-  const userHomeBin = path.join(process.env.USERPROFILE || process.env.HOME || '', '.enlangg', 'bin');
-  const userPath = process.env.PATH || '';
-  const inPath = userPath.toLowerCase().includes(bundledBinDir.toLowerCase()) || userPath.toLowerCase().includes(userHomeBin.toLowerCase());
-
-  return {
-    isPackaged: app.isPackaged,
-    installPath: process.resourcesPath ? path.dirname(process.resourcesPath) : path.join(__dirname, '..'),
-    bundledBinDir,
-    userHomeBin,
-    inPath,
-    binaries,
-    platform: process.platform,
-    arch: process.arch,
-    electronVersion: process.versions.electron,
-    nodeVersion: process.versions.node
-  };
 });
 
 ipcMain.handle('env:addToPath', async () => {
@@ -539,7 +547,7 @@ function downloadFileWithProgress(url, destPath, onProgress) {
 }
 
 async function checkLatestRelease() {
-  const currentVersion = app.getVersion() || '2.0.0';
+  const currentVersion = app.getVersion() || '5.0.0';
   try {
     const releases = await fetchJson('https://api.github.com/repos/Aero99op/enlang-main/releases');
     if (!Array.isArray(releases) || releases.length === 0) {
@@ -549,21 +557,24 @@ async function checkLatestRelease() {
     const latestVersion = (latest.tag_name || 'v0.0.0').replace(/^[vV]/, '');
     const hasUpdate = isNewerVersion(latestVersion, currentVersion);
 
-    // Pick best matching asset for current platform
+    // Pick best matching installer for current platform (Must be a Studio installer, NEVER a compiler zip!)
     let targetAsset = null;
     if (latest.assets && latest.assets.length > 0) {
       if (process.platform === 'win32') {
-        targetAsset = latest.assets.find(a => a.name.endsWith('.exe')) ||
-                      latest.assets.find(a => a.name.includes('windows') && a.name.endsWith('.zip')) ||
-                      latest.assets[0];
+        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.exe')) ||
+                      latest.assets.find(a => a.name.endsWith('-setup.exe')) ||
+                      latest.assets.find(a => a.name.endsWith('.exe'));
       } else if (process.platform === 'darwin') {
-        targetAsset = latest.assets.find(a => a.name.includes('darwin') || a.name.includes('macos')) ||
-                      latest.assets[0];
+        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && (a.name.endsWith('.dmg') || a.name.endsWith('.zip')));
       } else {
-        targetAsset = latest.assets.find(a => a.name.includes('linux')) ||
-                      latest.assets[0];
+        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && (a.name.endsWith('.AppImage') || a.name.endsWith('.deb')));
       }
     }
+
+    // Fallback official Studio installer URL if release has only compiler CLI binaries
+    const downloadUrl = targetAsset ? targetAsset.browser_download_url : 'https://enlangg.site/enlangg-studio-setup.exe';
+    const assetName = targetAsset ? targetAsset.name : 'Enlangg-Studio-Setup.exe';
+    const assetSize = targetAsset ? targetAsset.size : 82614853;
 
     return {
       hasUpdate,
@@ -571,12 +582,12 @@ async function checkLatestRelease() {
       latestVersion,
       tag: latest.tag_name,
       releaseName: latest.name || `Enlangg Release ${latest.tag_name}`,
-      releaseNotes: latest.body || 'No release notes provided.',
+      releaseNotes: latest.body || 'New Enlangg Studio release available with performance and stability improvements.',
       publishedAt: latest.published_at,
       htmlUrl: latest.html_url,
-      downloadUrl: targetAsset ? targetAsset.browser_download_url : (latest.zipball_url || latest.html_url),
-      assetName: targetAsset ? targetAsset.name : `enlangg-${latest.tag_name}.zip`,
-      assetSize: targetAsset ? targetAsset.size : 0
+      downloadUrl,
+      assetName,
+      assetSize
     };
   } catch (err) {
     return {
@@ -595,7 +606,7 @@ ipcMain.handle('updater:downloadUpdate', async (event, { downloadUrl, assetName 
   if (!downloadUrl) throw new Error('Missing download URL');
   const tempDir = path.join(os.tmpdir(), 'enlangg_studio_update');
   fs.mkdirSync(tempDir, { recursive: true });
-  const filename = assetName || path.basename(new URL(downloadUrl).pathname) || 'enlangg-update.exe';
+  const filename = assetName || path.basename(new URL(downloadUrl).pathname) || 'Enlangg-Studio-Setup.exe';
   const destPath = path.join(tempDir, filename);
 
   await downloadFileWithProgress(downloadUrl, destPath, (progress) => {
@@ -620,11 +631,8 @@ ipcMain.handle('updater:installUpdate', async (event, { filePath }) => {
     child.unref();
     setTimeout(() => {
       app.quit();
-    }, 800);
+    }, 500);
     return { success: true, action: 'spawned_installer' };
-  } else if (filePath.endsWith('.zip')) {
-    shell.showItemInFolder(filePath);
-    return { success: true, action: 'show_in_folder' };
   } else {
     shell.openPath(filePath);
     return { success: true, action: 'opened_path' };
