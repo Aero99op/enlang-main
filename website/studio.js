@@ -12385,6 +12385,7 @@ Provide code in fenced code blocks.`;
             }
           }
         }
+      }
 
       if (info && info.hasUpdate) {
         showUpdateIndicators(info);
