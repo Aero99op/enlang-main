@@ -17,7 +17,8 @@ const uiFiles = [
   'enlang_wasm.js',
   'favicon.svg',
   'logo.svg',
-  'enlang_bundle.json'
+  'enlang_bundle.json',
+  'version.json'
 ];
 
 for (const file of uiFiles) {

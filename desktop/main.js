@@ -548,46 +548,70 @@ function downloadFileWithProgress(url, destPath, onProgress) {
 
 async function checkLatestRelease() {
   const currentVersion = app.getVersion() || '5.0.0';
+
+  // 1. Primary Source of Truth: Check version.json manifest directly from enlangg.site
+  const manifestUrls = [
+    'https://enlangg.site/version.json',
+    'https://enlangg.vercel.app/version.json',
+    'https://raw.githubusercontent.com/Aero99op/enlang-main/main/website/version.json'
+  ];
+
+  for (const url of manifestUrls) {
+    try {
+      const manifest = await fetchJson(url);
+      if (manifest && manifest.version) {
+        const latestVersion = manifest.version.replace(/^[vV]/, '');
+        const hasUpdate = isNewerVersion(latestVersion, currentVersion);
+        return {
+          hasUpdate,
+          currentVersion,
+          latestVersion,
+          tag: `v${latestVersion}`,
+          releaseName: manifest.name || `Enlangg Studio v${latestVersion}`,
+          releaseNotes: manifest.releaseNotes || 'Latest official Enlangg Studio build published on enlangg.site.',
+          publishedAt: manifest.publishedAt || new Date().toISOString(),
+          downloadUrl: manifest.downloadUrl || 'https://enlangg.site/enlangg-studio-setup.exe',
+          assetName: manifest.assetName || 'Enlangg-Studio-Setup.exe',
+          source: 'enlangg.site'
+        };
+      }
+    } catch (_) {}
+  }
+
+  // 2. Secondary Fallback: GitHub Releases API
   try {
     const releases = await fetchJson('https://api.github.com/repos/Aero99op/enlang-main/releases');
-    if (!Array.isArray(releases) || releases.length === 0) {
-      return { hasUpdate: false, currentVersion, message: 'No releases found on repository.' };
-    }
-    const latest = releases[0];
-    const latestVersion = (latest.tag_name || 'v0.0.0').replace(/^[vV]/, '');
-    const hasUpdate = isNewerVersion(latestVersion, currentVersion);
+    if (Array.isArray(releases) && releases.length > 0) {
+      const latest = releases[0];
+      const latestVersion = (latest.tag_name || 'v0.0.0').replace(/^[vV]/, '');
+      const hasUpdate = isNewerVersion(latestVersion, currentVersion);
 
-    // Pick best matching installer for current platform (Must be a Studio installer, NEVER a compiler zip or CLI exe!)
-    let targetAsset = null;
-    if (latest.assets && latest.assets.length > 0) {
-      if (process.platform === 'win32') {
-        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.toLowerCase().endsWith('.exe')) ||
-                      latest.assets.find(a => a.name.toLowerCase().includes('setup') && a.name.toLowerCase().endsWith('.exe'));
-      } else if (process.platform === 'darwin') {
-        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.dmg'));
-      } else {
-        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.AppImage'));
+      let targetAsset = null;
+      if (latest.assets && latest.assets.length > 0) {
+        if (process.platform === 'win32') {
+          targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.toLowerCase().endsWith('.exe')) ||
+                        latest.assets.find(a => a.name.toLowerCase().includes('setup') && a.name.toLowerCase().endsWith('.exe'));
+        } else if (process.platform === 'darwin') {
+          targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.dmg'));
+        } else {
+          targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.AppImage'));
+        }
       }
+
+      return {
+        hasUpdate,
+        currentVersion,
+        latestVersion,
+        tag: latest.tag_name,
+        releaseName: latest.name || `Enlangg Release ${latest.tag_name}`,
+        releaseNotes: latest.body || 'New Enlangg Studio release available.',
+        publishedAt: latest.published_at,
+        htmlUrl: latest.html_url,
+        downloadUrl: targetAsset ? targetAsset.browser_download_url : 'https://enlangg.site/enlangg-studio-setup.exe',
+        assetName: targetAsset ? targetAsset.name : 'Enlangg-Studio-Setup.exe',
+        source: 'github'
+      };
     }
-
-    // Fallback official Studio installer URL if release has only compiler CLI binaries
-    const downloadUrl = targetAsset ? targetAsset.browser_download_url : 'https://github.com/Aero99op/enlang-main/raw/main/website/enlangg-studio-setup.exe';
-    const assetName = targetAsset ? targetAsset.name : 'Enlangg-Studio-Setup.exe';
-    const assetSize = targetAsset ? targetAsset.size : 82614853;
-
-    return {
-      hasUpdate,
-      currentVersion,
-      latestVersion,
-      tag: latest.tag_name,
-      releaseName: latest.name || `Enlangg Release ${latest.tag_name}`,
-      releaseNotes: latest.body || 'New Enlangg Studio release available with performance and stability improvements.',
-      publishedAt: latest.published_at,
-      htmlUrl: latest.html_url,
-      downloadUrl,
-      assetName,
-      assetSize
-    };
   } catch (err) {
     return {
       hasUpdate: false,
@@ -595,6 +619,8 @@ async function checkLatestRelease() {
       error: err.message
     };
   }
+
+  return { hasUpdate: false, currentVersion };
 }
 
 ipcMain.handle('updater:checkForUpdates', async () => {

@@ -12319,37 +12319,72 @@ Provide code in fenced code blocks.`;
       if (window.EnlangElectron && window.EnlangElectron.checkForUpdates) {
         info = await window.EnlangElectron.checkForUpdates();
       } else {
-        // Web fallback using GitHub Releases API
+        // Primary: Query official enlangg.site version.json manifest
         const curVer = '5.0.0';
-        const res = await fetch('https://api.github.com/repos/Aero99op/enlang-main/releases', {
-          headers: { 'Accept': 'application/vnd.github.v3+json' }
-        });
-        if (res.ok) {
-          const releases = await res.json();
-          if (Array.isArray(releases) && releases.length > 0) {
-            const rel = releases[0];
-            const latVer = (rel.tag_name || '').replace(/^[vV]/, '');
-            const hasUpdate = isNewerSemver(latVer, curVer);
-            let asset = null;
-            if (rel.assets && rel.assets.length > 0) {
-              asset = rel.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.exe')) ||
-                      rel.assets.find(a => a.name.endsWith('-setup.exe'));
+        const manifestUrls = [
+          'version.json',
+          'https://enlangg.site/version.json',
+          'https://enlangg.vercel.app/version.json',
+          'https://raw.githubusercontent.com/Aero99op/enlang-main/main/website/version.json'
+        ];
+
+        let manifest = null;
+        for (const u of manifestUrls) {
+          try {
+            const r = await fetch(u);
+            if (r.ok) {
+              manifest = await r.json();
+              if (manifest && manifest.version) break;
             }
-            info = {
-              hasUpdate,
-              currentVersion: curVer,
-              latestVersion: latVer,
-              tag: rel.tag_name,
-              releaseName: rel.name || `Enlangg ${rel.tag_name}`,
-              releaseNotes: rel.body || 'New Enlangg release available with performance and stability improvements.',
-              publishedAt: rel.published_at,
-              htmlUrl: rel.html_url,
-              downloadUrl: asset ? asset.browser_download_url : 'https://enlangg.site/enlangg-studio-setup.exe',
-              assetName: asset ? asset.name : 'Enlangg-Studio-Setup.exe'
-            };
+          } catch (_) {}
+        }
+
+        if (manifest && manifest.version) {
+          const latVer = manifest.version.replace(/^[vV]/, '');
+          const hasUpdate = isNewerSemver(latVer, curVer);
+          info = {
+            hasUpdate,
+            currentVersion: curVer,
+            latestVersion: latVer,
+            tag: `v${latVer}`,
+            releaseName: manifest.name || `Enlangg Studio v${latVer}`,
+            releaseNotes: manifest.releaseNotes || 'Latest official Enlangg Studio build published on enlangg.site.',
+            publishedAt: manifest.publishedAt || new Date().toISOString(),
+            htmlUrl: 'https://enlangg.site',
+            downloadUrl: manifest.downloadUrl || 'https://enlangg.site/enlangg-studio-setup.exe',
+            assetName: manifest.assetName || 'Enlangg-Studio-Setup.exe'
+          };
+        } else {
+          // Secondary fallback to GitHub Releases
+          const res = await fetch('https://api.github.com/repos/Aero99op/enlang-main/releases', {
+            headers: { 'Accept': 'application/vnd.github.v3+json' }
+          });
+          if (res.ok) {
+            const releases = await res.json();
+            if (Array.isArray(releases) && releases.length > 0) {
+              const rel = releases[0];
+              const latVer = (rel.tag_name || '').replace(/^[vV]/, '');
+              const hasUpdate = isNewerSemver(latVer, curVer);
+              let asset = null;
+              if (rel.assets && rel.assets.length > 0) {
+                asset = rel.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.exe')) ||
+                        rel.assets.find(a => a.name.endsWith('-setup.exe'));
+              }
+              info = {
+                hasUpdate,
+                currentVersion: curVer,
+                latestVersion: latVer,
+                tag: rel.tag_name,
+                releaseName: rel.name || `Enlangg ${rel.tag_name}`,
+                releaseNotes: rel.body || 'New Enlangg release available with performance and stability improvements.',
+                publishedAt: rel.published_at,
+                htmlUrl: rel.html_url,
+                downloadUrl: asset ? asset.browser_download_url : 'https://enlangg.site/enlangg-studio-setup.exe',
+                assetName: asset ? asset.name : 'Enlangg-Studio-Setup.exe'
+              };
+            }
           }
         }
-      }
 
       if (info && info.hasUpdate) {
         showUpdateIndicators(info);

@@ -1,0 +1,13 @@
+{
+  "name": "Enlangg Studio",
+  "version": "5.0.0",
+  "build": "5.0.0.1",
+  "publishedAt": "2026-10-06T06:10:00Z",
+  "releaseNotes": "Enlangg Studio Sovereign Release: Dedicated First-Run Onboarding Gateway, clean zero-clutter editor workspace, 7 precompiled C99 compilers, and seamless in-place updates directly from enlangg.site.",
+  "downloadUrl": "https://enlangg.site/enlangg-studio-setup.exe",
+  "mirrors": [
+    "https://enlangg.vercel.app/enlangg-studio-setup.exe",
+    "https://github.com/Aero99op/enlang-main/raw/main/website/enlangg-studio-setup.exe"
+  ],
+  "assetName": "Enlangg-Studio-Setup-5.0.0.exe"
+}
