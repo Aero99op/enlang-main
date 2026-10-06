@@ -255,8 +255,11 @@
           <div class="menu-item" id="menuHelp" tabindex="0">
             <span class="menu-label">Help</span>
             <div class="menu-dropdown">
+              <div class="menu-dropdown-item" data-action="openFirstRunGateway">
+                <span>🏆 First-Run Onboarding Gateway</span>
+              </div>
               <div class="menu-dropdown-item" data-action="openWelcome">
-                <span>🏆 Onboarding Walkthrough</span>
+                <span>📖 In-Editor Walkthrough &amp; Overview</span>
               </div>
               <div class="menu-dropdown-divider"></div>
               <div class="menu-dropdown-item" data-action="openDocs">
@@ -2366,6 +2369,210 @@ balance <span class="syn-kw">increases by</span> 250
             <span>Done &amp; Close</span>
           </button>
         </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       DEDICATED FIRST-RUN ONBOARDING GATEWAY (SEPARATE FULLSCREEN EXPERIENCE)
+       Appears for new users before entering the live IDE workspace.
+       ========================================================================= -->
+  <div class="first-run-gateway-overlay" id="firstRunGateway" style="display:none;">
+    <div class="first-run-gateway-backdrop"></div>
+    <div class="first-run-gateway-container">
+      
+      <!-- Top Gateway Progress & Brand -->
+      <div class="first-run-gateway-header">
+        <div class="gateway-brand">
+          <svg class="gateway-logo-svg" viewBox="0 0 24 24"><path fill="#38bdf8" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <div class="gateway-brand-text">
+            <span class="gateway-brand-name">Enlangg Studio</span>
+            <span class="gateway-brand-tag">v5.0.0 Sovereign AG</span>
+          </div>
+        </div>
+
+        <div class="gateway-step-indicators">
+          <div class="gateway-step-dot active" data-step="1" title="Welcome"></div>
+          <div class="gateway-step-line"></div>
+          <div class="gateway-step-dot" data-step="2" title="Theme"></div>
+          <div class="gateway-step-line"></div>
+          <div class="gateway-step-dot" data-step="3" title="Toolchain"></div>
+          <div class="gateway-step-line"></div>
+          <div class="gateway-step-dot" data-step="4" title="Get Started"></div>
+        </div>
+
+        <button type="button" class="gateway-skip-btn" id="gatewaySkipBtn" title="Skip directly to IDE">
+          <span>Skip to IDE →</span>
+        </button>
+      </div>
+
+      <!-- Main Step Views Container -->
+      <div class="first-run-gateway-body">
+        
+        <!-- STEP 1: Welcome & Mission -->
+        <div class="gateway-slide active" id="gatewaySlide1">
+          <div class="gateway-hero-icon">👑</div>
+          <h1 class="gateway-slide-title">Welcome to Enlangg Studio</h1>
+          <p class="gateway-slide-desc">The sovereign native desktop IDE engineered with 1:1 VS Code ergonomics, zero garbage collection, and lightning-fast C99 execution.</p>
+
+          <div class="gateway-features-grid">
+            <div class="gateway-feature-card">
+              <div class="feature-card-icon" style="color:#38bdf8;">⚡</div>
+              <div class="feature-card-title">Zero GC &amp; Native C99</div>
+              <div class="feature-card-desc">Sub-millisecond startup, deterministic execution, and direct native binaries.</div>
+            </div>
+            <div class="gateway-feature-card">
+              <div class="feature-card-icon" style="color:#4ec9b0;">🗣</div>
+              <div class="feature-card-title">Bracketless Natural Grammar</div>
+              <div class="feature-card-desc">Intent-driven spoken language syntax with zero cognitive punctuation traps.</div>
+            </div>
+            <div class="gateway-feature-card">
+              <div class="feature-card-icon" style="color:#f59e0b;">🗄</div>
+              <div class="feature-card-title">In-Memory Sovereign SQL</div>
+              <div class="feature-card-desc">&lt;0.05ms relational micro-VM with live schema exploration and zero external drivers.</div>
+            </div>
+            <div class="gateway-feature-card">
+              <div class="feature-card-icon" style="color:#c084fc;">🌐</div>
+              <div class="feature-card-title">6-Domain Fullstack</div>
+              <div class="feature-card-desc">Unified language ecosystem spanning logic, design tokens, markup, and mobile HAL.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: Choose Theme -->
+        <div class="gateway-slide" id="gatewaySlide2">
+          <div class="gateway-hero-icon">🎨</div>
+          <h1 class="gateway-slide-title">Choose Your Look &amp; Feel</h1>
+          <p class="gateway-slide-desc">Select your preferred color theme. Changes are applied instantly to your editor.</p>
+
+          <div class="gateway-themes-grid" id="gatewayThemesGrid">
+            <!-- Theme cards dynamically injected / rendered here -->
+          </div>
+        </div>
+
+        <!-- STEP 3: Verify Toolchain Status -->
+        <div class="gateway-slide" id="gatewaySlide3">
+          <div class="gateway-hero-icon">⚙️</div>
+          <h1 class="gateway-slide-title">Verify Sovereign Toolchain</h1>
+          <p class="gateway-slide-desc">Enlangg Studio includes all 7 precompiled native C99 compilers ready for local development.</p>
+
+          <div class="gateway-toolchain-box">
+            <div class="gateway-toolchain-header">
+              <div class="gateway-toolchain-status">
+                <span class="gateway-status-dot" id="gatewayToolchainDot"></span>
+                <span class="gateway-status-text" id="gatewayToolchainText">Native Toolchain: 7/7 Compilers Ready</span>
+              </div>
+              <span class="gateway-toolchain-badge">C99 Binary Engine</span>
+            </div>
+
+            <div class="gateway-compilers-list">
+              <div class="compiler-row">
+                <span class="compiler-name"><code>enlng.exe</code></span>
+                <span class="compiler-desc">Core Algorithmic &amp; Logic Compiler</span>
+                <span class="compiler-state ready">✔ Ready</span>
+              </div>
+              <div class="compiler-row">
+                <span class="compiler-name"><code>enlangg.exe</code></span>
+                <span class="compiler-desc">Sovereign Unified CLI Driver</span>
+                <span class="compiler-state ready">✔ Ready</span>
+              </div>
+              <div class="compiler-row">
+                <span class="compiler-name"><code>enlngdb.exe</code></span>
+                <span class="compiler-desc">In-Memory Sovereign SQL Micro-VM</span>
+                <span class="compiler-state ready">✔ Ready</span>
+              </div>
+              <div class="compiler-row">
+                <span class="compiler-name"><code>enlngf.exe</code></span>
+                <span class="compiler-desc">Frontend Sovereign Markup Compiler</span>
+                <span class="compiler-state ready">✔ Ready</span>
+              </div>
+              <div class="compiler-row">
+                <span class="compiler-name"><code>enlngd.exe</code></span>
+                <span class="compiler-desc">Design Token &amp; Hardware Styling Engine</span>
+                <span class="compiler-state ready">✔ Ready</span>
+              </div>
+              <div class="compiler-row">
+                <span class="compiler-name"><code>enlngs.exe</code></span>
+                <span class="compiler-desc">Client Reactive Event Script Engine</span>
+                <span class="compiler-state ready">✔ Ready</span>
+              </div>
+              <div class="compiler-row">
+                <span class="compiler-name"><code>enlngm.exe</code></span>
+                <span class="compiler-desc">Mobile Simulator &amp; Device HAL Transpiler</span>
+                <span class="compiler-state ready">✔ Ready</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4: Choose Starter Project & Launch -->
+        <div class="gateway-slide" id="gatewaySlide4">
+          <div class="gateway-hero-icon">🚀</div>
+          <h1 class="gateway-slide-title">How Would You Like to Start?</h1>
+          <p class="gateway-slide-desc">Select a starter workspace or open an existing directory to launch the IDE.</p>
+
+          <div class="gateway-starters-grid">
+            <div class="gateway-starter-card active" data-starter="banking">
+              <div class="starter-card-icon" style="color:#38bdf8;">🏦</div>
+              <div class="starter-card-content">
+                <div class="starter-card-title">Sovereign Banking App</div>
+                <div class="starter-card-desc">Fullstack banking sample with relational transactions and UI.</div>
+              </div>
+              <div class="starter-card-check">✓</div>
+            </div>
+
+            <div class="gateway-starter-card" data-starter="ml">
+              <div class="starter-card-icon" style="color:#34d399;">🤖</div>
+              <div class="starter-card-content">
+                <div class="starter-card-title">AI &amp; Neural Classifier</div>
+                <div class="starter-card-desc">Zero-library machine learning models, perceptrons &amp; matrix math.</div>
+              </div>
+              <div class="starter-card-check">✓</div>
+            </div>
+
+            <div class="gateway-starter-card" data-starter="ecommerce">
+              <div class="starter-card-icon" style="color:#fbbf24;">🛒</div>
+              <div class="starter-card-content">
+                <div class="starter-card-title">E-Commerce Web Application</div>
+                <div class="starter-card-desc">Interactive product showcase, cart state &amp; micro-database.</div>
+              </div>
+              <div class="starter-card-check">✓</div>
+            </div>
+
+            <div class="gateway-starter-card" data-starter="blank">
+              <div class="starter-card-icon" style="color:#a78bfa;">📄</div>
+              <div class="starter-card-content">
+                <div class="starter-card-title">Clean Blank Workspace</div>
+                <div class="starter-card-desc">Start fresh with a minimal sovereign project structure.</div>
+              </div>
+              <div class="starter-card-check">✓</div>
+            </div>
+          </div>
+
+          <div class="gateway-folder-opt">
+            <span>Or open an existing project:</span>
+            <button type="button" class="titlebar-btn" id="gatewayOpenFolderBtn">
+              <span>📁 Open Local Folder / Workspace...</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Gateway Footer Navigation -->
+      <div class="first-run-gateway-footer">
+        <button type="button" class="titlebar-btn" id="gatewayPrevBtn" style="padding:9px 20px;font-weight:600;" disabled>
+          <span>← Back</span>
+        </button>
+
+        <div class="gateway-footer-center">
+          <span class="gateway-step-text" id="gatewayStepText">Step 1 of 4</span>
+        </div>
+
+        <button type="button" class="titlebar-btn primary" id="gatewayNextBtn" style="padding:9px 28px;font-weight:700;font-size:13px;box-shadow:0 0 20px rgba(56,189,248,0.3);">
+          <span>Continue →</span>
+        </button>
       </div>
 
     </div>

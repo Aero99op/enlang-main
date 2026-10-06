@@ -4751,6 +4751,180 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
   }
 
   // =========================================================================
+  // DEDICATED FIRST-RUN ONBOARDING GATEWAY (PRE-IDE GATEWAY EXPERIENCE)
+  // Appears for new users before entering the live IDE workspace
+  // =========================================================================
+  let gatewayCurrentStep = 1;
+  let gatewaySelectedStarter = 'banking';
+  let gatewayInitialized = false;
+
+  function openFirstRunGateway(step = 1) {
+    const gateway = document.getElementById('firstRunGateway');
+    if (!gateway) return;
+    gateway.style.display = 'flex';
+    initFirstRunGateway();
+    goToGatewayStep(step);
+  }
+  window.openFirstRunGateway = openFirstRunGateway;
+
+  function closeFirstRunGateway() {
+    const gateway = document.getElementById('firstRunGateway');
+    if (!gateway) return;
+    gateway.style.display = 'none';
+  }
+  window.closeFirstRunGateway = closeFirstRunGateway;
+
+  function goToGatewayStep(stepNum) {
+    const target = Math.max(1, Math.min(4, parseInt(stepNum, 10) || 1));
+    gatewayCurrentStep = target;
+
+    // 1. Update step indicators
+    document.querySelectorAll('.gateway-step-dot').forEach(dot => {
+      const s = parseInt(dot.getAttribute('data-step'), 10);
+      dot.classList.toggle('active', s === target);
+      dot.classList.toggle('completed', s < target);
+    });
+
+    // 2. Switch slides
+    for (let i = 1; i <= 4; i++) {
+      const slide = document.getElementById(`gatewaySlide${i}`);
+      if (slide) slide.classList.toggle('active', i === target);
+    }
+
+    // 3. Update step counter & buttons
+    const stepText = document.getElementById('gatewayStepText');
+    if (stepText) stepText.textContent = `Step ${target} of 4`;
+
+    const prevBtn = document.getElementById('gatewayPrevBtn');
+    if (prevBtn) prevBtn.disabled = (target === 1);
+
+    const nextBtn = document.getElementById('gatewayNextBtn');
+    if (nextBtn) {
+      if (target === 4) {
+        nextBtn.innerHTML = '<span>🚀 Launch Studio</span>';
+      } else {
+        nextBtn.innerHTML = '<span>Continue →</span>';
+      }
+    }
+  }
+
+  function completeFirstRunGateway(starter = gatewaySelectedStarter) {
+    localStorage.setItem('enlangg_studio_onboarding_completed', 'true');
+    localStorage.setItem('enlangg_studio_setup_seen', 'true');
+    closeFirstRunGateway();
+
+    if (starter === 'folder') {
+      if (window.EnlangElectron && window.EnlangElectron.openFolder) {
+        window.EnlangElectron.openFolder();
+      } else {
+        showStudioToast('Virtual workspace active. Open files from file tree.', null);
+      }
+    } else if (starter === 'ml') {
+      if (!vfs['ai/classifier.enlng']) {
+        vfs['ai/classifier.enlng'] = `type enlng\n\n# ==============================================================================\n# 🤖 SOVEREIGN AI & NEURAL CLASSIFIER\n# Zero External Libraries · Deterministic Mathematical Inference\n# ==============================================================================\n\nremember weights as [0.45, -0.82, 0.91]\nremember bias as 0.15\n\nfunction predict with features:\n    remember total as bias\n    for i from 0 to count of features - 1 by 1:\n        total increases by features[i] * weights[i]\n    when total > 0.0:\n        give "POSITIVE_CLASS"\n    give "NEGATIVE_CLASS"\n\nsample_input = [1.2, 0.5, -0.3]\nresult = predict(sample_input)\nshow "Inference Result: " result\n`;
+      }
+      saveVfs();
+      renderFileTree();
+      openFile('ai/classifier.enlng');
+    } else if (starter === 'ecommerce') {
+      if (!vfs['src/shop.enlng']) {
+        vfs['src/shop.enlng'] = `type enlng\n\n# ==============================================================================\n# 🛒 SOVEREIGN E-COMMERCE & CART VM\n# ==============================================================================\n\nremember inventory as [\n    {"id": "PROD-1", "name": "Mechanical Keyboard", "price": 149.0},\n    {"id": "PROD-2", "name": "Ultra-Wide Monitor", "price": 389.0}\n]\n\nremember subtotal as 0.0\nfor item in inventory:\n    subtotal increases by item.price\n\nfreeze TAX_RATE as 0.08\nfreeze total as subtotal + (subtotal * TAX_RATE)\n\nshow "Cart Items: " count of inventory\nshow "Subtotal: $" subtotal\nshow "Order Total: $" total\n`;
+      }
+      saveVfs();
+      renderFileTree();
+      openFile('src/shop.enlng');
+    } else if (starter === 'blank') {
+      vfs['src/main.enlng'] = `type enlng\n\n# 👑 Clean Enlangg Workspace\nremember greeting as "Hello from Sovereign Enlangg Studio!"\nshow greeting\n`;
+      saveVfs();
+      renderFileTree();
+      openFile('src/main.enlng');
+    } else {
+      // banking default
+      openFile('src/main.enlng');
+    }
+
+    showStudioToast('🏆 Welcome to Enlangg Studio! Sovereign IDE initialized.', null);
+  }
+
+  function initFirstRunGateway() {
+    if (gatewayInitialized) return;
+    gatewayInitialized = true;
+
+    // 1. Populate Theme Cards in Step 2
+    const themesGrid = document.getElementById('gatewayThemesGrid');
+    if (themesGrid && themesGrid.children.length === 0) {
+      for (const [key, theme] of Object.entries(STUDIO_THEMES)) {
+        const card = document.createElement('div');
+        card.className = `gateway-theme-card ${key === currentThemeKey ? 'active' : ''}`;
+        card.dataset.themeKey = key;
+        const swatches = theme.swatches || ['#1e1e1e', '#007acc'];
+        const previewBlocks = swatches.map(c => `<div style="flex:1;background:${c};"></div>`).join('');
+        card.innerHTML = `
+          <div class="gateway-theme-swatches">${previewBlocks}</div>
+          <div class="gateway-theme-title">${escapeHtml(theme.name)}</div>
+        `;
+        card.addEventListener('click', () => {
+          applyTheme(key);
+          document.querySelectorAll('.gateway-theme-card').forEach(el => el.classList.remove('active'));
+          card.classList.add('active');
+          showStudioToast(`Theme applied: ${theme.name}`, null);
+        });
+        themesGrid.appendChild(card);
+      }
+    }
+
+    // 2. Wire Step Indicators
+    document.querySelectorAll('.gateway-step-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        const s = parseInt(dot.getAttribute('data-step'), 10);
+        goToGatewayStep(s);
+      });
+    });
+
+    // 3. Wire Starter Selection Cards
+    document.querySelectorAll('.gateway-starter-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.gateway-starter-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        gatewaySelectedStarter = card.getAttribute('data-starter') || 'banking';
+      });
+    });
+
+    // 4. Wire Navigation Buttons
+    const prevBtn = document.getElementById('gatewayPrevBtn');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (gatewayCurrentStep > 1) goToGatewayStep(gatewayCurrentStep - 1);
+      });
+    }
+
+    const nextBtn = document.getElementById('gatewayNextBtn');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (gatewayCurrentStep < 4) {
+          goToGatewayStep(gatewayCurrentStep + 1);
+        } else {
+          completeFirstRunGateway(gatewaySelectedStarter);
+        }
+      });
+    }
+
+    const skipBtn = document.getElementById('gatewaySkipBtn');
+    if (skipBtn) {
+      skipBtn.addEventListener('click', () => {
+        completeFirstRunGateway('banking');
+      });
+    }
+
+    const openFolderBtn = document.getElementById('gatewayOpenFolderBtn');
+    if (openFolderBtn) {
+      openFolderBtn.addEventListener('click', () => {
+        completeFirstRunGateway('folder');
+      });
+    }
+  }
+
+  // =========================================================================
   // VS Code Native Walkthrough & Get Started Engine (100% In-Editor, 0 Popups)
   // =========================================================================
   let currentWtStep = 1;
@@ -5696,15 +5870,21 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
   const COMMAND_PALETTE_ITEMS = [
     {
       category: 'Help',
-      label: 'Help: 🏆 Interactive Onboarding Walkthrough',
+      label: 'Help: 🏆 First-Run Onboarding Gateway',
       shortcut: '',
-      action: () => openOnboardingFlow(1)
+      action: () => openFirstRunGateway(1)
+    },
+    {
+      category: 'Preferences',
+      label: 'Preferences: First-Run Onboarding Gateway',
+      shortcut: '',
+      action: () => openFirstRunGateway(1)
     },
     {
       category: 'Help',
-      label: 'Help: Onboarding (VS Code & Cursor Style)',
+      label: 'Help: 📖 In-Editor Walkthrough & Overview',
       shortcut: '',
-      action: () => openOnboardingFlow(1)
+      action: () => openWelcomeTab('walkthrough', 1)
     },
     {
       category: 'Preferences',
@@ -9879,6 +10059,12 @@ Provide code in fenced code blocks.`;
         openThemePicker();
         break;
 
+      case 'openFirstRunGateway':
+      case 'firstRunGateway':
+      case 'openGateway':
+        openFirstRunGateway(1);
+        break;
+
       case 'onboarding':
       case 'openOnboarding':
       case 'openWelcome':
@@ -11904,14 +12090,12 @@ Provide code in fenced code blocks.`;
     const savedTheme = localStorage.getItem('enlangg_studio_theme') || 'vs-dark';
     applyTheme(savedTheme);
 
-    // Check if Welcome / Onboarding Walkthrough page should be shown on startup
+    // Dedicated First-Run Onboarding Gateway: Shown to new users BEFORE entering the main IDE workspace
     const isNewUser = !localStorage.getItem('enlangg_studio_onboarding_completed');
-    const showWelcome = localStorage.getItem('enlangg_show_welcome_on_startup') !== 'false';
-    if (isNewUser || showWelcome) {
-      if (!openTabs.includes('Get Started')) {
-        openTabs.unshift('Get Started');
-      }
-      activeFile = 'Get Started';
+    if (isNewUser) {
+      setTimeout(() => {
+        openFirstRunGateway(1);
+      }, 50);
     }
 
     renderFileTree();
