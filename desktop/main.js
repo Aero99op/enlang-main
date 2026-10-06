@@ -557,22 +557,21 @@ async function checkLatestRelease() {
     const latestVersion = (latest.tag_name || 'v0.0.0').replace(/^[vV]/, '');
     const hasUpdate = isNewerVersion(latestVersion, currentVersion);
 
-    // Pick best matching installer for current platform (Must be a Studio installer, NEVER a compiler zip!)
+    // Pick best matching installer for current platform (Must be a Studio installer, NEVER a compiler zip or CLI exe!)
     let targetAsset = null;
     if (latest.assets && latest.assets.length > 0) {
       if (process.platform === 'win32') {
-        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.exe')) ||
-                      latest.assets.find(a => a.name.endsWith('-setup.exe')) ||
-                      latest.assets.find(a => a.name.endsWith('.exe'));
+        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.toLowerCase().endsWith('.exe')) ||
+                      latest.assets.find(a => a.name.toLowerCase().includes('setup') && a.name.toLowerCase().endsWith('.exe'));
       } else if (process.platform === 'darwin') {
-        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && (a.name.endsWith('.dmg') || a.name.endsWith('.zip')));
+        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.dmg'));
       } else {
-        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && (a.name.endsWith('.AppImage') || a.name.endsWith('.deb')));
+        targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.AppImage'));
       }
     }
 
     // Fallback official Studio installer URL if release has only compiler CLI binaries
-    const downloadUrl = targetAsset ? targetAsset.browser_download_url : 'https://enlangg.site/enlangg-studio-setup.exe';
+    const downloadUrl = targetAsset ? targetAsset.browser_download_url : 'https://github.com/Aero99op/enlang-main/raw/main/website/enlangg-studio-setup.exe';
     const assetName = targetAsset ? targetAsset.name : 'Enlangg-Studio-Setup.exe';
     const assetSize = targetAsset ? targetAsset.size : 82614853;
 
@@ -623,7 +622,7 @@ ipcMain.handle('updater:installUpdate', async (event, { filePath }) => {
     throw new Error('Downloaded update file does not exist on disk.');
   }
 
-  if (filePath.endsWith('.exe')) {
+  if (filePath.toLowerCase().endsWith('.exe')) {
     const child = spawn(filePath, [], {
       detached: true,
       stdio: 'ignore'
@@ -634,8 +633,7 @@ ipcMain.handle('updater:installUpdate', async (event, { filePath }) => {
     }, 500);
     return { success: true, action: 'spawned_installer' };
   } else {
-    shell.openPath(filePath);
-    return { success: true, action: 'opened_path' };
+    throw new Error('Downloaded update file is not a valid Windows executable installer (.exe).');
   }
 });
 
