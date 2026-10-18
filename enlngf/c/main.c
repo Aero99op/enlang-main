@@ -40,12 +40,16 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         const char* src = argv[2];
-        char outname[256];
+        char outname[512];
         const char* out = NULL;
         if (argc >= 5 && strcmp(argv[3], "-o") == 0) {
             out = argv[4];
         } else {
-            snprintf(outname, sizeof(outname), "%s.html", src);
+            strncpy(outname, src, sizeof(outname) - 1);
+            outname[sizeof(outname) - 1] = '\0';
+            char* dot = strrchr(outname, '.');
+            if (dot) strcpy(dot, ".html");
+            else strcat(outname, ".html");
             out = outname;
         }
 

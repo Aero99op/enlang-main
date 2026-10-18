@@ -45,8 +45,12 @@ class ENLGDLexer:
                 continue
 
             raw_line = line_no_comment.lstrip()
-            # Support and skip standard domain type header (e.g. 'type enlgd')
-            if raw_line.lower().startswith("type ") and raw_line.lower().split()[1].rstrip(":") in ("enlgd", "design", "css", "styles", "style"):
+            # Support and skip standard domain type header (e.g. 'type enlgd', 'type enlngd')
+            if raw_line.lower().startswith("type ") and len(raw_line.lower().split()) > 1 and raw_line.lower().split()[1].rstrip(":;") in ("enlgd", "enlngd", "enlang", "enlangg", "design", "css", "styles", "style"):
+                continue
+
+            # Skip display logging statements (e.g. display "...")
+            if raw_line.lower().startswith("display \"") or raw_line.lower().startswith("display '"):
                 continue
 
             # Compute indentation

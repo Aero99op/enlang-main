@@ -45,8 +45,8 @@ def compile_enlgf_file(filepath: str, style_path: str = None, script_path: str =
     handled_styles = set()
     handled_scripts = set()
 
-    # 1. Auto-detect and compile referenced <link ... href="*.enlgd"> in HTML
-    link_matches = re.findall(r'<link[^>]*href=["\']([^"\']+\.enlgd)["\'][^>]*>', html)
+    # 1. Auto-detect and compile referenced <link ... href="*.enlgd|*.enlngd"> in HTML
+    link_matches = re.findall(r'<link[^>]*href=["\']([^"\']+\.(?:enlgd|enlngd))["\'][^>]*>', html)
     for enlgd_ref in link_matches:
         base_dir = os.path.dirname(os.path.abspath(filepath)) if os.path.exists(filepath) else "."
         full_ref_path = os.path.join(base_dir, enlgd_ref)
@@ -60,9 +60,9 @@ def compile_enlgf_file(filepath: str, style_path: str = None, script_path: str =
             except Exception as e:
                 print(f"[enlgf Server Warning] Failed to compile referenced stylesheet '{enlgd_ref}': {e}", file=sys.stderr)
 
-    # 2. Auto-detect and compile referenced <script ... src="*.enlgs"> in HTML
+    # 2. Auto-detect and compile referenced <script ... src="*.enlgs|*.enlngs"> in HTML
     # Move custom enlgs scripts from <head> to before </body> so DOM elements are available
-    script_matches = re.findall(r'<script[^>]*src=["\']([^"\']+\.enlgs)["\'][^>]*>\s*</script>', html)
+    script_matches = re.findall(r'<script[^>]*src=["\']([^"\']+\.(?:enlgs|enlngs))["\'][^>]*>\s*</script>', html)
     for enlgs_ref in script_matches:
         base_dir = os.path.dirname(os.path.abspath(filepath)) if os.path.exists(filepath) else "."
         full_ref_path = os.path.join(base_dir, enlgs_ref)
@@ -83,39 +83,48 @@ def compile_enlgf_file(filepath: str, style_path: str = None, script_path: str =
             except Exception as e:
                 print(f"[enlgf Server Warning] Failed to compile referenced script '{enlgs_ref}': {e}", file=sys.stderr)
 
-    # 3. Auto-detect matching .enlgd stylesheet if not explicitly provided and not already handled
+    # 3. Auto-detect matching .enlngd / .enlgd stylesheet if not explicitly provided and not already handled
     if style_path is None:
-        auto_style = f"{os.path.splitext(filepath)[0]}.enlgd"
-        if os.path.exists(auto_style):
-            style_path = auto_style
+        base_name = os.path.splitext(filepath)[0]
+        for ext in (".enlngd", ".enlgd"):
+            candidate = f"{base_name}{ext}"
+            if os.path.exists(candidate):
+                style_path = candidate
+                break
 
     if style_path and os.path.exists(style_path):
         abs_style = os.path.normpath(os.path.abspath(style_path))
         if abs_style not in handled_styles:
             try:
-                if style_path.endswith(".enlgd"):
+                if style_path.endswith((".enlgd", ".enlngd")):
                     from enlgd.compiler import compile_enlgd_file
                     css_content = compile_enlgd_file(style_path)
                 else:
                     with open(style_path, "r", encoding="utf-8") as sf:
                         css_content = sf.read()
                 style_tag = f"    <style>\n{css_content}\n    </style>\n  </head>"
-                html = html.replace("  </head>", style_tag, 1)
+                if "  </head>" in html:
+                    html = html.replace("  </head>", style_tag, 1)
+                elif "</head>" in html:
+                    html = html.replace("</head>", style_tag, 1)
                 handled_styles.add(abs_style)
             except Exception as e:
                 print(f"[enlgf Server Warning] Failed to compile stylesheet '{style_path}': {e}", file=sys.stderr)
 
-    # 4. Auto-detect matching .enlgs script if not explicitly provided and not already handled
+    # 4. Auto-detect matching .enlngs / .enlgs script if not explicitly provided and not already handled
     if script_path is None:
-        auto_script = f"{os.path.splitext(filepath)[0]}.enlgs"
-        if os.path.exists(auto_script):
-            script_path = auto_script
+        base_name = os.path.splitext(filepath)[0]
+        for ext in (".enlngs", ".enlgs"):
+            candidate = f"{base_name}{ext}"
+            if os.path.exists(candidate):
+                script_path = candidate
+                break
 
     if script_path and os.path.exists(script_path):
         abs_script = os.path.normpath(os.path.abspath(script_path))
         if abs_script not in handled_scripts:
             try:
-                if script_path.endswith(".enlgs"):
+                if script_path.endswith((".enlgs", ".enlngs")):
                     from enlgs.compiler import compile_enlgs_file
                     js_content = compile_enlgs_file(script_path)
                 else:

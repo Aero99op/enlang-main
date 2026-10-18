@@ -7,7 +7,7 @@ int main(int argc, char* argv[]) {
         printf("  enlngm <file.enlngm>                         Launch Native Smartphone Simulator Window\n");
         printf("  enlngm run <file.enlngm>                     Launch Native Smartphone Simulator Window\n");
         printf("  enlngm build <file.enlngm> [--target <apk|ipa>] [-o <out>] Build production package\n");
-        printf("  enlngm export <file.enlngm> [-o <out.dart>]  Export to Flutter/Dart source code\n");
+        printf("  enlngm export <file.enlngm> [-o <out.c>]     Export to standalone C99 mobile source\n");
         printf("  enlngm --version                             Display version information\n");
         return 0;
     }
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
 
     if (strcmp(argv[1], "export") == 0) {
         if (argc < 3) {
-            fprintf(stderr, "Usage: enlngm export <file.enlngm> [-o <out.dart>]\n");
+            fprintf(stderr, "Usage: enlngm export <file.enlngm> [-o <out.c>]\n");
             return 1;
         }
         const char* src = argv[2];
@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
         const char* out = NULL;
         if (argc >= 5 && strcmp(argv[3], "-o") == 0) out = argv[4];
         else {
-            snprintf(outname, sizeof(outname), "%s.dart", src);
+            snprintf(outname, sizeof(outname), "%s.c", src);
             out = outname;
         }
         EnlngmApp* app = enlngm_create_app();
@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
             enlngm_free_app(app);
             return 1;
         }
-        int res = enlngm_export_dart(app, out);
+        int res = enlngm_export_c(app, out);
         enlngm_free_app(app);
         return res;
     }

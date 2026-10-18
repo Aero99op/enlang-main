@@ -58,8 +58,13 @@ class ENLGSLexer:
             if not stripped_line:
                 continue
 
-            # Support and skip standard domain type header (e.g. 'type enlgs')
-            if stripped_line.lower().startswith("type ") and stripped_line.lower().split()[1].rstrip(":") in ("enlgs", "script", "js"):
+            # Support and skip standard domain type header (e.g. 'type enlgs', 'type enlngs;', 'in script:')
+            clean_hdr = stripped_line.lower().rstrip(";:")
+            if clean_hdr.startswith("type ") and len(clean_hdr.split()) > 1 and clean_hdr.split()[1] in ("enlgs", "enlngs", "enlang", "enlangg", "script", "js"):
+                continue
+            if clean_hdr in ("in script", "start script", "type enlgs", "type enlngs", "type enlang", "type enlangg"):
+                continue
+            if clean_hdr in ("end", "end of script", "end of block"):
                 continue
 
             # Compute indentation

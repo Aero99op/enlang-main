@@ -14,6 +14,8 @@ import subprocess
 import sys
 import tempfile
 import time
+import secrets
+import urllib.parse
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -25,6 +27,43 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEBSITE_DIR = os.path.join(BASE_DIR, "website")
 HOME_DIR = os.path.expanduser("~")
 DEFAULT_ENLANG_BIN = os.path.join(HOME_DIR, ".enlangg", "bin")
+
+# Secure Token Management
+BRIDGE_TOKEN = os.environ.get("ENLANG_BRIDGE_TOKEN")
+if not BRIDGE_TOKEN:
+    token_file = os.path.join(DEFAULT_ENLANG_BIN, ".bridge_token")
+    try:
+        os.makedirs(DEFAULT_ENLANG_BIN, exist_ok=True)
+        if os.path.exists(token_file):
+            with open(token_file, "r", encoding="utf-8") as f:
+                BRIDGE_TOKEN = f.read().strip()
+        if not BRIDGE_TOKEN:
+            BRIDGE_TOKEN = secrets.token_hex(16)
+            with open(token_file, "w", encoding="utf-8") as f:
+                f.write(BRIDGE_TOKEN)
+    except Exception:
+        BRIDGE_TOKEN = secrets.token_hex(16)
+
+ALLOWED_ORIGIN_HOSTS = {
+    "localhost",
+    "127.0.0.1",
+    "enlangg.vercel.app",
+    "enlangg.site"
+}
+
+def is_allowed_origin(origin_header):
+    if not origin_header:
+        return True
+    if origin_header.lower() == "null":
+        return False
+    try:
+        parsed = urllib.parse.urlparse(origin_header)
+        hostname = (parsed.hostname or "").lower()
+        if hostname in ALLOWED_ORIGIN_HOSTS or hostname.endswith(".enlangg.vercel.app") or hostname.endswith(".enlangg.site"):
+            return True
+        return False
+    except Exception:
+        return False
 
 def find_binary(name):
     target_ext = ".exe" if platform.system() == "Windows" else ""
@@ -67,18 +106,31 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=WEBSITE_DIR if os.path.exists(WEBSITE_DIR) else BASE_DIR, **kwargs)
 
     def end_headers(self):
-        # Enable Full CORS for Web IDE connectivity
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Enlang-Source")
+        origin = self.headers.get("Origin")
+        if origin and is_allowed_origin(origin):
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Enlang-Source, X-Enlang-Token, Authorization")
+            self.send_header("Access-Control-Allow-Credentials", "true")
+            self.send_header("Vary", "Origin")
         self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
         super().end_headers()
 
     def do_OPTIONS(self):
+        origin = self.headers.get("Origin")
+        if origin and not is_allowed_origin(origin):
+            self.send_response(403)
+            self.end_headers()
+            return
         self.send_response(200)
         self.end_headers()
 
     def do_GET(self):
+        origin = self.headers.get("Origin")
+        if origin and not is_allowed_origin(origin):
+            self.send_error_json(403, "Forbidden: Origin not authorized to access Enlang bridge.")
+            return
+
         if self.path in ("/health", "/api/health", "/status"):
             binaries = detect_installed_binaries()
             resp = {
@@ -88,6 +140,7 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
                 "defaultBinDir": DEFAULT_ENLANG_BIN,
                 "binaries": binaries,
                 "activeInstalled": any(v["found"] for v in binaries.values()),
+                "authRequired": True,
                 "timestamp": int(time.time() * 1000)
             }
             body = json.dumps(resp, indent=2).encode("utf-8")
@@ -102,7 +155,26 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
+        origin = self.headers.get("Origin")
+        if origin and not is_allowed_origin(origin):
+            self.send_error_json(403, "Forbidden: Origin not authorized to access Enlang bridge.")
+            return
+
         if self.path in ("/api/run", "/run"):
+            # Verify authentication token
+            req_token = self.headers.get("X-Enlang-Token")
+            if not req_token:
+                auth_header = self.headers.get("Authorization", "")
+                if auth_header.startswith("Bearer "):
+                    req_token = auth_header[7:].strip()
+            if not req_token and "?" in self.path:
+                parsed_q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                req_token = parsed_q.get("token", [None])[0]
+
+            if not req_token or req_token != BRIDGE_TOKEN:
+                self.send_error_json(401, "Unauthorized: Invalid or missing Enlang bridge token.")
+                return
+
             content_length = int(self.headers.get("Content-Length", 0))
             raw_body = self.rfile.read(content_length).decode("utf-8")
             
@@ -262,6 +334,8 @@ def run_bridge_server(port=DEFAULT_PORT):
     print(f"  [ENLANGG] NATIVE BRIDGE & STUDIO DAEMON LIVE ON PORT {port}")
     print(f"  Local Bridge API : http://127.0.0.1:{port}/health")
     print(f"  Local Studio UI  : http://127.0.0.1:{port}/studio.html")
+    print(f"  Security Token   : {BRIDGE_TOKEN}")
+    print(f"  CORS Protection  : Restricted to localhost & Enlang Studio")
     print(f"  Detected Binaries: {found_count}/7 detected in system / repo")
     for name, info in binaries.items():
         symbol = "+" if info["found"] else "-"

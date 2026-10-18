@@ -102,6 +102,46 @@ def _tokens_to_expr(tokens: List[Token]) -> str:
                 parts.append(f"{source_expr}.find(item => {predicate_expr})")
                 break
         
+        # Check for 'call length with <expr>' or 'length with <expr>'
+        if t_val == "call" and i + 1 < length and tokens[i+1].value.lower() == "length":
+            expr_start = i + 2
+            if expr_start < length and tokens[expr_start].value.lower() == "with":
+                expr_start += 1
+            expr_str = _tokens_to_expr(tokens[expr_start:])
+            parts.append(f"({expr_str}).length")
+            break
+        elif t_val == "length" and i + 1 < length and tokens[i+1].value.lower() == "with":
+            expr_str = _tokens_to_expr(tokens[i+2:])
+            parts.append(f"({expr_str}).length")
+            break
+
+        # Check for bracket slicing: target[start to end]
+        if t.type == TokenType.SYMBOL and t.value == "[":
+            # Find matching ']'
+            close_idx = -1
+            to_idx = -1
+            depth = 1
+            for k in range(i + 1, length):
+                if tokens[k].type == TokenType.SYMBOL and tokens[k].value == "[":
+                    depth += 1
+                elif tokens[k].type == TokenType.SYMBOL and tokens[k].value == "]":
+                    depth -= 1
+                    if depth == 0:
+                        close_idx = k
+                        break
+                elif depth == 1 and tokens[k].value.lower() == "to":
+                    to_idx = k
+
+            if close_idx != -1 and to_idx != -1:
+                start_toks = tokens[i+1:to_idx]
+                end_toks = tokens[to_idx+1:close_idx]
+                start_e = _tokens_to_expr(start_toks)
+                end_e = _tokens_to_expr(end_toks)
+                target = parts.pop() if parts else ""
+                parts.append(f"{target}.slice({start_e}, {end_e})")
+                i = close_idx + 1
+                continue
+
         if t.type == TokenType.STRING:
             escaped = t.value.replace('"', '\\"')
             parts.append(f'"{escaped}"')
@@ -110,8 +150,20 @@ def _tokens_to_expr(tokens: List[Token]) -> str:
                 parts.append("&&" if t.value == "and" else "||")
             elif t.value in ("is", "are"):
                 parts.append("===")
+            elif t.value in ("the", "a", "an"):
+                pass # skip silent articles
             else:
-                pass # skip silent connector
+                next_tok = tokens[i+1] if i + 1 < length else None
+                prev_tok = tokens[i-1] if i > 0 else None
+                is_operand = False
+                if next_tok and (next_tok.type in (TokenType.OPERATOR, TokenType.SYMBOL) or next_tok.value in (")", "]", "}", "*", "+", "-", "/", "=", "==", "!=")):
+                    is_operand = True
+                if prev_tok and (prev_tok.type in (TokenType.OPERATOR, TokenType.SYMBOL) or prev_tok.value in ("(", "[", "{", "*", "+", "-", "/", "=", "==", "!=")):
+                    is_operand = True
+                if is_operand:
+                    parts.append(t.value)
+                else:
+                    pass
         elif t.type == TokenType.SYMBOL and t.value == ";":
             pass
         else:
@@ -170,6 +222,9 @@ class ENLGSParser:
                 if self._peek().type == TokenType.DEDENT:
                     self._advance()
                     break
+                if self._peek().type == TokenType.INDENT:
+                    self._advance()
+                    continue
                 stmt = self._parse_statement()
                 if stmt:
                     statements.append(stmt)
@@ -185,6 +240,9 @@ class ENLGSParser:
             if self._is_at_end():
                 break
             if self._peek().type == TokenType.DEDENT:
+                self._advance()
+                continue
+            if self._peek().type == TokenType.INDENT:
                 self._advance()
                 continue
             stmt = self._parse_statement()
@@ -203,51 +261,60 @@ class ENLGSParser:
 
         first_tok = line_tokens[0]
 
-        # 1. Check for recognized Hint Word intent
+        # 1. Check for raw JS lines (single-line returns, braces, closures)
+        raw_code = first_tok.raw_text.strip()
+        if raw_code in ("}", "})", "});", "{") or raw_code.startswith("}") or raw_code.startswith("})"):
+            return RawJSNode(code=raw_code)
+        if raw_code.endswith("{"):
+            if first_tok.type == TokenType.HINT and HINT_REGISTRY.get(first_tok.value.lower()) in ("DECLARE_VAR", "DECLARE_CONST"):
+                pass
+            else:
+                return RawJSNode(code=raw_code)
+
+        # 2. Check for recognized Hint Word intent
         if first_tok.type == TokenType.HINT:
             intent = HINT_REGISTRY.get(first_tok.value.lower())
+            if intent == "COND_IF" and not first_tok.raw_text.strip().endswith(":"):
+                suffix = "" if raw_code.endswith(";") or raw_code.endswith("{") or raw_code.endswith("}") else ";"
+                return RawJSNode(code=raw_code + suffix)
             if intent:
                 return self._build_node_from_intent(intent, line_tokens[1:], line_tokens)
 
-        # 2. Check for Destructuring assignment
+        # 3. Check for Destructuring assignment
         if first_tok.value.lower() in ("extract", "unpack"):
             return self._build_node_from_intent("EXTRACT_FROM", line_tokens[1:], line_tokens)
 
-        # 3. Check for Assignment
+        # 4. Check for Assignment
         if len(line_tokens) >= 3 and line_tokens[1].type == TokenType.OPERATOR and line_tokens[1].value in ("=", "+=", "-=", "*=", "/="):
             name = line_tokens[0].value
             op = line_tokens[1].value
             val = _tokens_to_expr(line_tokens[2:])
             return VarAssignNode(name=name, op=op, value=val)
 
-        # 4. Check for Function Call: fn(arg1, arg2)
+        # 5. Check for Function Call: fn(arg1, arg2)
         if len(line_tokens) >= 2 and line_tokens[0].type == TokenType.IDENTIFIER and line_tokens[1].type == TokenType.SYMBOL and line_tokens[1].value == "(":
             return RawJSNode(code=_tokens_to_expr(line_tokens) + ";")
 
-        # 5. Raw JavaScript Passthrough fallback
+        # 6. Raw JavaScript Passthrough fallback
         return RawJSNode(code=first_tok.raw_text)
 
     def _build_node_from_intent(self, intent: str, tokens: List[Token], line_tokens: List[Token]) -> ASTNode:
         # ── Variables & Constants ──
-        if intent == "DECLARE_VAR":
+        if intent in ("DECLARE_VAR", "DECLARE_CONST"):
             if not tokens:
                 return RawJSNode(code=line_tokens[0].raw_text)
-            name = tokens[0].value
-            val_tokens = tokens[1:]
-            if val_tokens and val_tokens[0].value.lower() in ("as", "="):
-                val_tokens = val_tokens[1:]
-            val = _tokens_to_expr(val_tokens) if val_tokens else None
-            return VarDeclNode(kind="let", name=name, value=val)
 
-        elif intent == "DECLARE_CONST":
-            if not tokens:
-                return RawJSNode(code=line_tokens[0].raw_text)
-            name = tokens[0].value
-            val_tokens = tokens[1:]
-            if val_tokens and val_tokens[0].value.lower() in ("as", "="):
+            cur_tokens = list(tokens)
+            while cur_tokens and cur_tokens[0].value.lower() in ("a", "an", "the", "state", "signal", "reactive", "variable") and len(cur_tokens) > 1:
+                cur_tokens.pop(0)
+
+            name = cur_tokens[0].value
+            val_tokens = cur_tokens[1:]
+            if val_tokens and val_tokens[0].value.lower() in ("as", "=", "of", "to", ":"):
                 val_tokens = val_tokens[1:]
             val = _tokens_to_expr(val_tokens) if val_tokens else None
-            return VarDeclNode(kind="const", name=name, value=val)
+            kind = "let" if intent == "DECLARE_VAR" else "const"
+            return VarDeclNode(kind=kind, name=name, value=val)
 
         elif intent == "PUT_INTO":
             if not tokens:
@@ -285,14 +352,36 @@ class ENLGSParser:
             if not tokens:
                 return RawJSNode(code=line_tokens[0].raw_text)
 
+            # Check for: update <target> with text/value/html <val>
+            with_idx = -1
+            for idx, t in enumerate(tokens):
+                if t.value.lower() == "with" and with_idx == -1:
+                    with_idx = idx
+                    break
+            if with_idx != -1 and with_idx > 0:
+                tgt = _tokens_to_expr(tokens[:with_idx]).strip('"\'')
+                val_toks = tokens[with_idx+1:]
+                prop = "text"
+                if val_toks and val_toks[0].value.lower() in ("text", "value", "html"):
+                    prop = val_toks[0].value.lower()
+                    val_toks = val_toks[1:]
+                val_e = _tokens_to_expr(val_toks)
+                return DOMSetNode(target=tgt, prop_type=prop, value=val_e)
+
             # Check for: set <prop> of <target> to <val> (e.g. set fov of camera to 60)
             of_idx = -1
             to_idx = -1
+            depth = 0
             for idx, t in enumerate(tokens):
-                if t.value.lower() == "of" and of_idx == -1:
-                    of_idx = idx
-                elif t.value.lower() == "to" and of_idx != -1 and to_idx == -1:
-                    to_idx = idx
+                if t.type == TokenType.SYMBOL and t.value in ("(", "[", "{"):
+                    depth += 1
+                elif t.type == TokenType.SYMBOL and t.value in (")", "]", "}"):
+                    depth = max(0, depth - 1)
+                elif depth == 0:
+                    if t.value.lower() == "of" and of_idx == -1:
+                        of_idx = idx
+                    elif t.value.lower() == "to" and of_idx != -1 and to_idx == -1:
+                        to_idx = idx
 
             if of_idx != -1 and to_idx != -1:
                 prop_name = _tokens_to_expr(tokens[:of_idx])
@@ -303,13 +392,19 @@ class ENLGSParser:
             # Check for: update/set/change/assign <target> to/as/= <val>
             to_sep_idx = -1
             eq_sep_idx = -1
+            depth = 0
             for idx, t in enumerate(tokens):
-                if t.value.lower() in ("to", "as") and to_sep_idx == -1:
-                    to_sep_idx = idx
-                elif t.value == "=" and eq_sep_idx == -1:
-                    eq_sep_idx = idx
+                if t.type == TokenType.SYMBOL and t.value in ("(", "[", "{"):
+                    depth += 1
+                elif t.type == TokenType.SYMBOL and t.value in (")", "]", "}"):
+                    depth = max(0, depth - 1)
+                elif depth == 0:
+                    if t.value == "=" and eq_sep_idx == -1:
+                        eq_sep_idx = idx
+                    elif t.value.lower() in ("to", "as") and to_sep_idx == -1:
+                        to_sep_idx = idx
 
-            sep_idx = to_sep_idx if to_sep_idx != -1 else eq_sep_idx
+            sep_idx = eq_sep_idx if eq_sep_idx != -1 else to_sep_idx
             if sep_idx != -1 and sep_idx > 0:
                 target_expr = _tokens_to_expr(tokens[:sep_idx])
                 val_expr = _tokens_to_expr(tokens[sep_idx+1:])
@@ -610,33 +705,41 @@ class ENLGSParser:
             is_variable = False
 
             if tokens:
-                target = tokens[0].value.strip('"\'')
-                is_variable = (tokens[0].type == TokenType.IDENTIFIER and tokens[0].value.lower() not in ("window", "document", "body"))
-                ev_phrase = " ".join([t.value.lower() for t in tokens[1:]])
-                if "click" in ev_phrase:
-                    event_type = "click"
-                elif "submit" in ev_phrase:
-                    event_type = "submit"
-                elif "change" in ev_phrase:
-                    event_type = "change"
-                elif "load" in ev_phrase:
-                    event_type = "load"
-                elif "receives" in ev_phrase or "message" in ev_phrase:
-                    event_type = "message"
-                elif "mousemove" in ev_phrase or "mouse moved" in ev_phrase or "moved" in ev_phrase:
-                    event_type = "mousemove"
-                elif "resize" in ev_phrase or "resized" in ev_phrase:
-                    event_type = "resize"
-                elif "scroll" in ev_phrase:
-                    event_type = "scroll"
-                elif "mouse-enter" in ev_phrase or "mouseenter" in ev_phrase:
-                    event_type = "mouseenter"
-                elif "mouse-left" in ev_phrase or "mouseleave" in ev_phrase:
-                    event_type = "mouseleave"
-                elif "press" in ev_phrase or "key" in ev_phrase:
-                    event_type = "keydown"
-                    if len(tokens) >= 3:
-                        key_filter = tokens[-1].value.strip('"\'')
+                first_low = tokens[0].value.lower()
+                event_keywords = ("click", "submit", "change", "load", "scroll", "input", "tap",
+                                  "keydown", "keyup", "keypress", "mouseenter", "mouseleave", "mousemove", "blur", "focus")
+                if first_low in event_keywords and len(tokens) >= 3 and tokens[1].value.lower() in ("of", "in", "on"):
+                    event_type = "click" if first_low == "tap" else first_low
+                    target = tokens[2].value.strip('"\'')
+                    is_variable = (tokens[2].type == TokenType.IDENTIFIER and tokens[2].value.lower() not in ("window", "document", "body"))
+                else:
+                    target = tokens[0].value.strip('"\'')
+                    is_variable = (tokens[0].type == TokenType.IDENTIFIER and tokens[0].value.lower() not in ("window", "document", "body"))
+                    ev_phrase = " ".join([t.value.lower() for t in tokens[1:]])
+                    if "click" in ev_phrase or "tap" in ev_phrase:
+                        event_type = "click"
+                    elif "submit" in ev_phrase:
+                        event_type = "submit"
+                    elif "change" in ev_phrase:
+                        event_type = "change"
+                    elif "load" in ev_phrase:
+                        event_type = "load"
+                    elif "receives" in ev_phrase or "message" in ev_phrase:
+                        event_type = "message"
+                    elif "mousemove" in ev_phrase or "mouse moved" in ev_phrase or "moved" in ev_phrase:
+                        event_type = "mousemove"
+                    elif "resize" in ev_phrase or "resized" in ev_phrase:
+                        event_type = "resize"
+                    elif "scroll" in ev_phrase:
+                        event_type = "scroll"
+                    elif "mouse-enter" in ev_phrase or "mouseenter" in ev_phrase:
+                        event_type = "mouseenter"
+                    elif "mouse-left" in ev_phrase or "mouseleave" in ev_phrase:
+                        event_type = "mouseleave"
+                    elif "press" in ev_phrase or "key" in ev_phrase:
+                        event_type = "keydown"
+                        if len(tokens) >= 3:
+                            key_filter = tokens[-1].value.strip('"\'')
 
             body = self._parse_block()
             return EventNode(target=target, event_type=event_type, key_filter=key_filter, is_variable=is_variable, body=body)
@@ -688,9 +791,12 @@ class ENLGSParser:
 
         elif intent == "FUNC_CALL":
             fn_name = tokens[0].value if tokens else "fn"
+            arg_tokens = tokens[1:]
+            if arg_tokens and arg_tokens[0].value.lower() in ("with", "using"):
+                arg_tokens = arg_tokens[1:]
             args = []
-            if len(tokens) > 1:
-                args = [_tokens_to_expr(tokens[1:])]
+            if arg_tokens:
+                args = [_tokens_to_expr(arg_tokens)]
             return FunctionCallNode(name=fn_name, args=args)
 
         # ── Conditionals ──
@@ -870,6 +976,77 @@ class ENLGSParser:
             val = _tokens_to_expr(clean_tokens[1:]) if len(clean_tokens) > 1 else None
             return StorageNode(action=action_map[intent], key=key, value=val)
 
+        # ── Network & Fetch ──
+        elif intent == "FETCH_GET":
+            clean_tokens = [t for t in tokens if t.value.lower() not in ("from", "the", "a", "an")]
+            resp_var = "data"
+            for idx, t in enumerate(clean_tokens):
+                if t.value.lower() in ("as", "into") and idx + 1 < len(clean_tokens):
+                    resp_var = clean_tokens[idx+1].value
+                    clean_tokens = clean_tokens[:idx]
+                    break
+            url = clean_tokens[0].value.strip('"\'') if clean_tokens else "/api/data"
+            body = self._parse_block()
+            return FetchNode(method="GET", url=url, response_var=resp_var, body=body)
+
+        elif intent == "FETCH_POST":
+            clean_tokens = list(tokens)
+            to_idx = -1
+            with_idx = -1
+            for idx, t in enumerate(clean_tokens):
+                if t.value.lower() == "to" and to_idx == -1:
+                    to_idx = idx
+                elif t.value.lower() == "with" and with_idx == -1:
+                    with_idx = idx
+
+            url = "/api/data"
+            body_expr = None
+            if to_idx != -1:
+                after_to = clean_tokens[to_idx+1:with_idx] if with_idx != -1 else clean_tokens[to_idx+1:]
+                if after_to:
+                    url = after_to[0].value.strip('"\'')
+                if with_idx != -1:
+                    body_expr = _tokens_to_expr(clean_tokens[with_idx+1:])
+                elif to_idx > 0:
+                    body_expr = _tokens_to_expr(clean_tokens[:to_idx])
+            else:
+                if clean_tokens:
+                    url = clean_tokens[0].value.strip('"\'')
+            body = self._parse_block()
+            return FetchNode(method="POST", url=url, body_expr=body_expr, response_var="data", body=body)
+
+        # ── Triggers & Navigation ──
+        elif intent == "TRIGGER_SCROLL":
+            clean_tokens = [t for t in tokens if t.value.lower() not in ("to", "the", "a", "an")]
+            target = clean_tokens[0].value.strip('"\'') if clean_tokens else ""
+            js_code = f"(document.getElementById('{target}') || document.querySelector('{target}') || document.querySelector('.{target}') || document.querySelector('#{target}'))?.scrollIntoView({{ behavior: 'smooth' }});"
+            return RawJSNode(code=js_code)
+
+        elif intent == "TRIGGER_MODAL":
+            msg_expr = _tokens_to_expr(tokens)
+            js_code = f"alert({msg_expr});"
+            return RawJSNode(code=js_code)
+
+        elif intent == "TRIGGER_TOAST":
+            msg_expr = _tokens_to_expr(tokens)
+            js_code = (
+                f"(function(msg) {{\n"
+                f"  console.log('[Toast]', msg);\n"
+                f"  if (typeof document !== 'undefined') {{\n"
+                f"    const toast = document.createElement('div');\n"
+                f"    toast.textContent = msg;\n"
+                f"    toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1e293b;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);transition:opacity 0.3s';\n"
+                f"    document.body.appendChild(toast);\n"
+                f"    setTimeout(() => {{ toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }}, 3000);\n"
+                f"  }}\n"
+                f"}})({msg_expr});"
+            )
+            return RawJSNode(code=js_code)
+
+        elif intent == "TRIGGER_ACTION":
+            expr = _tokens_to_expr(tokens)
+            return RawJSNode(code=f"{expr}();" if not expr.endswith(")") else f"{expr};")
+
         # ── Error Handling ──
         elif intent == "TRY_BLOCK":
             try_body = self._parse_block()
@@ -922,6 +1099,10 @@ class ENLGSParser:
                     self._advance()
                     break
             line_tokens.append(self._advance())
+        while line_tokens and line_tokens[0].type == TokenType.INDENT:
+            line_tokens.pop(0)
+        while line_tokens and line_tokens[-1].type == TokenType.SYMBOL and line_tokens[-1].value == ";":
+            line_tokens.pop()
         return line_tokens
 
     def _skip_newlines(self):

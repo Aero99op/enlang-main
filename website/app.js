@@ -1465,6 +1465,33 @@ function initPlayground() {
   let isPlaygroundBridgeConnected = false;
   const PLAYGROUND_BRIDGE_URL = 'http://127.0.0.1:5999';
 
+  function getPlaygroundBridgeToken() {
+    try {
+      return localStorage.getItem('enlang_bridge_token') || window.__ENLANG_BRIDGE_TOKEN || '';
+    } catch (_) {
+      return window.__ENLANG_BRIDGE_TOKEN || '';
+    }
+  }
+
+  function setPlaygroundBridgeToken(token) {
+    const clean = (token || '').trim();
+    window.__ENLANG_BRIDGE_TOKEN = clean;
+    try {
+      if (clean) localStorage.setItem('enlang_bridge_token', clean);
+      else localStorage.removeItem('enlang_bridge_token');
+    } catch (_) {}
+    return clean;
+  }
+
+  function promptPlaygroundBridgeToken(msg) {
+    const cur = getPlaygroundBridgeToken();
+    const entered = window.prompt(msg || 'Enter the Auth Token printed by enlangg-bridge in your terminal:', cur);
+    if (entered !== null && entered.trim()) {
+      return setPlaygroundBridgeToken(entered.trim());
+    }
+    return cur;
+  }
+
   async function checkPlaygroundBridge(userInitiated = false) {
     const dot = document.getElementById('statusNativeEngineDot');
     const text = document.getElementById('statusNativeEngineText');
@@ -1483,6 +1510,10 @@ function initPlayground() {
         const data = await res.json();
         if (data && data.status === 'online') {
           isPlaygroundBridgeConnected = true;
+          let token = getPlaygroundBridgeToken();
+          if (userInitiated && !token) {
+            token = promptPlaygroundBridgeToken('Connected to enlangg-bridge! Paste the Auth Token printed in the enlangg-bridge terminal:');
+          }
           if (dot) {
             dot.style.background = '#4ec9b0';
             dot.style.boxShadow = '0 0 8px #4ec9b0';
@@ -1536,11 +1567,31 @@ function initPlayground() {
     terminal.innerHTML = `<span class="term-cyan">⚡ [Native Engine ~/.enlangg/bin] Executing ${filename}...</span>\n`;
     const t0 = performance.now();
     try {
-      const res = await fetch(`${PLAYGROUND_BRIDGE_URL}/api/run`, {
+      let token = getPlaygroundBridgeToken();
+      if (!token) {
+        token = promptPlaygroundBridgeToken('Enter the Auth Token printed by enlangg-bridge in your terminal:');
+      }
+      let res = await fetch(`${PLAYGROUND_BRIDGE_URL}/api/run`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Enlang-Token': token
+        },
         body: JSON.stringify({ filename, content, lang: isDb ? 'enlngdb' : 'enlng' })
       });
+      if (res.status === 401) {
+        token = promptPlaygroundBridgeToken('Bridge rejected token (401 Unauthorized). Paste the current Auth Token from enlangg-bridge:');
+        if (token) {
+          res = await fetch(`${PLAYGROUND_BRIDGE_URL}/api/run`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Enlang-Token': token
+            },
+            body: JSON.stringify({ filename, content, lang: isDb ? 'enlngdb' : 'enlng' })
+          });
+        }
+      }
       const result = await res.json();
       const elapsed = (performance.now() - t0).toFixed(2);
       if (result.success) {

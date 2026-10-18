@@ -6,7 +6,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 #define ENLNGM_VERSION "5.3.0"
 #define MAX_MOBILE_WIDGETS 128
@@ -47,6 +49,6 @@ bool enlngm_parse_file(EnlngmApp* app, const char* filepath);
 
 int enlngm_run_simulator(const char* filepath);
 int enlngm_build_package(const char* filepath, const char* target, const char* outpath);
-int enlngm_export_dart(const EnlngmApp* app, const char* outpath);
+int enlngm_export_c(const EnlngmApp* app, const char* outpath);
 
 #endif /* ENLNGM_H */

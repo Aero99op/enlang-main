@@ -16,6 +16,8 @@ import sys
 import json
 import time
 import argparse
+import urllib.parse
+import secrets
 from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 from typing import Optional, Dict, Any, List
 from pathlib import Path
@@ -26,6 +28,27 @@ from enlngdb.storage import NativeStorageEngine, StorageError
 from enlngdb.locking import DatabaseLock
 from enlngdb.paging import estimate_memory_bytes
 
+ALLOWED_ORIGIN_HOSTS = {
+    "localhost",
+    "127.0.0.1",
+    "enlangg.vercel.app",
+    "enlangg.site"
+}
+
+def is_allowed_origin(origin_header: Optional[str]) -> bool:
+    if not origin_header:
+        return True
+    if origin_header.lower() == "null":
+        return False
+    try:
+        parsed = urllib.parse.urlparse(origin_header)
+        hostname = (parsed.hostname or "").lower()
+        if hostname in ALLOWED_ORIGIN_HOSTS or hostname.endswith(".enlangg.vercel.app") or hostname.endswith(".enlangg.site"):
+            return True
+        return False
+    except Exception:
+        return False
+
 
 SERVER_START_TIME = time.time()
 
@@ -35,13 +58,35 @@ class EnlngDBRequestHandler(BaseHTTPRequestHandler):
 
     server_version = "EnlngDB-Sovereign-HTTP/2.0"
 
+    def _check_auth(self) -> bool:
+        required_token = getattr(self.server, "auth_token", None)
+        if not required_token:
+            return True
+        auth_header = self.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:].strip()
+            return token == required_token
+        token_header = self.headers.get("X-Enlngdb-Token", "")
+        if token_header:
+            return token_header == required_token
+        return False
+
     def _set_cors_headers(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+        origin = self.headers.get("Origin")
+        if origin and is_allowed_origin(origin):
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Enlngdb-Token")
+            self.send_header("Access-Control-Allow-Credentials", "true")
+            self.send_header("Vary", "Origin")
 
     def do_OPTIONS(self):
         """Handles CORS preflight requests."""
+        origin = self.headers.get("Origin")
+        if origin and not is_allowed_origin(origin):
+            self.send_response(403)
+            self.end_headers()
+            return
         self.send_response(204)
         self._set_cors_headers()
         self.end_headers()
@@ -77,6 +122,9 @@ class EnlngDBRequestHandler(BaseHTTPRequestHandler):
             return
 
         elif self.path in ("/api/tables", "/tables"):
+            if not self._check_auth():
+                self._send_json({"success": False, "error": "Unauthorized: Invalid or missing authentication token."}, status=401)
+                return
             tables_info = []
             for name, tbl in engine.storage.tables.items():
                 tables_info.append({
@@ -94,6 +142,9 @@ class EnlngDBRequestHandler(BaseHTTPRequestHandler):
             return
 
         elif self.path.startswith("/api/table/"):
+            if not self._check_auth():
+                self._send_json({"success": False, "error": "Unauthorized: Invalid or missing authentication token."}, status=401)
+                return
             tbl_name = self.path.replace("/api/table/", "").strip()
             if tbl_name in engine.storage.tables:
                 tbl = engine.storage.tables[tbl_name]
@@ -117,6 +168,10 @@ class EnlngDBRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         """Handles POST requests (query execution and batch execution)."""
         engine: NativeExecutionEngine = self.server.engine  # type: ignore
+
+        if not self._check_auth():
+            self._send_json({"success": False, "error": "Unauthorized: Invalid or missing authentication token."}, status=401)
+            return
 
         content_length = int(self.headers.get("Content-Length", 0))
         if content_length <= 0:
@@ -210,14 +265,28 @@ class EnlngDBRequestHandler(BaseHTTPRequestHandler):
 class EnlngDBHttpServer(ThreadingHTTPServer):
     """Threading HTTP server with embedded sovereign EnlngDB engine instance."""
 
-    def __init__(self, server_address, RequestHandlerClass, db_path: Optional[str] = None):
+    def __init__(self, server_address, RequestHandlerClass, db_path: Optional[str] = None, auth_token: Optional[str] = None):
         super().__init__(server_address, RequestHandlerClass)
         self.engine = NativeExecutionEngine(db_path=db_path, stream_output=False)
+        self.auth_token = auth_token if auth_token is not None else os.environ.get("ENLNGDB_TOKEN")
+        if self.auth_token is None:
+            token_path = os.path.expanduser("~/.enlangg/bin/.enlngdb_token")
+            try:
+                os.makedirs(os.path.dirname(token_path), exist_ok=True)
+                if os.path.exists(token_path):
+                    with open(token_path, "r", encoding="utf-8") as f:
+                        self.auth_token = f.read().strip()
+                if not self.auth_token:
+                    self.auth_token = secrets.token_hex(16)
+                    with open(token_path, "w", encoding="utf-8") as f:
+                        f.write(self.auth_token)
+            except Exception:
+                self.auth_token = secrets.token_hex(16)
 
 
-def serve_enlngdb(db_path: Optional[str] = None, host: str = "0.0.0.0", port: int = 8080) -> EnlngDBHttpServer:
+def serve_enlngdb(db_path: Optional[str] = None, host: str = "127.0.0.1", port: int = 8080, auth_token: Optional[str] = None) -> EnlngDBHttpServer:
     """Instantiates and starts an EnlngDB HTTP Server Daemon."""
-    server = EnlngDBHttpServer((host, port), EnlngDBRequestHandler, db_path=db_path)
+    server = EnlngDBHttpServer((host, port), EnlngDBRequestHandler, db_path=db_path, auth_token=auth_token)
     return server
 
 
@@ -225,7 +294,8 @@ def main():
     parser = argparse.ArgumentParser(description="EnlngDB Sovereign Network HTTP Server Daemon")
     parser.add_argument("--db", default=None, help="Path to sovereign database file (.edb / .enlngdb)")
     parser.add_argument("--port", type=int, default=8080, help="Port to listen on (default: 8080)")
-    parser.add_argument("--host", default="0.0.0.0", help="Host address to bind to (default: 0.0.0.0)")
+    parser.add_argument("--host", default="127.0.0.1", help="Host address to bind to (default: 127.0.0.1)")
+    parser.add_argument("--token", default=None, help="Optional authentication bearer token")
 
     args = parser.parse_args()
 
@@ -234,10 +304,11 @@ def main():
     print(f"  ENLNGDB SOVEREIGN NETWORK SERVER DAEMON LIVE")
     print(f"  Host: http://{args.host}:{args.port}")
     print(f"  Active Database: {db_display}")
+    print(f"  Auth: {'Token Required' if (args.token or os.environ.get('ENLNGDB_TOKEN')) else 'Local Unrestricted'}")
     print(f"  Zero SQL | Zero External Dependencies | Multi-Threaded")
     print(f"=======================================================\n")
 
-    server = serve_enlngdb(db_path=args.db, host=args.host, port=args.port)
+    server = serve_enlngdb(db_path=args.db, host=args.host, port=args.port, auth_token=args.token)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

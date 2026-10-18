@@ -1,3 +1,7 @@
+#ifndef __USE_MINGW_ANSI_STDIO
+#define __USE_MINGW_ANSI_STDIO 1
+#endif
+
 #include "enlngdb.h"
 #include <ctype.h>
 #include <time.h>
@@ -69,7 +73,7 @@ void enlng_free_val(EnlngVal* v) {
     }
 }
 
-static EnlngVal enlng_copy_val(const EnlngVal* src) {
+EnlngVal enlng_copy_val(const EnlngVal* src) {
     EnlngVal dest = *src;
     if (src->type == ENLNG_VAL_STRING && src->str_val) {
         dest.str_val = strdup(src->str_val);
@@ -162,8 +166,113 @@ bool enlngdb_drop_table(EnlngDatabase* db, const char* name, bool confirmed) {
     return false;
 }
 
+static int str_ci_cmp(const char* s1, const char* s2) {
+    if (!s1 && !s2) return 0;
+    if (!s1) return -1;
+    if (!s2) return 1;
+    while (*s1 && *s2) {
+        int diff = tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
+        if (diff != 0) return diff;
+        s1++;
+        s2++;
+    }
+    return tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
+}
+
+static bool sql_like_match(const char* pattern, const char* text) {
+    if (!pattern || !text) return false;
+    while (*pattern) {
+        if (*pattern == '%') {
+            pattern++;
+            if (*pattern == '\0') return true;
+            while (*text) {
+                if (sql_like_match(pattern, text)) return true;
+                text++;
+            }
+            return false;
+        } else if (*pattern == '_') {
+            if (*text == '\0') return false;
+            pattern++;
+            text++;
+        } else {
+            if (tolower((unsigned char)*pattern) != tolower((unsigned char)*text)) {
+                return false;
+            }
+            pattern++;
+            text++;
+        }
+    }
+    return *text == '\0';
+}
+
+int enlng_compare_vals(const EnlngVal* a, const EnlngVal* b) {
+    if (a->type == ENLNG_VAL_NULL && b->type == ENLNG_VAL_NULL) return 0;
+    if (a->type == ENLNG_VAL_NULL) return -1;
+    if (b->type == ENLNG_VAL_NULL) return 1;
+
+    // Numeric comparison
+    if ((a->type == ENLNG_VAL_INT || a->type == ENLNG_VAL_DOUBLE) &&
+        (b->type == ENLNG_VAL_INT || b->type == ENLNG_VAL_DOUBLE)) {
+        double da = (a->type == ENLNG_VAL_DOUBLE) ? a->double_val : (double)a->int_val;
+        double db = (b->type == ENLNG_VAL_DOUBLE) ? b->double_val : (double)b->int_val;
+        if (fabs(da - db) < 1e-9) return 0;
+        return (da < db) ? -1 : 1;
+    }
+
+    if (a->type == ENLNG_VAL_STRING && b->type == ENLNG_VAL_STRING) {
+        const char* sa = a->str_val ? a->str_val : "";
+        const char* sb = b->str_val ? b->str_val : "";
+        return str_ci_cmp(sa, sb);
+    }
+
+    if (a->type == ENLNG_VAL_BOOL && b->type == ENLNG_VAL_BOOL) {
+        return (a->bool_val ? 1 : 0) - (b->bool_val ? 1 : 0);
+    }
+
+    return 0;
+}
+#define compare_vals enlng_compare_vals
+
 bool enlngdb_insert_row(EnlngTable* table, const EnlngVal* cells, int cell_count) {
     if (!table || !cells) return false;
+
+    // Check if table has a primary key or unique identifier column for idempotent re-runs
+    int id_col_idx = -1;
+    for (int c = 0; c < table->col_count; c++) {
+        if (table->columns[c].is_primary_key ||
+            str_ci_cmp(table->columns[c].name, "id") == 0 ||
+            str_ci_cmp(table->columns[c].name, "code") == 0 ||
+            str_ci_cmp(table->columns[c].name, "key") == 0) {
+            id_col_idx = c;
+            break;
+        }
+    }
+    if (id_col_idx < 0) {
+        for (int c = 0; c < table->col_count; c++) {
+            size_t nlen = strlen(table->columns[c].name);
+            if (nlen > 3 && str_ci_cmp(table->columns[c].name + nlen - 3, "_id") == 0) {
+                id_col_idx = c;
+                break;
+            }
+        }
+    }
+
+    if (id_col_idx >= 0 && id_col_idx < cell_count) {
+        for (size_t r = 0; r < table->row_count; r++) {
+            if (id_col_idx < table->rows[r].cell_count) {
+                if (compare_vals(&table->rows[r].cells[id_col_idx], &cells[id_col_idx]) == 0) {
+                    // Update existing row in place (upsert idempotency)
+                    for (int c = 0; c < cell_count && c < table->rows[r].cell_count; c++) {
+                        enlng_free_val(&table->rows[r].cells[c]);
+                        table->rows[r].cells[c] = enlng_copy_val(&cells[c]);
+                    }
+                    table->rows[r].version++;
+                    table->version++;
+                    return true;
+                }
+            }
+        }
+    }
 
     if (table->row_count >= table->row_capacity) {
         size_t new_cap = table->row_capacity == 0 ? 16 : table->row_capacity * 2;
@@ -187,40 +296,11 @@ bool enlngdb_insert_row(EnlngTable* table, const EnlngVal* cells, int cell_count
     return true;
 }
 
-static int compare_vals(const EnlngVal* a, const EnlngVal* b) {
-    if (a->type == ENLNG_VAL_NULL && b->type == ENLNG_VAL_NULL) return 0;
-    if (a->type == ENLNG_VAL_NULL) return -1;
-    if (b->type == ENLNG_VAL_NULL) return 1;
+#define compare_vals enlng_compare_vals
 
-    // Numeric comparison
-    if ((a->type == ENLNG_VAL_INT || a->type == ENLNG_VAL_DOUBLE) &&
-        (b->type == ENLNG_VAL_INT || b->type == ENLNG_VAL_DOUBLE)) {
-        double da = (a->type == ENLNG_VAL_DOUBLE) ? a->double_val : (double)a->int_val;
-        double db = (b->type == ENLNG_VAL_DOUBLE) ? b->double_val : (double)b->int_val;
-        if (fabs(da - db) < 1e-9) return 0;
-        return (da < db) ? -1 : 1;
-    }
-
-    if (a->type == ENLNG_VAL_STRING && b->type == ENLNG_VAL_STRING) {
-        const char* sa = a->str_val ? a->str_val : "";
-        const char* sb = b->str_val ? b->str_val : "";
-#ifdef _WIN32
-        return _stricmp(sa, sb);
-#else
-        return strcasecmp(sa, sb);
-#endif
-    }
-
-    if (a->type == ENLNG_VAL_BOOL && b->type == ENLNG_VAL_BOOL) {
-        return a->bool_val - b->bool_val;
-    }
-
-    return 0;
-}
-
-static bool eval_condition(const EnlngVal* val, EnlngOp op, const EnlngVal* target) {
+bool enlng_eval_condition(const EnlngVal* val, EnlngOp op, const EnlngVal* target) {
     if (op == OP_NONE) return true;
-    int cmp = compare_vals(val, target);
+    int cmp = enlng_compare_vals(val, target);
     switch (op) {
         case OP_EQ:  return cmp == 0;
         case OP_NEQ: return cmp != 0;
@@ -230,13 +310,27 @@ static bool eval_condition(const EnlngVal* val, EnlngOp op, const EnlngVal* targ
         case OP_LTE: return cmp <= 0;
         case OP_LIKE: {
             if (val->type == ENLNG_VAL_STRING && target->type == ENLNG_VAL_STRING) {
-                return strstr(val->str_val, target->str_val) != NULL;
+                const char* pat = target->str_val ? target->str_val : "";
+                const char* txt = val->str_val ? val->str_val : "";
+                if (strchr(pat, '%') != NULL || strchr(pat, '_') != NULL) {
+                    return sql_like_match(pat, txt);
+                }
+                char low_pat[256], low_txt[512];
+                size_t plen = strlen(pat);
+                size_t tlen = strlen(txt);
+                if (plen < sizeof(low_pat) && tlen < sizeof(low_txt)) {
+                    for (size_t i = 0; i <= plen; i++) low_pat[i] = (char)tolower((unsigned char)pat[i]);
+                    for (size_t i = 0; i <= tlen; i++) low_txt[i] = (char)tolower((unsigned char)txt[i]);
+                    return strstr(low_txt, low_pat) != NULL;
+                }
+                return sql_like_match(pat, txt);
             }
             return false;
         }
         default: return true;
     }
 }
+#define eval_condition enlng_eval_condition
 
 EnlngQueryResult* enlngdb_find(EnlngTable* table, const char* filter_col, EnlngOp op, const EnlngVal* target_val, int limit, int offset) {
     if (!table) return NULL;
@@ -506,7 +600,7 @@ void enlngdb_print_result(const EnlngQueryResult* res) {
     }
     printf("\n");
 
-    printf("%zu row(s) in set (%.2f ms)\n\n", res->row_count, res->execution_time_ms);
+    printf("%lu row(s) in set (%.2f ms)\n\n", (unsigned long)res->row_count, res->execution_time_ms);
 }
 
 void enlngdb_print_tables(const EnlngDatabase* db) {

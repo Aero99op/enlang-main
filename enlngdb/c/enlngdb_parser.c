@@ -19,6 +19,19 @@ static bool str_starts_with_ci(const char* str, const char* prefix) {
     return true;
 }
 
+static int str_ci_cmp(const char* s1, const char* s2) {
+    if (!s1 && !s2) return 0;
+    if (!s1) return -1;
+    if (!s2) return 1;
+    while (*s1 && *s2) {
+        int diff = tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
+        if (diff != 0) return diff;
+        s1++;
+        s2++;
+    }
+    return tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
+}
+
 static EnlngVal parse_val_token(const char* token) {
     char clean[256];
     strncpy(clean, token, sizeof(clean) - 1);
@@ -119,6 +132,73 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         return true;
     }
 
+    // display / print
+    if (str_starts_with_ci(stmt, "display ") || str_starts_with_ci(stmt, "print ")) {
+        const char* p = stmt + (str_starts_with_ci(stmt, "display ") ? 8 : 6);
+        while (isspace((unsigned char)*p)) p++;
+        char clean_msg[1024];
+        strncpy(clean_msg, p, sizeof(clean_msg) - 1);
+        clean_msg[sizeof(clean_msg) - 1] = '\0';
+        char* msg = trim(clean_msg);
+        size_t mlen = strlen(msg);
+        if (mlen >= 2 && ((msg[0] == '"' && msg[mlen - 1] == '"') || (msg[0] == '\'' && msg[mlen - 1] == '\''))) {
+            msg[mlen - 1] = '\0';
+            msg++;
+        }
+        if (print_output) {
+            printf("%s\n", msg);
+        }
+        return true;
+    }
+
+    // hint
+    if (str_starts_with_ci(stmt, "hint ") || str_starts_with_ci(stmt, "hint:")) {
+        return true;
+    }
+
+    // save database to "<filename>"
+    if (str_starts_with_ci(stmt, "save database to ") || str_starts_with_ci(stmt, "save database ")) {
+        const char* p = stmt + (str_starts_with_ci(stmt, "save database to ") ? 17 : 14);
+        while (isspace((unsigned char)*p)) p++;
+        char path_buf[256];
+        strncpy(path_buf, p, sizeof(path_buf) - 1);
+        path_buf[sizeof(path_buf) - 1] = '\0';
+        char* path = trim(path_buf);
+        size_t plen = strlen(path);
+        if (plen >= 2 && ((path[0] == '"' && path[plen - 1] == '"') || (path[0] == '\'' && path[plen - 1] == '\''))) {
+            path[plen - 1] = '\0';
+            path++;
+        }
+        bool ok = enlngdb_save(db, path);
+        if (ok && print_output) {
+            printf("Database saved to '%s'. (0.02 ms)\n\n", path);
+        }
+        return ok;
+    }
+
+    // open database to "<filename>" / load database from "<filename>"
+    if (str_starts_with_ci(stmt, "open database to ") || str_starts_with_ci(stmt, "open database ") || str_starts_with_ci(stmt, "load database from ")) {
+        const char* p = stmt;
+        if (str_starts_with_ci(p, "open database to ")) p += 17;
+        else if (str_starts_with_ci(p, "open database ")) p += 14;
+        else if (str_starts_with_ci(p, "load database from ")) p += 19;
+        while (isspace((unsigned char)*p)) p++;
+        char path_buf[256];
+        strncpy(path_buf, p, sizeof(path_buf) - 1);
+        path_buf[sizeof(path_buf) - 1] = '\0';
+        char* path = trim(path_buf);
+        size_t plen = strlen(path);
+        if (plen >= 2 && ((path[0] == '"' && path[plen - 1] == '"') || (path[0] == '\'' && path[plen - 1] == '\''))) {
+            path[plen - 1] = '\0';
+            path++;
+        }
+        bool ok = enlngdb_load(db, path);
+        if (ok && print_output) {
+            printf("Database loaded from '%s'. (0.02 ms)\n\n", path);
+        }
+        return ok;
+    }
+
     // 1. show tables
     if (str_starts_with_ci(stmt, "show tables")) {
         if (print_output) enlngdb_print_tables(db);
@@ -187,20 +267,39 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         }
     }
 
-    // 4. create table <name> with <col1>, <col2>...
+    // 4. create table [if not exists] <name> with <col1>, <col2>...
     if (str_starts_with_ci(stmt, "create table ")) {
+        const char* p = stmt + 13;
+        while (isspace((unsigned char)*p)) p++;
+        bool if_not_exists = false;
+        if (str_starts_with_ci(p, "if not exists ")) {
+            p += 14;
+            if_not_exists = true;
+        } else if (str_starts_with_ci(p, "if not exist ")) {
+            p += 13;
+            if_not_exists = true;
+        }
+        while (isspace((unsigned char)*p)) p++;
+
         char tbl_name[64];
-        char* with_pos = strstr(stmt, " with ");
-        if (!with_pos) with_pos = strstr(stmt, " WITH ");
+        const char* with_pos = strstr(p, " with ");
+        if (!with_pos) with_pos = strstr(p, " WITH ");
 
         if (with_pos) {
-            int nlen = (int)(with_pos - (stmt + 13));
+            int nlen = (int)(with_pos - p);
             if (nlen >= (int)sizeof(tbl_name)) nlen = (int)sizeof(tbl_name) - 1;
-            strncpy(tbl_name, stmt + 13, nlen);
+            strncpy(tbl_name, p, nlen);
             tbl_name[nlen] = '\0';
             trim(tbl_name);
 
-            char* cols_str = with_pos + 6;
+            if (if_not_exists && enlngdb_get_table(db, tbl_name) != NULL) {
+                if (print_output) {
+                    printf("Query OK, 0 rows affected. Table '%s' already exists. (0.01 ms)\n\n", tbl_name);
+                }
+                return true;
+            }
+
+            char* cols_str = (char*)(with_pos + 6);
             EnlngColumn cols[ENLNGDB_MAX_COLS];
             int col_count = 0;
 
@@ -208,15 +307,15 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
             strncpy(cols_copy, cols_str, sizeof(cols_copy) - 1);
             cols_copy[sizeof(cols_copy) - 1] = '\0';
 
-            char* p = cols_copy;
-            while (*p && col_count < ENLNGDB_MAX_COLS) {
-                while (isspace((unsigned char)*p)) p++;
-                if (!*p) break;
-                char* item_start = p;
-                while (*p && *p != ',') p++;
-                if (*p == ',') {
-                    *p = '\0';
-                    p++;
+            char* cp = cols_copy;
+            while (*cp && col_count < ENLNGDB_MAX_COLS) {
+                while (isspace((unsigned char)*cp)) cp++;
+                if (!*cp) break;
+                char* item_start = cp;
+                while (*cp && *cp != ',') cp++;
+                if (*cp == ',') {
+                    *cp = '\0';
+                    cp++;
                 }
                 char* col_item = trim(item_start);
                 char cname[64];
@@ -225,6 +324,11 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
                 memset(&cols[col_count], 0, sizeof(EnlngColumn));
                 strncpy(cols[col_count].name, cname, ENLNGDB_MAX_NAME - 1);
                 cols[col_count].type = ENLNG_VAL_STRING;
+                if (strstr(col_item, "primary key") != NULL ||
+                    str_ci_cmp(cname, "id") == 0 ||
+                    (strlen(cname) > 3 && str_ci_cmp(cname + strlen(cname) - 3, "_id") == 0)) {
+                    cols[col_count].is_primary_key = true;
+                }
                 col_count++;
             }
 
@@ -332,18 +436,21 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         }
     }
 
-    // 6. find [all] records from / find records from <name> [where <col> <op> <val>]
-    if (str_starts_with_ci(stmt, "find ") || str_starts_with_ci(stmt, "show all records from ")) {
+    // 6. find [all] records from / find records from <name> [where ...] [order by ...]
+    if (str_starts_with_ci(stmt, "find ") || str_starts_with_ci(stmt, "show all records from ") || str_starts_with_ci(stmt, "select ")) {
         char tbl_name[64] = {0};
-        char filter_col[64] = {0};
-        EnlngOp op = OP_NONE;
-        EnlngVal target_val = enlng_null();
+        char order_col[64] = {0};
+        bool is_desc = false;
 
         const char* from_pos = strstr(stmt, " from ");
-        if (!from_pos) from_pos = strstr(stmt, " in ");
+        int offset = 6;
+        if (!from_pos) {
+            from_pos = strstr(stmt, " in ");
+            offset = 4;
+        }
 
         if (from_pos) {
-            const char* after_from = from_pos + (strstr(from_pos, " from ") ? 6 : 4);
+            const char* after_from = from_pos + offset;
             while (isspace((unsigned char)*after_from)) after_from++;
 
             char rest[512];
@@ -354,41 +461,211 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
             if (!where_pos) where_pos = strstr(rest, " WHERE ");
             char* order_pos = strstr(rest, " order by ");
             if (!order_pos) order_pos = strstr(rest, " ORDER BY ");
+            if (!order_pos) order_pos = strstr(rest, " sorted by ");
+            if (!order_pos) order_pos = strstr(rest, " SORTED BY ");
 
             if (order_pos) {
+                const char* ord_arg = order_pos + (strstr(order_pos, " sorted by ") ? 11 : 10);
+                while (isspace((unsigned char)*ord_arg)) ord_arg++;
+                sscanf(ord_arg, "%63s", order_col);
+                if (strstr(ord_arg, "desc") != NULL || strstr(ord_arg, "DESC") != NULL || strstr(ord_arg, "highest") != NULL) {
+                    is_desc = true;
+                }
                 if (!where_pos || order_pos > where_pos) {
                     *order_pos = '\0';
                 }
             }
 
+            typedef struct {
+                char col[64];
+                EnlngOp op;
+                EnlngVal val;
+            } FilterCond;
+            FilterCond conds[4];
+            int cond_count = 0;
+
+            if (where_pos) {
+                *where_pos = '\0';
+                strncpy(tbl_name, trim(rest), sizeof(tbl_name) - 1);
+                char* cond_str = trim(where_pos + 7);
+
+                // Split conditions by " and " / " AND "
+                char* pcond = cond_str;
+                while (*pcond && cond_count < 4) {
+                    char* and_pos = strstr(pcond, " and ");
+                    if (!and_pos) and_pos = strstr(pcond, " AND ");
+                    if (and_pos) {
+                        *and_pos = '\0';
+                    }
+                    char* single_cond = trim(pcond);
+                    char cname[64];
+                    if (sscanf(single_cond, "%63s", cname) == 1) {
+                        char* dot = strchr(cname, '.');
+                        if (dot) strncpy(conds[cond_count].col, dot + 1, sizeof(conds[cond_count].col) - 1);
+                        else strncpy(conds[cond_count].col, cname, sizeof(conds[cond_count].col) - 1);
+
+                        char* op_start = single_cond + strlen(cname);
+                        while (isspace((unsigned char)*op_start)) op_start++;
+
+                        if (str_starts_with_ci(op_start, "of ")) {
+                            op_start += 3;
+                            while (isspace((unsigned char)*op_start)) op_start++;
+                            if (str_starts_with_ci(op_start, "the ")) {
+                                op_start += 4;
+                                while (isspace((unsigned char)*op_start)) op_start++;
+                            }
+                            while (*op_start && !isspace((unsigned char)*op_start)) op_start++;
+                            while (isspace((unsigned char)*op_start)) op_start++;
+                        }
+
+                        int op_len = 0;
+                        conds[cond_count].op = parse_op_phrase(op_start, &op_len);
+                        if (conds[cond_count].op != OP_NONE) {
+                            char* val_str = trim(op_start + op_len);
+                            conds[cond_count].val = parse_val_token(val_str);
+                            cond_count++;
+                        }
+                    }
+
+                    if (and_pos) {
+                        pcond = and_pos + 5;
+                    } else {
+                        break;
+                    }
+                }
+            } else {
+                strncpy(tbl_name, trim(rest), sizeof(tbl_name) - 1);
+            }
+
+            EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
+            if (!tbl) {
+                if (print_output) {
+                    printf("ERROR: Table '%s' does not exist in database '%s'.\n\n", tbl_name, db->name);
+                }
+                for (int i = 0; i < cond_count; i++) enlng_free_val(&conds[i].val);
+                return false;
+            }
+
+            EnlngQueryResult* res = NULL;
+            if (cond_count <= 1) {
+                res = enlngdb_find(tbl, cond_count == 1 ? conds[0].col : NULL, cond_count == 1 ? conds[0].op : OP_NONE, cond_count == 1 ? &conds[0].val : NULL, 0, 0);
+            } else {
+                res = (EnlngQueryResult*)calloc(1, sizeof(EnlngQueryResult));
+                res->col_count = tbl->col_count;
+                for (int c = 0; c < tbl->col_count; c++) res->columns[c] = tbl->columns[c];
+                size_t cap = 16;
+                res->rows = (EnlngRow*)malloc(cap * sizeof(EnlngRow));
+                res->row_count = 0;
+
+                int col_indices[4];
+                for (int i = 0; i < cond_count; i++) {
+                    col_indices[i] = -1;
+                    for (int c = 0; c < tbl->col_count; c++) {
+                        if (strcmp(tbl->columns[c].name, conds[i].col) == 0) {
+                            col_indices[i] = c;
+                            break;
+                        }
+                    }
+                }
+
+                for (size_t r = 0; r < tbl->row_count; r++) {
+                    EnlngRow* row = &tbl->rows[r];
+                    bool all_match = true;
+                    for (int i = 0; i < cond_count; i++) {
+                        if (col_indices[i] >= 0 && col_indices[i] < row->cell_count) {
+                            if (!enlng_eval_condition(&row->cells[col_indices[i]], conds[i].op, &conds[i].val)) {
+                                all_match = false;
+                                break;
+                            }
+                        } else {
+                            all_match = false;
+                            break;
+                        }
+                    }
+
+                    if (all_match) {
+                        if (res->row_count >= cap) {
+                            cap *= 2;
+                            res->rows = (EnlngRow*)realloc(res->rows, cap * sizeof(EnlngRow));
+                        }
+                        EnlngRow* dest_row = &res->rows[res->row_count++];
+                        dest_row->cell_count = row->cell_count;
+                        dest_row->cells = (EnlngVal*)malloc(row->cell_count * sizeof(EnlngVal));
+                        for (int c = 0; c < row->cell_count; c++) {
+                            dest_row->cells[c] = enlng_copy_val(&row->cells[c]);
+                        }
+                    }
+                }
+            }
+
+            for (int i = 0; i < cond_count; i++) enlng_free_val(&conds[i].val);
+
+            if (res) {
+                if (order_col[0] != '\0') {
+                    int ord_idx = -1;
+                    for (int c = 0; c < res->col_count; c++) {
+                        if (str_ci_cmp(res->columns[c].name, order_col) == 0) {
+                            ord_idx = c;
+                            break;
+                        }
+                    }
+                    if (ord_idx >= 0 && res->row_count > 1) {
+                        for (size_t i = 0; i < res->row_count - 1; i++) {
+                            for (size_t j = i + 1; j < res->row_count; j++) {
+                                int cmp = enlng_compare_vals(&res->rows[i].cells[ord_idx], &res->rows[j].cells[ord_idx]);
+                                if ((is_desc && cmp < 0) || (!is_desc && cmp > 0)) {
+                                    EnlngRow tmp = res->rows[i];
+                                    res->rows[i] = res->rows[j];
+                                    res->rows[j] = tmp;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (print_output) enlngdb_print_result(res);
+                enlngdb_free_result(res);
+                return true;
+            }
+        }
+    }
+
+    // 7. count records from / count records in <name> [where ...]
+    if (str_starts_with_ci(stmt, "count ") || str_starts_with_ci(stmt, "count records from ") || str_starts_with_ci(stmt, "count records in ") || str_starts_with_ci(stmt, "count all from ") || str_starts_with_ci(stmt, "count all in ")) {
+        const char* from_pos = strstr(stmt, " from ");
+        int offset = 6;
+        if (!from_pos) {
+            from_pos = strstr(stmt, " in ");
+            offset = 4;
+        }
+        if (from_pos) {
+            const char* p = from_pos + offset;
+            while (isspace((unsigned char)*p)) p++;
+
+            char rest[512];
+            strncpy(rest, p, sizeof(rest) - 1);
+            rest[sizeof(rest) - 1] = '\0';
+
+            char tbl_name[64] = {0};
+            char filter_col[64] = {0};
+            EnlngOp op = OP_NONE;
+            EnlngVal target_val = enlng_null();
+
+            char* where_pos = strstr(rest, " where ");
+            if (!where_pos) where_pos = strstr(rest, " WHERE ");
+
             if (where_pos) {
                 *where_pos = '\0';
                 strncpy(tbl_name, trim(rest), sizeof(tbl_name) - 1);
                 char* cond = trim(where_pos + 7);
-
-                // Parse condition: col op value
                 char cname[64];
                 if (sscanf(cond, "%63s", cname) == 1) {
                     char* dot = strchr(cname, '.');
-                    if (dot) {
-                        strncpy(filter_col, dot + 1, sizeof(filter_col) - 1);
-                    } else {
-                        strncpy(filter_col, cname, sizeof(filter_col) - 1);
-                    }
+                    if (dot) strncpy(filter_col, dot + 1, sizeof(filter_col) - 1);
+                    else strncpy(filter_col, cname, sizeof(filter_col) - 1);
+
                     char* op_start = cond + strlen(cname);
                     while (isspace((unsigned char)*op_start)) op_start++;
-
-                    if (str_starts_with_ci(op_start, "of ")) {
-                        op_start += 3;
-                        while (isspace((unsigned char)*op_start)) op_start++;
-                        if (str_starts_with_ci(op_start, "the ")) {
-                            op_start += 4;
-                            while (isspace((unsigned char)*op_start)) op_start++;
-                        }
-                        while (*op_start && !isspace((unsigned char)*op_start)) op_start++;
-                        while (isspace((unsigned char)*op_start)) op_start++;
-                    }
-
                     int op_len = 0;
                     op = parse_op_phrase(op_start, &op_len);
                     if (op != OP_NONE) {
@@ -401,33 +678,9 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
             }
 
             EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
-            if (!tbl) {
-                if (print_output) {
-                    printf("ERROR: Table '%s' does not exist in database '%s'.\n\n", tbl_name, db->name);
-                }
-                return false;
-            }
-
-            EnlngQueryResult* res = enlngdb_find(tbl, filter_col[0] ? filter_col : NULL, op, &target_val, 0, 0);
-            enlng_free_val(&target_val);
-            if (res) {
-                if (print_output) enlngdb_print_result(res);
-                enlngdb_free_result(res);
-                return true;
-            }
-        }
-    }
-
-    // 7. count records from <name> [where ...]
-    if (str_starts_with_ci(stmt, "count ") || str_starts_with_ci(stmt, "count records from ")) {
-        const char* from_pos = strstr(stmt, " from ");
-        if (!from_pos) from_pos = strstr(stmt, " in ");
-        if (from_pos) {
-            char tbl_name[64];
-            sscanf(from_pos + 6, "%63s", tbl_name);
-            EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
             if (tbl) {
-                int c = enlngdb_count(tbl, NULL, OP_NONE, NULL);
+                int c = enlngdb_count(tbl, filter_col[0] ? filter_col : NULL, op, &target_val);
+                enlng_free_val(&target_val);
                 if (print_output) {
                     printf("+----------+\n");
                     printf("| count(*) |\n");
@@ -437,8 +690,79 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
                     printf("1 row in set (0.01 ms)\n\n");
                 }
                 return true;
+            } else {
+                if (print_output) printf("ERROR: Table '%s' does not exist in database '%s'.\n\n", tbl_name, db->name);
+                return false;
             }
         }
+    }
+
+    // 8. delete / remove records from <table> [where ...]
+    if (str_starts_with_ci(stmt, "delete records from ") || str_starts_with_ci(stmt, "delete from ") || str_starts_with_ci(stmt, "delete all from ") || str_starts_with_ci(stmt, "delete all records from ") ||
+        str_starts_with_ci(stmt, "remove records from ") || str_starts_with_ci(stmt, "remove from ") || str_starts_with_ci(stmt, "remove all from ") || str_starts_with_ci(stmt, "remove all records from ")) {
+        const char* p = stmt;
+        if (str_starts_with_ci(p, "delete all records from ")) p += 24;
+        else if (str_starts_with_ci(p, "delete all from ")) p += 16;
+        else if (str_starts_with_ci(p, "delete records from ")) p += 20;
+        else if (str_starts_with_ci(p, "delete from ")) p += 12;
+        else if (str_starts_with_ci(p, "remove all records from ")) p += 24;
+        else if (str_starts_with_ci(p, "remove all from ")) p += 16;
+        else if (str_starts_with_ci(p, "remove records from ")) p += 20;
+        else if (str_starts_with_ci(p, "remove from ")) p += 12;
+        while (isspace((unsigned char)*p)) p++;
+
+        char rest[512];
+        strncpy(rest, p, sizeof(rest) - 1);
+        rest[sizeof(rest) - 1] = '\0';
+
+        bool confirmed = (strstr(rest, " confirmed") != NULL || strstr(rest, " CONFIRMED") != NULL);
+        char* conf_pos = strstr(rest, " confirmed");
+        if (!conf_pos) conf_pos = strstr(rest, " CONFIRMED");
+        if (conf_pos) *conf_pos = '\0';
+
+        char tbl_name[64] = {0};
+        char filter_col[64] = {0};
+        EnlngOp op = OP_NONE;
+        EnlngVal target_val = enlng_null();
+
+        char* where_pos = strstr(rest, " where ");
+        if (!where_pos) where_pos = strstr(rest, " WHERE ");
+
+        if (where_pos) {
+            *where_pos = '\0';
+            strncpy(tbl_name, trim(rest), sizeof(tbl_name) - 1);
+            char* cond = trim(where_pos + 7);
+            char cname[64];
+            if (sscanf(cond, "%63s", cname) == 1) {
+                char* dot = strchr(cname, '.');
+                if (dot) strncpy(filter_col, dot + 1, sizeof(filter_col) - 1);
+                else strncpy(filter_col, cname, sizeof(filter_col) - 1);
+
+                char* op_start = cond + strlen(cname);
+                while (isspace((unsigned char)*op_start)) op_start++;
+                int op_len = 0;
+                op = parse_op_phrase(op_start, &op_len);
+                if (op != OP_NONE) {
+                    char* val_str = trim(op_start + op_len);
+                    target_val = parse_val_token(val_str);
+                }
+            }
+        } else {
+            strncpy(tbl_name, trim(rest), sizeof(tbl_name) - 1);
+        }
+
+        EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
+        if (!tbl) {
+            if (print_output) printf("ERROR: Table '%s' does not exist in database '%s'.\n\n", tbl_name, db->name);
+            return false;
+        }
+
+        int del_cnt = enlngdb_delete(tbl, filter_col[0] ? filter_col : NULL, op, &target_val, filter_col[0] ? true : confirmed);
+        enlng_free_val(&target_val);
+        if (print_output) {
+            printf("Query OK, %d row(s) deleted. (0.02 ms)\n\n", del_cnt);
+        }
+        return true;
     }
 
     // 8. drop table <name> confirmed

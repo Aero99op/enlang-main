@@ -1,6 +1,10 @@
 #ifndef ENLNGDB_H
 #define ENLNGDB_H
 
+#ifndef __USE_MINGW_ANSI_STDIO
+#define __USE_MINGW_ANSI_STDIO 1
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -114,5 +118,8 @@ EnlngVal enlng_str(const char* s);
 EnlngVal enlng_bool(bool b);
 EnlngVal enlng_null(void);
 void enlng_free_val(EnlngVal* v);
+EnlngVal enlng_copy_val(const EnlngVal* src);
+int enlng_compare_vals(const EnlngVal* a, const EnlngVal* b);
+bool enlng_eval_condition(const EnlngVal* val, EnlngOp op, const EnlngVal* target);
 
 #endif /* ENLNGDB_H */

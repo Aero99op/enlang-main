@@ -151,7 +151,7 @@ class ENLGMParser:
                     stmt = self._parse_top_level_statement()
                     if stmt:
                         self._add_top_level_node(stmt)
-        elif has_type_header:
+        elif has_type_header or (first_tok and first_tok.type == ENLGMTokenType.HINT and first_tok.value == "APP_DEF"):
             while not self._match(ENLGMTokenType.EOF):
                 self._consume_newlines()
                 if self._match(ENLGMTokenType.EOF):
@@ -209,37 +209,14 @@ class ENLGMParser:
                                 app_node.primary_color = s.get("color") or s.get("accent_color")
                             if "home" in s or "home_screen" in s:
                                 app_node.home_screen = s.get("home") or s.get("home_screen")
+                        elif isinstance(s, ScreenDefNode):
+                            self.root.screens.append(s)
+                            if not app_node.home_screen or app_node.home_screen == "HomeScreen":
+                                app_node.home_screen = s.name
                 return app_node
 
             elif intent in ("SCREEN_DEF", "STATEFUL_SCREEN_DEF"):
-                is_stateful = (intent == "STATEFUL_SCREEN_DEF")
-                screen_name = line_tokens[1].value if len(line_tokens) > 1 else "Screen"
-                screen = ScreenDefNode(name=screen_name, is_stateful=is_stateful)
-
-                if self._has_child_block():
-                    body_nodes = self._parse_block()
-                    for node in body_nodes:
-                        if isinstance(node, StateDeclNode):
-                            screen.state_vars.append(node)
-                            screen.is_stateful = True
-                        elif isinstance(node, AppBarNode):
-                            screen.app_bar = node
-                        elif isinstance(node, BottomNavNode):
-                            screen.bottom_bar = node
-                        elif isinstance(node, DrawerNode):
-                            screen.drawer = node
-                        elif isinstance(node, ButtonWidgetNode) and node.btn_type == "fab":
-                            screen.fab = node
-                        elif isinstance(node, MethodDefNode):
-                            screen.methods.append(node)
-                        elif isinstance(node, dict) and "title" in node:
-                            screen.title = node["title"]
-                        elif isinstance(node, dict) and "body" in node:
-                            screen.body.extend(node["body"])
-                        else:
-                            screen.body.append(node)
-
-                return screen
+                return self._parse_screen(intent, line_tokens)
 
             elif intent == "WIDGET_BLUEPRINT":
                 bp_name = line_tokens[1].value if len(line_tokens) > 1 else "CustomWidget"
@@ -283,6 +260,36 @@ class ENLGMParser:
                 self._consume()
         return lines
 
+    def _parse_screen(self, intent: str, line_tokens: List[Token]) -> ScreenDefNode:
+        is_stateful = (intent == "STATEFUL_SCREEN_DEF")
+        screen_name = line_tokens[1].value if len(line_tokens) > 1 else "Screen"
+        screen = ScreenDefNode(name=screen_name, is_stateful=is_stateful)
+
+        if self._has_child_block():
+            body_nodes = self._parse_block()
+            for node in body_nodes:
+                if isinstance(node, StateDeclNode):
+                    screen.state_vars.append(node)
+                    screen.is_stateful = True
+                elif isinstance(node, AppBarNode):
+                    screen.app_bar = node
+                elif isinstance(node, BottomNavNode):
+                    screen.bottom_bar = node
+                elif isinstance(node, DrawerNode):
+                    screen.drawer = node
+                elif isinstance(node, ButtonWidgetNode) and node.btn_type == "fab":
+                    screen.fab = node
+                elif isinstance(node, MethodDefNode):
+                    screen.methods.append(node)
+                elif isinstance(node, dict) and "title" in node:
+                    screen.title = node["title"]
+                elif isinstance(node, dict) and "body" in node:
+                    screen.body.extend(node["body"])
+                else:
+                    screen.body.append(node)
+
+        return screen
+
     def _parse_block(self) -> List[Any]:
         nodes = []
         if not self._match(ENLGMTokenType.INDENT):
@@ -309,6 +316,8 @@ class ENLGMParser:
             tokens.append(self._consume())
         if self._match(ENLGMTokenType.NEWLINE):
             self._consume()
+        if not tokens and not self._match(ENLGMTokenType.EOF):
+            self._consume()
         return tokens
 
     def _parse_statement(self) -> Optional[Any]:
@@ -330,7 +339,6 @@ class ENLGMParser:
                 return {"color": color_val}
             elif val_lower in ("home", "home_screen") and len(line_tokens) > 1:
                 target = [t.value for t in line_tokens[1:] if t.value.lower() not in ("screen", "to", "at", "is", "as") and t.type in (ENLGMTokenType.IDENTIFIER, ENLGMTokenType.STRING, ENLGMTokenType.HINT)]
-                # If a hint was matched like 'HomeScreen' where 'Home' wasn't recognized as hint but followed by screen
                 candidate = target[-1] if target else "HomeScreen"
                 return {"home": candidate}
             elif val_lower == "needs":
@@ -348,6 +356,8 @@ class ENLGMParser:
 
         if first.type == ENLGMTokenType.HINT:
             intent = first.value
+            if intent in ("SCREEN_DEF", "STATEFUL_SCREEN_DEF"):
+                return self._parse_screen(intent, line_tokens)
             return self._build_node_from_intent(intent, line_tokens[1:], line_tokens)
 
         # Check for method definition or function call
@@ -542,7 +552,7 @@ class ENLGMParser:
                 for c in child_nodes:
                     if isinstance(c, tuple) and c[0] == "ON_TAP":
                         on_tap_body.extend(c[1])
-                    elif isinstance(c, NavigationNode) or isinstance(c, ToastFeedbackNode) or isinstance(c, StateAssignNode):
+                    elif isinstance(c, (NavigationNode, ToastFeedbackNode, StateAssignNode, CallFunctionNode, NetworkCallNode, RawDartNode)):
                         on_tap_body.append(c)
 
             return ButtonWidgetNode(btn_type=btn_type, label_expr=label_expr, icon_name=icon_name, props=props, on_tap_body=on_tap_body)

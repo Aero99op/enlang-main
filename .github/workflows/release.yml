@@ -21,6 +21,11 @@ jobs:
           mkdir dist
           gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -o dist\enlangg.exe
           gcc -O2 -s -I. -Isrc enlng.c -o dist\enlng.exe
+          gcc -O2 -s -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -o dist\enlngdb.exe
+          gcc -O2 -s -I. -Ienlngf/c enlngf.c -o dist\enlngf.exe -lws2_32 -lgdi32 -luser32
+          gcc -O2 -s -I. -Ienlngs/c enlngs.c -o dist\enlngs.exe
+          gcc -O2 -s -I. -Ienlngd/c enlngd.c -o dist\enlngd.exe
+          gcc -O2 -s -I. -Ienlngm/c enlngm.c -o dist\enlngm.exe -lgdi32 -luser32
           copy install.cmd dist\
           copy install.ps1 dist\
           Compress-Archive -Path dist\* -DestinationPath enlangg-windows-amd64.zip
@@ -42,9 +47,14 @@ jobs:
           mkdir -p dist
           gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o dist/enlangg
           gcc -O2 -s -I. -Isrc enlng.c -lm -o dist/enlng
+          gcc -O2 -s -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o dist/enlngdb
+          gcc -O2 -s -I. -Ienlngf/c enlngf.c -lm -o dist/enlngf
+          gcc -O2 -s -I. -Ienlngs/c enlngs.c -lm -o dist/enlngs
+          gcc -O2 -s -I. -Ienlngd/c enlngd.c -lm -o dist/enlngd
+          gcc -O2 -s -I. -Ienlngm/c enlngm.c -lm -o dist/enlngm
           cp install.sh dist/
-          chmod +x dist/enlangg dist/enlng dist/install.sh
-          tar -czf enlangg-linux-amd64.tar.gz -C dist enlangg enlng install.sh
+          chmod +x dist/enlangg dist/enlng dist/enlngdb dist/enlngf dist/enlngs dist/enlngd dist/enlngm dist/install.sh
+          tar -czf enlangg-linux-amd64.tar.gz -C dist .
 
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
@@ -63,9 +73,14 @@ jobs:
           mkdir -p dist
           clang -O2 -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o dist/enlangg
           clang -O2 -I. -Isrc enlng.c -lm -o dist/enlng
+          clang -O2 -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o dist/enlngdb
+          clang -O2 -I. -Ienlngf/c enlngf.c -lm -o dist/enlngf
+          clang -O2 -I. -Ienlngs/c enlngs.c -lm -o dist/enlngs
+          clang -O2 -I. -Ienlngd/c enlngd.c -lm -o dist/enlngd
+          clang -O2 -I. -Ienlngm/c enlngm.c -lm -o dist/enlngm
           cp install.sh dist/
-          chmod +x dist/enlangg dist/enlng dist/install.sh
-          tar -czf enlangg-darwin-arm64.tar.gz -C dist enlangg enlng install.sh
+          chmod +x dist/enlangg dist/enlng dist/enlngdb dist/enlngf dist/enlngs dist/enlngd dist/enlngm dist/install.sh
+          tar -czf enlangg-darwin-arm64.tar.gz -C dist .
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
@@ -106,13 +121,14 @@ jobs:
             curl -fsSL https://raw.githubusercontent.com/Aero99op/enlang-main/main/install.sh | bash
             ```
             
-            ### Included Domains:
-            - `enlng` - Core general-purpose sovereign language (Python parity)
-            - `enlngf` - Frontend natural markup & components
-            - `enlngs` - Server endpoints & HTTP routing
-            - `enlngd` - Design tokens & dynamic styling
+            ### Included Domains (Pure C 7-in-1 Suite):
+            - `enlangg` - Sovereign master toolchain dispatcher
+            - `enlng` - Core general-purpose sovereign language
+            - `enlngdb` - Pure C microsecond database engine
+            - `enlngf` - Frontend natural markup & web studio
+            - `enlngs` - Reactive fullstack scripts & DOM events
+            - `enlngd` - Design tokens & dynamic CSS generator
             - `enlngm` - Mobile HAL & reactive hardware simulator
-            - `enlngdb` - Database schemas & declarative queries
           files: |
             enlangg-windows-amd64/enlangg-windows-amd64.zip
             enlangg-linux-amd64/enlangg-linux-amd64.tar.gz

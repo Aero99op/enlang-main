@@ -64,6 +64,8 @@ bool enlng_has_python_dependency(const char* filepath) {
             starts_with_ci(t, "load library") ||
             starts_with_ci(t, "load module") ||
             starts_with_ci(t, "from library") ||
+            starts_with_ci(t, "blueprint ") ||
+            starts_with_ci(t, "class ") ||
             (starts_with_ci(t, "from ") && strstr(t, " import ")) ||
             (starts_with_ci(t, "import ") && !strstr(t, ".enlng\"") && !strstr(t, ".enlng'") && !strstr(t, ".enlg\"") && !strstr(t, ".enlg'")) ||
             strstr(t, "\"numpy\"") || strstr(t, "'numpy'") ||

@@ -56,7 +56,8 @@ class ENLGSEmitter:
         # ── Variables ──
         elif isinstance(node, VarDeclNode):
             val = f" = {node.value}" if node.value is not None else ""
-            return f"{pad}{node.kind} {node.name}{val};"
+            semi = "" if (node.value and node.value.rstrip().endswith("{")) else ";"
+            return f"{pad}{node.kind} {node.name}{val}{semi}"
 
         elif isinstance(node, VarAssignNode):
             return f"{pad}{node.name} {node.op} {node.value};"

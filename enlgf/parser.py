@@ -34,6 +34,8 @@ class ENLEGFPParser:
                             doc.body_children.extend(child.children)
                         else:
                             doc.children.append(child)
+                elif isinstance(node, ElementNode) and node.tag in ("link", "style", "meta"):
+                    doc.head_children.append(node)
                 else:
                     doc.children.append(node)
                     
@@ -99,6 +101,11 @@ class ENLEGFPParser:
         events = {}
         text_content = None
         children = []
+
+        # If add title / create title is used in UI layout, map to h2
+        if tag == "title" and tag_token.value in ("add title", "create title"):
+            tag = "h2"
+            attributes["class"] = "title" if "class" not in attributes else f"title {attributes['class']}"
         
         # Self-closing tags
         self_closing_tags = {"br", "hr", "img", "input", "meta", "link"}
@@ -179,6 +186,22 @@ class ENLEGFPParser:
                 val = self._advance().value
                 if tag == "link" and "href" not in attributes:
                     attributes["href"] = val
+                elif tag == "script" and "src" not in attributes:
+                    attributes["src"] = val
+                elif (
+                    tag in ("div", "section", "article", "aside", "nav", "header", "footer", "main", "form", "ul", "ol")
+                    and ("class" in attributes or "class" in default_attrs)
+                    and (
+                        any(c in attributes.get("class", "") for c in ("application", "container", "grid", "row", "card", "screen", "navbar", "nav-menu", "action-group", "panel", "controls", "hero"))
+                        or any(c in default_attrs.get("class", "") for c in ("application", "container", "grid", "row", "card", "screen", "navbar", "nav-menu", "action-group", "panel", "controls", "hero"))
+                    )
+                ):
+                    if "id" not in attributes:
+                        attributes["id"] = val
+                        if default_attrs.get("class") == "application":
+                            attributes["title"] = val
+                    elif text_content is None:
+                        text_content = val
                 elif text_content is None:
                     text_content = val
                 continue
@@ -207,7 +230,11 @@ class ENLEGFPParser:
                 attr_name = ATTR_MAPPINGS[val_lower]
                 self._advance()
                 if not self._is_at_end() and self._peek().type in (TokenType.STRING, TokenType.IDENTIFIER, TokenType.NUMBER):
-                    attributes[attr_name] = self._advance().value
+                    val = self._advance().value
+                    if attr_name == "text":
+                        text_content = val
+                    else:
+                        attributes[attr_name] = val
                 continue
 
             # Special Attribute Shortcuts

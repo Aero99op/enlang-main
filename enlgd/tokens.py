@@ -30,6 +30,8 @@ class Token:
 # CSS Property English Aliases -> Canonical CSS property name
 PROPERTY_MAPPINGS: Dict[str, str] = {
     # Backgrounds
+    "global background": "background",
+    "global bg": "background",
     "background-color": "background-color",
     "background color": "background-color",
     "bg color": "background-color",
@@ -37,6 +39,9 @@ PROPERTY_MAPPINGS: Dict[str, str] = {
     "bg": "background",
     
     # Typography & Text
+    "global font-family": "font-family",
+    "global font family": "font-family",
+    "global font": "font-family",
     "text-color": "color",
     "text color": "color",
     "color": "color",
@@ -61,6 +66,9 @@ PROPERTY_MAPPINGS: Dict[str, str] = {
     "text decoration": "text-decoration",
     "text-transform": "text-transform",
     "text transform": "text-transform",
+    "text gradient": "text-gradient",
+    "text-shadow": "text-shadow",
+    "text shadow": "text-shadow",
     
     # Box Model & Spacing
     "margin-top": "margin-top",
@@ -110,11 +118,26 @@ PROPERTY_MAPPINGS: Dict[str, str] = {
     "border width": "border-width",
     "border-style": "border-style",
     "border style": "border-style",
+    "border-bottom": "border-bottom",
+    "border bottom": "border-bottom",
+    "border-top": "border-top",
+    "border top": "border-top",
+    "border-left": "border-left",
+    "border left": "border-left",
+    "border-right": "border-right",
+    "border right": "border-right",
     "border": "border",
     "box-shadow": "box-shadow",
     "box shadow": "box-shadow",
     "shadow": "box-shadow",
     "outline": "outline",
+    "stroke color": "stroke",
+    "stroke-color": "stroke",
+    "stroke width": "stroke-width",
+    "stroke-width": "stroke-width",
+    "stroke dasharray": "stroke-dasharray",
+    "stroke-dasharray": "stroke-dasharray",
+    "stroke": "stroke",
     
     # Layout & Flexbox/Grid
     "display": "display",
@@ -125,10 +148,17 @@ PROPERTY_MAPPINGS: Dict[str, str] = {
     "flex wrap": "flex-wrap",
     "align-items": "align-items",
     "align items": "align-items",
+    "align center": "align-items",
     "align": "align-items",
     "justify-content": "justify-content",
     "justify content": "justify-content",
+    "justify center": "justify-content",
     "justify": "justify-content",
+    "space between": "justify-content",
+    "space around": "justify-content",
+    "space evenly": "justify-content",
+    "columns": "grid-template-columns",
+    "grid columns": "grid-template-columns",
     "gap": "gap",
     "spacing": "gap",
     
@@ -150,6 +180,14 @@ PROPERTY_MAPPINGS: Dict[str, str] = {
     "right": "right",
     "bottom": "bottom",
     "left": "left",
+    "filter": "filter",
+    "backdrop blur": "backdrop-filter",
+    "backdrop-blur": "backdrop-filter",
+    "backdrop-filter": "backdrop-filter",
+    "user select": "user-select",
+    "user-select": "user-select",
+    "hover effect": "hover-effect",
+    "hover color": "hover-color",
 }
 
 # Pseudo-states / pseudo-classes
@@ -181,5 +219,7 @@ KEYWORDS = {
     "portrait", "landscape", "animation", "at", "degrees", "deg",
     "percent", "viewport-height", "vh", "viewport-width", "vw",
     "gradient", "from", "to", "color", "size", "duration", "easing",
-    "becomes"
+    "becomes", "theme", "component", "global", "set", "pixels", "pixel",
+    "via", "radial", "linear", "backdrop", "blur", "repeat", "sticky",
+    "columns", "effect"
 }

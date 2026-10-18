@@ -10,6 +10,10 @@
 #ifndef ENLNG_RUNTIME_H
 #define ENLNG_RUNTIME_H
 
+#ifndef __USE_MINGW_ANSI_STDIO
+#define __USE_MINGW_ANSI_STDIO 1
+#endif
+
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>

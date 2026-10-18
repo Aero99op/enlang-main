@@ -6,38 +6,45 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 #define ENLNGF_VERSION "5.3.0"
-#define MAX_ELEMENTS 256
-
-typedef enum {
-    ELEM_HEADING,
-    ELEM_PARAGRAPH,
-    ELEM_BUTTON,
-    ELEM_INPUT,
-    ELEM_SECTION,
-    ELEM_CARD
-} EnlngfElemType;
+#define MAX_CHILDREN 512
+#define MAX_ATTRS 24
+#define MAX_NODES 4096
+#define MAX_STACK_DEPTH 512
 
 typedef struct {
-    EnlngfElemType type;
-    int level; // for heading (1, 2, 3)
-    char text[256];
-    char id[64];
-    char class_name[64];
-    char hint[128];
-    char color[32];
-    int width;
-    int height;
-} EnlngfElement;
+    char key[32];
+    char value[256];
+} EnlngfAttr;
+
+typedef struct EnlngfNode {
+    char tag[32];
+    char text[2048];
+    EnlngfAttr attrs[MAX_ATTRS];
+    int attr_count;
+    bool is_self_closing;
+    int indent_level;
+    struct EnlngfNode* children[MAX_CHILDREN];
+    int child_count;
+    struct EnlngfNode* parent;
+} EnlngfNode;
 
 typedef struct {
     char title[128];
-    char design_file[128];
-    char script_file[128];
-    EnlngfElement elements[MAX_ELEMENTS];
-    int element_count;
+    char source_dir[512];
+    char design_files[16][128];
+    int design_file_count;
+    char script_files[16][128];
+    int script_file_count;
+    char inline_css[8192];
+    char inline_js[8192];
+    EnlngfNode nodes_pool[MAX_NODES];
+    int node_count;
+    EnlngfNode* root;
 } EnlngfDoc;
 
 /* Core API */

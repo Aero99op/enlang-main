@@ -547,6 +547,10 @@ class ENLGMEmitter:
             lines.append("});")
             return "\n".join(lines)
 
+        # Function Call
+        elif isinstance(node, CallFunctionNode):
+            return f"{node.fn_name}({', '.join(node.args)});"
+
         # Raw Dart
         elif isinstance(node, RawDartNode):
             return node.code

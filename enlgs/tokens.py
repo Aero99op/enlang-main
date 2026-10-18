@@ -32,13 +32,25 @@ class Token:
 # Hint-Word Registry: Maps natural English hints & phrases to canonical Intent IDs
 HINT_REGISTRY: Dict[str, str] = {
     # ── Domain Declarations ──
+    "type enlngs": "DOMAIN_DECL",
     "type enlgs": "DOMAIN_DECL",
+    "type enlang": "DOMAIN_DECL",
+    "type enlangg": "DOMAIN_DECL",
     "type script": "DOMAIN_DECL",
     "type js": "DOMAIN_DECL",
+    "in script:": "DOMAIN_DECL",
     "in script": "DOMAIN_DECL",
-    "script enlgs": "DOMAIN_DECL",
+    "start script:": "DOMAIN_DECL",
     "start script": "DOMAIN_DECL",
+    "script enlgs": "DOMAIN_DECL",
     "enlgs script": "DOMAIN_DECL",
+
+    # ── Triggers & Navigation ──
+    "trigger scroll to": "TRIGGER_SCROLL",
+    "trigger scroll": "TRIGGER_SCROLL",
+    "trigger modal": "TRIGGER_MODAL",
+    "trigger toast": "TRIGGER_TOAST",
+    "trigger": "TRIGGER_ACTION",
 
     # ── Variables ──
     "create": "DECLARE_VAR",
@@ -284,6 +296,10 @@ COMPARISON_PHRASES: Dict[str, str] = {
     "greater than or equal to": ">=",
     "is less than or equal to": "<=",
     "less than or equal to": "<=",
+    "is at most": "<=",
+    "at most": "<=",
+    "is at least": ">=",
+    "at least": ">=",
     "is greater than": ">",
     "greater than": ">",
     "is less than": "<",

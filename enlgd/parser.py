@@ -25,9 +25,30 @@ UNITLESS_PROPERTIES = {
     "flex-grow", "flex-shrink", "order"
 }
 
+import re
+
 def _format_css_value(prop: str, raw_val: str) -> str:
-    """Auto-appends px for bare numbers on length/size properties."""
+    """Cleans up CSS values: strips unwanted quotes, normalizes units, auto-px for numbers."""
     val = raw_val.strip()
+    if not val:
+        return val
+
+    # Strip outer quotes if not content
+    if prop != "content":
+        if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+            val = val[1:-1].strip()
+
+    # Normalization of english unit phrases
+    val = val.replace("viewport-height", "vh").replace("viewport height", "vh")
+    val = val.replace("viewport-width", "vw").replace("viewport width", "vw")
+    val = val.replace("pixels", "px").replace("pixel", "px")
+    val = val.replace("percent", "%").replace("percentage", "%")
+    val = val.replace("degrees", "deg")
+
+    # Fix space between number and unit (e.g. "100 vh" -> "100vh", "960 px" -> "960px", "100 %" -> "100%")
+    val = re.sub(r'(\d+(?:\.\d+)?)\s*(px|vh|vw|%|deg|s|ms)\b', r'\1\2', val)
+
+    # Unitless check
     if val.isdigit() and prop not in UNITLESS_PROPERTIES:
         return f"{val}px"
     return val
@@ -49,12 +70,22 @@ class ENLGDParser:
 
             t = self._peek()
 
-            # 1. CSS Variables: define [type] "name" as [value]
+            # 1. CSS Variables or Themes/Components
             if t.type == TokenType.KEYWORD and t.value == "define":
-                var_node = self._parse_variable()
-                if var_node:
-                    stylesheet.variables.append(var_node)
-                continue
+                next_tok = self._peek_offset(1)
+                if next_tok and next_tok.value == "theme":
+                    self._parse_theme_block(stylesheet)
+                    continue
+                elif next_tok and next_tok.value == "component":
+                    comp_rules = self._parse_component_block()
+                    if comp_rules:
+                        stylesheet.rules.extend(comp_rules)
+                    continue
+                else:
+                    var_node = self._parse_variable()
+                    if var_node:
+                        stylesheet.variables.append(var_node)
+                    continue
 
             # 2. Keyframes: animation "name": ... end
             if t.type == TokenType.KEYWORD and t.value == "animation":
@@ -317,6 +348,100 @@ class ENLGDParser:
 
         return KeyframeNode(name=name, frames=frames)
 
+    def _parse_theme_block(self, stylesheet: StylesheetNode):
+        self._advance() # consume 'define'
+        self._advance() # consume 'theme'
+        theme_name = ""
+        if not self._is_at_end() and self._peek().type in (TokenType.STRING, TokenType.IDENTIFIER):
+            theme_name = self._advance().value.strip('"\'')
+        if not self._is_at_end() and self._peek().type == TokenType.SYMBOL and self._peek().value == ":":
+            self._advance()
+
+        self._skip_newlines()
+        has_indent = not self._is_at_end() and self._peek().type == TokenType.INDENT
+        if has_indent:
+            self._advance()
+
+        body_decls = []
+
+        while not self._is_at_end():
+            self._skip_newlines()
+            if self._is_at_end():
+                break
+            if self._peek().type == TokenType.DEDENT:
+                self._advance()
+                break
+            if self._peek().value in ("end", "finish"):
+                self._advance()
+                break
+
+            if self._peek().type == TokenType.KEYWORD and self._peek().value == "define":
+                if self._peek_offset(1) and self._peek_offset(1).value == "component":
+                    comp_rules = self._parse_component_block()
+                    if comp_rules:
+                        stylesheet.rules.extend(comp_rules)
+                    continue
+                else:
+                    var_node = self._parse_variable()
+                    if var_node:
+                        stylesheet.variables.append(var_node)
+                    continue
+
+            # Parse global rule lines inside theme
+            line_decls, hover_rules = self._parse_declaration_line_with_hover("body")
+            body_decls.extend(line_decls)
+            if hover_rules:
+                stylesheet.rules.extend(hover_rules)
+            self._skip_newlines()
+
+        if body_decls:
+            stylesheet.rules.insert(0, RuleNode(selector="body", declarations=body_decls))
+
+    def _parse_component_block(self) -> List[RuleNode]:
+        self._advance() # consume 'define'
+        self._advance() # consume 'component'
+        comp_name = "component"
+        if not self._is_at_end() and self._peek().type in (TokenType.STRING, TokenType.IDENTIFIER):
+            comp_name = self._advance().value.strip('"\'')
+        if not self._is_at_end() and self._peek().type == TokenType.SYMBOL and self._peek().value == ":":
+            self._advance()
+
+        std_tags = {"button", "header", "footer", "nav", "section", "main", "aside", "row", "card", "input", "body", "p", "a", "span", "div", "h1", "h2", "h3", "h4", "h5", "h6", "canvas", "table", "tr", "td", "th", "ul", "ol", "li"}
+        if comp_name.lower() in std_tags:
+            selector = f"{comp_name}, .{comp_name}, #{comp_name}"
+        else:
+            selector = f".{comp_name}, #{comp_name}"
+
+        self._skip_newlines()
+        has_indent = not self._is_at_end() and self._peek().type == TokenType.INDENT
+        if has_indent:
+            self._advance()
+
+        decls = []
+        hover_rules = []
+
+        while not self._is_at_end():
+            self._skip_newlines()
+            if self._is_at_end():
+                break
+            if self._peek().type == TokenType.DEDENT:
+                self._advance()
+                break
+            if self._peek().value in ("end", "finish"):
+                self._advance()
+                break
+
+            line_decls, extra_rules = self._parse_declaration_line_with_hover(comp_name)
+            decls.extend(line_decls)
+            hover_rules.extend(extra_rules)
+            self._skip_newlines()
+
+        rules = []
+        if decls:
+            rules.append(RuleNode(selector=selector, declarations=decls))
+        rules.extend(hover_rules)
+        return rules
+
     def _parse_declarations_block(self) -> List[DeclarationNode]:
         """Parses declarations inside a rule, handling connectors, gradients, variables."""
         declarations: List[DeclarationNode] = []
@@ -335,7 +460,7 @@ class ENLGDParser:
                 break
 
             # Parse line with possible connector chaining
-            line_decls = self._parse_declaration_line()
+            line_decls, _ = self._parse_declaration_line_with_hover("element")
             declarations.extend(line_decls)
             self._skip_newlines()
 
@@ -350,8 +475,18 @@ class ENLGDParser:
         return declarations
 
     def _parse_declaration_line(self) -> List[DeclarationNode]:
-        """Parses a single declaration or multiple declarations linked by connectors ('and', 'with', 'also')."""
+        """Parses a single declaration line."""
+        decls, _ = self._parse_declaration_line_with_hover("element")
+        return decls
+
+    def _parse_declaration_line_with_hover(self, base_comp: str) -> Tuple[List[DeclarationNode], List[RuleNode]]:
+        """Parses a declaration line, extracting declarations and any companion pseudo-state rules."""
         decls: List[DeclarationNode] = []
+        hover_rules: List[RuleNode] = []
+
+        # Consume leading 'set' if present
+        if not self._is_at_end() and self._peek().type == TokenType.KEYWORD and self._peek().value == "set":
+            self._advance()
 
         while not self._is_at_end() and self._peek().type not in (TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT):
             t = self._peek()
@@ -368,7 +503,47 @@ class ENLGDParser:
             # Must be a property or identifier
             if t.type in (TokenType.PROPERTY, TokenType.IDENTIFIER, TokenType.KEYWORD):
                 prop_tok = self._advance()
-                prop_name = PROPERTY_MAPPINGS.get(prop_tok.value.lower(), prop_tok.value)
+                raw_prop_name = prop_tok.value.lower()
+                prop_name = PROPERTY_MAPPINGS.get(raw_prop_name, prop_tok.value)
+
+                # Check if next token is 'to' or ':' or '='
+                if not self._is_at_end() and self._peek().value in ("to", ":", "="):
+                    self._advance()
+
+                # Special: Hover Color
+                if prop_name == "hover-color":
+                    col_tok = self._advance() if not self._is_at_end() else Token(TokenType.STRING, "#fff", 0, 0)
+                    col_val = col_tok.value.strip('"\'')
+                    hover_rules.append(RuleNode(selector=f".{base_comp}:hover, #{base_comp}:hover", declarations=[DeclarationNode(property_name="color", value=col_val)]))
+                    continue
+
+                # Special: Hover Effect
+                if prop_name == "hover-effect":
+                    eff_tok = self._advance() if not self._is_at_end() else Token(TokenType.STRING, "", 0, 0)
+                    eff_str = eff_tok.value.strip('"\'')
+                    hover_decls = []
+                    segments = re.split(r'\s+and\s+|,', eff_str)
+                    for seg in segments:
+                        seg = seg.strip()
+                        if not seg:
+                            continue
+                        if seg.startswith("scale "):
+                            hover_decls.append(DeclarationNode("transform", f"scale({seg[6:].strip()})"))
+                        elif seg.startswith("transform "):
+                            hover_decls.append(DeclarationNode("transform", seg[10:].strip()))
+                        elif seg.startswith("background "):
+                            hover_decls.append(DeclarationNode("background", seg[11:].strip()))
+                        elif seg.startswith("border-color ") or seg.startswith("border color "):
+                            hover_decls.append(DeclarationNode("border-color", seg.split(None, 1)[1].strip()))
+                        elif seg.startswith("color "):
+                            hover_decls.append(DeclarationNode("color", seg[6:].strip()))
+                        else:
+                            parts = seg.split(None, 1)
+                            if len(parts) == 2:
+                                hover_decls.append(DeclarationNode(parts[0], parts[1]))
+                    if hover_decls:
+                        hover_rules.append(RuleNode(selector=f".{base_comp}:hover, #{base_comp}:hover", declarations=hover_decls))
+                    continue
 
                 # Parse value for this property
                 val_parts = []
@@ -384,14 +559,27 @@ class ENLGDParser:
                         val_parts.append(f"var(--{var_name})")
                         continue
 
-                    # Handle 'gradient from "A" to "B" at 135 degrees'
+                    # Handle 'gradient ...'
                     if tok.value == "gradient":
                         self._advance()
-                        grad_val = self._parse_gradient_value()
-                        val_parts.append(grad_val)
+                        if not self._is_at_end() and self._peek().type == TokenType.STRING:
+                            grad_str = self._advance().value.strip('"\'')
+                            if "radial from" in grad_str:
+                                m = re.search(r'radial\s+from\s+([^\s]+)\s+at\s+([^\s]+(?:\s+[^\s]+)?)\s+to\s+([^\s]+)', grad_str)
+                                if m:
+                                    val_parts.append(f"radial-gradient(circle at {m.group(2)}, {m.group(1)}, {m.group(3)})")
+                                else:
+                                    val_parts.append(f"radial-gradient({grad_str})")
+                            elif "linear from" in grad_str:
+                                val_parts.append(self._parse_linear_str(grad_str))
+                            else:
+                                val_parts.append(grad_str)
+                        else:
+                            grad_val = self._parse_gradient_value()
+                            val_parts.append(grad_val)
                         continue
 
-                    # Handle 'percent', 'vh', 'vw', 'degrees' units following numbers
+                    # Units
                     if tok.value in ("percent", "%"):
                         self._advance()
                         if val_parts and val_parts[-1].isdigit():
@@ -416,10 +604,59 @@ class ENLGDParser:
                             val_parts[-1] = f"{val_parts[-1]}deg"
                         continue
 
+                    if tok.value in ("pixels", "pixel"):
+                        self._advance()
+                        if val_parts and val_parts[-1].isdigit():
+                            val_parts[-1] = f"{val_parts[-1]}px"
+                        continue
+
+                    # Sticky at top 0
+                    if prop_name == "position" and tok.value == "at":
+                        self._advance() # consume 'at'
+                        if not self._is_at_end() and self._peek().value in ("top", "bottom", "left", "right"):
+                            edge = self._advance().value
+                            num = self._advance().value if not self._is_at_end() else "0"
+                            num_formatted = f"{num}px" if num.isdigit() else num
+                            decls.append(DeclarationNode(property_name=edge, value=num_formatted))
+                        continue
+
                     # Regular value token
                     self._advance()
                     v = tok.value.strip('"\'') if tok.type == TokenType.STRING else tok.value
                     val_parts.append(v)
+
+                # Shorthand deductions when val_parts is empty or repeated property name
+                if not val_parts or val_parts == [prop_name]:
+                    if prop_name == "align-items":
+                        val_parts = ["center"]
+                    elif prop_name == "justify-content":
+                        val_parts = ["space-between"]
+
+                # Text Gradient
+                if prop_name == "text-gradient":
+                    grad_raw = " ".join(val_parts)
+                    grad_css = self._parse_linear_str(grad_raw)
+                    decls.append(DeclarationNode(property_name="background", value=grad_css))
+                    decls.append(DeclarationNode(property_name="-webkit-background-clip", value="text"))
+                    decls.append(DeclarationNode(property_name="-webkit-text-fill-color", value="transparent"))
+                    continue
+
+                # Backdrop filter
+                if prop_name == "backdrop-filter":
+                    raw_val = " ".join(val_parts)
+                    raw_val = raw_val.replace("blur", "").strip()
+                    val = _format_css_value("backdrop-filter", raw_val)
+                    decls.append(DeclarationNode(property_name="backdrop-filter", value=f"blur({val})"))
+                    decls.append(DeclarationNode(property_name="-webkit-backdrop-filter", value=f"blur({val})"))
+                    continue
+
+                # Grid columns
+                if prop_name == "grid-template-columns":
+                    raw_val = " ".join(val_parts)
+                    if raw_val.isdigit():
+                        raw_val = f"repeat({raw_val}, minmax(0, 1fr))"
+                    decls.append(DeclarationNode(property_name="grid-template-columns", value=raw_val))
+                    continue
 
                 raw_val = " ".join(val_parts)
                 final_val = _format_css_value(prop_name, raw_val)
@@ -427,7 +664,19 @@ class ENLGDParser:
             else:
                 self._advance()
 
-        return decls
+        return decls, hover_rules
+
+    def _parse_linear_str(self, grad_raw: str) -> str:
+        grad_raw = grad_raw.strip('"\'')
+        if "via" in grad_raw:
+            m = re.search(r'linear\s+from\s+([^\s]+)\s+via\s+([^\s]+)\s+to\s+([^\s]+)', grad_raw)
+            if m:
+                return f"linear-gradient(to right, {m.group(1)}, {m.group(2)}, {m.group(3)})"
+        elif "from" in grad_raw and "to" in grad_raw:
+            m = re.search(r'linear\s+from\s+([^\s]+)\s+to\s+([^\s]+)', grad_raw)
+            if m:
+                return f"linear-gradient(to right, {m.group(1)}, {m.group(2)})"
+        return f"linear-gradient({grad_raw})"
 
     def _parse_gradient_value(self) -> str:
         # from "#1e3c72" to "#2a5298" at 135 degrees

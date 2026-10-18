@@ -53,6 +53,10 @@ class ENLGFEmitter:
             # Assemble attributes
             attrs_str = ""
             for k, v in node.attributes.items():
+                if k == "href" and (v.endswith(".enlgd") or v.endswith(".enlngd")):
+                    v = v.rsplit(".", 1)[0] + ".css"
+                elif k == "src" and (v.endswith(".enlgs") or v.endswith(".enlngs")):
+                    v = v.rsplit(".", 1)[0] + ".js"
                 attrs_str += f' {k}="{v}"'
                 
             # Assemble inline styles

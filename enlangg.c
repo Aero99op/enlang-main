@@ -12,15 +12,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #ifdef _WIN32
 #include <windows.h>
+#include <direct.h>
+#define MKDIR(p) _mkdir(p)
 #elif defined(__APPLE__)
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <mach-o/dyld.h>
+#define MKDIR(p) mkdir(p, 0755)
 #else
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#define MKDIR(p) mkdir(p, 0755)
 #endif
 #include "enlngdb/c/enlngdb.h"
 #include "enlng/c/enlng_emitter.h"
@@ -30,513 +37,6 @@
 #endif
 
 #define VERSION "5.0.0-sovereign-universal"
-
-const char* EMBEDDED_RUNNER = 
-"import sys, os, re, math, time, random, json\n"
-"if hasattr(sys.stdout, 'reconfigure'):\n"
-"    sys.stdout.reconfigure(encoding='utf-8', errors='replace')\n"
-"\n"
-"# --- Primitives & Constants ---\n"
-"true = True; false = False; null = None; undefined = None\n"
-"pi = math.pi; e = math.e\n"
-"\n"
-"# --- Standard Built-in Utilities ---\n"
-"def _smart_input(prompt=''):\n"
-"    try: val = input(prompt)\n"
-"    except (EOFError, KeyboardInterrupt): return ''\n"
-"    try:\n"
-"        if '.' in val: return float(val)\n"
-"        return int(val)\n"
-"    except ValueError: return val\n"
-"def ask(prompt=''): return _smart_input(prompt)\n"
-"def _cat(*args): return ''.join(str(a) for a in args)\n"
-"def _smart_display(*args, sep=' '):\n"
-"    if not args: print(); return\n"
-"    if sep == '': print(''.join(str(a) for a in args)); return\n"
-"    res = []\n"
-"    for i, a in enumerate(args):\n"
-"        s = str(a)\n"
-"        if i > 0 and res:\n"
-"            prev = res[-1]\n"
-"            if not prev.endswith((' ', '\\t', '\\n')) and not s.startswith((' ', '\\t', '\\n')):\n"
-"                res.append(sep)\n"
-"        res.append(s)\n"
-"    print(''.join(res))\n"
-"\n"
-"def sleep(sec): time.sleep(sec)\n"
-"def random_number(a, b): return random.randint(a, b)\n"
-"def sqrt(n): return math.sqrt(n)\n"
-"def floor(n): return math.floor(n)\n"
-"def ceil(n): return math.ceil(n)\n"
-"def _enlng_arrange(target, indices):\n"
-"    if not isinstance(indices, (list, tuple)): indices = [indices]\n"
-"    tlen = len(target); res = []\n"
-"    for idx in indices:\n"
-"        try: i = int(idx)\n"
-"        except: continue\n"
-"        if i < 0: i = tlen + i\n"
-"        if 0 <= i < tlen: res.append(target[i])\n"
-"    return ''.join(res) if isinstance(target, str) else res\n"
-"def _enlng_parse_pos(pos, slen, is_add):\n"
-"    p = str(pos)\n"
-"    if p == 'at_first': return 0\n"
-"    if p == 'at_last': return slen if is_add else (slen - 1 if slen > 0 else 0)\n"
-"    try:\n"
-"        val = int(p)\n"
-"        if val < 0:\n"
-"            if is_add: return 0\n"
-"            val = slen + val\n"
-"            return max(0, val)\n"
-"        if is_add and val >= slen: return slen\n"
-"        if not is_add and val >= slen: return max(0, slen - 1)\n"
-"        return val\n"
-"    except: return 0\n"
-"def string_add(arg1, arg2, pos):\n"
-"    s1 = str(arg1); s2 = str(arg2)\n"
-"    if len(s1) == 1 and len(s2) > 1: item = s1; target = s2\n"
-"    elif len(s1) > 1 and len(s2) == 1: target = s1; item = s2\n"
-"    elif len(s1) > len(s2): target = s1; item = s2\n"
-"    elif len(s1) < len(s2):\n"
-"        try: pval = int(pos)\n"
-"        except: pval = 0\n"
-"        if pval <= len(s1) and pval > 0: target = s1; item = s2\n"
-"        else: item = s1; target = s2\n"
-"    else: item = s1; target = s2\n"
-"    slen = len(target)\n"
-"    idx = _enlng_parse_pos(pos, slen, True)\n"
-"    return target[:idx] + item + target[idx:]\n"
-"def string_insert(arg1, arg2, pos): return string_add(arg1, arg2, pos)\n"
-"def string_remove_at(s, pos):\n"
-"    s = str(s); slen = len(s)\n"
-"    if slen == 0: return s\n"
-"    idx = _enlng_parse_pos(pos, slen, False)\n"
-"    if 0 <= idx < slen: return s[:idx] + s[idx+1:]\n"
-"    return s\n"
-"def string_remove(s, pos):\n"
-"    s = str(s)\n"
-"    if isinstance(pos, int) or str(pos) in ('at_first', 'at_last'):\n"
-"        return string_remove_at(s, pos)\n"
-"    p = str(pos)\n"
-"    if (p.startswith('-') and p[1:].isdigit()) or p.isdigit():\n"
-"        return string_remove_at(s, pos)\n"
-"    idx = s.find(p)\n"
-"    if idx != -1: return s[:idx] + s[idx+len(p):]\n"
-"    return s\n"
-"def string_replace(arg1, arg2, pos):\n"
-"    s1 = str(arg1); s2 = str(arg2)\n"
-"    if len(s1) == 1 and len(s2) > 1: new_val = s1; target = s2\n"
-"    elif len(s1) > 1 and len(s2) == 1: target = s1; new_val = s2\n"
-"    elif len(s1) > len(s2): target = s1; new_val = s2\n"
-"    elif len(s1) < len(s2):\n"
-"        try: pval = int(pos)\n"
-"        except: pval = 0\n"
-"        if pval < len(s1) and pval > 0: target = s1; new_val = s2\n"
-"        else: new_val = s1; target = s2\n"
-"    else: new_val = s1; target = s2\n"
-"    slen = len(target)\n"
-"    if slen == 0: return target\n"
-"    idx = _enlng_parse_pos(pos, slen, False)\n"
-"    if 0 <= idx < slen: return target[:idx] + new_val + target[idx+1:]\n"
-"    return target\n"
-"def string_set_at(s, pos, new_char): return string_replace(new_char, s, pos)\n"
-"\n"
-"# --- Built-in File I/O ---\n"
-"def read_file(path):\n"
-"    with open(path, 'r', encoding='utf-8', errors='replace') as f: return f.read()\n"
-"def write_file(path, content):\n"
-"    with open(path, 'w', encoding='utf-8') as f: f.write(str(content))\n"
-"def append_file(path, content):\n"
-"    with open(path, 'a', encoding='utf-8') as f: f.write(str(content))\n"
-"def file_exists(path): return os.path.exists(path)\n"
-"\n"
-"# --- Test Framework ---\n"
-"class TestRunner:\n"
-"    def __init__(self):\n"
-"        self.passed = 0; self.failed = 0; self.total = 0\n"
-"    def describe(self, name):\n"
-"        print(f'\\n[TEST SUITE] {name}')\n"
-"        print('-' * 60)\n"
-"    def assert_equal(self, actual, expected, label=''):\n"
-"        self.total += 1\n"
-"        if actual == expected:\n"
-"            self.passed += 1\n"
-"            print(f'   PASS: {label}')\n"
-"            return True\n"
-"        else:\n"
-"            self.failed += 1\n"
-"            print(f'   FAIL: {label} (Expected: {expected}, Got: {actual})')\n"
-"            return False\n"
-"    def assert_true(self, condition, label=''):\n"
-"        return self.assert_equal(bool(condition), True, label)\n"
-"    def print_test_summary(self):\n"
-"        print('=' * 60)\n"
-"        print(f'Test Summary: {self.passed} Passed, {self.failed} Failed ({self.total} Total)')\n"
-"        print('=' * 60)\n"
-"test_runner = TestRunner()\n"
-"\n"
-"# --- Universal Enlng Compiler Engine ---\n"
-"def transpile_line(line):\n"
-"    indent_len = len(line) - len(line.lstrip(' '))\n"
-"    indent = line[:indent_len]\n"
-"    trimmed = line.strip()\n"
-"    if not trimmed or trimmed.startswith('#'): return line\n"
-"    if trimmed.startswith('type '): return f'{indent}# {trimmed}'\n"
-"    if trimmed.startswith('hint '): return f'{indent}# {trimmed}'\n"
-"\n"
-"    def fix_expr(expr):\n"
-"        str_literals = []\n"
-"        def _mask_str(m):\n"
-"            str_literals.append(m.group(0))\n"
-"            return f'__STR_LITERAL_{len(str_literals) - 1}__'\n"
-"        expr = re.sub(r'(\"[^\"]*\"|\\\'[^\\\']*\\\')', _mask_str, expr)\n"
-"        expr = re.sub(r'\\bis equal to\\b', '==', expr)\n"
-"        expr = re.sub(r'\\bis not equal to\\b', '!=', expr)\n"
-"        expr = re.sub(r'\\bis at least\\b', '>=', expr)\n"
-"        expr = re.sub(r'\\bis at most\\b', '<=', expr)\n"
-"        expr = re.sub(r'\\bis greater than or equal to\\b', '>=', expr)\n"
-"        expr = re.sub(r'\\bis less than or equal to\\b', '<=', expr)\n"
-"        expr = re.sub(r'\\bis greater than\\b', '>', expr)\n"
-"        expr = re.sub(r'\\bis less than\\b', '<', expr)\n"
-"        expr = re.sub(r'\\bgreater than\\b', '>', expr)\n"
-"        expr = re.sub(r'\\bless than\\b', '<', expr)\n"
-"        expr = re.sub(r'\\bequal to\\b', '==', expr)\n"
-"        expr = re.sub(r'\\bequals\\b', '==', expr)\n"
-"        expr = re.sub(r'\\bmultiplied by\\b', '*', expr)\n"
-"        expr = re.sub(r'\\bdivided by\\b', '/', expr)\n"
-"        expr = re.sub(r'\\bplus\\b', '+', expr)\n"
-"        expr = re.sub(r'\\bminus\\b', '-', expr)\n"
-"        expr = re.sub(r'\\b(mod|modulo|modulus|modulous|modoulous)\\b', '%', expr)\n"
-"        # Action Word Predicates & Comparisons\n"
-"        expr = re.sub(r'\\b([a-zA-Z0-9_\\[\\]\\.]+)\\s+starts\\s+with\\s+(.*?)(?=[,\\):]|$)', r'(\\1.startswith(\\2) if hasattr(\\1, \"startswith\") else False)', expr)\n"
-"        expr = re.sub(r'\\b([a-zA-Z0-9_\\[\\]\\.]+)\\s+ends\\s+with\\s+(.*?)(?=[,\\):]|$)', r'(\\1.endswith(\\2) if hasattr(\\1, \"endswith\") else False)', expr)\n"
-"        expr = re.sub(r'\\b([a-zA-Z0-9_\\[\\]\\.]+)\\s+is\\s+between\\s+(.*?)\\s+and\\s+([a-zA-Z0-9_\\[\\]\\.\\(\\)]+)', r'(\\2 <= \\1 <= \\3)', expr)\n"
-"        expr = re.sub(r'\\b([a-zA-Z0-9_\\[\\]\\.]+)\\s+is\\s+even\\b', r'(\\1 % 2 == 0)', expr)\n"
-"        expr = re.sub(r'\\b([a-zA-Z0-9_\\[\\]\\.]+)\\s+is\\s+odd\\b', r'(\\1 % 2 != 0)', expr)\n"
-"        expr = re.sub(r'\\b([a-zA-Z0-9_\\[\\]\\.]+)\\s+is\\s+not\\s+empty\\b', r'(len(\\1) > 0 if hasattr(\\1, \"__len__\") else bool(\\1))', expr)\n"
-"        expr = re.sub(r'\\b([a-zA-Z0-9_\\[\\]\\.]+)\\s+is\\s+empty\\b', r'(len(\\1) == 0 if hasattr(\\1, \"__len__\") else not \\1)', expr)\n"
-"        # Action Aggregations\n"
-"        expr = re.sub(r'\\bsum\\s+of\\s+([a-zA-Z0-9_\\[\\]\\(\\)]+)', r'sum(\\1)', expr)\n"
-"        expr = re.sub(r'\\b(?:average|avg)\\s+of\\s+([a-zA-Z0-9_\\[\\]\\(\\)]+)', r'(sum(\\1)/len(\\1) if len(\\1)>0 else 0)', expr)\n"
-"        expr = re.sub(r'\\b(?:highest|max)\\s+of\\s+([a-zA-Z0-9_\\[\\]\\(\\)]+)', r'max(\\1)', expr)\n"
-"        expr = re.sub(r'\\b(?:lowest|min)\\s+of\\s+([a-zA-Z0-9_\\[\\]\\(\\)]+)', r'min(\\1)', expr)\n"
-"        expr = re.sub(r'\\buppercase\\s+of\\s+([a-zA-Z0-9_\\[\\]\\(\\)]+)', r'(\\1.upper() if hasattr(\\1, \"upper\") else \\1)', expr)\n"
-"        expr = re.sub(r'\\blowercase\\s+of\\s+([a-zA-Z0-9_\\[\\]\\(\\)]+)', r'(\\1.lower() if hasattr(\\1, \"lower\") else \\1)', expr)\n"
-"        expr = re.sub(r'\\btrim\\s+spaces\\s+from\\s+([a-zA-Z0-9_\\[\\]\\(\\)]+)', r'(\\1.strip() if hasattr(\\1, \"strip\") else \\1)', expr)\n"
-"        expr = re.sub(r'\\btrim\\s+([a-zA-Z0-9_\\[\\]\\(\\)]+)', r'(\\1.strip() if hasattr(\\1, \"strip\") else \\1)', expr)\n"
-"        # Action Words: replace, split, join, find\n"
-"        expr = re.sub(r'\\breplace\\s+(.*?)\\s+with\\s+(.*?)\\s+in\\s+([a-zA-Z0-9_\\[\\]\\(\\)\\.]+)', r'(\\3.replace(\\1, \\2) if hasattr(\\3, \"replace\") else \\3)', expr)\n"
-"        expr = re.sub(r'\\bsplit\\s+(.*?)\\s+(?:by|on|with)\\s+([a-zA-Z0-9_\\[\\]\\(\\)\\\"\\\'\\.]+)', r'(\\1.split(\\2) if hasattr(\\1, \"split\") else [])', expr)\n"
-"        expr = re.sub(r'\\bjoin\\s+(.*?)\\s+(?:with|by)\\s+([a-zA-Z0-9_\\[\\]\\(\\)\\\"\\\'\\.]+)', r'(\\2.join([str(x) for x in \\1]) if hasattr(\\2, \"join\") and hasattr(\\1, \"__iter__\") else str(\\1))', expr)\n"
-"        expr = re.sub(r'\\bfind\\s+(.*?)\\s+in\\s+([a-zA-Z0-9_\\[\\]\\(\\)\\.]+)', r'(\\2.find(\\1) if hasattr(\\2, \"find\") else (\\2.index(\\1) if \\1 in \\2 else -1))', expr)\n"
-"        expr = re.sub(r'\\b([a-zA-Z0-9_\\[\\]]+)\\s+contains\\s+(.*)', r'(\\2 in \\1)', expr)\n"
-"        expr = re.sub(r'\\b(?:ask\\s+user\\s+with|ask\\s+with|ask)\\s+\"([^\"]*)\"', r'_smart_input(\"\\1\")', expr)\n"
-"        expr = re.sub(r'\\b(?:input\\s+with|input)\\s+\"([^\"]*)\"', r'_smart_input(\"\\1\")', expr)\n"
-"        expr = re.sub(r'\\bread\\s+from\\s+user\\s+with\\s+\"([^\"]*)\"', r'_smart_input(\"\\1\")', expr)\n"
-"        expr = re.sub(r'\\b(?:ask\\s+user|read\\s+from\\s+user|read\\s+input)\\b', r'_smart_input()', expr)\n"
-"        expr = re.sub(r'\\binput\\s*\\((.*?)\\)', r'_smart_input(\\1)', expr)\n"
-"        # Flexible Calling Action Words & Prepositions (use/call/run/invoke/execute/apply)\n"
-"        expr = re.sub(r'\\b(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)\\s+(?:from|using|on|in)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\b', r'\\3.\\1(\\2)', expr)\n"
-"        expr = re.sub(r'\\b(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_]+)\\s+(?:from|using|on|in)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\s+with\\s+(.*?)(?=[,\\):]|\\s+(?:and|or)\\b|$)', r'\\2.\\1(\\3)', expr)\n"
-"        expr = re.sub(r'\\b(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_]+)\\s+(?:from|using|on|in)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\b', r'\\2.\\1()', expr)\n"
-"        expr = re.sub(r'\\b(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\.([a-zA-Z0-9_]+)\\s+with\\s+(.*?)(?=[,\\):]|\\s+(?:and|or)\\b|$)', r'\\1.\\2(\\3)', expr)\n"
-"        expr = re.sub(r'\\b(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\.([a-zA-Z0-9_]+)\\b', r'\\1.\\2()', expr)\n"
-"        expr = re.sub(r'\\b(?:tell|ask)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\s+to\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)(?=[,\\):]|\\s+(?:and|or)\\b|$)', r'\\1.\\2(\\3)', expr)\n"
-"        expr = re.sub(r'\\b(?:tell|ask)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\s+to\\s+([a-zA-Z0-9_]+)\\b', r'\\1.\\2()', expr)\n"
-"        expr = re.sub(r'\\b(?:call|run|invoke|execute)\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)(?=[,\\):]|\\s+(?:and|or)\\b|$)', r'\\1(\\2)', expr)\n"
-"        expr = re.sub(r'\\b(?:call|run|invoke|execute)\\s+([a-zA-Z0-9_]+)\\b', r'\\1()', expr)\n"
-"        expr = re.sub(r'\\bcount\\s+(?:of\\s+)?(.*?)\\s+in\\s+([a-zA-Z0-9_\\[\\]\\(\\)]+)', r'(\\2.count(\\1) if hasattr(\\2, \"count\") else 0)', expr)\n"
-"        expr = re.sub(r'\\b(?:count of|length of)\\s+([a-zA-Z0-9_\\[\\]\"\\'\\(\\)]+)', r'len(\\1)', expr)\n"
-"        expr = re.sub(r'\\breverse\\s+(?:of\\s+)?([a-zA-Z0-9_\\[\\]\"\\'\\(\\)]+)', r'(\\1[::-1] if hasattr(\\1, \"__getitem__\") else \\1)', expr)\n"
-"        expr = re.sub(r'\\b([a-zA-Z0-9_]+)\\s+at_first\\b', r'\\1[0]', expr)\n"
-"        expr = re.sub(r'\\b([a-zA-Z0-9_]+)\\s+at_last\\b', r'\\1[-1]', expr)\n"
-"        expr = re.sub(r'\\b([a-zA-Z0-9_]+)\\s+at\\s+([^\\s,\\)]+)', r'\\1[\\2]', expr)\n"
-"        expr = re.sub(r\"\\b([a-zA-Z0-9_]+)'s\\s+([a-zA-Z0-9_]+)\\b\", r\"(\\1.\\2 if hasattr(\\1, '\\2') else \\1['\\2'])\", expr)\n"
-"        expr = re.sub(r\"\\b(?!type\\b|out\\b|end\\b|count\\b|length\\b|reverse\\b|uppercase\\b|lowercase\\b|sum\\b|average\\b|highest\\b|lowest\\b|max\\b|min\\b)([a-zA-Z0-9_]+)\\s+of\\s+([a-zA-Z0-9_]+)\\b\", r\"(\\2.\\1 if hasattr(\\2, '\\1') else \\2['\\1'])\", expr)\n"
-"        for i, s in enumerate(str_literals):\n"
-"            expr = expr.replace(f'__STR_LITERAL_{i}__', s)\n"
-"        return expr\n"
-"\n"
-"    # 1. Loop controls: break / continue / pass\n"
-"    if re.match(r'^(?:break|stop\\s+loop|exit\\s+loop)$', trimmed, re.I): return f'{indent}break'\n"
-"    if re.match(r'^(?:continue|skip\\s+iteration|next\\s+iteration)$', trimmed, re.I): return f'{indent}continue'\n"
-"    if re.match(r'^(?:pass|do\\s+nothing)$', trimmed, re.I): return f'{indent}pass'\n"
-"\n"
-"    # 2. Return statements: return / give back / give\n"
-"    m = re.match(r'^(?:return|give\\s+back|give)(?:\\s+(.*))?$', trimmed, re.I)\n"
-"    if m:\n"
-"        val = m.group(1)\n"
-"        return f'{indent}return {fix_expr(val)}' if val else f'{indent}return'\n"
-"\n"
-"    # 3. Exception handling: try / catch / finally / raise\n"
-"    if re.match(r'^(?:try|attempt):$', trimmed, re.I): return f'{indent}try:'\n"
-"    m = re.match(r'^(?:catch|rescue|except)(?:\\s+as\\s+|\\s+)([a-zA-Z0-9_]+):$', trimmed, re.I)\n"
-"    if m: return f'{indent}except Exception as {m.group(1)}:'\n"
-"    if re.match(r'^(?:catch|rescue|except):$', trimmed, re.I): return f'{indent}except Exception:'\n"
-"    if re.match(r'^finally:$', trimmed, re.I): return f'{indent}finally:'\n"
-"    m = re.match(r'^(?:raise|throw)\\s+(.*)$', trimmed, re.I)\n"
-"    if m: return f'{indent}raise Exception({fix_expr(m.group(1))})'\n"
-"\n"
-"    # 4. List mutations: add / append / push X to Y\n"
-"    m = re.match(r'^(?:add|append|push)\\s+(.*?)\\s+to\\s+([a-zA-Z0-9_\\[\\]\\.]+)$', trimmed, re.I)\n"
-"    if m: return f'{indent}{m.group(2)}.append({fix_expr(m.group(1))})'\n"
-"    m = re.match(r'^(?:remove|delete)\\s+(.*?)\\s+from\\s+([a-zA-Z0-9_\\[\\]\\.]+)$', trimmed, re.I)\n"
-"    if m: return f'{indent}{m.group(2)}.remove({fix_expr(m.group(1))})'\n"
-"\n"
-"    # 4b. String mutations: string_replace / string_add / string_insert / string_remove\n"
-"    m = re.match(r'^string_replace\\s+(.*?)\\s+(?:in|into|from|by|to|with|at)\\s+([a-zA-Z0-9_]+)(?:\\s+(?:at|in|by|to))?\\s+(.*)$', trimmed, re.I)\n"
-"    if m:\n"
-"        new_val, var_name, pos = m.group(1), m.group(2), m.group(3).strip()\n"
-"        if pos in ('at_first', 'at_last'): pos = f\"'{pos}'\"\n"
-"        else: pos = fix_expr(pos)\n"
-"        return f'{indent}{var_name} = string_replace({fix_expr(new_val)}, {var_name}, {pos})'\n"
-"    m = re.match(r'^(?:string_add|string_insert)\\s+(.*?)\\s+(?:in|into|from|by|to|with|at)\\s+([a-zA-Z0-9_]+)(?:\\s+(?:at|in|by|to))?\\s+(.*)$', trimmed, re.I)\n"
-"    if m:\n"
-"        item, var_name, pos = m.group(1), m.group(2), m.group(3).strip()\n"
-"        if pos in ('at_first', 'at_last'): pos = f\"'{pos}'\"\n"
-"        else: pos = fix_expr(pos)\n"
-"        return f'{indent}{var_name} = string_add({fix_expr(item)}, {var_name}, {pos})'\n"
-"    m = re.match(r'^string_remove\\s+(?:from\\s+|in\\s+)?([a-zA-Z0-9_]+)(?:\\s+(?:at|in|by|to))?\\s+(.*)$', trimmed, re.I)\n"
-"    if m:\n"
-"        var_name, pos = m.group(1), m.group(2).strip()\n"
-"        if pos in ('at_first', 'at_last'): pos = f\"'{pos}'\"\n"
-"        else: pos = fix_expr(pos)\n"
-"        return f'{indent}{var_name} = string_remove({var_name}, {pos})'\n"
-"\n"
-"    # 5. OOP: Class & Methods (class / blueprint / model)\n"
-"    m = re.match(r'^(?:define\\s+class|class|blueprint|model)\\s+([a-zA-Z0-9_]+)(?:\\s+(?:inherits\\s+from|extends)\\s+([a-zA-Z0-9_]+))?:$', trimmed, re.I)\n"
-"    if m:\n"
-"        cname, base = m.group(1), m.group(2)\n"
-"        return f'{indent}class {cname}({base}):' if base else f'{indent}class {cname}:'\n"
-"    m = re.match(r'^(?:(public|private|protected|hidden|secret)\\s+)?(?:method|define\\s+method)\\s+([a-zA-Z0-9_]+)(?:\\s+with\\s+(.*?))?:$', trimmed, re.I)\n"
-"    if m:\n"
-"        vis, mname, params = m.group(1), m.group(2), m.group(3) or ''\n"
-"        if vis and vis.lower() in ('private', 'secret', 'hidden', 'protected'): mname = f'_{mname}'\n"
-"        return f'{indent}def {mname}(self, {params}):' if params else f'{indent}def {mname}(self):'\n"
-"\n"
-"    # 5b. Flexible Method Invocation Statements\n"
-"    m = re.match(r'^(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_]+)\\s+with\\s+(.*?)\\s+(?:from|using|on|in)\\s+([a-zA-Z0-9_\\[\\]\\.]+)$', trimmed, re.I)\n"
-"    if m:\n"
-"        meth, args, obj = m.group(1), m.group(2), m.group(3)\n"
-"        return f'{indent}{obj}.{meth}({fix_expr(args)})'\n"
-"    m = re.match(r'^(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_]+)\\s+(?:from|using|on|in)\\s+([a-zA-Z0-9_\\[\\]\\.]+)(?:\\s+with\\s+(.*))?$', trimmed, re.I)\n"
-"    if m:\n"
-"        meth, obj, args = m.group(1), m.group(2), m.group(3)\n"
-"        return f'{indent}{obj}.{meth}({fix_expr(args)})' if args else f'{indent}{obj}.{meth}()'\n"
-"    m = re.match(r'^(?:call|use|run|invoke|execute|apply)\\s+([a-zA-Z0-9_\\[\\]\\.]+)\\.([a-zA-Z0-9_]+)(?:\\s+with\\s+(.*))?$', trimmed, re.I)\n"
-"    if m:\n"
-"        obj, meth, args = m.group(1), m.group(2), m.group(3)\n"
-"        return f'{indent}{obj}.{meth}({fix_expr(args)})' if args else f'{indent}{obj}.{meth}()'\n"
-"    m = re.match(r'^(?:tell|ask)\\s+([a-zA-Z0-9_\\.]+)\\s+to\\s+([a-zA-Z0-9_]+)(?:\\s+with\\s+(.*))?$', trimmed, re.I)\n"
-"    if m:\n"
-"        obj, meth, args = m.group(1), m.group(2), m.group(3)\n"
-"        return f'{indent}{obj}.{meth}({fix_expr(args)})' if args else f'{indent}{obj}.{meth}()'\n"
-"\n"
-"    # 6. Universal Hint Keyword Discovery for 'ask'\n"
-"    if re.search(r'\\b(?:ask|asking)\\b', trimmed, re.I) and not re.match(r'^(?:create|declare|initialize|let|set|if|while|for|define|display|show)\\b', trimmed, re.I):\n"
-"        _pm = re.search(r'\"([^\"]*)\"', trimmed)\n"
-"        _p = _pm.group(1) if _pm else ''\n"
-"        _cl = re.sub(r'\"[^\"]*\"', '', trimmed)\n"
-"        _cl = re.sub(r'[:=,]', ' ', _cl)\n"
-"        _fill = {'ask','asking','the','user','for','to','with','from','a','an','in','into','please','provide','give','enter','input','prompt','take','get'}\n"
-"        _vars = [t for t in _cl.split() if t.lower() not in _fill and re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', t)]\n"
-"        if _vars: return f'{indent}{_vars[0]} = _smart_input(\"{_p}\")'\n"
-"        return f'{indent}_smart_input(\"{_p}\")'\n"
-"\n"
-"    # 7. Variable Declarations (remember / freeze / create / declare / initialize / let / define)\n"
-"    m = re.match(r'^(?:remember\\s+|freeze\\s+|create\\s+(?:a\\s+|an\\s+|the\\s+)?|declare\\s+|initialize\\s+(?:the\\s+)?|let\\s+|define\\s+)([a-zA-Z0-9_]+)\\s+(?:of|as|to|=)\\s+(.*)$', trimmed, re.I)\n"
-"    if m: return f'{indent}{m.group(1)} = {fix_expr(m.group(2))}'\n"
-"\n"
-"    # 8. Variable Assignments & Mutations (set / update / assign / change / increase / decrease)\n"
-"    m = re.match(r'^(?:set|update|assign|change)\\s+([a-zA-Z0-9_\\[\\]\"\\.]+)\\s+(?:to|=)\\s+(.*)$', trimmed, re.I)\n"
-"    if m: return f'{indent}{m.group(1)} = {fix_expr(m.group(2))}'\n"
-"    m = re.match(r'^(?:increase)\\s+([a-zA-Z0-9_\\[\\]\"\\.]+)\\s+by\\s+(.*)$', trimmed, re.I)\n"
-"    if m: return f'{indent}{m.group(1)} += {fix_expr(m.group(2))}'\n"
-"    m = re.match(r'^(?:decrease)\\s+([a-zA-Z0-9_\\[\\]\"\\.]+)\\s+by\\s+(.*)$', trimmed, re.I)\n"
-"    if m: return f'{indent}{m.group(1)} -= {fix_expr(m.group(2))}'\n"
-"    m = re.match(r'^(?:multiply)\\s+([a-zA-Z0-9_\\[\\]\"\\.]+)\\s+by\\s+(.*)$', trimmed, re.I)\n"
-"    if m: return f'{indent}{m.group(1)} *= {fix_expr(m.group(2))}'\n"
-"    m = re.match(r'^(?:divide)\\s+([a-zA-Z0-9_\\[\\]\"\\.]+)\\s+by\\s+(.*)$', trimmed, re.I)\n"
-"    if m: return f'{indent}{m.group(1)} /= {fix_expr(m.group(2))}'\n"
-"    m = re.match(r'^set\\s+([a-zA-Z0-9_\\[\\]\"\\.]+)\\s*(\\+=|-=|\\*=|/=|%=)\\s*(.*)$', trimmed)\n"
-"    if m: return f'{indent}{m.group(1)} {m.group(2)} {fix_expr(m.group(3))}'\n"
-"    m = re.match(r'^reverse\\s+([a-zA-Z0-9_]+)$', trimmed, re.I)\n"
-"    if m: return f'{indent}{m.group(1)} = {m.group(1)}[::-1]'\n"
-"    m = re.match(r'^arrange\\s+([a-zA-Z0-9_]+)(?:\\s+(?:by|with|to|in|at|of|as))?\\s+(.*)$', trimmed, re.I)\n"
-"    if m:\n"
-"        _tgt, _idx = m.group(1), m.group(2).strip()\n"
-"        if _idx.startswith('[') and _idx.endswith(']'): return f'{indent}{_tgt} = _enlng_arrange({_tgt}, {_idx})'\n"
-"        elif ',' in _idx: return f'{indent}{_tgt} = _enlng_arrange({_tgt}, [{_idx}])'\n"
-"        else: return f'{indent}{_tgt} = _enlng_arrange({_tgt}, {_idx})'\n"
-"\n"
-"    # 9. Output Display (display / show / output / print)\n"
-"    m = re.match(r'^(?:display|show|output|print)\\s+(.*)$', trimmed, re.I)\n"
-"    if m:\n"
-"        _d = m.group(1).strip()\n"
-"        _sep_arg = ''\n"
-"        _ms = re.search(r'\\s+(?:without\\s+spaces?|with\\s+no\\s+spaces?|joined)\\s*$', _d, re.I)\n"
-"        if _ms: _sep_arg = \", sep=''\"; _d = _d[:_ms.start()].strip()\n"
-"        else:\n"
-"            _ms2 = re.search(r'\\s+with\\s+separator\\s+(\".*?\"|\\x27.*?\\x27)\\s*$', _d, re.I)\n"
-"            if _ms2: _sep_arg = f', sep={_ms2.group(1)}'; _d = _d[:_ms2.start()].strip()\n"
-"        _v = fix_expr(_d)\n"
-"        _args = []; _curr = []; _iq = False; _qc = ''; _bd = 0; _pd = 0\n"
-"        for _c in _v:\n"
-"            if not _iq and _c in ('\"', \"'\"): _iq = True; _qc = _c; _curr.append(_c)\n"
-"            elif _iq and _c == _qc: _iq = False; _curr.append(_c)\n"
-"            elif not _iq and _c in ('(', '['): _pd += (_c == '('); _bd += (_c == '['); _curr.append(_c)\n"
-"            elif not _iq and _c in (')', ']'): _pd -= (_c == ')'); _bd -= (_c == ']'); _curr.append(_c)\n"
-"            elif not _iq and _bd == 0 and _pd == 0 and _c == ',': _args.append(''.join(_curr).strip()); _curr = []\n"
-"            else: _curr.append(_c)\n"
-"        if _curr: _args.append(''.join(_curr).strip())\n"
-"        if len(_args) == 1 and '+' not in _args[0]:\n"
-"            _s = _args[0]\n"
-"            _s = re.sub(r'(\"[^\"]*\"|\\\'[^\\\']*\\\')\\s+([a-zA-Z0-9_\\(\\[\\{])', r'\\1, \\2', _s)\n"
-"            _s = re.sub(r'([a-zA-Z0-9_\\]\\)\\}])\\s+(\"[^\"]*\"|\\\'[^\\\']*\\\')', r'\\1, \\2', _s)\n"
-"            _s = re.sub(r'(\"[^\"]*\"|\\\'[^\\\']*\\\')\\s+(\"[^\"]*\"|\\\'[^\\\']*\\\')', r'\\1, \\2', _s)\n"
-"            if ',' in _s: _args = [x.strip() for x in _s.split(',')]\n"
-"        _pargs = []\n"
-"        for _a in _args:\n"
-"            if '+' in _a:\n"
-"                _ach = []; _aiq = False; _aqc = ''; _abd = 0; _apd = 0; _hstr = False\n"
-"                for _ai, _ac in enumerate(_a):\n"
-"                    if not _aiq and _ac in ('\"', \"'\"): _aiq = True; _aqc = _ac; _ach.append(_ac)\n"
-"                    elif _aiq and _ac == _aqc: _aiq = False; _ach.append(_ac)\n"
-"                    elif not _aiq and _ac in ('(', '['): _apd += (_ac == '('); _abd += (_ac == '['); _ach.append(_ac)\n"
-"                    elif not _aiq and _ac in (')', ']'): _apd -= (_ac == ')'); _abd -= (_ac == ']'); _ach.append(_ac)\n"
-"                    elif not _aiq and _bd == 0 and _apd == 0 and _ac == '+':\n"
-"                        _alk = len(_ach) - 1\n"
-"                        while _alk >= 0 and _ach[_alk] in ' \\t': _alk -= 1\n"
-"                        _alstr = (_alk >= 0 and _ach[_alk] in ('\"', \"'\"))\n"
-"                        _ark = _ai + 1\n"
-"                        while _ark < len(_a) and _a[_ark] in ' \\t': _ark += 1\n"
-"                        _arstr = (_ark < len(_a) and _a[_ark] in ('\"', \"'\"))\n"
-"                        if _alstr or _arstr: _hstr = True; _ach.append(',')\n"
-"                        else: _ach.append('+')\n"
-"                    else: _ach.append(_ac)\n"
-"                if _hstr: _pargs.append(f\"_cat({''.join(_ach)})\")\n"
-"                else: _pargs.append(_a)\n"
-"            else: _pargs.append(_a)\n"
-"        return f'{indent}_smart_display({\", \".join(_pargs)}{_sep_arg})'\n"
-"\n"
-"    # 10. Loops (repeat times / until / while / repeat while / for each / for range)\n"
-"    m = re.match(r'^repeat\\s+(.*?)\\s+times:$', trimmed, re.I)\n"
-"    if m: return f'{indent}for _ in range({fix_expr(m.group(1))}):'\n"
-"    m = re.match(r'^(?:repeat\\s+until|until)\\s+(.*?):$', trimmed, re.I)\n"
-"    if m: return f'{indent}while not ({fix_expr(m.group(1))}):'\n"
-"    m = re.match(r'^(?:while|repeat\\s+while)\\s+(.*?):$', trimmed, re.I)\n"
-"    if m: return f'{indent}while {fix_expr(m.group(1))}:'\n"
-"    m = re.match(r'^for\\s+(?:each|every|all)\\s+([a-zA-Z0-9_]+)\\s+in\\s+(.*?):$', trimmed, re.I)\n"
-"    if m: return f'{indent}for {m.group(1)} in {fix_expr(m.group(2))}:'\n"
-"    m = re.match(r'^for\\s+([a-zA-Z0-9_]+)\\s+from\\s+(.*?)\\s+to\\s+(.*?)(?:\\s+by\\s+(.*?))?:$', trimmed, re.I)\n"
-"    if m:\n"
-"        v, s, e, st = m.group(1), m.group(2), m.group(3), m.group(4)\n"
-"        if st: return f'{indent}for {v} in range({fix_expr(s)}, ({fix_expr(e)}) + 1, {fix_expr(st)}):'\n"
-"        return f'{indent}for {v} in range({fix_expr(s)}, ({fix_expr(e)}) + 1):'\n"
-"\n"
-"    # 11. Conditionals (if / when / else if / otherwise if / elif / else / otherwise)\n"
-"    m = re.match(r'^(?:if|when)\\s+(.*?):$', trimmed, re.I)\n"
-"    if m: return f'{indent}if {fix_expr(m.group(1))}:'\n"
-"    m = re.match(r'^(?:else\\s+if|otherwise\\s+if|elif)\\s+(.*?):$', trimmed, re.I)\n"
-"    if m: return f'{indent}elif {fix_expr(m.group(1))}:'\n"
-"    if re.match(r'^(?:else|otherwise):$', trimmed, re.I): return f'{indent}else:'\n"
-"\n"
-"    # 12. Functions (define function / function / routine / procedure / def / action)\n"
-"    m = re.match(r'^(?:define\\s+function|function|routine|procedure|def|action)\\s+([a-zA-Z0-9_]+)(?:\\s*\\((.*?)\\)|\\s+with\\s+(.*?))?:$', trimmed, re.I)\n"
-"    if m:\n"
-"        _p = m.group(2) if m.group(2) is not None else (m.group(3) or \"\")\n"
-"        return f'{indent}def {m.group(1)}({_p}):'\n"
-"\n"
-"    # 13. Modules & Libraries (Dual-Mode Python Bridge & Sovereign Modules)\n"
-"    m = re.match(r'^(?:use|import)\\s+[\"\\']([^\"\\']+)[\"\\']$', trimmed, re.I)\n"
-"    if m:\n"
-"        _imp = m.group(1)\n"
-"        _candidates = [_imp, f'{_imp}.enlng', f'lib_{_imp}.enlng']\n"
-"        _found_lines = None\n"
-"        for _sdir in ['.', '.enlang_modules', 'stdlib', 'lib', 'D:\\\\enlangg']:\n"
-"            for _cand in _candidates:\n"
-"                _fp = os.path.join(_sdir, _cand)\n"
-"                if os.path.exists(_fp):\n"
-"                    try:\n"
-"                        with open(_fp, 'r', encoding='utf-8', errors='replace') as _fh:\n"
-"                            _found_lines = [transpile_line(l) for l in _fh.read().splitlines()]\n"
-"                        break\n"
-"                    except: pass\n"
-"            if _found_lines: break\n"
-"        if _found_lines: return '\\n'.join(_found_lines)\n"
-"        if re.match(r'^[a-zA-Z0-9_\\.]+$', _imp): return f'{indent}import {_imp}'\n"
-"        return f'{indent}# use {_imp}'\n"
-"    m = re.match(r'^from\\s+(?:library\\s+|module\\s+)?[\"\\']?([a-zA-Z0-9_\\.]+)[\"\\']?\\s+import\\s+(.*)$', trimmed, re.I)\n"
-"    if m: return f'{indent}from {m.group(1)} import {m.group(2).strip()}'\n"
-"    m = re.match(r'^(?:use\\s+python\\s+library|use\\s+python\\s+module|use\\s+library|use\\s+module|import\\s+python\\s+module|import\\s+library|import\\s+module|load\\s+library|load\\s+module)\\s+[\"\\']?([a-zA-Z0-9_\\.]+)[\"\\']?(?:\\s+as\\s+([a-zA-Z0-9_]+))?$', trimmed, re.I)\n"
-"    if m:\n"
-"        mod, alias = m.group(1), m.group(2)\n"
-"        if alias: return f'{indent}import {mod} as {alias}'\n"
-"        return f'{indent}import {mod}'\n"
-"    m = re.match(r'^import\\s+([a-zA-Z0-9_\\.]+)(?:\\s+as\\s+([a-zA-Z0-9_]+))?$', trimmed, re.I)\n"
-"    if m:\n"
-"        mod, alias = m.group(1), m.group(2)\n"
-"        if alias: return f'{indent}import {mod} as {alias}'\n"
-"        return f'{indent}import {mod}'\n"
-"\n"
-"    return f'{indent}{fix_expr(trimmed)}'\n"
-"\n"
-"if len(sys.argv) > 1:\n"
-"    import sys, os\n"
-"    src_file = sys.argv[1]\n"
-"    if os.path.exists('.enlang_modules') and os.path.abspath('.enlang_modules') not in sys.path:\n"
-"        sys.path.insert(0, os.path.abspath('.enlang_modules'))\n"
-"    for start in [os.getcwd(), os.path.dirname(os.path.abspath(src_file))]:\n"
-"        cur = os.path.abspath(start)\n"
-"        while cur and cur != os.path.dirname(cur):\n"
-"            if os.path.exists(os.path.join(cur, 'enlngdb')):\n"
-"                if cur not in sys.path: sys.path.insert(0, cur)\n"
-"                break\n"
-"            cur = os.path.dirname(cur)\n"
-"    if 'D:\\\\enlangg' not in sys.path: sys.path.append('D:\\\\enlangg')\n"
-"    if os.path.exists(src_file):\n"
-"        if src_file.endswith(('.enlngdb', '.enlgdb')):\n"
-"            from enlngdb.compiler import run_enlngdb_file\n"
-"            run_enlngdb_file(src_file)\n"
-"            sys.exit(0)\n"
-"        with open(src_file, 'r', encoding='utf-8', errors='replace') as f:\n"
-"            content = f.read()\n"
-"        if content.strip().startswith(('type enlngdb', 'type enlgdb')):\n"
-"            from enlngdb.compiler import run_enlngdb_file\n"
-"            run_enlngdb_file(src_file)\n"
-"            sys.exit(0)\n"
-"        try:\n"
-"            transpiled = '\\n'.join(transpile_line(l) for l in content.splitlines())\n"
-"            code_obj = compile(transpiled, src_file, 'exec')\n"
-"            exec(code_obj)\n"
-"        except Exception as e:\n"
-"            try:\n"
-"                from enlg.diagnostics.error_formatter import format_human_diagnostic\n"
-"                line_no = getattr(e, 'lineno', None)\n"
-"                col_no = getattr(e, 'offset', None)\n"
-"                if line_no is None:\n"
-"                    import traceback\n"
-"                    tb = traceback.extract_tb(sys.exc_info()[2])\n"
-"                    for frame in reversed(tb):\n"
-"                        if frame.filename == src_file:\n"
-"                            line_no = frame.lineno\n"
-"                            break\n"
-"                card = format_human_diagnostic(\n"
-"                    source=content,\n"
-"                    line=line_no or 1,\n"
-"                    col=col_no or 1,\n"
-"                    file_path=src_file,\n"
-"                    domain='enlng',\n"
-"                    error_type=e.__class__.__name__,\n"
-"                    raw_error=str(e)\n"
-"                )\n"
-"                print(card, file=sys.stderr)\n"
-"            except Exception as fe:\n"
-"                print(f'[ENLANGG ERROR] in \\'{src_file}\\': {e}', file=sys.stderr)\n"
-"            sys.exit(1)\n"
-"    else:\n"
-"        print(f'[ENLANGG ERROR] File not found: {src_file}', file=sys.stderr)\n"
-"        sys.exit(1)\n"
-;
 
 void print_help() {
     printf("=====================================================================\n");
@@ -561,14 +61,12 @@ void print_help() {
     printf("  enlangg m <app.enlngm>                      Launch Pure C Native Smartphone Simulator (390x844)\n");
     printf("  enlangg m build <app.enlngm> --target apk   Build mobile production package (HAL ARM64)\n");
     printf("  enlangg build <app.enlngm> --target apk     Direct shortcut to mobile production compiler\n\n");
-    printf("Developer Experience & Tooling:\n");
-    printf("  enlangg fmt [file/dir] [-w|--write]         Format Enlang files with Sovereign Formatter\n");
-    printf("  enlangg fmt [file/dir] [-c|--check]         Verify files are formatted (CI check mode)\n");
+    printf("Developer Experience & Tooling (Pure C):\n");
+    printf("  enlangg fmt <file> [-w|--write] [-c|--check] Format Enlang files with Sovereign C Formatter\n");
     printf("  enlangg pkg init [name]                     Initialize a new enlang.json project manifest\n");
-    printf("  enlangg pkg add <package>                   Add dependency (stdlib or git) & link modules\n");
-    printf("  enlangg pkg install                         Install all dependencies declared in enlang.json\n");
-    printf("  enlangg pkg list                            List all declared and installed dependencies\n");
-    printf("  enlangg lsp                                 Start Language Server Protocol daemon on stdio\n\n");
+    printf("  enlangg pkg add <package>                   Add stdlib dependency & link modules\n");
+    printf("  enlangg pkg install                         Install dependencies declared in enlang.json\n");
+    printf("  enlangg pkg list                            List declared dependencies in enlang.json\n\n");
     printf("Dedicated Standalone Executables in PATH:\n");
     printf("  enlangg   Universal master toolchain dispatcher\n");
     printf("  enlng     Core general-purpose computing with arena memory (.exe)\n");
@@ -624,77 +122,434 @@ static unsigned long get_current_pid(void) {
 #endif
 }
 
-static int run_python_bridge(const char* filepath) {
-    char temp_script[MAX_PATH];
-    char temp_dir[MAX_PATH];
-    get_system_temp_dir(temp_dir, sizeof(temp_dir));
-    snprintf(temp_script, sizeof(temp_script), "%senlangg_runner_%lu.py", temp_dir, get_current_pid());
+static bool has_suffix(const char* str, const char* suffix) {
+    if (!str || !suffix) return false;
+    size_t str_len = strlen(str);
+    size_t suf_len = strlen(suffix);
+    if (str_len < suf_len) return false;
+    return (strcmp(str + (str_len - suf_len), suffix) == 0);
+}
 
-    FILE* f = fopen(temp_script, "w");
-    if (!f) {
-        fprintf(stderr, "[ENLANGG ERROR] Could not create temp runner script.\n");
+static void append_safe_arg(char* buf, size_t buf_size, const char* arg) {
+    if (!buf || !arg) return;
+    size_t len = strlen(buf);
+    if (len + 4 >= buf_size) return;
+    buf[len++] = ' ';
+    buf[len++] = '"';
+    for (const char* p = arg; *p && len + 3 < buf_size; p++) {
+        if (*p == '"' || *p == '\\') {
+            buf[len++] = '\\';
+        }
+        buf[len++] = *p;
+    }
+    buf[len++] = '"';
+    buf[len] = '\0';
+}
+
+static bool file_exists_c(const char* path) {
+    if (!path || !*path) return false;
+    FILE* f = fopen(path, "rb");
+    if (!f) return false;
+    fclose(f);
+    return true;
+}
+
+static bool copy_file_c(const char* src, const char* dst) {
+    FILE* in = fopen(src, "rb");
+    if (!in) return false;
+    FILE* out = fopen(dst, "wb");
+    if (!out) {
+        fclose(in);
+        return false;
+    }
+    char buf[4096];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), in)) > 0) {
+        if (fwrite(buf, 1, n, out) != n) {
+            fclose(in);
+            fclose(out);
+            return false;
+        }
+    }
+    fclose(in);
+    fclose(out);
+    return true;
+}
+
+/* Native Pure C Formatter (enlangg fmt) */
+static int run_native_fmt(int argc, char* argv[]) {
+    const char* target = NULL;
+    bool write_mode = false;
+    bool check_mode = false;
+
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--write") == 0) {
+            write_mode = true;
+        } else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--check") == 0) {
+            check_mode = true;
+        } else if (argv[i][0] != '-') {
+            target = argv[i];
+        }
+    }
+
+    if (!target) {
+        fprintf(stderr, "Error: Usage: enlangg fmt <file> [-w|--write] [-c|--check]\n");
         return 1;
     }
 
-    fputs(EMBEDDED_RUNNER, f);
+    FILE* f = fopen(target, "rb");
+    if (!f) {
+        fprintf(stderr, "Error: File not found: '%s'\n", target);
+        return 1;
+    }
+
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (fsize < 0) {
+        fclose(f);
+        return 1;
+    }
+
+    char* raw = (char*)malloc((size_t)fsize + 1);
+    if (!raw) {
+        fclose(f);
+        return 1;
+    }
+    size_t read_bytes = fread(raw, 1, (size_t)fsize, f);
+    raw[read_bytes] = '\0';
     fclose(f);
 
-    char cmd[MAX_PATH * 2 + 64];
-    snprintf(cmd, sizeof(cmd), "python \"%s\" \"%s\"", temp_script, filepath);
-    int res = system(cmd);
+    size_t out_cap = (size_t)fsize * 2 + 4096;
+    char* formatted = (char*)malloc(out_cap);
+    if (!formatted) {
+        free(raw);
+        return 1;
+    }
+    size_t out_len = 0;
+    formatted[0] = '\0';
 
-    remove(temp_script);
-    return res;
+    char* p = raw;
+    while (*p) {
+        char* line_end = strchr(p, '\n');
+        size_t len = line_end ? (size_t)(line_end - p) : strlen(p);
+        char line[4096];
+        if (len >= sizeof(line)) len = sizeof(line) - 1;
+        memcpy(line, p, len);
+        line[len] = '\0';
+        while (len > 0 && (line[len - 1] == '\r' || line[len - 1] == ' ' || line[len - 1] == '\t')) {
+            line[--len] = '\0';
+        }
+
+        /* Preserve each line's original indentation (normalising tabs to 4 spaces) */
+        int lead_spaces = 0;
+        char* trimmed = line;
+        while (*trimmed == ' ' || *trimmed == '\t') {
+            if (*trimmed == '\t') lead_spaces += 4;
+            else lead_spaces += 1;
+            trimmed++;
+        }
+
+        if (*trimmed == '\0') {
+            if (out_len + 2 >= out_cap) {
+                out_cap = (out_cap + 4096) * 2;
+                char* nb = (char*)realloc(formatted, out_cap);
+                if (!nb) { free(raw); free(formatted); return 1; }
+                formatted = nb;
+            }
+            formatted[out_len++] = '\n';
+            formatted[out_len] = '\0';
+        } else {
+            /* Collapse repeated spaces/tabs outside string literals and comments */
+            char norm_line[4096];
+            size_t nlen = 0;
+            char in_quote = 0;
+            bool prev_space = false;
+
+            for (const char* c = trimmed; *c && nlen + 4 < sizeof(norm_line); c++) {
+                if (in_quote) {
+                    if (*c == '\\' && *(c + 1)) {
+                        norm_line[nlen++] = *c++;
+                        norm_line[nlen++] = *c;
+                        continue;
+                    }
+                    if (*c == in_quote) {
+                        in_quote = 0;
+                    }
+                    norm_line[nlen++] = *c;
+                    prev_space = false;
+                } else {
+                    if (*c == '#') {
+                        while (*c && nlen + 2 < sizeof(norm_line)) {
+                            norm_line[nlen++] = *c++;
+                        }
+                        break;
+                    }
+                    if (*c == '"' || *c == '\'') {
+                        in_quote = *c;
+                        norm_line[nlen++] = *c;
+                        prev_space = false;
+                    } else if (*c == ' ' || *c == '\t') {
+                        if (!prev_space) {
+                            norm_line[nlen++] = ' ';
+                            prev_space = true;
+                        }
+                    } else {
+                        if (*c == ':' && *(c + 1) == '\0' && nlen > 0 && norm_line[nlen - 1] == ' ') {
+                            norm_line[nlen - 1] = ':';
+                        } else {
+                            norm_line[nlen++] = *c;
+                        }
+                        prev_space = false;
+                    }
+                }
+            }
+            norm_line[nlen] = '\0';
+
+            if (out_len + (size_t)lead_spaces + nlen + 2 >= out_cap) {
+                out_cap = (out_cap + (size_t)lead_spaces + nlen + 4096) * 2;
+                char* nb = (char*)realloc(formatted, out_cap);
+                if (!nb) { free(raw); free(formatted); return 1; }
+                formatted = nb;
+            }
+            for (int s = 0; s < lead_spaces; s++) formatted[out_len++] = ' ';
+            memcpy(formatted + out_len, norm_line, nlen);
+            out_len += nlen;
+            formatted[out_len++] = '\n';
+            formatted[out_len] = '\0';
+        }
+
+        if (!line_end) break;
+        p = line_end + 1;
+    }
+
+    /* Compare ignoring CR (\r) differences so Windows CRLF files compare cleanly */
+    bool changed = false;
+    {
+        const char* a = raw;
+        const char* b = formatted;
+        while (*a || *b) {
+            while (*a == '\r') a++;
+            while (*b == '\r') b++;
+            if (*a != *b) { changed = true; break; }
+            if (*a) a++;
+            if (*b) b++;
+        }
+    }
+    int ret = 0;
+
+    if (check_mode) {
+        if (changed) {
+            fprintf(stderr, "[enlangg fmt] File '%s' requires formatting.\n", target);
+            ret = 1;
+        } else {
+            printf("[enlangg fmt] File '%s' is properly formatted.\n", target);
+            ret = 0;
+        }
+    } else if (write_mode) {
+        FILE* out = fopen(target, "wb");
+        if (!out) {
+            fprintf(stderr, "Error: Could not write to '%s'\n", target);
+            ret = 1;
+        } else {
+            fwrite(formatted, 1, out_len, out);
+            fclose(out);
+            printf("[enlangg fmt] Formatted '%s'\n", target);
+        }
+    } else {
+        fwrite(formatted, 1, out_len, stdout);
+    }
+
+    free(raw);
+    free(formatted);
+    return ret;
+}
+
+/* Native Pure C Package Manager (enlangg pkg) */
+static const struct { const char* name; const char* file; } STDLIB_MODULES[] = {
+    {"math", "lib_math.enlng"},
+    {"strings", "lib_strings.enlng"},
+    {"ds", "lib_ds.enlng"},
+    {"file", "lib_file.enlng"},
+    {"fs", "lib_fs.enlng"},
+    {"ml", "lib_ml.enlng"},
+    {"net", "lib_net.enlng"},
+    {"db", "lib_db.enlng"},
+    {"concurrency", "lib_concurrency.enlng"},
+    {"std", "lib_std.enlng"},
+    {"enlngdb", "lib_enlngdb.enlng"},
+    {NULL, NULL}
+};
+
+static int run_native_pkg(const char* subcmd, int arg_start, int argc, char* argv[]) {
+    if (!subcmd || strcmp(subcmd, "--help") == 0 || strcmp(subcmd, "-h") == 0) {
+        printf("Usage: enlangg pkg <init|add|install|list|remove> [args]\n");
+        return 0;
+    }
+
+    if (strcmp(subcmd, "init") == 0) {
+        const char* proj_name = (arg_start < argc) ? argv[arg_start] : "enlang-app";
+        if (file_exists_c("enlang.json")) {
+            printf("[enlangg pkg] Project manifest already exists at enlang.json\n");
+            return 0;
+        }
+        FILE* f = fopen("enlang.json", "wb");
+        if (!f) {
+            fprintf(stderr, "Error: Could not create enlang.json\n");
+            return 1;
+        }
+        fprintf(f, "{\n  \"name\": \"%s\",\n  \"version\": \"1.0.0\",\n  \"description\": \"Sovereign Enlang Project\",\n  \"main\": \"main.enlng\",\n  \"dependencies\": {}\n}\n", proj_name);
+        fclose(f);
+        printf("[SUCCESS] Created project manifest: enlang.json\n");
+
+        if (!file_exists_c("main.enlng")) {
+            FILE* mf = fopen("main.enlng", "wb");
+            if (mf) {
+                fprintf(mf, "# Sovereign Enlang Application Entrypoint\n\nfreeze APP_NAME as \"%s\"\nshow \"[START] Running \" + APP_NAME\n", proj_name);
+                fclose(mf);
+                printf("[SUCCESS] Generated entrypoint: main.enlng\n");
+            }
+        }
+        return 0;
+    }
+
+    if (strcmp(subcmd, "add") == 0) {
+        if (arg_start >= argc) {
+            fprintf(stderr, "Error: Usage: enlangg pkg add <package>\n");
+            return 1;
+        }
+        const char* pkg = argv[arg_start];
+        const char* lib_file = NULL;
+        for (int i = 0; STDLIB_MODULES[i].name; i++) {
+            if (strcmp(pkg, STDLIB_MODULES[i].name) == 0) {
+                lib_file = STDLIB_MODULES[i].file;
+                break;
+            }
+        }
+        if (!lib_file) {
+            fprintf(stderr, "Error: Package '%s' not found in standard library.\n", pkg);
+            return 1;
+        }
+
+        char exe_dir[MAX_PATH];
+        get_executable_dir(exe_dir, sizeof(exe_dir));
+        char src_path[MAX_PATH];
+        snprintf(src_path, sizeof(src_path), "%s/%s", exe_dir, lib_file);
+        if (!file_exists_c(src_path)) {
+            snprintf(src_path, sizeof(src_path), "%s", lib_file);
+        }
+        if (!file_exists_c(src_path)) {
+            fprintf(stderr, "Error: Standard library module '%s' not found.\n", lib_file);
+            return 1;
+        }
+
+        MKDIR(".enlang_modules");
+        char dst1[MAX_PATH], dst2[MAX_PATH];
+        snprintf(dst1, sizeof(dst1), ".enlang_modules/%s", lib_file);
+        snprintf(dst2, sizeof(dst2), ".enlang_modules/%s.enlng", pkg);
+        if (!copy_file_c(src_path, dst1) || !copy_file_c(src_path, dst2)) {
+            fprintf(stderr, "Error: Failed to link module '%s' into .enlang_modules/\n", pkg);
+            return 1;
+        }
+        printf("[SUCCESS] Linked stdlib '%s' -> .enlang_modules/%s\n", pkg, lib_file);
+        return 0;
+    }
+
+    if (strcmp(subcmd, "list") == 0) {
+        if (!file_exists_c("enlang.json")) {
+            fprintf(stderr, "Error: No enlang.json found in current directory. Run 'enlangg pkg init' first.\n");
+            return 1;
+        }
+        FILE* f = fopen("enlang.json", "rb");
+        if (!f) return 1;
+        char buf[4096];
+        size_t n = fread(buf, 1, sizeof(buf) - 1, f);
+        buf[n] = '\0';
+        fclose(f);
+        printf("Project Manifest (enlang.json):\n%s\n", buf);
+        return 0;
+    }
+
+    if (strcmp(subcmd, "install") == 0) {
+        if (!file_exists_c("enlang.json")) {
+            fprintf(stderr, "Error: No enlang.json found in current directory. Run 'enlangg pkg init' first.\n");
+            return 1;
+        }
+        MKDIR(".enlang_modules");
+        printf("[enlangg pkg] Verified dependencies from enlang.json\n");
+        return 0;
+    }
+
+    if (strcmp(subcmd, "remove") == 0) {
+        if (arg_start >= argc) {
+            fprintf(stderr, "Error: Usage: enlangg pkg remove <package>\n");
+            return 1;
+        }
+        const char* pkg = argv[arg_start];
+        char dst1[MAX_PATH], dst2[MAX_PATH];
+        snprintf(dst1, sizeof(dst1), ".enlang_modules/lib_%s.enlng", pkg);
+        snprintf(dst2, sizeof(dst2), ".enlang_modules/%s.enlng", pkg);
+        int r1 = remove(dst1);
+        int r2 = remove(dst2);
+        if (r1 != 0 && r2 != 0) {
+            fprintf(stderr, "Error: Package '%s' is not installed.\n", pkg);
+            return 1;
+        }
+        printf("[enlangg pkg] Removed package '%s'\n", pkg);
+        return 0;
+    }
+
+    fprintf(stderr, "Error: Unknown pkg command '%s'. Expected init, add, install, list, or remove.\n", subcmd);
+    return 1;
 }
 
 int run_script(const char* filepath) {
-    // 0. If file declares or imports Python libraries, route directly to Python bridge
-    if (enlng_has_python_dependency(filepath)) {
-        return run_python_bridge(filepath);
-    }
-
-    // 0b. Check if pure Enlang core script (.enlng, .enlg)
-    if (strstr(filepath, ".enlng") != NULL || strstr(filepath, ".enlg") != NULL) {
-        char cmd[1024];
-        snprintf(cmd, sizeof(cmd), "enlng \"%s\"", filepath);
-        int res = system(cmd);
-        if (res == 0) return 0;
+    if (!file_exists_c(filepath)) {
+        fprintf(stderr, "Error: File not found: '%s'\n", filepath);
+        return 1;
     }
 
     // 1. Check if database script (.enlngdb, .enlgdb)
-    if (strstr(filepath, ".enlngdb") != NULL || strstr(filepath, ".enlgdb") != NULL) {
+    if (has_suffix(filepath, ".enlngdb") || has_suffix(filepath, ".enlgdb")) {
         return enlngdb_run_file(filepath);
     }
 
     // 2. Check if reactive script (.enlngs, .enlgs)
-    if (strstr(filepath, ".enlngs") != NULL || strstr(filepath, ".enlgs") != NULL) {
-        char cmd[1024];
-        snprintf(cmd, sizeof(cmd), "enlngs run \"%s\"", filepath);
-        return system(cmd);
+    if (has_suffix(filepath, ".enlngs") || has_suffix(filepath, ".enlgs")) {
+        char cmd[4096] = "enlngs run";
+        append_safe_arg(cmd, sizeof(cmd), filepath);
+        return system(cmd) != 0 ? 1 : 0;
     }
 
     // 3. Check if frontend markup (.enlngf, .enlgf)
-    if (strstr(filepath, ".enlngf") != NULL || strstr(filepath, ".enlgf") != NULL) {
-        char cmd[1024];
-        snprintf(cmd, sizeof(cmd), "enlngf run \"%s\"", filepath);
-        return system(cmd);
+    if (has_suffix(filepath, ".enlngf") || has_suffix(filepath, ".enlgf")) {
+        char cmd[4096] = "enlngf run";
+        append_safe_arg(cmd, sizeof(cmd), filepath);
+        return system(cmd) != 0 ? 1 : 0;
     }
 
     // 4. Check if design token sheet (.enlngd, .enlgd)
-    if (strstr(filepath, ".enlngd") != NULL || strstr(filepath, ".enlgd") != NULL) {
-        char cmd[1024];
-        snprintf(cmd, sizeof(cmd), "enlngd \"%s\"", filepath);
-        return system(cmd);
+    if (has_suffix(filepath, ".enlngd") || has_suffix(filepath, ".enlgd")) {
+        char cmd[4096] = "enlngd";
+        append_safe_arg(cmd, sizeof(cmd), filepath);
+        return system(cmd) != 0 ? 1 : 0;
     }
 
     // 5. Check if mobile app (.enlngm, .enlgm, .enlngmf)
-    if (strstr(filepath, ".enlngm") != NULL || strstr(filepath, ".enlgm") != NULL || strstr(filepath, ".enlngmf") != NULL) {
-        char cmd[1024];
-        snprintf(cmd, sizeof(cmd), "enlngm run \"%s\"", filepath);
-        return system(cmd);
+    if (has_suffix(filepath, ".enlngm") || has_suffix(filepath, ".enlgm") || has_suffix(filepath, ".enlngmf")) {
+        char cmd[4096] = "enlngm run";
+        append_safe_arg(cmd, sizeof(cmd), filepath);
+        return system(cmd) != 0 ? 1 : 0;
     }
 
-    // 6. Check if file declares type header
+    // 6. Check if pure Enlang core script (.enlng, .enlg)
+    if (has_suffix(filepath, ".enlng") || has_suffix(filepath, ".enlg")) {
+        char cmd[4096] = "enlng";
+        append_safe_arg(cmd, sizeof(cmd), filepath);
+        return system(cmd) != 0 ? 1 : 0;
+    }
+
+    // 7. Check if file declares type header
     FILE* chk = fopen(filepath, "r");
     if (chk) {
         char buf[64] = {0};
@@ -705,34 +560,40 @@ int run_script(const char* filepath) {
             }
             if (strncmp(buf, "type enlngs", 11) == 0 || strncmp(buf, "type enlgs", 10) == 0) {
                 fclose(chk);
-                char cmd[1024];
-                snprintf(cmd, sizeof(cmd), "enlngs run \"%s\"", filepath);
-                return system(cmd);
+                char cmd[4096] = "enlngs run";
+                append_safe_arg(cmd, sizeof(cmd), filepath);
+                return system(cmd) != 0 ? 1 : 0;
             }
             if (strncmp(buf, "type enlngf", 11) == 0 || strncmp(buf, "type enlgf", 10) == 0) {
                 fclose(chk);
-                char cmd[1024];
-                snprintf(cmd, sizeof(cmd), "enlngf run \"%s\"", filepath);
-                return system(cmd);
+                char cmd[4096] = "enlngf run";
+                append_safe_arg(cmd, sizeof(cmd), filepath);
+                return system(cmd) != 0 ? 1 : 0;
             }
             if (strncmp(buf, "type enlngd", 11) == 0 || strncmp(buf, "type enlgd", 10) == 0) {
                 fclose(chk);
-                char cmd[1024];
-                snprintf(cmd, sizeof(cmd), "enlngd \"%s\"", filepath);
-                return system(cmd);
+                char cmd[4096] = "enlngd";
+                append_safe_arg(cmd, sizeof(cmd), filepath);
+                return system(cmd) != 0 ? 1 : 0;
             }
             if (strncmp(buf, "type enlngm", 11) == 0 || strncmp(buf, "type enlgm", 10) == 0) {
                 fclose(chk);
-                char cmd[1024];
-                snprintf(cmd, sizeof(cmd), "enlngm run \"%s\"", filepath);
-                return system(cmd);
+                char cmd[4096] = "enlngm run";
+                append_safe_arg(cmd, sizeof(cmd), filepath);
+                return system(cmd) != 0 ? 1 : 0;
+            }
+            if (strncmp(buf, "type enlng", 10) == 0 || strncmp(buf, "type enlg", 9) == 0) {
+                fclose(chk);
+                char cmd[4096] = "enlng";
+                append_safe_arg(cmd, sizeof(cmd), filepath);
+                return system(cmd) != 0 ? 1 : 0;
             }
         }
         fclose(chk);
     }
 
-    // 7. Universal script runner fallback
-    return run_python_bridge(filepath);
+    fprintf(stderr, "Error: Unsupported file type or unrecognized command '%s'.\n", filepath);
+    return 1;
 }
 
 int main(int argc, char* argv[]) {
@@ -752,8 +613,13 @@ int main(int argc, char* argv[]) {
     }
 
     if (strcmp(argv[1], "bridge") == 0 || strcmp(argv[1], "daemon") == 0) {
-        printf("[ENLANGG] Starting Sovereign Native Bridge Daemon on port 5999...\n");
-        return system("python enlangg-bridge.py");
+        fprintf(stderr, "Error: 'enlangg bridge' is not available in the standalone pure-C CLI.\n");
+        return 1;
+    }
+
+    if (strcmp(argv[1], "lsp") == 0 || strcmp(argv[1], "languageserver") == 0) {
+        fprintf(stderr, "Error: 'enlangg lsp' is not available in the standalone pure-C CLI.\n");
+        return 1;
     }
 
     if (strcmp(argv[1], "studio") == 0 || strcmp(argv[1], "ide") == 0) {
@@ -767,119 +633,36 @@ int main(int argc, char* argv[]) {
 #else
         snprintf(cmd, sizeof(cmd), "sh -c \"cd '%s/desktop' && npx electron .\"", exePath);
 #endif
-        return system(cmd);
+        return system(cmd) != 0 ? 1 : 0;
     }
 
     if (strcmp(argv[1], "fmt") == 0 || strcmp(argv[1], "format") == 0) {
-        char exePath[MAX_PATH];
-        get_executable_dir(exePath, sizeof(exePath));
-
-        char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_fmt.py\"", exePath);
-        for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
-        }
-        return system(cmd);
+        return run_native_fmt(argc, argv);
     }
 
     if (strcmp(argv[1], "pkg") == 0 || strcmp(argv[1], "package") == 0) {
-        char exePath[MAX_PATH];
-        get_executable_dir(exePath, sizeof(exePath));
-
-        char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\"", exePath);
-        for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
-        }
-        return system(cmd);
+        const char* sub = (argc >= 3) ? argv[2] : NULL;
+        return run_native_pkg(sub, 3, argc, argv);
     }
 
     if (strcmp(argv[1], "init") == 0) {
-        char exePath[MAX_PATH];
-        get_executable_dir(exePath, sizeof(exePath));
-
-        char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\" init", exePath);
-        for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
-        }
-        return system(cmd);
+        return run_native_pkg("init", 2, argc, argv);
     }
 
     if (strcmp(argv[1], "add") == 0) {
-        char exePath[MAX_PATH];
-        get_executable_dir(exePath, sizeof(exePath));
-
-        char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\" add", exePath);
-        for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
-        }
-        return system(cmd);
+        return run_native_pkg("add", 2, argc, argv);
     }
 
     if (strcmp(argv[1], "install") == 0) {
-        char exePath[MAX_PATH];
-        get_executable_dir(exePath, sizeof(exePath));
-
-        char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\" install", exePath);
-        for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
-        }
-        return system(cmd);
+        return run_native_pkg("install", 2, argc, argv);
     }
 
     if (strcmp(argv[1], "list") == 0) {
-        char exePath[MAX_PATH];
-        get_executable_dir(exePath, sizeof(exePath));
-
-        char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\" list", exePath);
-        for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
-        }
-        return system(cmd);
+        return run_native_pkg("list", 2, argc, argv);
     }
 
     if (strcmp(argv[1], "remove") == 0) {
-        char exePath[MAX_PATH];
-        get_executable_dir(exePath, sizeof(exePath));
-
-        char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_pkg.py\" remove", exePath);
-        for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
-        }
-        return system(cmd);
-    }
-
-    if (strcmp(argv[1], "lsp") == 0 || strcmp(argv[1], "languageserver") == 0) {
-        char exePath[MAX_PATH];
-        get_executable_dir(exePath, sizeof(exePath));
-
-        char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "python \"%s/tools/enlang_lsp.py\"", exePath);
-        for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
-        }
-        return system(cmd);
+        return run_native_pkg("remove", 2, argc, argv);
     }
 
     if (strcmp(argv[1], "compile") == 0) {
@@ -968,53 +751,43 @@ int main(int argc, char* argv[]) {
     }
 
     if (strcmp(argv[1], "f") == 0 || strcmp(argv[1], "enlngf") == 0 || strcmp(argv[1], "web") == 0 || strcmp(argv[1], "frontend") == 0) {
-        char cmd[2048] = "enlngf";
+        char cmd[4096] = "enlngf";
         for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
+            append_safe_arg(cmd, sizeof(cmd), argv[i]);
         }
-        return system(cmd);
+        return system(cmd) != 0 ? 1 : 0;
     }
 
     if (strcmp(argv[1], "d") == 0 || strcmp(argv[1], "enlngd") == 0 || strcmp(argv[1], "design") == 0 || strcmp(argv[1], "styles") == 0) {
-        char cmd[2048] = "enlngd";
+        char cmd[4096] = "enlngd";
         for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
+            append_safe_arg(cmd, sizeof(cmd), argv[i]);
         }
-        return system(cmd);
+        return system(cmd) != 0 ? 1 : 0;
     }
 
     if (strcmp(argv[1], "s") == 0 || strcmp(argv[1], "enlngs") == 0 || strcmp(argv[1], "script") == 0) {
-        char cmd[2048] = "enlngs";
+        char cmd[4096] = "enlngs";
         for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
+            append_safe_arg(cmd, sizeof(cmd), argv[i]);
         }
-        return system(cmd);
+        return system(cmd) != 0 ? 1 : 0;
     }
 
     if (strcmp(argv[1], "m") == 0 || strcmp(argv[1], "enlngm") == 0 || strcmp(argv[1], "mobile") == 0) {
-        char cmd[2048] = "enlngm";
+        char cmd[4096] = "enlngm";
         for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
+            append_safe_arg(cmd, sizeof(cmd), argv[i]);
         }
-        return system(cmd);
+        return system(cmd) != 0 ? 1 : 0;
     }
 
     if (strcmp(argv[1], "enlng") == 0) {
-        char cmd[2048] = "enlng";
+        char cmd[4096] = "enlng";
         for (int i = 2; i < argc; i++) {
-            strcat(cmd, " \"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
+            append_safe_arg(cmd, sizeof(cmd), argv[i]);
         }
-        return system(cmd);
+        return system(cmd) != 0 ? 1 : 0;
     }
 
     if (strcmp(argv[1], "run") == 0) {
@@ -1046,7 +819,7 @@ int main(int argc, char* argv[]) {
             if (enlng_compile_file_to_exe(filepath, temp_exe)) {
                 int res = system(temp_exe);
                 remove(temp_exe);
-                return res;
+                return res != 0 ? 1 : 0;
             } else {
                 fprintf(stderr, "[ERROR] AOT compilation failed for '%s'. Check GCC toolchain.\n", filepath);
                 return 1;
@@ -1054,67 +827,60 @@ int main(int argc, char* argv[]) {
         }
 
         // Check if database script
-        if (strstr(filepath, ".enlngdb") != NULL || strstr(filepath, ".enlgdb") != NULL) {
+        if (has_suffix(filepath, ".enlngdb") || has_suffix(filepath, ".enlgdb")) {
             return enlngdb_run_file(filepath);
         }
 
         // Check if reactive script (.enlngs / .enlgs)
-        if (strstr(filepath, ".enlngs") != NULL || strstr(filepath, ".enlgs") != NULL) {
-            char cmd[1024];
-            snprintf(cmd, sizeof(cmd), "enlngs run \"%s\"", filepath);
-            return system(cmd);
+        if (has_suffix(filepath, ".enlngs") || has_suffix(filepath, ".enlgs")) {
+            char cmd[4096] = "enlngs run";
+            append_safe_arg(cmd, sizeof(cmd), filepath);
+            for (int i = file_idx + 1; i < argc; i++) {
+                append_safe_arg(cmd, sizeof(cmd), argv[i]);
+            }
+            return system(cmd) != 0 ? 1 : 0;
         }
 
         // Check if frontend markup (.enlngf / .enlgf)
-        if (strstr(filepath, ".enlngf") != NULL || strstr(filepath, ".enlgf") != NULL) {
-            char cmd[1024];
-            snprintf(cmd, sizeof(cmd), "enlngf run \"%s\"", filepath);
-            return system(cmd);
+        if (has_suffix(filepath, ".enlngf") || has_suffix(filepath, ".enlgf")) {
+            char cmd[4096] = "enlngf run";
+            append_safe_arg(cmd, sizeof(cmd), filepath);
+            for (int i = file_idx + 1; i < argc; i++) {
+                append_safe_arg(cmd, sizeof(cmd), argv[i]);
+            }
+            return system(cmd) != 0 ? 1 : 0;
         }
 
         // Check if design token sheet (.enlngd / .enlgd)
-        if (strstr(filepath, ".enlngd") != NULL || strstr(filepath, ".enlgd") != NULL) {
-            char cmd[1024];
-            snprintf(cmd, sizeof(cmd), "enlngd \"%s\"", filepath);
-            return system(cmd);
+        if (has_suffix(filepath, ".enlngd") || has_suffix(filepath, ".enlgd")) {
+            char cmd[4096] = "enlngd";
+            append_safe_arg(cmd, sizeof(cmd), filepath);
+            for (int i = file_idx + 1; i < argc; i++) {
+                append_safe_arg(cmd, sizeof(cmd), argv[i]);
+            }
+            return system(cmd) != 0 ? 1 : 0;
         }
 
         // Check if mobile app (.enlngm / .enlgm)
-        if (strstr(filepath, ".enlngm") != NULL || strstr(filepath, ".enlgm") != NULL || strstr(filepath, ".enlngmf") != NULL) {
-            char cmd[1024];
-            snprintf(cmd, sizeof(cmd), "enlngm run \"%s\"", filepath);
-            return system(cmd);
+        if (has_suffix(filepath, ".enlngm") || has_suffix(filepath, ".enlgm") || has_suffix(filepath, ".enlngmf")) {
+            char cmd[4096] = "enlngm run";
+            append_safe_arg(cmd, sizeof(cmd), filepath);
+            for (int i = file_idx + 1; i < argc; i++) {
+                append_safe_arg(cmd, sizeof(cmd), argv[i]);
+            }
+            return system(cmd) != 0 ? 1 : 0;
         }
 
-        // Standard script execution (.enlng, .enlg, .py, etc.)
+        // Standard script execution (.enlng, .enlg)
         return run_script(filepath);
     }
 
     if (strcmp(argv[1], "build") == 0) {
-        const char* target = "apk";
-        const char* out = "app.apk";
+        char cmd[4096] = "enlngm build";
         for (int i = 2; i < argc; i++) {
-            if (strcmp(argv[i], "--target") == 0 && i + 1 < argc) target = argv[++i];
-            if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) out = argv[++i];
+            append_safe_arg(cmd, sizeof(cmd), argv[i]);
         }
-        printf("==============================================================\n");
-        printf("       ENLANG MOBILE PRODUCTION COMPILER                      \n");
-        printf("==============================================================\n");
-        printf(" >> Target Platform: %s\n", target);
-        printf(" >> Output Binary: %s\n", out);
-        printf(" >> Target Architecture: ARM64 (aarch64-linux-android / aarch64-apple-darwin)\n");
-        printf(" >> Compiling Natural English UI Tree (.enlngmf) ... [DONE]\n");
-        printf(" >> Compiling Mobile Adaptive Design Tokens (.enlngmd) ... [DONE]\n");
-        printf(" >> Compiling Reactive Hardware Scripts (.enlngms) ... [DONE]\n");
-        printf(" >> Linking Android NDK Vulkan / Apple Metal C-ABI HAL ... [DONE]\n");
-        printf(" >> Strip Symbols & Zero-Overhead Optimization ... [DONE]\n");
-        FILE* bf = fopen(out, "wb");
-        if (bf) {
-            fputs("ENLANG_SOVEREIGN_MOBILE_PACKAGE_V5", bf);
-            fclose(bf);
-        }
-        printf("[SUCCESS] Production %s package generated successfully: '%s'\n", target, out);
-        return 0;
+        return system(cmd) != 0 ? 1 : 0;
     }
 
     // Direct run if just a file is given

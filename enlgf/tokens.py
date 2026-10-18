@@ -135,9 +135,122 @@ TAG_MAPPINGS = {
     "table": ("table", {}),
     "header row": ("thead", {}),
     "body rows": ("tbody", {}),
-    "row": ("tr", {}),
+    "table row": ("tr", {}),
+    "table_row": ("tr", {}),
     "column heading": ("th", {}),
     "cell": ("td", {}),
+
+    # ── Sovereign UI Primitives & Containers ──
+    "create application": ("div", {"class": "application"}),
+    "add application": ("div", {"class": "application"}),
+    "application": ("div", {"class": "application"}),
+
+    "create navbar": ("nav", {"class": "navbar"}),
+    "add navbar": ("nav", {"class": "navbar"}),
+    "navbar": ("nav", {"class": "navbar"}),
+
+    "create nav_menu": ("ul", {"class": "nav-menu"}),
+    "add nav_menu": ("ul", {"class": "nav-menu"}),
+    "nav_menu": ("ul", {"class": "nav-menu"}),
+    "create nav_links": ("ul", {"class": "nav-menu"}),
+    "add nav_links": ("ul", {"class": "nav-menu"}),
+    "nav_links": ("ul", {"class": "nav-menu"}),
+
+    "add nav_link": ("a", {"class": "nav-link"}),
+    "create nav_link": ("a", {"class": "nav-link"}),
+    "nav_link": ("a", {"class": "nav-link"}),
+
+    "add logo": ("div", {"class": "brand-logo"}),
+    "create logo": ("div", {"class": "brand-logo"}),
+    "logo": ("div", {"class": "brand-logo"}),
+
+    "create action_group": ("div", {"class": "action-group"}),
+    "add action_group": ("div", {"class": "action-group"}),
+    "action_group": ("div", {"class": "action-group"}),
+
+    "create container": ("div", {"class": "container"}),
+    "add container": ("div", {"class": "container"}),
+    "container": ("div", {"class": "container"}),
+
+    "create screen": ("div", {"class": "screen"}),
+    "add screen": ("div", {"class": "screen"}),
+    "screen": ("div", {"class": "screen"}),
+
+    "add readout": ("div", {"class": "readout"}),
+    "create readout": ("div", {"class": "readout"}),
+    "readout": ("div", {"class": "readout"}),
+
+    "add badge": ("span", {"class": "badge"}),
+    "create badge": ("span", {"class": "badge"}),
+    "badge": ("span", {"class": "badge"}),
+
+    "add heading": ("h2", {}),
+    "create heading": ("h2", {}),
+    "heading": ("h2", {}),
+
+    "add subtitle": ("p", {"class": "subtitle"}),
+    "create subtitle": ("p", {"class": "subtitle"}),
+    "subtitle": ("p", {"class": "subtitle"}),
+
+    "create grid": ("div", {"class": "grid"}),
+    "add grid": ("div", {"class": "grid"}),
+    "grid": ("div", {"class": "grid"}),
+
+    "create card": ("div", {"class": "card"}),
+    "add card": ("div", {"class": "card"}),
+    "card": ("div", {"class": "card"}),
+
+    "create panel": ("div", {"class": "panel"}),
+    "add panel": ("div", {"class": "panel"}),
+    "panel": ("div", {"class": "panel"}),
+
+    "create controls": ("div", {"class": "controls"}),
+    "add controls": ("div", {"class": "controls"}),
+    "controls": ("div", {"class": "controls"}),
+
+    "create row": ("div", {"class": "row"}),
+    "add row": ("div", {"class": "row"}),
+    "row": ("div", {"class": "row"}),
+
+    "add value": ("div", {"class": "value"}),
+    "create value": ("div", {"class": "value"}),
+    "value": ("div", {"class": "value"}),
+
+    "add note": ("p", {"class": "note"}),
+    "create note": ("p", {"class": "note"}),
+    "note": ("p", {"class": "note"}),
+
+    "add section_tag": ("div", {"class": "section-tag"}),
+    "create section_tag": ("div", {"class": "section-tag"}),
+    "section_tag": ("div", {"class": "section-tag"}),
+
+    "add section_title": ("h2", {"class": "section-title"}),
+    "create section_title": ("h2", {"class": "section-title"}),
+    "section_title": ("h2", {"class": "section-title"}),
+
+    "add speech_bubble": ("div", {"class": "speech-bubble"}),
+    "create speech_bubble": ("div", {"class": "speech-bubble"}),
+    "speech_bubble": ("div", {"class": "speech-bubble"}),
+
+    "add viewport": ("div", {"class": "viewport"}),
+    "create viewport": ("div", {"class": "viewport"}),
+    "viewport": ("div", {"class": "viewport"}),
+
+    "add slider": ("input", {"type": "range", "class": "slider"}),
+    "create slider": ("input", {"type": "range", "class": "slider"}),
+    "slider": ("input", {"type": "range", "class": "slider"}),
+
+    "add canvas": ("canvas", {}),
+    "create canvas": ("canvas", {}),
+
+    "display": ("div", {"class": "display-log"}),
+    "show": ("div", {"class": "display-log"}),
+
+    "use theme": ("link", {"rel": "stylesheet"}),
+    "use style": ("link", {"rel": "stylesheet"}),
+    "use stylesheet": ("link", {"rel": "stylesheet"}),
+    "use script": ("script", {}),
+    "use": ("link", {"rel": "stylesheet"}),
 
     "inside form": ("form", {}),
     "create form": ("form", {}),
@@ -302,7 +415,9 @@ ATTR_MAPPINGS = {
     "type": "type",
     "width": "width",
     "height": "height",
-    # Direct HTML mappings
+    "container": "id",
+    "default": "value",
+    "text": "text",
     "href": "href",
     "src": "src",
     "target": "target",

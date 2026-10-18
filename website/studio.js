@@ -778,89 +778,463 @@ screen WalletHome:
   function renderLivePreview() {
     if (!previewPane || !activeFile) return;
 
-    if (activeFile.endsWith('.enlngm')) {
-      // Mobile Device Simulator
+    if (activeFile.endsWith('.enlngm') || activeFile.endsWith('.enlgm')) {
+      // Real Dynamic Mobile Device Compiler (.enlngm / .enlgm)
       if (livePreviewFrame) livePreviewFrame.style.display = 'none';
       if (mobileSimulator) mobileSimulator.style.display = 'flex';
 
-      const code = codeEditor.value;
-      let appTitle = 'Sovereign Mobile';
-      let balance = '$85,000.00';
-      const titleMatch = code.match(/title\s+"(.*?)"/i);
-      if (titleMatch) appTitle = titleMatch[1];
-      const balMatch = code.match(/amount:\s+"(.*?)"/i);
-      if (balMatch) balance = balMatch[1];
+      const code = (codeEditor && codeEditor.value) || '';
+
+      function compileClientEnlngm(src) {
+        let appName = 'Enlangg Mobile';
+        let accentColor = '#38bdf8';
+        let isDark = true;
+        const screens = [];
+        let currentScreen = null;
+        let lastWidget = null;
+        let inCard = false;
+        let cardBuffer = [];
+        let inRow = false;
+        let rowBuffer = [];
+
+        function ensureScreen(name) {
+          if (!currentScreen || (name && currentScreen.name !== name)) {
+            currentScreen = {
+              name: name || 'MainScreen',
+              title: name || appName,
+              actions: [],
+              widgetsHtml: [],
+              fab: null
+            };
+            screens.push(currentScreen);
+          }
+          return currentScreen;
+        }
+
+        function flushRow() {
+          if (inRow && currentScreen) {
+            if (rowBuffer.length > 0) {
+              currentScreen.widgetsHtml.push(`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:6px 0;">${rowBuffer.join('')}</div>`);
+            }
+            rowBuffer = [];
+            inRow = false;
+          }
+        }
+
+        function flushCard() {
+          flushRow();
+          if (inCard && currentScreen) {
+            if (cardBuffer.length > 0) {
+              currentScreen.widgetsHtml.push(`<div style="background:rgba(30,41,59,0.9);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:16px;margin:10px 0;box-shadow:0 8px 20px rgba(0,0,0,0.35);">${cardBuffer.join('')}</div>`);
+            }
+            cardBuffer = [];
+            inCard = false;
+          }
+        }
+
+        function pushWidgetHtml(htmlStr) {
+          ensureScreen();
+          if (inRow) {
+            rowBuffer.push(htmlStr);
+          } else if (inCard) {
+            cardBuffer.push(htmlStr);
+          } else {
+            currentScreen.widgetsHtml.push(htmlStr);
+          }
+        }
+
+        const rawLines = src.split('\n');
+        for (let idx = 0; idx < rawLines.length; idx++) {
+          const raw = rawLines[idx];
+          const indent = (raw.match(/^\s*/) || [''])[0].length;
+          const l = raw.trim().replace(/;$/, '');
+          if (!l || l.startsWith('#') || l.startsWith('--') || l.startsWith('//')) continue;
+          if (/^type\s+enlngm/i.test(l) || /^in\s+mobile:?$/i.test(l) || /^use\s+/i.test(l)) continue;
+
+          if (indent <= 12 && inRow && !/^(?:button|chip|spacer|item|icon)\b/i.test(l)) {
+            flushRow();
+          }
+          if (indent <= 8 && inCard && !/^(?:padding|column|row|text|spacer|chip|amount|tag)\b/i.test(l)) {
+            flushCard();
+          }
+
+          let mApp = l.match(/^app\s+["']([^"']+)["']/i);
+          if (mApp) {
+            appName = mApp[1];
+            continue;
+          }
+          if (/^theme\s+light/i.test(l)) { isDark = false; continue; }
+          if (/^theme\s+dark/i.test(l)) { isDark = true; continue; }
+
+          let mColor = l.match(/^(?:accent|primary)\s+color\s+["']([^"']+)["']/i);
+          if (mColor) {
+            accentColor = mColor[1];
+            continue;
+          }
+
+          let mScreen = l.match(/^(?:stateful\s+)?screen\s+([A-Za-z0-9_]+)\s*:?/i);
+          if (mScreen) {
+            flushCard();
+            ensureScreen(mScreen[1]);
+            lastWidget = null;
+            continue;
+          }
+
+          let mTitle = l.match(/^title\s+["']([^"']+)["']/i);
+          if (mTitle) {
+            ensureScreen();
+            currentScreen.title = mTitle[1];
+            continue;
+          }
+
+          if (/^(?:app\s*bar|body|scroll|column|padding|actions|when\s+tapped)\b/i.test(l)) {
+            continue;
+          }
+
+          if (/^(?:row|quick-actions)\b/i.test(l)) {
+            flushRow();
+            inRow = true;
+            continue;
+          }
+
+          if (/^(?:card|balance-card)\b/i.test(l)) {
+            flushCard();
+            inCard = true;
+            continue;
+          }
+
+          let mToast = l.match(/^show\s+toast\s+["']([^"']+)["']/i);
+          if (mToast && lastWidget) {
+            lastWidget.toast = mToast[1];
+            continue;
+          }
+
+          let mGoto = l.match(/^go\s+to\s+([A-Za-z0-9_]+)/i);
+          if (mGoto && lastWidget) {
+            lastWidget.gotoScreen = mGoto[1];
+            continue;
+          }
+
+          let mAvatar = l.match(/^avatar\s+from\s+["']([^"']+)["'](?:\s+size\s+(\d+))?/i);
+          if (mAvatar) {
+            const sz = parseInt(mAvatar[2] || '80', 10);
+            pushWidgetHtml(`<div style="text-align:center;margin:8px 0;"><img src="${escapeHtml(mAvatar[1])}" alt="avatar" style="width:${sz}px;height:${sz}px;border-radius:50%;border:2px solid ${escapeHtml(accentColor)};object-fit:cover;"></div>`);
+            continue;
+          }
+
+          let mAmount = l.match(/^amount:\s*["']([^"']+)["']/i);
+          if (mAmount) {
+            pushWidgetHtml(`<div style="font-size:30px;font-weight:800;color:${escapeHtml(accentColor)};margin:6px 0;">${escapeHtml(mAmount[1])}</div>`);
+            continue;
+          }
+
+          let mTag = l.match(/^tag:\s*["']([^"']+)["']/i);
+          if (mTag) {
+            pushWidgetHtml(`<div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">${escapeHtml(mTag[1])}</div>`);
+            continue;
+          }
+
+          let mText = l.match(/^text\s+["']([^"']+)["'](.*)$/i);
+          if (mText) {
+            const txt = mText[1];
+            const rest = mText[2] || '';
+            const szMatch = rest.match(/size\s+(\d+)/i);
+            const colMatch = rest.match(/color\s+["']([^"']+)["']/i);
+            const isBold = /\bbold\b/i.test(rest);
+            const isCenter = /\balign\s+center\b/i.test(rest);
+            const fontSize = szMatch ? parseInt(szMatch[1], 10) : 14;
+            const color = colMatch ? colMatch[1] : (isDark ? '#f8fafc' : '#0f172a');
+            pushWidgetHtml(`<div style="font-size:${fontSize}px;font-weight:${isBold ? '700' : '400'};color:${escapeHtml(color)};${isCenter ? 'text-align:center;' : ''}margin:4px 0;line-height:1.4;">${escapeHtml(txt)}</div>`);
+            continue;
+          }
+
+          let mChip = l.match(/^chip\s+["']([^"']+)["']/i);
+          if (mChip) {
+            pushWidgetHtml(`<span style="display:inline-block;background:rgba(56,189,248,0.14);border:1px solid rgba(56,189,248,0.35);color:${escapeHtml(accentColor)};font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;">${escapeHtml(mChip[1])}</span>`);
+            continue;
+          }
+
+          let mInput = l.match(/^input\s+["']([^"']+)["'](?:\s+placeholder\s+["']([^"']+)["'])?(.*)$/i);
+          if (mInput) {
+            const ph = mInput[2] || mInput[1];
+            const rest = mInput[3] || '';
+            const linesMatch = rest.match(/lines\s+(\d+)/i);
+            if (linesMatch && parseInt(linesMatch[1], 10) > 1) {
+              pushWidgetHtml(`<textarea rows="${parseInt(linesMatch[1], 10)}" placeholder="${escapeHtml(ph)}" style="width:100%;background:#1e293b;border:1px solid #334155;color:#fff;padding:10px 12px;border-radius:10px;font-size:13px;margin:4px 0;box-sizing:border-box;"></textarea>`);
+            } else {
+              pushWidgetHtml(`<input type="text" placeholder="${escapeHtml(ph)}" style="width:100%;background:#1e293b;border:1px solid #334155;color:#fff;padding:10px 12px;border-radius:10px;font-size:13px;margin:4px 0;box-sizing:border-box;">`);
+            }
+            continue;
+          }
+
+          let mBtn = l.match(/^(?:icon\s+button|floating\s+button|button|item)\s+["']([^"']+)["']/i);
+          if (mBtn) {
+            const label = mBtn[1];
+            const wObj = { label, toast: '', gotoScreen: '', idx: (currentScreen ? currentScreen.widgetsHtml.length : 0) };
+            lastWidget = wObj;
+            const token = `__BTN_${screens.length}_${Math.random().toString(36).slice(2, 8)}__`;
+            wObj.token = token;
+            wObj.isItem = /^item\b/i.test(l);
+            pushWidgetHtml(token);
+            if (!currentScreen._deferredBtns) currentScreen._deferredBtns = [];
+            currentScreen._deferredBtns.push(wObj);
+            continue;
+          }
+
+          let mTx = l.match(/^tx\s+id:\s*["']([^"']+)["']\s*,\s*amount:\s*["']([^"']+)["']\s*,\s*vendor:\s*["']([^"']+)["']/i);
+          if (mTx) {
+            pushWidgetHtml(`<div style="background:#1e293b;padding:10px 12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin:4px 0;font-size:12px;"><span>${escapeHtml(mTx[3])} <small style="color:#64748b;">(${escapeHtml(mTx[1])})</small></span><span style="color:#f87171;font-weight:600;">${escapeHtml(mTx[2])}</span></div>`);
+            continue;
+          }
+
+          let mSpacer = l.match(/^spacer(?:\s+height\s+(\d+))?(?:\s+width\s+(\d+))?/i);
+          if (mSpacer) {
+            const h = parseInt(mSpacer[1] || '12', 10);
+            const w = parseInt(mSpacer[2] || '0', 10);
+            pushWidgetHtml(`<div style="height:${h}px;${w ? `width:${w}px;display:inline-block;` : ''}"></div>`);
+            continue;
+          }
+
+          if (/^divider\b/i.test(l)) {
+            pushWidgetHtml(`<hr style="border:none;border-top:1px solid rgba(255,255,255,0.12);margin:10px 0;">`);
+            continue;
+          }
+        }
+
+        flushCard();
+        if (screens.length === 0) ensureScreen('MainScreen');
+
+        const bg = isDark ? '#0f172a' : '#f8fafc';
+        const fg = isDark ? '#f8fafc' : '#0f172a';
+
+        let screensHtml = '';
+        screens.forEach((scr, sIdx) => {
+          let bodyJoined = scr.widgetsHtml.join('\n');
+          if (scr._deferredBtns) {
+            for (const b of scr._deferredBtns) {
+              const dataGoto = b.gotoScreen ? ` data-enlngm-goto="${escapeHtml(b.gotoScreen)}"` : '';
+              const dataToast = b.toast ? ` data-enlngm-toast="${escapeHtml(b.toast)}"` : '';
+              const btnStyle = b.isItem
+                ? `background:#1e293b;border:1px solid #334155;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:600;flex:1;`
+                : `background:${escapeHtml(accentColor)};color:#0f172a;border:none;padding:11px 16px;border-radius:12px;cursor:pointer;font-weight:700;width:100%;margin:6px 0;`;
+              const btnEl = `<button type="button" class="enlngm-sim-btn"${dataGoto}${dataToast} style="${btnStyle}">${escapeHtml(b.label)}</button>`;
+              bodyJoined = bodyJoined.replace(b.token, btnEl);
+            }
+          }
+          screensHtml += `
+            <div class="enlngm-screen-view" data-screen-name="${escapeHtml(scr.name)}" style="display:${sIdx === 0 ? 'block' : 'none'};">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(30,41,59,0.95);border-bottom:1px solid rgba(255,255,255,0.08);margin:-24px -16px 16px -16px;">
+                <h3 style="font-size:16px;margin:0;color:${escapeHtml(accentColor)};font-weight:700;">${escapeHtml(scr.title || appName)}</h3>
+                <span style="font-size:10px;background:${escapeHtml(accentColor)};color:#0f172a;padding:2px 8px;border-radius:10px;font-weight:700;">${escapeHtml(scr.name)}</span>
+              </div>
+              ${bodyJoined || `<div style="color:#64748b;font-size:12px;text-align:center;padding:24px 0;">Empty screen (${escapeHtml(scr.name)})</div>`}
+            </div>`;
+        });
+
+        return `
+          <div style="background:${bg};color:${fg};min-height:100%;font-family:sans-serif;padding:24px 16px;position:relative;box-sizing:border-box;">
+            ${screensHtml}
+            <div id="enlngmSimToast" style="display:none;position:sticky;bottom:12px;left:12px;right:12px;background:#0284c7;color:#fff;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,0.4);margin-top:16px;"></div>
+          </div>`;
+      }
 
       if (mobileScreenContent) {
-        mobileScreenContent.innerHTML = `
-          <div style="background:#0f172a;color:#fff;min-height:100%;font-family:sans-serif;padding:24px 16px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;margin-bottom:20px;">
-              <h3 style="font-size:18px;margin:0;">${appTitle}</h3>
-              <span style="font-size:12px;background:#38bdf8;color:#000;padding:2px 8px;border-radius:12px;font-weight:700;">5G ONLINE</span>
-            </div>
-            <div style="background:linear-gradient(135deg, #1e293b, #0f172a);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:20px;margin-bottom:20px;box-shadow:0 10px 25px rgba(0,0,0,0.5);">
-              <span style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Primary Vault Balance</span>
-              <div style="font-size:32px;font-weight:800;color:#38bdf8;margin:8px 0;">${balance}</div>
-              <div style="font-size:11px;color:#34d399;">● Zero Network Fee · Native HAL</div>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;">
-              <button style="background:#1e293b;border:1px solid #334155;color:#fff;padding:12px;border-radius:12px;cursor:pointer;font-weight:600;">↗ Send</button>
-              <button style="background:#1e293b;border:1px solid #334155;color:#fff;padding:12px;border-radius:12px;cursor:pointer;font-weight:600;">↙ Receive</button>
-              <button style="background:#1e293b;border:1px solid #334155;color:#fff;padding:12px;border-radius:12px;cursor:pointer;font-weight:600;">⚙ More</button>
-            </div>
-            <h4 style="font-size:13px;color:#94a3b8;margin-bottom:12px;text-transform:uppercase;">Recent Ledger Settlements</h4>
-            <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
-              <div style="background:#1e293b;padding:10px 12px;border-radius:8px;display:flex;justify-content:space-between;">
-                <span>Compute Cloud</span>
-                <span style="color:#f87171;font-weight:600;">-$4,500.00</span>
-              </div>
-              <div style="background:#1e293b;padding:10px 12px;border-radius:8px;display:flex;justify-content:space-between;">
-                <span>Satellite Uplink</span>
-                <span style="color:#f87171;font-weight:600;">-$18,200.00</span>
-              </div>
-            </div>
-          </div>
-        `;
+        mobileScreenContent.innerHTML = compileClientEnlngm(code);
+        const btns = mobileScreenContent.querySelectorAll('.enlngm-sim-btn');
+        btns.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const targetScr = btn.getAttribute('data-enlngm-goto');
+            const toastMsg = btn.getAttribute('data-enlngm-toast');
+            if (targetScr) {
+              const views = mobileScreenContent.querySelectorAll('.enlngm-screen-view');
+              views.forEach(v => {
+                v.style.display = (v.getAttribute('data-screen-name') === targetScr) ? 'block' : 'none';
+              });
+            }
+            const toastEl = mobileScreenContent.querySelector('#enlngmSimToast');
+            if (toastEl) {
+              toastEl.textContent = toastMsg || (targetScr ? `Navigated to ${targetScr}` : `${btn.textContent} tapped`);
+              toastEl.style.display = 'block';
+              setTimeout(() => { toastEl.style.display = 'none'; }, 2200);
+            }
+          });
+        });
       }
     } else {
-      // Web Canvas Mode (.enlngf / .enlngd)
+      // Real Dynamic Web Canvas Compiler (.enlngf / .enlngd / .enlngs)
       if (mobileSimulator) mobileSimulator.style.display = 'none';
       if (livePreviewFrame) {
         livePreviewFrame.style.display = 'block';
+        livePreviewFrame.setAttribute('sandbox', 'allow-scripts');
 
-        let customStyles = '';
-        if (vfs['styles/theme.enlngd']) {
-          customStyles = `
-            body { background: #0f172a; color: #f8fafc; font-family: Inter, sans-serif; padding: 24px; }
-            .fintech-card { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 500px; margin: 0 auto; }
-            .heading-1 { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 8px; }
-            .status-online { display: inline-block; background: rgba(52, 211, 153, 0.2); color: #34d399; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; margin-bottom: 16px; }
-            .currency-display { font-size: 36px; font-weight: 800; color: #38bdf8; margin: 12px 0; }
-            button { background: #007acc; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-right: 8px; }
-            button:hover { background: #0e639c; }
-          `;
+        const code = (codeEditor && codeEditor.value) || '';
+        let compiledCss = '';
+        let compiledBody = '';
+
+        function compileClientEnlngd(src) {
+          if (!src) return '';
+          let css = '';
+          let currentSelector = null;
+          for (let rawLine of src.split('\n')) {
+            let l = rawLine.trim();
+            if (!l || l.startsWith('#') || l.startsWith('//')) continue;
+            let mTheme = l.match(/^(?:define\s+theme|theme)\s+["']?([^"':]+)["']?:?/i);
+            let mComp = l.match(/^(?:define\s+component|component)\s+["']?([^"':]+)["']?:?/i);
+            let mClass = l.match(/^(?:class|style)\s+["']?([^"':]+)["']?:?/i);
+            if (mTheme) {
+              if (currentSelector) css += '}\n';
+              currentSelector = 'body';
+              css += `${currentSelector} {\n`;
+              continue;
+            } else if (mComp || mClass) {
+              if (currentSelector) css += '}\n';
+              let name = (mComp ? mComp[1] : mClass[1]).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+              currentSelector = `.${name}, #${name}`;
+              css += `${currentSelector} {\n`;
+              continue;
+            }
+            if (l === '}' || l.endsWith(':')) {
+              if (currentSelector && l === '}') {
+                css += '}\n';
+                currentSelector = null;
+              }
+              continue;
+            }
+            let colonIdx = l.indexOf(':');
+            if (colonIdx > 0) {
+              let prop = l.substring(0, colonIdx).trim().toLowerCase();
+              let val = l.substring(colonIdx + 1).trim().replace(/^["']|["']$/g, '');
+              val = val.replace(/\bviewport-height\b/g, 'vh')
+                       .replace(/\bviewport-width\b/g, 'vw')
+                       .replace(/\bpixels\b/g, 'px')
+                       .replace(/\bpercent\b/g, '%');
+              if (currentSelector) {
+                css += `  ${prop}: ${val};\n`;
+              }
+            }
+          }
+          if (currentSelector) css += '}\n';
+          return css;
         }
 
-        const htmlDoc = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>${customStyles}</style>
-          </head>
-          <body>
-            <div class="fintech-card">
-              <div class="heading-1">Sovereign Enterprise Vault</div>
-              <span class="status-online">● VIP ACTIVE · SUB-MS LATENCY</span>
-              <div style="color:#94a3b8;font-size:12px;text-transform:uppercase;">Liquid Vault Reserve</div>
-              <div class="currency-display">$85,000.00</div>
-              <div style="margin-top:20px;">
-                <button onclick="alert('Transaction Authorized')">Transfer Funds</button>
-                <button style="background:#334155;" onclick="alert('Ledger Exported')">Audit Trail</button>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
+        function compileClientEnlngf(src) {
+          if (!src) return '';
+          let out = '';
+          const lines = src.split('\n');
+          for (let rawLine of lines) {
+            let l = rawLine.trim();
+            if (!l || l.startsWith('#') || l.startsWith('//')) continue;
+            if (l.match(/^(?:connect|use|include)\s+(?:design|theme|script)/i)) continue;
+
+            let quoted = [];
+            let qRe = /"([^"]*)"|'([^']*)'/g;
+            let qm;
+            while ((qm = qRe.exec(l)) !== null) {
+              quoted.push(qm[1] !== undefined ? qm[1] : qm[2]);
+            }
+
+            let id = '';
+            let cls = '';
+            let mId = l.match(/\b(?:with\s+id|id)\s+["']?([a-zA-Z0-9_-]+)["']?/i);
+            if (mId) id = mId[1];
+            let mCls = l.match(/\b(?:with\s+class|class)\s+["']?([a-zA-Z0-9_\s-]+)["']?/i);
+            if (mCls) cls = mCls[1];
+
+            let tag = 'div';
+            let inner = quoted[0] || '';
+
+            if (l.match(/^create\s+application/i)) {
+              tag = 'div'; cls = `application ${quoted[0] || ''} ${cls}`.trim(); id = id || quoted[0] || 'app'; inner = '';
+            } else if (l.match(/^create\s+header/i)) {
+              tag = 'header'; cls = `header ${cls}`.trim(); id = id || quoted[0] || 'header'; inner = '';
+            } else if (l.match(/^create\s+container/i)) {
+              tag = 'div'; cls = `container ${cls}`.trim(); id = id || quoted[0] || ''; inner = '';
+            } else if (l.match(/^create\s+grid/i)) {
+              tag = 'div'; cls = `grid ${cls}`.trim(); id = id || quoted[0] || ''; inner = '';
+            } else if (l.match(/^create\s+row/i)) {
+              tag = 'div'; cls = `row ${cls}`.trim(); id = id || quoted[0] || ''; inner = '';
+            } else if (l.match(/^create\s+card/i)) {
+              tag = 'div'; cls = `card ${cls}`.trim(); id = id || quoted[0] || ''; inner = '';
+            } else if (l.match(/^create\s+screen/i)) {
+              tag = 'div'; cls = `screen ${cls}`.trim(); id = id || quoted[0] || ''; inner = '';
+            } else if (l.match(/^add\s+button/i) || l.match(/^button\s+/i)) {
+              tag = 'button'; inner = quoted[0] || 'Button';
+            } else if (l.match(/^add\s+readout/i)) {
+              tag = 'div'; cls = `readout ${cls}`.trim(); inner = quoted[0] || '';
+            } else if (l.match(/^add\s+badge/i)) {
+              tag = 'span'; cls = `badge ${cls}`.trim(); inner = quoted[0] || '';
+            } else if (l.match(/^add\s+title/i) || l.match(/^add\s+heading\s+1/i) || l.match(/^h1\s+/i)) {
+              tag = 'h1'; inner = quoted[0] || '';
+            } else if (l.match(/^add\s+heading\s+2/i) || l.match(/^h2\s+/i)) {
+              tag = 'h2'; inner = quoted[0] || '';
+            } else if (l.match(/^add\s+paragraph/i) || l.match(/^p\s+/i)) {
+              tag = 'p'; inner = quoted[0] || '';
+            } else if (l.match(/^add\s+note/i)) {
+              tag = 'p'; cls = `note ${cls}`.trim(); inner = quoted[0] || '';
+            } else if (l.match(/^add\s+label/i)) {
+              tag = 'label'; inner = quoted[0] || '';
+            } else if (l.match(/^add\s+input/i) || l.match(/^input\s+/i)) {
+              tag = 'input';
+            }
+
+            let attrs = '';
+            if (id) attrs += ` id="${id}"`;
+            if (cls) attrs += ` class="${cls}"`;
+
+            if (tag === 'input') {
+              out += `  <input type="text"${attrs}>\n`;
+            } else if (inner) {
+              out += `  <${tag}${attrs}>${escapeHtml(inner)}</${tag}>\n`;
+            } else {
+              out += `  <${tag}${attrs}>\n`;
+            }
+          }
+          return out;
+        }
+
+        // Collect CSS from any open or virtual stylesheets
+        if (typeof vfs === 'object' && vfs) {
+          for (const [k, v] of Object.entries(vfs)) {
+            if (k.endsWith('.enlngd') || k.endsWith('.enlgd')) {
+              compiledCss += compileClientEnlngd(v) + '\n';
+            }
+          }
+        }
+
+        if (activeFile.endsWith('.enlngd') || activeFile.endsWith('.enlgd')) {
+          compiledCss += compileClientEnlngd(code);
+          compiledBody = `
+            <div style="max-width:600px;margin:20px auto;padding:24px;background:#1e293b;border-radius:12px;border:1px solid #334155;">
+              <h2 style="margin-top:0;color:#38bdf8;">Design Tokens Preview</h2>
+              <p style="color:#94a3b8;">Tokens compiled dynamically from <code>${escapeHtml(activeFile)}</code>.</p>
+              <button style="margin-right:8px;">Button</button>
+              <div class="card" style="margin-top:16px;padding:12px;border:1px solid rgba(255,255,255,0.1);">Card Component</div>
+            </div>`;
+        } else if (activeFile.endsWith('.enlngf') || activeFile.endsWith('.enlgf')) {
+          compiledBody = compileClientEnlngf(code);
+        } else {
+          compiledBody = `<pre style="padding:16px;color:#cbd5e1;white-space:pre-wrap;">${escapeHtml(code)}</pre>`;
+        }
+
+        const htmlDoc = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #0f172a; color: #f8fafc; }
+    button { background: #38bdf8; color: #0f172a; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    button:hover { background: #7dd3fc; }
+    .card { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; margin: 8px 0; }
+    .badge { display: inline-block; background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 700; }
+    .readout { font-size: 32px; font-weight: 800; color: #38bdf8; margin: 8px 0; }
+    ${compiledCss}
+  </style>
+</head>
+<body>
+  ${compiledBody}
+</body>
+</html>`;
 
         livePreviewFrame.srcdoc = htmlDoc;
       }
@@ -873,6 +1247,36 @@ screen WalletHome:
   const NATIVE_BRIDGE_URL = 'http://127.0.0.1:5999';
   let isNativeBridgeConnected = false;
   let nativeBridgeData = null;
+
+  function getStoredBridgeToken() {
+    try {
+      return localStorage.getItem('enlang_bridge_token') || window.__ENLANG_BRIDGE_TOKEN || '';
+    } catch (_) {
+      return window.__ENLANG_BRIDGE_TOKEN || '';
+    }
+  }
+
+  function setStoredBridgeToken(token) {
+    const clean = (token || '').trim();
+    window.__ENLANG_BRIDGE_TOKEN = clean;
+    try {
+      if (clean) localStorage.setItem('enlang_bridge_token', clean);
+      else localStorage.removeItem('enlang_bridge_token');
+    } catch (_) {}
+    return clean;
+  }
+
+  function promptForBridgeToken(reasonText) {
+    const current = getStoredBridgeToken();
+    const entered = window.prompt(
+      `${reasonText || 'Enter the Auth Token printed by enlangg-bridge in your terminal:'}`,
+      current
+    );
+    if (entered !== null && entered.trim()) {
+      return setStoredBridgeToken(entered.trim());
+    }
+    return current;
+  }
 
   async function checkNativeBridge(userInitiated = false) {
     const dot = document.getElementById('statusNativeEngineDot');
@@ -940,6 +1344,10 @@ screen WalletHome:
         if (data.status === 'online') {
           isNativeBridgeConnected = true;
           nativeBridgeData = data;
+          let token = getStoredBridgeToken();
+          if (userInitiated && !token) {
+            token = promptForBridgeToken('Connected to enlangg-bridge! Paste the Auth Token printed in the enlangg-bridge terminal:');
+          }
           if (dot) {
             dot.style.background = '#4ec9b0';
             dot.style.boxShadow = '0 0 8px #4ec9b0';
@@ -1002,11 +1410,31 @@ screen WalletHome:
     appendTerminal(`\n<span class="term-cyan">⚡ [Native Engine ~/.enlangg/bin] Executing ${escapeHtml(filename)}...</span>`);
     const t0 = performance.now();
     try {
-      const res = await fetch(`${NATIVE_BRIDGE_URL}/api/run`, {
+      let token = getStoredBridgeToken();
+      if (!token) {
+        token = promptForBridgeToken('Enter the Auth Token printed by enlangg-bridge in your terminal:');
+      }
+      let res = await fetch(`${NATIVE_BRIDGE_URL}/api/run`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Enlang-Token': token
+        },
         body: JSON.stringify({ filename, content, lang })
       });
+      if (res.status === 401) {
+        token = promptForBridgeToken('Bridge rejected token (401 Unauthorized). Paste the current Auth Token from enlangg-bridge:');
+        if (token) {
+          res = await fetch(`${NATIVE_BRIDGE_URL}/api/run`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Enlang-Token': token
+            },
+            body: JSON.stringify({ filename, content, lang })
+          });
+        }
+      }
       const result = await res.json();
       const elapsed = (performance.now() - t0).toFixed(2);
       if (result.success) {
@@ -7145,7 +7573,7 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
       const iframe = document.createElement('iframe');
       iframe.id = `webview_frame_${viewId}`;
       iframe.style.cssText = 'width:100%;flex:1;min-height:200px;border:none;background:var(--vscode-sidebar-bg);';
-      iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-same-origin');
+      iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups');
       iframe.setAttribute('title', `Webview: ${viewId}`);
 
       // Load state from persistence
@@ -7982,7 +8410,7 @@ window.addEventListener('message', function(e) {
       const iframe = document.createElement('iframe');
       iframe.className = 'extension-editor-iframe';
       iframe.id = `ext_iframe_${panelId}`;
-      iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-same-origin');
+      iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups');
       iframe.setAttribute('title', title);
       paneEl.appendChild(iframe);
 
@@ -12262,7 +12690,8 @@ Provide code in fenced code blocks.`;
       try {
         const downloadRes = await window.EnlangElectron.downloadUpdate({
           downloadUrl: studioUpdateInfo.downloadUrl,
-          assetName: studioUpdateInfo.assetName
+          assetName: studioUpdateInfo.assetName,
+          expectedSha256: studioUpdateInfo.sha256 || studioUpdateInfo.checksum || null
         });
 
         if (progressUnsub) progressUnsub();
@@ -12352,7 +12781,8 @@ Provide code in fenced code blocks.`;
             publishedAt: manifest.publishedAt || new Date().toISOString(),
             htmlUrl: 'https://enlangg.site',
             downloadUrl: manifest.downloadUrl || 'https://enlangg.site/enlangg-studio-setup.exe',
-            assetName: manifest.assetName || 'Enlangg-Studio-Setup.exe'
+            assetName: manifest.assetName || 'Enlangg-Studio-Setup.exe',
+            sha256: manifest.sha256 || manifest.checksum || null
           };
         } else {
           // Secondary fallback to GitHub Releases

@@ -45,8 +45,8 @@ class ENLGFLexer:
                 continue
                 
             raw_line = line_no_comment.lstrip()
-            # Support and skip standard domain type header (e.g. 'type enlgf')
-            if raw_line.lower().startswith("type ") and raw_line.lower().split()[1].rstrip(":") in ("enlgf", "frontend", "html", "ui"):
+            # Support and skip standard domain type header (e.g. 'type enlgf', 'type enlngf')
+            if raw_line.lower().startswith("type ") and len(raw_line.lower().split()) > 1 and raw_line.lower().split()[1].rstrip(":;") in ("enlgf", "enlngf", "enlang", "enlangg", "frontend", "html", "ui"):
                 continue
 
             # Compute indentation

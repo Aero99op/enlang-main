@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const https = require('https');
+const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 let mainWindow = null;
@@ -111,7 +112,12 @@ function createWindow() {
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        shell.openExternal(url);
+      }
+    } catch (_) {}
     return { action: 'deny' };
   });
 
@@ -195,6 +201,25 @@ ipcMain.handle('compiler:run', async (event, { filename, content, domain }) => {
 });
 
 // --- IPC: Native File System Operations ---
+let currentWorkspacePath = null;
+
+function assertInWorkspace(targetPath) {
+  if (!currentWorkspacePath) {
+    throw new Error('Access Denied: No workspace folder has been opened via the native folder dialog.');
+  }
+  if (!targetPath || typeof targetPath !== 'string') {
+    throw new Error('Access Denied: Invalid file path.');
+  }
+  const resolved = path.resolve(targetPath);
+  const resolvedWs = path.resolve(currentWorkspacePath);
+  const isWin = process.platform === 'win32';
+  const cmpTarget = isWin ? resolved.toLowerCase() : resolved;
+  const cmpWs = isWin ? resolvedWs.toLowerCase() : resolvedWs;
+  if (cmpTarget !== cmpWs && !cmpTarget.startsWith(cmpWs + path.sep)) {
+    throw new Error(`Access Denied: Path '${targetPath}' is outside the active workspace '${currentWorkspacePath}'.`);
+  }
+}
+
 ipcMain.handle('fs:openDirectoryDialog', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Open Enlang Project Folder',
@@ -203,7 +228,8 @@ ipcMain.handle('fs:openDirectoryDialog', async () => {
   if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
     return null;
   }
-  return result.filePaths[0];
+  currentWorkspacePath = path.resolve(result.filePaths[0]);
+  return currentWorkspacePath;
 });
 
 ipcMain.handle('fs:openFileDialog', async (event, options = {}) => {
@@ -218,7 +244,10 @@ ipcMain.handle('fs:openFileDialog', async (event, options = {}) => {
   if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
     return null;
   }
-  const filePath = result.filePaths[0];
+  const filePath = path.resolve(result.filePaths[0]);
+  if (!currentWorkspacePath) {
+    currentWorkspacePath = path.dirname(filePath);
+  }
   const content = fs.readFileSync(filePath, 'utf8');
   return { path: filePath, name: path.basename(filePath), content };
 });
@@ -235,10 +264,15 @@ ipcMain.handle('fs:saveFileDialog', async (event, options = {}) => {
   if (result.canceled || !result.filePath) {
     return null;
   }
-  return result.filePath;
+  const resolvedSave = path.resolve(result.filePath);
+  if (!currentWorkspacePath) {
+    currentWorkspacePath = path.dirname(resolvedSave);
+  }
+  return resolvedSave;
 });
 
 ipcMain.handle('fs:listDirectory', async (event, dirPath) => {
+  assertInWorkspace(dirPath);
   if (!fs.existsSync(dirPath)) return [];
   try {
     const entries = fs.readdirSync(dirPath, { withFileTypes: true });
@@ -268,6 +302,7 @@ ipcMain.handle('fs:listDirectory', async (event, dirPath) => {
 });
 
 ipcMain.handle('fs:readFile', async (event, filePath) => {
+  assertInWorkspace(filePath);
   try {
     return fs.readFileSync(filePath, 'utf8');
   } catch (err) {
@@ -276,6 +311,7 @@ ipcMain.handle('fs:readFile', async (event, filePath) => {
 });
 
 ipcMain.handle('fs:writeFile', async (event, filePath, content) => {
+  assertInWorkspace(filePath);
   try {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, content, 'utf8');
@@ -286,6 +322,7 @@ ipcMain.handle('fs:writeFile', async (event, filePath, content) => {
 });
 
 ipcMain.handle('fs:createFile', async (event, filePath) => {
+  assertInWorkspace(filePath);
   try {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     if (!fs.existsSync(filePath)) {
@@ -298,6 +335,7 @@ ipcMain.handle('fs:createFile', async (event, filePath) => {
 });
 
 ipcMain.handle('fs:createFolder', async (event, dirPath) => {
+  assertInWorkspace(dirPath);
   try {
     fs.mkdirSync(dirPath, { recursive: true });
     return true;
@@ -308,10 +346,20 @@ ipcMain.handle('fs:createFolder', async (event, dirPath) => {
 
 // --- IPC: Shell Utilities ---
 ipcMain.handle('shell:openExternal', async (event, url) => {
-  return shell.openExternal(url);
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return shell.openExternal(url);
+    }
+    throw new Error(`Blocked unsafe protocol: ${parsed.protocol}`);
+  } catch (err) {
+    console.error('shell:openExternal rejected URL:', url, err.message);
+    throw err;
+  }
 });
 
 ipcMain.handle('shell:showInFolder', async (event, filePath) => {
+  assertInWorkspace(filePath);
   return shell.showItemInFolder(filePath);
 });
 
@@ -501,16 +549,47 @@ function fetchJson(url) {
   });
 }
 
+const ALLOWED_GITHUB_REPO_PREFIXES = [
+  '/Aero99op/enlang-main/',
+  '/Aero99op/enlangg/'
+];
+
+function isAllowedUpdateUrl(targetUrl, isRedirect = false) {
+  try {
+    const parsed = new URL(targetUrl);
+    if (parsed.protocol !== 'https:') return false;
+    const host = parsed.hostname.toLowerCase();
+    const pathname = parsed.pathname;
+
+    if (host === 'enlangg.site' || host === 'enlangg.vercel.app') {
+      return true;
+    }
+    if (host === 'github.com' || host === 'raw.githubusercontent.com') {
+      return ALLOWED_GITHUB_REPO_PREFIXES.some(prefix => pathname.toLowerCase().startsWith(prefix.toLowerCase()));
+    }
+    // GitHub release asset redirects go to objects.githubusercontent.com with a signed token
+    if (isRedirect && host === 'objects.githubusercontent.com') {
+      return true;
+    }
+    return false;
+  } catch (_) {
+    return false;
+  }
+}
+
 function downloadFileWithProgress(url, destPath, onProgress) {
   return new Promise((resolve, reject) => {
-    function get(reqUrl) {
+    function get(reqUrl, isRedirect = false) {
+      if (!isAllowedUpdateUrl(reqUrl, isRedirect)) {
+        return reject(new Error(`Untrusted update URL rejected: '${reqUrl}'`));
+      }
       const parsed = new URL(reqUrl);
       const req = https.get(parsed, {
         headers: { 'User-Agent': 'EnlanggStudio-Desktop' },
         timeout: 60000
       }, (res) => {
         if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-          return get(res.headers.location);
+          return get(res.headers.location, true);
         }
         if (res.statusCode !== 200) {
           return reject(new Error(`Download failed with HTTP ${res.statusCode}`));
@@ -527,8 +606,7 @@ function downloadFileWithProgress(url, destPath, onProgress) {
           }
         });
         res.on('end', () => {
-          fileStream.end();
-          resolve(destPath);
+          fileStream.end(() => resolve(destPath));
         });
         res.on('error', (err) => {
           fileStream.destroy();
@@ -542,9 +620,12 @@ function downloadFileWithProgress(url, destPath, onProgress) {
         reject(new Error('Download timed out'));
       });
     }
-    get(url);
+    get(url, false);
   });
 }
+
+let latestReleaseSha256 = null;
+let verifiedUpdateState = null;
 
 async function checkLatestRelease() {
   const currentVersion = app.getVersion() || '5.0.0';
@@ -562,6 +643,8 @@ async function checkLatestRelease() {
       if (manifest && manifest.version) {
         const latestVersion = manifest.version.replace(/^[vV]/, '');
         const hasUpdate = isNewerVersion(latestVersion, currentVersion);
+        const sha256 = manifest.sha256 || manifest.checksum || null;
+        if (sha256) latestReleaseSha256 = sha256;
         return {
           hasUpdate,
           currentVersion,
@@ -572,6 +655,7 @@ async function checkLatestRelease() {
           publishedAt: manifest.publishedAt || new Date().toISOString(),
           downloadUrl: manifest.downloadUrl || 'https://enlangg.site/enlangg-studio-setup.exe',
           assetName: manifest.assetName || 'Enlangg-Studio-Setup.exe',
+          sha256,
           source: 'enlangg.site'
         };
       }
@@ -598,6 +682,10 @@ async function checkLatestRelease() {
         }
       }
 
+      const assetDigest = targetAsset && typeof targetAsset.digest === 'string' && targetAsset.digest.startsWith('sha256:')
+        ? targetAsset.digest.slice(7)
+        : latestReleaseSha256;
+
       return {
         hasUpdate,
         currentVersion,
@@ -609,6 +697,7 @@ async function checkLatestRelease() {
         htmlUrl: latest.html_url,
         downloadUrl: targetAsset ? targetAsset.browser_download_url : 'https://enlangg.site/enlangg-studio-setup.exe',
         assetName: targetAsset ? targetAsset.name : 'Enlangg-Studio-Setup.exe',
+        sha256: assetDigest || null,
         source: 'github'
       };
     }
@@ -627,12 +716,34 @@ ipcMain.handle('updater:checkForUpdates', async () => {
   return await checkLatestRelease();
 });
 
-ipcMain.handle('updater:downloadUpdate', async (event, { downloadUrl, assetName }) => {
+function computeFileSha256(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fs.createReadStream(filePath);
+    stream.on('data', chunk => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+    stream.on('error', err => reject(err));
+  });
+}
+
+ipcMain.handle('updater:downloadUpdate', async (event, { downloadUrl, assetName, expectedSha256 }) => {
+  verifiedUpdateState = null;
   if (!downloadUrl) throw new Error('Missing download URL');
+  if (!isAllowedUpdateUrl(downloadUrl, false)) {
+    throw new Error(`Untrusted update download URL: '${downloadUrl}'. Update rejected.`);
+  }
+  const requiredSha256 = (expectedSha256 || latestReleaseSha256 || '').trim().toLowerCase();
+  if (!requiredSha256 || !/^[a-f0-9]{64}$/.test(requiredSha256)) {
+    throw new Error('Mandatory SHA-256 checksum missing or invalid in release manifest. Refusing unverified update download.');
+  }
+
   const tempDir = path.join(os.tmpdir(), 'enlangg_studio_update');
   fs.mkdirSync(tempDir, { recursive: true });
-  const filename = assetName || path.basename(new URL(downloadUrl).pathname) || 'Enlangg-Studio-Setup.exe';
-  const destPath = path.join(tempDir, filename);
+  const safeAssetName = path.basename(assetName || new URL(downloadUrl).pathname || 'Enlangg-Studio-Setup.exe');
+  if (!safeAssetName.toLowerCase().endsWith('.exe')) {
+    throw new Error('Update installer must be a .exe file.');
+  }
+  const destPath = path.join(tempDir, safeAssetName);
 
   await downloadFileWithProgress(downloadUrl, destPath, (progress) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -640,16 +751,39 @@ ipcMain.handle('updater:downloadUpdate', async (event, { downloadUrl, assetName 
     }
   });
 
-  return { success: true, filePath: destPath, filename };
-});
-
-ipcMain.handle('updater:installUpdate', async (event, { filePath }) => {
-  if (!filePath || !fs.existsSync(filePath)) {
-    throw new Error('Downloaded update file does not exist on disk.');
+  const actualSha256 = (await computeFileSha256(destPath)).toLowerCase();
+  if (actualSha256 !== requiredSha256) {
+    try { fs.unlinkSync(destPath); } catch (_) {}
+    throw new Error(`SHA-256 verification failed: expected '${requiredSha256}', got '${actualSha256}'. Unverified installer deleted.`);
   }
 
-  if (filePath.toLowerCase().endsWith('.exe')) {
-    const child = spawn(filePath, [], {
+  verifiedUpdateState = {
+    filePath: destPath,
+    sha256: actualSha256,
+    verifiedAt: Date.now()
+  };
+
+  return { success: true, filePath: destPath, filename: safeAssetName, sha256: actualSha256 };
+});
+
+ipcMain.handle('updater:installUpdate', async (event, payload = {}) => {
+  if (!verifiedUpdateState || !verifiedUpdateState.filePath || !fs.existsSync(verifiedUpdateState.filePath)) {
+    throw new Error('Refusing to run installer: no verified update package downloaded in this session.');
+  }
+  if (payload && payload.filePath && path.resolve(payload.filePath) !== path.resolve(verifiedUpdateState.filePath)) {
+    throw new Error('Security violation: installUpdate path does not match the verified update package.');
+  }
+
+  const targetExe = verifiedUpdateState.filePath;
+  const currentSha256 = (await computeFileSha256(targetExe)).toLowerCase();
+  if (currentSha256 !== verifiedUpdateState.sha256) {
+    verifiedUpdateState = null;
+    try { fs.unlinkSync(targetExe); } catch (_) {}
+    throw new Error('Security violation: downloaded installer checksum changed before execution.');
+  }
+
+  if (targetExe.toLowerCase().endsWith('.exe')) {
+    const child = spawn(targetExe, [], {
       detached: true,
       stdio: 'ignore'
     });
@@ -659,7 +793,7 @@ ipcMain.handle('updater:installUpdate', async (event, { filePath }) => {
     }, 500);
     return { success: true, action: 'spawned_installer' };
   } else {
-    throw new Error('Downloaded update file is not a valid Windows executable installer (.exe).');
+    throw new Error('Verified update file is not a valid Windows executable installer (.exe).');
   }
 });
 

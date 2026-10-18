@@ -11,6 +11,7 @@ set -e
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
@@ -38,55 +39,73 @@ esac
 echo "${YELLOW}>> Target Platform: $OS ($ARCH)${NC}"
 echo "${YELLOW}>> Installing 7 Sovereign Executables to: $INSTALL_DIR ...${NC}"
 
-DIST_URL="https://enlangg.vercel.app"
+GITHUB_REPO="Aero99op/enlang-main"
+RELEASE_URL="https://github.com/$GITHUB_REPO/releases/latest/download/enlangg-${OS}-${ARCH}.tar.gz"
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo "")"
+
 CC=""
 if command -v gcc >/dev/null 2>&1; then
     CC="gcc"
-elif command -v cc >/dev/null 2>&1; then
-    CC="cc"
 elif command -v clang >/dev/null 2>&1; then
     CC="clang"
+elif command -v cc >/dev/null 2>&1; then
+    CC="cc"
 fi
 
-# 1. Compile or Install Sovereign Binaries
-if [ -n "$CC" ]; then
-    echo "   Compiling pure C sovereign core engines using $CC..."
-    
-    # enlangg
-    if [ -f "$SCRIPT_DIR/enlangg.c" ]; then
-        $CC -O2 "$SCRIPT_DIR/enlangg.c" -o "$INSTALL_DIR/enlangg" 2>/dev/null || true
-    else
-        curl -fsSL "$DIST_URL/enlangg.c" -o "/tmp/enlangg.c" 2>/dev/null && \
-        $CC -O2 /tmp/enlangg.c -o "$INSTALL_DIR/enlangg" 2>/dev/null || true
-    fi
+build_from_source() {
+    SRC_ROOT="$1"
+    echo "   Compiling pure C sovereign core engines from '$SRC_ROOT' using $CC..."
 
-    # enlng
-    if [ -f "$SCRIPT_DIR/enlng.c" ]; then
-        $CC -O2 "$SCRIPT_DIR/enlng.c" -o "$INSTALL_DIR/enlng" 2>/dev/null || true
-    else
-        curl -fsSL "$DIST_URL/enlng.c" -o "/tmp/enlng.c" 2>/dev/null && \
-        $CC -O2 /tmp/enlng.c -o "$INSTALL_DIR/enlng" 2>/dev/null || true
-    fi
+    echo "   [1/7] Compiling enlangg (Universal Dispatcher)..."
+    $CC -O2 -I"$SRC_ROOT" -I"$SRC_ROOT/enlngdb/c" -I"$SRC_ROOT/enlng/c" \
+        "$SRC_ROOT/enlangg.c" "$SRC_ROOT/enlngdb/c/enlngdb.c" "$SRC_ROOT/enlngdb/c/enlngdb_parser.c" "$SRC_ROOT/enlng/c/enlng_emitter.c" \
+        -lm -o "$INSTALL_DIR/enlangg"
 
-    # enlngdb
-    if [ -f "$SCRIPT_DIR/enlngdb/c/main.c" ] && [ -f "$SCRIPT_DIR/enlngdb/c/enlngdb.c" ]; then
-        $CC -O2 "$SCRIPT_DIR/enlngdb/c/main.c" "$SCRIPT_DIR/enlngdb/c/enlngdb.c" "$SCRIPT_DIR/enlngdb/c/enlngdb_parser.c" -o "$INSTALL_DIR/enlngdb" 2>/dev/null || true
-    fi
+    echo "   [2/7] Compiling enlng (Core Language)..."
+    $CC -O2 -I"$SRC_ROOT" -I"$SRC_ROOT/src" \
+        "$SRC_ROOT/enlng.c" -lm -o "$INSTALL_DIR/enlng"
 
-    # enlngs
-    if [ -f "$SCRIPT_DIR/enlngs/c/main.c" ] && [ -f "$SCRIPT_DIR/enlngs/c/enlngs_engine.c" ]; then
-        $CC -O2 "$SCRIPT_DIR/enlngs/c/main.c" "$SCRIPT_DIR/enlngs/c/enlngs_engine.c" -o "$INSTALL_DIR/enlngs" 2>/dev/null || true
-    fi
+    echo "   [3/7] Compiling enlngdb (Database Engine)..."
+    $CC -O2 -I"$SRC_ROOT/enlngdb/c" \
+        "$SRC_ROOT/enlngdb/c/main.c" "$SRC_ROOT/enlngdb/c/enlngdb.c" "$SRC_ROOT/enlngdb/c/enlngdb_parser.c" \
+        -lm -o "$INSTALL_DIR/enlngdb"
 
-    # enlngd
-    if [ -f "$SCRIPT_DIR/enlngd/c/main.c" ] && [ -f "$SCRIPT_DIR/enlngd/c/enlngd_engine.c" ]; then
-        $CC -O2 "$SCRIPT_DIR/enlngd/c/main.c" "$SCRIPT_DIR/enlngd/c/enlngd_engine.c" -o "$INSTALL_DIR/enlngd" 2>/dev/null || true
-    fi
+    echo "   [4/7] Compiling enlngf (Frontend Studio)..."
+    $CC -O2 "$SRC_ROOT/enlngf.c" -o "$INSTALL_DIR/enlngf"
+
+    echo "   [5/7] Compiling enlngs (Reactive Script Engine)..."
+    $CC -O2 "$SRC_ROOT/enlngs.c" -o "$INSTALL_DIR/enlngs"
+
+    echo "   [6/7] Compiling enlngd (Design Tokens Engine)..."
+    $CC -O2 "$SRC_ROOT/enlngd.c" -o "$INSTALL_DIR/enlngd"
+
+    echo "   [7/7] Compiling enlngm (Mobile HAL Packager)..."
+    $CC -O2 "$SRC_ROOT/enlngm.c" -o "$INSTALL_DIR/enlngm"
+}
+
+# 1. Install via Local Source, Release Tarball, or Git Clone
+if [ -f "$SCRIPT_DIR/enlangg.c" ] && [ -n "$CC" ]; then
+    build_from_source "$SCRIPT_DIR"
+elif curl -f -s -I "$RELEASE_URL" >/dev/null 2>&1; then
+    echo "   Downloading prebuilt release archive from GitHub..."
+    TMP_TAR="/tmp/enlangg-${OS}-${ARCH}.tar.gz"
+    curl -fsSL "$RELEASE_URL" -o "$TMP_TAR"
+    tar -xzf "$TMP_TAR" -C "$INSTALL_DIR"
+    rm -f "$TMP_TAR"
+elif [ -n "$CC" ] && command -v git >/dev/null 2>&1; then
+    echo "   Cloning official repository to build from source..."
+    TMP_CLONE="/tmp/enlang-build-$$"
+    git clone --depth 1 "https://github.com/$GITHUB_REPO.git" "$TMP_CLONE"
+    build_from_source "$TMP_CLONE"
+    rm -rf "$TMP_CLONE"
+else
+    echo "${RED}[ERROR] Neither a C compiler (gcc/clang) nor a prebuilt release archive could be accessed.${NC}"
+    echo "Please install gcc or clang and run the installer again."
+    exit 1
 fi
 
 # Ensure executable permissions
-chmod +x "$INSTALL_DIR"/* 2>/dev/null || true
+chmod +x "$INSTALL_DIR"/* 2>/dev/null
 
 # 2. Update Shell Profiles (PATH)
 echo "${YELLOW}>> Configuring system PATH environment variable...${NC}"
@@ -119,9 +138,12 @@ export PATH="$INSTALL_DIR:$PATH"
 
 # 3. Verification
 echo "${GREEN}>> Verifying installed tools:${NC}"
-for CMD in enlangg enlng enlngdb enlngs enlngd; do
+for CMD in enlangg enlng enlngdb enlngf enlngs enlngd enlngm; do
     if [ -x "$INSTALL_DIR/$CMD" ]; then
-        "$INSTALL_DIR/$CMD" --version 2>/dev/null || true
+        printf "   %-10s: " "$CMD"
+        "$INSTALL_DIR/$CMD" --version
+    else
+        echo "${RED}   [MISSING] $CMD failed to install.${NC}"
     fi
 done
 
@@ -139,8 +161,10 @@ echo "Available Pure C Sovereign Commands:"
 echo "  enlangg <file>              # Universal toolchain dispatcher"
 echo "  enlng run <file.enlng>      # Core backend language engine"
 echo "  enlngdb <script.enlngdb>    # Pure C microsecond database"
+echo "  enlngf <app.enlngf>         # Pure C frontend studio"
 echo "  enlngs <logic.enlngs>       # Pure C in-memory script VM"
 echo "  enlngd <theme.enlngd>       # Pure C design tokens & style resolver"
+echo "  enlngm <app.enlngm>         # Pure C smartphone simulator & HAL"
 echo "  enlangg --help              # Toolchain comprehensive help"
 echo ""
 echo "Website & Live Playground: https://enlangg.vercel.app"
