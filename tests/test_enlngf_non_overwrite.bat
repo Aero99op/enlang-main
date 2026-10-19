@@ -71,6 +71,30 @@ if errorlevel 1 (
 echo [PASS] Non-overwrite companion protection verified!
 type "%ERR_LOG%"
 
+rem 8. Test file with OLD header ("Compiled by Enlangg")
+(
+echo /**
+echo  * Compiled by Enlangg Sovereign Design Token Engine v5.3.0
+echo  */
+echo body { color: #123456; }
+) > "%CSS_FILE%"
+
+"%~dp0..\enlngf.exe" build "%ENLGF_FILE%" -o "%OUT_HTML%" 2> "%ERR_LOG%"
+if "!ERRORLEVEL!" NEQ "1" (
+    echo [FAIL] Expected refusal on file with old header, got !ERRORLEVEL!
+    rmdir /s /q "%TEST_DIR%"
+    exit /b 1
+)
+
+findstr /C:"#123456" "%CSS_FILE%" >nul
+if errorlevel 1 (
+    echo [FAIL] File with old header was overwritten!
+    rmdir /s /q "%TEST_DIR%"
+    exit /b 1
+)
+
+echo [PASS] Non-overwrite verified for user file with old header!
+
 rem Clean up
 rmdir /s /q "%TEST_DIR%"
 exit /b 0

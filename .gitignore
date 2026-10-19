@@ -48,8 +48,14 @@ videos/
 website/videos/
 recordings/
 
-# Local deployment bundles
+# Local deployment bundles & binary build outputs
 .vercel/
 dist-desktop/
 desktop/ui/
 *.blockmap
+*.exe
+website/*.exe
+desktop/bin/*.exe
+enlang-core/*.exe
+nexora/*.exe
+

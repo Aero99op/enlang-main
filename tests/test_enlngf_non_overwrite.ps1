@@ -51,5 +51,27 @@ if ($cssContent -notmatch "My custom styles") {
     throw "[FAIL] app.css was overwritten!"
 }
 
-Write-Host "[PASS] test_enlngf_non_overwrite passed successfully."
+# 8. Test file with old header ("Compiled by Enlangg")
+Set-Content -Path $cssFile -Value @"
+/**
+ * Compiled by Enlangg Sovereign Design Token Engine v5.3.0
+ */
+body { color: #abcdef; }
+"@
+
+$errOutput2 = cmd /c "`"$enlngfExe`" build `"$enlgfFile`" -o `"$outHtml`" 2>&1"
+$exitCode2 = $LASTEXITCODE
+
+if ($exitCode2 -ne 1) {
+    Remove-Item -Recurse -Force $testDir
+    throw "[FAIL] Expected exit code 1 on file with old header, but got $exitCode2"
+}
+
+$cssContent2 = Get-Content -Path $cssFile -Raw
+if ($cssContent2 -notmatch "#abcdef") {
+    Remove-Item -Recurse -Force $testDir
+    throw "[FAIL] File with old header was overwritten!"
+}
+
+Write-Host "[PASS] test_enlngf_non_overwrite passed successfully for both arbitrary user files and old header files."
 Remove-Item -Recurse -Force $testDir

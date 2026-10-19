@@ -2,12 +2,12 @@
   "name": "Enlangg Studio",
   "version": "5.0.1",
   "build": "5.0.1.0",
-  "publishedAt": "2026-10-19T01:00:00Z",
-  "releaseNotes": "Enlangg Studio 5.0.1 Sovereign Release: Pure C native backend engines, non-overwrite companion asset protection, Win32 desktop preview viewport, and hardened HTTP/1.1 Web Studio server.",
-  "downloadUrl": "https://enlangg.site/enlangg-studio-setup.exe",
+  "publishedAt": "2026-10-19T00:48:49Z",
+  "releaseNotes": "Enlangg Studio 5.0.1 Sovereign Release: Pure C native backend engines, strict SHA-256 non-overwrite companion asset protection, Win32 desktop preview viewport, and hardened HTTP/1.1 Web Studio server.",
+  "downloadUrl": "https://github.com/Aero99op/enlang-main/releases/download/v5.0.1/Enlangg-Studio-Setup-5.0.1.exe",
   "mirrors": [
-    "https://enlangg.vercel.app/enlangg-studio-setup.exe",
-    "https://github.com/Aero99op/enlang-main/raw/main/website/enlangg-studio-setup.exe"
+    "https://enlangg.site/enlangg-studio-setup.exe",
+    "https://enlangg.vercel.app/enlangg-studio-setup.exe"
   ],
   "assetName": "Enlangg-Studio-Setup-5.0.1.exe",
   "sha256": "6dab02128401bdc624fa48acffaa6a377f3d68998dd1a321e101ff681748272a"

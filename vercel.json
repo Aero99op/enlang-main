@@ -6,6 +6,18 @@
   "outputDirectory": "website",
   "cleanUrls": false,
   "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/enlangg-studio-setup.exe",
+      "destination": "https://github.com/Aero99op/enlang-main/releases/download/v5.0.1/Enlangg-Studio-Setup-5.0.1.exe",
+      "permanent": false
+    },
+    {
+      "source": "/Enlangg-Studio-Setup-5.0.1.exe",
+      "destination": "https://github.com/Aero99op/enlang-main/releases/download/v5.0.1/Enlangg-Studio-Setup-5.0.1.exe",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

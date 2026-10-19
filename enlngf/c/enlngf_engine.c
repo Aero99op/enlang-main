@@ -1231,18 +1231,248 @@ static bool file_exists_local(const char* path) {
     return false;
 }
 
-static bool is_enlangg_generated_asset(const char* path) {
+/* ========================================================================= */
+/* Pure C SHA-256 Implementation (FIPS 180-2 compliant, zero dependencies)  */
+/* ========================================================================= */
+#include <stdint.h>
+
+#ifdef _WIN32
+#define enlngf_strncasecmp _strnicmp
+#else
+#define enlngf_strncasecmp strncasecmp
+#endif
+
+typedef struct {
+    uint32_t state[8];
+    uint64_t count;
+    uint8_t buffer[64];
+} EnlngfSha256;
+
+#define ENLNGF_ROTR(x, n) (((x) >> (n)) | ((x) << (32 - (n))))
+#define ENLNGF_CH(x, y, z) (((x) & (y)) ^ (~(x) & (z)))
+#define ENLNGF_MAJ(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+#define ENLNGF_EP0(x) (ENLNGF_ROTR(x, 2) ^ ENLNGF_ROTR(x, 13) ^ ENLNGF_ROTR(x, 22))
+#define ENLNGF_EP1(x) (ENLNGF_ROTR(x, 6) ^ ENLNGF_ROTR(x, 11) ^ ENLNGF_ROTR(x, 25))
+#define ENLNGF_SIG0(x) (ENLNGF_ROTR(x, 7) ^ ENLNGF_ROTR(x, 18) ^ ((x) >> 3))
+#define ENLNGF_SIG1(x) (ENLNGF_ROTR(x, 17) ^ ENLNGF_ROTR(x, 19) ^ ((x) >> 10))
+
+static const uint32_t ENLNGF_K256[64] = {
+    0x428a2f98UL, 0x71374491UL, 0xb5c0fbcfUL, 0xe9b5dba5UL,
+    0x3956c25bUL, 0x59f111f1UL, 0x923f82a4UL, 0xab1c5ed5UL,
+    0xd807aa98UL, 0x12835b01UL, 0x243185beUL, 0x550c7dc3UL,
+    0x72be5d74UL, 0x80deb1feUL, 0x9bdc06a7UL, 0xc19bf174UL,
+    0xe49b69c1UL, 0xefbe4786UL, 0x0fc19dc6UL, 0x240ca1ccUL,
+    0x2de92c6fUL, 0x4a7484aaUL, 0x5cb0a9dcUL, 0x76f988daUL,
+    0x983e5152UL, 0xa831c66dUL, 0xb00327c8UL, 0xbf597fc7UL,
+    0xc6e00bf3UL, 0xd5a79147UL, 0x06ca6351UL, 0x14292967UL,
+    0x27b70a85UL, 0x2e1b2138UL, 0x4d2c6dfcUL, 0x53380d13UL,
+    0x650a7354UL, 0x766a0abbUL, 0x81c2c92eUL, 0x92722c85UL,
+    0xa2bfe8a1UL, 0xa81a664bUL, 0xc24b8b70UL, 0xc76c51a3UL,
+    0xd192e819UL, 0xd6990624UL, 0xf40e3585UL, 0x106aa070UL,
+    0x19a4c116UL, 0x1e376c08UL, 0x2748774cUL, 0x34b0bcb5UL,
+    0x391c0cb3UL, 0x4ed8aa4aUL, 0x5b9cca4fUL, 0x682e6ff3UL,
+    0x748f82eeUL, 0x78a5636fUL, 0x84c87814UL, 0x8cc70208UL,
+    0x90befffaUL, 0xa4506cebUL, 0xbef9a3f7UL, 0xc67178f2UL
+};
+
+static void enlngf_sha256_transform(EnlngfSha256* ctx, const uint8_t data[64]) {
+    uint32_t a, b, c, d, e, f, g, h, m[64];
+    for (int i = 0, j = 0; i < 16; ++i, j += 4) {
+        m[i] = ((uint32_t)data[j] << 24) | ((uint32_t)data[j + 1] << 16) |
+               ((uint32_t)data[j + 2] << 8) | ((uint32_t)data[j + 3]);
+    }
+    for (int i = 16; i < 64; ++i) {
+        m[i] = ENLNGF_SIG1(m[i - 2]) + m[i - 7] + ENLNGF_SIG0(m[i - 15]) + m[i - 16];
+    }
+    a = ctx->state[0];
+    b = ctx->state[1];
+    c = ctx->state[2];
+    d = ctx->state[3];
+    e = ctx->state[4];
+    f = ctx->state[5];
+    g = ctx->state[6];
+    h = ctx->state[7];
+    for (int i = 0; i < 64; ++i) {
+        uint32_t t1 = h + ENLNGF_EP1(e) + ENLNGF_CH(e, f, g) + ENLNGF_K256[i] + m[i];
+        uint32_t t2 = ENLNGF_EP0(a) + ENLNGF_MAJ(a, b, c);
+        h = g;
+        g = f;
+        f = e;
+        e = d + t1;
+        d = c;
+        c = b;
+        b = a;
+        a = t1 + t2;
+    }
+    ctx->state[0] += a;
+    ctx->state[1] += b;
+    ctx->state[2] += c;
+    ctx->state[3] += d;
+    ctx->state[4] += e;
+    ctx->state[5] += f;
+    ctx->state[6] += g;
+    ctx->state[7] += h;
+}
+
+static void enlngf_sha256_init(EnlngfSha256* ctx) {
+    ctx->state[0] = 0x6a09e667UL;
+    ctx->state[1] = 0xbb67ae85UL;
+    ctx->state[2] = 0x3c6ef372UL;
+    ctx->state[3] = 0xa54ff53aUL;
+    ctx->state[4] = 0x510e527fUL;
+    ctx->state[5] = 0x9b05688cUL;
+    ctx->state[6] = 0x1f83d9abUL;
+    ctx->state[7] = 0x5be0cd19UL;
+    ctx->count = 0;
+}
+
+static void enlngf_sha256_update(EnlngfSha256* ctx, const uint8_t* data, size_t len) {
+    size_t i = 0;
+    size_t index = (size_t)((ctx->count >> 3) & 0x3f);
+    ctx->count += (uint64_t)len << 3;
+    size_t part_len = 64 - index;
+    if (len >= part_len) {
+        memcpy(&ctx->buffer[index], data, part_len);
+        enlngf_sha256_transform(ctx, ctx->buffer);
+        for (i = part_len; i + 63 < len; i += 64) {
+            enlngf_sha256_transform(ctx, &data[i]);
+        }
+        index = 0;
+    }
+    memcpy(&ctx->buffer[index], &data[i], len - i);
+}
+
+static void enlngf_sha256_final(EnlngfSha256* ctx, uint8_t hash[32]) {
+    uint8_t bits[8];
+    for (int i = 0; i < 8; ++i) {
+        bits[i] = (uint8_t)((ctx->count >> ((7 - i) * 8)) & 0xff);
+    }
+    size_t index = (size_t)((ctx->count >> 3) & 0x3f);
+    size_t pad_len = (index < 56) ? (56 - index) : (120 - index);
+    static const uint8_t PADDING[64] = { 0x80 };
+    enlngf_sha256_update(ctx, PADDING, pad_len);
+    enlngf_sha256_update(ctx, bits, 8);
+    for (int i = 0; i < 8; ++i) {
+        hash[i * 4]     = (uint8_t)((ctx->state[i] >> 24) & 0xff);
+        hash[i * 4 + 1] = (uint8_t)((ctx->state[i] >> 16) & 0xff);
+        hash[i * 4 + 2] = (uint8_t)((ctx->state[i] >> 8) & 0xff);
+        hash[i * 4 + 3] = (uint8_t)(ctx->state[i] & 0xff);
+    }
+}
+
+static void enlngf_sha256_hex(const uint8_t* data, size_t len, char hex_out[65]) {
+    EnlngfSha256 ctx;
+    enlngf_sha256_init(&ctx);
+    enlngf_sha256_update(&ctx, data, len);
+    uint8_t h[32];
+    enlngf_sha256_final(&ctx, h);
+    for (int i = 0; i < 32; ++i) {
+        sprintf(hex_out + (i * 2), "%02x", h[i]);
+    }
+    hex_out[64] = '\0';
+}
+
+static bool is_valid_enlngf_generated_asset(const char* path) {
     if (!path || !*path) return false;
     FILE* f = fopen(path, "rb");
     if (!f) return false;
-    char buf[513];
-    size_t n = fread(buf, 1, 512, f);
-    fclose(f);
-    buf[n] = '\0';
-    if (strstr(buf, "Compiled by Enlangg") != NULL || strstr(buf, "Enlangg Sovereign") != NULL) {
-        return true;
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (sz <= 0) {
+        fclose(f);
+        return false;
     }
-    return false;
+    char* buf = (char*)malloc(sz + 1);
+    if (!buf) {
+        fclose(f);
+        return false;
+    }
+    size_t rd = fread(buf, 1, sz, f);
+    fclose(f);
+    buf[rd] = '\0';
+
+    const char MARKER_PREFIX[] = "/* enlngf-generated: ";
+    size_t prefix_len = strlen(MARKER_PREFIX);
+    if (rd < prefix_len + 64 + 3) {
+        free(buf);
+        return false;
+    }
+    if (strncmp(buf, MARKER_PREFIX, prefix_len) != 0) {
+        free(buf);
+        return false;
+    }
+    const char* expected_hash = buf + prefix_len;
+    for (int i = 0; i < 64; ++i) {
+        char ch = expected_hash[i];
+        if (!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'))) {
+            free(buf);
+            return false;
+        }
+    }
+    if (strncmp(expected_hash + 64, " */", 3) != 0) {
+        free(buf);
+        return false;
+    }
+
+    const char* newline = strchr(expected_hash + 67, '\n');
+    const char* rest = newline ? newline + 1 : "";
+    size_t rest_len = newline ? (rd - (size_t)(rest - buf)) : 0;
+
+    char computed_hash[65];
+    enlngf_sha256_hex((const uint8_t*)rest, rest_len, computed_hash);
+
+    bool match = (enlngf_strncasecmp(expected_hash, computed_hash, 64) == 0);
+    free(buf);
+    return match;
+}
+
+static bool stamp_enlngf_generated_marker(const char* path) {
+    if (!path || !*path) return false;
+    FILE* f = fopen(path, "rb");
+    if (!f) return false;
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    char* buf = (char*)malloc(sz + 1);
+    if (!buf) {
+        fclose(f);
+        return false;
+    }
+    size_t rd = fread(buf, 1, sz, f);
+    fclose(f);
+    buf[rd] = '\0';
+
+    const char MARKER_PREFIX[] = "/* enlngf-generated: ";
+    size_t prefix_len = strlen(MARKER_PREFIX);
+    const char* content = buf;
+    size_t content_len = rd;
+    if (rd >= prefix_len + 67 && strncmp(buf, MARKER_PREFIX, prefix_len) == 0) {
+        const char* end_marker = strstr(buf, "*/");
+        if (end_marker) {
+            const char* nl = strchr(end_marker, '\n');
+            if (nl) {
+                content = nl + 1;
+                content_len = rd - (size_t)(content - buf);
+            }
+        }
+    }
+
+    char hash[65];
+    enlngf_sha256_hex((const uint8_t*)content, content_len, hash);
+
+    f = fopen(path, "wb");
+    if (!f) {
+        free(buf);
+        return false;
+    }
+    fprintf(f, "/* enlngf-generated: %s */\n", hash);
+    if (content_len > 0) {
+        fwrite(content, 1, content_len, f);
+    }
+    fclose(f);
+    free(buf);
+    return true;
 }
 
 static bool auto_compile_companion_assets(const EnlngfDoc* doc, const char* src_dir, const char* out_dir) {
@@ -1292,7 +1522,7 @@ static bool auto_compile_companion_assets(const EnlngfDoc* doc, const char* src_
 
         if (src_d) {
             if (file_exists_local(out_css)) {
-                if (!is_enlangg_generated_asset(out_css)) {
+                if (!is_valid_enlngf_generated_asset(out_css)) {
                     fprintf(stderr, "Error: Companion file '%s' already exists and was not generated by Enlangg. Refusing to overwrite.\n", out_css);
                     return false;
                 }
@@ -1306,6 +1536,7 @@ static bool auto_compile_companion_assets(const EnlngfDoc* doc, const char* src_
 #endif
             int ret = system(cmd);
             (void)ret;
+            stamp_enlngf_generated_marker(out_css);
         }
     }
 
@@ -1343,7 +1574,7 @@ static bool auto_compile_companion_assets(const EnlngfDoc* doc, const char* src_
 
         if (src_s) {
             if (file_exists_local(out_js)) {
-                if (!is_enlangg_generated_asset(out_js)) {
+                if (!is_valid_enlngf_generated_asset(out_js)) {
                     fprintf(stderr, "Error: Companion file '%s' already exists and was not generated by Enlangg. Refusing to overwrite.\n", out_js);
                     return false;
                 }
@@ -1357,6 +1588,7 @@ static bool auto_compile_companion_assets(const EnlngfDoc* doc, const char* src_
 #endif
             int ret = system(cmd);
             (void)ret;
+            stamp_enlngf_generated_marker(out_js);
         }
     }
     return true;
