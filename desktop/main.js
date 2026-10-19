@@ -567,8 +567,8 @@ function isAllowedUpdateUrl(targetUrl, isRedirect = false) {
     if (host === 'github.com' || host === 'raw.githubusercontent.com') {
       return ALLOWED_GITHUB_REPO_PREFIXES.some(prefix => pathname.toLowerCase().startsWith(prefix.toLowerCase()));
     }
-    // GitHub release asset redirects go to objects.githubusercontent.com with a signed token
-    if (isRedirect && host === 'objects.githubusercontent.com') {
+    // GitHub release asset redirects go to objects.githubusercontent.com or release-assets.githubusercontent.com with a signed token
+    if (isRedirect && (host === 'objects.githubusercontent.com' || host === 'release-assets.githubusercontent.com')) {
       return true;
     }
     return false;
