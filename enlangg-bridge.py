@@ -51,6 +51,19 @@ ALLOWED_ORIGIN_HOSTS = {
     "enlangg.site"
 }
 
+ALLOWED_REQ_HOSTS = {
+    "localhost",
+    "127.0.0.1"
+}
+
+def is_allowed_host(host_header):
+    if not host_header:
+        return False
+    host = host_header.strip().lower()
+    if ":" in host:
+        host = host.split(":", 1)[0]
+    return host in ALLOWED_REQ_HOSTS
+
 def is_allowed_origin(origin_header):
     if not origin_header:
         return True
@@ -117,6 +130,10 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_OPTIONS(self):
+        if not is_allowed_host(self.headers.get("Host")):
+            self.send_response(403)
+            self.end_headers()
+            return
         origin = self.headers.get("Origin")
         if origin and not is_allowed_origin(origin):
             self.send_response(403)
@@ -126,12 +143,17 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        if not is_allowed_host(self.headers.get("Host")):
+            self.send_error_json(403, "Forbidden: Invalid or untrusted Host header.")
+            return
+
         origin = self.headers.get("Origin")
         if origin and not is_allowed_origin(origin):
             self.send_error_json(403, "Forbidden: Origin not authorized to access Enlang bridge.")
             return
 
-        if self.path in ("/health", "/api/health", "/status"):
+        parsed_path = urllib.parse.urlparse(self.path).path
+        if parsed_path in ("/health", "/api/health", "/status"):
             binaries = detect_installed_binaries()
             resp = {
                 "status": "online",
@@ -155,21 +177,23 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
+        if not is_allowed_host(self.headers.get("Host")):
+            self.send_error_json(403, "Forbidden: Invalid or untrusted Host header.")
+            return
+
         origin = self.headers.get("Origin")
         if origin and not is_allowed_origin(origin):
             self.send_error_json(403, "Forbidden: Origin not authorized to access Enlang bridge.")
             return
 
-        if self.path in ("/api/run", "/run"):
-            # Verify authentication token
+        parsed_path = urllib.parse.urlparse(self.path).path
+        if parsed_path in ("/api/run", "/run"):
+            # Verify authentication token (header-only: X-Enlang-Token or Authorization: Bearer <token>)
             req_token = self.headers.get("X-Enlang-Token")
             if not req_token:
                 auth_header = self.headers.get("Authorization", "")
                 if auth_header.startswith("Bearer "):
                     req_token = auth_header[7:].strip()
-            if not req_token and "?" in self.path:
-                parsed_q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-                req_token = parsed_q.get("token", [None])[0]
 
             if not req_token or req_token != BRIDGE_TOKEN:
                 self.send_error_json(401, "Unauthorized: Invalid or missing Enlang bridge token.")

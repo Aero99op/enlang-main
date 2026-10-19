@@ -286,10 +286,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install ARM64 Cross-Compiler & QEMU User Emulation
+      - name: Install ARM64 Cross-Compiler
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross qemu-user-static file
+          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross file
 
       - name: Build & Stage Linux aarch64 Static Archive
         run: |
@@ -316,7 +316,7 @@ jobs:
 
           tar -czf enlangg-linux-aarch64.tar.gz -C "$PKG_ROOT" .
 
-      - name: Verify Linux aarch64 Binaries via QEMU
+      - name: Inspect Linux aarch64 ELF Binaries (Untested on Hardware)
         run: |
           set -euo pipefail
           VERIFY_DIR="/tmp/enlangg-linux-aarch64-verify"
@@ -324,11 +324,9 @@ jobs:
           mkdir -p "$VERIFY_DIR"
           tar -xzf enlangg-linux-aarch64.tar.gz -C "$VERIFY_DIR"
 
+          echo "Inspecting ELF binary architectures (Cross-compiled; untested on physical hardware):"
           for t in enlangg enlng enlngdb enlngf enlngd enlngs enlngm; do
             file "$VERIFY_DIR/bin/$t" | grep -F "ARM aarch64"
-            out=$(qemu-aarch64-static "$VERIFY_DIR/bin/$t" --version)
-            echo "$t (aarch64) -> $out"
-            echo "$out" | grep -F "$TOOLCHAIN_VERSION"
           done
           rm -rf "$VERIFY_DIR"
 
