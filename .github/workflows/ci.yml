@@ -20,9 +20,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y file curl
+
       - name: Build & Stage Linux x86_64 Static Archive
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           PKG_ROOT="stage/enlangg-v${TOOLCHAIN_VERSION}"
           mkdir -p "$PKG_ROOT/bin" "$PKG_ROOT/lib" "$PKG_ROOT/include"
 
@@ -46,7 +51,7 @@ jobs:
 
       - name: Verify Linux x86_64 Archive & POSIX Behavior
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           VERIFY_DIR="/tmp/enlangg-linux-x86_64-verify"
           WORK_DIR="/tmp/enlangg-linux-x86_64-work"
           FAKE_PATH="/tmp/enlangg-linux-fakepath"
@@ -64,6 +69,19 @@ jobs:
             echo "$out" | grep -F "$TOOLCHAIN_VERSION"
           done
 
+          # Verify Windows-only GUI commands fail non-zero with clear message on POSIX
+          if "$VERIFY_DIR/bin/enlngf" run dummy.enlngf >/dev/null 2>err_f.txt; then
+            echo "ERROR: enlngf run should have exited non-zero on Linux"
+            exit 1
+          fi
+          grep -i "Windows only" err_f.txt
+
+          if "$VERIFY_DIR/bin/enlngm" run dummy.enlngm >/dev/null 2>err_m.txt; then
+            echo "ERROR: enlngm run should have exited non-zero on Linux"
+            exit 1
+          fi
+          grep -i "Windows only" err_m.txt
+
           # Verify enlng locates stdlib from its own executable dir
           printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > smoke.enlng
           res=$("$VERIFY_DIR/bin/enlng" run smoke.enlng)
@@ -79,16 +97,6 @@ jobs:
           echo "enlangg run smoke.enlng (with fake enlng on PATH) -> $disp_res"
           [ "$disp_res" = "144" ]
           export PATH="$OLD_PATH"
-
-          # Verify POSIX socket serve returns non-zero for Windows-only stubs
-          set +e
-          "$VERIFY_DIR/bin/enlngf" run non_existent.enlngf >/dev/null 2>&1
-          run_exit=$?
-          "$VERIFY_DIR/bin/enlngm" run non_existent.enlngm >/dev/null 2>&1
-          m_exit=$?
-          set -e
-          [ "$run_exit" -ne 0 ]
-          [ "$m_exit" -ne 0 ]
 
           rm -rf "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
 
@@ -109,7 +117,7 @@ jobs:
 
       - name: Run POSIX enlngf serve Jail & Symlink Containment Test
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           JAIL_ROOT="/tmp/enlngf-jail-test"
           OUTSIDE_DIR="$JAIL_ROOT/outside"
           SERVE_DIR="$JAIL_ROOT/served"
@@ -117,7 +125,11 @@ jobs:
           rm -rf "$JAIL_ROOT"
           mkdir -p "$OUTSIDE_DIR" "$SERVE_DIR/sub" "$BIN_DIR"
 
-          tar -xzf enlangg-linux-x86_64.tar.gz -C "$BIN_DIR"
+          if [ -f enlangg-linux-x86_64.tar.gz ]; then
+            tar -xzf enlangg-linux-x86_64.tar.gz -C "$BIN_DIR"
+          else
+            tar -xzf */enlangg-linux-x86_64.tar.gz -C "$BIN_DIR"
+          fi
           ENLNGF_BIN="$BIN_DIR/bin/enlngf"
 
           printf 'SECRET_OUTSIDE_CANARY_99182\n' > "$OUTSIDE_DIR/secret.txt"
@@ -142,12 +154,19 @@ jobs:
           trap 'kill -9 $SERVE_PID 2>/dev/null || true; rm -rf "$JAIL_ROOT"' EXIT
 
           # Wait for server readiness
-          for i in $(seq 1 30); do
+          READY=0
+          for i in $(seq 1 40); do
             if curl -s "http://127.0.0.1:$PORT/" | grep -q "Serve Root Containment Test"; then
+              READY=1
               break
             fi
             sleep 0.1
           done
+          if [ "$READY" -ne 1 ]; then
+            echo "ERROR: Server failed to become ready on port $PORT"
+            cat "$JAIL_ROOT/serve.log" || true
+            exit 1
+          fi
 
           echo "=== 0. Baseline legitimate requests (/, /public.txt) ==="
           resp_root=$(curl -s -i "http://127.0.0.1:$PORT/")
