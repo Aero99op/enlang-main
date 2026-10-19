@@ -1,5 +1,5 @@
 /*
- * enlngm - Enlangg Sovereign Mobile Native & HAL Engine
+ * enlngm - Enlangg Sovereign Desktop Preview Engine
  * Pure C Native Engine (Zero Python)
  */
 

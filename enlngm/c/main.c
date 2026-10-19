@@ -2,18 +2,18 @@
 
 int main(int argc, char* argv[]) {
     if (argc < 2 || strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
-        printf("enlngm - Enlangg Sovereign Mobile Native & HAL Engine v%s (Pure C Zero-Python)\n\n", ENLNGM_VERSION);
+        printf("enlngm - Enlangg Sovereign Desktop Preview Engine v%s (Pure C Zero-Python)\n\n", ENLNGM_VERSION);
         printf("Usage:\n");
-        printf("  enlngm <file.enlngm>                         Launch Native Smartphone Simulator Window\n");
-        printf("  enlngm run <file.enlngm>                     Launch Native Smartphone Simulator Window\n");
+        printf("  enlngm <file.enlngm>                         Launch desktop preview window (390x844)\n");
+        printf("  enlngm run <file.enlngm>                     Launch desktop preview window (390x844)\n");
         printf("  enlngm build <file.enlngm> [--target <apk|ipa>] [-o <out>] Build production package\n");
-        printf("  enlngm export <file.enlngm> [-o <out.c>]     Export to standalone C99 mobile source\n");
+        printf("  enlngm export <file.enlngm> [-o <out.c>]     Export to standalone Win32 desktop preview C source\n");
         printf("  enlngm --version                             Display version information\n");
         return 0;
     }
 
     if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
-        printf("enlngm version %s (Pure C Sovereign Mobile Native Engine - ZERO PYTHON)\n", ENLNGM_VERSION);
+        printf("enlngm version 2.0.0-pure-c-native (Pure C Sovereign Preview Engine - ZERO PYTHON)\n");
         return 0;
     }
 

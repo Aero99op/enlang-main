@@ -3,7 +3,7 @@
  * Supports:
  *   enlangg run <file.enlng>                (Full natural English execution)
  *   enlangg run <file.enlngf> [--p <port>]  (Web studio server)
- *   enlangg run <file.enlngmf> [--device]   (Mobile HAL simulator)
+ *   enlangg run <file.enlngm>               (Desktop preview window (390x844))
  *   enlangg build <file> --target <apk|ipa> -o <out>
  */
 
@@ -58,7 +58,7 @@ void print_help() {
     printf("  enlangg f build <app.enlngf> [-o <out.html>] Compile frontend markup to standalone HTML5\n");
     printf("  enlangg d <theme.enlngd>                    Inspect and resolve design tokens & styles\n");
     printf("  enlangg d compile <theme.enlngd> [-o <.css>] Export design tokens to CSS3 stylesheet\n");
-    printf("  enlangg m <app.enlngm>                      Launch Pure C Native Smartphone Simulator (390x844)\n");
+    printf("  enlangg m <app.enlngm>                      Launch desktop preview window (390x844)\n");
     printf("  enlangg m build <app.enlngm> --target apk   Build mobile production package (HAL ARM64)\n");
     printf("  enlangg build <app.enlngm> --target apk     Direct shortcut to mobile production compiler\n\n");
     printf("Developer Experience & Tooling (Pure C):\n");
@@ -74,7 +74,7 @@ void print_help() {
     printf("  enlngs    Pure C sovereign in-memory script VM & interpreter\n");
     printf("  enlngf    Pure C sovereign desktop window GUI & WinSock2 web studio\n");
     printf("  enlngd    Pure C sovereign design tokens & style resolver\n");
-    printf("  enlngm    Pure C sovereign smartphone simulator & HAL packager\n\n");
+    printf("  enlngm    Pure C sovereign desktop preview window (390x844)\n\n");
     printf("Documentation & Live Playground: https://enlangg.vercel.app\n");
 }
 
@@ -535,7 +535,7 @@ int run_script(const char* filepath) {
         return system(cmd) != 0 ? 1 : 0;
     }
 
-    // 5. Check if mobile app (.enlngm, .enlgm, .enlngmf)
+    // 5. Check if desktop preview (.enlngm, .enlgm, .enlngmf)
     if (has_suffix(filepath, ".enlngm") || has_suffix(filepath, ".enlgm") || has_suffix(filepath, ".enlngmf")) {
         char cmd[4096] = "enlngm run";
         append_safe_arg(cmd, sizeof(cmd), filepath);
@@ -861,7 +861,7 @@ int main(int argc, char* argv[]) {
             return system(cmd) != 0 ? 1 : 0;
         }
 
-        // Check if mobile app (.enlngm / .enlgm)
+        // Check if desktop preview (.enlngm / .enlgm)
         if (has_suffix(filepath, ".enlngm") || has_suffix(filepath, ".enlgm") || has_suffix(filepath, ".enlngmf")) {
             char cmd[4096] = "enlngm run";
             append_safe_arg(cmd, sizeof(cmd), filepath);

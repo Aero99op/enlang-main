@@ -10,7 +10,7 @@
 #include <windows.h>
 #endif
 
-#define ENLNGM_VERSION "5.3.0"
+#define ENLNGM_VERSION "2.0.0-pure-c-native"
 #define MAX_MOBILE_WIDGETS 128
 
 typedef enum {
