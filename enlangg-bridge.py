@@ -9,6 +9,7 @@ import http.server
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -51,18 +52,22 @@ ALLOWED_ORIGIN_HOSTS = {
     "enlangg.site"
 }
 
-ALLOWED_REQ_HOSTS = {
-    "localhost",
-    "127.0.0.1"
-}
+HOST_RE = re.compile(r"^(localhost|127\.0\.0\.1)(?::(\d{1,5}))?$", re.IGNORECASE)
 
-def is_allowed_host(host_header):
+def is_allowed_host(host_header, expected_port=None):
     if not host_header:
         return False
-    host = host_header.strip().lower()
-    if ":" in host:
-        host = host.split(":", 1)[0]
-    return host in ALLOWED_REQ_HOSTS
+    match = HOST_RE.match(host_header.strip())
+    if not match:
+        return False
+    port_str = match.group(2)
+    if port_str is not None:
+        port_num = int(port_str)
+        if port_num < 1 or port_num > 65535:
+            return False
+        if expected_port is not None and port_num != expected_port:
+            return False
+    return True
 
 def is_allowed_origin(origin_header):
     if not origin_header:
@@ -130,7 +135,8 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_OPTIONS(self):
-        if not is_allowed_host(self.headers.get("Host")):
+        server_port = getattr(self.server, "server_port", None)
+        if not is_allowed_host(self.headers.get("Host"), server_port):
             self.send_response(403)
             self.end_headers()
             return
@@ -143,7 +149,8 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if not is_allowed_host(self.headers.get("Host")):
+        server_port = getattr(self.server, "server_port", None)
+        if not is_allowed_host(self.headers.get("Host"), server_port):
             self.send_error_json(403, "Forbidden: Invalid or untrusted Host header.")
             return
 
@@ -177,7 +184,8 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if not is_allowed_host(self.headers.get("Host")):
+        server_port = getattr(self.server, "server_port", None)
+        if not is_allowed_host(self.headers.get("Host"), server_port):
             self.send_error_json(403, "Forbidden: Invalid or untrusted Host header.")
             return
 

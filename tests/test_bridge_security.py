@@ -54,12 +54,31 @@ def run_tests():
         print("[PASS] Bridge started and responded 200 on /health")
 
         # Test 1: Verify Host header check (Valid vs Invalid)
-        # Valid Host: localhost
+        passed_checks = 0
+
+        # Valid Host: localhost with port
         conn = http.client.HTTPConnection("127.0.0.1", TEST_PORT)
         conn.request("GET", "/health", headers={"Host": f"localhost:{TEST_PORT}"})
         res = conn.getresponse()
-        assert res.status == 200, f"Expected 200 for Host: localhost, got {res.status}"
-        print("[PASS] Valid Host (localhost) accepted with 200")
+        assert res.status == 200, f"Expected 200 for Host: localhost:{TEST_PORT}, got {res.status}"
+        print(f"[PASS] Valid Host (localhost:{TEST_PORT}) accepted with 200")
+        passed_checks += 1
+
+        # Valid Host: 127.0.0.1 with port
+        conn = http.client.HTTPConnection("127.0.0.1", TEST_PORT)
+        conn.request("GET", "/health", headers={"Host": f"127.0.0.1:{TEST_PORT}"})
+        res = conn.getresponse()
+        assert res.status == 200, f"Expected 200 for Host: 127.0.0.1:{TEST_PORT}, got {res.status}"
+        print(f"[PASS] Valid Host (127.0.0.1:{TEST_PORT}) accepted with 200")
+        passed_checks += 1
+
+        # Valid Host: localhost without port
+        conn = http.client.HTTPConnection("127.0.0.1", TEST_PORT)
+        conn.request("GET", "/health", headers={"Host": "localhost"})
+        res = conn.getresponse()
+        assert res.status == 200, f"Expected 200 for Host: localhost without port, got {res.status}"
+        print("[PASS] Valid Host (localhost) without port accepted with 200")
+        passed_checks += 1
 
         # Invalid Host: attacker.rebind.example
         conn = http.client.HTTPConnection("127.0.0.1", TEST_PORT)
@@ -67,6 +86,31 @@ def run_tests():
         res = conn.getresponse()
         assert res.status == 403, f"Expected 403 for rebind Host, got {res.status}"
         print("[PASS] Rebind Host (attacker.rebind.example) rejected with 403 Forbidden")
+        passed_checks += 1
+
+        # Invalid Host: wrong port (localhost:9999)
+        conn = http.client.HTTPConnection("127.0.0.1", TEST_PORT)
+        conn.request("GET", "/health", headers={"Host": "localhost:9999"})
+        res = conn.getresponse()
+        assert res.status == 403, f"Expected 403 for wrong port Host, got {res.status}"
+        print("[PASS] Wrong port Host (localhost:9999) rejected with 403 Forbidden")
+        passed_checks += 1
+
+        # Invalid Host: userinfo injection (localhost:5998@evil.com)
+        conn = http.client.HTTPConnection("127.0.0.1", TEST_PORT)
+        conn.request("GET", "/health", headers={"Host": f"localhost:{TEST_PORT}@evil.com"})
+        res = conn.getresponse()
+        assert res.status == 403, f"Expected 403 for userinfo injection Host, got {res.status}"
+        print(f"[PASS] Malformed Host with userinfo (localhost:{TEST_PORT}@evil.com) rejected with 403 Forbidden")
+        passed_checks += 1
+
+        # Invalid Host: comma-separated list (localhost:5998, evil.com)
+        conn = http.client.HTTPConnection("127.0.0.1", TEST_PORT)
+        conn.request("GET", "/health", headers={"Host": f"localhost:{TEST_PORT}, evil.com"})
+        res = conn.getresponse()
+        assert res.status == 403, f"Expected 403 for multiple Host header values, got {res.status}"
+        print("[PASS] Multiple Host values (localhost, evil.com) rejected with 403 Forbidden")
+        passed_checks += 1
 
         # Test 2: Verify Origin check (Null vs Trusted)
         # Untrusted Origin
@@ -78,6 +122,7 @@ def run_tests():
         res = conn.getresponse()
         assert res.status == 403, f"Expected 403 for untrusted Origin, got {res.status}"
         print("[PASS] Untrusted Origin rejected with 403 Forbidden")
+        passed_checks += 1
 
         # Origin: null
         conn = http.client.HTTPConnection("127.0.0.1", TEST_PORT)
@@ -88,6 +133,7 @@ def run_tests():
         res = conn.getresponse()
         assert res.status == 403, f"Expected 403 for Origin: null, got {res.status}"
         print("[PASS] Origin: null rejected with 403 Forbidden")
+        passed_checks += 1
 
         # Test 3: Token query string ?token= MUST BE REJECTED with 401
         payload = json.dumps({"filename": "test.enlng", "content": "show 42", "lang": "enlng"}).encode()
@@ -99,6 +145,7 @@ def run_tests():
         res = conn.getresponse()
         assert res.status == 401, f"Expected 401 Unauthorized for ?token= query parameter, got {res.status}"
         print("[PASS] Insecure ?token= query parameter rejected with 401 Unauthorized")
+        passed_checks += 1
 
         # Test 4: Header-based token (X-Enlang-Token) MUST BE ACCEPTED
         conn = http.client.HTTPConnection("127.0.0.1", TEST_PORT)
@@ -112,6 +159,7 @@ def run_tests():
         body = json.loads(res.read().decode())
         assert "success" in body, f"Unexpected body: {body}"
         print("[PASS] Valid X-Enlang-Token header accepted with 200 OK")
+        passed_checks += 1
 
         # Test 5: Authorization: Bearer <token> MUST BE ACCEPTED
         conn = http.client.HTTPConnection("127.0.0.1", TEST_PORT)
@@ -123,8 +171,9 @@ def run_tests():
         res = conn.getresponse()
         assert res.status == 200, f"Expected 200 for Bearer token, got {res.status}"
         print("[PASS] Authorization: Bearer token accepted with 200 OK")
+        passed_checks += 1
 
-        print("\n=== ALL BRIDGE SECURITY TESTS PASSED CLEANLY (5/5) ===")
+        print(f"\n=== ALL BRIDGE SECURITY TESTS PASSED CLEANLY ({passed_checks}/{passed_checks}) ===")
 
     finally:
         proc.terminate()
