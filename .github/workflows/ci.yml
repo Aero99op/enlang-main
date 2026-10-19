@@ -62,33 +62,63 @@ jobs:
           cd "$WORK_DIR"
           unset ENLANGG_HOME
 
+          echo "=== 1. Checking 7 binary versions ==="
           for t in enlangg enlng enlngdb enlngf enlngd enlngs enlngm; do
-            file "$VERIFY_DIR/bin/$t"
+            file "$VERIFY_DIR/bin/$t" || true
             out=$("$VERIFY_DIR/bin/$t" --version)
             echo "$t -> $out"
             echo "$out" | grep -F "$TOOLCHAIN_VERSION"
           done
 
-          # Verify Windows-only GUI commands fail non-zero with clear message on POSIX
+          echo "=== 2. Checking POSIX Windows-only error stubs ==="
           if "$VERIFY_DIR/bin/enlngf" run dummy.enlngf >/dev/null 2>err_f.txt; then
             echo "ERROR: enlngf run should have exited non-zero on Linux"
             exit 1
           fi
+          cat err_f.txt
           grep -i "Windows only" err_f.txt
 
           if "$VERIFY_DIR/bin/enlngm" run dummy.enlngm >/dev/null 2>err_m.txt; then
             echo "ERROR: enlngm run should have exited non-zero on Linux"
             exit 1
           fi
+          cat err_m.txt
           grep -i "Windows only" err_m.txt
 
-          # Verify enlng locates stdlib from its own executable dir
+          echo "=== 3. Testing enlng stdlib lookup & native execution ==="
           printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > smoke.enlng
-          res=$("$VERIFY_DIR/bin/enlng" run smoke.enlng)
-          echo "smoke.enlng -> $res"
-          [ "$res" = "144" ]
+          "$VERIFY_DIR/bin/enlng" emit-c smoke.enlng > emitted.c 2> emit_err.txt || {
+            echo "FAILED emit-c! Stderr was:"
+            cat emit_err.txt
+            exit 1
+          }
+          echo "Emitted C header lines:"
+          head -n 25 emitted.c
 
-          # Verify sibling-first dispatch: fake enlng on PATH must NOT be executed by enlangg
+          "$VERIFY_DIR/bin/enlng" run smoke.enlng > smoke_out.txt 2> smoke_err.txt || {
+            echo "=== FAILED enlng run smoke.enlng ==="
+            echo "STDOUT:"
+            cat smoke_out.txt
+            echo "STDERR:"
+            cat smoke_err.txt
+            {
+              echo "## Linux x86_64 Run Failure"
+              echo '**STDOUT:**'
+              echo '```'
+              cat smoke_out.txt
+              echo '```'
+              echo '**STDERR:**'
+              echo '```'
+              cat smoke_err.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+          echo "smoke.enlng output:"
+          cat smoke_out.txt
+          grep -qx "144" smoke_out.txt
+
+          echo "=== 4. Testing sibling-first dispatch ==="
           printf '#!/bin/sh\necho FAKE-TOOL-FROM-PATH\nexit 42\n' > "$FAKE_PATH/enlng"
           chmod +x "$FAKE_PATH/enlng"
           OLD_PATH="$PATH"
@@ -372,7 +402,7 @@ jobs:
 
       - name: Verify Source Tarball Make Install & Uninstall
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           TEST_ROOT="/tmp/enlangg-src-test"
           rm -rf "$TEST_ROOT"
           mkdir -p "$TEST_ROOT"
@@ -384,15 +414,51 @@ jobs:
           unset ENLANGG_HOME
           mkdir -p "$TEST_ROOT/work"
           cd "$TEST_ROOT/work"
+          echo "=== Testing enlangg version in build-source ==="
           "$TEST_ROOT/bin/enlangg" --version | grep -F "$TOOLCHAIN_VERSION"
-          printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > smoke.enlng
-          res=$("$TEST_ROOT/bin/enlng" run smoke.enlng)
-          [ "$res" = "144" ]
 
+          echo "=== Testing smoke.enlng in build-source ==="
+          printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > smoke.enlng
+          "$TEST_ROOT/bin/enlng" emit-c smoke.enlng > emitted.c 2> emit_err.txt || {
+            echo "FAILED emit-c in build-source! Stderr:"
+            cat emit_err.txt
+            exit 1
+          }
+
+          "$TEST_ROOT/bin/enlng" run smoke.enlng > smoke_out.txt 2> smoke_err.txt || {
+            echo "=== FAILED enlng run smoke.enlng in build-source ==="
+            echo "STDOUT:"
+            cat smoke_out.txt
+            echo "STDERR:"
+            cat smoke_err.txt
+            {
+              echo "## Source Build Run Failure"
+              echo '**STDOUT:**'
+              echo '```'
+              cat smoke_out.txt
+              echo '```'
+              echo '**STDERR:**'
+              echo '```'
+              cat smoke_err.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+          echo "smoke.enlng output in build-source:"
+          cat smoke_out.txt
+          grep -qx "144" smoke_out.txt
+
+          echo "=== Testing make uninstall ==="
           cd "$TEST_ROOT/enlangg-src-v${TOOLCHAIN_VERSION}"
           make PREFIX="$TEST_ROOT/prefix" BINDIR="$TEST_ROOT/bin" uninstall
-          [ ! -d "$TEST_ROOT/prefix" ]
-          [ ! -e "$TEST_ROOT/bin/enlangg" ]
+          if [ -d "$TEST_ROOT/prefix" ]; then
+            echo "ERROR: $TEST_ROOT/prefix still exists"
+            exit 1
+          fi
+          if [ -e "$TEST_ROOT/bin/enlangg" ]; then
+            echo "ERROR: $TEST_ROOT/bin/enlangg still exists"
+            exit 1
+          fi
           rm -rf "$TEST_ROOT"
 
       - name: Upload Source Tarball Artifact
