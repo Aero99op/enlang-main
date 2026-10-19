@@ -21,12 +21,18 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <errno.h>
 #include <mach-o/dyld.h>
 #define MKDIR(p) mkdir(p, 0755)
 #else
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <errno.h>
 #define MKDIR(p) mkdir(p, 0755)
 #endif
 #include "src/enlangg_version.h"
@@ -112,28 +118,261 @@ static bool has_suffix(const char* str, const char* suffix) {
     return (strcmp(str + (str_len - suf_len), suffix) == 0);
 }
 
-static void append_safe_arg(char* buf, size_t buf_size, const char* arg) {
-    if (!buf || !arg) return;
-    size_t len = strlen(buf);
-    if (len + 4 >= buf_size) return;
-    buf[len++] = ' ';
-    buf[len++] = '"';
-    for (const char* p = arg; *p && len + 3 < buf_size; p++) {
-        if (*p == '"' || *p == '\\') {
-            buf[len++] = '\\';
-        }
-        buf[len++] = *p;
-    }
-    buf[len++] = '"';
-    buf[len] = '\0';
-}
-
 static bool file_exists_c(const char* path) {
     if (!path || !*path) return false;
     FILE* f = fopen(path, "rb");
     if (!f) return false;
     fclose(f);
     return true;
+}
+
+/* ---------------------------------------------------------------------
+ * Sibling tool dispatch (enlng, enlngf, enlngd, enlngs, enlngm).
+ *
+ * Resolution order:
+ *   1. <directory of the running enlangg executable>/<tool>[.exe]
+ *      (symlinks followed, see enlangg_get_exe_dir()).
+ *   2. Only if that file is missing: each directory listed in PATH,
+ *      in order. The current working directory is never searched
+ *      unless PATH itself lists it.
+ *
+ * No shell is involved. Arguments are passed as a vector:
+ *   Windows: CreateProcessA with MSVCRT-compatible argument quoting.
+ *   POSIX:   fork + execv, parent waits like system() does.
+ * enlngdb is linked into enlangg and is never spawned.
+ * ------------------------------------------------------------------- */
+#ifdef _WIN32
+#define ENLANGG_TOOL_EXT ".exe"
+#define ENLANGG_PATH_LIST_SEP ';'
+#else
+#define ENLANGG_TOOL_EXT ""
+#define ENLANGG_PATH_LIST_SEP ':'
+#endif
+
+static bool is_runnable_file(const char* path) {
+    if (!path || !*path) return false;
+#ifdef _WIN32
+    DWORD attr = GetFileAttributesA(path);
+    return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
+#else
+    struct stat st;
+    if (stat(path, &st) != 0 || !S_ISREG(st.st_mode)) return false;
+    return access(path, X_OK) == 0;
+#endif
+}
+
+static bool resolve_tool_path(const char* tool, char* out, size_t out_sz, bool* from_path) {
+    if (!tool || !*tool || !out || out_sz == 0) return false;
+    out[0] = '\0';
+    *from_path = false;
+
+    /* 1. Sibling of the running enlangg executable. */
+    char exe_dir[ENLANGG_MAX_PATH];
+    if (enlangg_get_exe_dir(exe_dir, sizeof(exe_dir))) {
+        int n = snprintf(out, out_sz, "%s%c%s%s", exe_dir, ENLANGG_PATH_SEP, tool, ENLANGG_TOOL_EXT);
+        if (n > 0 && (size_t)n < out_sz && is_runnable_file(out)) {
+            return true;
+        }
+    }
+
+    /* 2. Fallback: explicit walk of PATH entries. */
+    const char* path_env = getenv("PATH");
+    if (!path_env) {
+        out[0] = '\0';
+        return false;
+    }
+    const char* p = path_env;
+    while (*p) {
+        const char* end = strchr(p, ENLANGG_PATH_LIST_SEP);
+        size_t seg_len = end ? (size_t)(end - p) : strlen(p);
+        char dir[ENLANGG_MAX_PATH];
+        if (seg_len < sizeof(dir)) {
+            memcpy(dir, p, seg_len);
+            dir[seg_len] = '\0';
+#ifdef _WIN32
+            /* PATH entries may be quoted on Windows. */
+            size_t dl = strlen(dir);
+            if (dl >= 2 && dir[0] == '"' && dir[dl - 1] == '"') {
+                memmove(dir, dir + 1, dl - 2);
+                dir[dl - 2] = '\0';
+            }
+#endif
+            if (dir[0] == '\0') {
+                /* POSIX: an empty PATH entry means the current directory. */
+#ifndef _WIN32
+                strcpy(dir, ".");
+#endif
+            }
+            if (dir[0] != '\0') {
+                enlangg_strip_trailing_sep(dir);
+                int n = snprintf(out, out_sz, "%s%c%s%s", dir, ENLANGG_PATH_SEP, tool, ENLANGG_TOOL_EXT);
+                if (n > 0 && (size_t)n < out_sz && is_runnable_file(out)) {
+                    *from_path = true;
+                    return true;
+                }
+            }
+        }
+        if (!end) break;
+        p = end + 1;
+    }
+    out[0] = '\0';
+    return false;
+}
+
+#ifdef _WIN32
+/* Appends one argument using the quoting rules parsed by the MSVCRT /
+ * CommandLineToArgvW, so paths with spaces and embedded quotes or
+ * trailing backslashes reach the child unchanged. */
+static bool win_append_arg(char* buf, size_t sz, size_t* len, const char* arg) {
+    size_t l = *len;
+    if (l > 0) {
+        if (l + 1 >= sz) return false;
+        buf[l++] = ' ';
+    }
+    bool needs_quotes = (arg[0] == '\0') || (strpbrk(arg, " \t\n\v\"") != NULL);
+    if (!needs_quotes) {
+        size_t al = strlen(arg);
+        if (l + al >= sz) return false;
+        memcpy(buf + l, arg, al);
+        l += al;
+        buf[l] = '\0';
+        *len = l;
+        return true;
+    }
+    if (l + 1 >= sz) return false;
+    buf[l++] = '"';
+    for (const char* c = arg; ; c++) {
+        size_t backslashes = 0;
+        while (*c == '\\') { backslashes++; c++; }
+        if (*c == '\0') {
+            /* Double trailing backslashes so the closing quote stays a quote. */
+            if (l + backslashes * 2 >= sz) return false;
+            for (size_t i = 0; i < backslashes * 2; i++) buf[l++] = '\\';
+            break;
+        } else if (*c == '"') {
+            if (l + backslashes * 2 + 2 >= sz) return false;
+            for (size_t i = 0; i < backslashes * 2 + 1; i++) buf[l++] = '\\';
+            buf[l++] = '"';
+        } else {
+            if (l + backslashes + 1 >= sz) return false;
+            for (size_t i = 0; i < backslashes; i++) buf[l++] = '\\';
+            buf[l++] = *c;
+        }
+    }
+    if (l + 1 >= sz) return false;
+    buf[l++] = '"';
+    buf[l] = '\0';
+    *len = l;
+    return true;
+}
+#endif
+
+/* Runs <tool> [sub] [first_arg] argv[from..argc-1]. Returns the child's
+ * exit status, or 1 if the tool could not be found or started. */
+static int run_tool(const char* tool, const char* sub, const char* first_arg, int argc, char** argv, int from) {
+    char tool_path[ENLANGG_MAX_PATH];
+    bool from_path = false;
+    if (!resolve_tool_path(tool, tool_path, sizeof(tool_path), &from_path)) {
+        char exe_dir[ENLANGG_MAX_PATH];
+        if (!enlangg_get_exe_dir(exe_dir, sizeof(exe_dir))) strcpy(exe_dir, "<unknown>");
+        fprintf(stderr, "Error: could not find '%s%s' next to enlangg (%s) or on PATH.\n",
+                tool, ENLANGG_TOOL_EXT, exe_dir);
+        fprintf(stderr, "Reinstall the Enlangg toolchain so all 7 tools are in the same folder.\n");
+        return 1;
+    }
+
+    int extra = (argv && from < argc) ? (argc - from) : 0;
+    size_t vec_len = 1 + (sub ? 1 : 0) + (first_arg ? 1 : 0) + (size_t)extra + 1;
+    const char** vec = (const char**)malloc(vec_len * sizeof(const char*));
+    if (!vec) {
+        fprintf(stderr, "Error: out of memory while starting '%s'.\n", tool);
+        return 1;
+    }
+    size_t vi = 0;
+    vec[vi++] = tool_path;
+    if (sub) vec[vi++] = sub;
+    if (first_arg) vec[vi++] = first_arg;
+    for (int i = 0; i < extra; i++) vec[vi++] = argv[from + i];
+    vec[vi] = NULL;
+
+    fflush(stdout);
+    fflush(stderr);
+
+#ifdef _WIN32
+    size_t cmd_sz = 32768; /* CreateProcess command-line limit */
+    char* cmdline = (char*)malloc(cmd_sz);
+    if (!cmdline) {
+        free(vec);
+        fprintf(stderr, "Error: out of memory while starting '%s'.\n", tool);
+        return 1;
+    }
+    cmdline[0] = '\0';
+    size_t cl = 0;
+    for (size_t i = 0; vec[i]; i++) {
+        if (!win_append_arg(cmdline, cmd_sz, &cl, vec[i])) {
+            fprintf(stderr, "Error: command line for '%s' is too long.\n", tool);
+            free(cmdline);
+            free(vec);
+            return 1;
+        }
+    }
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    memset(&si, 0, sizeof(si));
+    si.cb = sizeof(si);
+    memset(&pi, 0, sizeof(pi));
+    BOOL ok = CreateProcessA(tool_path, cmdline, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
+    free(cmdline);
+    free(vec);
+    if (!ok) {
+        fprintf(stderr, "Error: could not start '%s' (Windows error %lu).\n",
+                tool_path, (unsigned long)GetLastError());
+        return 1;
+    }
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    DWORD code = 1;
+    if (!GetExitCodeProcess(pi.hProcess, &code)) code = 1;
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return (int)code;
+#else
+    /* Like system(): the parent ignores SIGINT/SIGQUIT while waiting so
+     * Ctrl+C reaches the child and enlangg reports its exit status. */
+    struct sigaction ign, old_int, old_quit;
+    memset(&ign, 0, sizeof(ign));
+    ign.sa_handler = SIG_IGN;
+    sigemptyset(&ign.sa_mask);
+    sigaction(SIGINT, &ign, &old_int);
+    sigaction(SIGQUIT, &ign, &old_quit);
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        sigaction(SIGINT, &old_int, NULL);
+        sigaction(SIGQUIT, &old_quit, NULL);
+        free(vec);
+        fprintf(stderr, "Error: could not start '%s': %s\n", tool_path, strerror(errno));
+        return 1;
+    }
+    if (pid == 0) {
+        sigaction(SIGINT, &old_int, NULL);
+        sigaction(SIGQUIT, &old_quit, NULL);
+        execv(tool_path, (char* const*)vec);
+        fprintf(stderr, "Error: could not execute '%s': %s\n", tool_path, strerror(errno));
+        _exit(127);
+    }
+    free(vec);
+    int status = 0;
+    pid_t w;
+    do {
+        w = waitpid(pid, &status, 0);
+    } while (w < 0 && errno == EINTR);
+    sigaction(SIGINT, &old_int, NULL);
+    sigaction(SIGQUIT, &old_quit, NULL);
+    if (w < 0) return 1;
+    if (WIFEXITED(status)) return WEXITSTATUS(status);
+    if (WIFSIGNALED(status)) return 128 + WTERMSIG(status);
+    return 1;
+#endif
 }
 
 static bool copy_file_c(const char* src, const char* dst) {
@@ -492,37 +731,27 @@ int run_script(const char* filepath) {
 
     // 2. Check if reactive script (.enlngs, .enlgs)
     if (has_suffix(filepath, ".enlngs") || has_suffix(filepath, ".enlgs")) {
-        char cmd[4096] = "enlngs run";
-        append_safe_arg(cmd, sizeof(cmd), filepath);
-        return system(cmd) != 0 ? 1 : 0;
+        return run_tool("enlngs", "run", filepath, 0, NULL, 0) != 0 ? 1 : 0;
     }
 
     // 3. Check if frontend markup (.enlngf, .enlgf)
     if (has_suffix(filepath, ".enlngf") || has_suffix(filepath, ".enlgf")) {
-        char cmd[4096] = "enlngf run";
-        append_safe_arg(cmd, sizeof(cmd), filepath);
-        return system(cmd) != 0 ? 1 : 0;
+        return run_tool("enlngf", "run", filepath, 0, NULL, 0) != 0 ? 1 : 0;
     }
 
     // 4. Check if design token sheet (.enlngd, .enlgd)
     if (has_suffix(filepath, ".enlngd") || has_suffix(filepath, ".enlgd")) {
-        char cmd[4096] = "enlngd";
-        append_safe_arg(cmd, sizeof(cmd), filepath);
-        return system(cmd) != 0 ? 1 : 0;
+        return run_tool("enlngd", NULL, filepath, 0, NULL, 0) != 0 ? 1 : 0;
     }
 
     // 5. Check if desktop preview (.enlngm, .enlgm, .enlngmf)
     if (has_suffix(filepath, ".enlngm") || has_suffix(filepath, ".enlgm") || has_suffix(filepath, ".enlngmf")) {
-        char cmd[4096] = "enlngm run";
-        append_safe_arg(cmd, sizeof(cmd), filepath);
-        return system(cmd) != 0 ? 1 : 0;
+        return run_tool("enlngm", "run", filepath, 0, NULL, 0) != 0 ? 1 : 0;
     }
 
     // 6. Check if pure Enlang core script (.enlng, .enlg)
     if (has_suffix(filepath, ".enlng") || has_suffix(filepath, ".enlg")) {
-        char cmd[4096] = "enlng";
-        append_safe_arg(cmd, sizeof(cmd), filepath);
-        return system(cmd) != 0 ? 1 : 0;
+        return run_tool("enlng", NULL, filepath, 0, NULL, 0) != 0 ? 1 : 0;
     }
 
     // 7. Check if file declares type header
@@ -536,33 +765,23 @@ int run_script(const char* filepath) {
             }
             if (strncmp(buf, "type enlngs", 11) == 0 || strncmp(buf, "type enlgs", 10) == 0) {
                 fclose(chk);
-                char cmd[4096] = "enlngs run";
-                append_safe_arg(cmd, sizeof(cmd), filepath);
-                return system(cmd) != 0 ? 1 : 0;
+                return run_tool("enlngs", "run", filepath, 0, NULL, 0) != 0 ? 1 : 0;
             }
             if (strncmp(buf, "type enlngf", 11) == 0 || strncmp(buf, "type enlgf", 10) == 0) {
                 fclose(chk);
-                char cmd[4096] = "enlngf run";
-                append_safe_arg(cmd, sizeof(cmd), filepath);
-                return system(cmd) != 0 ? 1 : 0;
+                return run_tool("enlngf", "run", filepath, 0, NULL, 0) != 0 ? 1 : 0;
             }
             if (strncmp(buf, "type enlngd", 11) == 0 || strncmp(buf, "type enlgd", 10) == 0) {
                 fclose(chk);
-                char cmd[4096] = "enlngd";
-                append_safe_arg(cmd, sizeof(cmd), filepath);
-                return system(cmd) != 0 ? 1 : 0;
+                return run_tool("enlngd", NULL, filepath, 0, NULL, 0) != 0 ? 1 : 0;
             }
             if (strncmp(buf, "type enlngm", 11) == 0 || strncmp(buf, "type enlgm", 10) == 0) {
                 fclose(chk);
-                char cmd[4096] = "enlngm run";
-                append_safe_arg(cmd, sizeof(cmd), filepath);
-                return system(cmd) != 0 ? 1 : 0;
+                return run_tool("enlngm", "run", filepath, 0, NULL, 0) != 0 ? 1 : 0;
             }
             if (strncmp(buf, "type enlng", 10) == 0 || strncmp(buf, "type enlg", 9) == 0) {
                 fclose(chk);
-                char cmd[4096] = "enlng";
-                append_safe_arg(cmd, sizeof(cmd), filepath);
-                return system(cmd) != 0 ? 1 : 0;
+                return run_tool("enlng", NULL, filepath, 0, NULL, 0) != 0 ? 1 : 0;
             }
         }
         fclose(chk);
@@ -727,43 +946,23 @@ int main(int argc, char* argv[]) {
     }
 
     if (strcmp(argv[1], "f") == 0 || strcmp(argv[1], "enlngf") == 0 || strcmp(argv[1], "web") == 0 || strcmp(argv[1], "frontend") == 0) {
-        char cmd[4096] = "enlngf";
-        for (int i = 2; i < argc; i++) {
-            append_safe_arg(cmd, sizeof(cmd), argv[i]);
-        }
-        return system(cmd) != 0 ? 1 : 0;
+        return run_tool("enlngf", NULL, NULL, argc, argv, 2) != 0 ? 1 : 0;
     }
 
     if (strcmp(argv[1], "d") == 0 || strcmp(argv[1], "enlngd") == 0 || strcmp(argv[1], "design") == 0 || strcmp(argv[1], "styles") == 0) {
-        char cmd[4096] = "enlngd";
-        for (int i = 2; i < argc; i++) {
-            append_safe_arg(cmd, sizeof(cmd), argv[i]);
-        }
-        return system(cmd) != 0 ? 1 : 0;
+        return run_tool("enlngd", NULL, NULL, argc, argv, 2) != 0 ? 1 : 0;
     }
 
     if (strcmp(argv[1], "s") == 0 || strcmp(argv[1], "enlngs") == 0 || strcmp(argv[1], "script") == 0) {
-        char cmd[4096] = "enlngs";
-        for (int i = 2; i < argc; i++) {
-            append_safe_arg(cmd, sizeof(cmd), argv[i]);
-        }
-        return system(cmd) != 0 ? 1 : 0;
+        return run_tool("enlngs", NULL, NULL, argc, argv, 2) != 0 ? 1 : 0;
     }
 
     if (strcmp(argv[1], "m") == 0 || strcmp(argv[1], "enlngm") == 0 || strcmp(argv[1], "mobile") == 0) {
-        char cmd[4096] = "enlngm";
-        for (int i = 2; i < argc; i++) {
-            append_safe_arg(cmd, sizeof(cmd), argv[i]);
-        }
-        return system(cmd) != 0 ? 1 : 0;
+        return run_tool("enlngm", NULL, NULL, argc, argv, 2) != 0 ? 1 : 0;
     }
 
     if (strcmp(argv[1], "enlng") == 0) {
-        char cmd[4096] = "enlng";
-        for (int i = 2; i < argc; i++) {
-            append_safe_arg(cmd, sizeof(cmd), argv[i]);
-        }
-        return system(cmd) != 0 ? 1 : 0;
+        return run_tool("enlng", NULL, NULL, argc, argv, 2) != 0 ? 1 : 0;
     }
 
     if (strcmp(argv[1], "run") == 0) {
@@ -809,42 +1008,22 @@ int main(int argc, char* argv[]) {
 
         // Check if reactive script (.enlngs / .enlgs)
         if (has_suffix(filepath, ".enlngs") || has_suffix(filepath, ".enlgs")) {
-            char cmd[4096] = "enlngs run";
-            append_safe_arg(cmd, sizeof(cmd), filepath);
-            for (int i = file_idx + 1; i < argc; i++) {
-                append_safe_arg(cmd, sizeof(cmd), argv[i]);
-            }
-            return system(cmd) != 0 ? 1 : 0;
+            return run_tool("enlngs", "run", filepath, argc, argv, file_idx + 1) != 0 ? 1 : 0;
         }
 
         // Check if frontend markup (.enlngf / .enlgf)
         if (has_suffix(filepath, ".enlngf") || has_suffix(filepath, ".enlgf")) {
-            char cmd[4096] = "enlngf run";
-            append_safe_arg(cmd, sizeof(cmd), filepath);
-            for (int i = file_idx + 1; i < argc; i++) {
-                append_safe_arg(cmd, sizeof(cmd), argv[i]);
-            }
-            return system(cmd) != 0 ? 1 : 0;
+            return run_tool("enlngf", "run", filepath, argc, argv, file_idx + 1) != 0 ? 1 : 0;
         }
 
         // Check if design token sheet (.enlngd / .enlgd)
         if (has_suffix(filepath, ".enlngd") || has_suffix(filepath, ".enlgd")) {
-            char cmd[4096] = "enlngd";
-            append_safe_arg(cmd, sizeof(cmd), filepath);
-            for (int i = file_idx + 1; i < argc; i++) {
-                append_safe_arg(cmd, sizeof(cmd), argv[i]);
-            }
-            return system(cmd) != 0 ? 1 : 0;
+            return run_tool("enlngd", NULL, filepath, argc, argv, file_idx + 1) != 0 ? 1 : 0;
         }
 
         // Check if desktop preview (.enlngm / .enlgm)
         if (has_suffix(filepath, ".enlngm") || has_suffix(filepath, ".enlgm") || has_suffix(filepath, ".enlngmf")) {
-            char cmd[4096] = "enlngm run";
-            append_safe_arg(cmd, sizeof(cmd), filepath);
-            for (int i = file_idx + 1; i < argc; i++) {
-                append_safe_arg(cmd, sizeof(cmd), argv[i]);
-            }
-            return system(cmd) != 0 ? 1 : 0;
+            return run_tool("enlngm", "run", filepath, argc, argv, file_idx + 1) != 0 ? 1 : 0;
         }
 
         // Standard script execution (.enlng, .enlg)
@@ -852,11 +1031,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (strcmp(argv[1], "build") == 0) {
-        char cmd[4096] = "enlngm build";
-        for (int i = 2; i < argc; i++) {
-            append_safe_arg(cmd, sizeof(cmd), argv[i]);
-        }
-        return system(cmd) != 0 ? 1 : 0;
+        return run_tool("enlngm", "build", NULL, argc, argv, 2) != 0 ? 1 : 0;
     }
 
     // Direct run if just a file is given

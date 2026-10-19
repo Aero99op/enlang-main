@@ -81,6 +81,7 @@ jobs:
           if ($runOut.Trim() -ne "144") { throw "Expected 144, got: $runOut" }
 
           Pop-Location
+          powershell -NoProfile -ExecutionPolicy Bypass -File tests\test_enlangg_dispatch.ps1 -BinDir "$verifyDir\bin"
           Remove-Item -Recurse -Force $verifyDir, $workDir
 
       - name: Upload Windows Artifact
@@ -124,8 +125,9 @@ jobs:
           set -euo pipefail
           VERIFY_DIR="/tmp/enlangg-linux-x86_64-verify"
           WORK_DIR="/tmp/enlangg-linux-x86_64-work"
-          rm -rf "$VERIFY_DIR" "$WORK_DIR"
-          mkdir -p "$VERIFY_DIR" "$WORK_DIR"
+          FAKE_PATH="/tmp/enlangg-linux-fakepath"
+          rm -rf "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
+          mkdir -p "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
           tar -xzf enlangg-linux-x86_64.tar.gz -C "$VERIFY_DIR"
 
           cd "$WORK_DIR"
@@ -157,13 +159,126 @@ jobs:
           echo "smoke.enlng -> $res"
           [ "$res" = "144" ]
 
-          rm -rf "$VERIFY_DIR" "$WORK_DIR"
+          # Verify enlangg sibling-first dispatch (bin NOT on PATH, fake enlng earlier on PATH)
+          for ft in enlng enlngf enlngd enlngs enlngm; do
+            printf '#!/bin/sh\necho "FAKE-TOOL-FROM-PATH %s"\nexit 42\n' "$ft" > "$FAKE_PATH/$ft"
+            chmod +x "$FAKE_PATH/$ft"
+          done
+          OLD_PATH="$PATH"
+          export PATH="$FAKE_PATH:$OLD_PATH"
+          [ "$(command -v enlng)" = "$FAKE_PATH/enlng" ]
+          disp_res=$("$VERIFY_DIR/bin/enlangg" run smoke.enlng)
+          echo "enlangg run smoke.enlng (with fake enlng on PATH) -> $disp_res"
+          [ "$disp_res" = "144" ]
+          for sub in f d s m enlng; do
+            vout=$("$VERIFY_DIR/bin/enlangg" "$sub" --version)
+            echo "enlangg $sub --version -> $vout"
+            echo "$vout" | grep -F "$TOOLCHAIN_VERSION"
+          done
+          export PATH="$OLD_PATH"
+
+          rm -rf "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
 
       - name: Upload Linux x86_64 Artifact
         uses: actions/upload-artifact@v4
         with:
           name: enlangg-linux-x86_64
           path: enlangg-linux-x86_64.tar.gz
+
+  test-linux-enlngf-serve:
+    needs: [build-linux-x86_64]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download Linux x86_64 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: enlangg-linux-x86_64
+
+      - name: Test enlngf serve Path Traversal, Absolute Path, and Symlink Escape Rejection
+        run: |
+          set -euo pipefail
+          JAIL_ROOT="/tmp/enlngf-jail-test"
+          OUTSIDE_DIR="$JAIL_ROOT/outside"
+          SERVE_DIR="$JAIL_ROOT/served"
+          BIN_DIR="$JAIL_ROOT/toolchain"
+          rm -rf "$JAIL_ROOT"
+          mkdir -p "$OUTSIDE_DIR" "$SERVE_DIR/sub" "$BIN_DIR"
+
+          tar -xzf enlangg-linux-x86_64.tar.gz -C "$BIN_DIR"
+          ENLNGF_BIN="$BIN_DIR/bin/enlngf"
+
+          printf 'SECRET_OUTSIDE_CANARY_99182\n' > "$OUTSIDE_DIR/secret.txt"
+          printf 'PUBLIC_ASSET_INSIDE_OK\n' > "$SERVE_DIR/public.txt"
+          cat > "$SERVE_DIR/app.enlngf" << 'EOF'
+          make document in english:
+              inside head:
+                  add title "POSIX Serve Escape Test"
+              finish head
+              inside body:
+                  add heading 1 "Serve Root Containment Test"
+              finish body
+          EOF
+
+          # Create symlinks inside the served directory that point outside it
+          ln -s "$OUTSIDE_DIR/secret.txt" "$SERVE_DIR/symlink_outside.txt"
+          ln -s "$OUTSIDE_DIR" "$SERVE_DIR/symlink_dir"
+
+          PORT=38923
+          "$ENLNGF_BIN" serve "$SERVE_DIR/app.enlngf" --port "$PORT" > "$JAIL_ROOT/serve.log" 2>&1 &
+          SERVE_PID=$!
+          trap 'kill -9 $SERVE_PID 2>/dev/null || true; rm -rf "$JAIL_ROOT"' EXIT
+
+          # Wait for server readiness
+          for i in $(seq 1 30); do
+            if curl -s "http://127.0.0.1:$PORT/" | grep -q "Serve Root Containment Test"; then
+              break
+            fi
+            sleep 0.1
+          done
+
+          echo "=== 0. Baseline legitimate requests (/, /public.txt) ==="
+          resp_root=$(curl -s -i "http://127.0.0.1:$PORT/")
+          echo "$resp_root" | head -n 5
+          echo "$resp_root" | grep -F "HTTP/1.1 200 OK"
+
+          resp_pub=$(curl -s -i "http://127.0.0.1:$PORT/public.txt")
+          echo "$resp_pub"
+          echo "$resp_pub" | grep -F "HTTP/1.1 200 OK"
+          echo "$resp_pub" | grep -F "PUBLIC_ASSET_INSIDE_OK"
+
+          assert_rejected() {
+            local label="$1"
+            local raw_path="$2"
+            echo "=== Testing $label: GET $raw_path ==="
+            local resp
+            resp=$(curl --path-as-is -s -i "http://127.0.0.1:${PORT}${raw_path}")
+            echo "$resp"
+            if ! echo "$resp" | grep -F "HTTP/1.1 403 Forbidden" >/dev/null; then
+              echo "FAIL: Expected HTTP/1.1 403 Forbidden for $label ($raw_path)"
+              exit 1
+            fi
+            if echo "$resp" | grep -E "SECRET_OUTSIDE_CANARY_99182|root:x:" >/dev/null; then
+              echo "FAIL: Secret content leaked for $label ($raw_path)"
+              exit 1
+            fi
+            echo "[PASS] Rejected $label ($raw_path) with 403 Forbidden"
+          }
+
+          # 1. Relative traversal attempts (../)
+          assert_rejected "dot-dot parent traversal" "/../outside/secret.txt"
+          assert_rejected "nested dot-dot traversal" "/sub/../../outside/secret.txt"
+          assert_rejected "url-encoded dot-dot traversal" "/%2e%2e/outside/secret.txt"
+
+          # 2. Absolute path attempts
+          assert_rejected "double-slash absolute path" "//etc/passwd"
+          assert_rejected "absolute path to outside secret" "$OUTSIDE_DIR/secret.txt"
+          assert_rejected "etc/passwd path" "/etc/passwd"
+
+          # 3. Symlink inside the served folder pointing outside it
+          assert_rejected "file symlink pointing outside" "/symlink_outside.txt"
+          assert_rejected "directory symlink pointing outside" "/symlink_dir/secret.txt"
+
+          echo "=== ALL LINUX enlngf serve CONTAINMENT CHECKS PASSED ==="
 
   build-linux-aarch64:
     runs-on: ubuntu-22.04
@@ -265,8 +380,9 @@ jobs:
           set -euo pipefail
           VERIFY_DIR="/tmp/enlangg-macos-verify"
           WORK_DIR="/tmp/enlangg-macos-work"
-          rm -rf "$VERIFY_DIR" "$WORK_DIR"
-          mkdir -p "$VERIFY_DIR" "$WORK_DIR"
+          FAKE_PATH="/tmp/enlangg-macos-fakepath"
+          rm -rf "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
+          mkdir -p "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
           tar -xzf enlangg-macos-universal.tar.gz -C "$VERIFY_DIR"
 
           cd "$WORK_DIR"
@@ -284,7 +400,17 @@ jobs:
           echo "smoke.enlng -> $res"
           [ "$res" = "144" ]
 
-          rm -rf "$VERIFY_DIR" "$WORK_DIR"
+          # Verify sibling-first dispatch on macOS
+          printf '#!/bin/sh\necho FAKE-TOOL-FROM-PATH\nexit 42\n' > "$FAKE_PATH/enlng"
+          chmod +x "$FAKE_PATH/enlng"
+          OLD_PATH="$PATH"
+          export PATH="$FAKE_PATH:$OLD_PATH"
+          disp_res=$("$VERIFY_DIR/bin/enlangg" run smoke.enlng)
+          echo "enlangg run smoke.enlng (with fake enlng on PATH) -> $disp_res"
+          [ "$disp_res" = "144" ]
+          export PATH="$OLD_PATH"
+
+          rm -rf "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
@@ -346,7 +472,7 @@ jobs:
           path: enlangg-src.tar.gz
 
   publish-release:
-    needs: [build-windows, build-linux-x86_64, build-linux-aarch64, build-macos, build-source]
+    needs: [build-windows, build-linux-x86_64, test-linux-enlngf-serve, build-linux-aarch64, build-macos, build-source]
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
