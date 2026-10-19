@@ -512,18 +512,9 @@ int enlngm_run_simulator(const char* filepath) {
 }
 #else
 int enlngm_run_simulator(const char* filepath) {
-    EnlngmApp* app = enlngm_create_app();
-    if (!enlngm_parse_file(app, filepath)) {
-        fprintf(stderr, "Error: Could not parse '%s'\n", filepath);
-        enlngm_free_app(app);
-        return 1;
-    }
-    printf("=================================================================\n");
-    printf("     ENLNGM: SOVEREIGN DESKTOP PREVIEW (CLI VIEWPORT)            \n");
-    printf("=================================================================\n");
-    printf(" >> App: '%s' | Screen: '%s'\n", app->app_name, app->screen_title);
-    printf(" >> Widgets: %d total widgets defined.\n", app->widget_count);
-    enlngm_free_app(app);
-    return 0;
+    (void)filepath;
+    fprintf(stderr, "Error: 'enlngm run' (native Win32 desktop preview window) is Windows only.\n"
+                    "On macOS and Linux, use 'enlngm export <file.enlngm>'.\n");
+    return 1;
 }
 #endif

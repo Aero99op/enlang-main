@@ -9,8 +9,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include "../../src/enlangg_version.h"
 
-#define ENLNGF_VERSION "5.3.0"
 #define MAX_CHILDREN 512
 #define MAX_ATTRS 24
 #define MAX_NODES 4096

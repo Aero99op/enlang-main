@@ -502,7 +502,7 @@ ipcMain.handle('env:launchPureVSCode', async (event, workspacePath) => {
 // --- IPC: Auto-Updater ("Update in a Go") ---
 function isNewerVersion(latest, current) {
   if (!latest || !current) return false;
-  const parse = v => v.toString().replace(/^[vV]/, '').split('.').map(n => parseInt(n, 10) || 0);
+  const parse = v => v.toString().replace(/^(?:studio-)?[vV]/i, '').split('.').map(n => parseInt(n, 10) || 0);
   const [lMaj = 0, lMin = 0, lPatch = 0] = parse(latest);
   const [cMaj = 0, cMin = 0, cPatch = 0] = parse(current);
   if (lMaj > cMaj) return true;
@@ -662,44 +662,54 @@ async function checkLatestRelease() {
     } catch (_) {}
   }
 
-  // 2. Secondary Fallback: GitHub Releases API
+  // 2. Secondary Fallback: GitHub Releases API (Studio-only track; ignore toolchain-v* releases)
   try {
     const releases = await fetchJson('https://api.github.com/repos/Aero99op/enlang-main/releases');
     if (Array.isArray(releases) && releases.length > 0) {
-      const latest = releases[0];
-      const latestVersion = (latest.tag_name || 'v0.0.0').replace(/^[vV]/, '');
-      const hasUpdate = isNewerVersion(latestVersion, currentVersion);
-
-      let targetAsset = null;
-      if (latest.assets && latest.assets.length > 0) {
-        if (process.platform === 'win32') {
-          targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.toLowerCase().endsWith('.exe')) ||
-                        latest.assets.find(a => a.name.toLowerCase().includes('setup') && a.name.toLowerCase().endsWith('.exe'));
-        } else if (process.platform === 'darwin') {
-          targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.dmg'));
-        } else {
-          targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.AppImage'));
+      const latest = releases.find(r => {
+        const tag = String(r && r.tag_name ? r.tag_name : '').toLowerCase();
+        if (tag.startsWith('toolchain-')) return false;
+        if (tag.startsWith('studio-v')) return true;
+        if (tag.startsWith('v') && Array.isArray(r.assets)) {
+          return r.assets.some(a => String(a && a.name ? a.name : '').toLowerCase().includes('studio'));
         }
+        return false;
+      });
+
+      if (latest) {
+        const latestVersion = (latest.tag_name || 'v0.0.0').replace(/^(?:studio-)?[vV]/i, '');
+        const hasUpdate = isNewerVersion(latestVersion, currentVersion);
+
+        let targetAsset = null;
+        if (latest.assets && latest.assets.length > 0) {
+          if (process.platform === 'win32') {
+            targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.toLowerCase().endsWith('.exe'));
+          } else if (process.platform === 'darwin') {
+            targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.dmg'));
+          } else {
+            targetAsset = latest.assets.find(a => a.name.toLowerCase().includes('studio') && a.name.endsWith('.AppImage'));
+          }
+        }
+
+        const assetDigest = targetAsset && typeof targetAsset.digest === 'string' && targetAsset.digest.startsWith('sha256:')
+          ? targetAsset.digest.slice(7)
+          : latestReleaseSha256;
+
+        return {
+          hasUpdate,
+          currentVersion,
+          latestVersion,
+          tag: latest.tag_name,
+          releaseName: latest.name || `Enlangg Studio Release ${latest.tag_name}`,
+          releaseNotes: latest.body || 'New Enlangg Studio release available.',
+          publishedAt: latest.published_at,
+          htmlUrl: latest.html_url,
+          downloadUrl: targetAsset ? targetAsset.browser_download_url : 'https://enlangg.site/enlangg-studio-setup.exe',
+          assetName: targetAsset ? targetAsset.name : 'Enlangg-Studio-Setup.exe',
+          sha256: assetDigest || null,
+          source: 'github'
+        };
       }
-
-      const assetDigest = targetAsset && typeof targetAsset.digest === 'string' && targetAsset.digest.startsWith('sha256:')
-        ? targetAsset.digest.slice(7)
-        : latestReleaseSha256;
-
-      return {
-        hasUpdate,
-        currentVersion,
-        latestVersion,
-        tag: latest.tag_name,
-        releaseName: latest.name || `Enlangg Release ${latest.tag_name}`,
-        releaseNotes: latest.body || 'New Enlangg Studio release available.',
-        publishedAt: latest.published_at,
-        htmlUrl: latest.html_url,
-        downloadUrl: targetAsset ? targetAsset.browser_download_url : 'https://enlangg.site/enlangg-studio-setup.exe',
-        assetName: targetAsset ? targetAsset.name : 'Enlangg-Studio-Setup.exe',
-        sha256: assetDigest || null,
-        source: 'github'
-      };
     }
   } catch (err) {
     return {

@@ -10,8 +10,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include "../../src/enlangg_version.h"
 
-#define ENLNGDB_VERSION "2.0.0-pure-c-native"
 #define ENLNGDB_MAX_COLS 32
 #define ENLNGDB_MAX_TABLES 64
 #define ENLNGDB_MAX_NAME 64

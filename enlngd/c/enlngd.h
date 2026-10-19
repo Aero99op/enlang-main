@@ -6,8 +6,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include "../../src/enlangg_version.h"
 
-#define ENLNGD_VERSION "5.3.0"
 #define MAX_TOKENS 512
 #define MAX_RULES 512
 #define MAX_PROPS 64

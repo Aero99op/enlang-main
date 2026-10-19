@@ -7,8 +7,8 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <math.h>
+#include "../../src/enlangg_version.h"
 
-#define ENLNGS_VERSION "5.3.0"
 #define MAX_VARS 512
 #define MAX_FUNCS 128
 #define MAX_PARAMS 16

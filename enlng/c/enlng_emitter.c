@@ -1,4 +1,5 @@
 #include "enlng_emitter.h"
+#include "../../src/enlangg_version.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -295,7 +296,7 @@ bool enlng_emit_c_from_file(const char* in_filepath, const char* out_c_filepath)
     fprintf(fout, "#include <stdint.h>\n");
     fprintf(fout, "#include <stdbool.h>\n");
     fprintf(fout, "#include <math.h>\n\n");
-    fprintf(fout, "#include \"enlng/c/enlng_mem.h\"\n\n");
+    fprintf(fout, "#include \"enlng_mem.h\"\n\n");
 
     EmitterContext ctx;
     memset(&ctx, 0, sizeof(ctx));
@@ -592,8 +593,19 @@ bool enlng_compile_file_to_exe(const char* in_filepath, const char* out_exe_file
         return false;
     }
 
-    char cmd[1024];
-    snprintf(cmd, sizeof(cmd), "gcc -O3 -I. \"%s\" -o \"%s\"", temp_c_file, out_exe_filepath);
+    char extra_inc[1024] = "";
+    char home_dir[ENLANGG_MAX_PATH];
+    if (enlangg_get_home_dir(home_dir, sizeof(home_dir))) {
+        snprintf(extra_inc, sizeof(extra_inc),
+                 " -I\"%s%cinclude\" -I\"%s%cenlng%cc\" -I\"%s\"",
+                 home_dir, ENLANGG_PATH_SEP,
+                 home_dir, ENLANGG_PATH_SEP, ENLANGG_PATH_SEP,
+                 home_dir);
+    }
+
+    char cmd[2048];
+    snprintf(cmd, sizeof(cmd), "gcc -O3 -I\"enlng/c\" -I\".\"%s \"%s\" -o \"%s\" -lm",
+             extra_inc, temp_c_file, out_exe_filepath);
     int res = system(cmd);
 
     // Cleanup temp C file unless debug requested

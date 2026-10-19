@@ -2,6 +2,13 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <limits.h>
 #endif
 
 #ifdef _MSC_VER
@@ -1478,17 +1485,8 @@ static bool stamp_enlngf_generated_marker(const char* path) {
 }
 
 static bool auto_compile_companion_assets(const EnlngfDoc* doc, const char* src_dir, const char* out_dir) {
-    char bin_dir[512] = {0};
-#ifdef _WIN32
-    char exe_path[512] = {0};
-    if (GetModuleFileNameA(NULL, exe_path, sizeof(exe_path)) > 0) {
-        strncpy(bin_dir, exe_path, sizeof(bin_dir) - 1);
-        char* slash = strrchr(bin_dir, '\\');
-        if (!slash) slash = strrchr(bin_dir, '/');
-        if (slash) *slash = '\0';
-        else bin_dir[0] = '\0';
-    }
-#endif
+    char bin_dir[ENLANGG_MAX_PATH] = {0};
+    enlangg_get_exe_dir(bin_dir, sizeof(bin_dir));
 
     /* 1. Auto-compile linked stylesheets if companion .enlngd/.enlgd exists */
     for (int i = 0; i < doc->design_file_count; i++) {
@@ -1529,12 +1527,13 @@ static bool auto_compile_companion_assets(const EnlngfDoc* doc, const char* src_
                     return false;
                 }
             }
-            char cmd[1536];
+            char cmd[2048];
 #ifdef _WIN32
             if (bin_dir[0]) snprintf(cmd, sizeof(cmd), "\"\"%s\\enlngd.exe\" compile \"%s\" -o \"%s\" >NUL 2>&1\"", bin_dir, src_d, out_css);
             else snprintf(cmd, sizeof(cmd), "enlngd compile \"%s\" -o \"%s\" >NUL 2>&1", src_d, out_css);
 #else
-            snprintf(cmd, sizeof(cmd), "enlngd compile \"%s\" -o \"%s\" >/dev/null 2>&1", src_d, out_css);
+            if (bin_dir[0]) snprintf(cmd, sizeof(cmd), "\"%s/enlngd\" compile \"%s\" -o \"%s\" >/dev/null 2>&1", bin_dir, src_d, out_css);
+            else snprintf(cmd, sizeof(cmd), "enlngd compile \"%s\" -o \"%s\" >/dev/null 2>&1", src_d, out_css);
 #endif
             int ret = system(cmd);
             (void)ret;
@@ -1581,12 +1580,13 @@ static bool auto_compile_companion_assets(const EnlngfDoc* doc, const char* src_
                     return false;
                 }
             }
-            char cmd[1536];
+            char cmd[2048];
 #ifdef _WIN32
             if (bin_dir[0]) snprintf(cmd, sizeof(cmd), "\"\"%s\\enlngs.exe\" compile \"%s\" -o \"%s\" >NUL 2>&1\"", bin_dir, src_s, out_js);
             else snprintf(cmd, sizeof(cmd), "enlngs compile \"%s\" -o \"%s\" >NUL 2>&1", src_s, out_js);
 #else
-            snprintf(cmd, sizeof(cmd), "enlngs compile \"%s\" -o \"%s\" >/dev/null 2>&1", src_s, out_js);
+            if (bin_dir[0]) snprintf(cmd, sizeof(cmd), "\"%s/enlngs\" compile \"%s\" -o \"%s\" >/dev/null 2>&1", bin_dir, src_s, out_js);
+            else snprintf(cmd, sizeof(cmd), "enlngs compile \"%s\" -o \"%s\" >/dev/null 2>&1", src_s, out_js);
 #endif
             int ret = system(cmd);
             (void)ret;
@@ -1777,6 +1777,14 @@ int enlngf_run_gui(const char* filepath) {
     enlngf_free_doc(doc);
     return 0;
 }
+#else
+int enlngf_run_gui(const char* filepath) {
+    (void)filepath;
+    fprintf(stderr, "Error: 'enlngf run' (native Win32 desktop GUI window) is Windows only.\n"
+                    "On macOS and Linux, use 'enlngf serve <file.enlngf>' or 'enlngf build <file.enlngf>'.\n");
+    return 1;
+}
+#endif
 
 static const char* get_mime_type(const char* path) {
     const char* ext = strrchr(path, '.');
@@ -1793,7 +1801,19 @@ static const char* get_mime_type(const char* path) {
     return "application/octet-stream";
 }
 
-/* Pure C WinSock2 HTTP Web Studio Server */
+#ifndef _WIN32
+typedef int enlngf_socket_t;
+#define ENLNGF_INVALID_SOCKET (-1)
+#define ENLNGF_SOCKET_ERROR   (-1)
+#define enlngf_closesocket(s) close(s)
+#else
+typedef SOCKET enlngf_socket_t;
+#define ENLNGF_INVALID_SOCKET INVALID_SOCKET
+#define ENLNGF_SOCKET_ERROR   SOCKET_ERROR
+#define enlngf_closesocket(s) closesocket(s)
+#endif
+
+/* Pure C Cross-Platform HTTP Web Studio Server (WinSock2 & POSIX BSD Sockets) */
 int enlngf_serve_http(const char* filepath, int port) {
     EnlngfDoc* doc = enlngf_create_doc();
     if (!enlngf_parse_file(doc, filepath)) {
@@ -1811,13 +1831,22 @@ int enlngf_serve_http(const char* filepath, int port) {
     else base_dir[0] = '\0';
 
     /* Resolve canonical served folder path */
-    char abs_serve_dir[1024] = {0};
+    char abs_serve_dir[ENLANGG_MAX_PATH] = {0};
     const char* raw_dir = base_dir[0] ? base_dir : ".";
+#ifdef _WIN32
     if (!_fullpath(abs_serve_dir, raw_dir, sizeof(abs_serve_dir))) {
         strncpy(abs_serve_dir, raw_dir, sizeof(abs_serve_dir) - 1);
     }
+#else
+    if (!realpath(raw_dir, abs_serve_dir)) {
+        strncpy(abs_serve_dir, raw_dir, sizeof(abs_serve_dir) - 1);
+    }
+#endif
     size_t ad_len = strlen(abs_serve_dir);
-    while (ad_len > 3 && (abs_serve_dir[ad_len - 1] == '\\' || abs_serve_dir[ad_len - 1] == '/')) {
+    while (ad_len > 1 && (abs_serve_dir[ad_len - 1] == '\\' || abs_serve_dir[ad_len - 1] == '/')) {
+#ifdef _WIN32
+        if (ad_len == 3 && abs_serve_dir[1] == ':') break;
+#endif
         abs_serve_dir[--ad_len] = '\0';
     }
 
@@ -1839,15 +1868,33 @@ int enlngf_serve_http(const char* filepath, int port) {
     long sz = ftell(f);
     fseek(f, 0, SEEK_SET);
     char* html_body = (char*)malloc(sz + 1);
-    fread(html_body, 1, sz, f);
-    html_body[sz] = '\0';
+    if (html_body) {
+        size_t n = fread(html_body, 1, sz, f);
+        html_body[n] = '\0';
+    }
     fclose(f);
     remove(html_temp);
+    if (!html_body) {
+        enlngf_free_doc(doc);
+        return 1;
+    }
 
+#ifdef _WIN32
     WSADATA wsa;
     WSAStartup(MAKEWORD(2, 2), &wsa);
+#endif
 
-    SOCKET server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    enlngf_socket_t server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd == ENLNGF_INVALID_SOCKET) {
+        fprintf(stderr, "Error: Could not create HTTP server socket.\n");
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        free(html_body);
+        enlngf_free_doc(doc);
+        return 1;
+    }
+
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
 
@@ -1855,12 +1902,14 @@ int enlngf_serve_http(const char* filepath, int port) {
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = inet_addr("127.0.0.1");
-    address.sin_port = htons((u_short)port);
+    address.sin_port = htons((uint16_t)port);
 
-    if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) == SOCKET_ERROR) {
+    if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) == ENLNGF_SOCKET_ERROR) {
         fprintf(stderr, "Error: Port %d already in use on 127.0.0.1.\n", port);
-        closesocket(server_fd);
+        enlngf_closesocket(server_fd);
+#ifdef _WIN32
         WSACleanup();
+#endif
         free(html_body);
         enlngf_free_doc(doc);
         return 1;
@@ -1872,19 +1921,23 @@ int enlngf_serve_http(const char* filepath, int port) {
     printf("     ENLNGF: SOVEREIGN WEB STUDIO HTTP SERVER LIVE               \n");
     printf("=================================================================\n");
     printf(" >> Local Studio: http://127.0.0.1:%d\n", port);
+#ifdef _WIN32
     printf(" >> Engine: Pure C WinSock2 Daemon (Zero Python / Zero Node.js)\n");
+#else
+    printf(" >> Engine: Pure C POSIX Sockets Daemon (Zero Python / Zero Node.js)\n");
+#endif
     printf(" >> Serving Document: '%s'\n", doc->title);
     printf(" >> Press Ctrl+C to terminate.\n\n");
     fflush(stdout);
 
     while (1) {
-        SOCKET client_fd = accept(server_fd, NULL, NULL);
-        if (client_fd == INVALID_SOCKET) break;
+        enlngf_socket_t client_fd = accept(server_fd, NULL, NULL);
+        if (client_fd == ENLNGF_INVALID_SOCKET) break;
 
         char req_buf[2048] = {0};
-        int rlen = recv(client_fd, req_buf, sizeof(req_buf) - 1, 0);
+        int rlen = (int)recv(client_fd, req_buf, sizeof(req_buf) - 1, 0);
         if (rlen <= 0) {
-            closesocket(client_fd);
+            enlngf_closesocket(client_fd);
             continue;
         }
         req_buf[rlen] = '\0';
@@ -1905,7 +1958,7 @@ int enlngf_serve_http(const char* filepath, int port) {
                 "Connection: close\r\n\r\n"
                 "%s", body405);
             send(client_fd, resp405, (int)strlen(resp405), 0);
-            closesocket(client_fd);
+            enlngf_closesocket(client_fd);
             continue;
         }
 
@@ -1935,7 +1988,7 @@ int enlngf_serve_http(const char* filepath, int port) {
             if (!is_head) {
                 send(client_fd, body403, (int)strlen(body403), 0);
             }
-            closesocket(client_fd);
+            enlngf_closesocket(client_fd);
             continue;
         }
 
@@ -1947,23 +2000,33 @@ int enlngf_serve_http(const char* filepath, int port) {
             if (!is_head) {
                 send(client_fd, html_body, (int)sz, 0);
             }
-            closesocket(client_fd);
+            enlngf_closesocket(client_fd);
             continue;
         }
 
         /* Resolve requested file inside abs_serve_dir and require prefix match */
         const char* rel = req_path + 1;
-        char candidate_path[1024];
-        snprintf(candidate_path, sizeof(candidate_path), "%s\\%s", abs_serve_dir, rel);
+        char candidate_path[ENLANGG_MAX_PATH];
+        snprintf(candidate_path, sizeof(candidate_path), "%s%c%s", abs_serve_dir, ENLANGG_PATH_SEP, rel);
 
-        char resolved_path[1024] = {0};
+        char resolved_path[ENLANGG_MAX_PATH] = {0};
+#ifdef _WIN32
         if (!_fullpath(resolved_path, candidate_path, sizeof(resolved_path))) {
             resolved_path[0] = '\0';
         }
+#else
+        if (!realpath(candidate_path, resolved_path)) {
+            resolved_path[0] = '\0';
+        }
+#endif
 
         size_t root_len = strlen(abs_serve_dir);
         bool inside_serve_dir = false;
+#ifdef _WIN32
         if (resolved_path[0] && _strnicmp(resolved_path, abs_serve_dir, root_len) == 0) {
+#else
+        if (resolved_path[0] && strncmp(resolved_path, abs_serve_dir, root_len) == 0) {
+#endif
             char next_ch = resolved_path[root_len];
             if (next_ch == '\\' || next_ch == '/') {
                 inside_serve_dir = true;
@@ -1980,15 +2043,22 @@ int enlngf_serve_http(const char* filepath, int port) {
             if (!is_head) {
                 send(client_fd, body403, (int)strlen(body403), 0);
             }
-            closesocket(client_fd);
+            enlngf_closesocket(client_fd);
             continue;
         }
 
-        DWORD fattr = GetFileAttributesA(resolved_path);
         FILE* fa = NULL;
+#ifdef _WIN32
+        DWORD fattr = GetFileAttributesA(resolved_path);
         if (fattr != INVALID_FILE_ATTRIBUTES && !(fattr & FILE_ATTRIBUTE_DIRECTORY)) {
             fa = fopen(resolved_path, "rb");
         }
+#else
+        struct stat st;
+        if (stat(resolved_path, &st) == 0 && S_ISREG(st.st_mode)) {
+            fa = fopen(resolved_path, "rb");
+        }
+#endif
 
         if (fa) {
             fseek(fa, 0, SEEK_END);
@@ -1998,7 +2068,8 @@ int enlngf_serve_http(const char* filepath, int port) {
             if (!is_head && asz > 0) {
                 abuf = (char*)malloc(asz + 1);
                 if (abuf) {
-                    fread(abuf, 1, asz, fa);
+                    size_t nr = fread(abuf, 1, asz, fa);
+                    (void)nr;
                 }
             }
             const char* mime = get_mime_type(rel);
@@ -2023,41 +2094,14 @@ int enlngf_serve_http(const char* filepath, int port) {
                 send(client_fd, body404, (int)strlen(body404), 0);
             }
         }
-        closesocket(client_fd);
+        enlngf_closesocket(client_fd);
     }
 
-    closesocket(server_fd);
+    enlngf_closesocket(server_fd);
+#ifdef _WIN32
     WSACleanup();
+#endif
     free(html_body);
     enlngf_free_doc(doc);
     return 0;
 }
-#else
-int enlngf_run_gui(const char* filepath) {
-    EnlngfDoc* doc = enlngf_create_doc();
-    if (!enlngf_parse_file(doc, filepath)) {
-        fprintf(stderr, "Error: Could not parse '%s'\n", filepath);
-        enlngf_free_doc(doc);
-        return 1;
-    }
-    char html_temp[256] = "enlngf_preview.html";
-    enlngf_compile_to_html(doc, html_temp);
-    printf("enlngf GUI: Compiled standalone HTML to '%s' (Win32 window is Windows-only).\n", html_temp);
-    enlngf_free_doc(doc);
-    return 0;
-}
-
-int enlngf_serve_http(const char* filepath, int port) {
-    EnlngfDoc* doc = enlngf_create_doc();
-    if (!enlngf_parse_file(doc, filepath)) {
-        fprintf(stderr, "Error: Could not parse '%s'\n", filepath);
-        enlngf_free_doc(doc);
-        return 1;
-    }
-    char html_temp[256] = "enlngf_preview.html";
-    enlngf_compile_to_html(doc, html_temp);
-    printf("enlngf serve: Generated '%s' for port %d.\n", html_temp, port);
-    enlngf_free_doc(doc);
-    return 0;
-}
-#endif

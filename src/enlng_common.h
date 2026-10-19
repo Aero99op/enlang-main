@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ENLNG_VERSION "4.0.0-sovereign-native"
+#include "enlangg_version.h"
 
 /* Safe strdup implementation for ANSI C99 */
 static inline char *enlng_strdup(const char *s) {
@@ -29,7 +29,14 @@ static inline char *enlng_strdup(const char *s) {
 }
 
 static inline char *enlng_read_file_string(const char *filepath) {
-  FILE *f = fopen(filepath, "rb");
+  char resolved[ENLANGG_MAX_PATH];
+  const char *target = filepath;
+  FILE *f = fopen(target, "rb");
+  if (!f) {
+    if (enlangg_resolve_stdlib_path(filepath, resolved, sizeof(resolved))) {
+      f = fopen(resolved, "rb");
+    }
+  }
   if (!f)
     return NULL;
   fseek(f, 0, SEEK_END);
@@ -37,8 +44,8 @@ static inline char *enlng_read_file_string(const char *filepath) {
   fseek(f, 0, SEEK_SET);
   char *buf = (char *)malloc(len + 1);
   if (buf) {
-    fread(buf, 1, len, f);
-    buf[len] = '\0';
+    size_t n = fread(buf, 1, len, f);
+    buf[n] = '\0';
   }
   fclose(f);
   return buf;

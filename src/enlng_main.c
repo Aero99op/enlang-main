@@ -270,19 +270,24 @@ int main(int argc, char* argv[]) {
     char cmd[MAX_PATH * 4];
     const char* final_exe_target = (strcmp(mode, "build") == 0 && output_exe) ? output_exe : temp_exe;
 
-    char extra_inc[512] = "";
-    const char* env_home = getenv("ENLANGG_HOME");
-    if (env_home && strlen(env_home) > 0) {
-        snprintf(extra_inc, sizeof(extra_inc), " -I\"%s%csrc\" -I\"%s\"", env_home, ENLNG_PATH_SEP, env_home);
+    char extra_inc[1024] = "";
+    char home_dir[ENLANGG_MAX_PATH];
+    if (enlangg_get_home_dir(home_dir, sizeof(home_dir))) {
+        snprintf(extra_inc, sizeof(extra_inc),
+                 " -I\"%s%cinclude\" -I\"%s%csrc\" -I\"%s\"",
+                 home_dir, ENLNG_PATH_SEP,
+                 home_dir, ENLNG_PATH_SEP,
+                 home_dir);
     }
 
-    snprintf(cmd, sizeof(cmd), "gcc -O2 -std=c99 -I\"%s\" -I\"src\" -I\".\"%s \"%s\" -o \"%s\"",
+    snprintf(cmd, sizeof(cmd), "gcc -O2 -std=c99 -I\"%s\" -I\"src\" -I\".\"%s \"%s\" -o \"%s\" -lm",
              temp_dir, extra_inc, temp_c, final_exe_target);
     int compile_ret = system(cmd);
 
     if (compile_ret != 0) {
-        fprintf(stderr, "[ENLANG ERROR] Native C compilation failed.\n");
+        fprintf(stderr, "[ENLANG ERROR] Native C compilation failed. Ensure a C compiler (gcc) is installed and on PATH.\n");
         remove(temp_c);
+        remove(temp_runtime);
         return compile_ret;
     }
 
@@ -306,6 +311,7 @@ int main(int argc, char* argv[]) {
     }
 
     remove(temp_c);
+    remove(temp_runtime);
     codegen_free(&codegen);
     lexer_free(&lexer);
     free(source);

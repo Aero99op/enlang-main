@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
-        printf("enlngm version 2.0.0-pure-c-native (Pure C Sovereign Preview Engine - ZERO PYTHON)\n");
+        printf("enlngm version %s (Pure C Sovereign Preview Engine - ZERO PYTHON)\n", ENLNGM_VERSION);
         return 0;
     }
 

@@ -9,8 +9,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include "../../src/enlangg_version.h"
 
-#define ENLNGM_VERSION "2.0.0-pure-c-native"
 #define MAX_MOBILE_WIDGETS 128
 
 typedef enum {

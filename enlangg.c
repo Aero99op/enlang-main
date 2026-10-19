@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #define MKDIR(p) mkdir(p, 0755)
 #endif
+#include "src/enlangg_version.h"
 #include "enlngdb/c/enlngdb.h"
 #include "enlng/c/enlng_emitter.h"
 
@@ -36,7 +37,7 @@
 #define MAX_PATH 4096
 #endif
 
-#define VERSION "5.0.0-sovereign-universal"
+#define VERSION ENLANGG_VERSION
 
 void print_help() {
     printf("=====================================================================\n");
@@ -79,29 +80,10 @@ void print_help() {
 }
 
 static void get_executable_dir(char* outPath, size_t maxLen) {
-#ifdef _WIN32
-    GetModuleFileNameA(NULL, outPath, (DWORD)maxLen);
-    char* lastSlash = strrchr(outPath, '\\');
-    if (!lastSlash) lastSlash = strrchr(outPath, '/');
-    if (lastSlash) *lastSlash = '\0';
-#elif defined(__APPLE__)
-    uint32_t size = (uint32_t)maxLen;
-    if (_NSGetExecutablePath(outPath, &size) == 0) {
-        char* lastSlash = strrchr(outPath, '/');
-        if (lastSlash) *lastSlash = '\0';
-    } else {
-        strcpy(outPath, ".");
+    if (!enlangg_get_exe_dir(outPath, maxLen)) {
+        strncpy(outPath, ".", maxLen - 1);
+        outPath[maxLen - 1] = '\0';
     }
-#else
-    ssize_t len = readlink("/proc/self/exe", outPath, maxLen - 1);
-    if (len != -1) {
-        outPath[len] = '\0';
-        char* lastSlash = strrchr(outPath, '/');
-        if (lastSlash) *lastSlash = '\0';
-    } else {
-        strcpy(outPath, ".");
-    }
-#endif
 }
 
 static void get_system_temp_dir(char* outDir, size_t maxLen) {
@@ -431,14 +413,8 @@ static int run_native_pkg(const char* subcmd, int arg_start, int argc, char* arg
             return 1;
         }
 
-        char exe_dir[MAX_PATH];
-        get_executable_dir(exe_dir, sizeof(exe_dir));
         char src_path[MAX_PATH];
-        snprintf(src_path, sizeof(src_path), "%s/%s", exe_dir, lib_file);
-        if (!file_exists_c(src_path)) {
-            snprintf(src_path, sizeof(src_path), "%s", lib_file);
-        }
-        if (!file_exists_c(src_path)) {
+        if (!enlangg_resolve_stdlib_path(lib_file, src_path, sizeof(src_path))) {
             fprintf(stderr, "Error: Standard library module '%s' not found.\n", lib_file);
             return 1;
         }
@@ -723,8 +699,8 @@ int main(int argc, char* argv[]) {
     }
 
     if (strcmp(argv[1], "db") == 0 || strcmp(argv[1], "enlngdb") == 0) {
-        if (argc >= 3 && strcmp(argv[2], "--version") == 0) {
-            printf("enlngdb version 2.0.0-pure-c-native (Pure C Microsecond Database Engine)\n");
+        if (argc >= 3 && (strcmp(argv[2], "--version") == 0 || strcmp(argv[2], "-v") == 0)) {
+            printf("enlngdb version %s (Pure C Microsecond Database Engine)\n", VERSION);
             return 0;
         }
         if (argc >= 3 && (strcmp(argv[2], "run") == 0 || strstr(argv[2], ".enlngdb") != NULL || strstr(argv[2], ".enlgdb") != NULL)) {

@@ -3,11 +3,14 @@ name: Release Enlangg Sovereign Toolchain
 on:
   push:
     tags:
-      - 'v*'
+      - 'toolchain-v*'
   workflow_dispatch:
 
 permissions:
   contents: write
+
+env:
+  TOOLCHAIN_VERSION: "5.4.0"
 
 jobs:
   build-windows:
@@ -16,53 +19,209 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Windows Executables
+      - name: Build & Stage Windows x86_64 Archive
+        shell: powershell
         run: |
-          mkdir dist
-          gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -o dist\enlangg.exe
-          gcc -O2 -s -I. -Isrc enlng.c -o dist\enlng.exe
-          gcc -O2 -s -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -o dist\enlngdb.exe
-          gcc -O2 -s -I. -Ienlngf/c enlngf.c -o dist\enlngf.exe -lws2_32 -lgdi32 -luser32
-          gcc -O2 -s -I. -Ienlngs/c enlngs.c -o dist\enlngs.exe
-          gcc -O2 -s -I. -Ienlngd/c enlngd.c -o dist\enlngd.exe
-          gcc -O2 -s -I. -Ienlngm/c enlngm.c -o dist\enlngm.exe -lgdi32 -luser32
-          copy install.cmd dist\
-          copy install.ps1 dist\
-          copy enlangg-bridge.py dist\
-          copy enlangg-bridge.cmd dist\
-          Compress-Archive -Path dist\* -DestinationPath enlangg-windows-amd64.zip
+          $ErrorActionPreference = "Stop"
+          $pkgRoot = "stage\enlangg-v$env:TOOLCHAIN_VERSION"
+          New-Item -ItemType Directory -Force -Path "$pkgRoot\bin", "$pkgRoot\lib", "$pkgRoot\include" | Out-Null
+
+          gcc -O2 -s -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o "$pkgRoot\bin\enlangg.exe"
+          gcc -O2 -s -I. -Isrc enlng.c -lm -o "$pkgRoot\bin\enlng.exe"
+          gcc -O2 -s -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o "$pkgRoot\bin\enlngdb.exe"
+          gcc -O2 -s -I. -Isrc -Ienlngf/c enlngf.c -lws2_32 -lgdi32 -luser32 -lm -o "$pkgRoot\bin\enlngf.exe"
+          gcc -O2 -s -I. -Isrc -Ienlngs/c enlngs.c -lm -o "$pkgRoot\bin\enlngs.exe"
+          gcc -O2 -s -I. -Isrc -Ienlngd/c enlngd.c -lm -o "$pkgRoot\bin\enlngd.exe"
+          gcc -O2 -s -I. -Isrc -Ienlngm/c enlngm.c -lgdi32 -luser32 -lm -o "$pkgRoot\bin\enlngm.exe"
+
+          $stdlib = @(
+            "lib_math.enlng", "lib_strings.enlng", "lib_ds.enlng", "lib_file.enlng",
+            "lib_fs.enlng", "lib_ml.enlng", "lib_net.enlng", "lib_db.enlng",
+            "lib_concurrency.enlng", "lib_std.enlng", "lib_enlngdb.enlng"
+          )
+          foreach ($f in $stdlib) {
+            Copy-Item -Force $f "$pkgRoot\lib\$f"
+          }
+          Copy-Item -Force "src\enlng_runtime.h" "$pkgRoot\include\enlng_runtime.h"
+          Copy-Item -Force "enlng\c\enlng_mem.h" "$pkgRoot\include\enlng_mem.h"
+          Copy-Item -Force "LICENSE" "$pkgRoot\LICENSE"
+          Copy-Item -Force "README.md" "$pkgRoot\README.md"
+
+          Compress-Archive -Path "$pkgRoot\*" -DestinationPath "enlangg-windows-x86_64.zip" -Force
+
+      - name: Verify Windows Archive Contents & Standalone Execution
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $verifyDir = Join-Path $env:TEMP "enlangg-win-verify"
+          if (Test-Path $verifyDir) { Remove-Item -Recurse -Force $verifyDir }
+          Expand-Archive -Path "enlangg-windows-x86_64.zip" -DestinationPath $verifyDir -Force
+
+          # Confirm forbidden files are absent
+          if (Test-Path "$verifyDir\*\enlangg-bridge*") { throw "Forbidden Python bridge found in archive" }
+          if (Test-Path "$verifyDir\*\install.*") { throw "Forbidden legacy install script found in archive" }
+
+          $workDir = Join-Path $env:TEMP "enlangg-win-work"
+          New-Item -ItemType Directory -Force -Path $workDir | Out-Null
+          Push-Location $workDir
+          Remove-Item Env:\ENLANGG_HOME -ErrorAction SilentlyContinue
+
+          $tools = @("enlangg", "enlng", "enlngdb", "enlngf", "enlngd", "enlngs", "enlngm")
+          foreach ($t in $tools) {
+            $out = & "$verifyDir\bin\$t.exe" --version
+            Write-Host "$t -> $out"
+            if ($out -notmatch [regex]::Escape($env:TOOLCHAIN_VERSION)) {
+              throw "Version mismatch for ${t}: $out"
+            }
+          }
+
+          Set-Content -Path "smoke.enlng" -Value "type enlng`nuse `"lib_math.enlng`"`nshow square(12)"
+          $runOut = & "$verifyDir\bin\enlng.exe" run "smoke.enlng"
+          Write-Host "smoke.enlng output: $runOut"
+          if ($runOut.Trim() -ne "144") { throw "Expected 144, got: $runOut" }
+
+          Pop-Location
+          Remove-Item -Recurse -Force $verifyDir, $workDir
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: enlangg-windows-amd64
-          path: enlangg-windows-amd64.zip
+          name: enlangg-windows-x86_64
+          path: enlangg-windows-x86_64.zip
 
-  build-linux:
-    runs-on: ubuntu-latest
+  build-linux-x86_64:
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Linux Binaries
+      - name: Build & Stage Linux x86_64 Static Archive
         run: |
-          mkdir -p dist
-          gcc -O2 -s -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o dist/enlangg
-          gcc -O2 -s -I. -Isrc enlng.c -lm -o dist/enlng
-          gcc -O2 -s -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o dist/enlngdb
-          gcc -O2 -s -I. -Ienlngf/c enlngf.c -lm -o dist/enlngf
-          gcc -O2 -s -I. -Ienlngs/c enlngs.c -lm -o dist/enlngs
-          gcc -O2 -s -I. -Ienlngd/c enlngd.c -lm -o dist/enlngd
-          gcc -O2 -s -I. -Ienlngm/c enlngm.c -lm -o dist/enlngm
-          cp install.sh dist/
-          chmod +x dist/enlangg dist/enlng dist/enlngdb dist/enlngf dist/enlngs dist/enlngd dist/enlngm dist/install.sh
-          tar -czf enlangg-linux-amd64.tar.gz -C dist .
+          set -euo pipefail
+          PKG_ROOT="stage/enlangg-v${TOOLCHAIN_VERSION}"
+          mkdir -p "$PKG_ROOT/bin" "$PKG_ROOT/lib" "$PKG_ROOT/include"
 
-      - name: Upload Linux Artifact
+          gcc -O2 -s -static -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o "$PKG_ROOT/bin/enlangg"
+          gcc -O2 -s -static -I. -Isrc enlng.c -lm -o "$PKG_ROOT/bin/enlng"
+          gcc -O2 -s -static -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o "$PKG_ROOT/bin/enlngdb"
+          gcc -O2 -s -static -I. -Isrc -Ienlngf/c enlngf.c -lm -o "$PKG_ROOT/bin/enlngf"
+          gcc -O2 -s -static -I. -Isrc -Ienlngs/c enlngs.c -lm -o "$PKG_ROOT/bin/enlngs"
+          gcc -O2 -s -static -I. -Isrc -Ienlngd/c enlngd.c -lm -o "$PKG_ROOT/bin/enlngd"
+          gcc -O2 -s -static -I. -Isrc -Ienlngm/c enlngm.c -lm -o "$PKG_ROOT/bin/enlngm"
+
+          chmod 0755 "$PKG_ROOT/bin/"*
+          cp lib_math.enlng lib_strings.enlng lib_ds.enlng lib_file.enlng \
+             lib_fs.enlng lib_ml.enlng lib_net.enlng lib_db.enlng \
+             lib_concurrency.enlng lib_std.enlng lib_enlngdb.enlng "$PKG_ROOT/lib/"
+          cp src/enlng_runtime.h "$PKG_ROOT/include/"
+          cp enlng/c/enlng_mem.h "$PKG_ROOT/include/"
+          cp LICENSE README.md "$PKG_ROOT/"
+
+          tar -czf enlangg-linux-x86_64.tar.gz -C "$PKG_ROOT" .
+
+      - name: Verify Linux x86_64 Archive & POSIX Behavior
+        run: |
+          set -euo pipefail
+          VERIFY_DIR="/tmp/enlangg-linux-x86_64-verify"
+          WORK_DIR="/tmp/enlangg-linux-x86_64-work"
+          rm -rf "$VERIFY_DIR" "$WORK_DIR"
+          mkdir -p "$VERIFY_DIR" "$WORK_DIR"
+          tar -xzf enlangg-linux-x86_64.tar.gz -C "$VERIFY_DIR"
+
+          cd "$WORK_DIR"
+          unset ENLANGG_HOME
+
+          for t in enlangg enlng enlngdb enlngf enlngd enlngs enlngm; do
+            file "$VERIFY_DIR/bin/$t"
+            out=$("$VERIFY_DIR/bin/$t" --version)
+            echo "$t -> $out"
+            echo "$out" | grep -F "$TOOLCHAIN_VERSION"
+          done
+
+          # Verify Windows-only GUI commands fail non-zero with clear message on POSIX
+          if "$VERIFY_DIR/bin/enlngf" run dummy.enlngf >/dev/null 2>err_f.txt; then
+            echo "ERROR: enlngf run should have exited non-zero on Linux"
+            exit 1
+          fi
+          grep -i "Windows only" err_f.txt
+
+          if "$VERIFY_DIR/bin/enlngm" run dummy.enlngm >/dev/null 2>err_m.txt; then
+            echo "ERROR: enlngm run should have exited non-zero on Linux"
+            exit 1
+          fi
+          grep -i "Windows only" err_m.txt
+
+          # Verify stdlib lookup via ../lib without ENLANGG_HOME
+          printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > smoke.enlng
+          res=$("$VERIFY_DIR/bin/enlng" run smoke.enlng)
+          echo "smoke.enlng -> $res"
+          [ "$res" = "144" ]
+
+          rm -rf "$VERIFY_DIR" "$WORK_DIR"
+
+      - name: Upload Linux x86_64 Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: enlangg-linux-amd64
-          path: enlangg-linux-amd64.tar.gz
+          name: enlangg-linux-x86_64
+          path: enlangg-linux-x86_64.tar.gz
+
+  build-linux-aarch64:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ARM64 Cross-Compiler & QEMU User Emulation
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross qemu-user-static file
+
+      - name: Build & Stage Linux aarch64 Static Archive
+        run: |
+          set -euo pipefail
+          PKG_ROOT="stage/enlangg-v${TOOLCHAIN_VERSION}"
+          mkdir -p "$PKG_ROOT/bin" "$PKG_ROOT/lib" "$PKG_ROOT/include"
+
+          CC_ARM="aarch64-linux-gnu-gcc"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o "$PKG_ROOT/bin/enlangg"
+          $CC_ARM -O2 -s -static -I. -Isrc enlng.c -lm -o "$PKG_ROOT/bin/enlng"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o "$PKG_ROOT/bin/enlngdb"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngf/c enlngf.c -lm -o "$PKG_ROOT/bin/enlngf"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngs/c enlngs.c -lm -o "$PKG_ROOT/bin/enlngs"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngd/c enlngd.c -lm -o "$PKG_ROOT/bin/enlngd"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngm/c enlngm.c -lm -o "$PKG_ROOT/bin/enlngm"
+
+          chmod 0755 "$PKG_ROOT/bin/"*
+          cp lib_math.enlng lib_strings.enlng lib_ds.enlng lib_file.enlng \
+             lib_fs.enlng lib_ml.enlng lib_net.enlng lib_db.enlng \
+             lib_concurrency.enlng lib_std.enlng lib_enlngdb.enlng "$PKG_ROOT/lib/"
+          cp src/enlng_runtime.h "$PKG_ROOT/include/"
+          cp enlng/c/enlng_mem.h "$PKG_ROOT/include/"
+          cp LICENSE README.md "$PKG_ROOT/"
+
+          tar -czf enlangg-linux-aarch64.tar.gz -C "$PKG_ROOT" .
+
+      - name: Verify Linux aarch64 Binaries via QEMU
+        run: |
+          set -euo pipefail
+          VERIFY_DIR="/tmp/enlangg-linux-aarch64-verify"
+          rm -rf "$VERIFY_DIR"
+          mkdir -p "$VERIFY_DIR"
+          tar -xzf enlangg-linux-aarch64.tar.gz -C "$VERIFY_DIR"
+
+          for t in enlangg enlng enlngdb enlngf enlngd enlngs enlngm; do
+            file "$VERIFY_DIR/bin/$t" | grep -F "ARM aarch64"
+            out=$(qemu-aarch64-static "$VERIFY_DIR/bin/$t" --version)
+            echo "$t (aarch64) -> $out"
+            echo "$out" | grep -F "$TOOLCHAIN_VERSION"
+          done
+          rm -rf "$VERIFY_DIR"
+
+      - name: Upload Linux aarch64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: enlangg-linux-aarch64
+          path: enlangg-linux-aarch64.tar.gz
 
   build-macos:
     runs-on: macos-latest
@@ -70,79 +229,166 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build macOS Binaries
+      - name: Build Universal (arm64 + x86_64 via lipo) macOS Archive
         run: |
-          mkdir -p dist
-          clang -O2 -I. -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o dist/enlangg
-          clang -O2 -I. -Isrc enlng.c -lm -o dist/enlng
-          clang -O2 -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o dist/enlngdb
-          clang -O2 -I. -Ienlngf/c enlngf.c -lm -o dist/enlngf
-          clang -O2 -I. -Ienlngs/c enlngs.c -lm -o dist/enlngs
-          clang -O2 -I. -Ienlngd/c enlngd.c -lm -o dist/enlngd
-          clang -O2 -I. -Ienlngm/c enlngm.c -lm -o dist/enlngm
-          cp install.sh dist/
-          chmod +x dist/enlangg dist/enlng dist/enlngdb dist/enlngf dist/enlngs dist/enlngd dist/enlngm dist/install.sh
-          tar -czf enlangg-darwin-arm64.tar.gz -C dist .
+          set -euo pipefail
+          PKG_ROOT="stage/enlangg-v${TOOLCHAIN_VERSION}"
+          mkdir -p build/arm64 build/x86_64 "$PKG_ROOT/bin" "$PKG_ROOT/lib" "$PKG_ROOT/include"
+
+          for arch in arm64 x86_64; do
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o "build/$arch/enlangg"
+            clang -O2 -arch "$arch" -I. -Isrc enlng.c -lm -o "build/$arch/enlng"
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o "build/$arch/enlngdb"
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngf/c enlngf.c -lm -o "build/$arch/enlngf"
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngs/c enlngs.c -lm -o "build/$arch/enlngs"
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngd/c enlngd.c -lm -o "build/$arch/enlngd"
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngm/c enlngm.c -lm -o "build/$arch/enlngm"
+          done
+
+          for t in enlangg enlng enlngdb enlngf enlngs enlngd enlngm; do
+            lipo -create "build/arm64/$t" "build/x86_64/$t" -output "$PKG_ROOT/bin/$t"
+            chmod 0755 "$PKG_ROOT/bin/$t"
+            lipo -info "$PKG_ROOT/bin/$t"
+          done
+
+          cp lib_math.enlng lib_strings.enlng lib_ds.enlng lib_file.enlng \
+             lib_fs.enlng lib_ml.enlng lib_net.enlng lib_db.enlng \
+             lib_concurrency.enlng lib_std.enlng lib_enlngdb.enlng "$PKG_ROOT/lib/"
+          cp src/enlng_runtime.h "$PKG_ROOT/include/"
+          cp enlng/c/enlng_mem.h "$PKG_ROOT/include/"
+          cp LICENSE README.md "$PKG_ROOT/"
+
+          tar -czf enlangg-macos-universal.tar.gz -C "$PKG_ROOT" .
+
+      - name: Verify macOS Universal Archive
+        run: |
+          set -euo pipefail
+          VERIFY_DIR="/tmp/enlangg-macos-verify"
+          WORK_DIR="/tmp/enlangg-macos-work"
+          rm -rf "$VERIFY_DIR" "$WORK_DIR"
+          mkdir -p "$VERIFY_DIR" "$WORK_DIR"
+          tar -xzf enlangg-macos-universal.tar.gz -C "$VERIFY_DIR"
+
+          cd "$WORK_DIR"
+          unset ENLANGG_HOME
+
+          for t in enlangg enlng enlngdb enlngf enlngd enlngs enlngm; do
+            lipo -info "$VERIFY_DIR/bin/$t" | grep -E "x86_64.*arm64|arm64.*x86_64"
+            out=$("$VERIFY_DIR/bin/$t" --version)
+            echo "$t -> $out"
+            echo "$out" | grep -F "$TOOLCHAIN_VERSION"
+          done
+
+          printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > smoke.enlng
+          res=$("$VERIFY_DIR/bin/enlng" run smoke.enlng)
+          echo "smoke.enlng -> $res"
+          [ "$res" = "144" ]
+
+          rm -rf "$VERIFY_DIR" "$WORK_DIR"
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: enlangg-darwin-arm64
-          path: enlangg-darwin-arm64.tar.gz
+          name: enlangg-macos-universal
+          path: enlangg-macos-universal.tar.gz
+
+  build-source:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Source Tarball (enlangg-src.tar.gz)
+        run: |
+          set -euo pipefail
+          SRC_STAGE="stage/enlangg-src-v${TOOLCHAIN_VERSION}"
+          mkdir -p "$SRC_STAGE"
+
+          cp Makefile LICENSE README.md \
+             enlangg.c enlng.c enlngf.c enlngd.c enlngs.c enlngm.c \
+             lib_math.enlng lib_strings.enlng lib_ds.enlng lib_file.enlng \
+             lib_fs.enlng lib_ml.enlng lib_net.enlng lib_db.enlng \
+             lib_concurrency.enlng lib_std.enlng lib_enlngdb.enlng \
+             "$SRC_STAGE/"
+
+          cp -r src enlng enlngdb enlngf enlngd enlngs enlngm "$SRC_STAGE/"
+          tar -czf enlangg-src.tar.gz -C stage "enlangg-src-v${TOOLCHAIN_VERSION}"
+
+      - name: Verify Source Tarball Make Install & Uninstall
+        run: |
+          set -euo pipefail
+          TEST_ROOT="/tmp/enlangg-src-test"
+          rm -rf "$TEST_ROOT"
+          mkdir -p "$TEST_ROOT"
+          tar -xzf enlangg-src.tar.gz -C "$TEST_ROOT"
+
+          cd "$TEST_ROOT/enlangg-src-v${TOOLCHAIN_VERSION}"
+          make PREFIX="$TEST_ROOT/prefix" BINDIR="$TEST_ROOT/bin" install
+
+          unset ENLANGG_HOME
+          mkdir -p "$TEST_ROOT/work"
+          cd "$TEST_ROOT/work"
+          "$TEST_ROOT/bin/enlangg" --version | grep -F "$TOOLCHAIN_VERSION"
+          printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > smoke.enlng
+          res=$("$TEST_ROOT/bin/enlng" run smoke.enlng)
+          [ "$res" = "144" ]
+
+          cd "$TEST_ROOT/enlangg-src-v${TOOLCHAIN_VERSION}"
+          make PREFIX="$TEST_ROOT/prefix" BINDIR="$TEST_ROOT/bin" uninstall
+          [ ! -d "$TEST_ROOT/prefix" ]
+          [ ! -e "$TEST_ROOT/bin/enlangg" ]
+          rm -rf "$TEST_ROOT"
+
+      - name: Upload Source Tarball Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: enlangg-src
+          path: enlangg-src.tar.gz
 
   publish-release:
-    needs: [build-windows, build-linux, build-macos]
-    runs-on: ubuntu-latest
+    needs: [build-windows, build-linux-x86_64, build-linux-aarch64, build-macos, build-source]
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
 
       - name: Generate SHA256SUMS
         run: |
-          sha256sum enlangg-windows-amd64/enlangg-windows-amd64.zip \
-                    enlangg-linux-amd64/enlangg-linux-amd64.tar.gz \
-                    enlangg-darwin-arm64/enlangg-darwin-arm64.tar.gz > SHA256SUMS
-          sed -i 's|enlangg-[^/]*/||g' SHA256SUMS
+          sha256sum \
+            enlangg-windows-x86_64.zip \
+            enlangg-linux-x86_64.tar.gz \
+            enlangg-linux-aarch64.tar.gz \
+            enlangg-macos-universal.tar.gz \
+            enlangg-src.tar.gz > SHA256SUMS
           cat SHA256SUMS
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/toolchain-v')
         with:
           name: Enlangg Sovereign Toolchain ${{ github.ref_name }}
           body: |
             ## Enlangg Sovereign Programming Language & Toolchain (${{ github.ref_name }})
-            
-            > **Security Notice**: The published `SHA256SUMS` manifest verifies transmission and download integrity (guarding against transfer bitrot, incomplete downloads, and truncation). It does not cryptographically authenticate author origin as it is not an asymmetric PGP signature.
-            
-            ### Quick Install (Windows PowerShell):
-            ```powershell
-            powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Aero99op/enlang-main/main/install.ps1 | iex"
-            ```
-            
-            ### Quick Install (Command Prompt CMD):
-            ```cmd
-            curl -fsSL https://raw.githubusercontent.com/Aero99op/enlang-main/main/install.cmd -o install.cmd && install.cmd
-            ```
-            
-            ### Quick Install (Linux & macOS):
-            ```bash
-            curl -fsSL https://raw.githubusercontent.com/Aero99op/enlang-main/main/install.sh | bash
-            ```
-            
-            ### Included Domains (Pure C 7-in-1 Suite):
-            - `enlangg` - Sovereign master toolchain dispatcher
-            - `enlng` - Core general-purpose sovereign language
-            - `enlngdb` - Pure C microsecond database engine
-            - `enlngf` - Frontend natural markup & web studio
-            - `enlngs` - Reactive fullstack scripts & DOM events
-            - `enlngd` - Design tokens & dynamic CSS generator
-            - `enlngm` - Mobile HAL & reactive hardware simulator
+
+            > **Integrity vs. Authenticity Notice**: The published `SHA256SUMS` file checks download integrity (protecting against corrupted or incomplete downloads), not author authenticity. Installers in this release are unsigned.
+
+            ### Included Tools (Pure C 7-in-1 Toolchain — v5.4.0):
+            - `enlangg` — Master toolchain dispatcher
+            - `enlng` — Core general-purpose C99 compiler (`gcc` required at runtime)
+            - `enlngdb` — Embedded `.edb` database engine
+            - `enlngf` — Frontend markup compiler & HTTP server
+            - `enlngs` — Reactive fullstack script engine
+            - `enlngd` — Design token & CSS compiler
+            - `enlngm` — Mobile & desktop preview compiler
           files: |
-            enlangg-windows-amd64/enlangg-windows-amd64.zip
-            enlangg-linux-amd64/enlangg-linux-amd64.tar.gz
-            enlangg-darwin-arm64/enlangg-darwin-arm64.tar.gz
+            enlangg-windows-x86_64.zip
+            enlangg-linux-x86_64.tar.gz
+            enlangg-linux-aarch64.tar.gz
+            enlangg-macos-universal.tar.gz
+            enlangg-src.tar.gz
             SHA256SUMS
