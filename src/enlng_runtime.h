@@ -10,6 +10,13 @@
 #ifndef ENLNG_RUNTIME_H
 #define ENLNG_RUNTIME_H
 
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE 1
+#endif
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #ifndef __USE_MINGW_ANSI_STDIO
 #define __USE_MINGW_ANSI_STDIO 1
 #endif
@@ -857,7 +864,7 @@ static inline EnlngVal enlng_builtin_sleep(EnlngVal sec) {
 #ifdef _WIN32
   Sleep((DWORD)ms);
 #else
-  usleep((useconds_t)(ms * 1000));
+  usleep((unsigned int)(ms * 1000));
 #endif
   return enlng_make_null();
 }

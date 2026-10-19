@@ -101,6 +101,8 @@ jobs:
             cat smoke_out.txt
             echo "STDERR:"
             cat smoke_err.txt
+            err_msg=$(cat smoke_err.txt smoke_out.txt | tr '\r\n' ' ' | head -c 200)
+            echo "::error title=Linux x86_64 Smoke Error::$err_msg"
             {
               echo "## Linux x86_64 Run Failure"
               echo '**STDOUT:**'
@@ -431,6 +433,8 @@ jobs:
             cat smoke_out.txt
             echo "STDERR:"
             cat smoke_err.txt
+            err_msg=$(cat smoke_err.txt smoke_out.txt | tr '\r\n' ' ' | head -c 200)
+            echo "::error title=Source Build Smoke Error::$err_msg"
             {
               echo "## Source Build Run Failure"
               echo '**STDOUT:**'
