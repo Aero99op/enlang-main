@@ -1,0 +1,383 @@
+name: Toolchain CI
+
+on:
+  push:
+    branches:
+      - 'fix/installers'
+  pull_request:
+    branches:
+      - 'fix/installers'
+      - 'main'
+  workflow_dispatch:
+
+env:
+  TOOLCHAIN_VERSION: "5.4.0"
+
+jobs:
+  build-linux-x86_64:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build & Stage Linux x86_64 Static Archive
+        run: |
+          set -euo pipefail
+          PKG_ROOT="stage/enlangg-v${TOOLCHAIN_VERSION}"
+          mkdir -p "$PKG_ROOT/bin" "$PKG_ROOT/lib" "$PKG_ROOT/include"
+
+          gcc -O2 -s -static -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o "$PKG_ROOT/bin/enlangg"
+          gcc -O2 -s -static -I. -Isrc enlng.c -lm -o "$PKG_ROOT/bin/enlng"
+          gcc -O2 -s -static -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o "$PKG_ROOT/bin/enlngdb"
+          gcc -O2 -s -static -I. -Isrc -Ienlngf/c enlngf.c -lm -o "$PKG_ROOT/bin/enlngf"
+          gcc -O2 -s -static -I. -Isrc -Ienlngs/c enlngs.c -lm -o "$PKG_ROOT/bin/enlngs"
+          gcc -O2 -s -static -I. -Isrc -Ienlngd/c enlngd.c -lm -o "$PKG_ROOT/bin/enlngd"
+          gcc -O2 -s -static -I. -Isrc -Ienlngm/c enlngm.c -lm -o "$PKG_ROOT/bin/enlngm"
+
+          chmod 0755 "$PKG_ROOT/bin/"*
+          cp lib_math.enlng lib_strings.enlng lib_ds.enlng lib_file.enlng \
+             lib_fs.enlng lib_ml.enlng lib_net.enlng lib_db.enlng \
+             lib_concurrency.enlng lib_std.enlng lib_enlngdb.enlng "$PKG_ROOT/lib/"
+          cp src/enlng_runtime.h "$PKG_ROOT/include/"
+          cp enlng/c/enlng_mem.h "$PKG_ROOT/include/"
+          cp LICENSE README.md "$PKG_ROOT/"
+
+          tar -czf enlangg-linux-x86_64.tar.gz -C "$PKG_ROOT" .
+
+      - name: Verify Linux x86_64 Archive & POSIX Behavior
+        run: |
+          set -euo pipefail
+          VERIFY_DIR="/tmp/enlangg-linux-x86_64-verify"
+          WORK_DIR="/tmp/enlangg-linux-x86_64-work"
+          FAKE_PATH="/tmp/enlangg-linux-fakepath"
+          rm -rf "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
+          mkdir -p "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
+          tar -xzf enlangg-linux-x86_64.tar.gz -C "$VERIFY_DIR"
+
+          cd "$WORK_DIR"
+          unset ENLANGG_HOME
+
+          for t in enlangg enlng enlngdb enlngf enlngd enlngs enlngm; do
+            file "$VERIFY_DIR/bin/$t"
+            out=$("$VERIFY_DIR/bin/$t" --version)
+            echo "$t -> $out"
+            echo "$out" | grep -F "$TOOLCHAIN_VERSION"
+          done
+
+          # Verify enlng locates stdlib from its own executable dir
+          printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > smoke.enlng
+          res=$("$VERIFY_DIR/bin/enlng" run smoke.enlng)
+          echo "smoke.enlng -> $res"
+          [ "$res" = "144" ]
+
+          # Verify sibling-first dispatch: fake enlng on PATH must NOT be executed by enlangg
+          printf '#!/bin/sh\necho FAKE-TOOL-FROM-PATH\nexit 42\n' > "$FAKE_PATH/enlng"
+          chmod +x "$FAKE_PATH/enlng"
+          OLD_PATH="$PATH"
+          export PATH="$FAKE_PATH:$OLD_PATH"
+          disp_res=$("$VERIFY_DIR/bin/enlangg" run smoke.enlng)
+          echo "enlangg run smoke.enlng (with fake enlng on PATH) -> $disp_res"
+          [ "$disp_res" = "144" ]
+          export PATH="$OLD_PATH"
+
+          # Verify POSIX socket serve returns non-zero for Windows-only stubs
+          set +e
+          "$VERIFY_DIR/bin/enlngf" run non_existent.enlngf >/dev/null 2>&1
+          run_exit=$?
+          "$VERIFY_DIR/bin/enlngm" run non_existent.enlngm >/dev/null 2>&1
+          m_exit=$?
+          set -e
+          [ "$run_exit" -ne 0 ]
+          [ "$m_exit" -ne 0 ]
+
+          rm -rf "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
+
+      - name: Upload Linux x86_64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: enlangg-linux-x86_64
+          path: enlangg-linux-x86_64.tar.gz
+
+  test-linux-enlngf-serve:
+    needs: [build-linux-x86_64]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download Linux x86_64 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: enlangg-linux-x86_64
+
+      - name: Run POSIX enlngf serve Jail & Symlink Containment Test
+        run: |
+          set -euo pipefail
+          JAIL_ROOT="/tmp/enlngf-jail-test"
+          OUTSIDE_DIR="$JAIL_ROOT/outside"
+          SERVE_DIR="$JAIL_ROOT/served"
+          BIN_DIR="$JAIL_ROOT/toolchain"
+          rm -rf "$JAIL_ROOT"
+          mkdir -p "$OUTSIDE_DIR" "$SERVE_DIR/sub" "$BIN_DIR"
+
+          tar -xzf enlangg-linux-x86_64.tar.gz -C "$BIN_DIR"
+          ENLNGF_BIN="$BIN_DIR/bin/enlngf"
+
+          printf 'SECRET_OUTSIDE_CANARY_99182\n' > "$OUTSIDE_DIR/secret.txt"
+          printf 'PUBLIC_ASSET_INSIDE_OK\n' > "$SERVE_DIR/public.txt"
+          cat > "$SERVE_DIR/app.enlngf" << 'EOF'
+          make document in english:
+              inside head:
+                  add title "POSIX Serve Escape Test"
+              finish head
+              inside body:
+                  add heading 1 "Serve Root Containment Test"
+              finish body
+          EOF
+
+          # Create symlinks inside the served directory that point outside it
+          ln -s "$OUTSIDE_DIR/secret.txt" "$SERVE_DIR/symlink_outside.txt"
+          ln -s "$OUTSIDE_DIR" "$SERVE_DIR/symlink_dir"
+
+          PORT=38923
+          "$ENLNGF_BIN" serve "$SERVE_DIR/app.enlngf" --port "$PORT" > "$JAIL_ROOT/serve.log" 2>&1 &
+          SERVE_PID=$!
+          trap 'kill -9 $SERVE_PID 2>/dev/null || true; rm -rf "$JAIL_ROOT"' EXIT
+
+          # Wait for server readiness
+          for i in $(seq 1 30); do
+            if curl -s "http://127.0.0.1:$PORT/" | grep -q "Serve Root Containment Test"; then
+              break
+            fi
+            sleep 0.1
+          done
+
+          echo "=== 0. Baseline legitimate requests (/, /public.txt) ==="
+          resp_root=$(curl -s -i "http://127.0.0.1:$PORT/")
+          echo "$resp_root" | head -n 5
+          echo "$resp_root" | grep -F "HTTP/1.1 200 OK"
+
+          resp_pub=$(curl -s -i "http://127.0.0.1:$PORT/public.txt")
+          echo "$resp_pub"
+          echo "$resp_pub" | grep -F "HTTP/1.1 200 OK"
+          echo "$resp_pub" | grep -F "PUBLIC_ASSET_INSIDE_OK"
+
+          assert_rejected() {
+            local label="$1"
+            local raw_path="$2"
+            echo "=== Testing $label: GET $raw_path ==="
+            local resp
+            resp=$(curl --path-as-is -s -i "http://127.0.0.1:${PORT}${raw_path}")
+            echo "$resp"
+            if ! echo "$resp" | grep -F "HTTP/1.1 403 Forbidden" >/dev/null; then
+              echo "FAIL: Expected HTTP/1.1 403 Forbidden for $label ($raw_path)"
+              exit 1
+            fi
+            if echo "$resp" | grep -E "SECRET_OUTSIDE_CANARY_99182|root:x:" >/dev/null; then
+              echo "FAIL: Secret content leaked for $label ($raw_path)"
+              exit 1
+            fi
+            echo "[PASS] Rejected $label ($raw_path) with 403 Forbidden"
+          }
+
+          # 1. Relative traversal attempts (../)
+          assert_rejected "dot-dot parent traversal" "/../outside/secret.txt"
+          assert_rejected "nested dot-dot traversal" "/sub/../../outside/secret.txt"
+          assert_rejected "url-encoded dot-dot traversal" "/%2e%2e/outside/secret.txt"
+
+          # 2. Absolute path attempts
+          assert_rejected "double-slash absolute path" "//etc/passwd"
+          assert_rejected "absolute path to outside secret" "$OUTSIDE_DIR/secret.txt"
+          assert_rejected "etc/passwd path" "/etc/passwd"
+
+          # 3. Symlink inside the served folder pointing outside it
+          assert_rejected "file symlink pointing outside" "/symlink_outside.txt"
+          assert_rejected "directory symlink pointing outside" "/symlink_dir/secret.txt"
+
+          echo "=== ALL LINUX enlngf serve CONTAINMENT CHECKS PASSED ==="
+
+  build-linux-aarch64:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ARM64 Cross-Compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross file
+
+      - name: Build & Stage Linux aarch64 Static Archive
+        run: |
+          set -euo pipefail
+          PKG_ROOT="stage/enlangg-v${TOOLCHAIN_VERSION}"
+          mkdir -p "$PKG_ROOT/bin" "$PKG_ROOT/lib" "$PKG_ROOT/include"
+
+          CC_ARM="aarch64-linux-gnu-gcc"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o "$PKG_ROOT/bin/enlangg"
+          $CC_ARM -O2 -s -static -I. -Isrc enlng.c -lm -o "$PKG_ROOT/bin/enlng"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o "$PKG_ROOT/bin/enlngdb"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngf/c enlngf.c -lm -o "$PKG_ROOT/bin/enlngf"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngs/c enlngs.c -lm -o "$PKG_ROOT/bin/enlngs"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngd/c enlngd.c -lm -o "$PKG_ROOT/bin/enlngd"
+          $CC_ARM -O2 -s -static -I. -Isrc -Ienlngm/c enlngm.c -lm -o "$PKG_ROOT/bin/enlngm"
+
+          chmod 0755 "$PKG_ROOT/bin/"*
+          cp lib_math.enlng lib_strings.enlng lib_ds.enlng lib_file.enlng \
+             lib_fs.enlng lib_ml.enlng lib_net.enlng lib_db.enlng \
+             lib_concurrency.enlng lib_std.enlng lib_enlngdb.enlng "$PKG_ROOT/lib/"
+          cp src/enlng_runtime.h "$PKG_ROOT/include/"
+          cp enlng/c/enlng_mem.h "$PKG_ROOT/include/"
+          cp LICENSE README.md "$PKG_ROOT/"
+
+          tar -czf enlangg-linux-aarch64.tar.gz -C "$PKG_ROOT" .
+
+      - name: Inspect Linux aarch64 ELF Binaries (Untested on Hardware)
+        run: |
+          set -euo pipefail
+          VERIFY_DIR="/tmp/enlangg-linux-aarch64-verify"
+          rm -rf "$VERIFY_DIR"
+          mkdir -p "$VERIFY_DIR"
+          tar -xzf enlangg-linux-aarch64.tar.gz -C "$VERIFY_DIR"
+
+          echo "Inspecting ELF binary architectures (Cross-compiled; untested on physical hardware):"
+          for t in enlangg enlng enlngdb enlngf enlngd enlngs enlngm; do
+            file "$VERIFY_DIR/bin/$t" | grep -F "ARM aarch64"
+          done
+          rm -rf "$VERIFY_DIR"
+
+      - name: Upload Linux aarch64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: enlangg-linux-aarch64
+          path: enlangg-linux-aarch64.tar.gz
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Universal (arm64 + x86_64 via lipo) macOS Archive
+        run: |
+          set -euo pipefail
+          PKG_ROOT="stage/enlangg-v${TOOLCHAIN_VERSION}"
+          mkdir -p build/arm64 build/x86_64 "$PKG_ROOT/bin" "$PKG_ROOT/lib" "$PKG_ROOT/include"
+
+          for arch in arm64 x86_64; do
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o "build/$arch/enlangg"
+            clang -O2 -arch "$arch" -I. -Isrc enlng.c -lm -o "build/$arch/enlng"
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o "build/$arch/enlngdb"
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngf/c enlngf.c -lm -o "build/$arch/enlngf"
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngs/c enlngs.c -lm -o "build/$arch/enlngs"
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngd/c enlngd.c -lm -o "build/$arch/enlngd"
+            clang -O2 -arch "$arch" -I. -Isrc -Ienlngm/c enlngm.c -lm -o "build/$arch/enlngm"
+          done
+
+          for t in enlangg enlng enlngdb enlngf enlngs enlngd enlngm; do
+            lipo -create "build/arm64/$t" "build/x86_64/$t" -output "$PKG_ROOT/bin/$t"
+            chmod 0755 "$PKG_ROOT/bin/$t"
+            lipo -info "$PKG_ROOT/bin/$t"
+          done
+
+          cp lib_math.enlng lib_strings.enlng lib_ds.enlng lib_file.enlng \
+             lib_fs.enlng lib_ml.enlng lib_net.enlng lib_db.enlng \
+             lib_concurrency.enlng lib_std.enlng lib_enlngdb.enlng "$PKG_ROOT/lib/"
+          cp src/enlng_runtime.h "$PKG_ROOT/include/"
+          cp enlng/c/enlng_mem.h "$PKG_ROOT/include/"
+          cp LICENSE README.md "$PKG_ROOT/"
+
+          tar -czf enlangg-macos-universal.tar.gz -C "$PKG_ROOT" .
+
+      - name: Verify macOS Universal Archive
+        run: |
+          set -euo pipefail
+          VERIFY_DIR="/tmp/enlangg-macos-verify"
+          WORK_DIR="/tmp/enlangg-macos-work"
+          FAKE_PATH="/tmp/enlangg-macos-fakepath"
+          rm -rf "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
+          mkdir -p "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
+          tar -xzf enlangg-macos-universal.tar.gz -C "$VERIFY_DIR"
+
+          cd "$WORK_DIR"
+          unset ENLANGG_HOME
+
+          for t in enlangg enlng enlngdb enlngf enlngd enlngs enlngm; do
+            lipo -info "$VERIFY_DIR/bin/$t" | grep -E "x86_64.*arm64|arm64.*x86_64"
+            out=$("$VERIFY_DIR/bin/$t" --version)
+            echo "$t -> $out"
+            echo "$out" | grep -F "$TOOLCHAIN_VERSION"
+          done
+
+          printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > smoke.enlng
+          res=$("$VERIFY_DIR/bin/enlng" run smoke.enlng)
+          echo "smoke.enlng -> $res"
+          [ "$res" = "144" ]
+
+          # Verify sibling-first dispatch on macOS
+          printf '#!/bin/sh\necho FAKE-TOOL-FROM-PATH\nexit 42\n' > "$FAKE_PATH/enlng"
+          chmod +x "$FAKE_PATH/enlng"
+          OLD_PATH="$PATH"
+          export PATH="$FAKE_PATH:$OLD_PATH"
+          disp_res=$("$VERIFY_DIR/bin/enlangg" run smoke.enlng)
+          echo "enlangg run smoke.enlng (with fake enlng on PATH) -> $disp_res"
+          [ "$disp_res" = "144" ]
+          export PATH="$OLD_PATH"
+
+          rm -rf "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: enlangg-macos-universal
+          path: enlangg-macos-universal.tar.gz
+
+  build-source:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Source Tarball (enlangg-src.tar.gz)
+        run: |
+          set -euo pipefail
+          SRC_STAGE="stage/enlangg-src-v${TOOLCHAIN_VERSION}"
+          mkdir -p "$SRC_STAGE"
+
+          cp Makefile LICENSE README.md \
+             enlangg.c enlng.c enlngf.c enlngd.c enlngs.c enlngm.c \
+             lib_math.enlng lib_strings.enlng lib_ds.enlng lib_file.enlng \
+             lib_fs.enlng lib_ml.enlng lib_net.enlng lib_db.enlng \
+             lib_concurrency.enlng lib_std.enlng lib_enlngdb.enlng \
+             "$SRC_STAGE/"
+
+          cp -r src enlng enlngdb enlngf enlngd enlngs enlngm "$SRC_STAGE/"
+          tar -czf enlangg-src.tar.gz -C stage "enlangg-src-v${TOOLCHAIN_VERSION}"
+
+      - name: Verify Source Tarball Make Install & Uninstall
+        run: |
+          set -euo pipefail
+          TEST_ROOT="/tmp/enlangg-src-test"
+          rm -rf "$TEST_ROOT"
+          mkdir -p "$TEST_ROOT"
+          tar -xzf enlangg-src.tar.gz -C "$TEST_ROOT"
+
+          cd "$TEST_ROOT/enlangg-src-v${TOOLCHAIN_VERSION}"
+          make PREFIX="$TEST_ROOT/prefix" BINDIR="$TEST_ROOT/bin" install
+
+          unset ENLANGG_HOME
+          mkdir -p "$TEST_ROOT/work"
+          cd "$TEST_ROOT/work"
+          "$TEST_ROOT/bin/enlangg" --version | grep -F "$TOOLCHAIN_VERSION"
+          printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > smoke.enlng
+          res=$("$TEST_ROOT/bin/enlng" run smoke.enlng)
+          [ "$res" = "144" ]
+
+          cd "$TEST_ROOT/enlangg-src-v${TOOLCHAIN_VERSION}"
+          make PREFIX="$TEST_ROOT/prefix" BINDIR="$TEST_ROOT/bin" uninstall
+          [ ! -d "$TEST_ROOT/prefix" ]
+          [ ! -e "$TEST_ROOT/bin/enlangg" ]
+          rm -rf "$TEST_ROOT"
+
+      - name: Upload Source Tarball Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: enlangg-src
+          path: enlangg-src.tar.gz

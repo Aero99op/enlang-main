@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - 'toolchain-v*'
-  workflow_dispatch:
 
 permissions:
   contents: write
