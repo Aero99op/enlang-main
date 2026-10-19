@@ -44,19 +44,54 @@ function Install-EnlanggCore($targetBase, $addToPath, $associateFiles, $statusCa
 
     $binList = @("enlangg.exe", "enlng.exe", "enlngdb.exe", "enlngf.exe", "enlngd.exe", "enlngs.exe", "enlngm.exe", "enlangg-bridge.py", "enlangg-bridge.cmd")
     $scriptDir = $PSScriptRoot
-    $primaryUrl = "https://enlangg.vercel.app"
+    $hasLocal = $true
+    foreach ($b in @("enlangg.exe", "enlng.exe", "enlngdb.exe", "enlngf.exe", "enlngd.exe", "enlngs.exe", "enlngm.exe")) {
+        if (-not (Test-Path (Join-Path $scriptDir $b))) { $hasLocal = $false; break }
+    }
 
-    foreach ($b in $binList) {
-        $dest = Join-Path $binDir $b
-        $local = Join-Path $scriptDir $b
-        if (Test-Path $local) {
-            Copy-Item -Force $local $dest
-        } else {
-            try {
-                Invoke-WebRequest -Uri "$primaryUrl/$b" -OutFile $dest -UseBasicParsing -TimeoutSec 30
-            } catch {
-                Write-Warning "Could not fetch ${b}: $($_.Exception.Message)"
+    if ($hasLocal) {
+        foreach ($b in $binList) {
+            $src = Join-Path $scriptDir $b
+            if (Test-Path $src) {
+                Copy-Item -Force $src (Join-Path $binDir $b)
             }
+        }
+    } else {
+        $zipName = "enlangg-windows-amd64.zip"
+        $releaseBase = "https://github.com/Aero99op/enlang-main/releases/latest/download"
+        $tmpDir = Join-Path $env:TEMP "enlangg-install-$([guid]::NewGuid().ToString('N').Substring(0,8))"
+        New-Item -ItemType Directory -Force -Path $tmpDir | Out-Null
+        try {
+            $sumsPath = Join-Path $tmpDir "SHA256SUMS"
+            $zipPath = Join-Path $tmpDir $zipName
+            & $statusCallback "Downloading SHA256SUMS and $zipName..."
+            Invoke-WebRequest -Uri "$releaseBase/SHA256SUMS" -OutFile $sumsPath -UseBasicParsing -TimeoutSec 30
+            Invoke-WebRequest -Uri "$releaseBase/$zipName" -OutFile $zipPath -UseBasicParsing -TimeoutSec 60
+
+            $expectedSha = ""
+            Get-Content $sumsPath | ForEach-Object {
+                if ($_ -match "([a-fA-F0-9]{64})\s+.*$([regex]::Escape($zipName))") {
+                    $expectedSha = $matches[1].ToLower()
+                }
+            }
+            if (-not $expectedSha) { throw "Checksum for $zipName not found in SHA256SUMS." }
+
+            & $statusCallback "Verifying SHA-256 integrity..."
+            $actualSha = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLower()
+            if ($actualSha -ne $expectedSha) {
+                throw "SHA-256 verification failed for $zipName! Expected: $expectedSha, got: $actualSha"
+            }
+
+            & $statusCallback "Extracting verified binaries..."
+            Expand-Archive -Path $zipPath -DestinationPath $tmpDir -Force
+            foreach ($b in $binList) {
+                $src = Join-Path $tmpDir $b
+                if (Test-Path $src) {
+                    Copy-Item -Force $src (Join-Path $binDir $b)
+                }
+            }
+        } finally {
+            Remove-Item -Force -Recurse $tmpDir -ErrorAction SilentlyContinue
         }
     }
 

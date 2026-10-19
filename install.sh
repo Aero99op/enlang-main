@@ -40,7 +40,10 @@ echo "${YELLOW}>> Target Platform: $OS ($ARCH)${NC}"
 echo "${YELLOW}>> Installing 7 Sovereign Executables to: $INSTALL_DIR ...${NC}"
 
 GITHUB_REPO="Aero99op/enlang-main"
-RELEASE_URL="https://github.com/$GITHUB_REPO/releases/latest/download/enlangg-${OS}-${ARCH}.tar.gz"
+ARCHIVE_NAME="enlangg-${OS}-${ARCH}.tar.gz"
+RELEASE_BASE="https://github.com/$GITHUB_REPO/releases/latest/download"
+RELEASE_URL="$RELEASE_BASE/$ARCHIVE_NAME"
+SUMS_URL="$RELEASE_BASE/SHA256SUMS"
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo "")"
 
 CC=""
@@ -87,11 +90,46 @@ build_from_source() {
 if [ -f "$SCRIPT_DIR/enlangg.c" ] && [ -n "$CC" ]; then
     build_from_source "$SCRIPT_DIR"
 elif curl -f -s -I "$RELEASE_URL" >/dev/null 2>&1; then
-    echo "   Downloading prebuilt release archive from GitHub..."
-    TMP_TAR="/tmp/enlangg-${OS}-${ARCH}.tar.gz"
-    curl -fsSL "$RELEASE_URL" -o "$TMP_TAR"
-    tar -xzf "$TMP_TAR" -C "$INSTALL_DIR"
-    rm -f "$TMP_TAR"
+    echo "   Downloading prebuilt release archive and SHA256SUMS from GitHub..."
+    TMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t 'enlangg')"
+    if ! curl -fsSL "$SUMS_URL" -o "$TMP_DIR/SHA256SUMS"; then
+        echo "${RED}Error: Failed to download SHA256SUMS from $SUMS_URL${NC}" >&2
+        rm -rf "$TMP_DIR"
+        exit 1
+    fi
+    if ! curl -fsSL "$RELEASE_URL" -o "$TMP_DIR/$ARCHIVE_NAME"; then
+        echo "${RED}Error: Failed to download archive from $RELEASE_URL${NC}" >&2
+        rm -rf "$TMP_DIR"
+        exit 1
+    fi
+
+    EXPECTED_SHA=$(grep "[[:space:]]${ARCHIVE_NAME}$" "$TMP_DIR/SHA256SUMS" | awk '{print $1}')
+    if [ -z "$EXPECTED_SHA" ]; then
+        echo "${RED}Error: Could not locate checksum for $ARCHIVE_NAME in SHA256SUMS.${NC}" >&2
+        rm -rf "$TMP_DIR"
+        exit 1
+    fi
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        ACTUAL_SHA=$(sha256sum "$TMP_DIR/$ARCHIVE_NAME" | awk '{print $1}')
+    elif command -v shasum >/dev/null 2>&1; then
+        ACTUAL_SHA=$(shasum -a 256 "$TMP_DIR/$ARCHIVE_NAME" | awk '{print $1}')
+    else
+        echo "${RED}Error: Neither sha256sum nor shasum is available for verification.${NC}" >&2
+        rm -rf "$TMP_DIR"
+        exit 1
+    fi
+
+    if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+        echo "${RED}Error: SHA-256 verification failed!${NC}" >&2
+        echo "  Expected: $EXPECTED_SHA" >&2
+        echo "  Actual:   $ACTUAL_SHA" >&2
+        rm -rf "$TMP_DIR"
+        exit 1
+    fi
+    echo "   ✔ Verified SHA-256: $ACTUAL_SHA"
+    tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$INSTALL_DIR"
+    rm -rf "$TMP_DIR"
 elif [ -n "$CC" ] && command -v git >/dev/null 2>&1; then
     echo "   Cloning official repository to build from source..."
     TMP_CLONE="/tmp/enlang-build-$$"

@@ -204,7 +204,12 @@ class EnlangBridgeHandler(http.server.SimpleHTTPRequestHandler):
     def send_error_json(self, status_code, message):
         self.send_response(status_code)
         self.send_header("Content-Type", "application/json")
-        body = json.dumps({"success": False, "error": message}).encode("utf-8")
+        body = json.dumps({
+            "success": False,
+            "error": message,
+            "statusCode": status_code,
+            "executor": "Native Bridge"
+        }).encode("utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)

@@ -1447,7 +1447,11 @@ screen WalletHome:
           const fmt = typeof formatTerminalErrorHtml === 'function' ? formatTerminalErrorHtml : (window.formatTerminalErrorHtml || ((x) => `<span class="term-err">${escapeHtml(x)}</span>`));
           appendTerminal(fmt(result.output || result.error));
         }
-        appendTerminal(`<span class="term-warn">⚠ [${escapeHtml(result.executor)}] Exited with code ${result.exitCode} (${result.timeMs || elapsed}ms)</span>`);
+        if (result.exitCode !== undefined && result.exitCode !== null) {
+          appendTerminal(`<span class="term-warn">⚠ [${escapeHtml(result.executor || 'Native')}] Exited with code ${result.exitCode} (${result.timeMs || elapsed}ms)</span>`);
+        } else {
+          appendTerminal(`<span class="term-warn">⚠ [${escapeHtml(result.executor || 'Native Bridge')}] Request failed (${res.status}${res.statusText ? ' ' + res.statusText : ''}) (${result.timeMs || elapsed}ms)</span>`);
+        }
       }
       return result;
     } catch (e) {

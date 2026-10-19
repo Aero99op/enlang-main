@@ -34,14 +34,42 @@ if exist "%~dp0enlangg.exe" (
     )
 )
 
-echo   Downloading sovereign production binaries...
-for %%B in (enlangg.exe enlng.exe enlngdb.exe enlngf.exe enlngd.exe enlngs.exe enlngm.exe) do (
-    curl -fsSL "%PRIMARY_URL%/%%B" -o "%INSTALL_DIR%\%%B"
-    if !errorlevel! neq 0 (
-        echo [WARNING] Could not fetch %%B from remote, checking local fallback...
-        if exist "%~dp0%%B" copy /y "%~dp0%%B" "%INSTALL_DIR%\%%B" >nul
-    )
+echo   Downloading prebuilt release archive and SHA256SUMS from GitHub...
+set "RELEASE_BASE=https://github.com/Aero99op/enlang-main/releases/latest/download"
+set "ARCHIVE=enlangg-windows-amd64.zip"
+set "TMP_DIR=%TEMP%\enlangg_install_%RANDOM%"
+mkdir "%TMP_DIR%" >nul 2>&1
+
+curl -fsSL "%RELEASE_BASE%/SHA256SUMS" -o "%TMP_DIR%\SHA256SUMS"
+if !errorlevel! neq 0 (
+    echo [ERROR] Failed to download SHA256SUMS from %RELEASE_BASE%.
+    rmdir /s /q "%TMP_DIR%"
+    exit /b 1
 )
+
+curl -fsSL "%RELEASE_BASE%/%ARCHIVE%" -o "%TMP_DIR%\%ARCHIVE%"
+if !errorlevel! neq 0 (
+    echo [ERROR] Failed to download %ARCHIVE% from %RELEASE_BASE%.
+    rmdir /s /q "%TMP_DIR%"
+    exit /b 1
+)
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$exp = (Get-Content '%TMP_DIR%\SHA256SUMS' | Select-String '%ARCHIVE%').Line.Split()[0].ToLower(); " ^
+  "$act = (Get-FileHash '%TMP_DIR%\%ARCHIVE%' -Algorithm SHA256).Hash.ToLower(); " ^
+  "if (-not $exp -or $exp -ne $act) { Write-Error ('Checksum mismatch: exp=' + $exp + ' act=' + $act); exit 1 }"
+if !errorlevel! neq 0 (
+    echo [ERROR] SHA-256 verification failed for %ARCHIVE%!
+    rmdir /s /q "%TMP_DIR%"
+    exit /b 1
+)
+echo   [OK] SHA-256 verified successfully.
+
+powershell -NoProfile -Command "Expand-Archive -Path '%TMP_DIR%\%ARCHIVE%' -DestinationPath '%TMP_DIR%\out' -Force"
+for %%B in (enlangg.exe enlng.exe enlngdb.exe enlngf.exe enlngd.exe enlngs.exe enlngm.exe enlangg-bridge.py enlangg-bridge.cmd) do (
+    if exist "%TMP_DIR%\out\%%B" copy /y "%TMP_DIR%\out\%%B" "%INSTALL_DIR%\%%B" >nul
+)
+rmdir /s /q "%TMP_DIR%"
 
 :after_copy
 

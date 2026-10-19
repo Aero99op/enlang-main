@@ -1606,7 +1606,11 @@ function initPlayground() {
         if (result.output || result.error) {
           output += formatTerminalErrorHtml(result.output || result.error) + '\n';
         }
-        output += `<span class="term-warn">⚠ [${escapeHtml(result.executor || 'Native')}] Exited with code ${result.exitCode} (${result.timeMs || result.executionTimeMs || elapsed}ms)</span>`;
+        if (result.exitCode !== undefined && result.exitCode !== null) {
+          output += `<span class="term-warn">⚠ [${escapeHtml(result.executor || 'Native')}] Exited with code ${result.exitCode} (${result.timeMs || result.executionTimeMs || elapsed}ms)</span>`;
+        } else {
+          output += `<span class="term-warn">⚠ [${escapeHtml(result.executor || 'Native Bridge')}] Request failed (${res.status}${res.statusText ? ' ' + res.statusText : ''}) (${result.timeMs || result.executionTimeMs || elapsed}ms)</span>`;
+        }
         terminal.innerHTML = output;
       }
       return true;
