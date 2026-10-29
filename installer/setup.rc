@@ -1,0 +1,3 @@
+1 24 "setup.manifest"
+1 ICON "../desktop/icon.ico"
+PAYLOAD RCDATA "payload.bin"
