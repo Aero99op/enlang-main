@@ -490,4 +490,12 @@ jobs:
 
       - name: Test Windows Setup (silent install, upgrade, uninstall)
         shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests\test_installer.ps1
+        run: |
+          $out = powershell -NoProfile -ExecutionPolicy Bypass -File tests\test_installer.ps1 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $out
+          if ($code -ne 0) {
+            $tail = $out.Substring([Math]::Max(0, $out.Length - 3000)) -replace "`r", "" -replace "`n", "%0A"
+            Write-Host "::error title=Setup test failed::$tail"
+            exit 1
+          }
