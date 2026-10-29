@@ -221,10 +221,15 @@ static int user_path_edit(const wchar_t *bindir, int add) {
     wchar_t *res = (wchar_t *)calloc(cap, sizeof(wchar_t));
     if (add) { wcscpy(res, bindir); }
     wchar_t *copy = _wcsdup(old);
-    for (wchar_t *tok = wcstok(copy, L";"); tok; tok = wcstok(NULL, L";")) {
-        if (!*tok || same_entry(tok, bindir)) continue;
-        if (*res) wcscat(res, L";");
-        wcscat(res, tok);
+    /* split on ';' by hand: wcstok's signature differs between MinGW versions */
+    for (wchar_t *tok = copy; tok; ) {
+        wchar_t *semi = wcschr(tok, L';');
+        if (semi) *semi = 0;
+        if (*tok && !same_entry(tok, bindir)) {
+            if (*res) wcscat(res, L";");
+            wcscat(res, tok);
+        }
+        tok = semi ? semi + 1 : NULL;
     }
     free(copy);
     int ok = RegSetValueExW(k, L"Path", 0, type, (const BYTE *)res, (DWORD)((wcslen(res) + 1) * sizeof(wchar_t))) == ERROR_SUCCESS;
