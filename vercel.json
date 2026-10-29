@@ -9,7 +9,7 @@
   "redirects": [
     {
       "source": "/enlangg-setup.exe",
-      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.4.0/enlangg-setup.exe",
+      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.4.1/enlangg-setup.exe",
       "permanent": false
     },
     {
