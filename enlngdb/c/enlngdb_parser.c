@@ -757,6 +757,16 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
             return false;
         }
 
+        if (!filter_col[0] && !confirmed) {
+            enlng_free_val(&target_val);
+            if (print_output) {
+                printf("REFUSED: 'delete from %s' with no 'where' would remove every row.\n", tbl_name);
+                printf("         Nothing was deleted. To go ahead, add the word 'confirmed':\n");
+                printf("         delete all from %s confirmed;\n\n", tbl_name);
+            }
+            return false;
+        }
+
         int del_cnt = enlngdb_delete(tbl, filter_col[0] ? filter_col : NULL, op, &target_val, filter_col[0] ? true : confirmed);
         enlng_free_val(&target_val);
         if (print_output) {
@@ -770,6 +780,14 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         char tbl_name[64];
         bool confirmed = (strstr(stmt, " confirmed") != NULL || strstr(stmt, " CONFIRMED") != NULL);
         if (sscanf(stmt + 11, "%63s", tbl_name) == 1) {
+            if (!confirmed && enlngdb_get_table(db, tbl_name)) {
+                if (print_output) {
+                    printf("REFUSED: dropping table '%s' deletes the table and all its rows.\n", tbl_name);
+                    printf("         Nothing was changed. To go ahead, add the word 'confirmed':\n");
+                    printf("         drop table %s confirmed;\n\n", tbl_name);
+                }
+                return false;
+            }
             bool ok = enlngdb_drop_table(db, tbl_name, confirmed);
             if (ok && print_output) {
                 printf("Query OK, table '%s' dropped successfully. (0.02 ms)\n\n", tbl_name);
