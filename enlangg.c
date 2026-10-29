@@ -92,6 +92,61 @@ static void get_executable_dir(char* outPath, size_t maxLen) {
     }
 }
 
+/* Opens the installed Enlangg Studio (optionally on a file). A source checkout with
+ * desktop/ next to the binaries falls back to `npx electron` for development. */
+#define STUDIO_BUF 1024
+static int launch_studio(const char* openPath) {
+    char studio[STUDIO_BUF];
+    studio[0] = '\0';
+#ifdef _WIN32
+    const char* local = getenv("LOCALAPPDATA");
+    if (local && *local) {
+        snprintf(studio, sizeof(studio), "%s\\Programs\\Enlangg Studio\\Enlangg Studio.exe", local);
+        if (GetFileAttributesA(studio) == INVALID_FILE_ATTRIBUTES) studio[0] = '\0';
+    }
+    if (studio[0]) {
+        char cmd[STUDIO_BUF * 2];
+        if (openPath) snprintf(cmd, sizeof(cmd), "\"%s\" \"%s\"", studio, openPath);
+        else snprintf(cmd, sizeof(cmd), "\"%s\"", studio);
+        STARTUPINFOA si;
+        PROCESS_INFORMATION pi;
+        ZeroMemory(&si, sizeof(si));
+        si.cb = sizeof(si);
+        if (CreateProcessA(NULL, cmd, NULL, NULL, FALSE, DETACHED_PROCESS, NULL, NULL, &si, &pi)) {
+            CloseHandle(pi.hProcess);
+            CloseHandle(pi.hThread);
+            return 0;
+        }
+        fprintf(stderr, "[ERROR] Could not start %s\n", studio);
+        return 1;
+    }
+#elif defined(__APPLE__)
+    if (access("/Applications/Enlangg Studio.app", F_OK) == 0) {
+        char cmd[STUDIO_BUF * 2];
+        if (openPath) snprintf(cmd, sizeof(cmd), "open -a \"Enlangg Studio\" \"%s\"", openPath);
+        else snprintf(cmd, sizeof(cmd), "open -a \"Enlangg Studio\"");
+        return system(cmd) != 0 ? 1 : 0;
+    }
+#endif
+    char exeDir[STUDIO_BUF], pkg[STUDIO_BUF * 2];
+    get_executable_dir(exeDir, sizeof(exeDir));
+    snprintf(pkg, sizeof(pkg), "%s%cdesktop%cpackage.json", exeDir, ENLANGG_PATH_SEP, ENLANGG_PATH_SEP);
+    FILE* f = fopen(pkg, "rb");
+    if (f) {
+        fclose(f);
+        char cmd[STUDIO_BUF * 2];
+        printf("[ENLANGG] Starting Studio from source checkout (needs Node.js)...\n");
+#ifdef _WIN32
+        snprintf(cmd, sizeof(cmd), "cmd /c \"cd /d \"%s\\desktop\" && npx electron .\"", exeDir);
+#else
+        snprintf(cmd, sizeof(cmd), "sh -c \"cd '%s/desktop' && npx electron .\"", exeDir);
+#endif
+        return system(cmd) != 0 ? 1 : 0;
+    }
+    fprintf(stderr, "Enlangg Studio is not installed.\nDownload it from https://enlangg.site (it is a separate installer).\n");
+    return 1;
+}
+
 static void get_system_temp_dir(char* outDir, size_t maxLen) {
 #ifdef _WIN32
     GetTempPathA((DWORD)maxLen, outDir);
@@ -818,17 +873,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (strcmp(argv[1], "studio") == 0 || strcmp(argv[1], "ide") == 0) {
-        printf("[ENLANGG] Starting Sovereign Desktop Studio (Electron)...\n");
-        char exePath[MAX_PATH];
-        get_executable_dir(exePath, sizeof(exePath));
-
-        char cmd[2048];
-#ifdef _WIN32
-        snprintf(cmd, sizeof(cmd), "cmd /c \"cd /d \"%s\\desktop\" && npx electron .\"", exePath);
-#else
-        snprintf(cmd, sizeof(cmd), "sh -c \"cd '%s/desktop' && npx electron .\"", exePath);
-#endif
-        return system(cmd) != 0 ? 1 : 0;
+        return launch_studio(argc >= 3 ? argv[2] : NULL);
     }
 
     if (strcmp(argv[1], "fmt") == 0 || strcmp(argv[1], "format") == 0) {

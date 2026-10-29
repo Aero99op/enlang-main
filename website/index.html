@@ -145,7 +145,7 @@
               </div>
             </div>
             <div style="margin-top: 8px; font-size: 0.76rem; color: var(--text-muted); text-align: center;">
-              Looking for terminal toolchain? <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald); text-decoration: underline;">Download CLI Suite (670 KB)</a> · <a href="https://github.com/Aero99op/enlang-main/raw/main/website/enlangg-studio-setup.exe" target="_blank" rel="noopener" style="color: var(--accent-emerald); text-decoration: underline;">GitHub Mirror</a> · <a href="install.html" style="color: var(--accent-emerald); text-decoration: underline;">All Platforms</a>
+              Looking for terminal toolchain? <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald); text-decoration: underline;">Download CLI Suite</a> · <a href="https://github.com/Aero99op/enlang-main/releases/download/v5.0.1/Enlangg-Studio-Setup-5.0.1.exe" target="_blank" rel="noopener" style="color: var(--accent-emerald); text-decoration: underline;">GitHub Mirror</a> · <a href="install.html" style="color: var(--accent-emerald); text-decoration: underline;">All Platforms</a>
             </div>
           </div>
 
@@ -158,11 +158,10 @@
                 <span class="dot dot-green"></span>
               </div>
               <div class="os-tabs">
-                <button type="button" class="os-tab active" data-os="powershell">PowerShell</button>
-                <button type="button" class="os-tab" data-os="cmd">CMD</button>
-                <button type="button" class="os-tab" data-os="bash">Bash / zsh</button>
+                <button type="button" class="os-tab active" data-os="check">After Setup</button>
+                <button type="button" class="os-tab" data-os="run">Run a File</button>
+                <button type="button" class="os-tab" data-os="source">Build from Source</button>
                 <button type="button" class="os-tab" data-os="enlngdb">EnlngDB CLI</button>
-                <button type="button" class="os-tab" data-os="pip">Python PIP</button>
               </div>
               <button type="button" class="copy-btn" id="copyInstallerBtn" title="Copy command">
                 <svg class="copy-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
@@ -174,7 +173,7 @@
             </div>
             <div class="installer-body">
               <span class="prompt-symbol">$</span>
-              <code id="installerCode">powershell -ExecutionPolicy ByPass -c "irm https://enlangg.vercel.app/install.ps1 | iex"</code>
+              <code id="installerCode">enlangg --version</code>
             </div>
             <div class="installer-features">
               <span class="feature-item">
@@ -745,33 +744,32 @@ else:
         <div class="section-heading">
           <div class="section-kicker">Developer Toolchain</div>
           <h2 class="section-title">Terminal Commands & Quickstart Matrix</h2>
-          <p class="section-desc">Instant 1-click terminal commands to install, compile, query the database, or build native binaries across Windows, Linux, and macOS.</p>
+          <p class="section-desc">Terminal commands to install, compile, query the database, or build native binaries across Windows, Linux, and macOS.</p>
         </div>
 
         <div class="cli-matrix-grid">
-          <!-- Card 1: 1-Liner Install -->
+          <!-- Card 1: Windows installer -->
           <div class="cli-card">
             <div class="cli-card-header">
               <div class="cli-card-tag cli-tag-install">INSTALLATION</div>
-              <button type="button" class="copy-code-btn terminal-btn" data-copy="powershell -ExecutionPolicy ByPass -c &quot;irm https://enlangg.vercel.app/install.ps1 | iex&quot;">Copy</button>
             </div>
-            <h4 class="cli-card-title">Windows 1-Liner Terminal Install</h4>
-            <p class="cli-card-desc">Installs the complete 7-in-1 Sovereign Suite directly into PATH without admin privileges.</p>
+            <h4 class="cli-card-title">Windows Installer</h4>
+            <p class="cli-card-desc">Installs the 7-in-1 toolchain for your user account (no admin rights), updates PATH, and can add Enlangg Studio. Needs gcc (MinGW-w64 or MSYS2).</p>
             <div class="cli-code-block">
-              <code>powershell -ExecutionPolicy ByPass -c "irm https://enlangg.vercel.app/install.ps1 | iex"</code>
+              <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Download enlangg-setup.exe</a>
             </div>
           </div>
 
-          <!-- Card 2: Linux / macOS Install -->
+          <!-- Card 2: Linux / macOS from source -->
           <div class="cli-card">
             <div class="cli-card-header">
               <div class="cli-card-tag cli-tag-unix">BASH / ZSH</div>
-              <button type="button" class="copy-code-btn terminal-btn" data-copy="curl -fsSL https://enlangg.vercel.app/install.sh | bash">Copy</button>
+              <button type="button" class="copy-code-btn terminal-btn" data-copy="git clone https://github.com/Aero99op/enlang-main.git &amp;&amp; cd enlang-main &amp;&amp; make &amp;&amp; sudo make install">Copy</button>
             </div>
-            <h4 class="cli-card-title">Linux & macOS Universal Install</h4>
-            <p class="cli-card-desc">Automated curl installer that compiles the native C runtime and configures your shell.</p>
+            <h4 class="cli-card-title">Linux &amp; macOS: Build from Source</h4>
+            <p class="cli-card-desc">No prebuilt package yet. Needs a C compiler and make.</p>
             <div class="cli-code-block">
-              <code>curl -fsSL https://enlangg.vercel.app/install.sh | bash</code>
+              <code>git clone https://github.com/Aero99op/enlang-main.git &amp;&amp; cd enlang-main &amp;&amp; make &amp;&amp; sudo make install</code>
             </div>
           </div>
 

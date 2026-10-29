@@ -20,11 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- 1. Multi-OS Installer Tabs & Clipboard Copy ---
 const INSTALL_COMMANDS = {
-  powershell: 'powershell -ExecutionPolicy ByPass -c "irm https://enlangg.vercel.app/install.ps1 | iex"',
-  cmd: 'curl -fsSL https://enlangg.vercel.app/install.cmd -o install.cmd && install.cmd',
-  bash: 'curl -fsSL https://enlangg.vercel.app/install.sh | bash',
-  enlngdb: 'enlngdb run my_store.enlngdb --interactive',
-  pip: 'pip install enlang'
+  check: 'enlangg --version',
+  run: 'enlangg run hello.enlng',
+  source: 'git clone https://github.com/Aero99op/enlang-main.git && cd enlang-main && make && sudo make install',
+  enlngdb: 'enlngdb run my_store.enlngdb --interactive'
 };
 
 function initInstallerTabs() {

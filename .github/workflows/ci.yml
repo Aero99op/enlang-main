@@ -470,3 +470,17 @@ jobs:
         with:
           name: enlangg-src
           path: enlangg-src.tar.gz
+
+  build-windows-setup:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Windows Setup (enlangg-setup.exe)
+        shell: cmd
+        run: installer\build_installer.cmd
+
+      - name: Test Windows Setup (silent install, upgrade, uninstall)
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests\test_installer.ps1

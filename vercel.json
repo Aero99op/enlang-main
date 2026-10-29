@@ -8,6 +8,11 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/enlangg-setup.exe",
+      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.4.0/enlangg-setup.exe",
+      "permanent": false
+    },
+    {
       "source": "/enlangg-studio-setup.exe",
       "destination": "https://github.com/Aero99op/enlang-main/releases/download/v5.0.1/Enlangg-Studio-Setup-5.0.1.exe",
       "permanent": false

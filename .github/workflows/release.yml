@@ -89,6 +89,20 @@ jobs:
           name: enlangg-windows-x86_64
           path: enlangg-windows-x86_64.zip
 
+      - name: Build Windows Setup (enlangg-setup.exe)
+        shell: cmd
+        run: installer\build_installer.cmd
+
+      - name: Test Windows Setup (silent install, upgrade, uninstall)
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests\test_installer.ps1
+
+      - name: Upload Windows Setup Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: enlangg-setup
+          path: installer/enlangg-setup.exe
+
   build-linux-x86_64:
     runs-on: ubuntu-22.04
     steps:
@@ -483,6 +497,7 @@ jobs:
       - name: Generate SHA256SUMS
         run: |
           sha256sum \
+            enlangg-setup.exe \
             enlangg-windows-x86_64.zip \
             enlangg-linux-x86_64.tar.gz \
             enlangg-linux-aarch64.tar.gz \
@@ -509,6 +524,7 @@ jobs:
             - `enlngd` — Design token & CSS compiler
             - `enlngm` — Mobile & desktop preview compiler
           files: |
+            enlangg-setup.exe
             enlangg-windows-x86_64.zip
             enlangg-linux-x86_64.tar.gz
             enlangg-linux-aarch64.tar.gz

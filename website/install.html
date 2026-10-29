@@ -499,7 +499,7 @@
           </div>
           <div class="hero-feat-item">
             <span class="hero-feat-check">✓</span>
-            <span>Zero Node.js, Python, or GCC Required</span>
+            <span>No Node.js or Python required (compiling .enlng needs gcc)</span>
           </div>
         </div>
       </div>
@@ -526,7 +526,7 @@
 
         <div class="install-alt-links">
           <span>Mirrors:</span>
-          <a href="https://github.com/Aero99op/enlang-main/raw/main/website/enlangg-studio-setup.exe" target="_blank" rel="noopener" class="install-alt-link" title="Download via GitHub Global Edge CDN">
+          <a href="https://github.com/Aero99op/enlang-main/releases/download/v5.0.1/Enlangg-Studio-Setup-5.0.1.exe" target="_blank" rel="noopener" class="install-alt-link" title="Download via GitHub Global Edge CDN">
             <span>GitHub CDN Mirror (78.8 MB)</span>
             <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
           </a>
@@ -570,7 +570,7 @@
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
               <span>Download Setup (.exe)</span>
             </a>
-            <a href="https://github.com/Aero99op/enlang-main/raw/main/website/enlangg-studio-setup.exe" target="_blank" rel="noopener" class="btn btn-secondary" title="GitHub CDN Fallback Mirror">
+            <a href="https://github.com/Aero99op/enlang-main/releases/download/v5.0.1/Enlangg-Studio-Setup-5.0.1.exe" target="_blank" rel="noopener" class="btn btn-secondary" title="GitHub CDN Fallback Mirror">
               <span>Mirror ↗</span>
             </a>
           </div>
@@ -581,44 +581,21 @@
           <span class="install-card-tag">Lightweight Terminal Toolchain</span>
           <h3 class="install-card-title">All-in-One CLI Suite</h3>
           <p class="install-card-desc">
-            Ultra-compact installer that places the 7 domain compilers (<code>enlng</code>, <code>enlngdb</code>, <code>enlngf</code>, <code>enlngd</code>, <code>enlngs</code>, <code>enlngm</code>, <code>enlangg</code>) into <code>%USERPROFILE%\.enlangg\bin</code> and updates your Windows PATH.
+            Ultra-compact installer that places the 7 domain compilers (<code>enlng</code>, <code>enlngdb</code>, <code>enlngf</code>, <code>enlngd</code>, <code>enlngs</code>, <code>enlngm</code>, <code>enlangg</code>) into <code>%LOCALAPPDATA%\Programs\Enlangg</code> for your user account (no administrator rights), adds them to your PATH and can also fetch Enlangg Studio. The compilers need <code>gcc</code> (MinGW-w64 or MSYS2) installed separately; Setup tells you if it is missing.
           </p>
           <div class="install-specs-box">
             Package: enlangg-setup.exe<br>
-            Payload: Pure C Native Executables (670 KB)<br>
-            Features: Auto PATH Configuration, Zero Python Required
+            Payload: 7 pure C executables, standard library and headers (about 1 MB)<br>
+            Features: per-user install, PATH, uninstaller, optional Studio download (checksum-verified)
           </div>
           <div class="install-btn-group">
             <a href="enlangg-setup.exe" download="enlangg-setup.exe" class="btn btn-primary" style="flex:1; justify-content:center;">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
               <span>Download CLI (.exe)</span>
             </a>
-            <a href="https://github.com/Aero99op/enlang-main/raw/main/website/enlangg-setup.exe" target="_blank" rel="noopener" class="btn btn-secondary" title="GitHub CDN Fallback Mirror">
+            <a href="https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.4.0/enlangg-setup.exe" target="_blank" rel="noopener" class="btn btn-secondary" title="GitHub CDN Fallback Mirror">
               <span>Mirror ↗</span>
             </a>
-          </div>
-        </div>
-
-        <!-- Option 3: PowerShell Script -->
-        <div class="install-card">
-          <span class="install-card-tag">Automated Terminal One-Liner</span>
-          <h3 class="install-card-title">PowerShell &amp; CMD Install</h3>
-          <p class="install-card-desc">
-            Run this command in any standard PowerShell or CMD window. It fetches the latest binary, creates local directories, and automatically updates your shell PATH.
-          </p>
-          <div class="code-block-card">
-            <div class="code-block-header">
-              <span>PowerShell (Run as User)</span>
-              <button type="button" class="copy-code-btn terminal-btn" data-target="psCmd">Copy</button>
-            </div>
-            <div class="code-block-body" id="psCmd" style="font-size:0.76rem;padding:12px;">powershell -ExecutionPolicy ByPass -c "irm https://enlangg.vercel.app/install.ps1 | iex"</div>
-          </div>
-          <div class="code-block-card">
-            <div class="code-block-header">
-              <span>Command Prompt (CMD)</span>
-              <button type="button" class="copy-code-btn terminal-btn" data-target="cmdOneLiner">Copy</button>
-            </div>
-            <div class="code-block-body" id="cmdOneLiner" style="font-size:0.76rem;padding:12px;">curl -fsSL https://enlangg.vercel.app/install.cmd -o install.cmd &amp;&amp; install.cmd</div>
           </div>
         </div>
 
@@ -635,16 +612,16 @@
 
         <div class="code-block-card" style="margin-bottom: 12px;">
           <div class="code-block-header">
-            <span>Terminal (zsh / bash)</span>
+            <span>Build from source (Terminal)</span>
             <button type="button" class="copy-code-btn terminal-btn" data-target="macScript">Copy</button>
           </div>
-          <div class="code-block-body" id="macScript">curl -fsSL https://enlangg.vercel.app/install.sh | bash</div>
+          <div class="code-block-body" id="macScript">git clone https://github.com/Aero99op/enlang-main.git &amp;&amp; cd enlang-main &amp;&amp; make &amp;&amp; sudo make install</div>
         </div>
 
         <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0;">
-          This script automatically installs the binaries into <code>~/.enlangg/bin</code> and adds the export path to your <code>~/.zshrc</code> and <code>~/.bash_profile</code>. Requires standard Xcode Command Line Tools (<code>xcode-select --install</code>).
+          A ready-made macOS installer is not available yet. Building from source installs to <code>/usr/local/enlangg</code> and links the tools into <code>/usr/local/bin</code>. Requires Xcode Command Line Tools (<code>xcode-select --install</code>). The macOS build is checked in CI, but has not been tested on every macOS version.
         </p>
-      </div>
+            </div>
     </section>
 
     <!-- ==================== PLATFORM: LINUX ==================== -->
@@ -652,16 +629,19 @@
       <div class="install-card">
         <h3 class="install-card-title">Linux Distribution Packages</h3>
         <p class="install-card-desc">
-          Install Enlangg on any modern Linux distribution using the universal installer script:
+          Install Enlangg on a modern Linux distribution by building it from source:
         </p>
 
         <div class="code-block-card" style="margin-bottom: 16px;">
           <div class="code-block-header">
-            <span>Universal Linux Curl Command</span>
+            <span>Build from source</span>
             <button type="button" class="copy-code-btn terminal-btn" data-target="linuxScript">Copy</button>
           </div>
-          <div class="code-block-body" id="linuxScript">curl -fsSL https://enlangg.vercel.app/install.sh | bash</div>
+          <div class="code-block-body" id="linuxScript">git clone https://github.com/Aero99op/enlang-main.git &amp;&amp; cd enlang-main &amp;&amp; make &amp;&amp; sudo make install</div>
         </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px;">
+          No prebuilt Linux package yet. The source build is tested in CI on Linux x86_64 and cross-built for aarch64. Install the prerequisites below first.
+        </p>
 
         <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">Package Manager Prerequisites:</h4>
         <div class="table-responsive">
@@ -746,13 +726,11 @@ enlang --version</div>
           </div>
           <div class="code-block-body" id="dockerSnippet" style="font-size: 0.8rem;">FROM alpine:latest
 
-# Install lightweight C build toolchain
-RUN apk add --no-cache gcc musl-dev curl bash
+# Install a C build toolchain and git
+RUN apk add --no-cache gcc musl-dev make git
 
-# Install Enlangg Sovereign Toolchain
-RUN curl -fsSL https://enlangg.vercel.app/install.sh | bash
-
-ENV PATH="/root/.enlangg/bin:${PATH}"
+# Build and install the Enlangg toolchain from source
+RUN git clone --depth 1 https://github.com/Aero99op/enlang-main.git /tmp/enlangg  && make -C /tmp/enlangg && make -C /tmp/enlangg install PREFIX=/opt/enlangg BINDIR=/usr/local/bin  && rm -rf /tmp/enlangg
 
 WORKDIR /app
 COPY . /app
@@ -768,30 +746,23 @@ CMD ["/app/service"]</div>
     <!-- ==================== PLATFORM: SOURCE ==================== -->
     <section class="install-platform-section" id="platform-source" style="display: none; margin-bottom: 32px;">
       <div class="install-card">
-        <h3 class="install-card-title">Zero-Dependency Source Compilation</h3>
+        <h3 class="install-card-title">Build from Source</h3>
         <p class="install-card-desc">
-          The Enlangg compiler core is distributed as an independent, single-file ISO C99 source file. You can bootstrap and compile it on any architecture in seconds using standard GCC, Clang, or MSVC:
+          The toolchain is plain C99 and builds with GCC or Clang using <code>make</code>. On Windows use MinGW-w64 or MSYS2 and run <code>installeruild_installer.cmd</code> to produce the Setup program.
         </p>
 
         <div class="code-block-card" style="margin-bottom: 16px;">
           <div class="code-block-header">
-            <span>Direct Bootstrap Command</span>
+            <span>Build and install</span>
             <button type="button" class="copy-code-btn terminal-btn" data-target="srcCmd">Copy</button>
           </div>
-          <div class="code-block-body" id="srcCmd" style="font-size: 0.8rem;"># Download canonical compiler source
-curl -fsSL https://enlangg.vercel.app/enlng.c -o enlng.c
+          <div class="code-block-body" id="srcCmd" style="font-size: 0.8rem;">git clone https://github.com/Aero99op/enlang-main.git
+cd enlang-main
+make
+sudo make install
 
-# Compile with maximum optimization
-gcc -O3 enlng.c -o enlng
-
-# Verify binary
-./enlng --version</div>
-        </div>
-
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-          <a href="enlng.c" download class="btn btn-secondary">Download enlng.c (Compiler Core)</a>
-          <a href="enlangg.c" download class="btn btn-secondary">Download enlangg.c (Universal Runtime &amp; DB)</a>
-          <a href="enlngdb.exe" download class="btn btn-secondary" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">Download enlngdb.exe (Pure C DB Engine)</a>
+# Verify
+enlangg --version</div>
         </div>
       </div>
     </section>
@@ -865,14 +836,14 @@ gcc -O3 enlng.c -o enlng
           <tr>
             <td><strong>Download Size</strong></td>
             <td>78.8 MB</td>
-            <td>670 KB</td>
+            <td>about 1 MB</td>
             <td>~1.2 MB</td>
             <td>~68 KB</td>
           </tr>
           <tr>
             <td><strong>Dependencies</strong></td>
             <td>None (100% Offline)</td>
-            <td>None (Pure C Native)</td>
+            <td>gcc (MinGW-w64 or MSYS2) to compile .enlng</td>
             <td>Python 3.8+</td>
             <td>GCC, Clang, or MSVC</td>
           </tr>
@@ -894,10 +865,10 @@ gcc -O3 enlng.c -o enlng
         </div>
       </div>
       <div class="checksum-item">
-        <span class="checksum-label">Enlangg CLI Suite (enlangg-setup.exe · 670 KB)</span>
+        <span class="checksum-label">Enlangg CLI Suite (enlangg-setup.exe)</span>
         <div class="checksum-hash">
-          <span>0e287cc5199d2dbef1e8551deda65fc86de358651586346e817c49f3593043fd</span>
-          <button type="button" class="copy-code-btn terminal-btn" data-copy="0e287cc5199d2dbef1e8551deda65fc86de358651586346e817c49f3593043fd">Copy</button>
+          <span>674dec3645201349d86cde7d3a8feeefab6daff3776d700f16fee1578e6c1199</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-copy="674dec3645201349d86cde7d3a8feeefab6daff3776d700f16fee1578e6c1199">Copy</button>
         </div>
       </div>
     </div>
@@ -915,15 +886,15 @@ gcc -O3 enlng.c -o enlng
         </div>
         <div class="code-block-body" style="font-size: 0.78rem;"># Check universal toolchain master dispatcher
 $ enlangg --version
-enlangg version 5.0.0-sovereign-universal (Sovereign General Purpose)
+enlangg version 5.4.0
 
 # Check core compiler
 $ enlng --version
-enlng version 4.0.0-sovereign-native (Native C99)
+enlng version 5.4.0 (Native C99)
 
 # Check native pure C microsecond database engine
 $ enlngdb --version
-enlngdb version 2.0.0-pure-c-native (Pure C Microsecond Database Engine)</div>
+enlngdb version 5.4.0</div>
       </div>
 
       <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 12px;">Frequently Asked Questions &amp; Troubleshooting</h3>
