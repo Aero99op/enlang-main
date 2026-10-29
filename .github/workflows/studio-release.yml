@@ -1,0 +1,67 @@
+name: Release Enlangg Studio
+
+on:
+  push:
+    tags:
+      - 'studio-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check tag matches desktop/package.json version
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $tag = "${{ github.ref_name }}" -replace '^studio-v', ''
+          $pkg = (Get-Content desktop\package.json -Raw | ConvertFrom-Json).version
+          if ($tag -ne $pkg) { throw "Tag version $tag does not match desktop/package.json version $pkg" }
+          "STUDIO_VERSION=$pkg" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build Studio installer (unsigned)
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist
+
+      - name: Stage release files and checksum
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $src = "dist-desktop\Enlangg Studio-Setup-$env:STUDIO_VERSION.exe"
+          if (-not (Test-Path $src)) { Get-ChildItem dist-desktop | Out-Host; throw "Installer not found: $src" }
+          New-Item -ItemType Directory -Force release | Out-Null
+          $dest = "release\Enlangg-Studio-Setup-$env:STUDIO_VERSION.exe"
+          Copy-Item $src $dest
+          $hash = (Get-FileHash $dest -Algorithm SHA256).Hash.ToLower()
+          "$hash  Enlangg-Studio-Setup-$env:STUDIO_VERSION.exe" | Out-File -FilePath release\SHA256SUMS-studio -Encoding ascii
+          Get-Content release\SHA256SUMS-studio
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Enlangg Studio ${{ env.STUDIO_VERSION }}
+          body: |
+            ## Enlangg Studio ${{ env.STUDIO_VERSION }}
+
+            Desktop IDE for Enlangg. Installer is unsigned, so Windows SmartScreen may warn. `SHA256SUMS-studio` checks download integrity only, not author authenticity.
+
+            Compiling `.enlng` programs needs `gcc` installed separately. The toolchain installer is published under the `toolchain-v*` releases.
+          files: |
+            release/Enlangg-Studio-Setup-${{ env.STUDIO_VERSION }}.exe
+            release/SHA256SUMS-studio
