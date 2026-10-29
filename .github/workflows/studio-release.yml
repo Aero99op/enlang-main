@@ -30,14 +30,32 @@ jobs:
           "STUDIO_VERSION=$pkg" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Install dependencies
+        shell: powershell
         working-directory: desktop
-        run: npm ci
+        run: |
+          $out = cmd /c "npm install --no-audit --no-fund 2>&1" | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $out
+          if ($code -ne 0) {
+            $tail = $out.Substring([Math]::Max(0, $out.Length - 3000)) -replace "`r", "" -replace "`n", "%0A"
+            Write-Host "::error title=npm install failed::$tail"
+            exit 1
+          }
 
       - name: Build Studio installer (unsigned)
+        shell: powershell
         working-directory: desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npm run dist
+        run: |
+          $out = cmd /c "npm run dist 2>&1" | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $out
+          if ($code -ne 0) {
+            $tail = $out.Substring([Math]::Max(0, $out.Length - 3000)) -replace "`r", "" -replace "`n", "%0A"
+            Write-Host "::error title=Studio build failed::$tail"
+            exit 1
+          }
 
       - name: Stage release files and checksum
         shell: powershell
