@@ -73,6 +73,21 @@ try {
     Check 'uninstall key gone' (-not (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Enlangg'))
     Check 'app key gone' (-not (Test-Path 'HKCU:\Software\Enlangg'))
 
+    # --- PATH round-trips exactly for awkward starting values (trailing ';', no value at all)
+    foreach ($initial in @('C:\enlangg-test-x;', $null)) {
+        $d2 = Join-Path $tmp 'P'
+        if ($null -eq $initial) { Remove-ItemProperty 'HKCU:\Environment' -Name Path -ErrorAction SilentlyContinue }
+        else { Set-ItemProperty 'HKCU:\Environment' -Name Path -Value $initial -Type ExpandString }
+        $label = if ($null -eq $initial) { 'no PATH value' } else { "PATH '$initial'" }
+        Check "scenario install ($label)" ((Run @('/S', "/DIR=$d2", "/LOG=$log")) -eq 0)
+        $b2 = Join-Path $d2 'bin'
+        $expect = if ($null -eq $initial) { $b2 } else { "$b2;$initial" }
+        Check "scenario PATH after install ($label)" ((RawPath) -eq $expect)
+        Start-Process (Join-Path $d2 'uninstall.exe') -ArgumentList '/uninstall','/S' -Wait | Out-Null
+        Start-Sleep -Seconds 2
+        Check "scenario PATH restored exactly ($label)" ((RawPath) -eq $initial)
+    }
+
     # --- uninstaller refuses a copy that has no registry match
     $fake = Join-Path $tmp 'fake'; New-Item -ItemType Directory $fake | Out-Null
     Copy-Item $setup (Join-Path $fake 'uninstall.exe')
@@ -84,6 +99,7 @@ try {
 finally {
     # restore HKCU regardless of test outcome
     if ($null -ne $pathBefore) { Set-ItemProperty 'HKCU:\Environment' -Name Path -Value $pathBefore -Type ExpandString }
+    else { Remove-ItemProperty 'HKCU:\Environment' -Name Path -ErrorAction SilentlyContinue }
     Start-Sleep -Milliseconds 500
     Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }

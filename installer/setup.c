@@ -219,20 +219,30 @@ static int user_path_edit(const wchar_t *bindir, int add) {
     }
     size_t cap = wcslen(old) + wcslen(bindir) + 4;
     wchar_t *res = (wchar_t *)calloc(cap, sizeof(wchar_t));
-    if (add) { wcscpy(res, bindir); }
+    int parts = 0;
+    if (add) { wcscpy(res, bindir); parts = 1; }
     wchar_t *copy = _wcsdup(old);
-    /* split on ';' by hand: wcstok's signature differs between MinGW versions */
-    for (wchar_t *tok = copy; tok; ) {
+    /* Split on ';' by hand (wcstok's signature differs between MinGW versions).
+     * Every other entry, including empty ones such as a trailing ';', is kept verbatim. */
+    for (wchar_t *tok = *copy ? copy : NULL; tok; ) {
         wchar_t *semi = wcschr(tok, L';');
         if (semi) *semi = 0;
-        if (*tok && !same_entry(tok, bindir)) {
-            if (*res) wcscat(res, L";");
+        if (!same_entry(tok, bindir)) {
+            if (parts) wcscat(res, L";");
             wcscat(res, tok);
+            parts++;
         }
         tok = semi ? semi + 1 : NULL;
     }
     free(copy);
-    int ok = RegSetValueExW(k, L"Path", 0, type, (const BYTE *)res, (DWORD)((wcslen(res) + 1) * sizeof(wchar_t))) == ERROR_SUCCESS;
+    int ok;
+    if (!add && parts == 0) {
+        /* nothing else was on the user PATH: remove the value instead of leaving it empty */
+        LONG r = RegDeleteValueW(k, L"Path");
+        ok = (r == ERROR_SUCCESS || r == ERROR_FILE_NOT_FOUND);
+    } else {
+        ok = RegSetValueExW(k, L"Path", 0, type, (const BYTE *)res, (DWORD)((wcslen(res) + 1) * sizeof(wchar_t))) == ERROR_SUCCESS;
+    }
     free(res); free(old);
     RegCloseKey(k);
     if (ok) notify_env();
