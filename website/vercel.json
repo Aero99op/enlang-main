@@ -14,7 +14,12 @@
     },
     {
       "source": "/enlangg-studio-setup.exe",
-      "destination": "https://github.com/Aero99op/enlang-main/releases/download/v5.0.1/Enlangg-Studio-Setup-5.0.1.exe",
+      "destination": "https://github.com/Aero99op/enlang-main/releases/download/studio-v5.0.2/Enlangg-Studio-Setup-5.0.2.exe",
+      "permanent": false
+    },
+    {
+      "source": "/Enlangg-Studio-Setup-5.0.2.exe",
+      "destination": "https://github.com/Aero99op/enlang-main/releases/download/studio-v5.0.2/Enlangg-Studio-Setup-5.0.2.exe",
       "permanent": false
     },
     {
@@ -50,7 +55,7 @@
         },
         {
           "key": "Content-Disposition",
-          "value": "attachment; filename=\"Enlangg-Studio-Setup-5.0.1.exe\""
+          "value": "attachment; filename=\"Enlangg-Studio-Setup-5.0.2.exe\""
         },
         {
           "key": "Cache-Control",
