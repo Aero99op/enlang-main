@@ -1,0 +1,72 @@
+type enlng
+
+# =====================================================================
+#   ENLANG OFFICIAL STANDARD LIBRARY: lib_time.enlng
+#   Pure Enlang Date, Time, Formatting & Smart Alarm Primitives
+#   (Zero Engine Modifications - 100% Pure .enlng)
+# =====================================================================
+
+action pad2(n):
+    when n < 10:
+        return "0" + n
+    return "" + n
+
+action current_time_ist():
+    now = time_now() + 19800
+    h = floor((now % 86400) / 3600)
+    m = floor((now % 3600) / 60)
+    s = now % 60
+    return pad2(h) + ":" + pad2(m) + ":" + pad2(s)
+
+action current_time_utc():
+    now = time_now()
+    h = floor((now % 86400) / 3600)
+    m = floor((now % 3600) / 60)
+    s = now % 60
+    return pad2(h) + ":" + pad2(m) + ":" + pad2(s)
+
+action is_leap(yr):
+    when (yr % 400) == 0:
+        return true
+    when (yr % 100) == 0:
+        return false
+    when (yr % 4) == 0:
+        return true
+    return false
+
+action year_days(yr):
+    when is_leap(yr):
+        return 366
+    return 365
+
+action month_days(m, yr):
+    when m == 2:
+        when is_leap(yr):
+            return 29
+        return 28
+    when m == 4 or m == 6 or m == 9 or m == 11:
+        return 30
+    return 31
+
+action current_date_ist():
+    now = time_now() + 19800
+    days_left = floor(now / 86400)
+    yr = 1970
+    repeat while days_left >= year_days(yr):
+        days_left = days_left - year_days(yr)
+        yr = yr + 1
+    mo = 1
+    repeat while days_left >= month_days(mo, yr):
+        days_left = days_left - month_days(mo, yr)
+        mo = mo + 1
+    dy = days_left + 1
+    return "" + yr + "-" + pad2(mo) + "-" + pad2(dy)
+
+action current_datetime():
+    return current_date_ist() + " " + current_time_ist() + " IST"
+
+action set_alarm(seconds, msg):
+    show "⏰ Alarm set for" seconds "seconds from" current_time_ist() + "..."
+    sleep(seconds)
+    show "🔔 ALARM RINGING at" current_time_ist() + " ->" msg
+    return true

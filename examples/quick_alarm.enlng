@@ -1,0 +1,13 @@
+type enlng
+
+# 1. Check current system time (IST = UTC + 19800s)
+now = time_now() + 19800
+hours = floor((now % 86400) / 3600)
+mins  = floor((now % 3600) / 60)
+secs  = now % 60
+show "Current System Time (IST):" hours + ":" + mins + ":" + secs
+
+# 2. Set and trigger a 3-second alarm
+show "Setting alarm for 3 seconds..."
+sleep(3)
+show "🔔 ALARM RINGING! Time is up!"

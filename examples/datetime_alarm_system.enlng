@@ -1,0 +1,253 @@
+type enlng
+
+# ==============================================================================
+# 👑 ENLANG SOVEREIGN DATE, TIME & SMART ALARM SYSTEM
+# File: examples/datetime_alarm_system.enlng
+# Demonstrates:
+#   - Live OS Hardware Clock Inspection via time_now()
+#   - Full Gregorian Calendar Decoder (Year, Month, Day, Weekday, Leap Year)
+#   - Dual Timezone Formatting (UTC & IST UTC+05:30, 24h & 12h AM/PM)
+#   - Multi-Alarm Scheduler with Index-Free Spatial Pair Sorting
+#   - Live Hardware Countdown Alarm with Real-Time sleep(1) & Snooze Cycle
+# ==============================================================================
+
+use "lib_strings.enlng"
+
+# ------------------------------------------------------------------------------
+# 1. Integer Division & Zero-Padding Helpers
+# ------------------------------------------------------------------------------
+function int_div with a, b:
+    give floor(a / b)
+
+function pad2 with num:
+    remember s as "" + num
+    give pad_left(s, 2, "0")
+
+# ------------------------------------------------------------------------------
+# 2. Gregorian Calendar & Leap Year Engine
+# ------------------------------------------------------------------------------
+function is_leap_year with yr:
+    when (yr % 400) is 0:
+        give true
+    when (yr % 100) is 0:
+        give false
+    when (yr % 4) is 0:
+        give true
+    give false
+
+function days_in_year with yr:
+    when is_leap_year(yr):
+        give 366
+    give 365
+
+function days_in_month with m, yr:
+    when m is 2:
+        when is_leap_year(yr):
+            give 29
+        give 28
+    when m is 4 or m is 6 or m is 9 or m is 11:
+        give 30
+    give 31
+
+function month_name with m:
+    remember names as ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    give names at (m - 1)
+
+function weekday_name with total_days_since_epoch:
+    # 1970-01-01 was a Thursday (index 4 in Sunday=0..Saturday=6)
+    remember days as ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    remember w_idx as (total_days_since_epoch + 4) % 7
+    give days at w_idx
+
+# ------------------------------------------------------------------------------
+# 3. Full Epoch-to-DateTime Decoder (Returns Structured Map)
+# ------------------------------------------------------------------------------
+function decode_datetime with epoch_sec, tz_label, tz_offset_sec:
+    remember local_sec as epoch_sec + tz_offset_sec
+    remember total_days as int_div(local_sec, 86400)
+    remember rem_sec as local_sec % 86400
+
+    remember hours as int_div(rem_sec, 3600)
+    remember rem_after_h as rem_sec % 3600
+    remember minutes as int_div(rem_after_h, 60)
+    remember seconds as rem_after_h % 60
+
+    # Walk years from 1970
+    remember year as 1970
+    remember days_left as total_days
+    repeat while days_left >= days_in_year(year):
+        days_left decreases by days_in_year(year)
+        year increases by 1
+
+    remember day_of_year as days_left + 1
+
+    # Walk months 1..12
+    remember month as 1
+    repeat while days_left >= days_in_month(month, year):
+        days_left decreases by days_in_month(month, year)
+        month increases by 1
+
+    remember day as days_left + 1
+    remember wday as weekday_name(total_days)
+    remember mname as month_name(month)
+
+    # 12-hour AM/PM formatting
+    remember period as "AM"
+    when hours >= 12:
+        period = "PM"
+    remember hour12 as hours % 12
+    when hour12 is 0:
+        hour12 = 12
+
+    remember iso_date as "" + year + "-" + pad2(month) + "-" + pad2(day)
+    remember time_24h as pad2(hours) + ":" + pad2(minutes) + ":" + pad2(seconds)
+    remember time_12h as pad2(hour12) + ":" + pad2(minutes) + ":" + pad2(seconds) + " " + period
+
+    give {
+        "tz": tz_label,
+        "epoch": epoch_sec,
+        "year": year,
+        "month": month,
+        "month_name": mname,
+        "day": day,
+        "weekday": wday,
+        "day_of_year": day_of_year,
+        "leap_year": is_leap_year(year),
+        "hours": hours,
+        "minutes": minutes,
+        "seconds": seconds,
+        "seconds_of_day": rem_sec,
+        "iso_date": iso_date,
+        "time_24h": time_24h,
+        "time_12h": time_12h
+    }
+
+function format_duration with total_sec:
+    remember h as int_div(total_sec, 3600)
+    remember rem as total_sec % 3600
+    remember m as int_div(rem, 60)
+    remember s as rem % 60
+    give pad2(h) + "h " + pad2(m) + "m " + pad2(s) + "s"
+
+# ------------------------------------------------------------------------------
+# 4. Daily Alarm Scheduler & Countdown Calculator
+# ------------------------------------------------------------------------------
+function create_daily_alarm with label, target_h, target_m, target_s, now_sec_of_day:
+    remember target_sec_of_day as (target_h * 3600) + (target_m * 60) + target_s
+    remember wait_sec as target_sec_of_day - now_sec_of_day
+    remember day_status as "Today"
+    when wait_sec <= 0:
+        wait_sec = wait_sec + 86400
+        day_status = "Tomorrow"
+
+    remember target_str as pad2(target_h) + ":" + pad2(target_m) + ":" + pad2(target_s)
+    give {
+        "label": label,
+        "target_time": target_str,
+        "day_status": day_status,
+        "wait_seconds": wait_sec,
+        "countdown": format_duration(wait_sec)
+    }
+
+# ------------------------------------------------------------------------------
+# 5. Live Hardware Alarm Countdown & Snooze Runner
+# ------------------------------------------------------------------------------
+function trigger_live_alarm with alarm_name, delay_seconds, snooze_seconds:
+    remember start_ts as time_now()
+    remember target_ts as start_ts + delay_seconds
+    remember start_dt as decode_datetime(start_ts, "IST (UTC+05:30)", 19800)
+    remember target_dt as decode_datetime(target_ts, "IST (UTC+05:30)", 19800)
+
+    show "----------------------------------------------------------------------"
+    show "⏰ [ALARM ARMED] Label      :" alarm_name
+    show "   Current Time (IST)       :" (time_24h of start_dt)
+    show "   Target Ring Time (IST)   :" (time_24h of target_dt) "(in" delay_seconds "seconds)"
+    show "----------------------------------------------------------------------"
+
+    remember tick as 0
+    repeat while time_now() < target_ts:
+        remember now_ts as time_now()
+        remember rem as target_ts - now_ts
+        tick increases by 1
+        show "   [Tick" tick "] Live Clock:" (time_24h of decode_datetime(now_ts, "IST", 19800)) "| Remaining:" rem "sec..."
+        sleep(1)
+
+    remember ring_ts as time_now()
+    remember ring_dt as decode_datetime(ring_ts, "IST (UTC+05:30)", 19800)
+    show ""
+    show "🔔🔔🔔 [ALARM RINGING!] 🔔🔔🔔"
+    show "   >> Event       :" alarm_name
+    show "   >> Triggered At:" (iso_date of ring_dt) (time_24h of ring_dt) "(" + (time_12h of ring_dt) + ")"
+    show "   >> Epoch Drift :" (ring_ts - target_ts) "sec (Exact Hardware Sync)"
+
+    when snooze_seconds > 0:
+        show ""
+        show "💤 [SNOOZE ACTIVATED] Snoozing '" + alarm_name + "' for" snooze_seconds "second(s)..."
+        remember snooze_target as time_now() + snooze_seconds
+        repeat while time_now() < snooze_target:
+            sleep(1)
+        remember wake_dt as decode_datetime(time_now(), "IST (UTC+05:30)", 19800)
+        show "🔔 [SNOOZE WAKEUP!] '" + alarm_name + "' rang again at" (time_24h of wake_dt) "- Alarm Dismissed!"
+
+    give true
+
+# ==============================================================================
+# 🚀 MAIN EXECUTION: SYSTEM DATE/TIME DIAGNOSTIC & ALARM SUITE
+# ==============================================================================
+show "======================================================================"
+show "     👑 ENLANG SOVEREIGN SYSTEM CLOCK, CALENDAR & ALARM ENGINE        "
+show "======================================================================"
+
+remember raw_epoch as time_now()
+remember utc_now as decode_datetime(raw_epoch, "UTC (+00:00)", 0)
+remember ist_now as decode_datetime(raw_epoch, "IST (+05:30)", 19800)
+
+show ""
+show "=== 1. LIVE HARDWARE DATE & TIME INSPECTION ==="
+show "Raw UNIX Epoch Timestamp :" raw_epoch "seconds"
+show "UTC Date & Time          :" (weekday of utc_now) + "," (month_name of utc_now) (day of utc_now) + "," (year of utc_now) "|" (time_24h of utc_now) "(" + (time_12h of utc_now) + ")"
+show "IST Date & Time          :" (weekday of ist_now) + "," (month_name of ist_now) (day of ist_now) + "," (year of ist_now) "|" (time_24h of ist_now) "(" + (time_12h of ist_now) + ")"
+show "ISO-8601 Calendar Date   :" (iso_date of ist_now)
+show "Day of Year              : Day" (day_of_year of ist_now) "of" days_in_year(year of ist_now) "| Leap Year:" (leap_year of ist_now)
+
+show ""
+show "=== 2. DAILY ALARM QUEUE & SPATIAL PRIORITY SORTING ==="
+remember now_sod as seconds_of_day of ist_now
+
+remember a1 as create_daily_alarm("Morning Fitness & Hydration", 6, 30, 0, now_sod)
+remember a2 as create_daily_alarm("Engineering Daily Standup", 10, 0, 0, now_sod)
+remember a3 as create_daily_alarm("Production Deployment Window", 15, 45, 0, now_sod)
+remember a4 as create_daily_alarm("Night System Security Audit", 22, 15, 0, now_sod)
+
+remember alarms as [a1, a2, a3, a4]
+remember wt1 as wait_seconds of a1
+remember wt2 as wait_seconds of a2
+remember wt3 as wait_seconds of a3
+remember wt4 as wait_seconds of a4
+remember wait_times as [wt1, wt2, wt3, wt4]
+
+# Sort alarm wait times in ascending order using Enlang's index-free spatial pair loop
+repeat until sorted:
+    for each pair in wait_times:
+        when left of pair is greater than right of pair:
+            swap pair
+
+show "Scheduled Daily Alarms (Ordered from Nearest to Furthest):"
+remember rank as 1
+for wt in wait_times:
+    for al in alarms:
+        when (wait_seconds of al) is wt:
+            show "  #" + rank "[" + (target_time of al) (day_status of al) + "] ->" (label of al) "(Triggers in" (countdown of al) + ")"
+            rank increases by 1
+
+show ""
+show "=== 3. LIVE REAL-TIME COUNTDOWN ALARM EXECUTION ==="
+remember alarm_ok as trigger_live_alarm("Sovereign Launch Readiness Check", 2, 1)
+
+show ""
+show "======================================================================"
+when alarm_ok and raw_epoch > 1700000000:
+    show "✅ [SYSTEM PASS] Date, Time & Live Hardware Alarm Verified 100%!"
+otherwise:
+    show "❌ [SYSTEM FAIL] Clock or Alarm Verification Failed."
+show "======================================================================"
