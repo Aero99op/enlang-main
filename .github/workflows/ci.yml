@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  TOOLCHAIN_VERSION: "5.4.0"
+  TOOLCHAIN_VERSION: "5.4.1"
 
 jobs:
   build-linux-x86_64:

@@ -112,6 +112,53 @@ static EnlngOp parse_op_phrase(const char* s, int* op_len) {
     return OP_NONE;
 }
 
+/* "Table 'x' does not exist" with a way forward: what tables exist, a likely typo,
+ * and how to create the table. */
+static int edit_distance(const char* a, const char* b) {
+    int la = (int)strlen(a), lb = (int)strlen(b);
+    if (la > 63 || lb > 63) return 99;
+    int prev[64], cur[64];
+    for (int j = 0; j <= lb; j++) prev[j] = j;
+    for (int i = 1; i <= la; i++) {
+        cur[0] = i;
+        for (int j = 1; j <= lb; j++) {
+            int cost = tolower((unsigned char)a[i - 1]) == tolower((unsigned char)b[j - 1]) ? 0 : 1;
+            int best = prev[j - 1] + cost;
+            if (prev[j] + 1 < best) best = prev[j] + 1;
+            if (cur[j - 1] + 1 < best) best = cur[j - 1] + 1;
+            cur[j] = best;
+        }
+        for (int j = 0; j <= lb; j++) prev[j] = cur[j];
+    }
+    return prev[lb];
+}
+
+static void print_missing_table(const EnlngDatabase* db, const char* name) {
+    printf("ERROR: Table '%s' does not exist in database '%s'.\n", name, db->name);
+    if (db->table_count == 0) {
+        printf("       This database has no tables yet. Create one with:\n");
+        printf("         create table %s with id, name;\n", name);
+        printf("       (or insert a record, which creates the table: insert into %s with id 1, name \"A\";)\n\n", name);
+        return;
+    }
+    size_t nlen = strlen(name);
+    for (int i = 0; i < db->table_count; i++) {
+        const char* t = db->tables[i].name;
+        size_t tlen = strlen(t);
+        /* same name in another case, a missing/extra letter, or a swapped pair (studnet) */
+        int d = edit_distance(t, name);
+        bool close_match = str_ci_cmp(t, name) == 0 || (d <= 2 && tlen >= 4 && nlen >= 4);
+        (void)tlen;
+        if (close_match) {
+            printf("       Did you mean '%s'?\n", t);
+            break;
+        }
+    }
+    printf("       Tables in '%s':", db->name);
+    for (int i = 0; i < db->table_count; i++) printf("%s %s", i ? "," : "", db->tables[i].name);
+    printf("\n\n");
+}
+
 bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool print_output) {
     if (!db || !statement) return false;
     char line[1024];
@@ -540,7 +587,7 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
             EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
             if (!tbl) {
                 if (print_output) {
-                    printf("ERROR: Table '%s' does not exist in database '%s'.\n\n", tbl_name, db->name);
+                    print_missing_table(db, tbl_name);
                 }
                 for (int i = 0; i < cond_count; i++) enlng_free_val(&conds[i].val);
                 return false;
@@ -691,7 +738,7 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
                 }
                 return true;
             } else {
-                if (print_output) printf("ERROR: Table '%s' does not exist in database '%s'.\n\n", tbl_name, db->name);
+                if (print_output) print_missing_table(db, tbl_name);
                 return false;
             }
         }
@@ -753,7 +800,7 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
 
         EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
         if (!tbl) {
-            if (print_output) printf("ERROR: Table '%s' does not exist in database '%s'.\n\n", tbl_name, db->name);
+            if (print_output) print_missing_table(db, tbl_name);
             return false;
         }
 
@@ -881,7 +928,7 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         if (tbl_name[0] && after_action && *after_action) {
             EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
             if (!tbl) {
-                if (print_output) printf("ERROR: Table '%s' does not exist in database '%s'.\n\n", tbl_name, db->name);
+                if (print_output) print_missing_table(db, tbl_name);
                 return false;
             }
 
@@ -988,7 +1035,8 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
             fprintf(stderr, "What: Unrecognized or malformed database statement: '%s'\n", stmt);
             fprintf(stderr, "Why:  Statement does not match any valid conversational EnlngDB grammar.\n\n");
             fprintf(stderr, "Suggestions:\n");
-            fprintf(stderr, "  * Supported commands: create table, insert into, find records from, update, delete\n");
+            fprintf(stderr, "  * Supported commands: use database, show tables, create table, insert into, find records from, update, change, delete, drop table\n");
+            fprintf(stderr, "  * Comments start with '#' or '--' at the beginning of a line.\n");
             fprintf(stderr, "  * Run 'enlngdb --help' to view command reference.\n");
         }
         fprintf(stderr, "------------------------------------------------------------------------\n\n");
@@ -1007,8 +1055,8 @@ int enlngdb_execute_script(EnlngDatabase* db, const char* script_content, bool p
         while (*ptr && (isspace((unsigned char)*ptr) || *ptr == ';' || *ptr == '\n' || *ptr == '\r')) ptr++;
         if (!*ptr) break;
 
-        // Skip comments starting with '#'
-        if (*ptr == '#') {
+        // Skip comments starting with '#' or '--'
+        if (*ptr == '#' || (ptr[0] == '-' && ptr[1] == '-')) {
             while (*ptr && *ptr != '\n' && *ptr != '\r') ptr++;
             continue;
         }
@@ -1035,7 +1083,7 @@ int enlngdb_execute_script(EnlngDatabase* db, const char* script_content, bool p
         }
 
         char* trimmed = trim(stmt_start);
-        if (*trimmed && *trimmed != '#') {
+        if (*trimmed && *trimmed != '#' && !(trimmed[0] == '-' && trimmed[1] == '-')) {
             if (enlngdb_execute_statement(db, trimmed, print_output)) {
                 executed++;
             } else {
@@ -1086,9 +1134,30 @@ int enlngdb_run_file(const char* filepath) {
 
     int count = enlngdb_execute_script(db, buffer, true);
 
-    // Auto-save updated state to binary format only if no failures occurred
+    // Auto-save to the database that is active at the end: 'use database X' moves the
+    // target from the script-named file to X's file (current folder first, then tests/,
+    // the same order 'use database' loads it in). Nothing is saved if any statement failed.
     if (count >= 0) {
-        enlngdb_save(db, edb_file);
+        char save_file[256];
+        snprintf(save_file, sizeof(save_file), "%s.edb", db->name);
+        if (strcmp(db->name, dbname) != 0) {
+            FILE* here = fopen(save_file, "rb");
+            if (here) {
+                fclose(here);
+            } else {
+                char alt[256];
+                snprintf(alt, sizeof(alt), "tests/%s.edb", db->name);
+                FILE* there = fopen(alt, "rb");
+                if (there) {
+                    fclose(there);
+                    snprintf(save_file, sizeof(save_file), "%s", alt);
+                }
+            }
+        }
+        enlngdb_save(db, save_file);
+    } else {
+        printf("NOTE: %d statement(s) failed, so nothing from this run was saved to disk.\n", -count);
+        printf("      Fix the errors above and run the script again.\n");
     }
 
     free(buffer);

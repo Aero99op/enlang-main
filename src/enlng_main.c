@@ -145,6 +145,26 @@ static void print_human_error_c(const char* filepath, const char* source, int ta
         fprintf(stderr, "Why:  Variable bindings require 'as' or '=' to specify the initial value.\n\n");
         fprintf(stderr, "Suggestions:\n");
         fprintf(stderr, "  * Bind initial value with 'as', e.g. 'remember count as 0'.\n");
+    } else if (strncmp(raw_msg, "Unknown word '", 14) == 0) {
+        char word[64] = {0};
+        const char* q = raw_msg + 14;
+        size_t wl = 0;
+        while (q[wl] && q[wl] != '\'' && wl < sizeof(word) - 1) { word[wl] = q[wl]; wl++; }
+        word[wl] = '\0';
+        static const char* print_like[] = { "say", "write", "output", "echo", "puts", "println", "log", "console", "put", "tell", "speak", "out" };
+        int is_print_like = 0;
+        for (size_t i = 0; i < sizeof(print_like) / sizeof(print_like[0]); i++) {
+            if (strcmp(word, print_like[i]) == 0) is_print_like = 1;
+        }
+        fprintf(stderr, "Why:  '%s' is not a power word in Enlang, and it is not a name you defined earlier.\n\n", word);
+        fprintf(stderr, "Suggestions:\n");
+        if (is_print_like) {
+            fprintf(stderr, "  * To print, use 'show', 'display' or 'print', e.g.: show \"hello\"\n");
+        } else {
+            fprintf(stderr, "  * Check the spelling of '%s'.\n", word);
+            fprintf(stderr, "  * Common power words: show, remember, change, when, for, while, repeat, action, return.\n");
+            fprintf(stderr, "  * If '%s' is your own name, define it first, e.g.: remember %s as 0\n", word, word);
+        }
     } else if (strstr(raw_msg, "type enlng") != NULL) {
         fprintf(stderr, "Why:  Sovereign native Enlang compilation units must declare domain type on line 1.\n\n");
         fprintf(stderr, "Suggestions:\n");

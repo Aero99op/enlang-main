@@ -1475,6 +1475,20 @@ static ASTNode *parse_statement(Parser *p) {
 
   /* 14. Fallback: Standalone Expression / Function Call / Implicit Return */
   ASTNode *expr = parse_expression(p);
+
+  /* A lone word followed by a value on the same line ("say "hi"", "write total") is a
+   * power word we do not know. Without this check the value is silently dropped and the
+   * word reaches the C compiler, which reports a confusing C error. */
+  if (expr && expr->type == AST_EXPR_VARIABLE && !p->has_error) {
+    EnlngTokenType nt = peek(p, 0)->type;
+    if (nt == ENLNG_TOKEN_STRING_LITERAL || nt == ENLNG_TOKEN_INT_LITERAL ||
+        nt == ENLNG_TOKEN_FLOAT_LITERAL || nt == ENLNG_TOKEN_IDENTIFIER ||
+        nt == ENLNG_TOKEN_BOOL_LITERAL) {
+      char err[256];
+      snprintf(err, sizeof(err), "Unknown word '%s'", expr->as.variable.name);
+      set_error(p, err, t->line);
+    }
+  }
   ASTNode *n = ast_new(AST_EXPR_STMT, t->line);
   n->as.expr_stmt.expr = expr;
   return n;

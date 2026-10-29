@@ -34,10 +34,15 @@ def build(tmp):
     return exe
 
 
+_runs = [0]
+
+
 def run(exe, tmp, body):
+    # a fresh database per run, since changes are saved between runs
+    _runs[0] += 1
     script = os.path.join(tmp, "t.enlngdb")
     with open(script, "w") as f:
-        f.write("type enlngdb\n\nuse database confirmtest;\n" + body)
+        f.write("type enlngdb\n\nuse database confirmtest%d;\n" % _runs[0] + body)
     p = subprocess.run([exe, script], cwd=tmp, capture_output=True, text=True)
     return p.stdout, p.stderr
 
