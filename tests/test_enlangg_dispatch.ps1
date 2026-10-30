@@ -101,7 +101,7 @@ try {
     foreach ($pair in @(@('f', 'enlngf'), @('d', 'enlngd'), @('s', 'enlngs'), @('m', 'enlngm'), @('db', 'enlngdb'), @('enlng', 'enlng'))) {
         $r = Run (Join-Path $real 'enlangg.exe') @($pair[0], '--version')
         Write-Host "  enlangg $($pair[0]) --version -> exit $($r.Code): $($r.Out.Trim())"
-        Check ($r.Code -eq 0 -and $r.Out -match "^$($pair[1]) version 5\.5\.0" -and $r.Out -notmatch 'FAKE-TOOL') "$($pair[1]) dispatched to the sibling/embedded engine"
+        Check ($r.Code -eq 0 -and $r.Out -match "^$($pair[1]) version 5.5.1" -and $r.Out -notmatch 'FAKE-TOOL') "$($pair[1]) dispatched to the sibling/embedded engine"
     }
 
     Write-Host "`n[B] Sibling enlng.exe removed -> PATH fallback"
