@@ -1,0 +1,12 @@
+type enlng
+
+# split keeps empty pieces and splits on the whole delimiter text
+show split("a,,b", ",")
+show len(split("a,,b", ","))
+show split("-a-", "-")
+show split("a--b--c", "--")
+show split("abc", "")
+show split("", ",")
+
+freeze LIMIT as 10
+show LIMIT

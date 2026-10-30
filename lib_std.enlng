@@ -119,7 +119,7 @@ function sort_list with items:
     give items
 
 # --- 6. Index-Based String & List Permutation ---
-function arrange with text, indices:
+function arrange_text with text, indices:
     remember res as ""
     remember n as len(text)
     for idx in indices:
@@ -130,7 +130,7 @@ function arrange with text, indices:
             res = res + (text at real_idx)
     give res
 
-function arrange_list with items, indices:
+function arrange_items with items, indices:
     remember res as []
     remember n as len(items)
     for idx in indices:

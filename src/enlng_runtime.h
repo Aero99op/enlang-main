@@ -919,14 +919,22 @@ static inline EnlngVal enlng_builtin_split(EnlngVal str, EnlngVal sep) {
     }
     return enlng_make_list(res);
   }
-  char *copy = (char *)malloc(strlen(s) + 1);
-  strcpy(copy, s);
-  char *token = strtok(copy, d);
-  while (token) {
-    enlng_list_push(res, enlng_make_string(token));
-    token = strtok(NULL, d);
+  /* Split on the exact delimiter text. Empty pieces are kept, so
+   * "a,,b" gives three items and "-a-" gives ["", "a", ""]. */
+  if (s[0] == '\0')
+    return enlng_make_list(res);
+  const char *start = s;
+  const char *hit;
+  while ((hit = strstr(start, d)) != NULL) {
+    size_t n = (size_t)(hit - start);
+    char *piece = (char *)malloc(n + 1);
+    memcpy(piece, start, n);
+    piece[n] = '\0';
+    enlng_list_push(res, enlng_make_string(piece));
+    free(piece);
+    start = hit + dlen;
   }
-  free(copy);
+  enlng_list_push(res, enlng_make_string(start));
   return enlng_make_list(res);
 }
 

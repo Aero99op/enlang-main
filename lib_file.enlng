@@ -30,6 +30,12 @@ action file_read_lines_str(content):
                 sub_l = sub_l + l[i]
             l = sub_l
         append(clean_lines, l)
+    last = len(clean_lines) - 1
+    when last >= 0 and clean_lines[last] == "":
+        trimmed = []
+        for i from 0 to last - 1:
+            append(trimmed, clean_lines[i])
+        return trimmed
     return clean_lines
 
 action file_read_lines(filepath):
@@ -53,8 +59,12 @@ action file_line_count(filepath):
 
 action file_word_count(filepath):
     content = read_file(filepath)
-    words = split(content, " ")
-    return len(words)
+    total = 0
+    for line in split(content, "\n"):
+        for token in split(line, " "):
+            when len(token) > 0 and token != "\r":
+                total = total + 1
+    return total
 
 # ---------------------------------------------------------------------
 # Path Utilities

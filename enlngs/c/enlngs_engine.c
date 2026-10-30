@@ -79,7 +79,9 @@ char* enlngs_val_to_str(EnlngsVal v, char* buf, size_t bufsize) {
             snprintf(buf, bufsize, "%ld", (long)v.i_val);
             break;
         case VAL_DOUBLE:
-            snprintf(buf, bufsize, "%g", v.d_val);
+            if (isnan(v.d_val)) snprintf(buf, bufsize, "NaN");
+            else if (isinf(v.d_val)) snprintf(buf, bufsize, "%s", v.d_val > 0 ? "Infinity" : "-Infinity");
+            else snprintf(buf, bufsize, "%g", v.d_val);
             break;
         case VAL_STRING:
             snprintf(buf, bufsize, "%s", v.s_val);
@@ -130,118 +132,377 @@ static void set_var(EnlngsVM* vm, const char* name, EnlngsVal val, bool is_const
     }
 }
 
+static bool ci_eq_n(const char* a, const char* b, int n) {
+    for (int i = 0; i < n; i++) {
+        if (tolower((unsigned char)a[i]) != tolower((unsigned char)b[i])) return false;
+    }
+    return true;
+}
+
+/* ---------------------------------------------------------------------
+ * Splitting `show a b "c"` into separate values.
+ *
+ * Words and symbols that join their neighbours into one expression
+ * (`total * 2`, `a is equal to b`) are kept together; two operands side by
+ * side start a new value. If the text contains phrase words such as
+ * `get value of`, it is left whole for the caller to handle as before.
+ * ------------------------------------------------------------------- */
+static bool tok_in_list(const char* t, int n, const char* const* list) {
+    for (int i = 0; list[i]; i++) {
+        if ((int)strlen(list[i]) == n && ci_eq_n(t, list[i], n)) return true;
+    }
+    return false;
+}
+
+static const char* const OP_WORDS[] = {
+    "and", "or", "not", "plus", "minus", "times", "multiplied", "divided", "by", "mod", "modulo",
+    "is", "equal", "to", "than", "greater", "less", "at", "least", "most", NULL};
+
+static const char* const PHRASE_WORDS[] = {
+    "get", "call", "value", "element", "of", "with", "new", "await", "typeof", "in", "length", NULL};
+
+static bool tok_is_opish(const char* t, int n) {
+    if (n <= 0) return false;
+    if (n == 1 && strchr("+-*/%=<>!&|?:,", t[0])) return true;
+    if (tok_in_list(t, n, OP_WORDS)) return true;
+    if (strchr("+*/%=<>!&|?:", t[0])) return true;
+    if (strchr("+-*/%=<>!&|?:,", t[n - 1]) && !(t[n - 1] == '-' && n > 1 && t[0] == '"')) {
+        return t[n - 1] != '"' && t[n - 1] != ')' && t[n - 1] != ']';
+    }
+    return false;
+}
+
+static const char* tok_skip_unit(const char* p) {
+    char c = *p;
+    if (c == '"' || c == '\'') {
+        const char* q = p + 1;
+        while (*q && *q != c) q++;
+        return *q ? q + 1 : q;
+    }
+    if (c == '(' || c == '[' || c == '{') {
+        char open = c;
+        char close = (c == '(') ? ')' : (c == '[') ? ']' : '}';
+        int depth = 0;
+        const char* q = p;
+        while (*q) {
+            if (*q == '"' || *q == '\'') {
+                q = tok_skip_unit(q);
+                continue;
+            }
+            if (*q == open) depth++;
+            else if (*q == close) {
+                depth--;
+                if (depth == 0) return q + 1;
+            }
+            q++;
+        }
+        return q;
+    }
+    return p + 1;
+}
+
+/* Fills starts/lens with up to `max` groups; returns how many (at least 1). */
+static int split_show_values(const char* expr, const char** starts, int* lens, int max) {
+    const char* tok_s[128];
+    int tok_n[128];
+    int nt = 0;
+    const char* p = expr;
+    while (*p && nt < 128) {
+        while (isspace((unsigned char)*p)) p++;
+        if (!*p) break;
+        const char* s = p;
+        while (*p && !isspace((unsigned char)*p)) p = tok_skip_unit(p);
+        tok_s[nt] = s;
+        tok_n[nt] = (int)(p - s);
+        nt++;
+    }
+    starts[0] = expr;
+    lens[0] = (int)strlen(expr);
+    if (nt < 2 || *p) return 1;
+
+    for (int i = 0; i < nt; i++) {
+        if (tok_in_list(tok_s[i], tok_n[i], PHRASE_WORDS)) return 1;
+    }
+    int ng = 0;
+    for (int i = 0; i < nt; i++) {
+        bool join = (i > 0) && (tok_is_opish(tok_s[i - 1], tok_n[i - 1]) || tok_is_opish(tok_s[i], tok_n[i]));
+        if (i == 0 || !join) {
+            if (ng >= max) return 1;
+            starts[ng] = tok_s[i];
+            lens[ng] = tok_n[i];
+            ng++;
+        } else {
+            lens[ng - 1] = (int)((tok_s[i] + tok_n[i]) - starts[ng - 1]);
+        }
+    }
+    return ng;
+}
+
+/* ---------------------------------------------------------------------
+ * Expression evaluator: a small precedence parser.
+ *   or  <  and  <  not  <  comparison  <  + -  <  * / %  <  unary - , ( )
+ * Operators may be symbols or words (plus, minus, times, divided by, mod,
+ * is equal to, is greater than, ...). Operators of equal rank group from
+ * the left, so 10 - 3 - 2 is 5.
+ * ------------------------------------------------------------------- */
+typedef struct {
+    EnlngsVM* vm;
+    const char* p;
+    bool err;
+} EP;
+
+static EnlngsVal ep_or(EP* e);
+
+static void ep_ws(EP* e) {
+    while (isspace((unsigned char)*e->p)) e->p++;
+}
+
+/* Match a whole word (case-insensitive), advancing past it on success. */
+static bool ep_word(EP* e, const char* w) {
+    ep_ws(e);
+    size_t n = strlen(w);
+    for (size_t i = 0; i < n; i++) {
+        if (tolower((unsigned char)e->p[i]) != tolower((unsigned char)w[i])) return false;
+    }
+    char after = e->p[n];
+    if (isalnum((unsigned char)after) || after == '_') return false;
+    e->p += n;
+    return true;
+}
+
+/* Match several words in a row, such as "is equal to". All or nothing. */
+static bool ep_phrase(EP* e, const char* phrase) {
+    const char* save = e->p;
+    char buf[64];
+    strncpy(buf, phrase, sizeof(buf) - 1);
+    buf[sizeof(buf) - 1] = '\0';
+    char* w = strtok(buf, " ");
+    while (w) {
+        if (!ep_word(e, w)) {
+            e->p = save;
+            return false;
+        }
+        w = strtok(NULL, " ");
+    }
+    return true;
+}
+
+static bool ep_sym(EP* e, const char* s) {
+    ep_ws(e);
+    size_t n = strlen(s);
+    if (strncmp(e->p, s, n) == 0) {
+        e->p += n;
+        return true;
+    }
+    return false;
+}
+
+
+static double val_as_double(EnlngsVal v) {
+    if (v.type == VAL_DOUBLE) return v.d_val;
+    if (v.type == VAL_BOOL) return v.b_val ? 1 : 0;
+    if (v.type == VAL_INT) return (double)v.i_val;
+    return 0;
+}
+
+static bool val_truthy(EnlngsVal v) {
+    switch (v.type) {
+        case VAL_BOOL: return v.b_val;
+        case VAL_INT: return v.i_val != 0;
+        case VAL_DOUBLE: return v.d_val != 0;
+        case VAL_STRING: return v.s_val[0] != '\0';
+        default: return false;
+    }
+}
+
+static EnlngsVal val_num_result(double d, bool both_int) {
+    if (both_int && d == floor(d) && fabs(d) < 9e15) return enlngs_val_int((long long)d);
+    return enlngs_val_double(d);
+}
+
+static bool val_equal(EnlngsVal a, EnlngsVal b) {
+    if (a.type == VAL_STRING && b.type == VAL_STRING) return strcmp(a.s_val, b.s_val) == 0;
+    if (a.type == VAL_NULL || b.type == VAL_NULL) return a.type == b.type;
+    if (a.type == VAL_STRING || b.type == VAL_STRING) return false;
+    return val_as_double(a) == val_as_double(b);
+}
+
+static EnlngsVal ep_primary(EP* e) {
+    ep_ws(e);
+    if (*e->p == '(') {
+        e->p++;
+        EnlngsVal v = ep_or(e);
+        if (!ep_sym(e, ")")) e->err = true;
+        return v;
+    }
+    if (*e->p == '"' || *e->p == '\'') {
+        char q = *e->p++;
+        char buf[256];
+        int n = 0;
+        while (*e->p && *e->p != q) {
+            if (n < 255) buf[n++] = *e->p;
+            e->p++;
+        }
+        buf[n] = '\0';
+        if (*e->p == q) e->p++;
+        else e->err = true;
+        return enlngs_val_string(buf);
+    }
+    if (isdigit((unsigned char)*e->p) || (*e->p == '.' && isdigit((unsigned char)e->p[1]))) {
+        char* end;
+        long long iv = strtoll(e->p, &end, 10);
+        if (*end != '.' && *end != 'e' && *end != 'E') {
+            e->p = end;
+            return enlngs_val_int(iv);
+        }
+        double dv = strtod(e->p, &end);
+        e->p = end;
+        return enlngs_val_double(dv);
+    }
+    if (isalpha((unsigned char)*e->p) || *e->p == '_') {
+        char name[64];
+        int n = 0;
+        while ((isalnum((unsigned char)*e->p) || *e->p == '_') && n < 63) name[n++] = *e->p++;
+        name[n] = '\0';
+        if (str_equals_ci(name, "true")) return enlngs_val_bool(true);
+        if (str_equals_ci(name, "false")) return enlngs_val_bool(false);
+        if (str_equals_ci(name, "null")) return enlngs_val_null();
+        EnlngsVar* v = find_var(e->vm, name);
+        if (v) return v->val;
+        return enlngs_val_string(name);
+    }
+    e->err = true;
+    return enlngs_val_null();
+}
+
+static EnlngsVal ep_unary(EP* e) {
+    ep_ws(e);
+    if (*e->p == '-' ) {
+        e->p++;
+        EnlngsVal v = ep_unary(e);
+        if (v.type == VAL_DOUBLE) return enlngs_val_double(-v.d_val);
+        return enlngs_val_int(-(long long)val_as_double(v));
+    }
+    return ep_primary(e);
+}
+
+static EnlngsVal ep_mul(EP* e) {
+    EnlngsVal left = ep_unary(e);
+    for (;;) {
+        char op = 0;
+        if (ep_sym(e, "*")) op = '*';
+        else if (ep_sym(e, "/")) op = '/';
+        else if (ep_sym(e, "%")) op = '%';
+        else if (ep_phrase(e, "multiplied by") || ep_word(e, "times")) op = '*';
+        else if (ep_phrase(e, "divided by")) op = '/';
+        else if (ep_word(e, "modulo") || ep_word(e, "mod")) op = '%';
+        else break;
+        EnlngsVal right = ep_unary(e);
+        double a = val_as_double(left), b = val_as_double(right);
+        bool ints = left.type != VAL_DOUBLE && right.type != VAL_DOUBLE;
+        if (op == '*') left = val_num_result(a * b, ints);
+        else if (op == '/') left = val_num_result(a / b, ints);
+        else left = val_num_result(fmod(a, b), ints);
+    }
+    return left;
+}
+
+static EnlngsVal ep_add(EP* e) {
+    EnlngsVal left = ep_mul(e);
+    for (;;) {
+        char op = 0;
+        if (ep_sym(e, "+")) op = '+';
+        else if (ep_sym(e, "-")) op = '-';
+        else if (ep_word(e, "plus")) op = '+';
+        else if (ep_word(e, "minus")) op = '-';
+        else break;
+        EnlngsVal right = ep_mul(e);
+        if (op == '+' && (left.type == VAL_STRING || right.type == VAL_STRING)) {
+            char b1[512], b2[512], comb[1024];
+            snprintf(comb, sizeof(comb), "%s%s", enlngs_val_to_str(left, b1, sizeof(b1)),
+                     enlngs_val_to_str(right, b2, sizeof(b2)));
+            left = enlngs_val_string(comb);
+        } else {
+            bool ints = left.type != VAL_DOUBLE && right.type != VAL_DOUBLE;
+            double a = val_as_double(left), b = val_as_double(right);
+            left = val_num_result(op == '+' ? a + b : a - b, ints);
+        }
+    }
+    return left;
+}
+
+static EnlngsVal ep_cmp(EP* e) {
+    EnlngsVal left = ep_add(e);
+    for (;;) {
+        int kind = 0; /* 1 == 2 != 3 < 4 > 5 <= 6 >= */
+        if (ep_sym(e, "==")) kind = 1;
+        else if (ep_sym(e, "!=")) kind = 2;
+        else if (ep_sym(e, "<=")) kind = 5;
+        else if (ep_sym(e, ">=")) kind = 6;
+        else if (ep_sym(e, "<")) kind = 3;
+        else if (ep_sym(e, ">")) kind = 4;
+        else if (ep_phrase(e, "is not equal to") || ep_phrase(e, "is not")) kind = 2;
+        else if (ep_phrase(e, "is equal to")) kind = 1;
+        else if (ep_phrase(e, "is greater than")) kind = 4;
+        else if (ep_phrase(e, "is less than")) kind = 3;
+        else if (ep_phrase(e, "is at least")) kind = 6;
+        else if (ep_phrase(e, "is at most")) kind = 5;
+        else if (ep_word(e, "is")) kind = 1;
+        else break;
+        EnlngsVal right = ep_add(e);
+        bool r;
+        if (kind == 1) r = val_equal(left, right);
+        else if (kind == 2) r = !val_equal(left, right);
+        else if (left.type == VAL_STRING && right.type == VAL_STRING) {
+            int c = strcmp(left.s_val, right.s_val);
+            r = (kind == 3) ? c < 0 : (kind == 4) ? c > 0 : (kind == 5) ? c <= 0 : c >= 0;
+        } else {
+            double a = val_as_double(left), b = val_as_double(right);
+            r = (kind == 3) ? a < b : (kind == 4) ? a > b : (kind == 5) ? a <= b : a >= b;
+        }
+        left = enlngs_val_bool(r);
+    }
+    return left;
+}
+
+static EnlngsVal ep_not(EP* e) {
+    if (ep_word(e, "not")) return enlngs_val_bool(!val_truthy(ep_not(e)));
+    return ep_cmp(e);
+}
+
+static EnlngsVal ep_and(EP* e) {
+    EnlngsVal left = ep_not(e);
+    while (ep_word(e, "and") || ep_sym(e, "&&")) {
+        EnlngsVal right = ep_not(e);
+        left = enlngs_val_bool(val_truthy(left) && val_truthy(right));
+    }
+    return left;
+}
+
+static EnlngsVal ep_or(EP* e) {
+    EnlngsVal left = ep_and(e);
+    while (ep_word(e, "or") || ep_sym(e, "||")) {
+        EnlngsVal right = ep_and(e);
+        left = enlngs_val_bool(val_truthy(left) || val_truthy(right));
+    }
+    return left;
+}
+
 EnlngsVal enlngs_eval_expr(EnlngsVM* vm, const char* expr) {
     char buf[512];
     strncpy(buf, expr, sizeof(buf) - 1);
     buf[sizeof(buf) - 1] = '\0';
     char* s = trim(buf);
-
     if (!*s) return enlngs_val_null();
 
-    // Boolean literals
-    if (str_equals_ci(s, "true")) return enlngs_val_bool(true);
-    if (str_equals_ci(s, "false")) return enlngs_val_bool(false);
-    if (str_equals_ci(s, "null")) return enlngs_val_null();
-
-    // String literal
-    if ((s[0] == '"' && s[strlen(s) - 1] == '"') || (s[0] == '\'' && s[strlen(s) - 1] == '\'')) {
-        s[strlen(s) - 1] = '\0';
-        return enlngs_val_string(s + 1);
+    EP e = {vm, s, false};
+    EnlngsVal v = ep_or(&e);
+    ep_ws(&e);
+    if (e.err || *e.p) {
+        /* Not an expression this engine understands: keep the text as it was. */
+        return enlngs_val_string(s);
     }
-
-    // Binary addition / concatenation
-    char* plus = strchr(s, '+');
-    if (plus && plus != s && *(plus - 1) != 'e' && *(plus - 1) != 'E') {
-        *plus = '\0';
-        EnlngsVal left = enlngs_eval_expr(vm, trim(s));
-        EnlngsVal right = enlngs_eval_expr(vm, trim(plus + 1));
-        if (left.type == VAL_STRING || right.type == VAL_STRING) {
-            char b1[512], b2[512], comb[1024];
-            snprintf(comb, sizeof(comb), "%s%s",
-                     enlngs_val_to_str(left, b1, sizeof(b1)),
-                     enlngs_val_to_str(right, b2, sizeof(b2)));
-            return enlngs_val_string(comb);
-        }
-        if (left.type == VAL_DOUBLE || right.type == VAL_DOUBLE) {
-            double v1 = (left.type == VAL_DOUBLE) ? left.d_val : left.i_val;
-            double v2 = (right.type == VAL_DOUBLE) ? right.d_val : right.i_val;
-            return enlngs_val_double(v1 + v2);
-        }
-        return enlngs_val_int(left.i_val + right.i_val);
-    }
-
-    // Binary subtraction
-    char* minus = strchr(s, '-');
-    if (minus && minus != s && *(minus - 1) != 'e' && *(minus - 1) != 'E' && isspace((unsigned char)*(minus - 1))) {
-        *minus = '\0';
-        EnlngsVal left = enlngs_eval_expr(vm, trim(s));
-        EnlngsVal right = enlngs_eval_expr(vm, trim(minus + 1));
-        if (left.type == VAL_DOUBLE || right.type == VAL_DOUBLE) {
-            double v1 = (left.type == VAL_DOUBLE) ? left.d_val : left.i_val;
-            double v2 = (right.type == VAL_DOUBLE) ? right.d_val : right.i_val;
-            return enlngs_val_double(v1 - v2);
-        }
-        return enlngs_val_int(left.i_val - right.i_val);
-    }
-
-    // Comparison: is equal to / ==
-    if (strstr(s, " is equal to ") || strstr(s, " == ")) {
-        char* pos = strstr(s, " is equal to ");
-        int len = 13;
-        if (!pos) { pos = strstr(s, " == "); len = 4; }
-        *pos = '\0';
-        EnlngsVal left = enlngs_eval_expr(vm, trim(s));
-        EnlngsVal right = enlngs_eval_expr(vm, trim(pos + len));
-        if (left.type == VAL_STRING && right.type == VAL_STRING) {
-            return enlngs_val_bool(strcmp(left.s_val, right.s_val) == 0);
-        }
-        double v1 = (left.type == VAL_DOUBLE) ? left.d_val : left.i_val;
-        double v2 = (right.type == VAL_DOUBLE) ? right.d_val : right.i_val;
-        return enlngs_val_bool(v1 == v2);
-    }
-
-    // Comparison: >
-    if (strstr(s, " > ") || strstr(s, " is greater than ")) {
-        char* pos = strstr(s, " > ");
-        int len = 3;
-        if (!pos) { pos = strstr(s, " is greater than "); len = 17; }
-        *pos = '\0';
-        EnlngsVal left = enlngs_eval_expr(vm, trim(s));
-        EnlngsVal right = enlngs_eval_expr(vm, trim(pos + len));
-        double v1 = (left.type == VAL_DOUBLE) ? left.d_val : left.i_val;
-        double v2 = (right.type == VAL_DOUBLE) ? right.d_val : right.i_val;
-        return enlngs_val_bool(v1 > v2);
-    }
-
-    // Comparison: <
-    if (strstr(s, " < ") || strstr(s, " is less than ")) {
-        char* pos = strstr(s, " < ");
-        int len = 3;
-        if (!pos) { pos = strstr(s, " is less than "); len = 14; }
-        *pos = '\0';
-        EnlngsVal left = enlngs_eval_expr(vm, trim(s));
-        EnlngsVal right = enlngs_eval_expr(vm, trim(pos + len));
-        double v1 = (left.type == VAL_DOUBLE) ? left.d_val : left.i_val;
-        double v2 = (right.type == VAL_DOUBLE) ? right.d_val : right.i_val;
-        return enlngs_val_bool(v1 < v2);
-    }
-
-    // Number literal
-    char* endptr;
-    long long ival = strtoll(s, &endptr, 10);
-    if (*endptr == '\0') {
-        return enlngs_val_int(ival);
-    }
-    double dval = strtod(s, &endptr);
-    if (*endptr == '\0') {
-        return enlngs_val_double(dval);
-    }
-
-    // Variable lookup
-    EnlngsVar* v = find_var(vm, s);
-    if (v) return v->val;
-
-    return enlngs_val_string(s);
+    return v;
 }
 
 bool enlngs_exec_line(EnlngsVM* vm, const char* line) {
@@ -255,8 +516,17 @@ bool enlngs_exec_line(EnlngsVM* vm, const char* line) {
     // 1. Output commands: show <expr> / display <expr>
     if (str_starts_with_ci(s, "show ") || str_starts_with_ci(s, "display ")) {
         char* expr = trim(s + (str_starts_with_ci(s, "show ") ? 5 : 8));
-        EnlngsVal val = enlngs_eval_expr(vm, expr);
-        enlngs_print_val(val);
+        const char* starts[16];
+        int lens[16];
+        int ng = split_show_values(expr, starts, lens, 16);
+        for (int g = 0; g < ng; g++) {
+            char piece[512];
+            int n = lens[g] < 511 ? lens[g] : 511;
+            memcpy(piece, starts[g], (size_t)n);
+            piece[n] = '\0';
+            if (g > 0) printf(" ");
+            enlngs_print_val(enlngs_eval_expr(vm, piece));
+        }
         printf("\n");
         return true;
     }
@@ -392,6 +662,68 @@ bool enlngs_exec_line(EnlngsVM* vm, const char* line) {
     return true;
 }
 
+/* ---------------------------------------------------------------------
+ * Indented blocks. A line ending in a colon owns the lines below it that
+ * are indented further, the same rule the JavaScript translation uses.
+ * Older scripts that close a block with `end` are still understood.
+ * ------------------------------------------------------------------- */
+static int raw_indent(const char* s) {
+    int n = 0;
+    for (; *s == ' ' || *s == '\t'; s++) n += (*s == '\t') ? 4 : 1;
+    return n;
+}
+
+static bool raw_line_blank(const char* s) {
+    while (*s == ' ' || *s == '\t' || *s == '\r') s++;
+    return *s == '\0' || *s == '#' || (s[0] == '/' && s[1] == '/');
+}
+
+/* Copies the next line (without its newline) into buf and moves *pp past it. */
+static void read_raw_line(const char** pp, char* buf, size_t cap) {
+    size_t i = 0;
+    const char* p = *pp;
+    while (*p && *p != '\n') {
+        if (i + 1 < cap) buf[i++] = *p;
+        p++;
+    }
+    buf[i] = '\0';
+    if (*p == '\n') p++;
+    *pp = p;
+}
+
+/* Indent of the next line that has content, or -1 at the end of the text. */
+static int peek_next_indent(const char* p) {
+    char line[MAX_LINE_LEN];
+    while (*p) {
+        read_raw_line(&p, line, sizeof(line));
+        if (!raw_line_blank(line)) return raw_indent(line);
+    }
+    return -1;
+}
+
+/* Appends the lines indented deeper than header_indent to out. */
+static void take_indented_block(const char** pp, int header_indent, char* out, size_t cap) {
+    char line[MAX_LINE_LEN];
+    size_t used = 0;
+    out[0] = '\0';
+    for (;;) {
+        const char* save = *pp;
+        if (!**pp) break;
+        read_raw_line(pp, line, sizeof(line));
+        if (!raw_line_blank(line) && raw_indent(line) <= header_indent) {
+            *pp = save;
+            break;
+        }
+        size_t n = strlen(line);
+        if (used + n + 2 < cap) {
+            memcpy(out + used, line, n);
+            used += n;
+            out[used++] = '\n';
+            out[used] = '\0';
+        }
+    }
+}
+
 bool enlngs_exec_script(EnlngsVM* vm, const char* script) {
     if (!script) return false;
     char buffer[MAX_LINE_LEN];
@@ -404,9 +736,97 @@ bool enlngs_exec_script(EnlngsVM* vm, const char* script) {
         }
         buffer[idx] = '\0';
         if (*p == '\n') p++;
+        int header_indent = raw_indent(buffer);
 
         char* line = trim(buffer);
         if (!*line || line[0] == '#' || strncmp(line, "//", 2) == 0) continue;
+
+        // `in script:` only wraps the script; its lines run as written.
+        if (str_equals_ci(line, "in script:")) continue;
+
+        // Loop construct with an indented body
+        if (str_starts_with_ci(line, "repeat ") && strstr(line, " times") &&
+            peek_next_indent(p) > header_indent) {
+            char* times_pos = strstr(line, " times");
+            *times_pos = '\0';
+            long long count = enlngs_eval_expr(vm, line + 7).i_val;
+            char body[16384];
+            take_indented_block(&p, header_indent, body, sizeof(body));
+            for (long long c = 0; c < count; c++) enlngs_exec_script(vm, body);
+            continue;
+        }
+
+        // Conditional with an indented body
+        if (str_starts_with_ci(line, "if ") && peek_next_indent(p) > header_indent) {
+            char* cond_str = line + 3;
+            char* colon = strrchr(cond_str, ':');
+            if (colon) *colon = '\0';
+            EnlngsVal cond = enlngs_eval_expr(vm, trim(cond_str));
+            bool is_true = (cond.type == VAL_BOOL && cond.b_val) ||
+                           (cond.type == VAL_INT && cond.i_val != 0);
+            char then_body[16384], else_body[16384];
+            take_indented_block(&p, header_indent, then_body, sizeof(then_body));
+            else_body[0] = '\0';
+            const char* q = p;
+            char nextline[MAX_LINE_LEN];
+            while (*q) {
+                const char* before = q;
+                read_raw_line(&q, nextline, sizeof(nextline));
+                if (raw_line_blank(nextline)) continue;
+                char* nt = trim(nextline);
+                if (raw_indent(nextline) == header_indent &&
+                    (str_equals_ci(nt, "else:") || str_equals_ci(nt, "otherwise:"))) {
+                    p = q;
+                    take_indented_block(&p, header_indent, else_body, sizeof(else_body));
+                }
+                (void)before;
+                break;
+            }
+            enlngs_exec_script(vm, is_true ? then_body : else_body);
+            continue;
+        }
+
+        // Function with an indented body
+        if ((str_starts_with_ci(line, "function ") || str_starts_with_ci(line, "to do ")) &&
+            line[strlen(line) - 1] == ':' && peek_next_indent(p) > header_indent) {
+            if (vm->func_count < MAX_FUNCS) {
+                EnlngsFunc* fn = &vm->funcs[vm->func_count++];
+                char* name_start = line + (str_starts_with_ci(line, "function ") ? 9 : 6);
+                char* colon = strrchr(name_start, ':');
+                if (colon) *colon = '\0';
+                char* with_pos = strstr(name_start, " with ");
+                if (with_pos) {
+                    *with_pos = '\0';
+                    strncpy(fn->name, trim(name_start), 63);
+                    sscanf(trim(with_pos + 6), "%63s", fn->params[0]);
+                    fn->param_count = 1;
+                } else {
+                    strncpy(fn->name, trim(name_start), 63);
+                }
+                char body[16384];
+                take_indented_block(&p, header_indent, body, sizeof(body));
+                const char* bp = body;
+                while (*bp && fn->body_count < MAX_BODY_LINES) {
+                    char bl[MAX_LINE_LEN];
+                    read_raw_line(&bp, bl, sizeof(bl));
+                    char* bt = trim(bl);
+                    if (*bt && bt[0] != '#') strncpy(fn->body[fn->body_count++], bt, MAX_LINE_LEN - 1);
+                }
+            } else {
+                char skip[16384];
+                take_indented_block(&p, header_indent, skip, sizeof(skip));
+            }
+            continue;
+        }
+
+        // Page behaviour (timers, events, fetches) has nothing to act on in a
+        // terminal. Skip the header and everything indented under it.
+        if (line[strlen(line) - 1] == ':' && peek_next_indent(p) > header_indent &&
+            !str_starts_with_ci(line, "if ") && !str_starts_with_ci(line, "repeat ")) {
+            char skip[16384];
+            take_indented_block(&p, header_indent, skip, sizeof(skip));
+            continue;
+        }
 
         // Loop construct: repeat <N> times:
         if (str_starts_with_ci(line, "repeat ")) {
@@ -593,8 +1013,42 @@ static void transform_js_expr(const char* in, char* out, size_t out_sz) {
 
     char res[16384] = {0};
     const char* src = buf;
+    char in_quote = 0;
     while (*src) {
-        if (str_starts_with_ci(src, "get value of ")) {
+        /* Text inside quotes is copied as written, never translated. */
+        if (in_quote || *src == '"' || *src == '\'') {
+            if (!in_quote) in_quote = *src;
+            else if (*src == in_quote) in_quote = 0;
+            size_t rl = strlen(res);
+            if (rl + 1 < sizeof(res)) {
+                res[rl] = *src;
+                res[rl + 1] = '\0';
+            }
+            src++;
+            continue;
+        }
+        if (str_starts_with_ci(src, " plus ")) {
+            strncat(res, " + ", sizeof(res) - strlen(res) - 1);
+            src += 6;
+        } else if (str_starts_with_ci(src, " minus ")) {
+            strncat(res, " - ", sizeof(res) - strlen(res) - 1);
+            src += 7;
+        } else if (str_starts_with_ci(src, " multiplied by ")) {
+            strncat(res, " * ", sizeof(res) - strlen(res) - 1);
+            src += 15;
+        } else if (str_starts_with_ci(src, " times ")) {
+            strncat(res, " * ", sizeof(res) - strlen(res) - 1);
+            src += 7;
+        } else if (str_starts_with_ci(src, " divided by ")) {
+            strncat(res, " / ", sizeof(res) - strlen(res) - 1);
+            src += 12;
+        } else if (str_starts_with_ci(src, " modulo ")) {
+            strncat(res, " % ", sizeof(res) - strlen(res) - 1);
+            src += 8;
+        } else if (str_starts_with_ci(src, " mod ")) {
+            strncat(res, " % ", sizeof(res) - strlen(res) - 1);
+            src += 5;
+        } else if (str_starts_with_ci(src, "get value of ")) {
             src += 13;
             while (*src && isspace((unsigned char)*src)) src++;
             char target[128] = {0};
@@ -1506,9 +1960,20 @@ int enlngs_compile_to_js(const char* filepath, const char* outpath) {
         if (str_starts_with_ci(s, "show ") || str_starts_with_ci(s, "display ") || str_starts_with_ci(s, "log ")) {
             int skip_len = str_starts_with_ci(s, "display ") ? 8 : (str_starts_with_ci(s, "show ") ? 5 : 4);
             char* expr = trim(s + skip_len);
-            char tval[16384];
-            transform_js_expr(expr, tval, sizeof(tval));
-            fprintf(fout, "console.log(%s);\n", tval);
+            const char* starts[16];
+            int lens[16];
+            int ng = split_show_values(expr, starts, lens, 16);
+            fprintf(fout, "console.log(");
+            for (int g = 0; g < ng; g++) {
+                char piece[4096];
+                int n = lens[g] < 4095 ? lens[g] : 4095;
+                memcpy(piece, starts[g], (size_t)n);
+                piece[n] = '\0';
+                char tval[16384];
+                transform_js_expr(piece, tval, sizeof(tval));
+                fprintf(fout, "%s%s", g > 0 ? ", " : "", tval);
+            }
+            fprintf(fout, ");\n");
             continue;
         }
 

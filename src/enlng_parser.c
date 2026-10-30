@@ -1494,6 +1494,99 @@ static ASTNode *parse_statement(Parser *p) {
   return n;
 }
 
+/* ---------------------------------------------------------------------
+ * Frozen names: `freeze NAME as value` may not be assigned to afterwards.
+ * Checked once on the finished tree so the interpreter and the C backend
+ * behave the same. A function body starts with no frozen names, because a
+ * function cannot see names made outside it.
+ * ------------------------------------------------------------------- */
+typedef struct {
+  const char **names;
+  int count;
+  int cap;
+} FrozenSet;
+
+static bool frozen_has(FrozenSet *f, const char *name) {
+  for (int i = 0; i < f->count; i++)
+    if (strcmp(f->names[i], name) == 0)
+      return true;
+  return false;
+}
+
+static void frozen_add(FrozenSet *f, const char *name) {
+  if (f->count >= f->cap) {
+    f->cap = f->cap ? f->cap * 2 : 8;
+    f->names = (const char **)realloc(f->names, sizeof(char *) * f->cap);
+  }
+  f->names[f->count++] = name;
+}
+
+static void frozen_refuse(Parser *p, const char *name, int line) {
+  char err[256];
+  snprintf(err, sizeof(err),
+           "'%s' was declared with freeze, so it cannot be changed. "
+           "Use remember instead if the value needs to change.",
+           name);
+  set_error(p, err, line);
+}
+
+static void frozen_check_block(Parser *p, ASTNode **stmts, int count,
+                               FrozenSet *f) {
+  int keep = f->count; /* names frozen inside this block end with it */
+  for (int i = 0; i < count && !p->has_error; i++) {
+    ASTNode *n = stmts[i];
+    if (!n)
+      continue;
+    switch (n->type) {
+    case AST_DECLARATION:
+      if (frozen_has(f, n->as.decl.name))
+        frozen_refuse(p, n->as.decl.name, n->line);
+      else if (n->as.decl.is_frozen)
+        frozen_add(f, n->as.decl.name);
+      break;
+    case AST_MUTATION:
+      if (frozen_has(f, n->as.mutation.name))
+        frozen_refuse(p, n->as.mutation.name, n->line);
+      break;
+    case AST_WHEN:
+      frozen_check_block(p, n->as.when_stmt.then_body,
+                         n->as.when_stmt.then_count, f);
+      frozen_check_block(p, n->as.when_stmt.else_body,
+                         n->as.when_stmt.else_count, f);
+      break;
+    case AST_FOR_RANGE:
+      frozen_check_block(p, n->as.for_range.body, n->as.for_range.body_count,
+                         f);
+      break;
+    case AST_FOR_PAIR:
+      frozen_check_block(p, n->as.for_pair.body, n->as.for_pair.body_count, f);
+      break;
+    case AST_FOR_EACH:
+      frozen_check_block(p, n->as.for_each.body, n->as.for_each.body_count, f);
+      break;
+    case AST_REPEAT_WHILE:
+    case AST_REPEAT_UNTIL:
+      frozen_check_block(p, n->as.repeat_loop.body,
+                         n->as.repeat_loop.body_count, f);
+      break;
+    case AST_REPEAT_TIMES:
+      frozen_check_block(p, n->as.repeat_times.body,
+                         n->as.repeat_times.body_count, f);
+      break;
+    case AST_FUNCTION: {
+      FrozenSet inner = {0, 0, 0};
+      frozen_check_block(p, n->as.func_def.body, n->as.func_def.body_count,
+                         &inner);
+      free(inner.names);
+      break;
+    }
+    default:
+      break;
+    }
+  }
+  f->count = keep;
+}
+
 ASTNode *parser_parse_program(Parser *p) {
   skip_newlines(p);
 
@@ -1570,6 +1663,13 @@ ASTNode *parser_parse_program(Parser *p) {
       prog->as.program.statements[prog->as.program.count++] = stmt;
     }
     skip_newlines(p);
+  }
+
+  if (!p->has_error) {
+    FrozenSet top = {0, 0, 0};
+    frozen_check_block(p, prog->as.program.statements, prog->as.program.count,
+                       &top);
+    free(top.names);
   }
 
   return prog;

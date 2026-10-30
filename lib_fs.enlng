@@ -19,6 +19,12 @@ action file_read_lines_str(content):
                 sub_l = sub_l + l[i]
             l = sub_l
         append(clean_lines, l)
+    last = len(clean_lines) - 1
+    when last >= 0 and clean_lines[last] == "":
+        trimmed = []
+        for i from 0 to last - 1:
+            append(trimmed, clean_lines[i])
+        return trimmed
     return clean_lines
 
 action file_read_lines(filepath):

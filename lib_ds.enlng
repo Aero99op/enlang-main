@@ -379,8 +379,11 @@ action set_remove(s, item):
     key = "" + item
     elems = s.elements
     when has_key(elems, key):
-        elems[key] = null
-        s.elements = elems
+        kept = {}
+        for k in keys(elems):
+            when k != key:
+                kept[k] = elems[k]
+        s.elements = kept
         s.count = s.count - 1
 
 action set_size(s):
