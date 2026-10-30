@@ -1,0 +1,107 @@
+# Built-in Function Reference
+
+These functions are part of the language and need no `use` line. They are the same ones the interpreter and the C backend both provide. Everything else in the standard library is ordinary Enlangg code that you import.
+
+## Numbers
+
+| Call | Gives |
+|---|---|
+| `sqrt(x)` | The square root. |
+| `pow(x, y)` | `x` raised to the power `y`. |
+| `abs(x)` | The absolute value. |
+| `floor(x)` | The largest whole number not above `x`. |
+| `ceil(x)` | The smallest whole number not below `x`. |
+| `round(x)` | `x` rounded to the nearest whole number. |
+| `min(a, b)` | The smaller of two numbers. |
+| `max(a, b)` | The larger of two numbers. |
+| `random_number(low, high)` | A random whole number from `low` to `high`, both included. |
+
+## Text
+
+| Call | Gives |
+|---|---|
+| `len(text)` | The number of characters. |
+| `split(text, separator)` | A list of the pieces. With `""` as separator, one piece per character. |
+| `join(list, separator)` | The text items of the list glued together with the separator. |
+| `contains(text, piece)` | True if `piece` appears in `text`. Also works on lists. |
+| `reverse(text)` | The text backwards. |
+| `string_set_at(text, position, character)` | The text with the character at `position` replaced. |
+| `string_remove_at(text, position)` | The text without the character at `position`. |
+| `string_remove(text, piece)` | The text with the first `piece` taken out. |
+
+`string_add`, `string_insert` and `string_replace` also exist. They decide which argument is the text by comparing lengths, so their results can surprise you. The standard library module `lib_strings.enlng` has predictable replacements: `string_replace_first`, `string_replace_all`, and others.
+
+## Lists
+
+| Call | Gives |
+|---|---|
+| `len(list)` | The number of items. |
+| `append(list, value)` | Adds `value` at the end. |
+| `pop(list)` | Removes the last item and gives it back; `null` if the list is empty. |
+| `contains(list, value)` | True if the value is in the list. |
+| `reverse(list)` | A reversed copy. |
+| `join(list, separator)` | See above. |
+
+## Maps
+
+| Call | Gives |
+|---|---|
+| `keys(map)` | A list of the keys. |
+| `values(map)` | A list of the values. |
+| `has_key(map, key)` | True if the key is present. |
+| `len(map)` | The number of entries. |
+
+## Files, time and the machine
+
+| Call | Gives |
+|---|---|
+| `read_file(path)` | The file as text; empty text if it cannot be read. |
+| `write_file(path, text)` | Writes the file, replacing it. |
+| `append_file(path, text)` | Adds to the end of a file. |
+| `file_exists(path)` | True or false. |
+| `time_now()` | Seconds since 1970. |
+| `sleep(seconds)` | Waits. |
+
+## Phrases that act like functions
+
+Some summaries are written as phrases instead of calls:
+
+| Phrase | Gives |
+|---|---|
+| `count of x` | The number of items or characters. |
+| `length of x` | The same. |
+| `sum of list` | The total of a list of numbers. |
+| `average of list` (or `avg of list`) | The mean. |
+| `max of list`, `min of list` | The largest and smallest item. |
+| `first of list`, `last of list` | The ends of the list. |
+| `item at position` | One item. |
+| `key of map` | One entry. |
+
+## A sampler
+
+::: code
+type enlng
+
+remember xs as [5, 3, 9]
+remember m as {"k": 1}
+
+show sqrt(81)
+show pow(3, 4)
+show abs(-2)
+show floor(2.9) ceil(2.1) round(2.5)
+show min(4, 6) max(4, 6)
+show len("abc") len(xs) len(m)
+show split("a-b-c", "-")
+show join(["x", "y"], "/")
+show contains("seashell", "shell")
+show contains(xs, 9)
+show reverse("abc")
+append(xs, 1)
+show pop(xs)
+show keys(m) values(m) has_key(m, "k")
+show count of xs sum of xs max of xs first of xs
+:::
+
+## Where each function lives
+
+Every function listed here is available in both ways of running a program. If a name you expected is missing, such as `upper`, `trim` or `replace`, it is not a built-in; look in `lib_strings.enlng` and `lib_std.enlng`, which are covered in the next part.

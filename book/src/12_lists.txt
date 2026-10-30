@@ -1,0 +1,184 @@
+# Lists
+
+A list holds an ordered sequence of values. Write it with square brackets and commas. A list can hold any mix of kinds, including other lists.
+
+::: code
+type enlng
+
+remember primes as [2, 3, 5, 7, 11]
+remember mixed as [1, "two", 3.5, true]
+remember grid as [[1, 2], [3, 4]]
+remember empty as []
+show primes
+show mixed
+show grid
+show empty
+:::
+
+## Reading items
+
+Positions count from zero. A negative position counts back from the end. A position that does not exist gives `null` instead of an error:
+
+::: code
+type enlng
+
+remember colors as ["red", "green", "blue"]
+show colors[0]
+show colors[2]
+show colors[-1]
+show colors at 1
+show colors[10]
+:::
+
+A list inside a list is read with two positions:
+
+::: code
+type enlng
+
+remember grid as [[1, 2], [3, 4]]
+show grid[1][0]
+:::
+
+## How many items
+
+`count of`, `length of` and `len(...)` all work. `sum of`, `max of`, `min of` and `average of` summarise a list of numbers, and `first of` and `last of` give the ends:
+
+::: code
+type enlng
+
+remember scores as [72, 91, 55, 88]
+show count of scores
+show len(scores)
+show sum of scores
+show max of scores
+show min of scores
+show average of scores
+show first of scores
+show last of scores
+:::
+
+An empty list gives `0` for its sum and count and `null` for its maximum, minimum and ends.
+
+## Adding and removing
+
+`append(list, value)` adds to the end. `pop(list)` removes the last item and gives it back; on an empty list it gives `null`:
+
+::: code
+type enlng
+
+remember stack as []
+append(stack, "a")
+append(stack, "b")
+append(stack, "c")
+show stack
+show pop(stack)
+show stack
+:::
+
+There is no built-in for removing from the middle or the front of a list. Build a new list instead; the cookbook shows how.
+
+## Changing an item
+
+Assign to a position, or use an increase or decrease on it:
+
+::: code
+type enlng
+
+remember xs as [10, 20, 30]
+xs[1] = 99
+show xs
+xs[0] increases by 5
+show xs
+:::
+
+Assigning past the end pads with `null`:
+
+::: code
+type enlng
+
+remember xs as [1]
+xs[3] = 4
+show xs
+:::
+
+Changing an item of a list inside a list (`grid[1][0] = 9`) is not supported in toolchain 5.5.0. Read the inner list into a name, change it, and it is changed in the outer list too, because of the next point.
+
+## Lists are shared
+
+A name holds a reference to the list, not a copy. If you give the same list a second name, both names see every change:
+
+::: code
+type enlng
+
+remember original as [1, 2, 3]
+remember alias as original
+append(alias, 4)
+show original
+:::
+
+To make an independent copy, build a new list in a loop:
+
+::: code
+type enlng
+
+remember original as [1, 2, 3]
+remember copy as []
+for each x in original:
+    append(copy, x)
+append(copy, 4)
+show original
+show copy
+:::
+
+## Searching a list
+
+`contains(list, value)` tells you whether a value is present:
+
+::: code
+type enlng
+
+remember names as ["asha", "ravi", "meera"]
+show contains(names, "ravi")
+show contains(names, "zoya")
+:::
+
+## Reversing and sorting
+
+`reverse` as a statement reverses the list in place. Written as `reverse(list)` inside an expression it gives back a reversed list. `sort list ascending` and `sort list descending` reorder it in place:
+
+::: code
+type enlng
+
+remember xs as [4, 8, 15, 16, 23, 42]
+reverse xs
+show xs
+sort xs ascending
+show xs
+sort xs descending
+show xs
+:::
+
+## Walking a list
+
+::: code
+type enlng
+
+remember prices as [120, 80, 45]
+remember total as 0
+for each p in prices:
+    total increases by p
+show "Total:" total
+:::
+
+## Splitting text into a list and back
+
+::: code
+type enlng
+
+remember words as split("one two three", " ")
+show words
+show count of words
+show join(words, "+")
+:::
+
+`join` expects a list of text. A list of numbers joins to an empty result in this release, so turn numbers into text first by adding them to a string inside a loop.

@@ -1,0 +1,133 @@
+# The Standard Library: lib_concurrency and lib_enlngdb
+
+## lib_concurrency: coordination, simulated
+
+Enlangg 5.5.0 runs one thing at a time. There are no threads. `lib_concurrency.enlng` gives you the shapes that concurrent programs use, queues, pools, channels, locks, promises and events, written as ordinary code, so you can model how such a system behaves or structure a program around them. Nothing here runs in parallel.
+
+::: src
+use "lib_concurrency.enlng"
+:::
+
+### Task queue
+
+| Function | Does |
+|---|---|
+| `create_task_queue()` | An empty queue. |
+| `task_queue_push(q, name, payload)` | Adds a task. |
+| `task_queue_pop(q)` | Takes the oldest task (a map with `name` and `payload`). |
+| `task_queue_size(q)`, `task_queue_is_empty(q)`, `task_queue_clear(q)` | Inspect or empty it. |
+
+::: code
+type enlng
+use "lib_concurrency.enlng"
+
+remember queue as create_task_queue()
+task_queue_push(queue, "resize", 1)
+task_queue_push(queue, "email", 2)
+show task_queue_size(queue)
+remember task as task_queue_pop(queue)
+show task["name"] task["payload"]
+show task_queue_is_empty(queue)
+:::
+
+### Worker pool
+
+A pool holds tasks and works through them when you call `worker_pool_step`. In this version one call to `worker_pool_step` completes one task:
+
+::: code
+type enlng
+use "lib_concurrency.enlng"
+
+remember pool as create_worker_pool(2)
+worker_pool_dispatch(pool, "job1", 5)
+worker_pool_dispatch(pool, "job2", 6)
+worker_pool_dispatch(pool, "job3", 7)
+show worker_pool_pending_count(pool) worker_pool_completed_count(pool)
+worker_pool_step(pool)
+show worker_pool_pending_count(pool) worker_pool_completed_count(pool)
+:::
+
+### Channels
+
+A channel passes messages between parts of a program. It holds a fixed number. Sending to a full or closed channel returns false instead of waiting:
+
+::: code
+type enlng
+use "lib_concurrency.enlng"
+
+remember ch as create_channel(2)
+show channel_send(ch, "x") channel_send(ch, "y") channel_send(ch, "z")
+show channel_is_full(ch) channel_size(ch)
+show channel_receive(ch)
+channel_close(ch)
+show channel_send(ch, "w")
+:::
+
+### Mutex
+
+A mutex is a lock owned by one party at a time. `mutex_acquire` returns true if you got it, and `mutex_release` only works for the owner:
+
+::: code
+type enlng
+use "lib_concurrency.enlng"
+
+remember lock as create_mutex()
+show mutex_acquire(lock, 1) mutex_acquire(lock, 2)
+show mutex_is_locked(lock) mutex_owner(lock)
+show mutex_release(lock, 2) mutex_release(lock, 1)
+:::
+
+### Promises
+
+A promise stands for a value that is not ready yet. You settle it once, either by resolving it with a value or rejecting it with a message:
+
+::: code
+type enlng
+use "lib_concurrency.enlng"
+
+remember p as create_promise()
+show promise_is_settled(p)
+promise_resolve(p, 42)
+show promise_is_fulfilled(p) promise_value(p)
+
+remember q as create_promise()
+promise_reject(q, "boom")
+show promise_is_rejected(q) promise_error(q)
+:::
+
+### Events
+
+An emitter lets parts of a program announce that something happened. `event_on` registers a listener by name; `event_emit` returns how many listeners were told. It records the notification, it does not call a function for you:
+
+::: code
+type enlng
+use "lib_concurrency.enlng"
+
+remember events as create_event_emitter()
+event_on(events, "save", "logger")
+event_on(events, "save", "mailer")
+show event_listener_count(events, "save")
+show event_emit(events, "save", "doc1")
+:::
+
+## lib_enlngdb: the same style for EnlngDB
+
+`lib_enlngdb.enlng` offers `enlngdb_connect`, `enlngdb_create_table`, `enlngdb_insert`, `enlngdb_find_all`, `enlngdb_find_where`, `enlngdb_update_where` and `enlngdb_delete_where`. They take the same arguments as the `db_` functions of chapter 27 and keep the data in memory in the same way:
+
+::: code
+type enlng
+use "lib_enlngdb.enlng"
+
+remember db as enlngdb_connect("demo")
+enlngdb_create_table(db, "t", ["a"])
+enlngdb_insert(db, "t", {"a": 1})
+enlngdb_insert(db, "t", {"a": 2})
+show len(enlngdb_find_all(db, "t"))
+show len(enlngdb_find_where(db, "t", "a", ">", 1))
+enlngdb_update_where(db, "t", "a", "==", 1, "a", 9)
+enlngdb_delete_where(db, "t", "a", "==", 2)
+for each row in enlngdb_find_all(db, "t"):
+    show row["a"]
+:::
+
+It does not talk to the EnlngDB command-line tool; the tool is covered separately.

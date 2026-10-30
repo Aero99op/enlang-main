@@ -1,0 +1,176 @@
+# The Standard Library: lib_db (A Small Table Store)
+
+`lib_db.enlng` is a tiny database that lives in memory while your program runs. A database holds named tables, a table holds rows, and a row is a map from column name to value. Nothing is saved to disk: when the program ends, the data is gone (use `lib_file` to save it, or the separate EnlngDB tool described in a later chapter).
+
+::: src
+use "lib_db.enlng"
+:::
+
+## Tables and rows
+
+| Function | Does |
+|---|---|
+| `db_connect(name)` | Makes a new empty database. |
+| `db_create_table(db, table, columns)` | Adds a table with the given column names. |
+| `db_drop_table(db, table)` | Removes a table. |
+| `db_list_tables(db)` | The table names. |
+| `db_insert(db, table, row)` | Adds a row (a map). It gets an `id` column automatically, starting at 1. |
+| `db_count(db, table)` | The number of rows. |
+| `db_find_all(db, table)` | All rows as a list of maps. |
+
+Rows are maps, and maps have no fixed order, so when you print a whole row the keys can come out in any order. The examples here print individual fields to keep the output steady.
+
+::: code
+type enlng
+use "lib_db.enlng"
+
+remember db as db_connect("shop")
+db_create_table(db, "items", ["name", "price", "qty"])
+db_insert(db, "items", {"name": "tea", "price": 25, "qty": 10})
+db_insert(db, "items", {"name": "coffee", "price": 120, "qty": 3})
+db_insert(db, "items", {"name": "milk", "price": 30, "qty": 0})
+
+show db_list_tables(db)
+show db_count(db, "items")
+for each row in db_find_all(db, "items"):
+    show row["id"] row["name"] row["price"] row["qty"]
+:::
+
+## Searching
+
+`db_find_where(db, table, column, operator, value)` gives the matching rows. The operator is written as text: `"=="`, `"!="`, `"<"`, `">"`, `"<="`, `">="`, or `"contains"` (true when the column's text includes the value's text). A single `"="` also works as `"=="`. `db_find_one` gives the first row where a column equals a value.
+
+::: code
+type enlng
+use "lib_db.enlng"
+
+remember db as db_connect("shop")
+db_create_table(db, "items", ["name", "price", "qty"])
+db_insert(db, "items", {"name": "tea", "price": 25, "qty": 10})
+db_insert(db, "items", {"name": "coffee", "price": 120, "qty": 3})
+db_insert(db, "items", {"name": "milk", "price": 30, "qty": 0})
+
+for each row in db_find_where(db, "items", "price", ">", 26):
+    show row["name"]
+show "out of stock:"
+for each row in db_find_where(db, "items", "qty", "==", 0):
+    show row["name"]
+remember tea as db_find_one(db, "items", "name", "tea")
+show tea["price"]
+:::
+
+## Changing and removing
+
+| Function | Does |
+|---|---|
+| `db_update_where(db, table, column, op, value, set_column, new_value)` | Sets a column on every matching row. |
+| `db_delete_where(db, table, column, op, value)` | Removes every matching row. |
+
+::: code
+type enlng
+use "lib_db.enlng"
+
+remember db as db_connect("shop")
+db_create_table(db, "items", ["name", "price", "qty"])
+db_insert(db, "items", {"name": "tea", "price": 25, "qty": 10})
+db_insert(db, "items", {"name": "coffee", "price": 120, "qty": 3})
+db_insert(db, "items", {"name": "milk", "price": 30, "qty": 0})
+
+db_update_where(db, "items", "name", "==", "milk", "qty", 12)
+show db_find_one(db, "items", "name", "milk")["qty"]
+
+db_delete_where(db, "items", "qty", "<", 5)
+show db_count(db, "items")
+:::
+
+## Ordering, trimming and picking columns
+
+These work on a list of rows, usually the result of one of the finders.
+
+| Function | Does |
+|---|---|
+| `db_order_by(rows, column, ascending)` | Sorted rows. Pass `true` for smallest first, `false` for largest first. |
+| `db_limit(rows, count)` | The first `count` rows. |
+| `db_select_columns(rows, columns)` | Rows reduced to the listed columns. |
+
+::: code
+type enlng
+use "lib_db.enlng"
+
+remember db as db_connect("shop")
+db_create_table(db, "items", ["name", "price"])
+db_insert(db, "items", {"name": "tea", "price": 25})
+db_insert(db, "items", {"name": "coffee", "price": 120})
+db_insert(db, "items", {"name": "milk", "price": 30})
+
+show "dearest first:"
+for each row in db_order_by(db_find_all(db, "items"), "price", false):
+    show row["name"] row["price"]
+
+show "two cheapest:"
+for each row in db_limit(db_order_by(db_find_all(db, "items"), "price", true), 2):
+    show row["name"]
+
+show db_select_columns(db_find_all(db, "items"), ["name"])
+:::
+
+## Joining two tables
+
+`db_inner_join(rows_a, rows_b, key_a, key_b)` pairs up rows whose key columns are equal and merges them:
+
+::: code
+type enlng
+use "lib_db.enlng"
+
+remember db as db_connect("shop")
+db_create_table(db, "items", ["name", "price"])
+db_insert(db, "items", {"name": "tea", "price": 25})
+db_insert(db, "items", {"name": "coffee", "price": 120})
+db_create_table(db, "makers", ["item", "maker"])
+db_insert(db, "makers", {"item": "tea", "maker": "Asha"})
+
+for each row in db_inner_join(db_find_all(db, "items"), db_find_all(db, "makers"), "name", "item"):
+    show row["name"] row["price"] row["maker"]
+:::
+
+Only coffee is missing from the output, because no row in `makers` mentions it.
+
+## Transactions
+
+`db_transaction_begin`, `db_transaction_commit` and `db_transaction_rollback` let you try changes and take them back:
+
+::: code
+type enlng
+use "lib_db.enlng"
+
+remember db as db_connect("shop")
+db_create_table(db, "items", ["name"])
+db_insert(db, "items", {"name": "tea"})
+
+db_transaction_begin(db)
+db_insert(db, "items", {"name": "extra"})
+show "inside:" db_count(db, "items")
+db_transaction_rollback(db)
+show "after rollback:" db_count(db, "items")
+:::
+
+## Exporting to CSV
+
+`db_export_csv(db, table)` gives the table as comma-separated text, header row first:
+
+::: code
+type enlng
+use "lib_db.enlng"
+
+remember db as db_connect("shop")
+db_create_table(db, "items", ["name", "price", "qty"])
+db_insert(db, "items", {"name": "tea", "price": 25, "qty": 10})
+db_insert(db, "items", {"name": "milk", "price": 30, "qty": 12})
+show db_export_csv(db, "items")
+:::
+
+Pair it with `file_write` from chapter 26 to keep the data between runs.
+
+## What this is and is not
+
+It is a convenient way to hold and query rows in a program. It is not a server, it does not write to disk by itself, it has no indexes, and every search looks at every row. For a few thousand rows that is fine.

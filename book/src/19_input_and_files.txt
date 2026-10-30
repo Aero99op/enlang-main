@@ -1,0 +1,120 @@
+# Input, Files and Time
+
+## Reading what the user types
+
+`ask name` waits for a line of text, then stores it under `name`. The value is always **text**, even if the user typed digits. This surprises people:
+
+::: code stdin=5
+type enlng
+
+ask n
+show n times 2
+show n plus 1
+:::
+
+Here `n` is the text `"5"`, so `n times 2` repeats the text and `n plus 1` joins `"1"` on the end. To compute with a typed number, convert it first. The standard library has `parse_int` for whole numbers (chapter on the standard library):
+
+::: cmd
+@@ main.enlng
+type enlng
+use "lib_std.enlng"
+
+ask n
+show (parse_int with n) times 2
+@@@
+echo 21 | enlng run main.enlng
+:::
+
+At the end of the input `ask` gives an empty text, not an error, which makes loops that read until a blank line straightforward.
+
+## `ask` inside a block
+
+A name created by `ask` belongs to the block it is in. Inside a loop that means a fresh name on each pass, and an outer name of the same spelling is not updated. Ask into a temporary name and assign it to the outer one:
+
+::: code stdin=apple\nbanana\ncherry\n
+type enlng
+
+remember count as 0
+remember line as "start"
+while line is not "":
+    ask next_line
+    line = next_line
+    when line is not "":
+        count increases by 1
+show "lines read:" count
+:::
+
+## Files
+
+Five built-in functions work with files:
+
+| Function | What it does |
+|---|---|
+| `write_file(path, text)` | Creates the file, or replaces it, with `text`. |
+| `append_file(path, text)` | Adds `text` to the end of the file. |
+| `read_file(path)` | Gives the whole file as text. A missing file gives an empty text. |
+| `file_exists(path)` | True or false. |
+| `time_now()` | The current time as seconds since 1970. |
+
+Inside text, `\n` is a new line, `\t` a tab and `\"` a quote:
+
+::: code
+type enlng
+
+write_file("notes.txt", "milk\neggs\nbread")
+show file_exists("notes.txt")
+show read_file("notes.txt")
+
+append_file("notes.txt", "\ntea")
+remember items as split(read_file("notes.txt"), "\n")
+show count of items
+show items[3]
+show file_exists("missing.txt")
+:::
+
+A missing file reads as empty text, so check with `file_exists` first when the difference matters.
+
+## Keeping a log
+
+A file that grows by one line per run is only a few lines:
+
+::: code
+type enlng
+
+remember path as "visits.log"
+append_file(path, "visit\n")
+remember lines as split(read_file(path), "\n")
+show "lines so far:" count of lines
+:::
+
+Each time this program is run the count goes up by one, because the file is kept between runs.
+
+## Random numbers
+
+`random_number(low, high)` gives a whole number from `low` to `high`, both included. The result changes from run to run, so the example prints only facts that are always true:
+
+::: code
+type enlng
+
+remember roll as random_number(1, 6)
+when roll is at least 1 and roll is at most 6:
+    show "the roll is a valid die face"
+:::
+
+## Time
+
+`time_now()` is a number of seconds. Subtract two readings to time something:
+
+::: code
+type enlng
+
+remember start as time_now()
+remember total as 0
+for i from 1 to 1000:
+    total increases by i
+remember elapsed as time_now() minus start
+show "sum:" total
+show "took no more than 5 seconds:" elapsed is at most 5
+:::
+
+`sleep(seconds)` pauses the program.

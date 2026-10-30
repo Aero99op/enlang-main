@@ -1,0 +1,316 @@
+# Cookbook 4: Searching, Sorting and Recursion
+
+## Linear search
+
+Look at each item in turn. It works on any list, sorted or not:
+
+::: code
+type enlng
+
+function find_it with items, target:
+    for i from 0 to len(items) - 1:
+        when items[i] is target:
+            give i
+    give -1
+
+show find_it([8, 3, 9, 1], 9)
+show find_it([8, 3, 9, 1], 4)
+:::
+
+## Binary search
+
+On a sorted list, look at the middle and discard the half that cannot hold the target. Each step halves the work, so a list of a million items needs about twenty steps:
+
+::: code
+type enlng
+
+function bsearch with items, target:
+    remember low as 0
+    remember high as len(items) - 1
+    remember steps as 0
+    while low <= high:
+        steps increases by 1
+        remember mid as (low + high) / 2
+        when items[mid] is target:
+            show "found after" steps "steps"
+            give mid
+        when items[mid] < target:
+            low = mid + 1
+        otherwise:
+            high = mid - 1
+    show "not found after" steps "steps"
+    give -1
+
+remember data as []
+for i from 0 to 99:
+    append(data, i * 3)
+show bsearch(data, 150)
+show bsearch(data, 151)
+:::
+
+Because whole-number division cuts off the fraction, `(low + high) / 2` is already the middle position.
+
+## Bubble sort, written out
+
+Chapter 18 showed the built-in sorting words. Here is the classic method written by hand, which is useful for seeing how it works:
+
+::: code
+type enlng
+
+function bubble with items:
+    remember n as len(items)
+    for pass from 1 to n - 1:
+        for i from 0 to n - 2:
+            when items[i] > items[i + 1]:
+                remember t as items[i]
+                items[i] = items[i + 1]
+                items[i + 1] = t
+    give items
+
+show bubble([5, 2, 9, 1, 7, 3])
+:::
+
+## Selection sort
+
+Find the smallest of what is left, put it first, and repeat:
+
+::: code
+type enlng
+
+function selection with items:
+    remember n as len(items)
+    for i from 0 to n - 2:
+        remember smallest as i
+        for j from i + 1 to n - 1:
+            when items[j] < items[smallest]:
+                smallest = j
+        remember t as items[i]
+        items[i] = items[smallest]
+        items[smallest] = t
+    give items
+
+show selection([64, 25, 12, 22, 11])
+:::
+
+## Insertion sort
+
+Take each item and slide it left until it fits, like sorting playing cards in your hand:
+
+::: code
+type enlng
+
+function insertion with items:
+    for i from 1 to len(items) - 1:
+        remember key as items[i]
+        remember j as i - 1
+        while j >= 0 and items[j] > key:
+            items[j + 1] = items[j]
+            j = j - 1
+        items[j + 1] = key
+    give items
+
+show insertion([12, 11, 13, 5, 6])
+:::
+
+## Merge sort
+
+Split in half, sort each half, and merge the two sorted halves. This is the recursive way, and it stays fast on large lists:
+
+::: code
+type enlng
+
+function merge with a, b:
+    remember out as []
+    remember i as 0
+    remember j as 0
+    while i < len(a) and j < len(b):
+        when a[i] <= b[j]:
+            append(out, a[i])
+            i increases by 1
+        otherwise:
+            append(out, b[j])
+            j increases by 1
+    while i < len(a):
+        append(out, a[i])
+        i increases by 1
+    while j < len(b):
+        append(out, b[j])
+        j increases by 1
+    give out
+
+function msort with items:
+    when len(items) <= 1:
+        give items
+    remember mid as len(items) / 2
+    remember left as []
+    remember right as []
+    for i from 0 to len(items) - 1:
+        when i < mid:
+            append(left, items[i])
+        otherwise:
+            append(right, items[i])
+    give merge(msort(left), msort(right))
+
+show msort([38, 27, 43, 3, 9, 82, 10])
+:::
+
+## Sorting words and numbers by a rule
+
+To sort records by one field, put the field first and compare it. This sorts names by their length, shortest first, and stays stable for equal lengths:
+
+::: code
+type enlng
+
+remember names as ["Meera", "Ravi", "Asha", "Prakash", "Om"]
+remember n as len(names)
+for pass from 1 to n - 1:
+    for i from 0 to n - 2:
+        when len(names[i]) > len(names[i + 1]):
+            remember t as names[i]
+            names[i] = names[i + 1]
+            names[i + 1] = t
+show names
+:::
+
+## Recursion: sum of a list
+
+A recursive function calls itself on a smaller problem. It needs a base case where it stops:
+
+::: code
+type enlng
+
+function total with items, from_pos:
+    when from_pos >= len(items):
+        give 0
+    give items[from_pos] + total(items, from_pos + 1)
+
+show total([4, 8, 15, 16, 23, 42], 0)
+:::
+
+## Recursion: power
+
+::: code
+type enlng
+
+function power with base, exp:
+    when exp is 0:
+        give 1
+    give base * power(base, exp - 1)
+
+show power(2, 10)
+show power(3, 4)
+:::
+
+## Recursion: Towers of Hanoi
+
+Move a pile of discs from one peg to another, never putting a larger disc on a smaller one. The number of moves for n discs is 2 to the power n, minus 1:
+
+::: code
+type enlng
+
+function hanoi with n, source, target, spare:
+    when n is 0:
+        give 0
+    remember a as hanoi(n - 1, source, spare, target)
+    show "move disc" n "from" source "to" target
+    remember b as hanoi(n - 1, spare, target, source)
+    give a + b + 1
+
+remember moves as hanoi(3, "A", "C", "B")
+show "total moves:" moves
+:::
+
+## Recursion: all subsets
+
+For each item, either leave it out or put it in:
+
+::: code
+type enlng
+
+function subsets with items:
+    when len(items) is 0:
+        give [[]]
+    remember rest as []
+    for i from 1 to len(items) - 1:
+        append(rest, items[i])
+    remember smaller as subsets(rest)
+    remember out as []
+    for each s in smaller:
+        append(out, s)
+        remember with_first as [items[0]]
+        for each x in s:
+            append(with_first, x)
+        append(out, with_first)
+    give out
+
+remember all_sets as subsets([1, 2, 3])
+show len(all_sets)
+for each s in all_sets:
+    show s
+:::
+
+## Recursion: permutations of a word
+
+::: code
+type enlng
+
+function perms with text:
+    when len(text) <= 1:
+        give [text]
+    remember out as []
+    for i from 0 to len(text) - 1:
+        remember rest as ""
+        for j from 0 to len(text) - 1:
+            when j is not i:
+                rest = rest + text[j]
+        for each p in perms(rest):
+            append(out, text[i] + p)
+    give out
+
+show perms("abc")
+show len(perms("abcd"))
+:::
+
+## Sieve of Eratosthenes
+
+Cross out the multiples of each prime to leave only the primes:
+
+::: code
+type enlng
+
+remember limit as 50
+remember crossed as []
+for i from 0 to limit:
+    append(crossed, false)
+
+remember primes as []
+for i from 2 to limit:
+    when not crossed[i]:
+        append(primes, i)
+        remember m as i * i
+        while m <= limit:
+            crossed[m] = true
+            m increases by i
+show primes
+:::
+
+## Collatz sequence
+
+Halve even numbers, triple-plus-one odd numbers, and count how long it takes to reach 1:
+
+::: code
+type enlng
+
+function collatz with n:
+    remember steps as 0
+    while n is not 1:
+        when n mod 2 is 0:
+            n = n / 2
+        otherwise:
+            n = 3 * n + 1
+        steps increases by 1
+    give steps
+
+for each n in [6, 7, 27, 97]:
+    show n collatz(n)
+:::

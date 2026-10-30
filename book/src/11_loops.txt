@@ -1,0 +1,150 @@
+# Loops
+
+A loop repeats a block. Enlangg has loops that count, loops that walk through a list, and loops that run while a condition holds.
+
+## Counting: for ... from ... to
+
+The loop name takes each value from the start up to and including the end:
+
+::: code
+type enlng
+
+for i from 1 to 5:
+    show i
+:::
+
+Add `by` to step by more than one:
+
+::: code
+type enlng
+
+for i from 0 to 20 by 5:
+    show i
+:::
+
+The end value is included, and the step must be positive. A loop that is meant to count downwards, such as `for i from 3 to 1 by -1`, does not run at all in toolchain 5.5.0. To count down, count up and subtract:
+
+::: code
+type enlng
+
+for i from 0 to 2:
+    show 3 minus i
+:::
+
+## Doing something a fixed number of times
+
+::: code
+type enlng
+
+repeat 3 times:
+    show "hip hip hooray"
+:::
+
+## Walking through a list or text
+
+`for each` takes each item in turn. It works on a list, on text (one character at a time) and on the list returned by `keys`:
+
+::: code
+type enlng
+
+for each fruit in ["apple", "mango", "kiwi"]:
+    show "I like" fruit
+
+for each letter in "abc":
+    show letter
+:::
+
+## Walking through a map
+
+Looping directly over a map does not give you the keys in toolchain 5.5.0. Loop over `keys(map)` and look each value up:
+
+::: code
+type enlng
+
+remember stock as {"pens": 12, "books": 3}
+for each name in keys(stock):
+    show name "->" stock[name]
+:::
+
+## Loops that wait for a condition
+
+`while` and `repeat while` run as long as the condition is true. They are the same loop with two spellings:
+
+::: code
+type enlng
+
+remember n as 1
+while n < 100:
+    n = n times 2
+show n
+:::
+
+The condition is checked before each pass, so if it is false at the start the block never runs. Make sure something inside the block changes what the condition tests, otherwise the loop never ends.
+
+`repeat until` is the mirror image: it runs until the condition becomes true.
+
+::: code
+type enlng
+
+remember total as 0
+remember k as 0
+repeat until total is at least 10:
+    k increases by 1
+    total increases by k
+show "k =" k "total =" total
+:::
+
+## stop and skip
+
+`stop` leaves the loop at once. `skip` abandons the rest of this pass and goes to the next one:
+
+::: code
+type enlng
+
+for each n in [1, 2, 3, 4, 5, 6]:
+    when n mod 2 is 0:
+        skip
+    when n is 5:
+        stop
+    show n
+:::
+
+## Loops inside loops
+
+The inner loop runs completely for each pass of the outer one. A multiplication table:
+
+::: code
+type enlng
+
+for row from 1 to 4:
+    remember line as ""
+    for col from 1 to 4:
+        line = line + (row times col) + " "
+    show line
+:::
+
+## Accumulating
+
+Most loops build up one result. Start the result before the loop, update it inside, and use it after:
+
+::: code
+type enlng
+
+remember total as 0
+for each price in [120, 80, 45, 15]:
+    total increases by price
+show "Sum:" total
+show "Average:" total divided by 4
+:::
+
+## An infinite loop
+
+A loop whose condition never becomes false runs forever. If it happens, stop the program with Ctrl+C in the terminal:
+
+::: src
+type enlng
+
+remember n as 1
+while n > 0:
+    n increases by 1
+:::

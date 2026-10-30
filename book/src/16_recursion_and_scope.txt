@@ -1,0 +1,171 @@
+# Recursion and Scope
+
+## Recursion
+
+A function may call itself. The trick is to give it a case that does not, so that it stops. The usual shape is: if the problem is tiny, answer directly; otherwise solve a smaller version and build on that.
+
+Factorial multiplies the numbers from 1 up to `n`:
+
+::: code
+type enlng
+
+function factorial with n:
+    when n is at most 1:
+        give 1
+    give n times factorial(n minus 1)
+
+show factorial(5)
+show factorial(10)
+show factorial(20)
+:::
+
+The Fibonacci numbers, where each is the sum of the two before it:
+
+::: code
+type enlng
+
+function fib with n:
+    when n is less than 2:
+        give n
+    give fib(n minus 1) plus fib(n minus 2)
+
+for i from 0 to 12:
+    show fib(i)
+:::
+
+This version repeats a lot of work. `fib(30)` makes over a million calls. When speed matters, use a loop that keeps the two latest values:
+
+::: code
+type enlng
+
+function fib_fast with n:
+    remember a as 0
+    remember b as 1
+    for i from 1 to n:
+        remember next as a plus b
+        a = b
+        b = next
+    give a
+
+show fib_fast(30)
+show fib_fast(50)
+:::
+
+## Greatest common divisor
+
+Euclid's method: the answer for `a` and `b` is the answer for `b` and the remainder of `a` by `b`.
+
+::: code
+type enlng
+
+function gcd with a, b:
+    when b is 0:
+        give a
+    give gcd(b, a mod b)
+
+show gcd(48, 18)
+show gcd(17, 5)
+:::
+
+## Recursion depth
+
+Each pending call takes room. The interpreter allows a nesting of 20000 calls and stops a deeper one with an error that names the function (chapter 5 shows it). A recursive sum to 10000 works:
+
+::: code
+type enlng
+
+function total_to with n:
+    when n is 0:
+        give 0
+    give n plus total_to(n minus 1)
+
+show total_to(10000)
+:::
+
+If you expect more depth than that, rewrite the function as a loop.
+
+# Scope
+
+The **scope** of a name is the part of the program where it can be used.
+
+## Names made in a function stay in it
+
+A name created inside a function exists only while that function runs:
+
+::: err
+type enlng
+
+function make with n:
+    remember secret as n times 2
+    give secret
+
+show make(4)
+show secret
+:::
+
+## A function cannot see the caller's names
+
+In this release a function body cannot read names that were created outside it. If the function needs a value, pass it in as an input:
+
+::: err
+type enlng
+
+remember rate as 18
+function tax with price:
+    give price times rate divided by 100
+
+show tax(200)
+:::
+
+The fix is to make the rate an input:
+
+::: code
+type enlng
+
+remember rate as 18
+
+function tax with price, percent:
+    give price times percent divided by 100
+
+show tax(200, rate)
+:::
+
+This keeps functions self-contained: what a function does depends only on its inputs.
+
+## Blocks
+
+A name created inside a `when` or a loop belongs to that block. A name with the same spelling made inside the block hides an outer one for as long as the block runs, and the outer one is untouched afterwards:
+
+::: code
+type enlng
+
+remember x as 1
+when true:
+    remember x as 99
+    show "inside:" x
+show "outside:" x
+:::
+
+If you want to change an outer name from inside a block, assign without `remember`:
+
+::: code
+type enlng
+
+remember total as 0
+for each n in [1, 2, 3]:
+    total increases by n
+show total
+:::
+
+## Loop variables
+
+The name in `for each n in ...` or `for i from ...` belongs to the loop. Use a different name after the loop if you need to keep the last value:
+
+::: code
+type enlng
+
+remember last as 0
+for i from 1 to 4:
+    last = i
+show last
+:::

@@ -1,0 +1,91 @@
+# Your First Program
+
+Create a text file named `hello.enlng` and put this in it:
+
+::: code
+type enlng
+
+show "Hello from Enlangg"
+:::
+
+Run it from a terminal in the same folder:
+
+::: sh
+enlng run hello.enlng
+:::
+
+## The parts of the file
+
+- `type enlng` on the first line says which language this file is written in. Each of the six file types has its own tool and its own word list, and this line stops a file from being read by the wrong one. Chapter 18 returns to it.
+- A blank line is only for you. Blank lines are ignored.
+- `show` prints the values after it, followed by a new line.
+- Text goes in double quotes. Numbers do not.
+
+## Adding a name
+
+A name holds a value so you can use it again. You create one with `remember`:
+
+::: code
+type enlng
+
+remember city as "Pune"
+remember year as 2026
+show "City:" city
+show "Year:" year
+:::
+
+Notice that `show` with several values separates them with a space and that a string already ending in a space keeps it. The words after `show` are evaluated in order and printed together.
+
+## Comments
+
+A line that starts with `#` is a comment. The tool skips it. Use comments to explain why, not what:
+
+::: code
+type enlng
+
+# Tax is 18 percent in this example.
+remember rate as 18
+remember price as 200
+show "Tax:" price times rate divided by 100
+:::
+
+## Changing a value
+
+Once a name exists you can change it with `change`, or with an increase or decrease:
+
+::: code
+type enlng
+
+remember score as 10
+score increases by 5
+show score
+score decreases by 3
+show score
+change score to 100
+show score
+:::
+
+## Reading input
+
+`ask` reads a line the user types and stores it under the name you give. Because this book's programs run without a keyboard, the next example is run with the text `Asha` supplied as input:
+
+::: code stdin=Asha
+type enlng
+
+ask name
+show "Hello," name
+:::
+
+## What happens when you make a mistake
+
+Enlangg checks the whole file before running any of it. If a line does not follow the grammar you get a message that points at the line, shows it, and says what was expected:
+
+::: err
+type enlng
+
+show "before"
+remember as 5
+show "after"
+:::
+
+Nothing was printed, not even `before`, because the file never started running. Chapter 21 lists the error messages you are likely to meet.

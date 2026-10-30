@@ -1,0 +1,297 @@
+# Cookbook 1: Numbers
+
+Each recipe is a complete program. The output under it is what `enlng` printed when this book was built. Where a recipe depends on a quirk of the language, the text says so. Remember that dividing two whole numbers cuts off the remainder, and that a name must be made with `remember` before it is changed.
+
+## Even or odd
+
+::: code
+type enlng
+
+function parity with n:
+    when n mod 2 is 0:
+        give "even"
+    give "odd"
+
+for each n in [1, 2, 7, 10, 0]:
+    show n parity(n)
+:::
+
+## Sum of the numbers 1 to n
+
+A loop adds them one at a time. There is also a formula, n times (n plus 1) divided by 2, and the two should agree:
+
+::: code
+type enlng
+
+function sum_to with n:
+    remember total as 0
+    for i from 1 to n:
+        total increases by i
+    give total
+
+show sum_to(10)
+show sum_to(100)
+show 100 * 101 / 2
+:::
+
+## Factorial
+
+::: code
+type enlng
+
+function fact with n:
+    remember result as 1
+    for i from 2 to n:
+        result = result * i
+    give result
+
+for each n in [0, 1, 5, 10, 15]:
+    show n fact(n)
+:::
+
+Whole numbers in Enlangg are 64 bits wide. Past 20 factorial the value no longer fits and the result wraps around to nonsense; there is no warning. A program that needs larger numbers must keep them in another way, such as a list of digits.
+
+## Fibonacci numbers
+
+::: code
+type enlng
+
+remember a as 0
+remember b as 1
+remember line as ""
+for i from 1 to 15:
+    line = line + a + " "
+    remember next as a + b
+    a = b
+    b = next
+show line
+:::
+
+## Powers of two
+
+::: code
+type enlng
+
+remember p as 1
+for i from 0 to 10:
+    show i p
+    p = p * 2
+:::
+
+## Greatest common divisor
+
+Euclid's method: replace the pair (a, b) by (b, a mod b) until b is zero.
+
+::: code
+type enlng
+
+function gcd_of with a, b:
+    while b is not 0:
+        remember t as b
+        b = a mod b
+        a = t
+    give a
+
+show gcd_of(84, 36)
+show gcd_of(17, 5)
+show gcd_of(100, 75)
+:::
+
+## Is it prime?
+
+Try every divisor up to the square root:
+
+::: code
+type enlng
+
+function prime with n:
+    when n < 2:
+        give false
+    remember d as 2
+    while d * d <= n:
+        when n mod d is 0:
+            give false
+        d increases by 1
+    give true
+
+remember found as []
+for n from 1 to 40:
+    when prime(n):
+        append(found, n)
+show found
+:::
+
+## Counting the digits and summing them
+
+Repeated division by ten peels digits off the right. Whole-number division makes this work:
+
+::: code
+type enlng
+
+function digit_sum with n:
+    remember total as 0
+    while n > 0:
+        total increases by n mod 10
+        n = n / 10
+    give total
+
+function digit_count with n:
+    remember c as 0
+    while n > 0:
+        c increases by 1
+        n = n / 10
+    give c
+
+show digit_sum(2024) digit_count(2024)
+show digit_sum(999) digit_count(999)
+:::
+
+## Reversing a number
+
+::: code
+type enlng
+
+function flip with n:
+    remember out as 0
+    while n > 0:
+        out = out * 10 + n mod 10
+        n = n / 10
+    give out
+
+show flip(1234)
+show flip(1200)
+:::
+
+The trailing zeros of 1200 disappear, because a number has no leading zeros.
+
+## Palindrome numbers
+
+::: code
+type enlng
+
+function flip with n:
+    remember out as 0
+    while n > 0:
+        out = out * 10 + n mod 10
+        n = n / 10
+    give out
+
+for each n in [121, 123, 4004, 99]:
+    show n flip(n) is n
+:::
+
+## Armstrong numbers
+
+A three-digit number is an Armstrong number when the cubes of its digits add up to itself:
+
+::: code
+type enlng
+
+for n from 100 to 999:
+    remember a as n / 100
+    remember b as (n / 10) mod 10
+    remember c as n mod 10
+    when a * a * a + b * b * b + c * c * c is n:
+        show n
+:::
+
+## Converting to binary
+
+::: code
+type enlng
+
+function binary with n:
+    when n is 0:
+        give "0"
+    remember out as ""
+    while n > 0:
+        out = (n mod 2) + out
+        n = n / 2
+    give out
+
+for each n in [0, 5, 10, 255, 1024]:
+    show n binary(n)
+:::
+
+Adding a number in front of text with `+` turns the number into text first, which is what builds the string here.
+
+## Temperature table
+
+::: code
+type enlng
+
+for c from 0 to 100 by 25:
+    show c "C is" c * 9 / 5 + 32 "F"
+:::
+
+For these values the division comes out whole, so no digits are lost. With 37 C the answer would be cut off, so convert with a decimal such as `37.0` when you need the fraction.
+
+## Average and rounding
+
+::: code
+type enlng
+
+remember marks as [72, 85, 90, 64]
+show sum of marks
+show average of marks
+show round(average of marks)
+show floor(average of marks) ceil(average of marks)
+:::
+
+## Largest and smallest by hand
+
+The built-in `max of` does this in one phrase. Writing the loop shows what it does and extends to cases the phrase cannot cover:
+
+::: code
+type enlng
+
+remember values as [14, 3, 99, 27, 56]
+remember biggest as values[0]
+remember smallest as values[0]
+for each v in values:
+    when v > biggest:
+        biggest = v
+    when v < smallest:
+        smallest = v
+show biggest smallest
+show max of values min of values
+:::
+
+## Counting down
+
+There is no counting-down loop, so count up and subtract:
+
+::: code
+type enlng
+
+for i from 0 to 4:
+    show 5 - i
+show "liftoff"
+:::
+
+## Multiplication table
+
+::: code
+type enlng
+
+for row from 1 to 5:
+    remember line as ""
+    for col from 1 to 5:
+        line = line + (row * col) + " "
+    show line
+:::
+
+## Random numbers
+
+`random_number(low, high)` gives a whole number from `low` to `high`, both included. The results differ each run, so this recipe prints only facts that are always true:
+
+::: code
+type enlng
+
+remember all_in_range as true
+for i from 1 to 200:
+    remember r as random_number(1, 6)
+    when r < 1 or r > 6:
+        all_in_range = false
+show all_in_range
+:::

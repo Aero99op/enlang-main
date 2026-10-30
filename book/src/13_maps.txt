@@ -1,0 +1,149 @@
+# Maps
+
+A map stores values under names, called keys. It is the natural way to keep a record such as a person, a product or a setting. Write a map with curly braces; each entry is a key in quotes, a colon and a value.
+
+::: code
+type enlng
+
+remember person as {"name": "Asha", "age": 31, "city": "Pune"}
+show person["name"]
+show person["age"]
+:::
+
+Keys must be text in quotes. A map written with number keys, such as `{1: "one"}`, is a syntax error.
+
+## Reading
+
+Use the key in square brackets, or a dot when the key is a plain word. A key that is not in the map gives `null`:
+
+::: code
+type enlng
+
+remember car as {"make": "Tata", "year": 2019}
+show car["make"]
+show car.year
+show car["colour"]
+:::
+
+## Does a key exist?
+
+`has_key(map, key)` answers true or false, which is the safe way to ask before reading:
+
+::: code
+type enlng
+
+remember ages as {"asha": 31, "ravi": 27}
+show has_key(ages, "asha")
+show has_key(ages, "zoya")
+
+when has_key(ages, "zoya"):
+    show ages["zoya"]
+otherwise:
+    show "Zoya is not listed"
+:::
+
+## Adding and changing
+
+Assigning to a key that exists replaces the value. Assigning to one that does not exist adds it:
+
+::: code
+type enlng
+
+remember stock as {"pens": 12}
+stock["pens"] = 10
+stock["books"] = 4
+show stock["pens"]
+show stock["books"]
+show count of stock
+:::
+
+`increases by` and `decreases by` work on a map entry, with brackets or with a dot:
+
+::: code
+type enlng
+
+remember counter as {"hits": 0}
+counter["hits"] increases by 1
+counter.hits increases by 1
+show counter["hits"]
+:::
+
+## All the keys and all the values
+
+`keys(map)` and `values(map)` give lists. The order of the keys is decided by the map, not by the order you wrote them, so do not depend on it. The same keys always come out in the same order for the same map:
+
+::: code
+type enlng
+
+remember prices as {"tea": 10, "coffee": 25, "juice": 30}
+show count of keys(prices)
+show contains(keys(prices), "tea")
+show sum of values(prices)
+:::
+
+## Walking a map
+
+Loop over the keys and look each value up:
+
+::: code
+type enlng
+
+remember prices as {"tea": 10, "coffee": 25, "juice": 30}
+remember total as 0
+for each item in keys(prices):
+    total increases by prices[item]
+show "Menu total:" total
+:::
+
+If you need a particular order, put the keys in a list and sort the list:
+
+::: code
+type enlng
+
+remember prices as {"tea": 10, "coffee": 25, "juice": 30}
+remember names as keys(prices)
+sort names ascending
+for each n in names:
+    show n prices[n]
+:::
+
+## Maps and lists together
+
+Values can be lists or maps, so records nest. Reading goes through each level in turn:
+
+::: code
+type enlng
+
+remember school as {"name": "Sunrise", "students": ["Asha", "Ravi"], "address": {"city": "Pune", "pin": 411001}}
+show school["name"]
+show school["students"][1]
+show school["address"]["city"]
+:::
+
+Assigning to a level two deep (`school["address"]["city"] = "Mumbai"`) is not supported in toolchain 5.5.0. Read the inner map into a name, change that name's entry, and the change is seen through the outer map, because maps are shared the way lists are.
+
+::: code
+type enlng
+
+remember school as {"address": {"city": "Pune"}}
+remember address as school["address"]
+address["city"] = "Mumbai"
+show school["address"]["city"]
+:::
+
+## Counting words: a typical use
+
+::: code
+type enlng
+
+remember text as "the cat saw the dog and the bird"
+remember counts as {}
+for each word in split(text, " "):
+    when has_key(counts, word):
+        counts[word] increases by 1
+    otherwise:
+        counts[word] = 1
+show counts["the"]
+show counts["cat"]
+show count of counts
+:::

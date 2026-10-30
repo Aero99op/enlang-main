@@ -1,0 +1,161 @@
+# Reading Error Messages
+
+When something is wrong the tool stops and prints a message. Every message has the same shape, and learning the shape makes most mistakes quick to fix.
+
+::: out
+-- Enlang SyntaxError -----------------------------
+Location: program.enlng:4
+
+    3 | show "before"
+    4 | remember as 5
+      | ^
+    5 | show "after"
+
+What: Expected variable name after remember/freeze
+:::
+
+- The title says **when** the problem was found. A *SyntaxError* is found while reading the file, before anything runs. A *RuntimeError* is found while the program is running, so earlier lines have already printed.
+- `Location` gives the file name and line number.
+- The numbered lines show the offending line with its neighbours.
+- `What` says what the tool expected or what went wrong. Read this line first.
+
+The next sections show the mistakes you are most likely to make, with the exact message the tool prints.
+
+## A missing name
+
+::: err
+type enlng
+
+remember total as 10
+show totl
+:::
+
+The message names the unknown word and suggests how to create it. The usual cause is a typing slip.
+
+## A missing word in a statement
+
+::: err
+type enlng
+
+remember score
+show score
+:::
+
+::: err
+type enlng
+
+remember 5 as total
+:::
+
+## An unfinished block
+
+A line that opens a block must end with a colon:
+
+::: err
+type enlng
+
+when 1 is 1
+    show "yes"
+:::
+
+## An unfinished text
+
+A text value whose closing quote is missing is not reported. The tool reads to the end of the line, so the program runs, and the missing quote only shows up as odd output if the line also had something after the text:
+
+::: err
+type enlng
+
+show "hello
+show "world"
+:::
+
+## An unknown function
+
+::: err
+type enlng
+
+show triple(4)
+:::
+
+## The wrong number of inputs
+
+::: err
+type enlng
+
+function area with w, h:
+    give w times h
+
+show area(3)
+:::
+
+## A function that is not called
+
+::: err
+type enlng
+
+function ping:
+    show "pong"
+
+ping
+:::
+
+Note that `ping` alone is a name that does not exist as a value. Call it with brackets: `ping()`.
+
+## Using a list or a name in the wrong place
+
+::: err
+type enlng
+
+remember xs as [1, 2, 3]
+show ys[0]
+:::
+
+## A mismatched bracket
+
+::: err
+type enlng
+
+show (1 plus 2
+:::
+
+## Too much recursion
+
+::: err
+type enlng
+
+function again with n:
+    give again(n plus 1)
+
+show again(0)
+:::
+
+## A missing file in `use`
+
+::: err
+type enlng
+
+use "no_such_file.enlng"
+show 1
+:::
+
+## Not an error, but surprising
+
+Some mistakes are not reported at all, so it is worth knowing them:
+
+| What you wrote | What happens |
+|---|---|
+| `remember total as 10` then a typo `totl = 5` | A new name `totl` is created. Nothing warns you. |
+| `show 5 divided by 0` | Prints 0. |
+| `show xs[99]` on a short list | Prints `null`. |
+| `change FROZEN to 5` after `freeze FROZEN as 1` | Changes it. |
+| `ask n` then `n times 2` | Repeats the text. |
+| A line indented by an odd amount | Read as outside the block above it. |
+
+When a program prints something strange and gives no error, one of these is the usual reason.
+
+## What to do when you are stuck
+
+1. Read the `What` line, then look at the numbered source lines above it.
+2. Check the line just before the one reported. A missing colon or bracket often makes the *next* line look wrong.
+3. Cut the program down until the problem is the only thing left, then add lines back.
+4. Print the values in play with `show` just before the failing line.

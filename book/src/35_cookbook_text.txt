@@ -1,0 +1,289 @@
+# Cookbook 2: Text
+
+Text has no slicing syntax and few built-in editing functions, so many of these recipes build a new text one character at a time. That is the normal Enlangg way, and it is easy to read.
+
+## Count the vowels
+
+::: code
+type enlng
+
+function vowels with text:
+    remember n as 0
+    for each ch in split(text, ""):
+        when contains("aeiouAEIOU", ch):
+            n increases by 1
+    give n
+
+show vowels("Enlangg reads like English")
+show vowels("rhythm")
+:::
+
+## Reverse the words, not the letters
+
+::: code
+type enlng
+
+remember sentence as "the quick brown fox"
+show join(reverse(split(sentence, " ")), " ")
+show reverse(sentence)
+:::
+
+## Is it a palindrome?
+
+Keep only the letters, make them one case, and compare with the reverse. This version only lowercases by comparing against a list of both cases, so it stays in the built-in functions:
+
+::: code
+type enlng
+use "lib_strings.enlng"
+
+function is_pal with text:
+    remember clean as ""
+    for each ch in split(to_lower(text), ""):
+        when contains("abcdefghijklmnopqrstuvwxyz", ch):
+            clean = clean + ch
+    give clean is reverse(clean)
+
+show is_pal("A man, a plan, a canal: Panama")
+show is_pal("Enlangg")
+show is_pal("Never odd or even")
+:::
+
+## Count the words
+
+Splitting on a space leaves out empty pieces, so repeated spaces do not inflate the count:
+
+::: code
+type enlng
+
+function words with text:
+    give len(split(text, " "))
+
+show words("one two three")
+show words("  spaced    out   text ")
+show words("")
+:::
+
+## Word frequencies
+
+A map from word to count is the standard tool:
+
+::: code
+type enlng
+
+remember text as "the cat saw the dog and the dog saw the cat"
+remember counts as {}
+for each w in split(text, " "):
+    when has_key(counts, w):
+        counts[w] = counts[w] + 1
+    otherwise:
+        counts[w] = 1
+
+for each w in ["the", "cat", "dog", "saw", "and"]:
+    show w counts[w]
+:::
+
+The loop at the end names the words in a fixed order, because the order of `keys(counts)` is not something to rely on.
+
+## The longest word
+
+::: code
+type enlng
+
+remember best as ""
+for each w in split("a journey of a thousand miles begins", " "):
+    when len(w) > len(best):
+        best = w
+show best
+:::
+
+## Capitalise each word
+
+::: code
+type enlng
+use "lib_strings.enlng"
+
+function title with text:
+    remember out as []
+    for each w in split(text, " "):
+        append(out, capitalize(w))
+    give join(out, " ")
+
+show title("the old man and the sea")
+:::
+
+## Caesar cipher
+
+Shift each lowercase letter by a fixed amount. A function cannot see names made outside it, so the alphabet is made inside `shift` and handed to `index_of` as an argument:
+
+::: code
+type enlng
+
+function index_of with alphabet, ch:
+    for i from 0 to 25:
+        when alphabet[i] is ch:
+            give i
+    give -1
+
+function shift with text, k:
+    remember alphabet as "abcdefghijklmnopqrstuvwxyz"
+    remember out as ""
+    for each ch in split(text, ""):
+        remember i as index_of(alphabet, ch)
+        when i is -1:
+            out = out + ch
+        otherwise:
+            out = out + alphabet[(i + k) mod 26]
+    give out
+
+remember secret as shift("meet at noon", 3)
+show secret
+show shift(secret, 23)
+:::
+
+Shifting by 23 undoes a shift of 3, because 3 and 23 add up to the 26 letters of the alphabet.
+
+## Anagrams
+
+Two words are anagrams when their letters, sorted, are the same. This recipe counts the letters of each word in a map and compares the two maps, which avoids sorting:
+
+::: code
+type enlng
+
+function letter_counts with text:
+    remember counts as {}
+    for each ch in split(text, ""):
+        when has_key(counts, ch):
+            counts[ch] = counts[ch] + 1
+        otherwise:
+            counts[ch] = 1
+    give counts
+
+function anagram with a, b:
+    when len(a) is not len(b):
+        give false
+    remember ca as letter_counts(a)
+    remember cb as letter_counts(b)
+    for each ch in keys(ca):
+        when not has_key(cb, ch):
+            give false
+        when ca[ch] is not cb[ch]:
+            give false
+    give true
+
+show anagram("listen", "silent")
+show anagram("apple", "paper")
+show anagram("rat", "car")
+:::
+
+## Replace one character everywhere
+
+Because `string_replace_all` is unreliable at the ends of a string, build the result yourself:
+
+::: code
+type enlng
+
+function replace_char with text, old, new:
+    remember out as ""
+    for each ch in split(text, ""):
+        when ch is old:
+            out = out + new
+        otherwise:
+            out = out + ch
+    give out
+
+show replace_char("a-b-c", "-", "+")
+show replace_char("-a-", "-", "+")
+show replace_char("a--b", "-", "+")
+:::
+
+These are the same three inputs that failed in chapter 24, and here all three come out right.
+
+## Take a piece of a string
+
+No slicing, so a small function does it:
+
+::: code
+type enlng
+
+function piece with text, lo, hi:
+    remember out as ""
+    for i from lo to hi - 1:
+        out = out + text[i]
+    give out
+
+show piece("enlangg", 0, 3)
+show piece("enlangg", 2, 5)
+:::
+
+## Pad a number with zeros
+
+::: code
+type enlng
+
+function pad with n, width:
+    remember s as "" + n
+    while len(s) < width:
+        s = "0" + s
+    give s
+
+show pad(7, 3)
+show pad(42, 5)
+show pad(12345, 3)
+:::
+
+A number already wider than the width is left alone.
+
+## Check a password rule
+
+At least 8 characters, with at least one digit and one capital letter:
+
+::: code
+type enlng
+
+function strong with pw:
+    remember has_digit as false
+    remember has_upper as false
+    for each ch in split(pw, ""):
+        when contains("0123456789", ch):
+            has_digit = true
+        when contains("ABCDEFGHIJKLMNOPQRSTUVWXYZ", ch):
+            has_upper = true
+    give len(pw) >= 8 and has_digit and has_upper
+
+show strong("hello")
+show strong("Hello1234")
+show strong("hello1234")
+:::
+
+## Roman numerals
+
+Work down a table of values, taking as many of each symbol as fit:
+
+::: code
+type enlng
+
+function roman with n:
+    remember values as [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+    remember symbols as ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"]
+    remember out as ""
+    for i from 0 to 12:
+        while n >= values[i]:
+            out = out + symbols[i]
+            n = n - values[i]
+    give out
+
+for each n in [4, 9, 14, 40, 90, 1994, 2026]:
+    show n roman(n)
+:::
+
+## Counting lines in a block of text
+
+::: code
+type enlng
+
+remember poem as "roses are red\nviolets are blue\nsugar is sweet\nand so are you"
+remember lines as split(poem, "\n")
+show len(lines)
+for each line in lines:
+    show len(line) line
+:::

@@ -1,0 +1,157 @@
+# Functions
+
+A function is a named block of steps that you can run whenever you like, with different inputs each time. Once you have written a function, a program reads at the level of what it does instead of how.
+
+## Writing and calling
+
+`function name with inputs:` starts the definition. The lines indented under it are the body. `give` hands a result back to whoever called the function:
+
+::: code
+type enlng
+
+function add with a, b:
+    give a plus b
+
+show add with 2, 3
+show add(10, 20)
+remember total as add with 4, 5
+show total
+:::
+
+A function can be called either with the word `with` or with brackets. Inside an expression you can nest calls:
+
+::: code
+type enlng
+
+function double with n:
+    give n times 2
+
+show double(double(3))
+show double with 3 plus 4
+:::
+
+Notice the last line. After `with`, the whole expression up to the end of the line is the input, so `double with 3 plus 4` doubles 7, not 3. Use brackets when you want only part of a line to be the input.
+
+## The action spelling
+
+`action name(inputs):` with `return` is a second spelling of exactly the same thing. Use whichever style your program already uses; do not mix them in one program without a reason.
+
+::: code
+type enlng
+
+action square(n):
+    return n times n
+
+action cube(n):
+    return n times square(n)
+
+show square(5)
+show cube(3)
+:::
+
+## No inputs
+
+A function with no inputs is written without `with`, and is called with empty brackets. A bare name on a line by itself is not a call:
+
+::: code
+type enlng
+
+function greet:
+    show "Hello there"
+
+greet()
+greet()
+:::
+
+## What a function gives back
+
+When the function ends without `give`, the caller gets `null`. A function can `give` from inside a decision to leave early:
+
+::: code
+type enlng
+
+function sign_of with n:
+    when n is less than 0:
+        give "negative"
+    when n is 0:
+        give "zero"
+    give "positive"
+
+show sign_of(-5)
+show sign_of(0)
+show sign_of(8)
+:::
+
+## Inputs must match
+
+A function must be called with exactly as many inputs as it names. Too many or too few is an error that names the function:
+
+::: err
+type enlng
+
+function add with a, b:
+    give a plus b
+
+show add with 1
+:::
+
+## Functions with decisions and loops
+
+Any statement can appear in a body. This one finds the biggest number in a list:
+
+::: code
+type enlng
+
+function largest with numbers:
+    remember best as numbers[0]
+    for each n in numbers:
+        when n is greater than best:
+            best = n
+    give best
+
+show largest([3, 41, 7, 19])
+show largest([-5, -2, -9])
+:::
+
+## Lists and maps are shared
+
+A function that receives a list or map can change it, and the caller sees the change, because the function was handed the list itself, not a copy. Whole numbers and text are different: changing one inside a function does not affect the caller's name.
+
+::: code
+type enlng
+
+function bump with number, items:
+    number = number plus 1
+    append(items, number)
+
+remember n as 1
+remember log as []
+bump(n, log)
+bump(n, log)
+show n
+show log
+:::
+
+## Composing functions
+
+Small functions make bigger ones readable:
+
+::: code
+type enlng
+
+function is_even with n:
+    give n mod 2 is 0
+
+function count_evens with numbers:
+    remember c as 0
+    for each n in numbers:
+        when is_even(n):
+            c increases by 1
+    give c
+
+show count_evens([1, 2, 3, 4, 6, 7, 8])
+:::
+
+## Giving good names
+
+Name a function for what it gives back or does: `average_of`, `is_leap`, `print_receipt`. A reader should know what a call does without opening the body.

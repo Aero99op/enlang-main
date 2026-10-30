@@ -1,0 +1,127 @@
+# EnlngDB: The English Database Language
+
+`enlngdb` is the fifth tool of the toolchain. It runs scripts written as short English sentences, such as `find records from pets where kind is "cat"`, against tables held in memory. It is a separate tool from the `lib_db` library of chapter 27: that is a library you call from an Enlangg program, this is a language of its own with its own files, which end in `.enlngdb`.
+
+## Running a script
+
+::: sh
+enlngdb <script.enlngdb>       run a script file
+enlngdb -e "<statement>"       run one statement
+enlngdb --version              print the version
+:::
+
+Every script starts with the line `type enlngdb`. Lines that begin with `#` or `--` are comments. Here is a complete script that makes a table, adds four rows, and then asks questions of it:
+
+::: cmd
+@@ pets.enlngdb
+type enlngdb
+
+create table if not exists pets with name, kind, age
+insert record into pets with name "Momo", kind "cat", age 3
+insert record into pets with name "Rex", kind "dog", age 5
+insert record into pets with name "Tiko", kind "cat", age 1
+insert record into pets with name "Bruno", kind "dog", age 9
+
+find records from pets where kind is "cat"
+find records from pets where age is at least 3 order by age descending
+count records in pets where kind is "dog"
+@@@
+enlngdb pets.enlngdb
+:::
+
+Each statement prints a result. A change prints "Query OK" and how many rows it touched. A query prints a table, and the line under it says how many rows matched. The small time in brackets is the real time the statement took, and it will differ on your machine.
+
+## The statements
+
+| Statement | What it does |
+|---|---|
+| `create table pets with name, kind, age` | Makes a table with those columns. Add `if not exists` to make it safe to run twice. |
+| `insert record into pets with name "Momo", kind "cat", age 3` | Adds a row. |
+| `find records from pets where ...` | Shows matching rows. Leave off the `where` part to see all rows. |
+| `count records in pets where ...` | Shows how many rows match. |
+| `update records in pets set age = 4 where name is "Momo"` | Changes columns on matching rows. |
+| `delete records from pets where ...` | Removes matching rows. |
+| `drop table pets` | Removes the whole table. |
+| `show tables` | Lists the tables. |
+| `use database "name"` | Switches database. |
+| `save database to "file.edb"` | Writes the database to a file (see below). |
+
+## Saying what to match
+
+After `where`, conditions are written in words. Join several with `and`.
+
+| Write | Means |
+|---|---|
+| `kind is "cat"` | equal to |
+| `age is greater than 3` | more than |
+| `age is at least 3` | 3 or more |
+| `tag like "%Master%"` | contains the text; `%` stands for any characters |
+| `is_active is true` | a true/false column |
+
+End a query with `order by age descending` (or `ascending`) to sort it.
+
+::: cmd
+@@ more.enlngdb
+type enlngdb
+create table pets with name, kind, age
+insert record into pets with name "Momo", kind "cat", age 3
+insert record into pets with name "Rex", kind "dog", age 5
+insert record into pets with name "Tiko", kind "cat", age 1
+insert record into pets with name "Bruno", kind "dog", age 9
+
+update records in pets set age = 4 where name is "Momo"
+find records from pets where name is "Momo"
+delete records from pets where age is greater than 8
+count records in pets
+@@@
+enlngdb more.enlngdb
+:::
+
+## Showing your own messages
+
+`display "text"` prints a line of your own, which helps label the results of a long script:
+
+::: cmd
+@@ labelled.enlngdb
+type enlngdb
+create table tools with name, size
+insert record into tools with name "enlng", size 152
+display ">> everything in the table:"
+find records from tools
+@@@
+enlngdb labelled.enlngdb
+:::
+
+## One statement at a time
+
+With `-e` you can try a single statement. Tables live only for the length of one run, so a one-line `find` has nothing to look at unless the same statement creates it first:
+
+::: cmd
+enlngdb -e "show tables"
+:::
+
+The list is empty because a fresh run has no tables.
+
+## Saving to a file
+
+`save database to "gamers.edb"` writes the tables to a file with the `.edb` extension, which is the tool's own binary format. The copy of the program that ships with the toolchain can write the file; this book has not tested reading one back in a later run, so rely on `save` as a way to keep a copy and check your own round trip before you depend on it.
+
+## What the errors look like
+
+If a line does not match any statement, `enlngdb` says so and lists the commands it understands:
+
+::: cmd
+@@ bad.enlngdb
+type enlngdb
+create table t with a, b
+insert record into t with a 1, b "x"
+sum of a in t
+@@@
+enlngdb bad.enlngdb
+:::
+
+Notice that there is no `sum` or `average`. The statements in the table above are the whole language in this version. To total a column, read the rows with `find` and add them up in an Enlangg program, or use `lib_db` from chapter 27.
+
+## When to use which
+
+Use `lib_db` when the data belongs inside an Enlangg program and you want to loop over rows and compute with them. Use `enlngdb` when you want to describe a small data set and ask questions of it in a script, and read the printed tables yourself.

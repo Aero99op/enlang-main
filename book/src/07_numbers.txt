@@ -1,0 +1,165 @@
+# Numbers and Arithmetic
+
+## Two ways to write an operation
+
+Every arithmetic operator has a symbol and an English word. They mean the same thing and you can mix them in one program.
+
+| Meaning | Symbol | Words |
+|---|---|---|
+| add | `+` | `plus` |
+| subtract | `-` | `minus` |
+| multiply | `*` | `times` or `multiplied by` |
+| divide | `/` | `divided by` |
+| remainder | `%` | `mod` or `modulo` |
+
+::: code
+type enlng
+
+show 6 plus 4
+show 6 + 4
+show 6 minus 4
+show 6 times 4
+show 6 multiplied by 4
+show 6 divided by 4
+show 6 mod 4
+show 6 % 4
+:::
+
+## Whole numbers divide to whole numbers
+
+When both sides of a division are whole numbers, the result is a whole number with the fraction dropped. Make one side a decimal to keep the fraction:
+
+::: code
+type enlng
+
+show 7 divided by 2
+show 7.0 divided by 2
+show 7 divided by 2.0
+show 1 divided by 3
+show 1 divided by 3.0
+:::
+
+This is the most common surprise for new programmers, so it is worth saying plainly: `7 divided by 2` is `3`, not `3.5`.
+
+## Dividing by zero
+
+In toolchain 5.5.0, dividing by zero does not stop the program. The result is `0`:
+
+::: code
+type enlng
+
+show 5 divided by 0
+show "still running"
+:::
+
+If a zero divisor would be a mistake in your program, test for it first with `when`.
+
+## Order of operations
+
+Multiplication, division and remainder bind tighter than addition and subtraction, as in school arithmetic. Use brackets to be explicit:
+
+::: code
+type enlng
+
+show 2 plus 3 times 4
+show (2 plus 3) times 4
+show 10 minus 4 minus 3
+show 10 minus (4 minus 3)
+:::
+
+## Decimals
+
+Decimal numbers print with up to six significant digits, so tiny rounding differences do not show up in ordinary output:
+
+::: code
+type enlng
+
+show 0.1 plus 0.2
+show 1 divided by 3.0
+show 2 times 3.5
+show 22 divided by 7.0
+:::
+
+## Big whole numbers
+
+Whole numbers are 64-bit. The largest is 9223372036854775807. Going past it wraps around to a large negative number instead of stopping with an error, so do not rely on whole numbers for very large values:
+
+::: code
+type enlng
+
+show 1000000 times 1000000
+show 9223372036854775807
+show 9223372036854775807 plus 1
+:::
+
+## Remainders and negative numbers
+
+The remainder takes the sign of the left side:
+
+::: code
+type enlng
+
+show 7 mod 3
+show -7 mod 3
+show 7 mod -3
+:::
+
+## Built-in maths functions
+
+Functions are called with brackets, like `sqrt(16)`. These are available without importing anything:
+
+| Function | Result |
+|---|---|
+| `sqrt(x)` | Square root. |
+| `pow(x, y)` | `x` to the power `y`. |
+| `abs(x)` | Absolute value. |
+| `floor(x)` | Round down. |
+| `ceil(x)` | Round up. |
+| `round(x)` | Round to nearest. |
+| `min(a, b)` | The smaller of two values. |
+| `max(a, b)` | The larger of two values. |
+| `random_number(low, high)` | A random whole number between the two. |
+
+::: code
+type enlng
+
+show sqrt(144)
+show sqrt(2)
+show pow(2, 10)
+show abs(-3.5)
+show floor(3.7)
+show ceil(3.2)
+show round(2.5)
+show round(2.4)
+show min(3, 9)
+show max(3, 9)
+:::
+
+## A worked example: a shop bill
+
+::: code
+type enlng
+
+remember price as 249
+remember quantity as 3
+remember discount_percent as 10
+
+remember subtotal as price times quantity
+remember discount as subtotal times discount_percent divided by 100
+remember total as subtotal minus discount
+
+show "Subtotal:" subtotal
+show "Discount:" discount
+show "Total:" total
+:::
+
+The discount is exact here because `747 times 10 divided by 100` happens left to right on whole numbers: 7470 divided by 100 is 74, with the .7 dropped. If you need the cents, use a decimal such as `10.0`.
+
+::: code
+type enlng
+
+remember subtotal as 747
+remember discount as subtotal times 10.0 divided by 100
+show "Discount:" discount
+show "Total:" subtotal minus discount
+:::

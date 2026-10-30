@@ -1,0 +1,127 @@
+# Making Decisions
+
+`when` runs a block of lines only if a condition is true. The block is the indented lines under it, and the line ends with a colon.
+
+::: code
+type enlng
+
+remember temperature as 31
+
+when temperature is greater than 30:
+    show "It is hot"
+    show "Drink water"
+show "Done"
+:::
+
+Everything indented under `when` belongs to it. The line `show "Done"` is not indented, so it runs either way.
+
+## otherwise
+
+`otherwise:` gives the block that runs when the condition was false:
+
+::: code
+type enlng
+
+remember balance as 40
+remember price as 75
+
+when balance is at least price:
+    show "Purchase complete"
+otherwise:
+    show "Not enough balance, missing" price minus balance
+:::
+
+## Chains
+
+`otherwise when` adds another question. The first condition that is true wins and the rest are skipped:
+
+::: code
+type enlng
+
+remember marks as 72
+
+when marks is at least 90:
+    show "Grade A"
+otherwise when marks is at least 75:
+    show "Grade B"
+otherwise when marks is at least 60:
+    show "Grade C"
+otherwise:
+    show "Grade D"
+:::
+
+Because the first true condition wins, put the strictest test first. Here 72 is at least 60, but it is not at least 75, so the third branch runs.
+
+## Decisions inside decisions
+
+A block can hold another `when`. Indent each level one step further:
+
+::: code
+type enlng
+
+remember age as 20
+remember has_ticket as true
+
+when age is at least 18:
+    when has_ticket:
+        show "Welcome in"
+    otherwise:
+        show "Please buy a ticket"
+otherwise:
+    show "Adults only"
+:::
+
+A single true/false name can be used directly as the condition, as `has_ticket` is above.
+
+## Indentation
+
+The language uses indentation to see where blocks begin and end. Use four spaces per level and do not mix tabs and spaces.
+
+The tool is forgiving about odd depths, and that can hide mistakes. In the program below the last line is indented by two spaces, which matches no level. It is read as a line outside the block, so it runs even though the condition is false:
+
+::: code
+type enlng
+
+when 1 is 2:
+    show "inside the block"
+  show "this is not inside it"
+:::
+
+If a line seems to run when it should not, check its indentation first.
+
+## Choosing the largest of three
+
+::: code
+type enlng
+
+remember a as 14
+remember b as 91
+remember c as 56
+remember biggest as a
+
+when b is greater than biggest:
+    biggest = b
+when c is greater than biggest:
+    biggest = c
+show "Largest:" biggest
+:::
+
+## A leap-year test
+
+A year is a leap year if it divides by 4, except that centuries must divide by 400:
+
+::: code
+type enlng
+
+function is_leap with year:
+    when year mod 400 is 0:
+        give true
+    when year mod 100 is 0:
+        give false
+    when year mod 4 is 0:
+        give true
+    give false
+
+for each y in [1900, 2000, 2023, 2024]:
+    show y is_leap(y)
+:::

@@ -1,0 +1,165 @@
+# The Standard Library: lib_ml and lib_net
+
+## lib_ml: vectors and small predictors
+
+`lib_ml.enlng` holds the arithmetic that machine-learning code is made of. It is not a training framework: there is no model fitting, no tensors and no GPU. It is a handful of plain functions on lists of numbers, useful for teaching and for small calculations.
+
+::: src
+use "lib_ml.enlng"
+:::
+
+A vector is just a list of numbers.
+
+| Function | Gives |
+|---|---|
+| `vec_add(a, b)`, `vec_sub(a, b)` | The sum and difference, item by item. |
+| `vec_scale(v, k)` | Every item multiplied by `k`. |
+| `vec_dot(a, b)` | The dot product: multiply item by item, then add up. |
+| `vec_norm(v)` | The length of the vector. |
+| `euclidean_distance(a, b)` | The straight-line distance between two points. |
+| `cosine_similarity(a, b)` | 1 when they point the same way, 0 when at right angles. |
+
+::: code
+type enlng
+use "lib_ml.enlng"
+
+show vec_add([1, 2], [3, 4])
+show vec_sub([5, 5], [1, 2])
+show vec_scale([1, 2, 3], 2)
+show vec_dot([1, 2, 3], [4, 5, 6])
+show vec_norm([3, 4])
+show euclidean_distance([0, 0], [3, 4])
+show cosine_similarity([1, 0], [1, 0])
+show cosine_similarity([1, 0], [0, 1])
+:::
+
+### Activation functions and scaling
+
+| Function | Gives |
+|---|---|
+| `sigmoid(z)` | A smooth curve from 0 to 1; `sigmoid(0)` is 0.5. |
+| `relu(z)` | `z` when positive, otherwise 0. |
+| `leaky_relu(z, alpha)` | `z` when positive, otherwise `alpha` times `z`. |
+| `min_max_normalize(values)` | The list rescaled so the smallest is 0 and the largest is 1. |
+
+::: code
+type enlng
+use "lib_ml.enlng"
+
+show sigmoid(0)
+show relu(-3) relu(4)
+show leaky_relu(-10, 0.1)
+show min_max_normalize([10, 20, 30])
+:::
+
+### Three small predictors
+
+`linear_regression_predict(features, weights, bias)` multiplies each feature by its weight, adds them up, then adds the bias. You supply the weights; it does not learn them:
+
+::: code
+type enlng
+use "lib_ml.enlng"
+
+show linear_regression_predict([2, 3], [0.5, 1.5], 1)
+:::
+
+That is 2 times 0.5, plus 3 times 1.5, plus 1.
+
+`gini_impurity_binary(p1, p2)` measures how mixed two classes are: 0 for a pure group, 0.5 for an even split.
+
+`predict_knn1(points, x, y)` finds the nearest point and returns its label. Each point is a map with `x`, `y` and `label`:
+
+::: code
+type enlng
+use "lib_ml.enlng"
+
+remember points as [{"x": 0, "y": 0, "label": "cat"}, {"x": 10, "y": 10, "label": "dog"}]
+show predict_knn1(points, 9, 8)
+show predict_knn1(points, 1, 2)
+show gini_impurity_binary(0.5, 0.5)
+:::
+
+Points given as lists such as `[0, 0, "cat"]` do not work here; the function reads the names `x`, `y` and `label`.
+
+## lib_net: building and reading web text
+
+`lib_net.enlng` works on the text that web programs exchange: addresses, query strings, headers and request lines. It does not open network connections. Sending a request over the internet is not something Enlangg 5.5.0 can do; this module prepares and reads the text.
+
+::: src
+use "lib_net.enlng"
+:::
+
+### Addresses
+
+`parse_url` breaks an address into a map with `protocol`, `host`, `port`, `path` and `query`. `build_url` puts such a map back together:
+
+::: code
+type enlng
+use "lib_net.enlng"
+
+remember u as parse_url("https://example.com:8080/a/b?x=1&y=2")
+show u["protocol"]
+show u["host"]
+show u["port"]
+show u["path"]
+show u["query"]
+show build_url(u)
+:::
+
+A `#fragment` at the end of an address stays attached to the query text instead of being split off, so strip it first if your addresses can have one.
+
+### Query strings
+
+`build_query_string(map)` makes `key=value&key=value` text. `parse_query_string(text)` reads it back into a map. Keys come out in no particular order, because maps have none:
+
+::: code
+type enlng
+use "lib_net.enlng"
+
+show build_query_string({"q": "tea"})
+remember q as parse_query_string("x=1&y=2")
+show q["x"] q["y"]
+:::
+
+### Headers, requests and status codes
+
+| Function | Does |
+|---|---|
+| `create_headers()` | An empty header set. |
+| `header_set(h, name, value)`, `header_get(h, name)` | Store and read a header. |
+| `format_headers_block(h)` | The headers as `Name: value` lines. |
+| `http_status_text(code)` | The standard phrase for a status code. |
+| `create_http_request(method, url, headers, body)` | A request description. |
+| `serialize_http_request(request)` | The request as text ready to send. |
+| `create_rest_client(base_url)` | A client remembering a base address. |
+| `rest_prepare_get(client, path, params)`, `rest_prepare_post(client, path, body)` | Request text for a GET or POST. |
+
+::: code
+type enlng
+use "lib_net.enlng"
+
+remember h as create_headers()
+header_set(h, "Accept", "text/plain")
+show header_get(h, "Accept")
+show http_status_text(200) http_status_text(404)
+
+remember request as create_http_request("GET", "http://a.com/x", h, "")
+show serialize_http_request(request)
+
+remember client as create_rest_client("http://api.test")
+show rest_prepare_get(client, "/items", {"page": 1})
+:::
+
+### Packets
+
+`packet_encode(text)` prefixes a message with its length, so a reader knows where it ends. `packet_decode` reverses it:
+
+::: code
+type enlng
+use "lib_net.enlng"
+
+show packet_encode("hello")
+show packet_decode(packet_encode("hello"))
+:::
+
+`create_webhook_payload(event, source, data)` builds a small message describing an event, in the same spirit.

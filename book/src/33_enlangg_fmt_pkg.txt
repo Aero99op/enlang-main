@@ -1,0 +1,101 @@
+# The enlangg Command, fmt and pkg
+
+`enlangg` is the front door to the other tools, plus two helpers of its own: a formatter and a small project manager.
+
+## One command for every file type
+
+`enlangg run file` looks at the extension and starts the right tool. The file types are:
+
+| Extension | Tool started |
+|---|---|
+| `.enlng` | `enlng` |
+| `.enlngdb` | `enlngdb` |
+| `.enlngs` | `enlngs` |
+| `.enlngf` | `enlngf` |
+| `.enlngd` | `enlngd` |
+| `.enlngm` | `enlngm` |
+
+There are short forms for each tool: `enlangg db`, `enlangg s`, `enlangg f`, `enlangg d` and `enlangg m` run those tools with the arguments you give. For example, `enlangg d compile theme.enlngd` does what `enlngd compile theme.enlngd` does.
+
+::: cmd
+@@ hello.enlng
+type enlng
+show "hello from enlangg"
+@@@
+enlangg run hello.enlng
+:::
+
+## fmt: tidy a file
+
+`enlangg fmt` removes the extra spaces that creep into lines. By default it prints the tidied file and leaves yours alone:
+
+::: cmd
+@@ messy.enlng
+type enlng
+show   "hi"
+when   1 is 1:
+    show "yes"
+@@@
+enlangg fmt messy.enlng
+:::
+
+Two options change that:
+
+| Option | Does |
+|---|---|
+| `-c` or `--check` | Reports whether the file would change, and writes nothing. |
+| `-w` or `--write` | Rewrites the file with the tidy version. |
+
+::: cmd
+@@ messy.enlng
+type enlng
+show   "hi"
+when   1 is 1:
+    show "yes"
+@@@
+enlangg fmt messy.enlng --check
+enlangg fmt messy.enlng --write
+cat messy.enlng
+:::
+
+The formatter is simple. It squeezes the spaces between words on a line. It does not re-indent code, reflow long lines or sort anything, so do not expect it to make an untidy file look professional by itself.
+
+## pkg: a project folder
+
+`enlangg pkg` sets up a folder for a project.
+
+`pkg init` makes a manifest called `enlang.json` and a starting file `main.enlng`:
+
+::: cmd
+enlangg pkg init demo
+cat enlang.json
+cat main.enlng
+:::
+
+`pkg add` links one of the standard library modules into a hidden folder, `.enlang_modules`, inside the project. Give the short name of the module without `lib_`:
+
+::: cmd
+enlangg pkg init demo
+enlangg pkg add math
+enlangg pkg add strings
+ls .enlang_modules
+:::
+
+Each module appears twice, under its full name (`lib_math.enlng`) and its short name (`math.enlng`). Asking for a name that is not in the library gives an error:
+
+::: cmd
+enlangg pkg init demo
+enlangg pkg add lib_math
+:::
+
+Two things the manager does not do in 5.5.0. It does not record what you added in the `dependencies` list of `enlang.json`, which stays empty, and `pkg install` only checks the manifest. There is no way to fetch packages from the internet: every package it knows is one of the eleven library files.
+
+You do not need `pkg` to use the library. `use "lib_math.enlng"` already finds the files next to the installed tools, as chapter 23 showed.
+
+## Version and help
+
+::: cmd
+enlangg --version
+:::
+
+`enlangg --help` prints the long list of commands, which chapter 4 reproduced in full. Remember that its descriptions are written with some enthusiasm; this book describes what each command really does.

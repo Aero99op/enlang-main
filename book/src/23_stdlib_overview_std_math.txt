@@ -1,0 +1,193 @@
+# The Standard Library: Overview, lib_std and lib_math
+
+The standard library is eleven ordinary Enlangg files in the `lib` folder of the installation. You import one the way you import any file, by its name:
+
+::: code
+type enlng
+use "lib_math.enlng"
+
+show square(9)
+:::
+
+Because they are plain Enlangg, you can open them in an editor to see exactly how a function works. They are also a good source of examples of how to write functions.
+
+| Module | What it holds |
+|---|---|
+| `lib_std.enlng` | Reading numbers, small helpers, and the sort and arrange functions. |
+| `lib_math.enlng` | Maths, number theory, geometry and statistics. |
+| `lib_strings.enlng` | Text helpers: trimming, case, padding, searching, formatting. |
+| `lib_ds.enlng` | Stacks, queues, deques, priority queues, trees, graphs, linked lists, sets. |
+| `lib_file.enlng` | Files, paths, CSV and key-value text. |
+| `lib_fs.enlng` | Short names for file operations. |
+| `lib_db.enlng` | A small in-memory table store with filtering, ordering and joins. |
+| `lib_enlngdb.enlng` | The same shape of API for use with the EnlngDB tool. |
+| `lib_ml.enlng` | Vector arithmetic, activation functions and a few simple predictors. |
+| `lib_net.enlng` | Building and parsing URLs, query strings, headers and request text. |
+| `lib_concurrency.enlng` | Task queues, channels and other coordination structures, simulated in plain code. |
+
+Two things to keep in mind when you read the next chapters:
+
+- These modules are written in Enlangg, so they run at the speed of the interpreter or the C backend like any other program. They are meant to be clear, not tuned.
+- Each function listed here was called by a program in this book and the output printed beside it is real. A function that is not listed is not documented here, and may behave in ways this book has not checked.
+
+## lib_std: small helpers
+
+### Reading numbers
+
+`ask` gives text. These turn it into numbers.
+
+| Function | Gives |
+|---|---|
+| `parse_int with text` | The whole number written in the text. A leading `-` makes it negative. |
+| `read_number` | Reads one line and gives it as a number. |
+| `read_numbers_line` | Reads one line of numbers separated by spaces and gives a list. |
+
+::: code
+type enlng
+use "lib_std.enlng"
+
+show parse_int with "407"
+show parse_int with "-12"
+show (parse_int with "21") times 2
+:::
+
+`parse_int` understands digits only. It does not understand decimals, so `parse_int with "3.5"` is the digits 3 and 5 read as 35.
+
+::: code
+type enlng
+use "lib_std.enlng"
+
+show parse_int with "3.5"
+:::
+
+With input supplied:
+
+::: code stdin=4 8 15 16\n
+type enlng
+use "lib_std.enlng"
+
+remember nums as read_numbers_line()
+show nums
+show sum of nums
+:::
+
+### Number helpers
+
+| Function | Gives |
+|---|---|
+| `abs_val with n` | The absolute value. |
+| `difference with a, b` | How far apart `a` and `b` are, never negative. |
+| `max_of with a, b` | The larger. |
+| `min_of with a, b` | The smaller. |
+| `is_even with n` | True when `n` is even. |
+| `is_odd with n` | True when `n` is odd. |
+| `sum_of_list with items` | The total of a list. |
+
+::: code
+type enlng
+use "lib_std.enlng"
+
+show abs_val with -9
+show difference with 3, 10
+show max_of with 4, 7
+show min_of with 4, 7
+show is_even with 10
+show is_odd with 10
+show sum_of_list with [1, 2, 3, 4]
+:::
+
+### Sorting and arranging as functions
+
+`sort_list` sorts a list with the swap-pair method and gives it back:
+
+::: code
+type enlng
+use "lib_std.enlng"
+
+show sort_list with [5, 2, 8, 1]
+:::
+
+The file also defines `arrange` and `arrange_list`, but they cannot be called in toolchain 5.5.0: `arrange` is a word of the language (the statement from chapter 18), and the definitions that start with it are not usable. Use the `arrange` statement instead.
+
+### Cells and references
+
+Lists and maps are already shared when you pass them, so you rarely need these. They exist for programs that want an explicit box around one value, so a function can change it:
+
+| Function | Gives |
+|---|---|
+| `make_cell with val` | A box holding `val`. |
+| `get_cell with cell` | The value in the box. |
+| `set_cell with cell, new_val` | Puts a new value in the box. |
+| `swap_cells with a, b` | Swaps the contents of two boxes. |
+| `pointer with val`, `get_pointer`, `set_pointer`, `swap_pointers` | The same idea with a named box. |
+
+::: code
+type enlng
+use "lib_std.enlng"
+
+remember a as make_cell(1)
+remember b as make_cell(2)
+swap_cells(a, b)
+show get_cell(a) get_cell(b)
+
+remember p as pointer(10)
+set_pointer(p, 25)
+show get_pointer(p)
+:::
+
+## lib_math: maths and statistics
+
+| Function | Gives |
+|---|---|
+| `square(x)`, `cube(x)` | `x` squared and cubed. |
+| `pythagoras(a, b)`, `hypotenuse(a, b)` | The long side of a right triangle. |
+| `math_power(base, exp)`, `math_sqrt(v)`, `math_abs(v)` | Names for the built-ins, for programs that prefer the `math_` prefix. |
+| `math_floor(v)`, `math_ceil(v)`, `math_round(v)` | Likewise. |
+| `clamp(val, low, high)` | `val`, but no lower than `low` and no higher than `high`. |
+| `factorial(n)` | `n` factorial, by a loop. |
+| `gcd(a, b)`, `lcm(a, b)` | Greatest common divisor and least common multiple. |
+| `is_prime(n)` | True when `n` is prime. |
+| `distance_2d(x1, y1, x2, y2)` | Straight-line distance between two points. |
+| `polygon_area(xs, ys)` | Area of a polygon from its corner coordinates. |
+| `math_sum`, `math_mean`, `math_variance`, `math_std_dev` | Statistics of a list. |
+| `math_min_list`, `math_max_list` | Smallest and largest of a list; 0 for an empty list. |
+
+::: code
+type enlng
+use "lib_math.enlng"
+
+show square(12) cube(3)
+show hypotenuse(3, 4)
+show clamp(15, 0, 10) clamp(-5, 0, 10) clamp(4, 0, 10)
+show factorial(6)
+show gcd(84, 36) lcm(4, 6)
+show is_prime(97) is_prime(91)
+show distance_2d(0, 0, 6, 8)
+:::
+
+Statistics treat the list as the whole population. The variance is divided by the number of items, not by one less:
+
+::: code
+type enlng
+use "lib_math.enlng"
+
+remember data as [2, 4, 4, 4, 5, 5, 7, 9]
+show math_sum(data)
+show math_mean(data)
+show math_variance(data)
+show math_std_dev(data)
+show math_min_list(data) math_max_list(data)
+:::
+
+The area of a polygon comes from its corners, listed in order around the shape. A 4 by 3 rectangle:
+
+::: code
+type enlng
+use "lib_math.enlng"
+
+show polygon_area([0, 4, 4, 0], [0, 0, 3, 3])
+:::
+
+### A caution about `lcm`
+
+`lcm` computes `a * b / gcd`. With whole numbers the division is whole-number division, which is exact here because the gcd always divides the product, so the result is correct for numbers whose product fits in 64 bits.

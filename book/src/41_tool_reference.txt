@@ -1,0 +1,78 @@
+# Reference: Every Command
+
+This chapter collects the command lines of all seven tools in one place. The help text below is the real output of each tool's own `--help` in toolchain 5.5.0, so it matches what you will see. After each one is a plain note on what the book has and has not confirmed.
+
+## enlng
+
+::: cmd
+enlng --help
+:::
+
+Confirmed in this book: `run`, `build`, `emit-c`, `--version`, and `run --native`. Chapter 5 covers them.
+
+## enlngdb
+
+::: cmd
+enlngdb --help
+:::
+
+Confirmed: running a script file, `-e`, and the statements listed in chapter 30.
+
+## enlngf
+
+::: cmd
+enlngf --help
+:::
+
+Confirmed: `build`. Not shown, because they need a window or a browser: the bare form, `run`, `gui`, and `serve`.
+
+## enlngd
+
+::: cmd
+enlngd --help
+:::
+
+Confirmed: `inspect` and `compile`.
+
+## enlngs
+
+::: cmd
+enlngs --help
+:::
+
+Confirmed: `-e`, running a file, and `compile`. See the cautions in chapter 32.
+
+## enlngm
+
+::: cmd
+enlngm --help
+:::
+
+Confirmed: `export`, and that `build --target apk` is not implemented. The window forms need a screen and were not run.
+
+## enlangg
+
+::: cmd
+enlangg --help
+:::
+
+Confirmed: `run`, `fmt` with `--check` and `--write`, `pkg init`, and `pkg add`. The help text promises more than that, including `run --aot`, `compile`, and mobile builds. Read it as a list of command names, and use the earlier chapters for what each one really does.
+
+## Exit codes
+
+A command that succeeds ends with code 0. One that finds an error ends with a code that is not 0. That is what lets a shell script stop on failure:
+
+::: cmd
+@@ good.enlng
+type enlng
+show "fine"
+@@@
+enlng run good.enlng
+echo exit code %errorlevel%
+:::
+
+On Linux or macOS the last line would be `echo "exit code $?"`.
+
+## Environment
+
+The installers add the toolchain folder to your `PATH` so that the commands are found from any folder. Chapter 2 describes where the folder is and how to run the installer without changing the path. The standard library is read from the `lib` folder beside the programs, which is why `use "lib_math.enlng"` works from any directory.

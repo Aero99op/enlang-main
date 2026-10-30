@@ -1,0 +1,109 @@
+# Values and Names
+
+A program works with values. A **value** is a piece of data such as the number `42`, the text `"Pune"`, or the list `[1, 2, 3]`. A **name** is a label you attach to a value so you can use it later.
+
+## The kinds of value
+
+| Kind | Examples | Notes |
+|---|---|---|
+| Whole number | `0`, `42`, `-7` | 64-bit, so up to 9223372036854775807. |
+| Decimal number | `3.14`, `0.5` | Printed with up to six significant digits. |
+| Text | `"hello"`, `""` | Double quotes. Position counts from 0. |
+| True or false | `true`, `false` | Written in lower case. |
+| Nothing | `null` | Also what you get for a missing key or position. |
+| List | `[1, 2, 3]` | Ordered. Can mix kinds. |
+| Map | `{"a": 1}` | Keys are text. The order keys print in is not the order you wrote them. |
+
+::: code
+type enlng
+
+remember count as 42
+remember pi as 3.14159
+remember word as "hello"
+remember ready as true
+remember nothing_yet as null
+remember numbers as [1, 2, 3]
+remember person as {"name": "Asha", "age": 31}
+
+show count
+show pi
+show word
+show ready
+show nothing_yet
+show numbers
+show person
+:::
+
+## Making a name
+
+`remember name as value` creates a name. A plain `name = value` does the same thing:
+
+::: code
+type enlng
+
+remember a as 1
+b = 2
+show a b
+:::
+
+## Names are checked
+
+Using a name that was never created is an error that stops the program, and the message names the line:
+
+::: err
+type enlng
+
+show "start"
+show missing_name
+:::
+
+Note that `start` was printed before the error: this one is found while running, not while reading the file.
+
+## Changing a name
+
+Assigning to an existing name replaces its value. Three more forms exist for the most common changes:
+
+::: code
+type enlng
+
+remember n as 10
+n = 20
+show n
+n increases by 5
+show n
+n decreases by 8
+show n
+change n to 1
+show n
+:::
+
+Assigning to a name that does not exist yet simply creates it, so a mistyped name in an assignment does not stop the program. Spell names carefully, and use `remember` for the first assignment so that your intent is clear to the reader.
+
+## Constants with `freeze`
+
+`freeze NAME as value` declares a name meant to stay constant, and it reads that way:
+
+::: code
+type enlng
+
+freeze TAX_RATE as 18
+show TAX_RATE
+:::
+
+Be aware that in toolchain 5.5.0 the word is accepted but **not enforced**: a later `change` or assignment to a frozen name is not rejected. The program below prints 200.
+
+::: code
+type enlng
+
+freeze LIMIT as 100
+change LIMIT to 200
+show LIMIT
+:::
+
+Until enforcement is added, treat `freeze` as documentation for the reader, and write constants in capitals so that the intent is clear.
+
+## Name rules
+
+A name is made of letters, digits and underscores and does not start with a digit. A name cannot be one of the language's own words (see the keyword table in the reference part). Names are case-sensitive: `Total` and `total` are different.
+
+Pick names that read well in a sentence. `show total price` is better than `show tp`.

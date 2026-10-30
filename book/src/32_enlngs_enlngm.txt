@@ -1,0 +1,92 @@
+# enlngs and enlngm: Scripts and Mobile Previews
+
+## enlngs: page scripts
+
+`enlngs` runs small scripts in a syntax close to Enlangg's, and can translate them into JavaScript for a web page. Its main use is making an `.enlngf` page respond to clicks and timers.
+
+::: sh
+enlngs <file.enlngs>                       run a script
+enlngs -e "<statement>"                    run one statement
+enlngs compile <file.enlngs> [-o out.js]   write JavaScript
+:::
+
+A simple statement runs directly:
+
+::: cmd
+enlngs -e "show 2 + 3"
+:::
+
+### A script file
+
+A script keeps its data in names made with `create`, changes them with `set`, and prints with `show`:
+
+::: cmd
+@@ count.enlngs
+create total as 0
+create name as "Asha"
+set total = total + 5
+show "total is " + total
+show name
+@@@
+enlngs count.enlngs
+:::
+
+### Two honest warnings
+
+The `enlngs` tool is the youngest of the seven, and in 5.5.0 its two ways of running do not always agree.
+
+First, the tool that runs a script directly does not calculate everything. Here it prints the text of an expression where a number would be expected, while the JavaScript translation of the same line gives the number:
+
+::: cmd
+@@ calc.enlngs
+create total as 5
+show total * 2
+@@@
+enlngs calc.enlngs
+enlngs compile calc.enlngs -o calc.js
+tail -n 2 calc.js
+:::
+
+The first command printed `total * 2` as text. The generated JavaScript line is correct, and if you run it with Node it prints 10. When a script matters, compile it and run the JavaScript, or keep the calculation in a Enlangg program.
+
+Second, `show` with several values in a row, which works in Enlangg, is not understood here. Join the pieces with `+` instead, as in `show "total is " + total`.
+
+### Scripts written for pages
+
+The `to do` blocks, `every 1 second:` timers and `set text of "id" to ...` lines in the larger example scripts are meant for pages: they describe what happens in a browser. Compiling them to JavaScript is the intended use; running them in the terminal has nothing to act on.
+
+## enlngm: mobile app previews
+
+An `.enlngm` file describes a phone app: screens, bars, buttons, themes. `enlngm` shows it in a window the size of a phone (390 by 844) and can export it as C source for that preview window.
+
+::: sh
+enlngm <file.enlngm>                  open the preview window
+enlngm export <file.enlngm> -o x.c    export the preview as C source
+enlngm build <file.enlngm> --target apk
+:::
+
+The preview window is a Windows feature and needs a screen, so this book does not show its output. Exporting does not need a screen:
+
+::: cmd
+@@ app.enlngm
+mobile app "Counter":
+    screen "Home":
+        text "Hello"
+@@@
+enlngm export app.enlngm -o app.c
+:::
+
+### Building an APK or IPA
+
+The `build` command accepts `--target apk` and `--target ipa`. In toolchain 5.5.0 it does not produce either. This is what it says:
+
+::: cmd
+@@ app.enlngm
+mobile app "Counter":
+    screen "Home":
+        text "Hello"
+@@@
+enlngm build app.enlngm --target apk -o app.apk
+:::
+
+So you cannot make an installable phone app with this version. The preview window is the working part. Anything you read elsewhere that says otherwise describes a plan, not a feature.

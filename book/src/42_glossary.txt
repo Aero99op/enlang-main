@@ -1,0 +1,79 @@
+# Glossary
+
+**Action** — another word for a function in Enlangg. The library files use `action`; this book uses `function`.
+
+**Argument** — a value you hand to a function when you call it. The names that receive the arguments are called parameters.
+
+**ASCII** — the numbering of the basic English letters, digits and punctuation used by computers. The reason every capital letter sorts before every small letter.
+
+**Backend** — the part of a compiler that does the final work. Enlangg has two: the built-in interpreter, which runs a program straight away, and the C backend, which writes C code for a C compiler to build into a native program.
+
+**Base case** — in a recursive function, the case that is answered directly without calling itself. Without one, the function never stops.
+
+**Binary search** — finding a value in a sorted list by repeatedly checking the middle and discarding the half that cannot hold it.
+
+**Block** — the group of indented lines that belongs to a line ending in a colon, such as the body of a loop or a function.
+
+**Boolean** — a value that is `true` or `false`.
+
+**Call** — to run a function by writing its name and its arguments in parentheses.
+
+**Comment** — a line that starts with `#`. The tool ignores it; it is for the human reader.
+
+**Compile** — to translate a program into another form. `enlng build` compiles to a native program; `enlngd compile` turns a theme into CSS; `enlngs compile` turns a script into JavaScript.
+
+**Constant** — a value that is not meant to change. `freeze` declares one, but in 5.5.0 the tool does not stop you changing it.
+
+**Deque** — a list you can add to and take from at both ends. Short for "double-ended queue".
+
+**EnlngDB** — the English-language database tool, and the name of its script language.
+
+**Floating point** — a number with a fractional part, such as 2.5. Contrast with a whole number.
+
+**Function** — a named block of code that can be called with arguments and can give a value back.
+
+**Graph** — a set of points with connections between some pairs.
+
+**Interpreter** — a program that reads another program and carries out its instructions directly. `enlng run` uses one.
+
+**Iteration** — one pass through the body of a loop.
+
+**Key** — the name used to look up a value in a map.
+
+**List** — an ordered collection of values written in square brackets. Positions count from zero.
+
+**Map** — a collection of key and value pairs written in braces. It has no order.
+
+**Module** — a file of Enlangg code that other files can bring in with `use`.
+
+**Native** — compiled to the machine's own instructions, as opposed to interpreted.
+
+**Null** — the value that means "nothing here". Many library functions give it when asked for something that is not there.
+
+**Overflow** — what happens when a number is too big for the space reserved for it. In Enlangg whole numbers wrap around silently.
+
+**Parameter** — the name inside a function that receives an argument.
+
+**Priority queue** — a collection that always gives you the smallest value next.
+
+**Queue** — first in, first out.
+
+**Recursion** — a function calling itself on a smaller version of the problem.
+
+**Scope** — where a name can be seen. A name made inside a function or a block belongs to it.
+
+**Stack** — last in, first out.
+
+**Standard library** — the eleven Enlangg files in the `lib` folder, imported with `use`.
+
+**String** — another word for text.
+
+**Token** — the smallest piece of a program the tool recognises: a word, a number, a symbol. In `enlngd`, also a named value such as a colour.
+
+**Toolchain** — the set of seven programs, `enlng`, `enlngdb`, `enlngf`, `enlngd`, `enlngs`, `enlngm` and `enlangg`, that ship together.
+
+**Trie** — a tree of letters used to store words so that prefixes can be found quickly.
+
+**Truncate** — to cut off the fractional part. Whole-number division truncates.
+
+**Variable** — a name that holds a value which can change.

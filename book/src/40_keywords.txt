@@ -1,0 +1,74 @@
+# Reference: Words of the Language
+
+These are the words the reader of an Enlangg file treats as part of the language. They are reserved in the sense that matters: a few of them cannot be used as the name of a value or a parameter, and using one gives a syntax error that does not always say why. The list below was taken from the toolchain's own source.
+
+```
+action and arrange as ask at break by change continue count decreases
+define discard display divided each else enlng equal every false for
+forget freeze from function give greater if import in increases input
+is it keep least len length less minus mod modulo most multiplied needs
+none not nothing null of on or otherwise pair plus print remember repeat
+return reverse show skip sort step stop swap than that the times to true
+type until use when where while with
+```
+
+Not every word on that list refuses to be a name. A short experiment shows the difference: `count`, `first`, `last`, `item`, `list`, `text`, `name`, `value`, `result`, `key`, `start`, `end` and `next` all worked as names. `stop`, `times` and `from` did not:
+
+::: code
+type enlng
+
+remember count as 3
+remember first as "a"
+show count first
+:::
+
+::: err
+type enlng
+
+remember times as 3
+show times
+:::
+
+Because the rule is not obvious, the safe habit is to avoid every word in the list as a name, and to pick names that describe the data, such as `total`, `items`, `price`, `index`. When a function fails with "Expected ':' before block" and its first line looks right, check the parameter names against the list.
+
+## What the words do
+
+| Group | Words | Used for |
+|---|---|---|
+| Making names | `remember`, `define`, `keep`, `freeze`, `forget`, `discard`, `as` | Create a value, mark it constant (not enforced), or let it go. |
+| Showing and asking | `show`, `print`, `display`, `ask`, `input` | Print values; read a line of text. |
+| Deciding | `when`, `if`, `otherwise`, `else`, `is`, `not`, `and`, `or` | Choose between blocks. |
+| Comparing | `equal`, `less`, `greater`, `least`, `most`, `than`, `at` | Words for `==`, `<`, `>`, `<=`, `>=`, written after `is`, as in `is at least`. |
+| Arithmetic | `plus`, `minus`, `times`, `multiplied`, `divided`, `by`, `mod`, `modulo` | The same as `+ - * / %`. |
+| Changing numbers | `increases`, `decreases` | `x increases by 1`, `x decreases by 2`. |
+| Looping | `for`, `each`, `in`, `from`, `to`, `step`, `while`, `until`, `repeat`, `every`, `break`, `continue`, `stop`, `skip` | Repeat a block; leave or skip an iteration. |
+| Functions | `function`, `action`, `with`, `give`, `return`, `needs` | Define and use named blocks of code. |
+| Lists and text | `len`, `length`, `count`, `of`, `reverse`, `sort`, `swap`, `pair`, `arrange`, `change`, `that`, `the`, `it`, `on`, `where` | Work with collections and their parts; several also connect phrases. |
+| Files and modules | `use`, `import`, `type` | Bring in another file; declare a file's kind on its first line. |
+| Plain values | `true`, `false`, `null`, `none`, `nothing` | The values that mean yes, no and absent. |
+
+Two of these deserve a note.
+
+**`stop` and `break`** both leave the current loop. The cookbook uses `stop`.
+
+**`action`** is another word for `function`. Library files use `action` and the rest of this book uses `function`; they behave the same way.
+
+## The type line
+
+The first line of an Enlangg program is `type enlng`. The other languages of the toolchain start theirs with their own name: `type enlngdb` for a database script. The line tells the tool what it is reading. Chapter 17 explains what happens when it is missing.
+
+## Operators as symbols
+
+| Words | Symbol |
+|---|---|
+| `plus` | `+` |
+| `minus` | `-` |
+| `times`, `multiplied by` | `*` |
+| `divided by` | `/` |
+| `mod`, `modulo` | `%` |
+| `is`, `is equal to` | `==` |
+| `is not` | `!=` |
+| `is less than`, `is greater than` | `<`, `>` |
+| `is at most`, `is at least` | `<=`, `>=` |
+
+The words and the symbols can be mixed freely in one program, though one style per file reads best.

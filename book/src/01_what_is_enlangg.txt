@@ -1,0 +1,45 @@
+# What Enlangg Is
+
+Enlangg is a programming language whose programs read like short English sentences. A complete program can be as small as this:
+
+::: code
+type enlng
+remember price as 40
+remember quantity as 3
+show "Total:" price times quantity
+:::
+
+Nothing here needs braces, semicolons or type declarations. The words `remember`, `as`, `show` and `times` are ordinary words the language knows. This book teaches those words, the rules for putting them together, and the tools that run the result.
+
+## What you get when you install it
+
+Enlangg is not one program but a toolchain of seven small programs, all written in C:
+
+| Tool | What it is for |
+|---|---|
+| `enlng` | The language itself: runs and builds `.enlng` programs. |
+| `enlngdb` | A small database. You write statements in English instead of SQL. |
+| `enlngf` | Describes web pages in English and generates HTML. |
+| `enlngd` | Describes colours, spacing and styles in English and generates CSS. |
+| `enlngs` | Describes page behaviour in English and generates JavaScript. |
+| `enlngm` | Describes phone screens in English and previews them. |
+| `enlangg` | A front door: looks at a file name and starts the right tool. |
+
+The first four chapters after this one cover installing and running. Part II is the language reference. Part III is a cookbook of complete programs. Part IV covers the other tools. Part V is reference tables.
+
+## How a program runs
+
+When you type `enlng run program.enlng`, the tool reads your text, checks it against the grammar, and builds a tree of what you meant. There are two ways to carry out that tree:
+
+- **The built-in interpreter** walks the tree and does what it says. This is the default. It needs nothing else installed.
+- **The C backend** turns the same tree into C source code and asks a C compiler (gcc, clang or cc) to build an executable. You choose it with `enlng build` or `enlng run --native`.
+
+Both ways share one runtime, so a program behaves the same either way. Chapter 5 shows how to use each and what the one known difference is.
+
+## What this book does not claim
+
+You will not find performance tables against other languages in this book, because none have been measured properly. The only timing the project has published is a single start-up measurement on one machine, given in chapter 5. When a feature does not exist yet, the book says so in the chapter on limits (chapter 39) instead of describing it as if it did.
+
+## How the examples were made
+
+Every program in this book was run with toolchain 5.5.0 while the book was built. The grey box is the program and the green box is exactly what the tool printed. If you type the same program you should see the same output.

@@ -1,0 +1,131 @@
+# Sorting, Swapping and Arranging
+
+Ordering things is so common that Enlangg has words for it.
+
+## sort
+
+`sort list ascending` and `sort list descending` reorder a list in place. Without a direction it sorts ascending. Numbers sort by value and text sorts alphabetically:
+
+::: code
+type enlng
+
+remember numbers as [42, 7, 19, 3, 88]
+sort numbers ascending
+show numbers
+sort numbers descending
+show numbers
+
+remember names as ["meera", "asha", "ravi"]
+sort names
+show names
+
+remember sizes as [10, 9, 100]
+sort sizes
+show sizes
+:::
+
+Notice that numbers sort as numbers: 9 comes before 10 and 100.
+
+## Sorting by hand: swapping neighbours
+
+Sometimes you want to see the steps. Bubble sort repeatedly looks at neighbouring pairs and swaps those that are out of order. Enlangg has a phrase for that: `for each pair in list` walks the neighbours, `the left of the pair` and `the right of the pair` name the two, `swap pair` exchanges them, and `repeat until sorted` repeats the pass until nothing is out of order:
+
+::: code
+type enlng
+
+remember numbers as [64, 34, 25, 12, 22, 11, 90]
+show "Before:" numbers
+
+repeat until sorted:
+    for each pair in numbers:
+        when the left of the pair > the right of the pair:
+            swap pair
+
+show "After: " numbers
+:::
+
+The word `sorted` here is a built-in flag: the loop runs again while the last pass swapped something. It reads as a sentence, and it is correct because it ends only when a full pass changes nothing.
+
+## Writing bubble sort with positions
+
+You can do the same with explicit positions. It is longer, but it is how most languages write it, so it is worth knowing:
+
+::: code
+type enlng
+
+remember xs as [5, 2, 9, 1, 7]
+remember n as count of xs
+remember swapped as true
+while swapped:
+    swapped = false
+    for i from 0 to n minus 2:
+        when xs[i] > xs[i plus 1]:
+            remember tmp as xs[i]
+            xs[i] = xs[i plus 1]
+            xs[i plus 1] = tmp
+            swapped = true
+show xs
+:::
+
+## Reversing
+
+`reverse list` reverses in place:
+
+::: code
+type enlng
+
+remember word_list as ["one", "two", "three"]
+reverse word_list
+show word_list
+:::
+
+## arrange: pick positions in any order
+
+`arrange` rebuilds a text or a list from the positions you name, in the order you name them. It can reverse, repeat, pick every other item, or shuffle by a fixed pattern:
+
+::: code
+type enlng
+
+remember s as "enlangg"
+arrange s by 6, 5, 4, 3, 2, 1, 0
+show s
+
+remember t as "abcdef"
+arrange t in 0, 2, 4
+show t
+
+remember u as "abc"
+arrange u at 0, 0, 1, 1, 2, 2
+show u
+
+remember nums as [10, 20, 30, 40]
+arrange nums by 3, 2, 1, 0
+show nums
+:::
+
+The connecting word (`by`, `with`, `in` or `at`) can be any of the four. Negative positions count from the end, so `arrange s by -1, -2, -3` reverses the last three characters.
+
+::: code
+type enlng
+
+remember s as "spandan"
+arrange s by -1, -2, -3
+show s
+:::
+
+## Finding the smallest and largest
+
+For a quick answer you do not need to sort at all:
+
+::: code
+type enlng
+
+remember temps as [31, 28, 35, 29, 33]
+show "Lowest:" min of temps
+show "Highest:" max of temps
+show "Average:" average of temps
+:::
+
+## Sorting records by a field
+
+`sort` orders simple values. To order records such as maps, pull the field you care about into a list, sort that, and look the records up again. The cookbook has a worked recipe for sorting students by marks.

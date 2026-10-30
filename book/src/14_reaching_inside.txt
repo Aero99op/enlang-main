@@ -1,0 +1,85 @@
+# Reaching Inside Lists, Maps and Text
+
+You pick a single item out of a list, a map or a piece of text by saying where it is. Enlangg gives you four ways to say it. They mean the same thing, so use whichever reads best in the sentence you are writing.
+
+| Style | Example | Works on |
+|---|---|---|
+| Brackets | `person["name"]`, `xs[2]` | Lists, maps, text |
+| Dot | `person.name` | Maps with plain-word keys |
+| `at` | `xs at 2`, `person at "name"` | Lists, maps, text |
+| `of` | `name of person` | Maps |
+
+::: code
+type enlng
+
+remember user as {"role": "Architect", "level": 5}
+show user["role"]
+show user.role
+show user at "role"
+show role of user
+:::
+
+## `at` for lists and text
+
+`at` reads naturally for a position:
+
+::: code
+type enlng
+
+remember lane as [10, 20, 30]
+show lane at 0
+show lane at 2
+remember word as "banana"
+show word at 1
+:::
+
+## `of` for a record's fields
+
+`of` reads like possession, which suits records:
+
+::: code
+type enlng
+
+remember book as {"title": "Dune", "pages": 412}
+show "Title:" title of book
+show "Pages:" pages of book
+:::
+
+The same word is also used for a few summaries: `count of items`, `length of text`, `sum of numbers`, `first of items`, `last of items`, `max of numbers`, `min of numbers` and `average of numbers`. Those are described in the chapters on lists and text.
+
+## Changing through any style
+
+An item can be changed through the same forms you use to read it, including an increase or a decrease:
+
+::: code
+type enlng
+
+remember account as {"balance": 1000, "owner": "Asha"}
+balance of account increases by 250
+account.balance decreases by 100
+account["owner"] = "Asha K"
+change owner of account to "Asha Kulkarni"
+show account
+:::
+
+## Chaining
+
+Brackets and dots chain when you have records inside records or lists inside lists:
+
+::: code
+type enlng
+
+remember shop as {"name": "Corner", "items": [{"sku": "A1", "qty": 4}, {"sku": "B2", "qty": 9}]}
+show shop["items"][1]["sku"]
+show shop.name
+:::
+
+Only reading is chained. Assigning through two levels at once is not supported in toolchain 5.5.0; read the inner value into a name first, as the chapter on maps shows.
+
+## Spoken positions
+
+Inside a loop that walks a list of pairs, `the left of the pair` and `the right of the pair` name the two neighbours being compared. This is used by the sorting pattern in chapter 19.
+
+## Which style should I use?
+
+There is no rule. A common habit is brackets when the key is a variable (`prices[item]`), `of` when a program is read aloud (`price of item`), and the dot for short fixed names in a line that also has arithmetic.

@@ -1,0 +1,96 @@
+# Comparisons and Logic
+
+A comparison asks a question about two values and answers `true` or `false`. These answers are what decisions and loops are built on.
+
+## Comparing
+
+Each comparison has a symbol form and an English form:
+
+| Question | Symbols | Words |
+|---|---|---|
+| equal? | `==` | `is`, `is equal to` |
+| not equal? | `!=` | `is not` |
+| less than? | `<` | `is less than` |
+| greater than? | `>` | `is greater than` |
+| at most? | `<=` | `is at most` |
+| at least? | `>=` | `is at least` |
+
+::: code
+type enlng
+
+remember age as 21
+show age == 21
+show age is 21
+show age is not 18
+show age is less than 30
+show age is greater than 30
+show age is at least 21
+show age is at most 20
+show age >= 18
+:::
+
+## Numbers compare by value
+
+A whole number and a decimal that hold the same value are equal:
+
+::: code
+type enlng
+
+show 3 == 3.0
+show 2 < 2.5
+:::
+
+## Text, true/false and null
+
+Text compares exactly, so capital letters matter. `null` can be compared like any other value, which is how you test for a missing key or position:
+
+::: code
+type enlng
+
+remember scores as {"asha": 90}
+show "Hello" == "hello"
+show scores["asha"] == null
+show scores["ravi"] == null
+:::
+
+## Lists are not compared by content
+
+Comparing two lists with `==` asks whether they are the same list, not whether they hold the same items. Two separately written lists with identical contents are not equal:
+
+::: code
+type enlng
+
+remember a as [1, 2]
+remember b as [1, 2]
+show a == b
+show a == a
+:::
+
+To compare contents, compare item by item in a loop (the cookbook has a recipe).
+
+## Combining questions
+
+`and`, `or` and `not` combine answers:
+
+| Word | Meaning |
+|---|---|
+| `a and b` | True only when both are true. |
+| `a or b` | True when at least one is true. |
+| `not a` | The opposite. |
+
+::: code
+type enlng
+
+remember age as 25
+remember member as true
+show age >= 18 and member
+show age < 18 or member
+show not member
+show not (age < 18)
+:::
+
+`and` binds tighter than `or`, as in most languages. Use brackets when a line mixes them, so the next reader does not need to remember that.
+
+## Truthiness
+
+A condition is expected to be `true` or `false`. Write the comparison out (`count is greater than 0`) rather than relying on a number or text standing in for a truth value.

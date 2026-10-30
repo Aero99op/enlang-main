@@ -1,0 +1,157 @@
+# The Standard Library: lib_file and lib_fs (Files)
+
+The built-in file functions (`read_file`, `write_file`, `append_file`, `file_exists`) are in chapter 22. `lib_file.enlng` adds line-based reading, path helpers, CSV and key=value text on top of them. `lib_fs.enlng` is a set of short names for the same basics.
+
+::: src
+use "lib_file.enlng"
+use "lib_fs.enlng"
+:::
+
+Files are written to the folder you run the program from unless you give a path. The examples below write small files next to the program.
+
+## Reading and writing
+
+| Function | Does |
+|---|---|
+| `file_read(path)` | The whole file as text. |
+| `file_write(path, text)` | Replaces the file with `text`. |
+| `file_append(path, text)` | Adds `text` at the end. |
+| `file_append_line(path, line)` | Adds a line at the end. |
+| `file_write_lines(path, lines)` | Writes a list of lines, one per line. |
+| `file_read_lines(path)` | The lines as a list. |
+| `file_exists_check(path)` | True when the file exists. |
+| `file_copy(source, destination)` | Copies a file. |
+| `file_line_count(path)` | The number of lines. |
+
+::: code
+type enlng
+use "lib_file.enlng"
+
+file_write("demo.txt", "alpha\nbeta\ngamma\n")
+file_append_line("demo.txt", "delta")
+show file_read_lines("demo.txt")
+show file_line_count("demo.txt")
+file_copy("demo.txt", "demo_copy.txt")
+show file_exists_check("demo_copy.txt")
+show file_exists_check("never_made.txt")
+:::
+
+`file_read_lines` drops the trailing `\r` that Windows adds at the end of lines, so files made on either system read the same.
+
+## A caution about the word count
+
+`file_word_count` splits the text on single spaces only. A line break does not count as a separator, so the last word of one line and the first word of the next are counted as one:
+
+::: code
+type enlng
+use "lib_file.enlng"
+
+file_write("w.txt", "one two three\nfour five\n")
+show file_word_count("w.txt")
+show file_line_count("w.txt")
+:::
+
+That file has five words, but the count above is four. If you need an exact word count, read the lines and split each one yourself:
+
+::: code
+type enlng
+use "lib_file.enlng"
+
+file_write("w.txt", "one two three\nfour five\n")
+remember total as 0
+for each line in file_read_lines("w.txt"):
+    total increases by len(split(line, " "))
+show total
+:::
+
+## Paths
+
+These work on the text of a path. They do not look at the disk.
+
+| Function | Gives |
+|---|---|
+| `path_basename(path)` | The file name at the end. |
+| `path_dirname(path)` | Everything before the file name. |
+| `path_extension(path)` | The text after the last dot, without the dot. |
+| `path_join(folder, name)` | The two joined with a slash. |
+
+::: code
+type enlng
+use "lib_file.enlng"
+
+show path_basename("a/b/report.txt")
+show path_dirname("a/b/report.txt")
+show path_extension("a/b/report.txt")
+show path_join("a/b", "x.txt")
+:::
+
+## CSV text
+
+`csv_parse_records(text)` turns comma-separated text with a header row into a list of maps, one per row. Values are read as numbers where they look like numbers. `csv_serialize_records(headers, records)` does the reverse and needs the records as maps:
+
+::: code
+type enlng
+use "lib_file.enlng"
+
+remember rows as csv_parse_records("name,age\nAsha,30\nRavi,25\n")
+show len(rows)
+show rows[0]["name"] rows[1]["age"]
+
+remember out as csv_serialize_records(["name", "age"], [{"name": "Asha", "age": 30}, {"name": "Ravi", "age": 25}])
+show out
+:::
+
+Giving `csv_serialize_records` rows as plain lists instead of maps produces empty cells, so use maps. The functions do not handle quoted fields or commas inside a value.
+
+## Key=value text
+
+Settings files are often one `key=value` per line. `kv_parse_text` reads that into a map and `kv_serialize_map` writes a map back:
+
+::: code
+type enlng
+use "lib_file.enlng"
+
+remember settings as kv_parse_text("volume=7\nname=lamp\n")
+show settings["volume"]
+show settings["name"]
+
+show kv_serialize_map({"a": 1, "b": 2})
+:::
+
+## lib_fs: shorter names
+
+| Function | Same as |
+|---|---|
+| `fs_read(path)` | `file_read` |
+| `fs_write(path, data)` | `file_write` |
+| `fs_append(path, data)` | `file_append` |
+| `fs_exists(path)` | `file_exists_check` |
+| `fs_copy(source, destination)` | `file_copy` |
+
+::: code
+type enlng
+use "lib_fs.enlng"
+
+fs_write("z.txt", "hi")
+fs_append("z.txt", " there")
+show fs_read("z.txt")
+show fs_exists("z.txt")
+:::
+
+## A small program: a notes file
+
+::: code
+type enlng
+use "lib_file.enlng"
+
+remember notes_file as "notes.txt"
+file_write(notes_file, "")
+for each note in ["buy milk", "call Asha", "pay rent"]:
+    file_append_line(notes_file, note)
+
+show "Saved" file_line_count(notes_file) "notes:"
+remember n as 1
+for each line in file_read_lines(notes_file):
+    show n + "." line
+    n increases by 1
+:::

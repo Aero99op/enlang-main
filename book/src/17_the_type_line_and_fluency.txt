@@ -1,0 +1,79 @@
+# The Type Line and Natural Phrasing
+
+## The first line
+
+Every `.enlng` file starts with `type enlng`. It tells the toolchain which of the six languages the file is written in, so that a file meant for the database tool is never read by the language tool by mistake. If the line is missing, or names a different type, the file is refused before anything runs:
+
+::: err
+remember x as 10
+show x
+:::
+
+::: err
+type python
+
+show 1
+:::
+
+Comments and blank lines may come before it. Nothing else may.
+
+## Silent words
+
+You can add the small words `the`, `that` and `it` to make a line read more naturally. The tool skips them. These two programs are the same:
+
+::: code
+type enlng
+
+remember total as 50
+when total is at least 50:
+    show "enough"
+:::
+
+::: code
+type enlng
+
+remember the total as 50
+when the total is at least 50:
+    show "enough"
+:::
+
+Use them to make code read aloud well, not to decorate it. One silent word per sentence is usually plenty.
+
+## Symbols and words are interchangeable
+
+Anywhere a symbol is allowed an English word is allowed too, and you can mix them. Both spellings of the compound updates work for increasing:
+
+::: code
+type enlng
+
+remember a as 10
+remember b as 10
+a += 5
+b increases by 5
+show a b
+:::
+
+Only `+=` exists in the symbol form. For decreasing, use `decreases by` or `a = a minus 1`.
+
+## Words that change nothing
+
+A few filler words appear in the grammar to let sentences flow: `by` in `increases by`, `of` in `count of`, `than` in `is greater than`. They are part of the phrases they appear in and are not optional there.
+
+## A sentence is one line
+
+Each statement fits on one line. There is no continuation character, so keep long conditions readable by naming the parts:
+
+::: code
+type enlng
+
+remember age as 34
+remember income as 52000
+remember adult as age is at least 18
+remember earning as income is greater than 30000
+when adult and earning:
+    show "Eligible"
+:::
+
+## Case
+
+Words of the language are written in lower case. Your own names can use any case, and `Total` is a different name from `total`.

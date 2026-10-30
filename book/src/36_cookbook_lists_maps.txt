@@ -1,0 +1,317 @@
+# Cookbook 3: Lists and Maps
+
+Lists keep things in order, maps look things up by name. Recipes here use only built-in features unless a `use` line says otherwise.
+
+## Remove the duplicates
+
+`contains` tells you whether the list has a value. Keep an item only the first time you see it:
+
+::: code
+type enlng
+
+function unique with items:
+    remember out as []
+    for each x in items:
+        when not contains(out, x):
+            append(out, x)
+    give out
+
+show unique([3, 1, 3, 2, 1, 4, 2])
+show unique(["a", "b", "a"])
+:::
+
+## Keep only what matches
+
+::: code
+type enlng
+
+function keep_big with items, limit:
+    remember out as []
+    for each x in items:
+        when x > limit:
+            append(out, x)
+    give out
+
+show keep_big([5, 12, 8, 30, 2], 7)
+:::
+
+## Change every item
+
+::: code
+type enlng
+
+function doubled with items:
+    remember out as []
+    for each x in items:
+        append(out, x * 2)
+    give out
+
+show doubled([1, 2, 3, 4])
+:::
+
+## Remove the item at a position
+
+Lists have no built-in "remove from the middle". Build a new list that skips one position:
+
+::: code
+type enlng
+
+function remove_at with items, pos:
+    remember out as []
+    for i from 0 to len(items) - 1:
+        when i is not pos:
+            append(out, items[i])
+    give out
+
+show remove_at([10, 20, 30, 40], 1)
+show remove_at([10, 20, 30, 40], 0)
+:::
+
+## Insert at a position
+
+::: code
+type enlng
+
+function insert_at with items, pos, value:
+    remember out as []
+    for i from 0 to len(items) - 1:
+        when i is pos:
+            append(out, value)
+        append(out, items[i])
+    when pos >= len(items):
+        append(out, value)
+    give out
+
+show insert_at([1, 2, 4, 5], 2, 3)
+show insert_at([1, 2], 9, 3)
+:::
+
+## Join two lists
+
+::: code
+type enlng
+
+function concat with a, b:
+    remember out as []
+    for each x in a:
+        append(out, x)
+    for each x in b:
+        append(out, x)
+    give out
+
+show concat([1, 2], [3, 4, 5])
+:::
+
+## Find the position of a value
+
+::: code
+type enlng
+
+function position_of with items, target:
+    for i from 0 to len(items) - 1:
+        when items[i] is target:
+            give i
+    give -1
+
+show position_of(["a", "b", "c"], "c")
+show position_of(["a", "b", "c"], "z")
+:::
+
+## Rotate a list
+
+Moving the first item to the end, three times:
+
+::: code
+type enlng
+
+function rotate with items, turns:
+    remember out as items
+    for i from 1 to turns:
+        remember first_item as out[0]
+        remember next as []
+        for j from 1 to len(out) - 1:
+            append(next, out[j])
+        append(next, first_item)
+        out = next
+    give out
+
+show rotate([1, 2, 3, 4, 5], 1)
+show rotate([1, 2, 3, 4, 5], 3)
+:::
+
+## Split a list into pairs
+
+::: code
+type enlng
+
+remember items as [1, 2, 3, 4, 5, 6]
+remember pairs as []
+remember i as 0
+while i + 1 < len(items):
+    append(pairs, [items[i], items[i + 1]])
+    i increases by 2
+show pairs
+:::
+
+## A running total
+
+::: code
+type enlng
+
+remember sales as [120, 80, 150, 60]
+remember totals as []
+remember so_far as 0
+for each s in sales:
+    so_far increases by s
+    append(totals, so_far)
+show totals
+:::
+
+## Second largest
+
+::: code
+type enlng
+
+function second_largest with items:
+    remember first_max as items[0]
+    for each x in items:
+        when x > first_max:
+            first_max = x
+    remember second as null
+    for each x in items:
+        when x is not first_max:
+            when second is null or x > second:
+                second = x
+    give second
+
+show second_largest([4, 9, 2, 9, 7])
+show second_largest([5, 5, 5])
+:::
+
+The second call prints `null`: when every item equals the largest there is no second value, and the function says so instead of inventing one.
+
+## A two-dimensional grid
+
+A list of lists makes a grid. The first position picks the row and the second picks the column:
+
+::: code
+type enlng
+
+remember grid as [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+show grid[1][2]
+
+remember diagonal as 0
+for i from 0 to 2:
+    diagonal increases by grid[i][i]
+show diagonal
+
+for each row in grid:
+    show join(row, " ")
+:::
+
+## Transposing a grid
+
+::: code
+type enlng
+
+remember grid as [[1, 2, 3], [4, 5, 6]]
+remember flipped as []
+for c from 0 to 2:
+    remember column as []
+    for r from 0 to 1:
+        append(column, grid[r][c])
+    append(flipped, column)
+show flipped
+:::
+
+## Group items by a key
+
+A map from key to list gathers related things together:
+
+::: code
+type enlng
+
+remember words as ["apple", "avocado", "banana", "blueberry", "cherry", "apricot"]
+remember groups as {}
+for each w in words:
+    remember letter as w[0]
+    when not has_key(groups, letter):
+        groups[letter] = []
+    append(groups[letter], w)
+
+for each letter in ["a", "b", "c"]:
+    show letter groups[letter]
+:::
+
+## Invert a map
+
+Swap keys and values, provided every value is different:
+
+::: code
+type enlng
+
+remember codes as {"IN": "India", "FR": "France", "JP": "Japan"}
+remember by_name as {}
+for each code in keys(codes):
+    by_name[codes[code]] = code
+show by_name["France"]
+show by_name["Japan"]
+:::
+
+## Look up with a default
+
+::: code
+type enlng
+
+function lookup with table, key, fallback:
+    when has_key(table, key):
+        give table[key]
+    give fallback
+
+remember stock as {"tea": 10, "coffee": 0}
+show lookup(stock, "tea", -1)
+show lookup(stock, "juice", -1)
+:::
+
+## Merge two maps
+
+When both have the same key, the second wins:
+
+::: code
+type enlng
+
+function merge with a, b:
+    remember out as {}
+    for each k in keys(a):
+        out[k] = a[k]
+    for each k in keys(b):
+        out[k] = b[k]
+    give out
+
+remember defaults as {"volume": 5, "theme": "light"}
+remember mine as {"theme": "dark"}
+remember settings as merge(defaults, mine)
+show settings["volume"] settings["theme"]
+:::
+
+## The most common value
+
+::: code
+type enlng
+
+remember votes as ["red", "blue", "red", "green", "blue", "red"]
+remember tally as {}
+for each v in votes:
+    when has_key(tally, v):
+        tally[v] = tally[v] + 1
+    otherwise:
+        tally[v] = 1
+
+remember winner as ""
+remember best as 0
+for each v in keys(tally):
+    when tally[v] > best:
+        best = tally[v]
+        winner = v
+show winner best
+:::

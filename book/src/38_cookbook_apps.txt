@@ -1,0 +1,232 @@
+# Cookbook 5: Small Programs
+
+These are whole programs, longer than the recipes before them. Each one is the kind of thing a first project looks like. They take no keyboard input unless they say so, so that the output shown is exactly what you will see.
+
+## A bank account
+
+A map holds the state, and small functions change it. Notice that every function receives the account as an argument, because a function cannot see names made outside it. A map passed in is shared, so the changes stay:
+
+::: code
+type enlng
+
+function open_account with owner, opening:
+    give {"owner": owner, "balance": opening, "history": []}
+
+function deposit with account, amount:
+    account["balance"] = account["balance"] + amount
+    append(account["history"], "deposit " + amount)
+
+function withdraw with account, amount:
+    when amount > account["balance"]:
+        append(account["history"], "refused " + amount)
+        give false
+    account["balance"] = account["balance"] - amount
+    append(account["history"], "withdraw " + amount)
+    give true
+
+remember acct as open_account("Asha", 100)
+deposit(acct, 50)
+show withdraw(acct, 30)
+show withdraw(acct, 500)
+show acct["owner"] acct["balance"]
+for each entry in acct["history"]:
+    show " -" entry
+:::
+
+## A grade book
+
+::: code
+type enlng
+
+remember students as ["Asha", "Ravi", "Meera", "Om"]
+remember marks as [88, 54, 71, 39]
+
+function grade with m:
+    when m >= 85:
+        give "A"
+    otherwise when m >= 70:
+        give "B"
+    otherwise when m >= 50:
+        give "C"
+    otherwise:
+        give "fail"
+
+for i from 0 to len(students) - 1:
+    show students[i] marks[i] grade(marks[i])
+
+show "class average:" average of marks
+show "top score:" max of marks
+:::
+
+## An inventory with low-stock warnings
+
+::: code
+type enlng
+
+remember stock as {"tea": 40, "coffee": 5, "sugar": 3, "milk": 20}
+remember limit as 10
+
+for each item in ["tea", "coffee", "sugar", "milk"]:
+    when stock[item] < limit:
+        show "LOW:" item stock[item]
+    otherwise:
+        show "ok" item stock[item]
+
+stock["coffee"] = stock["coffee"] + 50
+show "after restock:" stock["coffee"]
+:::
+
+## A shopping cart with a total
+
+::: code
+type enlng
+
+remember prices as {"pen": 15, "notebook": 60, "ruler": 20}
+remember cart as [["pen", 4], ["notebook", 2], ["ruler", 1]]
+
+remember total as 0
+for each line in cart:
+    remember name as line[0]
+    remember qty as line[1]
+    remember cost as prices[name] * qty
+    show name "x" qty "=" cost
+    total increases by cost
+
+show "subtotal:" total
+remember tax as total * 18 / 100
+show "tax (18%):" tax
+show "total:" total + tax
+:::
+
+Tax is worked out with whole numbers, so any fraction of a rupee is cut off. A real shop would count in paise to keep the fractions.
+
+## A to-do list on screen
+
+A list of maps stores the tasks. You cannot assign through two levels at once (`tasks[1]["done"] = true` is a syntax error), so pick the map out into a name first. The name and the map in the list are the same map, so the change shows in the list:
+
+::: code
+type enlng
+
+remember tasks as []
+for each title in ["buy milk", "call Asha", "pay rent", "book tickets"]:
+    append(tasks, {"title": title, "done": false})
+
+remember second as tasks[1]
+second["done"] = true
+remember fourth as tasks[3]
+fourth["done"] = true
+
+remember open_count as 0
+for each t in tasks:
+    when t["done"]:
+        show "[x]" t["title"]
+    otherwise:
+        show "[ ]" t["title"]
+        open_count increases by 1
+show open_count "tasks still open"
+:::
+
+## A tic-tac-toe winner check
+
+The board is a list of nine cells. A line wins when three cells in a row hold the same non-empty mark:
+
+::: code
+type enlng
+
+function winner with b:
+    remember lines as [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
+    for each ln in lines:
+        remember a as b[ln[0]]
+        when a is not "." and a is b[ln[1]] and a is b[ln[2]]:
+            give a
+    give "none"
+
+show winner(["X","O","X", "O","X","O", "O",".","X"])
+show winner(["O","O","O", "X","X",".", ".",".","."])
+show winner(["X","O","X", "X","O","O", "O","X","X"])
+:::
+
+## A number guessing game, scripted
+
+A real game reads from the keyboard. To keep the output fixed, this one plays against a list of guesses and uses binary search to home in on the secret:
+
+::: code
+type enlng
+
+remember secret as 73
+remember low as 1
+remember high as 100
+remember tries as 0
+while true:
+    tries increases by 1
+    remember guess as (low + high) / 2
+    when guess is secret:
+        show "found" secret "in" tries "tries"
+        stop
+    otherwise when guess < secret:
+        show guess "is too low"
+        low = guess + 1
+    otherwise:
+        show guess "is too high"
+        high = guess - 1
+:::
+
+## A calculator that reads its input
+
+This one reads two numbers and an operator from standard input. The numbers come from `ask` as text and are converted with `parse_int`:
+
+::: code stdin=12\n+\n30\n
+type enlng
+use "lib_std.enlng"
+
+ask first
+ask op
+ask second
+remember a as parse_int with first
+remember b as parse_int with second
+
+when op is "+":
+    show a + b
+otherwise when op is "-":
+    show a - b
+otherwise when op is "*":
+    show a * b
+otherwise when op is "/":
+    show a / b
+otherwise:
+    show "unknown operator" op
+:::
+
+## Reading until a blank line
+
+At the end of the input `ask` gives empty text, so a loop can read whatever it is given and stop when nothing is left:
+
+::: code stdin=apple\nbanana\ncherry\n
+type enlng
+
+remember count as 0
+remember line as ""
+while true:
+    ask line
+    when line is "":
+        stop
+    count increases by 1
+    show count line
+show "read" count "lines"
+:::
+
+## A report written to a file and read back
+
+::: code
+type enlng
+use "lib_file.enlng"
+
+remember sales as {"Mon": 120, "Tue": 90, "Wed": 150}
+file_write("report.txt", "")
+for each day in ["Mon", "Tue", "Wed"]:
+    file_append_line("report.txt", day + ": " + sales[day])
+
+for each line in file_read_lines("report.txt"):
+    show line
+show file_line_count("report.txt") "lines saved"
+:::

@@ -1,0 +1,79 @@
+# Running and Building Programs
+
+`enlng` has four ways to treat a program. You have already used the first.
+
+| Command | What it does | Needs a C compiler? |
+|---|---|---|
+| `enlng run file.enlng` | Runs the program with the built-in interpreter. | No |
+| `enlng file.enlng` | Short form of the above. | No |
+| `enlng run --native file.enlng` | Translates to C, builds with gcc, then runs. | Yes |
+| `enlng build file.enlng -o out` | Translates to C and builds a standalone executable. | Yes |
+| `enlng emit-c file.enlng` | Prints the generated C source. | No |
+
+## The interpreter
+
+The interpreter reads your whole file first, so syntax mistakes are reported before anything runs. Then it walks the program and carries out each statement.
+
+Two limits protect you. A function that calls itself without end stops with a clear error instead of crashing the tool, and the interpreter runs on a large stack so that ordinary deep recursion, such as a recursive sum to ten thousand, works:
+
+::: code
+type enlng
+
+function sum_to with n:
+    when n is 0:
+        give 0
+    give n plus (sum_to with n minus 1)
+
+show sum_to with 10000
+:::
+
+Runaway recursion stops at a fixed depth and prints an error:
+
+::: err
+type enlng
+
+function forever with n:
+    give forever with n plus 1
+
+show forever with 0
+:::
+
+## Building an executable
+
+With gcc, clang or cc on your `PATH`, `enlng build` produces a program you can give to someone who does not have Enlangg installed:
+
+::: sh
+enlng build hello.enlng -o hello
+./hello
+:::
+
+## Seeing the C
+
+`enlng emit-c` prints what the C backend would compile. It is useful for curiosity and for checking what a program means. This is the whole of a one-line program:
+
+::: cmd
+@@ hello.enlng
+type enlng
+show "hi"
+@@@
+enlng emit-c hello.enlng
+:::
+
+The banner comment in that output still carries an old version number. It is cosmetic.
+
+## When there is no C compiler
+
+If you ask for `--native` or `build` and no compiler can be found, the tool tells you, and `enlng run` still works. This is the output with an empty `PATH`:
+
+::: sh
+enlng run --native hello.enlng
+[ENLANG ERROR] Native C compilation failed. Ensure a C compiler (gcc) is installed and on PATH.
+:::
+
+## Are the two ways the same?
+
+They share one runtime, and the project's tests run the same programs through both and compare the output. They agree on every test program, with one known difference: the C path prints a decimal number literal with six places, where the interpreter prints it the way the runtime formats numbers. If you need exact text output of decimals, format the number yourself.
+
+## Start-up time
+
+The only timing the project has measured is how long a hello-world takes from start to exit. On one Windows machine, with release 5.5.0, the median of 30 runs was about 12 ms for `enlng run hello.enlng` and about 73 ms for `python hello.py`. That is start-up only. The interpreter is not tuned for heavy loops, and for those `--native` is faster. No broader comparison has been done, so none is claimed.

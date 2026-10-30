@@ -1,0 +1,142 @@
+# enlngd and enlngf: Styles and Web Pages
+
+Two of the seven tools turn small English-like files into ordinary web files. `enlngd` turns a list of colours and rules into a CSS stylesheet. `enlngf` turns a page description into HTML. Both produce files that any browser opens; nothing about them needs the Enlangg tools afterwards.
+
+## enlngd: design tokens to CSS
+
+An `.enlngd` file has two kinds of thing. A **token** is a named value, such as a colour. A **rule** says which tokens and properties apply to a selector.
+
+::: sh
+enlngd <file.enlngd>                         inspect and resolve the tokens
+enlngd inspect <file.enlngd>                 the same, spelled out
+enlngd compile <file.enlngd> [-o out.css]    write a CSS file
+:::
+
+Here is a small theme:
+
+::: src
+define color "paper" as "#faf7f2"
+define color "ink" as "#1d1d1b"
+define color "accent" as "#b4412e"
+
+for "body" apply:
+    background use color "paper"
+    color use color "ink"
+    font-family "Georgia, serif"
+    line-height 1.6
+end
+
+for ".button" apply:
+    background use color "accent"
+    color use color "paper"
+    padding "8px 16px"
+    corner radius 6
+end
+:::
+
+`define color "name" as "value"` creates a token. A rule starts with `for "selector" apply:` and ends with `end`. Inside it, each line is a property name followed by its value. `use color "name"` refers to a token, and `corner radius 6` is a friendlier spelling of CSS `border-radius`.
+
+`inspect` shows what the tool understood:
+
+::: cmd
+@@ theme.enlngd
+define color "paper" as "#faf7f2"
+define color "ink" as "#1d1d1b"
+define color "accent" as "#b4412e"
+
+for "body" apply:
+    background use color "paper"
+    color use color "ink"
+    font-family "Georgia, serif"
+    line-height 1.6
+end
+
+for ".button" apply:
+    background use color "accent"
+    color use color "paper"
+    padding "8px 16px"
+    corner radius 6
+end
+@@@
+enlngd inspect theme.enlngd
+:::
+
+`compile` writes the stylesheet. Each token becomes a CSS variable on `:root`, and rules use `var(...)` to refer to them:
+
+::: cmd
+@@ theme.enlngd
+define color "paper" as "#faf7f2"
+define color "ink" as "#1d1d1b"
+
+for "body" apply:
+    background use color "paper"
+    color use color "ink"
+    line-height 1.6
+end
+@@@
+enlngd compile theme.enlngd -o theme.css
+cat theme.css
+:::
+
+Changing one token changes every rule that uses it, which is the whole point.
+
+## enlngf: page description to HTML
+
+An `.enlngf` file describes a page as nested blocks. Indentation shows what is inside what, the way it does in Enlangg programs.
+
+::: sh
+enlngf build <file.enlngf> [-o out.html]     compile to a standalone HTML file
+enlngf serve <file.enlngf> [--port 3000]     serve it over HTTP on this machine
+enlngf <file.enlngf>                         open it in a native Windows window
+:::
+
+A page with a head and a body:
+
+::: src
+document enlgf:
+    head:
+        title "Pet Shop"
+        connect design theme.enlngd
+    body:
+        div class "shell":
+            h1 "Pet Shop"
+            p "Open every day."
+            button "Call us" id "call" class "button"
+:::
+
+An element is its HTML name followed by its text and attributes. `div class "shell":` ends with a colon because it holds other elements. `connect design theme.enlngd` links a design file: when you build the page, `enlngf` also writes a stylesheet next to it, named after the design file.
+
+::: cmd
+@@ theme.enlngd
+define color "ink" as "#1d1d1b"
+for "body" apply:
+    color use color "ink"
+end
+@@ page.enlngf
+document enlgf:
+    head:
+        title "Pet Shop"
+        connect design theme.enlngd
+    body:
+        div class "shell":
+            h1 "Pet Shop"
+            p "Open every day."
+            button "Call us" id "call" class "button"
+@@@
+enlngf build page.enlngf -o page.html
+cat page.html
+:::
+
+The result is plain, readable HTML. Notice that the head links to `theme.css`.
+
+### A rule about overwriting
+
+If a file named `theme.css` is already there and the tool did not write it, `enlngf build` stops with an error instead of replacing it. Your hand-written stylesheet is safe. Rename it, or delete the old one if it was only an earlier build.
+
+### Serving and windows
+
+`enlngf serve` starts a small web server on your machine so you can view the page in a browser at `http://localhost:3000` (or the port you choose). Running `enlngf page.enlngf` with no command opens the page in a window of its own on Windows. Both of those need a screen and a browser, so they are described here but not shown as output.
+
+### What is and is not here
+
+`enlngf` produces static pages. Interactive behaviour, such as a button that does something, comes from a script file connected with `connect script`, written in `enlngs`, covered next. The stylesheet and markup are all that the examples above need.

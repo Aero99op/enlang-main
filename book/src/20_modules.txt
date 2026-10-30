@@ -1,0 +1,85 @@
+# Splitting a Program into Files
+
+A long program is easier to read in pieces. `use "file"` pulls another Enlangg file into this one, so the functions it defines are available here.
+
+## A small module
+
+Put reusable functions in a file of their own:
+
+::: cmd
+@@ geometry.enlng
+type enlng
+
+function circle_area with r:
+    give 3.14159 times r times r
+
+function rectangle_area with w, h:
+    give w times h
+@@ main.enlng
+type enlng
+use "geometry.enlng"
+
+show circle_area(2)
+show rectangle_area(3, 4)
+@@@
+enlng run main.enlng
+:::
+
+Each file begins with its own `type enlng` line. Only the main file is run; the imported file is read in as if its lines were written where the `use` line is.
+
+## Where a path is looked up
+
+A path in `use` is read relative to the file that contains the `use` line, not relative to the folder you were in when you started the program. That means a project keeps working when started from anywhere. Use `../` to go up a folder:
+
+::: cmd
+@@ tools/cube.enlng
+type enlng
+
+function cube with n:
+    give n times n times n
+@@ app/main.enlng
+type enlng
+use "../tools/cube.enlng"
+
+show cube(3)
+@@@
+enlng run app/main.enlng
+cd app && enlng run main.enlng
+:::
+
+## Files that cannot be found
+
+If the file does not exist, the program does not start, and the message names the path:
+
+::: cmd
+@@ main.enlng
+type enlng
+use "nowhere.enlng"
+
+show 1
+@@@
+enlng run main.enlng
+:::
+
+## The standard library
+
+The standard library is a set of ordinary Enlangg files installed in the `lib` folder next to the tools. You import them like any other file, by name:
+
+::: code
+type enlng
+use "lib_math.enlng"
+
+show gcd(48, 18)
+show lcm(4, 6)
+show is_prime(29)
+:::
+
+The library is described in the chapters that follow. Because the library is written in Enlangg, you can open any of its files and read how a function works.
+
+## Names from modules
+
+Imported functions share one set of names with your program. If your main file defines a function with the same name as one from a module, the later definition wins. Give your own functions names that do not clash, or read the module's list of functions first.
+
+## Importing the same file twice
+
+Importing a file is the same as pasting it. Importing the same file twice defines its functions twice, which is harmless but wasteful; import it once, at the top.

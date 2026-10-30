@@ -1,0 +1,137 @@
+# Text
+
+Text values are written in double quotes. A string can be empty (`""`) and can hold any characters.
+
+## Joining text
+
+`+` joins two pieces of text. If one side is a number it is turned into text first. Listing several values after `show` also prints them with a space between, which is often simpler:
+
+::: code
+type enlng
+
+remember first as "Ada"
+remember last as "Lovelace"
+show first + " " + last
+show first last
+show "Total: " + 42
+show "Count" 3 "items"
+:::
+
+## Length
+
+`length of` and `len(...)` give the number of characters:
+
+::: code
+type enlng
+
+remember word as "enlangg"
+show length of word
+show len(word)
+show len("")
+:::
+
+## Picking characters
+
+A character is picked by its position, counting from zero. A negative position counts from the end:
+
+::: code
+type enlng
+
+remember word as "enlangg"
+show word[0]
+show word[3]
+show word[-1]
+show word at 2
+:::
+
+There is no slicing syntax such as `word[0:3]` in toolchain 5.5.0. To take a piece, build it character by character in a loop, as the cookbook does.
+
+## Searching
+
+`contains(text, piece)` is true when `piece` appears anywhere in `text`:
+
+::: code
+type enlng
+
+remember sentence as "the quick brown fox"
+show contains(sentence, "quick")
+show contains(sentence, "slow")
+:::
+
+## Splitting and joining
+
+`split(text, separator)` breaks text into a list. `join(list, separator)` does the reverse. Splitting on an empty separator gives one item per character. Empty pieces are left out, so `split("a,,b", ",")` has two items, not three:
+
+::: code
+type enlng
+
+remember csv as "red,green,blue"
+remember parts as split(csv, ",")
+show parts
+show len(parts)
+show join(parts, " | ")
+show split("abc", "")
+show split("a,,b", ",")
+:::
+
+## Reversing
+
+`reverse` works on text and on lists:
+
+::: code
+type enlng
+
+show reverse("stressed")
+:::
+
+## Comparing
+
+Text compares with `==` or `is`, and orders alphabetically with `<` and `>`:
+
+::: code
+type enlng
+
+show "abc" == "abc"
+show "abc" is "abd"
+show "apple" < "banana"
+show "b" > "a"
+:::
+
+Comparisons are case-sensitive: `"Apple"` and `"apple"` are different, and in the ordering every capital letter comes before every small letter.
+
+## Changing one character
+
+Text values do not change in place. These functions give back a new text:
+
+| Function | Result |
+|---|---|
+| `string_set_at(text, position, character)` | The text with one character replaced. |
+| `string_remove_at(text, position)` | The text without the character at that position. |
+| `string_remove(text, piece)` | The text with the first occurrence of `piece` removed. |
+
+::: code
+type enlng
+
+remember word as "hello"
+show string_set_at(word, 0, "J")
+show string_remove_at(word, 1)
+show string_remove(word, "l")
+show word
+:::
+
+`word` itself is unchanged; assign the result if you want to keep it: `word = string_set_at(word, 0, "J")`.
+
+`string_add`, `string_insert` and `string_replace` also exist, but they work out which of their arguments is the text and which is the piece by comparing lengths. That makes their behaviour hard to predict, so this book avoids them. Build the new text with `+` and a loop instead.
+
+## Counting letters: a small program
+
+::: code
+type enlng
+
+remember text as "mississippi"
+remember count_s as 0
+for each ch in split(text, ""):
+    when ch is "s":
+        count_s increases by 1
+show "Letter s appears" count_s "times in" text
+:::

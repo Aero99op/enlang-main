@@ -1,0 +1,302 @@
+# The Standard Library: lib_ds (Data Structures)
+
+`lib_ds.enlng` builds the classic data structures out of lists and maps. Each structure is created with a `create_` function, and you pass it to the other functions of that structure. The structures are ordinary values, so you can keep several at once.
+
+::: src
+use "lib_ds.enlng"
+:::
+
+## Stack: last in, first out
+
+A stack hands things back in the reverse of the order they went in, like a pile of plates.
+
+| Function | Does |
+|---|---|
+| `create_stack()` | Makes an empty stack. |
+| `stack_push(s, val)` | Puts `val` on top. |
+| `stack_pop(s)` | Removes and gives back the top; `null` when empty. |
+| `stack_peek(s)` | The top, without removing it; `null` when empty. |
+| `stack_is_empty(s)`, `stack_size(s)` | Whether it is empty, and how many items. |
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember plates as create_stack()
+stack_push(plates, "blue")
+stack_push(plates, "red")
+show stack_peek(plates) stack_size(plates)
+show stack_pop(plates)
+show stack_pop(plates)
+show stack_is_empty(plates)
+show stack_pop(plates)
+:::
+
+A classic use of a stack is checking that brackets match. Each opening bracket is pushed, each closing one pops:
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+function balanced with text:
+    remember s as create_stack()
+    for each ch in split(text, ""):
+        when ch is "(":
+            stack_push(s, ch)
+        when ch is ")":
+            when stack_is_empty(s):
+                give false
+            stack_pop(s)
+    give stack_is_empty(s)
+
+show balanced("(a (b) c)")
+show balanced("(a (b c)")
+show balanced("a) (b")
+:::
+
+## Queue: first in, first out
+
+A queue serves things in the order they arrived, like a line at a counter.
+
+| Function | Does |
+|---|---|
+| `create_queue()` | Makes an empty queue. |
+| `queue_enqueue(q, val)` | Joins the back of the line. |
+| `queue_dequeue(q)` | Leaves from the front and gives the item; `null` when empty. |
+| `queue_peek(q)` | The front item, without removing it. |
+| `queue_is_empty(q)`, `queue_size(q)` | Emptiness and size. |
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember line as create_queue()
+queue_enqueue(line, "Asha")
+queue_enqueue(line, "Ravi")
+queue_enqueue(line, "Meera")
+show queue_peek(line) queue_size(line)
+show queue_dequeue(line)
+show queue_dequeue(line)
+show queue_size(line)
+:::
+
+## Deque: both ends
+
+A deque (pronounced "deck") is a list you can add to and remove from at either end.
+
+| Function | Does |
+|---|---|
+| `create_deque()` | Makes an empty deque. |
+| `deque_push_back(d, v)`, `deque_push_front(d, v)` | Adds at the back or the front. |
+| `deque_pop_back(d)`, `deque_pop_front(d)` | Removes from the back or the front. |
+| `deque_peek_back(d)`, `deque_peek_front(d)` | Looks at either end. |
+| `deque_is_empty(d)`, `deque_size(d)` | Emptiness and size. |
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember d as create_deque()
+deque_push_back(d, 1)
+deque_push_front(d, 0)
+deque_push_back(d, 2)
+show deque_peek_front(d) deque_peek_back(d) deque_size(d)
+show deque_pop_front(d) deque_pop_back(d)
+show deque_size(d)
+:::
+
+## Priority queue: smallest first
+
+A priority queue always gives you the smallest value next, whatever order they were added in.
+
+| Function | Does |
+|---|---|
+| `create_priority_queue()` | Makes an empty one. |
+| `pq_insert(pq, val)` | Adds a value. |
+| `pq_peek_min(pq)` | The smallest value, without removing it. |
+| `pq_extract_min(pq)` | Removes and gives the smallest; `null` when empty. |
+| `pq_size(pq)`, `pq_is_empty(pq)` | Size and emptiness. |
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember tasks as create_priority_queue()
+pq_insert(tasks, 5)
+pq_insert(tasks, 1)
+pq_insert(tasks, 3)
+show pq_peek_min(tasks)
+show pq_extract_min(tasks) pq_extract_min(tasks) pq_size(tasks)
+:::
+
+## Binary search tree
+
+A binary search tree keeps numbers so that the smaller ones hang to the left of a node and the larger to the right, which makes searching quick.
+
+| Function | Does |
+|---|---|
+| `bst_node(val)` | Makes a tree with one value; it is the root. |
+| `bst_insert(root, val)` | Adds a value below the root. |
+| `bst_search(root, target)` | True when the value is in the tree. |
+| `bst_min(root)`, `bst_max(root)` | The smallest and largest values. |
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember root as bst_node(50)
+for each v in [30, 70, 20, 40, 60, 80]:
+    bst_insert(root, v)
+show bst_search(root, 40) bst_search(root, 45)
+show bst_min(root) bst_max(root)
+:::
+
+## Graph
+
+A graph stores connections between named points. `graph_bfs` and `graph_dfs` list the points reachable from a start, breadth-first and depth-first.
+
+| Function | Does |
+|---|---|
+| `create_graph()` | Makes an empty graph. |
+| `graph_add_node(g, id)` | Adds a point. |
+| `graph_add_edge(g, u, v)` | Connects two points. |
+| `graph_neighbors(g, u)` | The points directly connected to `u`. |
+| `graph_has_edge(g, u, v)` | True when `u` and `v` are connected. |
+| `graph_bfs(g, start)`, `graph_dfs(g, start)` | Points reachable from `start`, in the order visited. |
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember map as create_graph()
+for each city in ["Pune", "Mumbai", "Nashik", "Goa"]:
+    graph_add_node(map, city)
+graph_add_edge(map, "Pune", "Mumbai")
+graph_add_edge(map, "Mumbai", "Nashik")
+graph_add_edge(map, "Mumbai", "Goa")
+show graph_neighbors(map, "Mumbai")
+show graph_has_edge(map, "Pune", "Mumbai")
+show graph_has_edge(map, "Pune", "Goa")
+show graph_bfs(map, "Pune")
+show graph_dfs(map, "Pune")
+:::
+
+## Linked lists
+
+A linked list chains items together so that adding at the front is as cheap as adding at the back. A doubly linked list can also be read backwards.
+
+| Function | Does |
+|---|---|
+| `create_linked_list()` | Makes an empty list. |
+| `ll_append(l, v)`, `ll_prepend(l, v)` | Adds at the end or the front. |
+| `ll_find(l, v)` | True when the value is present. |
+| `ll_to_list(l)`, `ll_size(l)` | The items as an ordinary list, and the count. |
+| `create_doubly_linked_list()` | The doubly linked kind. |
+| `dll_append`, `dll_prepend`, `dll_to_list`, `dll_to_list_reverse`, `dll_size` | The same operations, plus reading backwards. |
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember chain as create_linked_list()
+ll_append(chain, 1)
+ll_append(chain, 2)
+ll_prepend(chain, 0)
+show ll_to_list(chain) ll_size(chain)
+show ll_find(chain, 2) ll_find(chain, 9)
+
+remember both as create_doubly_linked_list()
+dll_append(both, "x")
+dll_append(both, "y")
+dll_prepend(both, "w")
+show dll_to_list(both)
+show dll_to_list_reverse(both)
+:::
+
+## Sets
+
+A set holds each value once, however many times you add it.
+
+| Function | Does |
+|---|---|
+| `create_set()` | Makes an empty set. |
+| `set_add(s, item)` | Adds an item (ignored if already present). |
+| `set_has(s, item)` | True when the item is present. |
+| `set_size(s)`, `set_to_list(s)` | Size, and the items as a list. |
+| `set_union(a, b)`, `set_intersection(a, b)`, `set_difference(a, b)` | New sets from two sets. |
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember a as create_set()
+set_add(a, 1)
+set_add(a, 2)
+set_add(a, 2)
+remember b as create_set()
+set_add(b, 2)
+set_add(b, 3)
+show set_size(a) set_has(a, 2) set_has(a, 9)
+show set_to_list(set_union(a, b))
+show set_to_list(set_intersection(a, b))
+show set_to_list(set_difference(a, b))
+:::
+
+There is a `set_remove(s, item)`, but in toolchain 5.5.0 it leaves a `null` placeholder where the item was, which then appears in `set_to_list`. Build a new set without the item if you need to remove one.
+
+## Trie
+
+A trie stores words so that you can ask which words start with some letters.
+
+| Function | Does |
+|---|---|
+| `create_trie()` | Makes an empty trie. |
+| `trie_insert(t, word)` | Adds a word. |
+| `trie_search(t, word)` | True when exactly this word was added. |
+| `trie_starts_with(t, prefix)` | True when some word begins with `prefix`. |
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember words as create_trie()
+trie_insert(words, "car")
+trie_insert(words, "cat")
+show trie_search(words, "car")
+show trie_search(words, "ca")
+show trie_starts_with(words, "ca")
+show trie_starts_with(words, "d")
+:::
+
+## Ring buffer
+
+A ring buffer holds a fixed number of items. Once it is full, new pushes are ignored in this version.
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember rb as create_ring_buffer(2)
+ring_push(rb, 1)
+ring_push(rb, 2)
+show ring_is_full(rb) ring_size(rb)
+ring_push(rb, 3)
+show ring_pop(rb) ring_pop(rb) ring_is_empty(rb)
+:::
+
+## A note on the cache
+
+The module also has `create_lru_cache`, `lru_get`, `lru_put` and `lru_size`. A least-recently-used cache should forget its oldest entry when it is full. It does that in 5.5.0, but `lru_size` reports a count that includes forgotten entries, so use `lru_get` to ask about a key instead of counting.
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember cache as create_lru_cache(2)
+lru_put(cache, "a", 1)
+lru_put(cache, "b", 2)
+lru_put(cache, "c", 3)
+show lru_get(cache, "a")
+show lru_get(cache, "b")
+show lru_get(cache, "c")
+:::

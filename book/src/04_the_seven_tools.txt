@@ -1,0 +1,51 @@
+# The Seven Tools
+
+Installing Enlangg puts seven programs on your machine. Six of them each understand one kind of file, and the seventh, `enlangg`, picks the right one for you.
+
+| File type | Tool | What the file describes | What comes out |
+|---|---|---|---|
+| `.enlng` | `enlng` | A program: logic, maths, text, files | Output on the screen, or a C source file or executable |
+| `.enlngdb` | `enlngdb` | Tables and rows | Query results; data saved to a file |
+| `.enlngf` | `enlngf` | A web page | HTML |
+| `.enlngd` | `enlngd` | Colours, spacing, styles | CSS |
+| `.enlngs` | `enlngs` | What a page does when clicked or typed into | JavaScript |
+| `.enlngm` | `enlngm` | A phone screen | A preview window (Windows only) |
+
+## Native programs, generated files
+
+All seven tools are native programs written in C. They start quickly, and you do not need Python, Node.js or a runtime installed to use them.
+
+It is worth being precise about what the last three of them produce, though. `enlngf`, `enlngd` and `enlngs` are translators: the tool is native, but its output is HTML, CSS and JavaScript text, which a browser then runs. They do not produce machine code. Only `enlng` can build a native executable, and it does so by way of C and a C compiler.
+
+## The front door: enlangg
+
+`enlangg` looks at the extension of the file you give it and starts the matching tool, so you can use one command for everything:
+
+::: cmd
+enlangg --help
+:::
+
+That is the help text of version 5.5.0, printed as the tool wrote it. A few of its descriptions are more enthusiastic than they are exact. The rest of this book describes what each command really does.
+
+## Where `enlangg` looks for the other tools
+
+`enlangg` first looks for the tool it needs in its own folder, the one it was started from. Only if the tool is not there does it search your `PATH`. This means two things. A copy of a tool earlier on your `PATH` cannot take over from the one that was installed with `enlangg`, and a folder you copy somewhere else keeps working as long as the seven files stay together. The tool is never taken from the current directory, so a file named `enlng.exe` that happens to sit in a project folder is not run by mistake.
+
+## Version numbers
+
+Each tool reports the same version:
+
+::: cmd
+enlng --version
+enlngdb --version
+enlngf --version
+enlngd --version
+enlngs --version
+enlngm --version
+:::
+
+The descriptions in parentheses are the tools' own tag lines. Some of them still say things like "ZERO PYTHON", which is true but is not a feature description; treat the tag lines as labels.
+
+## Studio
+
+Enlangg Studio is a separate download: a desktop editor for Windows that bundles the same seven tools. Everything in this book works from the terminal without it.

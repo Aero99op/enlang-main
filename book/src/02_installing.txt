@@ -1,0 +1,65 @@
+# Installing Enlangg
+
+There are two installers. Neither is code-signed, so Windows SmartScreen may warn you before the Windows installer starts. Check the SHA-256 hash on the download page against the file you got before you run it.
+
+## Windows
+
+Download `enlangg-setup.exe` from the install page and run it. It installs for your user account only, so it never asks for administrator rights.
+
+By default the files go to `%LOCALAPPDATA%\Programs\Enlangg`. The installer:
+
+- copies the seven tools into a `bin` folder and the standard library into `lib`;
+- adds the `bin` folder to your user `PATH` (you can untick this);
+- registers the `.enlng` file type (you can untick this) so that double-clicking a file opens it instead of running it;
+- optionally downloads Enlangg Studio, the IDE, and checks its SHA-256 before starting its installer.
+
+It writes a list of everything it installed to `install.manifest`, and `uninstall.exe` removes exactly that list. A file you added to the install folder yourself is left alone.
+
+For scripted installs the same program takes options:
+
+| Option | Meaning |
+|---|---|
+| `/S` | Silent: no window. |
+| `/DIR=<path>` | Install here. The path must be absolute and must not be a drive root. |
+| `/NOPATH` | Do not change `PATH`. |
+| `/NOASSOC` | Do not register the `.enlng` file type. |
+| `/STUDIO` | Also download and install Enlangg Studio. |
+| `/LOG=<file>` | Write a log of what the installer did. |
+
+To uninstall silently, run `uninstall.exe /uninstall /S` from the install folder.
+
+## Linux and macOS
+
+Download `enlangg-install.sh`. It is one file that contains a shell script followed by the program archives for Linux x86_64, Linux aarch64 and macOS. Run it with `sh`:
+
+::: sh
+sh enlangg-install.sh
+:::
+
+It checks each archive's SHA-256 before using it, installs into `~/.enlangg` without needing root, and adds `~/.enlangg/bin` to your shell startup files between two marker lines (`# >>> enlangg >>>` and `# <<< enlangg <<<`) so it can be removed again cleanly.
+
+| Option | Meaning |
+|---|---|
+| `--prefix DIR` | Install into `DIR` instead of `~/.enlangg`. |
+| `--no-path` | Do not touch your shell startup files. |
+| `--uninstall` | Remove an existing install. |
+| `--help` | Print the options. |
+
+To uninstall later, run `sh ~/.enlangg/uninstall.sh`. It removes only what is listed in `install.manifest` and the marked lines in your startup files.
+
+The installer has to be run as a file. Piping it into `sh` (`curl ... | sh`) is not supported, because it needs to read its own archives.
+
+## Do I need a C compiler?
+
+Not to run programs. `enlng run file.enlng` uses the built-in interpreter. A C compiler is needed only for two things: `enlng build` (to produce an executable) and `enlng run --native`. If you ask for either and no compiler is found, the tool says so and suggests `enlng run` instead.
+
+## Checking that it worked
+
+Open a new terminal, so that the changed `PATH` is picked up, and ask each tool for its version:
+
+::: cmd
+enlng --version
+enlangg --version
+:::
+
+If the command is not found, the `bin` folder is not on your `PATH`. Open a new terminal first; if it is still missing, add the folder by hand or run the installer again without the no-PATH option.
