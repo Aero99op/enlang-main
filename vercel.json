@@ -9,12 +9,12 @@
   "redirects": [
     {
       "source": "/enlangg-setup.exe",
-      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.5.0/enlangg-setup.exe",
+      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.5.1/enlangg-setup.exe",
       "permanent": false
     },
     {
       "source": "/enlangg-install.sh",
-      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.5.0/enlangg-install.sh",
+      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.5.1/enlangg-install.sh",
       "permanent": false
     },
     {
