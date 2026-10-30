@@ -1311,7 +1311,7 @@ screen WalletHome:
           if (userInitiated) {
             appendTerminal(`\n<span class="term-green">✔ [Native Toolchain] ${foundCount}/7 Sovereign C99 Compilers active (Desktop Direct IPC)</span>`);
             appendTerminal(`<span class="term-cyan">Binaries Location: ${escapeHtml(nativeBridgeData.defaultBinDir)}</span>`);
-            appendTerminal(`<span class="term-dim">Code execution runs directly as high-performance native machine binaries (enlng, enlngdb, enlangg, enlngf, enlngd, enlngs, enlngm).</span>`);
+            appendTerminal(`<span class="term-dim">Code runs through the bundled Enlangg tools (enlng, enlngdb, enlangg, enlngf, enlngd, enlngs, enlngm).</span>`);
           }
           return true;
         }

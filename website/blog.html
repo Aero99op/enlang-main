@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Engineering Blog - Enlangg Compiler Dispatches</title>
+  <title>Release Notes - Enlangg</title>
   <meta name="description" content="Technical publications, compiler architecture deep dives, performance benchmarks, and release dispatches from the Enlangg core engineering team." />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   
@@ -34,7 +34,7 @@
         <a href="docs.html" class="nav-link">Docs & Book</a>
         <a href="playground.html" class="nav-link">Playground</a>
         <a href="learn.html" class="nav-link">Tutorials</a>
-        <a href="library.html" class="nav-link">Library & Python</a>
+        <a href="library.html" class="nav-link">Library</a>
         <a href="community.html" class="nav-link">Community</a>
         <a href="about.html" class="nav-link">About</a>
         <a href="blog.html" class="nav-link active">Blog</a>
@@ -68,10 +68,10 @@
     <a href="docs.html">Documentation & Book</a>
     <a href="playground.html">Playground IDE</a>
     <a href="learn.html">Tutorials & Learn</a>
-    <a href="library.html">Standard Library & Python Interop</a>
+    <a href="library.html">Standard Library Interop</a>
     <a href="community.html">Community & Roadmap</a>
     <a href="about.html">About & Governance</a>
-    <a href="blog.html" class="active">Engineering Blog</a>
+    <a href="blog.html" class="active">Release Notes</a>
     <a href="brand.html">Brand Identity Kit</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
@@ -80,11 +80,11 @@
   <section class="page-hero">
     <div class="container page-hero-container">
       <div class="page-kicker">
-        <span>Research & Publications</span>
+        <span>News</span>
       </div>
-      <h1 class="page-title">Enlangg Engineering Dispatches</h1>
+      <h1 class="page-title">Enlangg Release Notes</h1>
       <p class="page-desc">
-        Deep technical articles exploring compiler design, deterministic slot memory models, C-ABI foreign call bridges, and the cognitive science of programming.
+        What changed in each release, and what is still missing.
       </p>
     </div>
   </section>
@@ -94,123 +94,64 @@
     
     <div style="display: flex; flex-direction: column; gap: 36px;">
       
-      <!-- Article 1: Zero GC -->
+      <!-- Release notes -->
       <article style="padding: 32px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap;">
-          <span style="color: var(--accent-emerald); font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 4px;">Compiler Core</span>
-          <span>September 2026</span>
-          <span>•</span>
-          <span>8 min read</span>
-          <span>•</span>
-          <span>Author: Core Architecture Team</span>
+          <span style="color: var(--accent-emerald); font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 4px;">Release</span>
+          <span>Toolchain 5.5.0</span>
         </div>
         <h2 style="font-size: 1.55rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); line-height: 1.3;">
-          Eliminating the Garbage Collector: How Inferred Memory Slots Achieve &lt;2ms Cold Start
+          enlng run now works without a C compiler
         </h2>
         <p style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
-          Runtime garbage collectors introduce stop-the-world latency spikes, non-deterministic memory footprints, and heavy runtime binary overhead (often 30MB+). In this dispatch, we break down how the Enlangg compiler builds a compile-time lifetime graph, allocating fixed memory slots in the stack data segment with zero background collector threads.
+          Until 5.5.0, <code>enlng run</code> translated your program to C and called gcc, so you needed a C compiler installed just to run a hello-world. The tool now includes a built-in interpreter, and <code>enlng run</code> uses it by default. Programs run the same way, with the same error messages, and nothing else has to be installed.
         </p>
-
-        <div class="code-block-card" style="margin-bottom: 20px;">
-          <div class="code-block-header">
-            <span>slot_memory_allocation.enlng</span>
-            <button type="button" class="copy-code-btn terminal-btn" data-target="blog01Code">Copy</button>
-          </div>
-          <div class="code-block-body" id="blog01Code">type enlng
-
-procedure process_payload with raw_bytes returns number:
-    // Slot #0: Stack Allocation (Zero Heap Allocation)
-    set decoded_len to length of raw_bytes
-    set checksum to crypto.sha256(raw_bytes)
-    return decoded_len
-
-// When procedure exits, stack pointer resets with zero GC sweep overhead</div>
-        </div>
-
-        <div class="table-responsive" style="margin-bottom: 16px;">
-          <table>
-            <thead>
-              <tr>
-                <th>Runtime Engine</th>
-                <th>Cold Start Latency</th>
-                <th>Base Memory RSS</th>
-                <th>GC Latency Spike</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="color: var(--accent-gold); font-weight: 700;">
-                <td>Enlangg (Slot Memory)</td>
-                <td>1.4 ms</td>
-                <td>1.2 MB</td>
-                <td>0.00 ms (Zero Collector)</td>
-              </tr>
-              <tr>
-                <td>Node.js 22 (Google V8)</td>
-                <td>42.1 ms</td>
-                <td>34.2 MB</td>
-                <td>4.5 - 28.0 ms</td>
-              </tr>
-              <tr>
-                <td>Python 3.12 (CPython)</td>
-                <td>28.6 ms</td>
-                <td>14.8 MB</td>
-                <td>1.2 - 8.4 ms</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </article>
-
-      <!-- Article 2: The God Call -->
-      <article style="padding: 32px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap;">
-          <span style="color: var(--accent-gold); font-weight: 700; background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">Interoperability</span>
-          <span>August 2026</span>
-          <span>•</span>
-          <span>10 min read</span>
-          <span>•</span>
-          <span>Author: Foreign Bridge WG</span>
-        </div>
-        <h2 style="font-size: 1.55rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); line-height: 1.3;">
-          The God Call: Direct CPython C-ABI Foreign Call Bridge at 0.08µs Latency
-        </h2>
         <p style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
-          Why spend years rewriting NumPy, PyTorch, or Scikit-Learn when you can invoke them at native C speeds? In this deep dive, we explain the virtual memory mapping technique that allows Enlangg programs to execute installed Python packages directly in-process with zero JSON or IPC serialization overhead.
+          The C path is still there. <code>enlng build hello.enlng -o hello</code> and <code>enlng run --native hello.enlng</code> translate to C and compile with gcc, which is useful for a standalone executable. Both paths share one runtime, and our CI runs the same test programs through both and compares the output. One known difference: the C path prints decimal literals with six places.
         </p>
-
         <div class="code-block-card">
           <div class="code-block-header">
-            <span>python_god_call.enlng</span>
-            <button type="button" class="copy-code-btn terminal-btn" data-target="blog02Code">Copy</button>
+            <span>terminal</span>
           </div>
-          <div class="code-block-body" id="blog02Code">type enlng
-
-import python module "numpy" as np
-
-set matrix to np.array([[1.0, 2.0], [3.0, 4.0]])
-set inverse to np.linalg.inv(matrix)
-
-display "Matrix inverse calculated via CPython virtual memory mapping:"
-display inverse</div>
+          <div class="code-block-body">enlng run hello.enlng            # built-in interpreter, no gcc needed
+enlng run --native hello.enlng   # via C and gcc
+enlng build hello.enlng -o hello # standalone executable (needs gcc)</div>
         </div>
       </article>
 
-      <!-- Article 3: Cognitive Science -->
       <article style="padding: 32px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap;">
-          <span style="color: #38bdf8; font-weight: 700; background: rgba(56, 189, 248, 0.1); padding: 3px 8px; border-radius: 4px;">Language Design</span>
-          <span>August 2026</span>
-          <span>•</span>
-          <span>7 min read</span>
-          <span>•</span>
-          <span>Author: Ergonomics WG</span>
+          <span style="color: var(--accent-gold); font-weight: 700; background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">Release</span>
+          <span>Toolchain 5.4.2</span>
         </div>
         <h2 style="font-size: 1.55rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); line-height: 1.3;">
-          Spoken Code & Cognitive Ergonomics: Quantitative Studies on Program Review Comprehension
+          An installer for Linux and macOS
         </h2>
         <p style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
-          Human working memory possesses distinct phonological and visual-spatial subsystems. By aligning language keywords with spoken phonological tokens (e.g., <code>set x to 10</code> rather than <code>let x = 10;</code>), engineers experience 34% fewer syntax transcription errors and significantly improved code review comprehension across distributed teams.
+          Windows has had a graphical installer for a while. Linux and macOS now have <code>enlangg-install.sh</code>, a single self-extracting file with all seven tools for Linux x86_64, Linux aarch64 and macOS. It verifies its contents with SHA-256, installs under <code>~/.enlangg</code> without root, adds that folder to your shell profile between marked lines, and writes an uninstaller that removes only what it installed.
         </p>
+        <p style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
+          Run it with <code>sh enlangg-install.sh</code>. It is not signed, so check the SHA-256 on the install page. The Windows installer is not signed either, and Windows SmartScreen may warn before you run it.
+        </p>
+      </article>
+
+      <article style="padding: 32px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap;">
+          <span style="color: #38bdf8; font-weight: 700; background: rgba(56, 189, 248, 0.1); padding: 3px 8px; border-radius: 4px;">Roadmap</span>
+          <span>Status</span>
+        </div>
+        <h2 style="font-size: 1.55rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); line-height: 1.3;">
+          What is not built yet
+        </h2>
+        <p style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
+          Plain statements about gaps, so you do not have to find them yourself:
+        </p>
+        <ul style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; padding-left: 20px;">
+          <li>Calling Python packages and C libraries from Enlangg code is planned, not implemented.</li>
+          <li>Building APK or IPA packages from <code>.enlngm</code> files is not implemented. <code>enlngm</code> gives a phone-sized preview window on Windows.</li>
+          <li>The preview windows of <code>enlngf</code> and <code>enlngm</code> are Windows-only. <code>enlngf serve</code> and <code>enlngf build</code> work on every platform.</li>
+          <li><code>enlngf</code>, <code>enlngd</code> and <code>enlngs</code> are native programs, but what they produce is HTML, CSS and JavaScript, not machine code.</li>
+        </ul>
       </article>
 
     </div>
@@ -229,7 +170,7 @@ display inverse</div>
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
-            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+            A programming language written in plain English, with a toolchain of seven small tools for six file types.
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
@@ -240,9 +181,9 @@ display inverse</div>
         <div class="footer-col">
           <h4 class="footer-col-title">Documentation</h4>
           <ul class="footer-links-list">
-            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch1">The Enlng Book (202 pp.)</a></li>
             <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
-            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch3">Values, Lists and Maps</a></li>
             <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
             <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
           </ul>
@@ -255,7 +196,7 @@ display inverse</div>
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Curriculum</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -267,14 +208,14 @@ display inverse</div>
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
             <li><a href="brand.html">Brand & Logo Kit</a></li>
-            <li><a href="blog.html">Engineering Blog</a></li>
+            <li><a href="blog.html">Release Notes</a></li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom-bar">
         <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
-        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+        <span>Open-source toolchain · MIT License</span>
       </div>
     </div>
   </footer>

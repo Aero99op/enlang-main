@@ -34,7 +34,7 @@
         <a href="docs.html" class="nav-link">Docs & Book</a>
         <a href="playground.html" class="nav-link">Playground</a>
         <a href="learn.html" class="nav-link">Tutorials</a>
-        <a href="library.html" class="nav-link">Library & Python</a>
+        <a href="library.html" class="nav-link">Library</a>
         <a href="community.html" class="nav-link">Community</a>
         <a href="about.html" class="nav-link active">About</a>
         <a href="blog.html" class="nav-link">Blog</a>
@@ -68,10 +68,10 @@
     <a href="docs.html">Documentation & Book</a>
     <a href="playground.html">Playground IDE</a>
     <a href="learn.html">Tutorials & Learn</a>
-    <a href="library.html">Standard Library & Python Interop</a>
+    <a href="library.html">Standard Library Interop</a>
     <a href="community.html">Community & Roadmap</a>
     <a href="about.html" class="active">About & Governance</a>
-    <a href="blog.html">Engineering Blog</a>
+    <a href="blog.html">Release Notes</a>
     <a href="brand.html">Brand Identity Kit</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
@@ -102,50 +102,50 @@
         This artificial syntax barrier creates cognitive translation overhead. When an engineer conceives <em>"if user age is greater than twenty-one"</em>, their brain translates fluid spoken thought into <code>if (user_age > 21) { ... }</code>. This translation step introduces syntax transcription errors, steep learning curves, and cognitive fatigue.
       </p>
       <div class="docs-callout">
-        <span class="docs-callout-title">The Sovereign Invariant</span>
+        <span class="docs-callout-title">The Core Idea</span>
         <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0;">
-          Enlangg eliminates this cognitive tax entirely. Code reads as unambiguous spoken English prose while compiling directly to bare-metal ISO C99 and native machine code with zero runtime garbage collection pauses.
+          Enlangg removes that translation step. Code reads as plain English sentences, and a fixed grammar turns each sentence into exactly one meaning. Programs run with a built-in interpreter, or are translated to C and built with a C compiler.
         </p>
       </div>
     </article>
 
     <!-- Compiler Architecture -->
     <article class="docs-article-section" id="compiler" style="margin-bottom: 48px;">
-      <h2 class="docs-h2">The 4-Stage Sovereign Compiler Pipeline</h2>
+      <h2 class="docs-h2">How enlng Works: Four Stages</h2>
       <p class="docs-p">
-        The Enlangg compiler (<code>enlng</code>) transforms spoken English into optimized machine code through a four-stage pipeline:
+        The language tool (<code>enlng</code>) reads your English source and runs it through four stages:
       </p>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 24px 0;">
         <div style="padding: 22px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md);">
           <div style="font-size: 0.76rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 6px;">STAGE 01</div>
-          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">Lexical Clause Tokenizer</h3>
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">1. Lexer</h3>
           <p style="font-size: 0.84rem; color: var(--text-secondary); margin: 0; line-height: 1.55;">
-            Converts spoken sentences into structured English tokens, stripping conversational noise while preserving mathematical and logical intent.
+            Splits each line into words, numbers, strings and operators, and ignores filler words the grammar allows.
           </p>
         </div>
 
         <div style="padding: 22px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md);">
           <div style="font-size: 0.76rem; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">STAGE 02</div>
-          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">Deterministic Slot Allocator</h3>
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">2. Parser</h3>
           <p style="font-size: 0.84rem; color: var(--text-secondary); margin: 0; line-height: 1.55;">
-            Performs compile-time variable lifetime analysis, mapping every identifier to a fixed static stack memory slot with zero dynamic GC pauses.
+            Matches each sentence against the grammar and builds a syntax tree. Mistakes are reported with the line, the source text and what was expected.
           </p>
         </div>
 
         <div style="padding: 22px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md);">
           <div style="font-size: 0.76rem; font-weight: 700; color: var(--accent-emerald); margin-bottom: 6px;">STAGE 03</div>
-          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">Domain Dispatcher</h3>
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">3. Domain Tools</h3>
           <p style="font-size: 0.84rem; color: var(--text-secondary); margin: 0; line-height: 1.55;">
-            Enforces strict architectural boundaries across the 6 system tiers (.enlng logic, .enlngf UI, .enlngs backend, .enlngd styles).
+            Each file type has its own tool: .enlng logic, .enlngf UI, .enlngs scripts, .enlngd styles, .enlngm mobile screens and .enlngdb databases.
           </p>
         </div>
 
         <div style="padding: 22px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md);">
           <div style="font-size: 0.76rem; font-weight: 700; color: #a78bfa; margin-bottom: 6px;">STAGE 04</div>
-          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">C99 & C-ABI Emission</h3>
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">4. Run or Build</h3>
           <p style="font-size: 0.84rem; color: var(--text-secondary); margin: 0; line-height: 1.55;">
-            Emits clean, ISO standard C99 source code with zero proprietary extensions, compiling with GCC, Clang, or MSVC with native CPU SIMD vectorization.
+            <code>enlng run</code> walks the tree with a built-in interpreter. <code>enlng build</code> and <code>--native</code> emit C99 and compile it with gcc. Both share one runtime.
           </p>
         </div>
       </div>
@@ -153,57 +153,30 @@
 
     <!-- Comprehensive Benchmark Matrix -->
     <article class="docs-article-section" style="margin-bottom: 48px;">
-      <h2 class="docs-h2">Architectural Benchmark Comparison</h2>
+      <h2 class="docs-h2">Measured Numbers</h2>
       <p class="docs-p">
-        Independent performance metrics comparing Enlangg against standard industrial runtimes (Node.js 22 V8, CPython 3.12, Go 1.22, and Rust):
+        What we have actually measured, on one Windows machine with release 5.5.0. Start-up is the median of 30 runs of a hello-world program. We have not benchmarked heavy workloads or compared against other languages beyond this, so no such claims are made.
       </p>
 
       <div class="table-responsive">
         <table>
           <thead>
             <tr>
-              <th>Runtime / Compiler</th>
-              <th>Cold Start Time</th>
-              <th>Base Memory RSS</th>
-              <th>GC Pause Latency</th>
-              <th>Binary Footprint</th>
+              <th>Program</th>
+              <th>Hello-world start to exit</th>
+              <th>File size</th>
             </tr>
           </thead>
           <tbody>
             <tr style="background: rgba(234, 179, 8, 0.05); font-weight: 600;">
-              <td style="color: var(--accent-gold);">Enlangg (Sovereign Core)</td>
-              <td>1.4 ms</td>
-              <td>1.2 MB</td>
-              <td>0.00 ms (Zero GC)</td>
-              <td>108 KB</td>
+              <td style="color: var(--accent-gold);">enlng run hello.enlng</td>
+              <td>about 12 ms</td>
+              <td>enlng.exe: 152 KB (all 7 tools: about 586 KB)</td>
             </tr>
             <tr>
-              <td>Node.js v22 (Google V8)</td>
-              <td>42.1 ms</td>
-              <td>34.2 MB</td>
-              <td>4.5 - 28.0 ms</td>
-              <td>48.0 MB</td>
-            </tr>
-            <tr>
-              <td>CPython 3.12 (Standard)</td>
-              <td>28.6 ms</td>
-              <td>14.8 MB</td>
-              <td>1.2 - 8.4 ms</td>
-              <td>18.5 MB</td>
-            </tr>
-            <tr>
-              <td>Go 1.22 (Concurrent GC)</td>
-              <td>3.8 ms</td>
-              <td>8.6 MB</td>
-              <td>0.3 - 1.2 ms</td>
-              <td>2.4 MB</td>
-            </tr>
-            <tr>
-              <td>Rust 1.78 (LLVM Native)</td>
-              <td>1.1 ms</td>
-              <td>0.9 MB</td>
-              <td>0.00 ms (Zero GC)</td>
-              <td>380 KB</td>
+              <td>python hello.py</td>
+              <td>about 73 ms</td>
+              <td>not measured</td>
             </tr>
           </tbody>
         </table>
@@ -238,7 +211,7 @@
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
-            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+            A programming language written in plain English, with a toolchain of seven small tools for six file types.
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
@@ -249,9 +222,9 @@
         <div class="footer-col">
           <h4 class="footer-col-title">Documentation</h4>
           <ul class="footer-links-list">
-            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch1">The Enlng Book (202 pp.)</a></li>
             <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
-            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch3">Values, Lists and Maps</a></li>
             <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
             <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
           </ul>
@@ -264,7 +237,7 @@
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Curriculum</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -276,14 +249,14 @@
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
             <li><a href="brand.html">Brand & Logo Kit</a></li>
-            <li><a href="blog.html">Engineering Blog</a></li>
+            <li><a href="blog.html">Release Notes</a></li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom-bar">
         <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
-        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+        <span>Open-source toolchain · MIT License</span>
       </div>
     </div>
   </footer>

@@ -33,7 +33,7 @@
         <a href="docs.html" class="nav-link active">Docs & Book</a>
         <a href="playground.html" class="nav-link">Playground</a>
         <a href="learn.html" class="nav-link">Tutorials</a>
-        <a href="library.html" class="nav-link">Library & Python</a>
+        <a href="library.html" class="nav-link">Library</a>
         <a href="community.html" class="nav-link">Community</a>
         <a href="about.html" class="nav-link">About</a>
         <a href="blog.html" class="nav-link">Blog</a>
@@ -67,10 +67,10 @@
     <a href="docs.html" class="active">Documentation & Book</a>
     <a href="playground.html">Playground IDE</a>
     <a href="learn.html">Tutorials & Learn</a>
-    <a href="library.html">Standard Library & Python Interop</a>
+    <a href="library.html">Standard Library Interop</a>
     <a href="community.html">Community & Roadmap</a>
     <a href="about.html">About & Governance</a>
-    <a href="blog.html">Engineering Blog</a>
+    <a href="blog.html">Release Notes</a>
     <a href="brand.html">Brand Identity Kit</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
@@ -88,7 +88,7 @@
       <div class="page-actions-bar" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px;">
         <a href="enlangg_the_enlng.pdf" download class="btn btn-primary">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          <span>Download 193-Page Canonical PDF</span>
+          <span>Download the PDF Manual (202 pp.)</span>
         </a>
         <a href="enlngdb_manual.pdf" download class="btn btn-secondary" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -109,11 +109,11 @@
       <div class="chip-bar-scrollable">
         <a href="#ch1" class="chip-btn">Ch 1: Grammar</a>
         <a href="#ch2" class="chip-btn">Ch 2: 6 Domains</a>
-        <a href="#ch3" class="chip-btn">Ch 3: Memory Slots</a>
+        <a href="#ch3" class="chip-btn">Ch 3: Values & Collections</a>
         <a href="#ch4" class="chip-btn">Ch 4: Control Flow</a>
         <a href="#ch5" class="chip-btn">Ch 5: Procedures</a>
         <a href="#ch6" class="chip-btn">Ch 6: FFI & C-ABI</a>
-        <a href="#ch7" class="chip-btn">Ch 7: Python God Call</a>
+        <a href="#ch7" class="chip-btn">Ch 7: Python (planned)</a>
         <a href="#ch8" class="chip-btn">Ch 8: EnlngDB C Engine</a>
         <a href="#cli" class="chip-btn">CLI Toolchain</a>
         <a href="#diagnostics" class="chip-btn">Error Codes</a>
@@ -129,12 +129,12 @@
           <ul class="docs-nav-list">
             <li class="docs-nav-item active"><a href="#ch1">Chapter 1: Sovereign Grammar</a></li>
             <li class="docs-nav-item"><a href="#ch2">Chapter 2: The 6 Isolated Domains</a></li>
-            <li class="docs-nav-item"><a href="#ch3">Chapter 3: Inferred Memory Slots</a></li>
+            <li class="docs-nav-item"><a href="#ch3">Chapter 3: Values, Lists and Maps</a></li>
             <li class="docs-nav-item"><a href="#ch4">Chapter 4: Spoken Control Flow</a></li>
             <li class="docs-nav-item"><a href="#ch5">Chapter 5: Procedures & Exceptions</a></li>
             <li class="docs-nav-item"><a href="#ch6">Chapter 6: Foreign Function Interface</a></li>
-            <li class="docs-nav-item"><a href="#ch7">Chapter 7: Python Interop God Call</a></li>
-            <li class="docs-nav-item"><a href="#ch8">Chapter 8: EnlngDB Pure C Engine</a></li>
+            <li class="docs-nav-item"><a href="#ch7">Chapter 7: Python Interop (planned)</a></li>
+            <li class="docs-nav-item"><a href="#ch8">Chapter 8: EnlngDB Database Engine</a></li>
             <li class="docs-nav-item" style="border-top: 1px solid rgba(56, 189, 248, 0.2); margin-top: 6px; padding-top: 6px;"><a href="#mastercode" style="color: #38bdf8; font-weight: 700;">👑 Mastercode Showcase</a></li>
           </ul>
         </div>
@@ -370,7 +370,7 @@ show "Calculated Total Balance: $" total</div>
                   <th>Extension</th>
                   <th>Domain Tier</th>
                   <th>Target Representation</th>
-                  <th>Compilation Target</th>
+                  <th>Output</th>
                 </tr>
               </thead>
               <tbody>
@@ -378,37 +378,37 @@ show "Calculated Total Balance: $" total</div>
                   <td><code>.enlng</code></td>
                   <td>Core Logic & Systems</td>
                   <td>Spoken Algorithms, Mathematical Slots</td>
-                  <td>Native ISO C99 / Machine Binary</td>
+                  <td>Runs in the built-in interpreter, or C99 via <code>enlng build</code></td>
                 </tr>
                 <tr>
                   <td><code>.enlngf</code></td>
                   <td>Frontend & DOM</td>
                   <td>Hierarchical Spoken Components</td>
-                  <td>WebAssembly / Virtual DOM AST</td>
+                  <td>HTML, CSS and JavaScript (<code>enlngf build</code>)</td>
                 </tr>
                 <tr>
                   <td><code>.enlngs</code></td>
                   <td>Server & Microservices</td>
                   <td>Route Handlers, Async Socket Listeners</td>
-                  <td>Multi-Threaded C99 Micro-daemon</td>
+                  <td>JavaScript (<code>enlngs</code>)</td>
                 </tr>
                 <tr>
                   <td><code>.enlngd</code></td>
                   <td>Design & Layout</td>
                   <td>Geometric Spoken Design Tokens</td>
-                  <td>Optimized CSS3 Engine AST</td>
+                  <td>CSS stylesheet (<code>enlngd compile</code>)</td>
                 </tr>
                 <tr>
                   <td><code>.enlngm</code></td>
                   <td>Mobile & Touch</td>
                   <td>Gesture Bindings, Mobile Views</td>
-                  <td>Android NDK / iOS Objective-C Bridge</td>
+                  <td>Phone-sized preview window on Windows; APK/IPA packaging not implemented yet</td>
                 </tr>
                 <tr>
                   <td><code>.enlngdb</code></td>
                   <td>Database & Storage</td>
                   <td>Conversational DDL/DML, Dynamic Arrays</td>
-                  <td>Pure C Native Engine / Binary (.edb) &lt;0.05ms</td>
+                  <td>Native C database engine (<code>enlngdb</code>), data saved to a file</td>
                 </tr>
               </tbody>
             </table>
@@ -425,48 +425,25 @@ listen on port 8080:
     on get request to "/api/v1/health":
         respond with json:
             status: "active"
-            uptime_ms: get_system_uptime()
-            compiler: "Enlangg Native"
-            gc_overhead: 0</div>
+            uptime_ms: get_system_uptime()</div>
           </div>
         </article>
 
         <!-- Chapter 3 -->
         <article class="docs-article-section" id="ch3">
-          <h2 class="docs-h2">Chapter 3: Inferred Memory Slots & Scoped Bump Arena (Automatic Memory Management in C)</h2>
+          <h2 class="docs-h2">Chapter 3: Values, Lists and Maps</h2>
           <p class="docs-p">
-            Traditional languages force developers to choose between manual memory management (<code>malloc</code>/<code>free</code> in C/C++ which breeds memory leaks and segmentation faults), steep borrow-checker rules (Rust), or heavyweight background garbage collectors with unpredictable stop-the-world pauses (Java, Go, Python, Node).
+            A program holds numbers, text, true/false values, lists and maps. You never allocate or free anything yourself: names are declared with <code>remember</code>, and the runtime keeps their values.
           </p>
-          <p class="docs-p">
-            Enlangg pioneers <strong>Automatic Memory Management in C via Scoped Bump Arena Allocation</strong>:
-          </p>
-
           <div class="docs-callout">
-            <span class="docs-callout-title">How Automatic Scoped Memory Works Under the Hood</span>
+            <span class="docs-callout-title">One Runtime, Two Ways to Run</span>
             <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0;">
-              In compiled native C machine code, Enlangg allocates memory inside a contiguous 4MB linear arena chunk (<code>EnlngArena</code>). When any function or loop scope begins, <code>ENLNG_SCOPE_START()</code> records the arena's current watermark offset. All variable allocations, string concatenations, lists, and intermediate values are bump-allocated in a single CPU addition instruction ($O(1)$). When exiting the scope, <code>ENLNG_SCOPE_END()</code> instantly rolls back the watermark in 1 CPU cycle—reclaiming 100% of temporary memory without manual <code>free()</code>, zero heap fragmentation, and zero GC pauses.
+              <code>enlng run</code> executes your program with a built-in interpreter. <code>enlng build</code> and <code>enlng run --native</code> translate it to C and compile it with gcc. Both use the same value model (<code>src/enlng_runtime.h</code>), and our CI runs the same test programs through both and compares the output. One known difference: the C path prints decimal literals with six places.
             </p>
           </div>
-
-          <div class="code-block-card">
-            <div class="code-block-header">
-              <span>scoped_memory_architecture.c</span>
-            </div>
-            <div class="code-block-body">// Native C Architecture Generated by `enlangg compile`:
-{
-    ENLNG_SCOPE_START(); // Records arena watermark offset in 1 CPU instruction
-    
-    // Bump-allocates dynamically sized strings/lists in O(1) linear contiguous memory
-    EnlngVal msg = enlng_val_str("Dynamic calculation in loop");
-    EnlngVal result = enlng_add(a, b);
-    
-    // Automatic return promotion lifts results to parent scope before rollback
-    // ENLNG_RETURN(result);
-    
-    ENLNG_SCOPE_END();   // Instantly reclaims 100% allocated bytes (watermark restored)
-}
-// Stress Test Verified: 1,000,000 nested scope iterations completed in 3.27s -> 0 BYTES LEAKED!</div>
-          </div>
+          <p class="docs-p">
+            Scopes follow the blocks you write: a name declared inside a loop or function is not visible outside it, and a function cannot see its caller's names. Runaway recursion stops with a clear runtime error instead of crashing.
+          </p>
         </article>
 
         <!-- Chapter 4 -->
@@ -580,101 +557,43 @@ show "Monthly Payment: $" monthly</div>
 
         <!-- Chapter 6 -->
         <article class="docs-article-section" id="ch6">
-          <h2 class="docs-h2">Chapter 6: Foreign Function Interface & C-ABI Emission</h2>
+          <h2 class="docs-h2">Chapter 6: Building an Executable and Reading the C</h2>
           <p class="docs-p">
-            Every Enlangg program compiles directly to clean, standard ISO C99 code. You can call any existing C library (such as OpenSSL, SQLite, or raylib) directly without overhead:
+            With a C compiler installed you can turn any program into a standalone executable, or just look at the C that Enlangg generates:
           </p>
-
           <div class="code-block-card">
             <div class="code-block-header">
-              <span>c_foreign_bridge.enlng</span>
-              <button type="button" class="copy-code-btn terminal-btn" data-target="cBridgeCode">Copy</button>
+              <span>terminal</span>
             </div>
-            <div class="code-block-body" id="cBridgeCode">type enlng
-
-external c function puts with text returns number
-external c function sqrt with value returns number
-
-set root to sqrt(144.0)
-display "Square root calculated via C-ABI: ", root</div>
+            <div class="code-block-body">enlng build hello.enlng -o hello      # translate to C, build with gcc
+enlng emit-c hello.enlng              # print the generated C99 source
+enlng run --native hello.enlng        # build and run through gcc</div>
           </div>
+          <p class="docs-p">
+            Calling arbitrary C libraries from Enlangg code (a foreign function interface) is <strong>not available yet</strong>.
+          </p>
         </article>
 
         <!-- Chapter 7 -->
         <article class="docs-article-section" id="ch7">
-          <h2 class="docs-h2">Chapter 7: Python Interop & The God Call</h2>
+          <h2 class="docs-h2">Chapter 7: Python Interop (Planned)</h2>
           <p class="docs-p">
-            Enlangg programs can directly invoke installed Python packages (NumPy, PyTorch, Pandas, Scikit-Learn) with zero JSON or IPC serialization overhead. The CPython runtime is linked into the address space via the virtual memory bridge:
+            Importing Python packages such as NumPy from Enlangg code is a goal, but it is <strong>not implemented</strong> in the current toolchain (5.5.0). Earlier drafts of this page showed an <code>import python module</code> example; that syntax does not exist yet. Use <code>use "file"</code> to include other Enlangg files.
           </p>
-
-          <div class="code-block-card">
-            <div class="code-block-header">
-              <span>numpy_god_call.enlng</span>
-              <button type="button" class="copy-code-btn terminal-btn" data-target="pyCallCode">Copy</button>
-            </div>
-            <div class="code-block-body" id="pyCallCode">type enlng
-
-import python module "numpy" as np
-
-set matrix_a to np.array([[1, 2], [3, 4]])
-set matrix_b to np.array([[5, 6], [7, 8]])
-set product to np.dot(matrix_a, matrix_b)
-
-display "Matrix multiplication computed via CPython C-ABI:"
-display product</div>
-          </div>
         </article>
 
         <!-- Chapter 8 -->
         <article class="docs-article-section" id="ch8">
-          <h2 class="docs-h2">Chapter 8: EnlngDB Pure C Sovereign Database Engine</h2>
+          <h2 class="docs-h2">Chapter 8: EnlngDB Database Engine</h2>
           <p class="docs-p">
-            EnlngDB is a 100% <strong>Pure C Native Database Engine</strong> embedded directly into the <code>enlangg</code> executable and available as standalone <code>enlngdb.exe</code>. It delivers microsecond query latencies with <strong>zero SQL parser overhead, zero Python runtime dependency, and direct binary disk serialization (<code>.edb</code>)</strong>.
+            EnlngDB is a database engine written in C. It is available as the standalone <code>enlngdb.exe</code> (about 106 KB) and through <code>enlangg db</code>. You write statements in English instead of SQL, and the data is saved to a file.
           </p>
 
           <div class="docs-callout">
-            <span class="docs-callout-title">Performance Benchmark: Pure C Native vs Python Database Runtimes</span>
-            <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0 0 12px 0;">
-              Compiled with ISO C99 and GCC <code>-O3</code> flags, EnlngDB bypasses VM initialization, bytecode compilation, and GIL synchronization entirely:
+            <span class="docs-callout-title">About Speed</span>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0;">
+              An earlier version of this page listed per-operation timings against other database runtimes. Those figures were not backed by a published benchmark, so they have been removed. We will add numbers here once a reproducible benchmark is in the repository.
             </p>
-            <div class="table-responsive">
-              <table style="font-size: 0.82rem;">
-                <thead>
-                  <tr>
-                    <th>Operation</th>
-                    <th>Standard Runtime</th>
-                    <th>Pure C EnlngDB (-O3)</th>
-                    <th>Speedup</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Cold Startup / Invocation</td>
-                    <td>~100 ms</td>
-                    <td><strong>&lt; 1.0 ms</strong></td>
-                    <td>100x Faster</td>
-                  </tr>
-                  <tr>
-                    <td>Table Creation (DDL)</td>
-                    <td>~2.5 ms</td>
-                    <td><strong>0.05 ms</strong> (50 µs)</td>
-                    <td>50x Faster</td>
-                  </tr>
-                  <tr>
-                    <td>Row Insertion (DML)</td>
-                    <td>~0.8 ms</td>
-                    <td><strong>0.04 ms</strong> (40 µs)</td>
-                    <td>20x Faster</td>
-                  </tr>
-                  <tr>
-                    <td>Select &amp; Filter Query</td>
-                    <td>~1.2 ms</td>
-                    <td><strong>0.01 ms</strong> (10 µs)</td>
-                    <td>120x Faster</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
           </div>
 
           <h3 class="docs-h3">Natural Conversational DDL &amp; DML Syntax</h3>
@@ -728,7 +647,7 @@ find all records from scholars;</div>
                 <tr>
                   <td><code>in &lt;tbl&gt; change &lt;col&gt; to &lt;val&gt; where ...;</code></td>
                   <td><code>in scholars change cgpa to 9.8 where name is "aryan";</code></td>
-                  <td>Updates single column for matching rows (0.03 ms in Pure C)</td>
+                  <td>Updates single column for matching rows </td>
                 </tr>
                 <tr>
                   <td><code>in &lt;tbl&gt; update &lt;col&gt; to &lt;val&gt; where ...;</code></td>
@@ -759,7 +678,7 @@ find all records from scholars;</div>
         <article class="docs-article-section" id="cli">
           <h2 class="docs-h2">Compiler Command Line Reference</h2>
           <p class="docs-p">
-            The sovereign compiler binary (<code>enlng</code> or <code>enlangg</code>) supports comprehensive flags for compilation, execution, syntax auditing, and C99 source emission:
+            The language tool is <code>enlng</code>; <code>enlangg</code> is a front door that picks the right tool for a file. Run <code>enlangg --help</code> for the full list of commands in your version.
           </p>
 
           <div class="table-responsive">
@@ -775,77 +694,77 @@ find all records from scholars;</div>
                 <tr>
                   <td><code>enlangg compile &lt;file.enlng&gt;</code></td>
                   <td><code>[-o &lt;out.exe&gt;]</code></td>
-                  <td>AOT compiles Enlangg code directly into standalone native machine binary with automatic Scoped Arena memory (Zero GC, zero manual free)</td>
+                  <td>Translates the program to C and builds a standalone executable with gcc (needs a C compiler)</td>
                 </tr>
                 <tr>
                   <td><code>enlangg emit-c &lt;file.enlng&gt;</code></td>
                   <td><code>[-o &lt;out.c&gt;]</code></td>
-                  <td>Emits clean, portable ISO C99 source code instrumented with scoped bump arena memory macros</td>
+                  <td>Prints the generated C99 source</td>
                 </tr>
                 <tr>
                   <td><code>enlangg run &lt;file.ext&gt;</code></td>
                   <td><code>[args...]</code></td>
-                  <td>Unified executor: compiles &amp; runs pure C instantly (&lt;2ms) for all domains (.enlng, .enlngdb, .enlngs, .enlngf, .enlngd, .enlngm)</td>
+                  <td>Runs any Enlangg file with the right tool (.enlng, .enlngdb, .enlngs, .enlngf, .enlngd, .enlngm). <code>.enlng</code> files use the built-in interpreter, so no C compiler is needed</td>
                 </tr>
                 <tr>
                   <td><code>enlangg db &lt;script.enlngdb&gt;</code></td>
                   <td>-</td>
-                  <td>Executes conversational database scripts natively via Pure C engine (&lt;0.05 ms)</td>
+                  <td>Runs a database script with the native C engine</td>
                 </tr>
                 <tr>
                   <td><code>enlangg db -e "&lt;query&gt;"</code></td>
                   <td><code>"&lt;conversational query&gt;"</code></td>
-                  <td>Executes instant inline database query in compiled C machine code</td>
+                  <td>Runs one inline database statement</td>
                 </tr>
                 <tr>
                   <td><code>enlangg s &lt;logic.enlngs&gt;</code></td>
                   <td><code>[-e "&lt;script&gt;"]</code></td>
-                  <td>Executes scripts natively on Pure C In-Memory Script VM (Zero Python / Zero Node.js)</td>
+                  <td>Runs a script with the enlngs tool; no Python or Node.js needed</td>
                 </tr>
                 <tr>
                   <td><code>enlangg f &lt;app.enlngf&gt;</code></td>
                   <td><code>[--port 3000]</code></td>
-                  <td>Spawns native Win32 Desktop Window GUI or launches WinSock2 HTTP Web Studio (<code>f serve</code>)</td>
+                  <td>Opens a window (Windows only), or serves the page locally with <code>f serve</code></td>
                 </tr>
                 <tr>
                   <td><code>enlangg d &lt;theme.enlngd&gt;</code></td>
                   <td><code>[-o &lt;out.css&gt;]</code></td>
-                  <td>Pure C Sovereign Design Tokens &amp; Style Resolver. Inspects tokens and resolves styles natively</td>
+                  <td>Inspects design tokens, or exports them as CSS with <code>d compile</code></td>
                 </tr>
                 <tr>
                   <td><code>enlangg m &lt;app.enlngm&gt;</code></td>
                   <td><code>[--target apk|ipa]</code></td>
-                  <td>Pure C Native Smartphone Simulator (390x844) &amp; Mobile Hardware Abstraction Layer (HAL) Packager</td>
+                  <td>Phone-sized preview window (Windows only). APK/IPA packaging is not implemented yet</td>
                 </tr>
                 <tr>
                   <td><code>enlngdb &lt;script.enlngdb&gt;</code></td>
                   <td>-</td>
-                  <td>Standalone Pure C conversational database engine with binary .edb file persistence</td>
+                  <td>Native C database engine with data saved to a file</td>
                 </tr>
                 <tr>
                   <td><code>enlngs &lt;logic.enlngs&gt;</code></td>
                   <td><code>[-o &lt;out.js&gt;]</code></td>
-                  <td>Standalone Pure C in-memory script VM with dynamic variable symbol tables and loop VM</td>
+                  <td>Script tool that generates JavaScript</td>
                 </tr>
                 <tr>
                   <td><code>enlngf &lt;app.enlngf&gt;</code></td>
                   <td><code>serve / build</code></td>
-                  <td>Standalone Pure C native GUI window, WinSock2 HTTP server, and HTML5 compiler</td>
+                  <td>Frontend tool: preview window (Windows), local server, and HTML build</td>
                 </tr>
                 <tr>
                   <td><code>enlngd &lt;theme.enlngd&gt;</code></td>
                   <td><code>inspect / compile</code></td>
-                  <td>Standalone Pure C token table inspector and CSS3 stylesheet generator</td>
+                  <td>Design-token inspector and CSS generator</td>
                 </tr>
                 <tr>
                   <td><code>enlngm &lt;app.enlngm&gt;</code></td>
                   <td><code>run / build / export</code></td>
-                  <td>Standalone Pure C mobile device simulator, ARM64 package builder, and Dart exporter</td>
+                  <td>Mobile screen preview (Windows)</td>
                 </tr>
                 <tr>
                   <td><code>enlng --version</code></td>
                   <td>-</td>
-                  <td>Displays compiler version and build architecture</td>
+                  <td>Prints the tool version</td>
                 </tr>
               </tbody>
             </table>
@@ -1118,14 +1037,14 @@ show "==========================================================================
 </div>
           </div>
 
-          <h3 class="docs-h3">Verified Live Compiler Output Proof (Exit Code 0)</h3>
+          <h3 class="docs-h3">Sample Output (Exit Code 0)</h3>
           <p class="docs-p">
-            Captured directly from running <code>enlng.exe examples/master_enterprise_system.enlng</code>:
+            From running <code>enlng run examples/master_enterprise_system.enlng</code>:
           </p>
 
           <div class="code-block-card" style="margin: 16px 0; border-color: rgba(34, 197, 94, 0.3);">
             <div class="code-block-header" style="background: rgba(34, 197, 94, 0.08);">
-              <span style="color: #4ade80;">Terminal Output Proof (Native Machine Execution: 1.8ms, Exit Code 0)</span>
+              <span style="color: #4ade80;">Terminal output of <code>enlng run</code> (exit code 0)</span>
             </div>
             <div class="code-block-body" style="color: #f8fafc; font-size: 0.84rem;">==========================================================================
 🏛️  Sovereign Reserve Bank // ENTERPRISE LEDGER CORE ( 2.0-SOVEREIGN )
@@ -1184,7 +1103,7 @@ Projected 3-Yr Yield  : $ 32702.9
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
-            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+            A programming language written in plain English, with a toolchain of seven small tools for six file types.
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
@@ -1195,9 +1114,9 @@ Projected 3-Yr Yield  : $ 32702.9
         <div class="footer-col">
           <h4 class="footer-col-title">Documentation</h4>
           <ul class="footer-links-list">
-            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch1">The Enlng Book (202 pp.)</a></li>
             <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
-            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch3">Values, Lists and Maps</a></li>
             <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
             <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
           </ul>
@@ -1210,7 +1129,7 @@ Projected 3-Yr Yield  : $ 32702.9
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Curriculum</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -1222,14 +1141,14 @@ Projected 3-Yr Yield  : $ 32702.9
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
             <li><a href="brand.html">Brand & Logo Kit</a></li>
-            <li><a href="blog.html">Engineering Blog</a></li>
+            <li><a href="blog.html">Release Notes</a></li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom-bar">
         <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
-        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+        <span>Open-source toolchain · MIT License</span>
       </div>
     </div>
   </footer>

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Enlangg: English Syntax Native Programming Language</title>
-  <meta name="description" content="Enlangg compiles natural English grammar directly to native machine binaries. Six strictly isolated tiers, deterministic compile-time memory, and sub-2ms warm execution without runtime dependencies." />
+  <title>Enlangg: Programming in Plain English</title>
+  <meta name="description" content="Enlangg is a programming language written in plain English, with a toolchain of seven small native programs written in C. enlng run uses a built-in interpreter, so no C compiler is needed to run programs." />
   
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   
@@ -40,7 +40,7 @@
         <a href="docs.html" class="nav-link">Docs & Book</a>
         <a href="playground.html" class="nav-link">Playground</a>
         <a href="learn.html" class="nav-link">Tutorials</a>
-        <a href="library.html" class="nav-link">Library & Python</a>
+        <a href="library.html" class="nav-link">Library</a>
         <a href="community.html" class="nav-link">Community</a>
         <a href="about.html" class="nav-link">About</a>
         <a href="blog.html" class="nav-link">Blog</a>
@@ -85,10 +85,10 @@
     <a href="docs.html">Documentation & Book</a>
     <a href="playground.html">Playground IDE</a>
     <a href="learn.html">Tutorials & Learn</a>
-    <a href="library.html">Standard Library & Python Interop</a>
+    <a href="library.html">Standard Library Interop</a>
     <a href="community.html">Community & Roadmap</a>
     <a href="about.html">About & Governance</a>
-    <a href="blog.html">Engineering Blog</a>
+    <a href="blog.html">Release Notes</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
 
@@ -99,11 +99,11 @@
       <div class="container hero-content">
         <h1 class="hero-title">
           Write Pure English.<br>
-          Compile to Native Speed.
+          Program in Plain English.
         </h1>
         
         <p class="hero-subtitle">
-          Enlangg compiles natural English grammar directly to native machine binaries. Six strictly isolated tiers, deterministic compile-time memory, and sub-2ms warm execution without runtime dependencies.
+          Enlangg is a programming language written in plain English, with a toolchain of seven small native programs written in C. <code>enlng run</code> runs your code with a built-in interpreter, so no C compiler is needed. Six separate file types cover logic, UI, styling, scripts, mobile and databases.
         </p>
 
         <!-- Dual Primary Installer Action Dock -->
@@ -120,7 +120,7 @@
               </div>
               <div class="dl-btn-content">
                 <span class="dl-btn-title">Download Enlangg Studio for Windows (.exe)</span>
-                <span class="dl-btn-meta">Pure Native Desktop IDE · Bundles all 7 C99 Compilers · Zero Dependencies</span>
+                <span class="dl-btn-meta">Desktop IDE for Windows · Bundles all 7 tools · Unsigned installer</span>
               </div>
               <span class="dl-btn-badge">
                 <span>Setup .exe</span>
@@ -186,7 +186,7 @@
               </span>
               <span class="feature-item">
                 <svg viewBox="0 0 20 20" width="13" height="13" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                Native Machine Code
+                No C Compiler Needed to Run
               </span>
             </div>
           </div>
@@ -195,18 +195,18 @@
         <!-- Trust Badges & Architectural Specs Row -->
         <div class="hero-stats-strip">
           <div class="stat-pill">
-            <span class="stat-num">1.8ms</span>
-            <span class="stat-label">Warm Boot Time</span>
+            <span class="stat-num">~12 ms</span>
+            <span class="stat-label">Hello World, Start to Exit</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-pill">
-            <span class="stat-num">108 KB</span>
-            <span class="stat-label">Single Executable</span>
+            <span class="stat-num">152 KB</span>
+            <span class="stat-label">enlng.exe (5.5.0)</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-pill">
-            <span class="stat-num">0</span>
-            <span class="stat-label">External Dependencies</span>
+            <span class="stat-num">7</span>
+            <span class="stat-label">Tools, ~586 KB Total</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-pill">
@@ -222,8 +222,8 @@
       <div class="container">
         <div class="section-heading">
           <div class="section-kicker">Interactive Studio</div>
-          <h2 class="section-title">In-Browser Native Sandbox</h2>
-          <p class="section-desc">Experience sovereign natural English syntax live in your browser. Zero setup, real-time compilation, and deterministic output.</p>
+          <h2 class="section-title">In-Browser Sandbox</h2>
+          <p class="section-desc">Try the English syntax in your browser. Nothing to install. The sandbox is a simplified preview; use the installed tools for the real thing.</p>
         </div>
 
         <div class="playground-window">
@@ -359,7 +359,7 @@
             <button class="domain-tab" data-domain="enlngdb">
               <span class="dom-badge dom-badge-db">DATA</span>
               <span class="dom-ext">.enlngdb</span>
-              <span class="dom-name">Pure C Database</span>
+              <span class="dom-name">Database</span>
             </button>
           </div>
 
@@ -382,7 +382,7 @@
                   <svg class="highlight-bullet" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
-                  <span id="domainFeat2">Direct compilation to native machine instructions</span>
+                  <span id="domainFeat2">Runs with a built-in interpreter, or builds via C</span>
                 </div>
                 <div class="highlight-item">
                   <svg class="highlight-bullet" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -423,8 +423,8 @@ else:
       <div class="container">
         <div class="section-heading">
           <div class="section-kicker">Raw Performance</div>
-          <h2 class="section-title">Built for Sub-Millisecond Precision</h2>
-          <p class="section-desc">By discarding legacy interpreter baggage, Enlangg achieves predictable execution and minimal resource consumption.</p>
+          <h2 class="section-title">Small, Quick to Start, Easy to Install</h2>
+          <p class="section-desc">Measured on one Windows machine with release 5.5.0 (median of 30 runs of a hello-world program). Your numbers will differ.</p>
         </div>
 
         <div class="benchmarks-grid">
@@ -434,20 +434,20 @@ else:
               <span class="bench-icon">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               </span>
-              <span class="bench-label">Startup Latency</span>
+              <span class="bench-label">Hello World, Start to Exit</span>
             </div>
-            <div class="bench-value">1.8 <span class="bench-unit">ms</span></div>
-            <p class="bench-desc">Instant warm-boot CLI invocation with compile-time slot registers.</p>
+            <div class="bench-value">12 <span class="bench-unit">ms</span></div>
+            <p class="bench-desc"><code>enlng run hello.enlng</code> with the built-in interpreter, process start to exit.</p>
             <div class="bench-bar-group">
               <div class="bench-bar-row">
-                <span class="bar-name">Enlangg</span>
-                <div class="bar-track"><div class="bar-fill" style="width: 8%;"></div></div>
-                <span class="bar-val">1.8ms</span>
+                <span class="bar-name">enlng</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 16%;"></div></div>
+                <span class="bar-val">12 ms</span>
               </div>
               <div class="bench-bar-row">
-                <span class="bar-name">Traditional Runtime</span>
-                <div class="bar-track"><div class="bar-fill fill-secondary" style="width: 85%;"></div></div>
-                <span class="bar-val">42.0ms</span>
+                <span class="bar-name">Python</span>
+                <div class="bar-track"><div class="bar-fill fill-secondary" style="width: 100%;"></div></div>
+                <span class="bar-val">73 ms</span>
               </div>
             </div>
           </div>
@@ -458,20 +458,20 @@ else:
               <span class="bench-icon">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18"/></svg>
               </span>
-              <span class="bench-label">Binary Size</span>
+              <span class="bench-label">Size on Disk</span>
             </div>
-            <div class="bench-value">108 <span class="bench-unit">KB</span></div>
-            <p class="bench-desc">Ultra-compact standalone executable without runtime library bloat.</p>
+            <div class="bench-value">152 <span class="bench-unit">KB</span></div>
+            <p class="bench-desc">The language tool <code>enlng.exe</code> holds the lexer, parser, interpreter and C backend. All seven tools together are about 586 KB.</p>
             <div class="bench-bar-group">
               <div class="bench-bar-row">
-                <span class="bar-name">Enlangg Single .exe</span>
-                <div class="bar-track"><div class="bar-fill" style="width: 5%;"></div></div>
-                <span class="bar-val">108 KB</span>
+                <span class="bar-name">enlng.exe</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 26%;"></div></div>
+                <span class="bar-val">152 KB</span>
               </div>
               <div class="bench-bar-row">
-                <span class="bar-name">Standard Bundles</span>
-                <div class="bar-track"><div class="bar-fill fill-secondary" style="width: 78%;"></div></div>
-                <span class="bar-val">28.5 MB</span>
+                <span class="bar-name">All 7 tools</span>
+                <div class="bar-track"><div class="bar-fill fill-secondary" style="width: 100%;"></div></div>
+                <span class="bar-val">586 KB</span>
               </div>
             </div>
           </div>
@@ -482,14 +482,14 @@ else:
               <span class="bench-icon">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </span>
-              <span class="bench-label">External Dependencies</span>
+              <span class="bench-label">What You Need to Install</span>
             </div>
-            <div class="bench-value">0 <span class="bench-unit">DLLs</span></div>
-            <p class="bench-desc">100% self-contained toolchain. No package managers or system DLL installs required.</p>
+            <div class="bench-value">1 <span class="bench-unit">installer</span></div>
+            <p class="bench-desc">No Python, Node or package manager. A C compiler (gcc) is only needed for <code>enlng build</code> and <code>--native</code>.</p>
             <div class="bench-badge-strip">
-              <span class="badge-pill-green">Zero NPM / Pip Bloat</span>
-              <span class="badge-pill-green">Zero C Runtime DLLs</span>
-              <span class="badge-pill-green">Runs Anywhere</span>
+              <span class="badge-pill-green">No Python or Node</span>
+              <span class="badge-pill-green">No admin rights</span>
+              <span class="badge-pill-green">Windows, Linux, macOS</span>
             </div>
           </div>
 
@@ -502,11 +502,11 @@ else:
               <span class="bench-label">Domain Boundaries</span>
             </div>
             <div class="bench-value">6 <span class="bench-unit">Tiers</span></div>
-            <p class="bench-desc">Formal grammar isolation eliminates unintended backend leaks into client UI tiers.</p>
+            <p class="bench-desc">Each file type has its own grammar, so backend words do not leak into UI files.</p>
             <div class="bench-badge-strip">
-              <span class="badge-pill-amber">Compile-Time Registry</span>
-              <span class="badge-pill-amber">Slot-Based Dispatch</span>
-              <span class="badge-pill-amber">Strict Security</span>
+              <span class="badge-pill-amber">Separate Grammars</span>
+              <span class="badge-pill-amber">One Tool per Type</span>
+              <span class="badge-pill-amber">Clear Error Messages</span>
             </div>
           </div>
         </div>
@@ -525,7 +525,7 @@ else:
               <span class="vol-badge">VOL I</span>
               <div class="book-vol-content">
                 <span class="vol-name">Enlangg Architecture</span>
-                <span class="vol-meta">193 Master Pages</span>
+                <span class="vol-meta">202 Pages</span>
               </div>
             </button>
             <button type="button" class="book-vol-btn vol-db" id="volEnlngDbBtn" data-volume="enlngdb">
@@ -552,7 +552,7 @@ else:
               <div class="book-spine">
                 <span class="spine-rib rib-top"></span>
                 <span class="spine-title" id="spineTitle">ENLANGG: THE ENLNG</span>
-                <span class="spine-pages" id="spinePages">193 PAGES</span>
+                <span class="spine-pages" id="spinePages">202 PAGES</span>
                 <span class="spine-rib rib-bottom"></span>
               </div>
 
@@ -569,7 +569,7 @@ else:
                 <div class="back-cover-body">
                   <h5 class="back-title" id="backTitle">THE ENLNG ARCHITECTURE</h5>
                   <p class="back-blurb" id="backBlurb">
-                    The complete 193-page canonical manual for the English-syntax computing platform. Details compiler slots, 6 isolated domains, and native bytecode emission.
+                    The complete 202-page canonical manual for the English-syntax computing platform. Covers the grammar, the six domains and the standard library.
                   </p>
                   <div class="back-features-list" id="backFeaturesList">
                     <span>• Zero External Dependencies</span>
@@ -592,12 +592,12 @@ else:
                 <div class="page-turn-overlay" id="pageTurnOverlay"></div>
                 <div class="page-header">
                   <span class="page-ch" id="pageCh">CHAPTER 1</span>
-                  <span class="page-num" id="pageNum">pp. 1-28 / 193</span>
+                  <span class="page-num" id="pageNum">pp. 1-28 / 202</span>
                 </div>
                 <h4 class="page-title" id="pageTitle">The Sovereign Philosophy</h4>
                 <div class="page-highlight-badge" id="pageHighlightBadge">Core Architectural Point</div>
                 <p class="page-excerpt" id="pageExcerpt">
-                  Natural English syntax eliminates arbitrary symbol friction, compiling directly to native machine bytecode.
+                  Natural English syntax eliminates arbitrary symbol friction, running through a built-in interpreter or translating to C.
                 </p>
                 <div class="page-code-snippet" id="pageCodeSnippet">
                   <span class="code-kw">type</span> <span class="code-val">enlng</span><br>
@@ -624,7 +624,7 @@ else:
                     <p class="book-author" id="bookCoverAuthor">Canonical Architecture Manual</p>
                   </div>
                   <div class="cover-footer">
-                    <span class="book-pages-pill" id="bookCoverPagesPill">193 Master Pages</span>
+                    <span class="book-pages-pill" id="bookCoverPagesPill">202 Pages</span>
                     <span class="open-hint" id="openHint">Click to Open →</span>
                   </div>
                 </div>
@@ -677,7 +677,7 @@ else:
           <div class="section-kicker" id="bookInfoKicker">Canonical Volume · 1st Edition</div>
           <h2 class="book-heading" id="bookInfoHeading">The Definitive Language Manual: Enlangg Architecture</h2>
           <p class="book-paragraph" id="bookInfoDesc">
-            The complete 193-page architectural treatise covering natural English grammar semantics, slot-based compiler mechanics, cross-domain isolation invariants, and standard library references.
+            The complete 202-page architectural treatise covering natural English grammar semantics, the six domains, the toolchain, and standard library references.
           </p>
 
           <!-- Interactive Chapter Direct Inspection -->
@@ -722,7 +722,7 @@ else:
           </div>
           <div class="book-meta-grid">
             <div class="meta-item">
-              <span class="meta-val" id="metaStat1">193</span>
+              <span class="meta-val" id="metaStat1">202</span>
               <span class="meta-lbl" id="metaLbl1">Master Pages</span>
             </div>
             <div class="meta-item">
@@ -744,7 +744,7 @@ else:
         <div class="section-heading">
           <div class="section-kicker">Developer Toolchain</div>
           <h2 class="section-title">Terminal Commands & Quickstart Matrix</h2>
-          <p class="section-desc">Terminal commands to install, compile, query the database, or build native binaries across Windows, Linux, and macOS.</p>
+          <p class="section-desc">Commands to install, run programs, query the database, or build an executable on Windows, Linux and macOS.</p>
         </div>
 
         <div class="cli-matrix-grid">
@@ -764,12 +764,12 @@ else:
           <div class="cli-card">
             <div class="cli-card-header">
               <div class="cli-card-tag cli-tag-unix">BASH / ZSH</div>
-              <button type="button" class="copy-code-btn terminal-btn" data-copy="git clone https://github.com/Aero99op/enlang-main.git &amp;&amp; cd enlang-main &amp;&amp; make &amp;&amp; sudo make install">Copy</button>
+              <button type="button" class="copy-code-btn terminal-btn" data-copy="sh enlangg-install.sh">Copy</button>
             </div>
-            <h4 class="cli-card-title">Linux &amp; macOS: Build from Source</h4>
-            <p class="cli-card-desc">No prebuilt package yet. Needs a C compiler and make.</p>
+            <h4 class="cli-card-title">Linux &amp; macOS Installer</h4>
+            <p class="cli-card-desc">Download <a href="enlangg-install.sh" download style="color: var(--accent-emerald);">enlangg-install.sh</a>, then run it. Installs to <code>~/.enlangg</code> without root.</p>
             <div class="cli-code-block">
-              <code>git clone https://github.com/Aero99op/enlang-main.git &amp;&amp; cd enlang-main &amp;&amp; make &amp;&amp; sudo make install</code>
+              <code>sh enlangg-install.sh</code>
             </div>
           </div>
 
@@ -780,7 +780,7 @@ else:
               <button type="button" class="copy-code-btn terminal-btn" data-copy="enlngdb run database.enlngdb">Copy</button>
             </div>
             <h4 class="cli-card-title">Execute EnlngDB Script (.enlngdb)</h4>
-            <p class="cli-card-desc">Executes declarative database queries and persists state into high-speed binary .edb.</p>
+            <p class="cli-card-desc">Runs database statements written in English and saves the data to a file.</p>
             <div class="cli-code-block">
               <code>enlngdb run database.enlngdb</code>
             </div>
@@ -805,8 +805,8 @@ else:
               <div class="cli-card-tag cli-tag-core">ENLANGG COMPILER</div>
               <button type="button" class="copy-code-btn terminal-btn" data-copy="enlangg compile main.enlng -o app.exe">Copy</button>
             </div>
-            <h4 class="cli-card-title">Compile to Standalone Machine Binary</h4>
-            <p class="cli-card-desc">Compiles natural English source directly to native x64 machine code in &lt; 2 milliseconds.</p>
+            <h4 class="cli-card-title">Build a Standalone Executable</h4>
+            <p class="cli-card-desc">Translates your program to C and builds it with gcc. Needs a C compiler; <code>enlng run</code> does not.</p>
             <div class="cli-code-block">
               <code>enlangg compile main.enlng -o app.exe</code>
             </div>
@@ -818,8 +818,8 @@ else:
               <div class="cli-card-tag cli-tag-c">PURE C BUILD</div>
               <button type="button" class="copy-code-btn terminal-btn" data-copy="gcc -O3 enlngdb.c enlngdb_parser.c -o enlngdb.exe">Copy</button>
             </div>
-            <h4 class="cli-card-title">Compile Pure C Database Engine</h4>
-            <p class="cli-card-desc">Zero-dependency C99 build command producing the sovereign ~100KB database engine binary.</p>
+            <h4 class="cli-card-title">Build the Database Engine from Source</h4>
+            <p class="cli-card-desc">Build the database engine from source with gcc. The released enlngdb.exe is about 106 KB.</p>
             <div class="cli-code-block">
               <code>gcc -O3 enlngdb.c enlngdb_parser.c -o enlngdb.exe</code>
             </div>
@@ -840,13 +840,13 @@ else:
         <div class="faq-accordion-grid">
           <div class="faq-card active">
             <button class="faq-question" type="button">
-              <span>How does natural English syntax translate to native machine code?</span>
+              <span>How does English syntax become a running program?</span>
               <span class="faq-icon">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </span>
             </button>
             <div class="faq-answer">
-              <p>Enlangg utilizes a deterministic grammar parser that maps spoken English syntactic clauses directly to compiler register slots. Spoken instructions like <code>set count to 0</code> and <code>while count is less than n</code> are parsed into low-overhead intermediate representations and compiled to native machine binaries with zero semantic loss.</p>
+              <p>A fixed grammar parser turns each English sentence, such as <code>remember count as 0</code>, into a syntax tree. <code>enlng run</code> walks that tree with a built-in interpreter. <code>enlng build</code> translates the same tree to C and lets gcc produce an executable. Both paths share one runtime and are checked against each other in CI.</p>
             </div>
           </div>
 
@@ -858,31 +858,31 @@ else:
               </span>
             </button>
             <div class="faq-answer">
-              <p>Domain isolation prevents architectural contamination. Core logic (<code>.enlng</code>), frontend components (<code>.enlngf</code>), server endpoints (<code>.enlngs</code>), design tokens (<code>.enlngd</code>), mobile screens (<code>.enlngm</code>), and database queries (<code>.enlngdb</code>) each have distinct intent registries that are validated at compile time, eliminating accidental leaks across application boundaries.</p>
+              <p>Domain isolation prevents architectural contamination. Core logic (<code>.enlng</code>), frontend components (<code>.enlngf</code>), server endpoints (<code>.enlngs</code>), design tokens (<code>.enlngd</code>), mobile screens (<code>.enlngm</code>), and database queries (<code>.enlngdb</code>) each have their own grammar and their own tool, so a database word cannot silently end up in a UI file.</p>
             </div>
           </div>
 
           <div class="faq-card">
             <button class="faq-question" type="button">
-              <span>Are there any external dependencies or DLLs required?</span>
+              <span>Do I need Python, Node or a C compiler?</span>
               <span class="faq-icon">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </span>
             </button>
             <div class="faq-answer">
-              <p>No. Enlangg is distributed as a single standalone executable (108 KB) with zero external packages, zero DLL dependencies, and zero admin privilege requirements. You can run it instantly from any folder or USB drive.</p>
+              <p>Not to run programs. The installer puts seven small native tools on your machine (about 586 KB in total) and needs no admin rights. A C compiler such as gcc is only needed for <code>enlng build</code> or <code>enlng run --native</code>.</p>
             </div>
           </div>
 
           <div class="faq-card">
             <button class="faq-question" type="button">
-              <span>How does Enlangg achieve sub-2ms execution?</span>
+              <span>How fast does it start?</span>
               <span class="faq-icon">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </span>
             </button>
             <div class="faq-answer">
-              <p>Traditional high-level environments spend dozens of milliseconds initializing module trees, scanning virtual environments, and launching runtime garbage collectors. Enlangg uses compile-time slot allocation and lightweight C ABI execution, delivering warm execution in under 2ms.</p>
+              <p>The tools are small native programs with nothing to load first. On one Windows machine with release 5.5.0, <code>enlng run</code> on a hello-world file took about 12 ms against about 73 ms for <code>python hello.py</code> (median of 30 runs). That is start-up time only; the interpreter is not tuned for heavy loops, which run faster with <code>--native</code>.</p>
             </div>
           </div>
         </div>
@@ -902,7 +902,7 @@ else:
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
-            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+            A programming language written in plain English, with a toolchain of seven small tools for six file types.
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
@@ -913,9 +913,9 @@ else:
         <div class="footer-col">
           <h4 class="footer-col-title">Documentation</h4>
           <ul class="footer-links-list">
-            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch1">The Enlng Book (202 pp.)</a></li>
             <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
-            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch3">Values, Lists and Maps</a></li>
             <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
             <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
           </ul>
@@ -928,7 +928,7 @@ else:
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Curriculum</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -940,14 +940,14 @@ else:
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
             <li><a href="brand.html">Brand & Logo Kit</a></li>
-            <li><a href="blog.html">Engineering Blog</a></li>
+            <li><a href="blog.html">Release Notes</a></li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom-bar">
         <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
-        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+        <span>Open-source toolchain · MIT License</span>
       </div>
     </div>
   </footer>

@@ -33,7 +33,7 @@
         <a href="docs.html" class="nav-link">Docs & Book</a>
         <a href="playground.html" class="nav-link">Playground</a>
         <a href="learn.html" class="nav-link active">Learn & Videos</a>
-        <a href="library.html" class="nav-link">Library & Python</a>
+        <a href="library.html" class="nav-link">Library</a>
         <a href="community.html" class="nav-link">Community</a>
         <a href="about.html" class="nav-link">About</a>
         <a href="blog.html" class="nav-link">Blog</a>
@@ -67,10 +67,10 @@
     <a href="docs.html">Documentation & Book</a>
     <a href="playground.html">Playground IDE</a>
     <a href="learn.html" class="active">Learn & Videos</a>
-    <a href="library.html">Standard Library & Python Interop</a>
+    <a href="library.html">Standard Library Interop</a>
     <a href="community.html">Community & Roadmap</a>
     <a href="about.html">About & Governance</a>
-    <a href="blog.html">Engineering Blog</a>
+    <a href="blog.html">Release Notes</a>
     <a href="brand.html">Brand Identity Kit</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
@@ -126,7 +126,7 @@
                 05:25
               </span>
             </div>
-            <div class="curriculum-item-title">Deterministic Memory Slots</div>
+            <div class="curriculum-item-title">Values, Lists and Maps</div>
           </a>
         </li>
 
@@ -204,7 +204,7 @@
                 08:10
               </span>
             </div>
-            <div class="curriculum-item-title">Python God Call &amp; C-ABI</div>
+            <div class="curriculum-item-title">Python and C Interop (planned)</div>
           </a>
         </li>
 
@@ -227,7 +227,7 @@
           <span>Open Sandbox IDE</span>
         </a>
         <a href="enlangg_the_enlng.pdf" download class="btn btn-secondary" style="font-size: 0.8rem; justify-content: center; padding: 8px 12px;">
-          <span>Download 193p Book</span>
+          <span>Download 202p Book</span>
         </a>
       </div>
     </aside>
@@ -243,7 +243,7 @@
         </div>
         <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">1. Breaking the Syntax Bottleneck: The Enlangg Architecture</h2>
         <p class="docs-p" style="margin-bottom: 20px;">
-          Watch the deep-dive architectural masterclass below exploring why legacy programming languages trapped developers in mechanical ASCII glyphs, and how Enlangg's deterministic NLP engine compiles natural English directly to high-speed native machine code.
+          Watch the deep-dive architectural masterclass below exploring why legacy programming languages trapped developers in mechanical ASCII glyphs, and how Enlangg's deterministic NLP engine turns natural English into a running program.
         </p>
 
         <!-- Video Player Card -->
@@ -292,7 +292,7 @@
 
 // Print to standard console output
 show "Hello, Sovereign World!"
-show "Enlangg compiles natural English to bare-metal C machine code."</div>
+show "Enlangg runs natural English as a program."</div>
         </div>
 
         <!-- Key Takeaways from NotebookLM -->
@@ -321,9 +321,9 @@ show "Enlangg compiles natural English to bare-metal C machine code."</div>
           <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 02 · MASTERCLASS</span>
           <span style="color: var(--text-muted); font-size: 0.85rem;">Duration: 5m 25s · 720p HD</span>
         </div>
-        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">2. Deterministic Memory Slots & Spoken Variables</h2>
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">2. Values, Lists and Maps & Spoken Variables</h2>
         <p class="docs-p" style="margin-bottom: 20px;">
-          Watch the deep-dive masterclass below exploring how Enlangg allocates state into deterministic stack slots without raw pointers, memory leaks, or garbage collection pauses.
+          Watch the deep-dive masterclass below exploring how Enlangg keeps values in scoped names, so you never handle raw pointers or free memory yourself.
         </p>
 
         <!-- Video Player Card -->
@@ -344,7 +344,7 @@ show "Enlangg compiles natural English to bare-metal C machine code."</div>
                 <div class="video-placeholder-icon">
                   <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </div>
-                <div class="video-placeholder-title">Deterministic Memory Slots & Spoken Variables</div>
+                <div class="video-placeholder-title">Values, Lists and Maps & Spoken Variables</div>
                 <p class="video-placeholder-hint">
                   Playing from <code>website/videos/02_memory_slots.mp4</code>.
                 </p>
@@ -390,15 +390,15 @@ show "Status Active:" is_active</div>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span>Enlangg also understands natural synonyms like <code>let &lt;id&gt; = &lt;val&gt;</code> or <code>create &lt;id&gt; as &lt;val&gt;</code> with zero overhead.</span>
+              <span>Enlangg also understands natural synonyms like <code>let &lt;id&gt; = &lt;val&gt;</code> or <code>create &lt;id&gt; as &lt;val&gt;</code> out of the box.</span>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span>Zero dynamic pointers are exposed, eliminating use-after-free and dangling pointer bugs by construction.</span>
+              <span>You never allocate, free or hold pointers yourself, so use-after-free bugs cannot be written in Enlangg code.</span>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span>In C AOT compilation, a Scoped Bump Arena automatically reclaims 100% of temporary memory in 1 CPU cycle on scope exit—stress-tested to 1,000,000 cycles with 0 bytes leaked!</span>
+              <span>Names are scoped to the block that declares them, and function calls get their own isolated scope.</span>
             </li>
           </ul>
         </div>
@@ -737,7 +737,7 @@ display "Projected 10-Year Portfolio Value: ", investment</div>
         </div>
         <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">7. Structured Data: Contiguous Lists & Hash Maps</h2>
         <p class="docs-p" style="margin-bottom: 20px;">
-          Work with dynamic collections using clean bracket notation. Enlangg implements fast contiguous vectors and Robin Hood hash maps natively.
+          Work with dynamic collections using clean bracket notation. Lists and maps are built into the language and the runtime.
         </p>
 
         <!-- Video Player Card -->
@@ -821,9 +821,9 @@ display "Current CPU: ", telemetry["cpu_load"]</div>
           <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 08</span>
           <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 10 mins · Video: 08:10</span>
         </div>
-        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">8. The Python God Call & C-ABI Interoperability</h2>
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">8. Python and C Interop (Planned)</h2>
         <p class="docs-p" style="margin-bottom: 20px;">
-          Leverage the vast Python and C ecosystem without rewriting libraries. Invoke PyTorch, NumPy, or native OS functions directly via zero-overhead memory bridging.
+          Calling Python packages and C libraries from Enlangg code is planned but not implemented in the current toolchain (5.5.0). The sample below shows the intended shape only and will not run yet.
         </p>
 
         <!-- Video Player Card -->
@@ -868,7 +868,7 @@ display "Current CPU: ", telemetry["cpu_load"]</div>
           </div>
           <div class="code-block-body" id="track08Code">type enlng
 
-// Bridge directly into Python 3.10+ runtime via C-ABI
+// PLANNED SYNTAX - not implemented in 5.5.0
 import python module "math" as py_math
 import python module "statistics" as stats
 
@@ -885,11 +885,11 @@ display "Standard Deviation: ", stdev_val</div>
           <ul class="lesson-takeaways-list">
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span>Foreign calls pass native C-struct pointers across the FFI boundary with zero serialization overhead.</span>
+              <span>Not implemented yet: the syntax shown is a design sketch.</span>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span>Enables seamless execution of AI/ML workflows while keeping the core application in bare-metal compiled code.</span>
+              <span>Until then, use <code>use "file"</code> to share code between Enlangg files.</span>
             </li>
           </ul>
         </div>
@@ -899,7 +899,7 @@ display "Standard Deviation: ", stdev_val</div>
       <section class="topic-lesson-section" id="track9">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
           <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 09</span>
-          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 8 mins · Pure C Engine</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 8 mins · Native C Engine</span>
         </div>
         <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">9. EnlngDB Sovereign Database &amp; Natural In-Table Updates</h2>
         <p class="docs-p" style="margin-bottom: 20px;">
@@ -946,7 +946,7 @@ find all records from scholars;</div>
           <ul class="lesson-takeaways-list">
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span>Executes in under 0.03 milliseconds in Pure C with zero SQL compilation overhead.</span>
+              <span>Runs in the native C engine with no SQL layer.</span>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
@@ -975,7 +975,7 @@ find all records from scholars;</div>
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
-            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+            A programming language written in plain English, with a toolchain of seven small tools for six file types.
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
@@ -986,9 +986,9 @@ find all records from scholars;</div>
         <div class="footer-col">
           <h4 class="footer-col-title">Documentation</h4>
           <ul class="footer-links-list">
-            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch1">The Enlng Book (202 pp.)</a></li>
             <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
-            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch3">Values, Lists and Maps</a></li>
             <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
             <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
           </ul>
@@ -1001,7 +1001,7 @@ find all records from scholars;</div>
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Videos</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -1013,14 +1013,14 @@ find all records from scholars;</div>
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
             <li><a href="brand.html">Brand & Logo Kit</a></li>
-            <li><a href="blog.html">Engineering Blog</a></li>
+            <li><a href="blog.html">Release Notes</a></li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom-bar">
         <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
-        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+        <span>Open-source toolchain · MIT License</span>
       </div>
     </div>
   </footer>

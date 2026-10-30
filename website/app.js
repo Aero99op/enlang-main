@@ -244,7 +244,7 @@ show "Factorial of" number "is:" result`,
 
 # Topic 01: Hello World & The Sovereign Declaration
 show "Hello, Sovereign World!"
-show "Enlangg compiles natural English to bare-metal C machine code."`,
+show "Enlangg runs natural English as a program."`,
 
   topic2: `type enlng
 
@@ -1544,7 +1544,7 @@ function initPlayground() {
       text.style.color = 'var(--text-muted)';
     }
     if (pill) {
-      pill.title = 'Running in Web Sandbox mode. Run enlangg-bridge to enable local machine native binaries.';
+      pill.title = 'Running in Web Sandbox mode. Run enlangg-bridge to enable running on your own machine.';
     }
     if (userInitiated && terminal) {
       terminal.innerHTML = `<span class="term-warn">[Native Bridge] Daemon is not running on port 5999.</span>\n<span class="term-dim">Run: <strong>python enlangg-bridge.py</strong> to connect playground to native compiler binaries.</span>`;
@@ -2710,10 +2710,10 @@ const DOMAINS_DATA = {
     tier: 'Tier 1 · Sovereign Architecture',
     title: 'Core Backend (.enlng)',
     filename: 'core_algorithm.enlng',
-    desc: 'General-purpose algorithms, collections, math, OOP, exceptions, and native standard I/O.',
+    desc: 'General-purpose programs: variables, lists, maps, loops, functions, math and file I/O, written as English sentences.',
     features: [
-      'Zero runtime garbage collector pauses',
-      'Direct compilation to native machine instructions',
+      'Runs with a built-in interpreter, no C compiler needed',
+      'enlng build translates to C and builds with gcc',
       'Spoken English arithmetic and control structures'
     ],
     code: `type enlng
@@ -2735,11 +2735,11 @@ otherwise:
     tier: 'Tier 2 · Client Representation',
     title: 'Frontend Markup & UI (.enlngf)',
     filename: 'user_profile.enlngf',
-    desc: 'Declarative component trees, props, stateful reactive hooks, and DOM events compiled directly to Web UI.',
+    desc: 'Describe pages and components in English. enlngf generates standalone HTML, and can serve it locally.',
     features: [
-      'Reactive signals without virtual DOM diffing overhead',
-      'Scoped design token inheritance',
-      'Native keyboard and touch gesture dispatchers'
+      'Output is plain HTML, CSS and JavaScript',
+      'enlngf build writes a standalone .html file',
+      'enlngf serve previews it on a local port'
     ],
     code: `type enlngf
 
@@ -2754,11 +2754,11 @@ component UserProfile with username, status:
     tier: 'Tier 3 · Network Services',
     title: 'Server & API Routes (.enlngs)',
     filename: 'gateway_api.enlngs',
-    desc: 'Zero-overhead HTTP REST endpoints, WebSockets, microservices, and middleware routing engine.',
+    desc: 'Browser-side and server-side logic in English, generated as JavaScript by enlngs.',
     features: [
-      'Built-in non-blocking epoll/IOCP event loop',
-      'Automatic JSON validation and serialization',
-      'Thread-safe session contexts with rate limiting'
+      'Generates JavaScript from English sentences',
+      'Runs from the command line with enlangg s',
+      'Same installer, no Node.js needed to generate'
     ],
     code: `type enlngs
 
@@ -2774,11 +2774,11 @@ route post "/api/v1/auth" with body payload:
     tier: 'Tier 4 · Design Systems',
     title: 'Design Tokens & Styles (.enlngd)',
     filename: 'theme_matrix.enlngd',
-    desc: 'Sovereign design tokens, responsive grid/flex layouts, color matrices, and GPU-accelerated keyframe animations.',
+    desc: 'Design tokens, colours, spacing and layouts in English, exported as a CSS stylesheet by enlngd.',
     features: [
-      'Deterministic design token propagation',
-      'Automated dark mode contrast verification',
-      'Hardware-accelerated CSS keyframe generator'
+      'Named design tokens reused across a theme',
+      'enlngd compile exports a .css file',
+      'Inspect resolved tokens from the command line'
     ],
     code: `type enlngd
 
@@ -2797,11 +2797,11 @@ style class "card":
     tier: 'Tier 5 · Mobile Hardware',
     title: 'Mobile Apps & HAL (.enlngm)',
     filename: 'mobile_activity.enlngm',
-    desc: 'Hardware Abstraction Layer for Android (NDK/Vulkan) and iOS (Metal) with 120 FPS native activities.',
+    desc: 'Describe mobile screens in English and preview them in a phone-sized window (Windows only for now).',
     features: [
-      'Direct C-ABI bindings to Android NDK & Apple Metal',
-      'Zero bridge serialization latency for gestures',
-      'Native background lifecycle and battery conservation'
+      'Preview window at 390x844 (Windows)',
+      'APK / IPA packaging is not implemented yet',
+      'Shares the same English screen syntax as enlngf'
     ],
     code: `type enlngm
 
@@ -2816,11 +2816,11 @@ screen Dashboard:
     tier: 'Tier 6 · Sovereign Data',
     title: 'Pure C Native Database (.enlngdb)',
     filename: 'schema_registry.enlngdb',
-    desc: 'Pure C native database engine compiled directly into enlangg.exe with zero Python/SQL dependencies and microsecond query latencies.',
+    desc: 'A database engine written in C, with statements written in English. No SQL and no separate database server.',
     features: [
-      'Pure C storage & execution engine (<0.05 ms query latency)',
-      'Natural conversational row & column mutations (in <table> change/update)',
-      'Direct binary serialization (.edb) with zero ORM/SQL overhead'
+      'Native C storage and execution engine (enlngdb.exe, about 106 KB)',
+      'Conversational row and column changes, no SQL',
+      'Data saved to a file and reloaded on the next run'
     ],
     code: `type enlngdb;
 
@@ -2876,46 +2876,46 @@ const BOOK_VOLUMES = {
     badge: 'MASTER SPECIFICATION',
     title: 'ENLANGG<br>THE ENLNG',
     author: 'Canonical Architecture Manual',
-    pagesPill: '193 Master Pages',
+    pagesPill: '202 Pages',
     spineTitle: 'ENLANGG: THE ENLNG',
-    spinePages: '193 PAGES',
+    spinePages: '202 PAGES',
     backBadge: 'CANONICAL SPECIFICATION',
     backTitle: 'THE ENLNG ARCHITECTURE',
-    backBlurb: 'The complete 193-page canonical manual for the English-syntax computing platform. Details compiler slots, 6 isolated domains, and native bytecode emission.',
+    backBlurb: 'The complete 202-page canonical manual for the English-syntax computing platform. Covers the grammar, the six domains and the standard library.',
     backFeatures: [
-      '• Zero External Dependencies',
+      '• No Python or Node Needed',
       '• 6 Isolated Tier Domains',
-      '• Sub-2ms Binary Execution',
-      '• Slot-Based Register Allocation'
+      '• Interpreter or C Backend',
+      '• Standard Library Reference'
     ],
     backIsbn: 'SPEC-ENLNG-2026',
     insideTitle: 'ENLANGG FOUNDATION',
     insideSubtitle: 'Sovereign Computing Architecture',
-    insideSpec: 'SPEC-2026-NATIVE',
+    insideSpec: 'SPEC-2026',
     infoKicker: 'Canonical Volume · 1st Edition',
     infoHeading: 'The Definitive Language Manual: Enlangg Architecture',
-    infoDesc: 'The complete 193-page architectural treatise covering natural English grammar semantics, slot-based compiler mechanics, cross-domain isolation invariants, and standard library references.',
+    infoDesc: 'The complete 202-page architectural treatise covering natural English grammar semantics, the six domains, the toolchain, and standard library references.',
     primaryDlHref: 'enlangg_the_enlng.pdf',
     primaryDlDownload: 'enlangg_the_enlng.pdf',
     primaryDlText: 'Download PDF Book (420 KB)',
     meta: [
-      { val: '193', lbl: 'Master Pages' },
+      { val: '202', lbl: 'Master Pages' },
       { val: '6', lbl: 'Isolated Domains' },
       { val: '100%', lbl: 'Standard Parity' }
     ],
     pages: [
       {
         chapter: 'CHAPTER 1',
-        pages: 'pp. 1-28 / 193',
+        pages: 'pp. 1-28 / 202',
         badge: 'Core Architectural Philosophy',
         title: 'The Sovereign Grammar',
-        excerpt: 'Natural English syntax eliminates symbol barrier friction, translating directly into high-throughput machine bytecode.',
+        excerpt: 'Natural English syntax removes symbol friction. Programs run through a built-in interpreter or translate to C.',
         snippet: '<span class="code-kw">type</span> <span class="code-val">enlng</span>\n<span class="code-kw">create</span> <span class="code-id">greeting</span> <span class="code-kw">of</span> <span class="code-val">"Hello Sovereign World"</span>\n<span class="code-kw">display</span> <span class="code-id">greeting</span>',
         seal: 'Universal Syntax Specification'
       },
       {
         chapter: 'CHAPTER 2',
-        pages: 'pp. 29-64 / 193',
+        pages: 'pp. 29-64 / 202',
         badge: 'Native Arithmetic Engine',
         title: 'Inferred Types & Natural Math',
         excerpt: 'Automatic compile-time type inference with zero runtime boxing overhead and spoken English arithmetic operators.',
@@ -2924,7 +2924,7 @@ const BOOK_VOLUMES = {
       },
       {
         chapter: 'CHAPTER 3',
-        pages: 'pp. 65-102 / 193',
+        pages: 'pp. 65-102 / 202',
         badge: 'Flow Control & Logic',
         title: 'Natural Branching & Loops',
         excerpt: 'Express complex decision logic and collection sweeps cleanly in human sentence structures without nested bracket noise.',
@@ -2933,7 +2933,7 @@ const BOOK_VOLUMES = {
       },
       {
         chapter: 'CHAPTER 4',
-        pages: 'pp. 103-146 / 193',
+        pages: 'pp. 103-146 / 202',
         badge: '6 Sovereign Domains',
         title: 'Cross-Domain Tier Isolation',
         excerpt: 'Compile-time isolation guarantees across .enlng, .enlngf, .enlngs, .enlngd, .enlngm, and .enlngdb tiers.',
@@ -2942,16 +2942,16 @@ const BOOK_VOLUMES = {
       },
       {
         chapter: 'CHAPTER 5',
-        pages: 'pp. 147-172 / 193',
-        badge: 'Memory & Native Compilation',
+        pages: 'pp. 147-172 / 202',
+        badge: 'Memory & Runtime',
         title: 'Deterministic Memory Model',
-        excerpt: 'Zero garbage-collector latency pauses via slot-based compile-time registers and instant 1.8ms warm boot.',
+        excerpt: 'How values, lists and maps are held in memory, and how the interpreter and the C backend share one runtime.',
         snippet: '<span class="code-kw">type</span> <span class="code-val">enlng</span>\n<span class="code-kw">function</span> <span class="code-id">process_buffer</span> <span class="code-kw">with</span> <span class="code-id">buf</span>:\n  <span class="code-kw">display</span> <span class="code-val">"Active registers: "</span> <span class="code-op">+</span> <span class="code-kw">length of</span> <span class="code-id">buf</span>',
-        seal: 'Zero-GC Machine Runtime'
+        seal: 'One Shared Runtime'
       },
       {
         chapter: 'CHAPTER 6',
-        pages: 'pp. 173-193 / 193',
+        pages: 'pp. 173-202 / 202',
         badge: 'Standard Universal Library',
         title: 'Full Universal Standard Library',
         excerpt: 'Complete built-in standard library for advanced data structures, math, cryptography, file I/O, and sockets.',
@@ -3060,7 +3060,7 @@ const BOOK_VOLUMES = {
         pages: 'Section 8 / 10',
         badge: 'C API & ABI',
         title: 'Native C Engine Integration',
-        excerpt: 'Embed EnlngDB directly into any C, C++, Rust, or Zig application with clean C ABI functions enlngdb_create, enlngdb_execute_statement, enlngdb_save.',
+        excerpt: 'Embed EnlngDB in a C or C++ program with the functions enlngdb_create, enlngdb_execute_statement, enlngdb_save.',
         snippet: '<span class="code-kw">#include</span> <span class="code-val">"enlngdb.h"</span>\n<span class="code-id">EnlngDatabase</span>* <span class="code-id">db</span> = <span class="code-id">enlngdb_create</span>(<span class="code-val">"finance"</span>);\n<span class="code-id">enlngdb_execute_statement</span>(<span class="code-id">db</span>, <span class="code-val">"create table accounts with id, bal;"</span>, <span class="code-val">true</span>);\n<span class="code-id">enlngdb_save</span>(<span class="code-id">db</span>, <span class="code-val">"finance.edb"</span>);\n<span class="code-id">enlngdb_free</span>(<span class="code-id">db</span>);',
         seal: 'Zero-Glue C Integration'
       },

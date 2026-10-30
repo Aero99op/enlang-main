@@ -34,7 +34,7 @@
         <a href="docs.html" class="nav-link">Docs & Book</a>
         <a href="playground.html" class="nav-link">Playground</a>
         <a href="learn.html" class="nav-link">Tutorials</a>
-        <a href="library.html" class="nav-link active">Library & Python</a>
+        <a href="library.html" class="nav-link active">Library</a>
         <a href="community.html" class="nav-link">Community</a>
         <a href="about.html" class="nav-link">About</a>
         <a href="blog.html" class="nav-link">Blog</a>
@@ -68,10 +68,10 @@
     <a href="docs.html">Documentation & Book</a>
     <a href="playground.html">Playground IDE</a>
     <a href="learn.html">Tutorials & Learn</a>
-    <a href="library.html" class="active">Standard Library & Python Interop</a>
+    <a href="library.html" class="active">Standard Library Interop</a>
     <a href="community.html">Community & Roadmap</a>
     <a href="about.html">About & Governance</a>
-    <a href="blog.html">Engineering Blog</a>
+    <a href="blog.html">Release Notes</a>
     <a href="brand.html">Brand Identity Kit</a>
     <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald);">Direct .exe Download</a>
   </div>
@@ -82,9 +82,9 @@
       <div class="page-kicker">
         <span>Universal Standard Library</span>
       </div>
-      <h1 class="page-title">Standard Library & The Python God Call</h1>
+      <h1 class="page-title">Standard Library Reference</h1>
       <p class="page-desc">
-        Explore built-in zero-overhead modules for I/O, mathematical analysis, string manipulation, data structures, cryptosystems, and direct C-ABI foreign call bridging.
+        Reference for the standard modules: I/O, math, strings, collections and more. Entries for Python bridging are design sketches and are marked as planned.
       </p>
     </div>
   </section>
@@ -253,7 +253,7 @@
           <span class="api-mod-badge">std.collections</span>
         </div>
         <p class="api-desc">
-          Retrieves value associated with key from Robin Hood hash table in O(1) average lookup time.
+          Retrieves the value stored under a key, or the default if the key is missing.
         </p>
         <div class="api-code-snippet">
           <code>set user to { "name": "Ada", "role": "Engineer" }<br>set role to map.get(user, "role", "Guest")</code>
@@ -321,7 +321,7 @@
           <span class="api-mod-badge">python.bridge</span>
         </div>
         <p class="api-desc">
-          Loads an installed CPython package (NumPy, PyTorch, Pandas) directly into virtual memory via C-ABI foreign call bridge.
+          PLANNED, not implemented in 5.5.0. Intended to load an installed Python package.
         </p>
         <div class="api-code-snippet">
           <code>set torch to python.import("torch")<br>set tensor to torch.randn([3, 3])</code>
@@ -334,7 +334,7 @@
           <span class="api-mod-badge">python.bridge</span>
         </div>
         <p class="api-desc">
-          Executes arbitrary Python code within the shared virtual memory context, returning native C types back to Enlangg slots.
+          PLANNED, not implemented in 5.5.0. Intended to run Python code and return its result.
         </p>
         <div class="api-code-snippet">
           <code>set result to python.eval("2 ** 32 - 1")</code>
@@ -397,7 +397,7 @@
             <span class="logo-text">enlangg foundation</span>
           </div>
           <p class="footer-desc">
-            The sovereign English programming language ecosystem. Deterministic memory, zero symbol friction, and formal grammar isolation across 6 domains.
+            A programming language written in plain English, with a toolchain of seven small tools for six file types.
           </p>
           <div class="footer-status-pill">
             <span class="beacon-dot"></span>
@@ -408,9 +408,9 @@
         <div class="footer-col">
           <h4 class="footer-col-title">Documentation</h4>
           <ul class="footer-links-list">
-            <li><a href="docs.html#ch1">The Enlng Book (193 pp.)</a></li>
+            <li><a href="docs.html#ch1">The Enlng Book (202 pp.)</a></li>
             <li><a href="docs.html#ch2">The 6 Isolated Domains</a></li>
-            <li><a href="docs.html#ch3">Deterministic Memory Slots</a></li>
+            <li><a href="docs.html#ch3">Values, Lists and Maps</a></li>
             <li><a href="docs.html#ch4">Spoken Control Flow</a></li>
             <li><a href="enlangg_the_enlng.pdf" download>Download Canonical PDF</a></li>
           </ul>
@@ -423,7 +423,7 @@
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Curriculum</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop & The God Call</a></li>
+            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -435,14 +435,14 @@
             <li><a href="community.html#contribute">Contributing Guidelines</a></li>
             <li><a href="about.html">Foundation Charter</a></li>
             <li><a href="brand.html">Brand & Logo Kit</a></li>
-            <li><a href="blog.html">Engineering Blog</a></li>
+            <li><a href="blog.html">Release Notes</a></li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom-bar">
         <span>© 2026 Enlangg Organization & Contributors. Released under the MIT License.</span>
-        <span>Independent Sovereign Toolchain · Zero External Analytics · Free & Open</span>
+        <span>Open-source toolchain · MIT License</span>
       </div>
     </div>
   </footer>
