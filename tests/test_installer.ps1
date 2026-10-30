@@ -43,7 +43,7 @@ try {
 
     # --- installed tool works and finds its stdlib exe-relative
     $v = & (Join-Path $bin 'enlng.exe') --version 2>&1 | Out-String
-    Check 'enlng --version 5.5.0' ($v -match '5\.5\.0')
+    Check 'enlng --version 5.5.1' ($v -match '5\.5\.1')
     $prog = Join-Path $tmp 'hello.enlng'
     Set-Content $prog -Encoding ascii -Value @("type enlng", "", "show `"hello from installed enlangg`"")
     $out = & (Join-Path $bin 'enlangg.exe') run $prog 2>&1 | Out-String

@@ -595,7 +595,7 @@ jobs:
 
             > **Integrity vs. Authenticity Notice**: The published `SHA256SUMS` file checks download integrity (protecting against corrupted or incomplete downloads), not author authenticity. Installers in this release are unsigned.
 
-            ### Included Tools (Pure C 7-in-1 Toolchain — v5.5.0):
+            ### Included Tools (Pure C 7-in-1 Toolchain — v5.5.1):
             - `enlangg` — Master toolchain dispatcher
             - `enlng` — Core language: runs programs with a built-in interpreter, no C compiler needed (`enlng build` makes native executables and needs `gcc`)
             - `enlngdb` — Embedded `.edb` database engine
