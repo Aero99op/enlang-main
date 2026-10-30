@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 let mainWindow = null;
+let updateRecheckTimer = null;
 
 function findBinary(name) {
   const isWin = process.platform === 'win32';
@@ -103,6 +104,20 @@ function createWindow() {
       } catch (_) {}
     }, 2500);
   });
+
+  // Studio can stay open for days: look again every 6 hours.
+  if (!updateRecheckTimer) {
+    updateRecheckTimer = setInterval(async () => {
+      try {
+        if (mainWindow && !mainWindow.isDestroyed() && !verifiedUpdateState) {
+          const updateInfo = await checkLatestRelease();
+          if (updateInfo && updateInfo.hasUpdate) {
+            mainWindow.webContents.send('updater:updateAvailable', updateInfo);
+          }
+        }
+      } catch (_) {}
+    }, 6 * 60 * 60 * 1000);
+  }
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
     console.error(`[Enlangg Studio] Failed to load ${validatedURL}: ${errorCode} - ${errorDescription}`);
@@ -793,7 +808,9 @@ ipcMain.handle('updater:installUpdate', async (event, payload = {}) => {
   }
 
   if (targetExe.toLowerCase().endsWith('.exe')) {
-    const child = spawn(targetExe, [], {
+    // /S installs silently over the current install folder; --updated --force-run make the
+    // installer reopen Studio by itself once the new files are in place.
+    const child = spawn(targetExe, ['/S', '--updated', '--force-run'], {
       detached: true,
       stdio: 'ignore'
     });

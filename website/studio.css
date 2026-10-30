@@ -760,9 +760,9 @@ html, body {
   height: 100%;
   padding: 10px 14px;
   margin: 0;
-  background: transparent !important;
-  color: transparent !important;
-  -webkit-text-fill-color: transparent !important;
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
   caret-color: #569cd6;
   font-family: var(--font-mono);
   font-size: 13px;
@@ -779,9 +779,9 @@ html, body {
 }
 
 .code-textarea::selection {
-  background: rgba(38, 79, 120, 0.65) !important;
-  color: transparent !important;
-  -webkit-text-fill-color: transparent !important;
+  background: rgba(38, 79, 120, 0.65);
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Syntax Highlighting Token Styles */
@@ -1411,22 +1411,22 @@ html, body {
   font-size: 11px;
   flex-shrink: 0;
   z-index: 100;
-  white-space: nowrap !important;
-  overflow: hidden !important;
+  white-space: nowrap;
+  overflow: hidden;
   line-height: 22px;
   user-select: none;
   border-top: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 .statusbar * {
-  white-space: nowrap !important;
+  white-space: nowrap;
 }
 
 .statusbar-left {
   display: flex;
   align-items: center;
   gap: 6px;
-  white-space: nowrap !important;
+  white-space: nowrap;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -1445,7 +1445,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 6px;
-  white-space: nowrap !important;
+  white-space: nowrap;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -1468,7 +1468,7 @@ html, body {
   border-radius: 2px;
   height: 20px;
   line-height: 20px;
-  white-space: nowrap !important;
+  white-space: nowrap;
   flex-shrink: 0;
   font-size: 11px;
 }
@@ -1480,7 +1480,7 @@ html, body {
 .statusbar-item span {
   display: inline-flex;
   align-items: center;
-  white-space: nowrap !important;
+  white-space: nowrap;
   line-height: 20px;
 }
 
@@ -4487,13 +4487,13 @@ html, body {
 }
 
 .update-badge {
-  background: #10b981 !important;
-  color: #000 !important;
-  font-weight: 800 !important;
-  font-size: 8.5px !important;
-  padding: 1px 5px !important;
-  border-radius: 4px !important;
-  letter-spacing: 0.5px !important;
+  background: #10b981;
+  color: #000;
+  font-weight: 800;
+  font-size: 8.5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
   animation: updateBadgePulse 1.8s infinite;
 }
@@ -4522,15 +4522,15 @@ html, body {
 
 /* Statusbar Update Item */
 .update-statusbar-item {
-  background: rgba(16, 185, 129, 0.12) !important;
+  background: rgba(16, 185, 129, 0.12);
   border-radius: 3px;
-  padding: 0 8px !important;
+  padding: 0 8px;
   transition: all 0.15s ease;
 }
 
 .update-statusbar-item:hover {
-  background: rgba(16, 185, 129, 0.22) !important;
-  color: #fff !important;
+  background: rgba(16, 185, 129, 0.22);
+  color: #fff;
 }
 
 /* Titlebar Update Button */
@@ -4553,9 +4553,9 @@ html, body {
 
 /* Update Modal Specifics */
 .update-modal-box {
-  background: #161618 !important;
-  border: 1px solid rgba(16, 185, 129, 0.3) !important;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7), 0 0 24px rgba(16, 185, 129, 0.15) !important;
+  background: #161618;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7), 0 0 24px rgba(16, 185, 129, 0.15);
 }
 
 .update-hero-banner {
@@ -4720,20 +4720,20 @@ html, body {
 }
 
 .update-go-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-  color: #fff !important;
-  font-weight: 700 !important;
-  border: none !important;
-  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3) !important;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 18px !important;
+  padding: 8px 18px;
 }
 
 .update-go-btn:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5) !important;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5);
   transform: translateY(-1px);
 }
 
@@ -5211,3 +5211,27 @@ html, body {
 
 
 
+
+/* Update pill states: busy while downloading/installing, steady once the update is ready */
+.update-titlebar-btn:disabled {
+  cursor: progress;
+  opacity: 0.85;
+}
+.update-titlebar-btn[data-state="downloading"],
+.update-titlebar-btn[data-state="installing"],
+.update-titlebar-btn[data-state="ready"] {
+  animation: none;
+}
+.update-titlebar-btn[data-state="ready"] {
+  background: rgba(16, 185, 129, 0.28);
+  border-color: rgba(16, 185, 129, 0.9);
+}
+.update-titlebar-btn[data-state="error"] {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.6);
+  background: rgba(245, 158, 11, 0.12);
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .update-titlebar-btn { animation: none; }
+}

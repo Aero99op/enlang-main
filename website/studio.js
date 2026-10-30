@@ -12594,12 +12594,85 @@ Provide code in fenced code blocks.`;
       settingsUpdateDot.style.display = 'block';
     }
 
-    // 2. Compact Titlebar button
-    const titlebarUpdateBtn = document.getElementById('titlebarUpdateBtn');
-    const titlebarUpdateText = document.getElementById('titlebarUpdateText');
-    if (titlebarUpdateBtn) {
-      titlebarUpdateBtn.style.display = 'inline-flex';
-      if (titlebarUpdateText) titlebarUpdateText.textContent = `Update v${ver}`;
+    // 2. Compact Titlebar button (one-click update)
+    if (studioUpdateState === 'idle' || studioUpdateState === 'available' || studioUpdateState === 'error') {
+      setPillState('available');
+    }
+  }
+
+  // Header pill: available -> downloading (n%) -> ready (restart) -> installing
+  let studioUpdateState = 'idle';
+  let studioUpdateDownload = null;
+
+  function setPillState(state, percent) {
+    studioUpdateState = state;
+    const btn = document.getElementById('titlebarUpdateBtn');
+    const text = document.getElementById('titlebarUpdateText');
+    if (!btn || !text) return;
+    const ver = (studioUpdateInfo && (studioUpdateInfo.latestVersion || studioUpdateInfo.tag)) || '';
+    btn.style.display = 'inline-flex';
+    btn.disabled = state === 'downloading' || state === 'installing';
+    btn.dataset.state = state;
+    if (state === 'available') {
+      text.textContent = `Update to v${ver}`;
+      btn.title = `Enlangg Studio v${ver} is available. Click to download it.`;
+    } else if (state === 'downloading') {
+      text.textContent = `Downloading ${percent || 0}%`;
+      btn.title = 'Downloading the update. Studio keeps working meanwhile.';
+    } else if (state === 'ready') {
+      text.textContent = `Restart to update (v${ver})`;
+      btn.title = 'Update downloaded and verified. Click to restart Studio on the new version.';
+    } else if (state === 'installing') {
+      text.textContent = 'Restarting...';
+      btn.title = 'Installing the update. Studio will reopen by itself.';
+    } else if (state === 'error') {
+      text.textContent = 'Update failed. Retry';
+      btn.title = 'The update could not be downloaded. Click to try again.';
+    }
+  }
+
+  async function onTitlebarUpdateClick() {
+    if (!studioUpdateInfo) return;
+    const api = window.EnlangElectron;
+    if (!(api && api.downloadUpdate && api.installUpdate)) {
+      openUpdateStudioModal();
+      return;
+    }
+    if (studioUpdateState === 'ready') {
+      await applyDownloadedUpdate();
+      return;
+    }
+    if (studioUpdateState !== 'available' && studioUpdateState !== 'error') return;
+
+    setPillState('downloading', 0);
+    const unsub = api.onDownloadProgress
+      ? api.onDownloadProgress((prog) => setPillState('downloading', prog.percent))
+      : null;
+    try {
+      studioUpdateDownload = await api.downloadUpdate({
+        downloadUrl: studioUpdateInfo.downloadUrl,
+        assetName: studioUpdateInfo.assetName,
+        expectedSha256: studioUpdateInfo.sha256 || studioUpdateInfo.checksum || null
+      });
+      setPillState('ready');
+      showStudioToast('Update downloaded and verified. Click "Restart to update" when you are ready.', null);
+    } catch (err) {
+      setPillState('error');
+      showStudioToast(`Update download failed: ${err.message}`, null);
+    } finally {
+      if (unsub) unsub();
+    }
+  }
+
+  async function applyDownloadedUpdate() {
+    if (!studioUpdateDownload) return;
+    if (!confirm('Studio will close and reopen on the new version. Save your open files first. Restart now?')) return;
+    setPillState('installing');
+    try {
+      await window.EnlangElectron.installUpdate({ filePath: studioUpdateDownload.filePath });
+    } catch (err) {
+      setPillState('ready');
+      showStudioToast(`Could not start the update: ${err.message}`, null);
     }
   }
 
@@ -12699,6 +12772,8 @@ Provide code in fenced code blocks.`;
         });
 
         if (progressUnsub) progressUnsub();
+        studioUpdateDownload = downloadRes;
+        setPillState('ready');
 
         if (progressStatus) progressStatus.textContent = 'Installer downloaded & verified! Ready to apply. 🚀';
         if (progressPercent) progressPercent.textContent = '100%';
@@ -12852,7 +12927,7 @@ Provide code in fenced code blocks.`;
     if (settingsUpdateDot) settingsUpdateDot.addEventListener('click', () => openUpdateStudioModal());
 
     const titlebarUpdateBtn = document.getElementById('titlebarUpdateBtn');
-    if (titlebarUpdateBtn) titlebarUpdateBtn.addEventListener('click', () => openUpdateStudioModal());
+    if (titlebarUpdateBtn) titlebarUpdateBtn.addEventListener('click', onTitlebarUpdateClick);
 
     const closeBtn = document.getElementById('closeUpdateModalBtn');
     if (closeBtn) closeBtn.addEventListener('click', closeUpdateStudioModal);
