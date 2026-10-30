@@ -6,6 +6,7 @@
  */
 
 #include "enlng_codegen.h"
+#include "enlangg_version.h"
 #include <stdarg.h>
 
 void codegen_init(CodeGen *cg) {
@@ -902,7 +903,7 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
            "==================================================================="
            "== */\n");
   emit(cg, "/*  NATIVE C99 EXECUTABLE - COMPILED BY ENLANG SOVEREIGN COMPILER "
-           "v4.0.0 */\n");
+           "v%s */\n", ENLNG_VERSION);
   emit(cg, "/* "
            "==================================================================="
            "== */\n\n");

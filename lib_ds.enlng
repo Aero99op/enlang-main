@@ -470,9 +470,15 @@ action trie_starts_with(root, prefix):
 action create_lru_cache(capacity):
     return { "capacity": capacity, "store": {}, "order": [] }
 
+action lru_has(lru, key):
+    for k in lru.order:
+        when k == key:
+            return true
+    return false
+
 action lru_get(lru, key):
     st = lru.store
-    when not has_key(st, key):
+    when not lru_has(lru, key):
         return null
     val = st[key]
     # Move key to end of order (most recently used)
@@ -487,7 +493,7 @@ action lru_get(lru, key):
 
 action lru_put(lru, key, val):
     st = lru.store
-    when has_key(st, key):
+    when lru_has(lru, key):
         st[key] = val
         lru.store = st
         lru_get(lru, key)

@@ -9,7 +9,18 @@ type enlng
 # ---------------------------------------------------------------------
 # URL Parsing & Composition
 # ---------------------------------------------------------------------
-action parse_url(url):
+action parse_url(full_url):
+    url = full_url
+    fragment = ""
+    hash_idx = 0 - 1
+    for i from 0 to len(full_url) - 1:
+        when "" + full_url[i] == "#" and hash_idx < 0:
+            hash_idx = i
+            url = ""
+            for j from 0 to i - 1:
+                url = url + full_url[j]
+            for j from i + 1 to len(full_url) - 1:
+                fragment = fragment + full_url[j]
     proto = "http"
     rest = url
     n = len(url)
@@ -74,7 +85,7 @@ action parse_url(url):
         for i from q_mark_idx + 1 to pq_len - 1:
             query = query + path_query[i]
 
-    return { "protocol": proto, "host": host, "port": port, "path": path, "query": query }
+    return { "protocol": proto, "host": host, "port": port, "path": path, "query": query, "fragment": fragment }
 
 action build_url(url_obj):
     res = url_obj.protocol + "://" + url_obj.host
@@ -86,6 +97,8 @@ action build_url(url_obj):
     res = res + url_obj.path
     when len(url_obj.query) > 0:
         res = res + "?" + url_obj.query
+    when has_key(url_obj, "fragment") and len(url_obj.fragment) > 0:
+        res = res + "#" + url_obj.fragment
     return res
 
 # ---------------------------------------------------------------------
