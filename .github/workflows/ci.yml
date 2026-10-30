@@ -499,3 +499,58 @@ jobs:
             Write-Host "::error title=Setup test failed::$tail"
             exit 1
           }
+
+  build-posix-installer:
+    needs: [build-linux-x86_64, build-linux-aarch64, build-macos]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download platform archives
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Build enlangg-install.sh (Linux + macOS installer)
+        run: |
+          set -euo pipefail
+          sh installer/posix/make_installer.sh "$TOOLCHAIN_VERSION" enlangg-install.sh \
+            linux-x86_64=enlangg-linux-x86_64.tar.gz \
+            linux-aarch64=enlangg-linux-aarch64.tar.gz \
+            macos=enlangg-macos-universal.tar.gz
+          ls -l enlangg-install.sh
+
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: enlangg-install-sh
+          path: enlangg-install.sh
+
+  test-posix-installer:
+    needs: [build-posix-installer]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Installer Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: enlangg-install-sh
+
+      - name: Test installer (install, PATH, upgrade, uninstall, damaged file)
+        run: |
+          set +e
+          sh tests/test_posix_installer.sh "$PWD/enlangg-install.sh" "$TOOLCHAIN_VERSION" > posix-test.log 2>&1
+          code=$?
+          cat posix-test.log
+          if [ "$code" -ne 0 ]; then
+            tail="$(grep -E '^FAIL|passed,|Error|rror:' posix-test.log | tail -40 | awk '{printf "%s%%0A", $0}')"
+            echo "::error title=POSIX installer test failed on ${{ matrix.os }}::$tail"
+            exit 1
+          fi

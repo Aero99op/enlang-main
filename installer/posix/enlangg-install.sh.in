@@ -1,0 +1,350 @@
+#!/bin/sh
+# Enlangg installer for Linux and macOS (self-extracting).
+# Toolchain version @VERSION@.
+#
+#   sh enlangg-install.sh [--prefix DIR] [--no-path] [--uninstall] [--help]
+#
+# Installs enlangg, enlng, enlngdb, enlngf, enlngd, enlngs and enlngm into
+# DIR/bin (default ~/.enlangg), with the standard library in DIR/lib. It never
+# needs root. Everything it writes is listed in DIR/install.manifest, and
+# `sh DIR/uninstall.sh` removes exactly that list again.
+#
+# The program archives for each platform are appended after the marker line at
+# the bottom of this file. This is a shell script on top and a binary below.
+
+LC_ALL=C
+export LC_ALL
+set -u
+
+VERSION="@VERSION@"
+MARK="# >>> enlangg >>>"
+MARK_END="# <<< enlangg <<<"
+MANIFEST_HDR="enlangg-install-manifest 1"
+TOOLS="enlangg enlng enlngdb enlngf enlngd enlngs enlngm"
+SELF="$0"
+
+if [ -t 1 ]; then
+    B=$(printf '\033[1m'); G=$(printf '\033[32m'); Y=$(printf '\033[33m')
+    R=$(printf '\033[31m'); N=$(printf '\033[0m')
+else
+    B=""; G=""; Y=""; R=""; N=""
+fi
+
+say()  { printf '%s\n' "$*"; }
+warn() { printf '%sWarning:%s %s\n' "$Y" "$N" "$*" >&2; }
+die()  { printf '%sError:%s %s\n' "$R" "$N" "$*" >&2; exit 1; }
+
+usage() {
+    cat <<EOF
+Enlangg installer $VERSION for Linux and macOS
+
+Usage: sh enlangg-install.sh [options]
+
+  --prefix DIR   install into DIR (default: \$HOME/.enlangg)
+  --no-path      do not add DIR/bin to your shell startup files
+  --uninstall    remove an existing install (same as: sh DIR/uninstall.sh)
+  --version      print the installer version
+  --help         show this help
+
+Installs enlangg, enlng, enlngdb, enlngf, enlngd, enlngs and enlngm. No root
+needed. enlng also needs a C compiler (gcc, clang or cc) when you run programs.
+EOF
+}
+
+# ---------------------------------------------------------------- arguments
+MODE=install
+PREFIX=""
+DO_PATH=1
+
+case "$(basename "$SELF")" in
+    uninstall.sh) MODE=uninstall; PREFIX=$(cd "$(dirname "$SELF")" && pwd) ;;
+esac
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --prefix)
+            [ $# -ge 2 ] || die "--prefix needs a folder, for example: --prefix \$HOME/enlangg"
+            PREFIX=$2; shift 2 ;;
+        --prefix=*) PREFIX=${1#--prefix=}; shift ;;
+        --no-path) DO_PATH=0; shift ;;
+        --uninstall) MODE=uninstall; shift ;;
+        -y|--yes) shift ;;
+        --version) say "enlangg installer $VERSION"; exit 0 ;;
+        -h|--help) usage; exit 0 ;;
+        *) die "unknown option '$1' (try --help)" ;;
+    esac
+done
+
+[ -n "${HOME:-}" ] && [ -d "$HOME" ] || die "HOME is not set to a folder, so there is nowhere to install to."
+[ -n "$PREFIX" ] || PREFIX="$HOME/.enlangg"
+
+check_prefix() {
+    case "$PREFIX" in
+        /*) ;;
+        *) die "the install folder must be an absolute path (got '$PREFIX')." ;;
+    esac
+    case "$PREFIX" in
+        *[!A-Za-z0-9_./+@%:,=~\ -]*)
+            die "the install folder '$PREFIX' has characters that are not allowed. Use letters, digits, spaces and . _ - + @ % : , = ~ / only." ;;
+    esac
+    [ "$PREFIX" != "/" ] || die "refusing to install into the filesystem root."
+    case "$PREFIX/" in
+        *"/../"*|*"/./"*|*"//"*) die "the install folder must not contain '.', '..' or empty parts ('$PREFIX')." ;;
+    esac
+    while [ "${PREFIX%/}" != "$PREFIX" ] && [ -n "${PREFIX%/}" ]; do PREFIX=${PREFIX%/}; done
+    [ "$PREFIX" != "$HOME" ] || die "refusing to install straight into your home folder. Try: --prefix $HOME/.enlangg"
+    slashes=$(printf '%s' "$PREFIX" | tr -cd '/')
+    [ "${#slashes}" -ge 2 ] || die "'$PREFIX' is too close to the filesystem root. Pick a folder of your own, for example $HOME/.enlangg"
+}
+
+# ----------------------------------------------------------------- manifest
+manifest_ok() {
+    [ -f "$PREFIX/install.manifest" ] || return 1
+    [ "$(sed -n 1p "$PREFIX/install.manifest")" = "$MANIFEST_HDR" ] || return 1
+    [ "$(sed -n 2p "$PREFIX/install.manifest")" = "prefix=$PREFIX" ] || return 1
+}
+
+# Delete every file named in the manifest, then any folders left empty.
+remove_listed() {
+    tail -n +3 "$PREFIX/install.manifest" | while IFS= read -r rel; do
+        [ -n "$rel" ] || continue
+        case "$rel" in
+            /*|*..*|*\\*) continue ;;
+        esac
+        rm -f "$PREFIX/$rel"
+    done
+    rm -f "$PREFIX/install.manifest" "$PREFIX/uninstall.sh"
+    find "$PREFIX" -mindepth 1 -depth -type d -empty -exec rmdir {} \; 2>/dev/null
+    return 0
+}
+
+# --------------------------------------------------------------- PATH edits
+RC_NAMES=".zshrc .bashrc .profile .bash_profile .zprofile"
+
+# Remove our marked block (and the one blank line we put in front of it).
+# $2 = "any" strips whatever prefix it points at, otherwise only blocks for $BIN.
+strip_block() {
+    f=$1
+    [ -f "$f" ] || return 0
+    grep -qF "$MARK" "$f" 2>/dev/null || return 0
+    if ! grep -qF "$MARK_END" "$f"; then
+        warn "$f has an Enlangg start marker but no end marker; left it alone. Remove the lines by hand."
+        return 0
+    fi
+    if [ "${2:-}" != "any" ] && ! grep -qF "export PATH=\"$BIN:" "$f"; then
+        return 0
+    fi
+    tmp=$(mktemp "${TMPDIR:-/tmp}/enlangg-rc.XXXXXX") || return 1
+    awk -v s="$MARK" -v e="$MARK_END" '
+        $0 == s { skip = 1; pend = 0; next }
+        skip    { if ($0 == e) skip = 0; next }
+        { if (pend) { print ""; pend = 0 } if ($0 == "") pend = 1; else print }
+        END { if (pend) print "" }
+    ' "$f" > "$tmp" && cat "$tmp" > "$f"
+    rm -f "$tmp"
+    [ -s "$f" ] || rm -f "$f"
+    return 0
+}
+
+add_block() {
+    f=$1
+    strip_block "$f" any
+    if [ -s "$f" ] && [ -n "$(tail -c 1 "$f")" ]; then printf '\n' >> "$f"; fi
+    {
+        printf '\n%s\n' "$MARK"
+        printf '%s\n' "# Added by the Enlangg installer. To undo: sh \"$PREFIX/uninstall.sh\""
+        printf 'case ":$PATH:" in *":%s:"*) ;; *) export PATH="%s:$PATH" ;; esac\n' "$BIN" "$BIN"
+        printf '%s\n' "$MARK_END"
+    } >> "$f"
+}
+
+path_add() {
+    changed=""
+    for n in $RC_NAMES; do
+        if [ -f "$HOME/$n" ]; then add_block "$HOME/$n"; changed="$changed $n"; fi
+    done
+    case "${SHELL:-}" in
+        */zsh) if [ ! -f "$HOME/.zshrc" ]; then add_block "$HOME/.zshrc"; changed="$changed .zshrc"; fi ;;
+    esac
+    if [ -z "$changed" ]; then
+        add_block "$HOME/.profile"; changed=" .profile"
+    fi
+    if [ -d "$HOME/.config/fish" ]; then
+        mkdir -p "$HOME/.config/fish/conf.d"
+        {
+            printf '%s\n' "# Added by the Enlangg installer. To undo: sh \"$PREFIX/uninstall.sh\""
+            printf 'if not contains -- "%s" $PATH\n    set -gx PATH "%s" $PATH\nend\n' "$BIN" "$BIN"
+        } > "$HOME/.config/fish/conf.d/enlangg.fish"
+        changed="$changed fish"
+    fi
+    PATH_FILES=$changed
+}
+
+path_remove() {
+    for n in $RC_NAMES; do strip_block "$HOME/$n"; done
+    fish="$HOME/.config/fish/conf.d/enlangg.fish"
+    if [ -f "$fish" ] && grep -qF "Added by the Enlangg installer" "$fish" && grep -qF "$BIN" "$fish"; then
+        rm -f "$fish"
+    fi
+}
+
+# ------------------------------------------------------------------ payload
+detect_target() {
+    if [ -n "${ENLANGG_INSTALL_TARGET:-}" ]; then TARGET=$ENLANGG_INSTALL_TARGET; return; fi
+    os=$(uname -s); mach=$(uname -m)
+    case "$os" in
+        Linux)
+            case "$mach" in
+                x86_64|amd64) TARGET=linux-x86_64 ;;
+                aarch64|arm64) TARGET=linux-aarch64 ;;
+                *) die "this installer has no build for Linux on '$mach'. Build from source instead: https://enlangg.site/install" ;;
+            esac ;;
+        Darwin) TARGET=macos ;;
+        *) die "this installer is for Linux and macOS (this is '$os'). On Windows, use enlangg-setup.exe from https://enlangg.site" ;;
+    esac
+}
+
+payload_entry() {
+    line=$(awk -v k="$1" '/^__ENLANGG_PAYLOAD__$/ { exit } $1 == "#@PAYLOAD" && $2 == k { print $3, $4, $5; exit }' "$SELF")
+    [ -n "$line" ] || return 1
+    set -- $line
+    P_OFF=$1; P_SIZE=$2; P_SHA=$3
+}
+
+payload_stream() {
+    tail -n +"$PAYLOAD_LINE" "$SELF" | tail -c +"$((P_OFF + 1))" | head -c "$P_SIZE"
+}
+
+sha256_stream() {
+    if command -v sha256sum >/dev/null 2>&1; then sha256sum | awk '{ print $1 }'
+    elif command -v shasum >/dev/null 2>&1; then shasum -a 256 | awk '{ print $1 }'
+    else return 1
+    fi
+}
+
+find_cc() {
+    for c in gcc cc clang; do
+        if command -v "$c" >/dev/null 2>&1; then CC_FOUND=$c; return 0; fi
+    done
+    return 1
+}
+
+# ------------------------------------------------------------------ install
+do_install() {
+    check_prefix
+    BIN="$PREFIX/bin"
+    [ -f "$SELF" ] || die "this installer has to be saved to a file first. Download enlangg-install.sh, then run: sh enlangg-install.sh"
+    PAYLOAD_LINE=$(awk '/^__ENLANGG_PAYLOAD__$/ { print NR + 1; exit }' "$SELF")
+    [ -n "$PAYLOAD_LINE" ] || die "this copy of the installer has no program files in it (it may be the small uninstall.sh). Download enlangg-install.sh again."
+
+    detect_target
+    payload_entry "$TARGET" || die "this installer has no build for '$TARGET'."
+
+    say "${B}Enlangg $VERSION${N}  ($TARGET)"
+    say "Installing to $PREFIX"
+
+    got=$(payload_stream | sha256_stream) || got=""
+    if [ -z "$got" ]; then
+        warn "no sha256sum or shasum found; skipped the integrity check."
+    elif [ "$got" != "$P_SHA" ]; then
+        die "this installer is damaged (checksum mismatch). Download enlangg-install.sh again and compare it with SHA256SUMS."
+    else
+        say "  checked download integrity"
+    fi
+
+    stage=$(mktemp -d "${TMPDIR:-/tmp}/enlangg-setup.XXXXXX") || die "could not create a temporary folder."
+    trap 'rm -rf "$stage"' EXIT
+    trap 'exit 1' INT TERM HUP
+    payload_stream | tar -xzf - -C "$stage" || die "could not unpack the program files."
+    for t in $TOOLS; do
+        [ -x "$stage/bin/$t" ] || die "the installer is missing $t; refusing to install a partial toolchain."
+    done
+    "$stage/bin/enlng" --version >/dev/null 2>&1 \
+        || die "the unpacked enlng does not run on this machine ($(uname -s) $(uname -m)). Build from source instead: https://enlangg.site/install"
+
+    mkdir -p "$PREFIX" 2>/dev/null || die "could not create $PREFIX. Pick a folder you own with --prefix."
+    [ -w "$PREFIX" ] || die "$PREFIX is not writable. Pick a folder you own with --prefix."
+
+    if manifest_ok; then
+        say "  replacing the existing install"
+        remove_listed
+    elif [ -f "$PREFIX/install.manifest" ]; then
+        warn "$PREFIX/install.manifest is not from this installer; leaving old files alone."
+    fi
+
+    (cd "$stage" && tar -cf - .) | (cd "$PREFIX" && tar -xf -) || die "could not copy files into $PREFIX."
+    for t in $TOOLS; do chmod 755 "$BIN/$t"; done
+
+    {
+        printf '%s\nprefix=%s\n' "$MANIFEST_HDR" "$PREFIX"
+        (cd "$stage" && find . -type f | sed 's|^\./||' | sort)
+        printf 'uninstall.sh\n'
+    } > "$PREFIX/install.manifest"
+    awk '{ print } /^__ENLANGG_PAYLOAD__$/ { exit }' "$SELF" > "$PREFIX/uninstall.sh"
+    chmod 755 "$PREFIX/uninstall.sh"
+    say "  copied $(($(wc -l < "$PREFIX/install.manifest") - 3)) files"
+
+    PATH_FILES=""
+    if [ "$DO_PATH" -eq 1 ]; then
+        path_add
+        say "  added $BIN to PATH in:$PATH_FILES"
+    else
+        say "  left your shell startup files alone (--no-path)"
+    fi
+
+    bad=0
+    for t in $TOOLS; do
+        out=$("$BIN/$t" --version 2>&1) || out=""
+        case "$out" in
+            *"$VERSION"*) ;;
+            *) warn "$t did not report version $VERSION (got '$out')"; bad=1 ;;
+        esac
+    done
+    [ "$bad" -eq 0 ] || die "the installed tools did not pass the version check."
+    say "  checked all 7 tools report $VERSION"
+
+    say ""
+    say "${G}${B}Enlangg is installed.${N}"
+    if [ "$DO_PATH" -eq 1 ]; then
+        say "Open a new terminal, then try:"
+    else
+        say "Add this to your PATH to use it anywhere: $BIN"
+        say "Or try it right now:"
+    fi
+    say "  enlangg --version"
+    if ! find_cc; then
+        say ""
+        warn "no C compiler found. enlng turns programs into C and needs one to run them."
+        if [ "$(uname -s)" = "Darwin" ]; then
+            say "  Install the Apple command line tools with:  xcode-select --install"
+        else
+            say "  Debian/Ubuntu:  sudo apt install gcc      Fedora:  sudo dnf install gcc"
+            say "  Arch:           sudo pacman -S gcc        Alpine:  sudo apk add gcc musl-dev"
+        fi
+    fi
+    say ""
+    say "To remove it later:  sh \"$PREFIX/uninstall.sh\""
+}
+
+do_uninstall() {
+    check_prefix
+    BIN="$PREFIX/bin"
+    manifest_ok || die "'$PREFIX' does not look like an Enlangg install (no matching install.manifest), so nothing was removed."
+    remove_listed
+    rmdir "$PREFIX" 2>/dev/null
+    path_remove
+    say "${G}Enlangg removed from $PREFIX${N}"
+    if [ -d "$PREFIX" ]; then
+        say "Kept $PREFIX because it still holds files that are not part of Enlangg."
+    fi
+    say "Open a new terminal for the PATH change to take effect."
+}
+
+main() {
+    if [ "$MODE" = "uninstall" ]; then do_uninstall; else do_install; fi
+}
+
+main "$@"
+exit $?
+#@TABLE@
+__ENLANGG_PAYLOAD__
