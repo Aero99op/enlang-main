@@ -1,7 +1,7 @@
 {
   "name": "enlangg-studio",
   "productName": "Enlangg Studio",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "Sovereign Native Desktop IDE for Enlang Ecosystem",
   "main": "main.js",
   "scripts": {
