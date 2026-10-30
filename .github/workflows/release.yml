@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  TOOLCHAIN_VERSION: "5.5.0"
+  TOOLCHAIN_VERSION: "5.5.1"
 
 jobs:
   build-windows:
