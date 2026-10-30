@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  TOOLCHAIN_VERSION: "5.4.2"
+  TOOLCHAIN_VERSION: "5.5.0"
 
 jobs:
   build-windows:
@@ -116,7 +116,7 @@ jobs:
           mkdir -p "$PKG_ROOT/bin" "$PKG_ROOT/lib" "$PKG_ROOT/include"
 
           gcc -O2 -s -static -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o "$PKG_ROOT/bin/enlangg"
-          gcc -O2 -s -static -I. -Isrc enlng.c -lm -o "$PKG_ROOT/bin/enlng"
+          gcc -O2 -s -static -I. -Isrc enlng.c -lm -pthread -o "$PKG_ROOT/bin/enlng"
           gcc -O2 -s -static -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o "$PKG_ROOT/bin/enlngdb"
           gcc -O2 -s -static -I. -Isrc -Ienlngf/c enlngf.c -lm -o "$PKG_ROOT/bin/enlngf"
           gcc -O2 -s -static -I. -Isrc -Ienlngs/c enlngs.c -lm -o "$PKG_ROOT/bin/enlngs"
@@ -191,6 +191,18 @@ jobs:
           export PATH="$OLD_PATH"
 
           rm -rf "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
+
+      - name: Interpreter runs with no C compiler, and matches the native path
+        run: |
+          set -euo pipefail
+          PAR=/tmp/enlangg-parity
+          rm -rf "$PAR"; mkdir -p "$PAR"
+          tar -xzf enlangg-linux-x86_64.tar.gz -C "$PAR"
+          printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > "$PAR/smoke.enlng"
+          res=$(env -i PATH=/nonexistent "$PAR/bin/enlng" run "$PAR/smoke.enlng")
+          echo "no-compiler run -> $res"
+          [ "$res" = "144" ]
+          python3 tests/test_interp_parity.py "$PAR/bin/enlng"
 
       - name: Upload Linux x86_64 Artifact
         uses: actions/upload-artifact@v4
@@ -312,7 +324,7 @@ jobs:
 
           CC_ARM="aarch64-linux-gnu-gcc"
           $CC_ARM -O2 -s -static -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o "$PKG_ROOT/bin/enlangg"
-          $CC_ARM -O2 -s -static -I. -Isrc enlng.c -lm -o "$PKG_ROOT/bin/enlng"
+          $CC_ARM -O2 -s -static -I. -Isrc enlng.c -lm -pthread -o "$PKG_ROOT/bin/enlng"
           $CC_ARM -O2 -s -static -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o "$PKG_ROOT/bin/enlngdb"
           $CC_ARM -O2 -s -static -I. -Isrc -Ienlngf/c enlngf.c -lm -o "$PKG_ROOT/bin/enlngf"
           $CC_ARM -O2 -s -static -I. -Isrc -Ienlngs/c enlngs.c -lm -o "$PKG_ROOT/bin/enlngs"
@@ -422,6 +434,18 @@ jobs:
           export PATH="$OLD_PATH"
 
           rm -rf "$VERIFY_DIR" "$WORK_DIR" "$FAKE_PATH"
+
+      - name: Interpreter runs with no C compiler, and matches the native path
+        run: |
+          set -euo pipefail
+          PAR=/tmp/enlangg-parity
+          rm -rf "$PAR"; mkdir -p "$PAR"
+          tar -xzf enlangg-macos-universal.tar.gz -C "$PAR"
+          printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > "$PAR/smoke.enlng"
+          res=$(env -i PATH=/nonexistent "$PAR/bin/enlng" run "$PAR/smoke.enlng")
+          echo "no-compiler run -> $res"
+          [ "$res" = "144" ]
+          python3 tests/test_interp_parity.py "$PAR/bin/enlng"
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
@@ -571,9 +595,9 @@ jobs:
 
             > **Integrity vs. Authenticity Notice**: The published `SHA256SUMS` file checks download integrity (protecting against corrupted or incomplete downloads), not author authenticity. Installers in this release are unsigned.
 
-            ### Included Tools (Pure C 7-in-1 Toolchain — v5.4.2):
+            ### Included Tools (Pure C 7-in-1 Toolchain — v5.5.0):
             - `enlangg` — Master toolchain dispatcher
-            - `enlng` — Core general-purpose C99 compiler (`gcc` required at runtime)
+            - `enlng` — Core language: runs programs with a built-in interpreter, no C compiler needed (`enlng build` makes native executables and needs `gcc`)
             - `enlngdb` — Embedded `.edb` database engine
             - `enlngf` — Frontend markup compiler & HTTP server
             - `enlngs` — Reactive fullstack script engine

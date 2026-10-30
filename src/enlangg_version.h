@@ -28,7 +28,7 @@
 #endif
 
 /* Unified Toolchain Version (Independent of Enlangg Studio IDE Version) */
-#define ENLANGG_VERSION "5.4.2"
+#define ENLANGG_VERSION "5.5.0"
 
 #define ENLNG_VERSION   ENLANGG_VERSION
 #define ENLNGDB_VERSION ENLANGG_VERSION

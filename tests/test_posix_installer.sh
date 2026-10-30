@@ -58,12 +58,9 @@ yes_if "sourcing .bashrc puts enlangg on PATH" test "$res" = "$want"
 # the installed toolchain works from a clean directory
 mkdir -p "$T/work"; cd "$T/work" || exit 1
 printf 'type enlng\nuse "lib_math.enlng"\nshow square(12)\n' > smoke.enlng
-if command -v gcc >/dev/null 2>&1 || command -v cc >/dev/null 2>&1 || command -v clang >/dev/null 2>&1; then
-    out=$("$P/bin/enlangg" run smoke.enlng 2>&1)
-    yes_if "enlangg run smoke.enlng -> 144" test "$out" = "144"
-else
-    echo "SKIP  enlangg run (no C compiler on this machine)"
-fi
+# no C compiler is reachable here (PATH is empty), so this proves the built-in interpreter runs it
+out=$(env -i HOME="$HOME" PATH=/nonexistent "$P/bin/enlangg" run smoke.enlng 2>&1)
+yes_if "enlangg run smoke.enlng -> 144 with no compiler on PATH" test "$out" = "144"
 
 # --- reinstall is idempotent, removes stale files
 echo x > "$P/lib/stale.enlng"; echo "lib/stale.enlng" >> "$P/install.manifest"

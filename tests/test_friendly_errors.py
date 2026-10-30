@@ -42,8 +42,8 @@ def write(path, text):
         f.write(text)
 
 
-def run(cmd, cwd):
-    p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+def run(cmd, cwd, env=None):
+    p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=env)
     return p.stdout, p.stderr
 
 
@@ -69,6 +69,24 @@ def main():
               'type enlng\n\nremember total as 0\nfor i from 1 to 3 by 1:\n    total increases by i\ndisplay "sum" total\n')
         out, err = run([enlng, "run", "c.enlng"], work)
         check("enlng: valid program unaffected", out.strip() == "sum 6" and err.strip() == "", out + err)
+
+        # ---- enlng interpreter: no compiler needed, runtime errors are readable
+        no_cc = dict(os.environ, PATH=os.path.join(tmp, "empty-path"))
+        out, err = run([enlng, "run", "c.enlng"], work, env=no_cc)
+        check("enlng: runs with no C compiler on PATH", out.strip() == "sum 6" and err.strip() == "", out + err)
+
+        write(os.path.join(work, "rt1.enlng"), "type enlng\n\nshow 1\nshow nope\n")
+        out, err = run([enlng, "run", "rt1.enlng"], work, env=no_cc)
+        check("enlng: undefined name is a RuntimeError with the line", "RuntimeError" in err and "rt1.enlng:4" in err and "I don't know a name 'nope'" in err, err)
+        check("enlng: output before the error is kept", out.strip() == "1", out)
+
+        write(os.path.join(work, "rt2.enlng"), "type enlng\n\naction f(x):\n    return x\n\nshow f(1, 2)\n")
+        out, err = run([enlng, "run", "rt2.enlng"], work, env=no_cc)
+        check("enlng: wrong number of inputs is explained", "'f' needs 1 input but was given 2" in err, err)
+
+        write(os.path.join(work, "rt3.enlng"), "type enlng\n\naction loop(n):\n    return loop(n + 1)\n\nshow loop(1)\n")
+        out, err = run([enlng, "run", "rt3.enlng"], work, env=no_cc)
+        check("enlng: runaway recursion stops with a message", "called itself too many times" in err, err)
 
         # ---- enlngdb
         write(os.path.join(work, "add.enlngdb"),

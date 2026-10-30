@@ -1,0 +1,23 @@
+type enlng
+
+remember words as split "a,b,c" by ","
+show words
+show join words with "-"
+remember nums as [4, 8, 15, 16, 23, 42]
+show sum of nums
+show max of nums
+show nums[0] nums[2]
+nums[1] = 100
+show nums
+sort nums descending
+show nums
+reverse nums
+show nums
+remember total as 0
+for each v in nums:
+    total increases by v
+show total
+remember t as 0
+while t < 3:
+    t increases by 1
+show t

@@ -59,7 +59,8 @@ static void print_banner(void) {
 static void print_help(void) {
     print_banner();
     printf("Usage:\n");
-    printf("  enlng run <file.enlng>              Compile and execute immediately\n");
+    printf("  enlng run <file.enlng>              Run immediately (built-in interpreter, no C compiler needed)\n");
+    printf("  enlng run --native <file.enlng>     Compile with gcc, then run (faster for heavy programs)\n");
     printf("  enlng build <file.enlng> -o <out>   Compile to standalone native executable (.exe)\n");
     printf("  enlng emit-c <file.enlng>           Emit generated ANSI C99 source code to stdout\n");
     printf("  enlng <file.enlng>                  Direct run\n");
@@ -197,9 +198,13 @@ int main(int argc, char* argv[]) {
     const char* input_file = NULL;
     const char* output_exe = NULL;
 
+    int native = 0;
     if (strcmp(argv[1], "run") == 0) {
-        if (argc < 3) { fprintf(stderr, "[ENLANG ERROR] Missing file for 'run'.\n"); return 1; }
-        input_file = argv[2];
+        for (int ai = 2; ai < argc; ai++) {
+            if (strcmp(argv[ai], "--native") == 0 || strcmp(argv[ai], "--compile") == 0) native = 1;
+            else if (!input_file) input_file = argv[ai];
+        }
+        if (!input_file) { fprintf(stderr, "[ENLANG ERROR] Missing file for 'run'.\n"); return 1; }
     } else if (strcmp(argv[1], "emit-c") == 0) {
         if (argc < 3) { fprintf(stderr, "[ENLANG ERROR] Missing file for 'emit-c'.\n"); return 1; }
         mode = "emit-c";
@@ -238,6 +243,14 @@ int main(int argc, char* argv[]) {
         lexer_free(&lexer);
         free(source);
         return 1;
+    }
+
+    /* 3a. Default `run`: interpret directly, no C compiler involved */
+    if (strcmp(mode, "run") == 0 && !native) {
+        int rc = enlng_interp_run(prog, input_file, source);
+        lexer_free(&lexer);
+        free(source);
+        return rc;
     }
 
     /* 3. Code Generation (Pure C99) */

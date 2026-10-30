@@ -499,7 +499,7 @@
           </div>
           <div class="hero-feat-item">
             <span class="hero-feat-check">✓</span>
-            <span>No Node.js or Python required (compiling .enlng needs gcc)</span>
+            <span>No Node.js, Python or C compiler required to run .enlng</span>
           </div>
         </div>
       </div>
@@ -581,7 +581,7 @@
           <span class="install-card-tag">Lightweight Terminal Toolchain</span>
           <h3 class="install-card-title">All-in-One CLI Suite</h3>
           <p class="install-card-desc">
-            Ultra-compact installer that places the 7 domain compilers (<code>enlng</code>, <code>enlngdb</code>, <code>enlngf</code>, <code>enlngd</code>, <code>enlngs</code>, <code>enlngm</code>, <code>enlangg</code>) into <code>%LOCALAPPDATA%\Programs\Enlangg</code> for your user account (no administrator rights), adds them to your PATH and can also fetch Enlangg Studio. The compilers need <code>gcc</code> (MinGW-w64 or MSYS2) installed separately; Setup tells you if it is missing.
+            Ultra-compact installer that places the 7 domain compilers (<code>enlng</code>, <code>enlngdb</code>, <code>enlngf</code>, <code>enlngd</code>, <code>enlngs</code>, <code>enlngm</code>, <code>enlangg</code>) into <code>%LOCALAPPDATA%\Programs\Enlangg</code> for your user account (no administrator rights), adds them to your PATH and can also fetch Enlangg Studio. Programs run with the built-in interpreter, so no C compiler is needed. Only <code>enlng build</code> (standalone .exe files) needs <code>gcc</code> (MinGW-w64 or MSYS2).
           </p>
           <div class="install-specs-box">
             Package: enlangg-setup.exe<br>
@@ -632,7 +632,7 @@
           <div class="code-block-body" id="macScript">sh enlangg-install.sh</div>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px;">
-          The compilers need a C compiler: if <code>gcc --version</code> fails, run <code>xcode-select --install</code>. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The installer is unsigned. It runs through <code>sh</code>, so Gatekeeper does not block it. The macOS build is checked in CI but has not been tested on every macOS version. Prefer to compile it yourself? See <em>Compile from Source</em>.
+          Programs run with the built-in interpreter, so no C compiler is needed. For <code>enlng build</code> (standalone executables) install one with <code>xcode-select --install</code>. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The installer is unsigned. It runs through <code>sh</code>, so Gatekeeper does not block it. The macOS build is checked in CI but has not been tested on every macOS version. Prefer to compile it yourself? See <em>Compile from Source</em>.
         </p>
       </div>
     </section>
@@ -667,7 +667,7 @@
           <div class="code-block-body" id="linuxScript">sh enlangg-install.sh</div>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px;">
-          The compilers need a C compiler. Install one with the prerequisites below. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The installer checks its own SHA-256 before writing anything. The aarch64 build is cross-compiled in CI and has not been run on real ARM hardware. Prefer to compile it yourself? See <em>Compile from Source</em>.
+          Programs run with the built-in interpreter, so no C compiler is needed. For <code>enlng build</code> (standalone executables) install one with the prerequisites below. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The installer checks its own SHA-256 before writing anything. The aarch64 build is cross-compiled in CI and has not been run on real ARM hardware. Prefer to compile it yourself? See <em>Compile from Source</em>.
         </p>
         <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">Package Manager Prerequisites:</h4>
         <div class="table-responsive">
@@ -869,7 +869,7 @@ enlangg --version</div>
           <tr>
             <td><strong>Dependencies</strong></td>
             <td>None (100% Offline)</td>
-            <td>gcc (MinGW-w64 or MSYS2) to compile .enlng</td>
+            <td>Nothing for <code>enlng run</code>; gcc only for <code>enlng build</code></td>
             <td>Python 3.8+</td>
             <td>GCC, Clang, or MSVC</td>
           </tr>

@@ -548,7 +548,7 @@ static int do_install(void) {
     reg_dw(REG_UNINSTALL, L"EstimatedSize", 3072);
 
     if (find_gcc(gccpath)) say(L"gcc found: %ls", gccpath);
-    else say(L"NOTE: gcc was not found on your PATH. 'enlng' compiles programs with gcc, so install a gcc (for example MinGW-w64 or MSYS2) and make sure 'gcc' works in a new terminal.");
+    else say(L"gcc was not found. That is fine: 'enlng run' has a built-in interpreter. Only 'enlng build' and 'enlng run --native' need gcc (for example MinGW-w64 or MSYS2).");
 
     wchar_t other[MAX_PATH];
     if (SearchPathW(NULL, L"enlangg", L".exe", MAX_PATH, other, NULL)) {
@@ -684,7 +684,7 @@ static LRESULT CALLBACK wndproc(HWND h, UINT m, WPARAM w, LPARAM l) {
         SendMessageW(c1, BM_SETCHECK, BST_CHECKED, 0);
         SendMessageW(c2, BM_SETCHECK, BST_CHECKED, 0);
         SendMessageW(c3, BM_SETCHECK, BST_CHECKED, 0);
-        mk(h, L"STATIC", find_gcc(gccpath) ? L"gcc: found on PATH." : L"gcc: NOT found. Enlangg compiles with gcc, so install MinGW-w64 or MSYS2 gcc separately (Setup will remind you).", 0, 20, 220, 500, 34, IDC_STATUS);
+        mk(h, L"STATIC", find_gcc(gccpath) ? L"gcc: found on PATH." : L"gcc: not found (optional). enlng run works without it; only enlng build needs gcc.", 0, 20, 220, 500, 34, IDC_STATUS);
         mk(h, L"EDIT", L"", WS_BORDER | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 20, 262, 500, 140, IDC_LOG);
         mk(h, L"BUTTON", L"Install", BS_DEFPUSHBUTTON | WS_TABSTOP, 420, 414, 100, 30, IDC_INSTALL);
         return 0;

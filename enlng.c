@@ -13,4 +13,5 @@
 #include "src/enlng_lexer.c"
 #include "src/enlng_parser.c"
 #include "src/enlng_codegen.c"
+#include "src/enlng_interp.c"
 #include "src/enlng_main.c"

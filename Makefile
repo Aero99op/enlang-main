@@ -9,7 +9,7 @@ DESTDIR ?=
 
 CC      ?= cc
 CFLAGS  ?= -O2
-LDFLAGS ?= -lm
+LDFLAGS ?= -lm -pthread
 
 BUILD_DIR := build
 BIN_OUT   := $(BUILD_DIR)/bin
@@ -55,7 +55,7 @@ $(BIN_OUT):
 $(BIN_OUT)/enlangg: enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c src/enlangg_version.h | $(BIN_OUT)
 	$(CC) $(CFLAGS) -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c $(LDFLAGS) -o $@
 
-$(BIN_OUT)/enlng: enlng.c src/enlng_main.c src/enlng_lexer.c src/enlng_parser.c src/enlng_codegen.c src/enlng_common.h src/enlng_runtime.h src/enlng_runtime_embed.h src/enlangg_version.h | $(BIN_OUT)
+$(BIN_OUT)/enlng: enlng.c src/enlng_main.c src/enlng_lexer.c src/enlng_parser.c src/enlng_codegen.c src/enlng_interp.c src/enlng_common.h src/enlng_runtime.h src/enlng_runtime_embed.h src/enlangg_version.h | $(BIN_OUT)
 	$(CC) $(CFLAGS) -I. -Isrc enlng.c $(LDFLAGS) -o $@
 
 $(BIN_OUT)/enlngdb: enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlngdb/c/enlngdb.h src/enlangg_version.h | $(BIN_OUT)
@@ -82,8 +82,8 @@ stage: $(TOOLS)
 
 install: all
 	@if ! command -v gcc >/dev/null 2>&1; then \
-		echo "Warning: 'gcc' was not found on PATH. 'enlng' invokes 'gcc' at runtime to compile .enlng programs to native machine code."; \
-		echo "         Install gcc (e.g. 'sudo apt install gcc', 'sudo dnf install gcc', or 'xcode-select --install') before running .enlng programs."; \
+		echo "Note: 'gcc' was not found on PATH. 'enlng run' works without it (built-in interpreter); 'enlng build' and 'enlng run --native' need it."; \
+		echo "         Install gcc (e.g. 'sudo apt install gcc', 'sudo dnf install gcc', or 'xcode-select --install') if you want native executables."; \
 	fi
 	mkdir -p "$(DESTDIR)$(PREFIX)/bin" "$(DESTDIR)$(PREFIX)/lib" "$(DESTDIR)$(PREFIX)/include" "$(DESTDIR)$(BINDIR)"
 	install -m 0755 $(BIN_OUT)/enlangg "$(DESTDIR)$(PREFIX)/bin/enlangg"

@@ -49,6 +49,7 @@ To avoid confusion between the native compiler engine and the Python distributio
 * **Repository Location**: [`enlang-core/`](enlang-core/) and [`enlng.c`](enlng.c) / [`enlangg.c`](enlangg.c)
 * **What It Is**: The standalone, compiled programming language. It transforms spoken English syntax into high-performance, bare-metal native binaries via a deterministic stack-allocated slot memory model (no garbage collector pauses, zero runtime dependencies).
 * **Execution**: Compiled with any standard C compiler (`gcc -O3 enlng.c -o enlng`) or run via the self-hosted VM in [`enlang-core/`](enlang-core/).
+* **Running programs**: `enlng run file.enlng` runs with the built-in interpreter ([`src/enlng_interp.c`](src/enlng_interp.c)), so no C compiler is needed. `enlng run --native file.enlng` and `enlng build file.enlng -o app` compile through `gcc` for speed and standalone executables. Both paths share one runtime and are compared against each other in CI (`tests/test_interp_parity.py`).
 * **Official Manual & Live Sandbox**: [enlangg.vercel.app](https://enlangg.vercel.app)
 
 ### 2. **enlang** *(The Official PyPI Toolchain & CLI Package)*

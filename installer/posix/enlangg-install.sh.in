@@ -47,7 +47,7 @@ Usage: sh enlangg-install.sh [options]
   --help         show this help
 
 Installs enlangg, enlng, enlngdb, enlngf, enlngd, enlngs and enlngm. No root
-needed. enlng also needs a C compiler (gcc, clang or cc) when you run programs.
+needed. enlng run works with no C compiler; enlng build needs gcc, clang or cc.
 EOF
 }
 
@@ -317,7 +317,7 @@ do_install() {
     say "  enlangg --version"
     if ! find_cc; then
         say ""
-        warn "no C compiler found. enlng turns programs into C and needs one to run them."
+        say "Note: no C compiler found. enlng run works without one; only enlng build (native executables) needs gcc, clang or cc."
         if [ "$(uname -s)" = "Darwin" ]; then
             say "  Install the Apple command line tools with:  xcode-select --install"
         else

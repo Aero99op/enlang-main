@@ -1,0 +1,38 @@
+type enlng
+
+remember x as 1
+when x is 1:
+    remember x as 99
+    show "inner" x
+show "outer" x
+for i from 1 to 3 by 1:
+    remember y as i * 2
+    when y is 4:
+        skip
+    show "y" y
+    when i is 3:
+        stop
+remember n as 0
+repeat 3 times:
+    n increases by 2
+show n
+remember data as [5, 3, 9, 1, 7]
+repeat until sorted:
+    for each pair in data:
+        when pair.left > pair.right:
+            swap pair
+show data
+action twice(v):
+    v * 2
+show twice(21)
+action pick(a, b):
+    when a > b:
+        return a
+    return b
+show pick(3, 8) pick(9, 2)
+remember m as {"a": 1, "b": 2}
+show m["a"] + m["b"]
+m["c"] = 10
+show count of m
+remember s as "hello"
+show uppercase of s

@@ -79,7 +79,7 @@ jobs:
 
             Desktop IDE for Enlangg. Installer is unsigned, so Windows SmartScreen may warn. `SHA256SUMS-studio` checks download integrity only, not author authenticity.
 
-            Compiling `.enlng` programs needs `gcc` installed separately. The toolchain installer is published under the `toolchain-v*` releases.
+            Running `.enlng` programs does not need a C compiler (building native executables with `enlng build` needs `gcc`). The toolchain installer is published under the `toolchain-v*` releases.
           files: |
             release/Enlangg-Studio-Setup-${{ env.STUDIO_VERSION }}.exe
             release/SHA256SUMS-studio
