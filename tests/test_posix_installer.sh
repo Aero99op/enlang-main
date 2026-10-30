@@ -52,7 +52,8 @@ yes_if "enlng --version $VER" test "$(echo "$v" | grep -cF "$VER")" -ge 1
 
 # PATH from the new block actually resolves the tool
 res=$(env -i HOME="$HOME" PATH=/usr/bin:/bin sh -c '. "$HOME/.bashrc"; command -v enlangg')
-yes_if "sourcing .bashrc puts enlangg on PATH" test "$res" = "$P/bin/enlangg"
+want=$(printf '%s' "$P/bin/enlangg" | sed 's|//*|/|g')
+yes_if "sourcing .bashrc puts enlangg on PATH" test "$res" = "$want"
 
 # the installed toolchain works from a clean directory
 mkdir -p "$T/work"; cd "$T/work" || exit 1

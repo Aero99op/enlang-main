@@ -79,6 +79,9 @@ done
 [ -n "$PREFIX" ] || PREFIX="$HOME/.enlangg"
 
 check_prefix() {
+    # macOS TMPDIR and some HOME values carry doubled slashes; fold them away first.
+    PREFIX=$(printf '%s' "$PREFIX" | sed 's|//*|/|g')
+    HOME_N=$(printf '%s' "$HOME" | sed 's|//*|/|g; s|/$||')
     case "$PREFIX" in
         /*) ;;
         *) die "the install folder must be an absolute path (got '$PREFIX')." ;;
@@ -89,10 +92,10 @@ check_prefix() {
     esac
     [ "$PREFIX" != "/" ] || die "refusing to install into the filesystem root."
     case "$PREFIX/" in
-        *"/../"*|*"/./"*|*"//"*) die "the install folder must not contain '.', '..' or empty parts ('$PREFIX')." ;;
+        *"/../"*|*"/./"*) die "the install folder must not contain '.' or '..' parts ('$PREFIX')." ;;
     esac
     while [ "${PREFIX%/}" != "$PREFIX" ] && [ -n "${PREFIX%/}" ]; do PREFIX=${PREFIX%/}; done
-    [ "$PREFIX" != "$HOME" ] || die "refusing to install straight into your home folder. Try: --prefix $HOME/.enlangg"
+    [ "$PREFIX" != "$HOME_N" ] || die "refusing to install straight into your home folder. Try: --prefix $HOME/.enlangg"
     slashes=$(printf '%s' "$PREFIX" | tr -cd '/')
     [ "${#slashes}" -ge 2 ] || die "'$PREFIX' is too close to the filesystem root. Pick a folder of your own, for example $HOME/.enlangg"
 }

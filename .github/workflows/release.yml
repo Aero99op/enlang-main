@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  TOOLCHAIN_VERSION: "5.4.1"
+  TOOLCHAIN_VERSION: "5.4.2"
 
 jobs:
   build-windows:
@@ -571,7 +571,7 @@ jobs:
 
             > **Integrity vs. Authenticity Notice**: The published `SHA256SUMS` file checks download integrity (protecting against corrupted or incomplete downloads), not author authenticity. Installers in this release are unsigned.
 
-            ### Included Tools (Pure C 7-in-1 Toolchain — v5.4.1):
+            ### Included Tools (Pure C 7-in-1 Toolchain — v5.4.2):
             - `enlangg` — Master toolchain dispatcher
             - `enlng` — Core general-purpose C99 compiler (`gcc` required at runtime)
             - `enlngdb` — Embedded `.edb` database engine

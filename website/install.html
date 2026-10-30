@@ -605,44 +605,70 @@
     <!-- ==================== PLATFORM: MACOS ==================== -->
     <section class="install-platform-section" id="platform-macos" style="display: none; margin-bottom: 32px;">
       <div class="install-card">
+        <span class="install-card-tag">Installer</span>
         <h3 class="install-card-title">macOS (Apple Silicon &amp; Intel)</h3>
         <p class="install-card-desc">
-          Enlangg compiles native universal binaries for macOS 12+ (Monterey, Ventura, Sonoma, Sequoia) supporting Apple Silicon (M1/M2/M3/M4, <code>arm64</code>) and Intel <code>x86_64</code> processors.
+          Universal binaries for macOS 12+ (Monterey, Ventura, Sonoma, Sequoia) on Apple Silicon (<code>arm64</code>) and Intel (<code>x86_64</code>). The installer picks the right build, puts the tools in <code>~/.enlangg/bin</code> and adds that folder to your PATH in <code>~/.zshrc</code>.
         </p>
-
+        <div class="install-specs-box">
+          Package: enlangg-install.sh (one file for macOS, Linux x86_64 and Linux aarch64)<br>
+          Installs: enlangg, enlng, enlngdb, enlngf, enlngd, enlngs, enlngm + standard library<br>
+          Features: per-user install to <code>~/.enlangg</code> (no root), PATH, checksum check, uninstall script
+        </div>
+        <div class="install-btn-group" style="margin-bottom: 16px;">
+          <a href="enlangg-install.sh" download="enlangg-install.sh" class="btn btn-primary" style="flex:1; justify-content:center;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Download installer (.sh)</span>
+          </a>
+          <a href="https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.4.2/enlangg-install.sh" target="_blank" rel="noopener" class="btn btn-secondary" title="GitHub CDN Fallback Mirror">
+            <span>Mirror ↗</span>
+          </a>
+        </div>
         <div class="code-block-card" style="margin-bottom: 12px;">
           <div class="code-block-header">
-            <span>Build from source (Terminal)</span>
+            <span>Then, in Terminal (run from the folder you saved it in)</span>
             <button type="button" class="copy-code-btn terminal-btn" data-target="macScript">Copy</button>
           </div>
-          <div class="code-block-body" id="macScript">git clone https://github.com/Aero99op/enlang-main.git &amp;&amp; cd enlang-main &amp;&amp; make &amp;&amp; sudo make install</div>
+          <div class="code-block-body" id="macScript">sh enlangg-install.sh</div>
         </div>
-
-        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0;">
-          A ready-made macOS installer is not available yet. Building from source installs to <code>/usr/local/enlangg</code> and links the tools into <code>/usr/local/bin</code>. Requires Xcode Command Line Tools (<code>xcode-select --install</code>). The macOS build is checked in CI, but has not been tested on every macOS version.
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px;">
+          The compilers need a C compiler: if <code>gcc --version</code> fails, run <code>xcode-select --install</code>. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The installer is unsigned. It runs through <code>sh</code>, so Gatekeeper does not block it. The macOS build is checked in CI but has not been tested on every macOS version. Prefer to compile it yourself? See <em>Compile from Source</em>.
         </p>
-            </div>
+      </div>
     </section>
 
     <!-- ==================== PLATFORM: LINUX ==================== -->
     <section class="install-platform-section" id="platform-linux" style="display: none; margin-bottom: 32px;">
       <div class="install-card">
-        <h3 class="install-card-title">Linux Distribution Packages</h3>
+        <span class="install-card-tag">Installer</span>
+        <h3 class="install-card-title">Linux (x86_64 &amp; aarch64)</h3>
         <p class="install-card-desc">
-          Install Enlangg on a modern Linux distribution by building it from source:
+          A single self-extracting script for Linux on x86_64 and aarch64 (static binaries, no libraries needed). It puts the tools in <code>~/.enlangg/bin</code> and adds that folder to your PATH in your shell startup files (bash, zsh, or fish). No root needed.
         </p>
-
-        <div class="code-block-card" style="margin-bottom: 16px;">
+        <div class="install-specs-box">
+          Package: enlangg-install.sh (one file for macOS, Linux x86_64 and Linux aarch64)<br>
+          Installs: enlangg, enlng, enlngdb, enlngf, enlngd, enlngs, enlngm + standard library<br>
+          Features: per-user install to <code>~/.enlangg</code> (no root), PATH, checksum check, uninstall script
+        </div>
+        <div class="install-btn-group" style="margin-bottom: 16px;">
+          <a href="enlangg-install.sh" download="enlangg-install.sh" class="btn btn-primary" style="flex:1; justify-content:center;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Download installer (.sh)</span>
+          </a>
+          <a href="https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.4.2/enlangg-install.sh" target="_blank" rel="noopener" class="btn btn-secondary" title="GitHub CDN Fallback Mirror">
+            <span>Mirror ↗</span>
+          </a>
+        </div>
+        <div class="code-block-card" style="margin-bottom: 12px;">
           <div class="code-block-header">
-            <span>Build from source</span>
+            <span>Then, in Terminal (run from the folder you saved it in)</span>
             <button type="button" class="copy-code-btn terminal-btn" data-target="linuxScript">Copy</button>
           </div>
-          <div class="code-block-body" id="linuxScript">git clone https://github.com/Aero99op/enlang-main.git &amp;&amp; cd enlang-main &amp;&amp; make &amp;&amp; sudo make install</div>
+          <div class="code-block-body" id="linuxScript">sh enlangg-install.sh</div>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px;">
-          No prebuilt Linux package yet. The source build is tested in CI on Linux x86_64 and cross-built for aarch64. Install the prerequisites below first.
+          The compilers need a C compiler. Install one with the prerequisites below. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The installer checks its own SHA-256 before writing anything. The aarch64 build is cross-compiled in CI and has not been run on real ARM hardware. Prefer to compile it yourself? See <em>Compile from Source</em>.
         </p>
-
         <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">Package Manager Prerequisites:</h4>
         <div class="table-responsive">
           <table>
