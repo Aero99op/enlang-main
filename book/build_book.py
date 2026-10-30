@@ -35,7 +35,7 @@ from reportlab.lib.pagesizes import A5
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 
-SIDE, TOPB, BOTB = 15, 15, 17
+SIDE, TOPB, BOTB = 15, 14.5, 16.5
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (BaseDocTemplate, Frame, KeepTogether, PageBreak, PageTemplate,
@@ -47,11 +47,11 @@ CRLF = chr(13) + chr(10)
 BSL = chr(92)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-ENLNG = os.environ.get('ENLNG_EXE', os.path.join(ROOT, 'scratch', 'w550', 'x', 'bin', 'enlng.exe'))
+ENLNG = r'D:/enlangg/scratch/w551/bin/enlng.exe'
 CACHE = os.path.join(HERE, '.runcache.json')
 OUT = os.path.join(HERE, 'out', 'enlangg_the_enlng.pdf')
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
-VERSION = '5.5.0'
+VERSION = '5.5.1'
 
 F = 'C:/Windows/Fonts/'
 pdfmetrics.registerFont(TTFont('Body', F + 'georgia.ttf'))

@@ -50,13 +50,17 @@ show is_pal("Never odd or even")
 
 ## Count the words
 
-Splitting on a space leaves out empty pieces, so repeated spaces do not inflate the count:
+Splitting on a space keeps the empty pieces that repeated spaces leave behind, so the recipe counts only the pieces that have something in them:
 
 ::: code
 type enlng
 
 function words with text:
-    give len(split(text, " "))
+    remember n as 0
+    for each w in split(text, " "):
+        when len(w) > 0:
+            n increases by 1
+    give n
 
 show words("one two three")
 show words("  spaced    out   text ")
@@ -177,7 +181,7 @@ show anagram("rat", "car")
 
 ## Replace one character everywhere
 
-Because `string_replace_all` is unreliable at the ends of a string, build the result yourself:
+`string_replace_all` from `lib_strings` does this in one call. Written out by hand, the idea looks like this:
 
 ::: code
 type enlng
@@ -196,7 +200,7 @@ show replace_char("-a-", "-", "+")
 show replace_char("a--b", "-", "+")
 :::
 
-These are the same three inputs that failed in chapter 24, and here all three come out right.
+These are the same three inputs that `string_replace_all` got wrong in 5.5.0, and all three come out right.
 
 ## Take a piece of a string
 

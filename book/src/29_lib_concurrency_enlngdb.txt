@@ -2,7 +2,7 @@
 
 ## lib_concurrency: coordination, simulated
 
-Enlangg 5.5.0 runs one thing at a time. There are no threads. `lib_concurrency.enlng` gives you the shapes that concurrent programs use, queues, pools, channels, locks, promises and events, written as ordinary code, so you can model how such a system behaves or structure a program around them. Nothing here runs in parallel.
+Enlangg 5.5.1 runs one thing at a time. There are no threads. `lib_concurrency.enlng` gives you the shapes that concurrent programs use, queues, pools, channels, locks, promises and events, written as ordinary code, so you can model how such a system behaves or structure a program around them. Nothing here runs in parallel.
 
 ::: src
 use "lib_concurrency.enlng"

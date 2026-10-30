@@ -1,10 +1,10 @@
-# Limits and Known Gaps in 5.5.0
+# Limits and Known Gaps in 5.5.1
 
-A manual that only lists strengths is advertising. This chapter lists what toolchain 5.5.0 does not do, or does badly, with the evidence for each. Everything here was checked by running the program shown or the command named. If a later version fixes something, the change belongs in the release notes, not in a quiet edit of this page.
+A manual that only lists strengths is advertising. This chapter lists what toolchain 5.5.1 does not do, or does badly, with the evidence for each. Everything here was checked by running the program shown or the command named. If a later version fixes something, the change belongs in the release notes, not in a quiet edit of this page.
 
 ## Things that do not exist
 
-| Claim you may have seen | Reality in 5.5.0 |
+| Claim you may have seen | Reality in 5.5.1 |
 |---|---|
 | Python interoperability | There is no way to call Python from Enlangg or the reverse. A file named `demo_enlngdb_python.py` in the examples folder is a Python script that talks to a database of its own. |
 | Calling C libraries (FFI) | Not implemented. |
@@ -15,7 +15,7 @@ A manual that only lists strengths is advertising. This chapter lists what toolc
 | Slicing such as `text[0:3]` | Not in the language. Use `sub_string` from `lib_strings`, or a loop (chapters 24 and 35). |
 | Nested assignment such as `grid[1][2] = 5` or `tasks[1]["done"] = true` | A syntax error. Pull the inner list or map into a name first, then assign through that name (chapter 38). |
 | Counting down with `for i from 3 to 1 by -1` | The loop does not run. Count up and subtract. |
-| A debugger | None in 5.5.0. `show` is the tool. |
+| A debugger | None in 5.5.1. `show` is the tool. |
 
 ## Behaviours that surprise people
 
@@ -27,26 +27,35 @@ These do work, but not the way a newcomer from another language would guess.
 - **Names made by `ask` belong to their block.** Inside a loop, each pass makes a new one; the outer name is not updated.
 - **Functions cannot see outer names.** Everything a function needs must be passed in. Maps and lists passed in are shared, so changes made through them are visible to the caller.
 - **A zero-argument call needs parentheses.** `stack_size(s)` takes an argument; `create_stack()` takes none and must still be written with `()`.
-- **`split` leaves out empty pieces.** `split("a,,b", ",")` has two items. This is why the `string_format_` and `string_replace_all` functions of `lib_strings` fail at the ends of a string (chapter 24).
+- **`split` keeps empty pieces.** `split("a,,b", ",")` has three items, the middle one empty, and a separator is matched as a whole. This changed in 5.5.1; older releases dropped empty pieces.
 - **Maps have no order.** Do not print a whole map and expect the keys in the order you typed them.
 - **Some ordinary words are reserved.** `stop`, `times`, `from` and others cannot be names (chapter 40 lists them). A function written `function f with times:` fails to read with the message "Expected ':' before block". If you meet that message on a line that looks fine, check for a reserved word.
 
-## Bugs found while writing this book
+## Bugs that remain
 
 These are faults in the toolchain or its library files, not in the way they are described here.
 
 | Where | What happens |
 |---|---|
-| `freeze` | Marks a name as constant, but later assignments are not refused. |
-| `lib_strings`: `string_replace_all`, `string_format_1/2/3` | Wrong results when the text to replace is at an end of the string or occurs twice in a row, because `split` drops the empty piece. |
-| `lib_std`: `arrange`, `arrange_list` | Cannot be called, because `arrange` is a language word. |
-| `lib_ds`: `set_remove` | Leaves a `null` placeholder in the set. |
 | `lib_ds`: `lru_size` | Counts entries that were already forgotten. |
-| `lib_file`: `file_word_count` | Splits on spaces only, so a line break does not separate words. |
 | `lib_net`: `parse_url` | Leaves a `#fragment` attached to the query. |
-| `enlngs` | Running a script directly does not evaluate expressions like `total * 2`, and `show` with several values prints the source text. The JavaScript it writes for the second case is invalid. |
 | `enlng emit-c` | The comment at the top of the generated C names an old version number. |
 | `string_add`, `string_insert`, `string_replace` | Decide which argument is the text by comparing lengths; results are hard to predict. The book avoids them. |
+| `enlngs` | Runs only a small part of the script language natively: `create`, `set`, `show`, `repeat`, `if`, `function`. Page-oriented lines are for the JavaScript translation. |
+| `freeze` | Protects the name only. A frozen list can still be changed with `append`, and elements can still be assigned. |
+
+## Fixed in 5.5.1
+
+The first edition of this book listed these as faults of 5.5.0. They are fixed from 5.5.1, and the chapters mention each one where it applies.
+
+| Was | Now |
+|---|---|
+| `freeze` did not stop a later assignment. | Assigning to a frozen name is an error when the file is read. |
+| `split` dropped empty pieces and treated each character of the separator as a separator. | It keeps empty pieces and matches the separator as a whole, which also repairs `string_replace_all` and `string_format_1/2/3`. |
+| `arrange` and `arrange_list` in `lib_std` could not be called. | They are named `arrange_text` and `arrange_items`. |
+| `set_remove` left a `null` in the set. | It removes the item. |
+| `file_word_count` counted only space-separated chunks. | A line break also ends a word. |
+| `enlngs` did not calculate `total * 2` and wrote invalid JavaScript for `show "a" b`. | It has a real expression parser, and several values in one `show` work in both modes. |
 
 ## Platform limits
 
@@ -60,4 +69,4 @@ The numbers on the Enlangg website come from one Windows machine and one small p
 
 ## How to report a problem
 
-If a program in this book behaves differently on your machine, check `enlng --version` first. The outputs here were produced with 5.5.0. If the version matches and the output differs, that is worth reporting at the project's GitHub page, with the program and its output.
+If a program in this book behaves differently on your machine, check `enlng --version` first. The outputs here were produced with 5.5.1. If the version matches and the output differs, that is worth reporting at the project's GitHub page, with the program and its output.

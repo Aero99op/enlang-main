@@ -38,9 +38,9 @@ show file_exists_check("never_made.txt")
 
 `file_read_lines` drops the trailing `\r` that Windows adds at the end of lines, so files made on either system read the same.
 
-## A caution about the word count
+## Counting words
 
-`file_word_count` splits the text on single spaces only. A line break does not count as a separator, so the last word of one line and the first word of the next are counted as one:
+`file_word_count` counts the words in a file. A word ends at a space or at the end of a line:
 
 ::: code
 type enlng
@@ -51,18 +51,7 @@ show file_word_count("w.txt")
 show file_line_count("w.txt")
 :::
 
-That file has five words, but the count above is four. If you need an exact word count, read the lines and split each one yourself:
-
-::: code
-type enlng
-use "lib_file.enlng"
-
-file_write("w.txt", "one two three\nfour five\n")
-remember total as 0
-for each line in file_read_lines("w.txt"):
-    total increases by len(split(line, " "))
-show total
-:::
+In 5.5.0 only spaces ended a word, so the last word of one line and the first of the next were counted as one and this file gave 4. A file that ends with a line break also has no extra empty line at the end in `file_read_lines` and `file_line_count`.
 
 ## Paths
 

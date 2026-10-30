@@ -120,7 +120,7 @@ show school["students"][1]
 show school["address"]["city"]
 :::
 
-Assigning to a level two deep (`school["address"]["city"] = "Mumbai"`) is not supported in toolchain 5.5.0. Read the inner map into a name, change that name's entry, and the change is seen through the outer map, because maps are shared the way lists are.
+Assigning to a level two deep (`school["address"]["city"] = "Mumbai"`) is not supported in toolchain 5.5.1. Read the inner map into a name, change that name's entry, and the change is seen through the outer map, because maps are shared the way lists are.
 
 ::: code
 type enlng

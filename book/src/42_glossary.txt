@@ -22,7 +22,7 @@
 
 **Compile** — to translate a program into another form. `enlng build` compiles to a native program; `enlngd compile` turns a theme into CSS; `enlngs compile` turns a script into JavaScript.
 
-**Constant** — a value that is not meant to change. `freeze` declares one, but in 5.5.0 the tool does not stop you changing it.
+**Constant** — a value that is not meant to change. `freeze` declares one, and from 5.5.1 the tool refuses to run a program that assigns to it again.
 
 **Deque** — a list you can add to and take from at both ends. Short for "double-ended queue".
 

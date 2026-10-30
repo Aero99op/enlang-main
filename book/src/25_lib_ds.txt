@@ -242,7 +242,20 @@ show set_to_list(set_intersection(a, b))
 show set_to_list(set_difference(a, b))
 :::
 
-There is a `set_remove(s, item)`, but in toolchain 5.5.0 it leaves a `null` placeholder where the item was, which then appears in `set_to_list`. Build a new set without the item if you need to remove one.
+`set_remove(s, item)` takes an item out. (In 5.5.0 it left a `null` in its place, which then showed up in `set_to_list`.)
+
+::: code
+type enlng
+use "lib_ds.enlng"
+
+remember s as create_set()
+set_add(s, 1)
+set_add(s, 2)
+set_add(s, 4)
+set_remove(s, 2)
+show set_to_list(s)
+show set_size(s) set_has(s, 2) set_has(s, 4)
+:::
 
 ## Trie
 
@@ -286,7 +299,7 @@ show ring_pop(rb) ring_pop(rb) ring_is_empty(rb)
 
 ## A note on the cache
 
-The module also has `create_lru_cache`, `lru_get`, `lru_put` and `lru_size`. A least-recently-used cache should forget its oldest entry when it is full. It does that in 5.5.0, but `lru_size` reports a count that includes forgotten entries, so use `lru_get` to ask about a key instead of counting.
+The module also has `create_lru_cache`, `lru_get`, `lru_put` and `lru_size`. A least-recently-used cache should forget its oldest entry when it is full. It does that in 5.5.1, but `lru_size` reports a count that includes forgotten entries, so use `lru_get` to ask about a key instead of counting.
 
 ::: code
 type enlng

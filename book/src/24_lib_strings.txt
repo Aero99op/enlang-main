@@ -149,9 +149,9 @@ show string_format_3("{2} {1} {0}", "a", "b", "c")
 
 A hole written `{}` without a number is not filled in.
 
-### A limitation in 5.5.0
+### Replacing at the ends of a string
 
-These functions, and `string_replace_all`, are built on the built-in `split`, and `split` leaves out empty pieces. When the text to replace is at the very start or very end of the string, or appears twice in a row, an empty piece is lost and the result is wrong:
+These functions, and `string_replace_all`, are built on the built-in `split`. In 5.5.0 `split` left out empty pieces, and a replacement at the very start or end of the text, or two in a row, was lost. From 5.5.1 `split` keeps them and all of these come out right:
 
 ::: code
 type enlng
@@ -164,7 +164,7 @@ show string_format_2("{0} + {1}", 1, 2)
 show string_format_2("x {0} y {1}", 1, 2)
 :::
 
-Only the first line is right. Each of the others is missing text that should be there: a replacement at the start or end of the string, or two in a row, is lost, and the template lines lose a value. Treat `string_replace_all` and the `string_format_` functions as unreliable in 5.5.0 and build text with `+` when the exact result matters. `string_replace_first` does not use `split` and is not affected.
+`string_replace_first` never used `split` and was not affected.
 
 ## Small helpers for output
 

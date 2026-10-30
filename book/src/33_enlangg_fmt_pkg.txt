@@ -88,7 +88,7 @@ enlangg pkg init demo
 enlangg pkg add lib_math
 :::
 
-Two things the manager does not do in 5.5.0. It does not record what you added in the `dependencies` list of `enlang.json`, which stays empty, and `pkg install` only checks the manifest. There is no way to fetch packages from the internet: every package it knows is one of the eleven library files.
+Two things the manager does not do in 5.5.1. It does not record what you added in the `dependencies` list of `enlang.json`, which stays empty, and `pkg install` only checks the manifest. There is no way to fetch packages from the internet: every package it knows is one of the eleven library files.
 
 You do not need `pkg` to use the library. `use "lib_math.enlng"` already finds the files next to the installed tools, as chapter 23 showed.
 

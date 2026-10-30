@@ -83,7 +83,7 @@ Points given as lists such as `[0, 0, "cat"]` do not work here; the function rea
 
 ## lib_net: building and reading web text
 
-`lib_net.enlng` works on the text that web programs exchange: addresses, query strings, headers and request lines. It does not open network connections. Sending a request over the internet is not something Enlangg 5.5.0 can do; this module prepares and reads the text.
+`lib_net.enlng` works on the text that web programs exchange: addresses, query strings, headers and request lines. It does not open network connections. Sending a request over the internet is not something Enlangg 5.5.1 can do; this module prepares and reads the text.
 
 ::: src
 use "lib_net.enlng"

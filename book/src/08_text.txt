@@ -44,7 +44,7 @@ show word[-1]
 show word at 2
 :::
 
-There is no slicing syntax such as `word[0:3]` in toolchain 5.5.0. To take a piece, build it character by character in a loop, as the cookbook does.
+There is no slicing syntax such as `word[0:3]` in toolchain 5.5.1. To take a piece, build it character by character in a loop, as the cookbook does.
 
 ## Searching
 
@@ -60,7 +60,7 @@ show contains(sentence, "slow")
 
 ## Splitting and joining
 
-`split(text, separator)` breaks text into a list. `join(list, separator)` does the reverse. Splitting on an empty separator gives one item per character. Empty pieces are left out, so `split("a,,b", ",")` has two items, not three:
+`split(text, separator)` breaks text into a list. `join(list, separator)` does the reverse. Splitting on an empty separator gives one item per character. Empty pieces are kept, so `split("a,,b", ",")` has three items and the middle one is empty. A separator of several characters is matched as a whole, so `split("a--b", "--")` has two items. (Before 5.5.1 empty pieces were dropped and every character of the separator was treated as a separator on its own.)
 
 ::: code
 type enlng
@@ -72,6 +72,8 @@ show len(parts)
 show join(parts, " | ")
 show split("abc", "")
 show split("a,,b", ",")
+show split("a--b", "--")
+show split("-a-", "-")
 :::
 
 ## Reversing

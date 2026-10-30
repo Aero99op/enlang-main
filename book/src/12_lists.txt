@@ -101,7 +101,7 @@ xs[3] = 4
 show xs
 :::
 
-Changing an item of a list inside a list (`grid[1][0] = 9`) is not supported in toolchain 5.5.0. Read the inner list into a name, change it, and it is changed in the outer list too, because of the next point.
+Changing an item of a list inside a list (`grid[1][0] = 9`) is not supported in toolchain 5.5.1. Read the inner list into a name, change it, and it is changed in the outer list too, because of the next point.
 
 ## Lists are shared
 

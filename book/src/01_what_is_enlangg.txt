@@ -42,4 +42,4 @@ You will not find performance tables against other languages in this book, becau
 
 ## How the examples were made
 
-Every program in this book was run with toolchain 5.5.0 while the book was built. The grey box is the program and the green box is exactly what the tool printed. If you type the same program you should see the same output.
+Every program in this book was run with toolchain 5.5.1 while the book was built. The grey box is the program and the green box is exactly what the tool printed. If you type the same program you should see the same output.

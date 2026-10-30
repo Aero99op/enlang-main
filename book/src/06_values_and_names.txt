@@ -90,9 +90,9 @@ freeze TAX_RATE as 18
 show TAX_RATE
 :::
 
-Be aware that in toolchain 5.5.0 the word is accepted but **not enforced**: a later `change` or assignment to a frozen name is not rejected. The program below prints 200.
+A frozen name cannot be assigned to again. The tool refuses the program when it reads the file, before anything runs, and says why:
 
-::: code
+::: err
 type enlng
 
 freeze LIMIT as 100
@@ -100,7 +100,17 @@ change LIMIT to 200
 show LIMIT
 :::
 
-Until enforcement is added, treat `freeze` as documentation for the reader, and write constants in capitals so that the intent is clear.
+What is frozen is the name, not what it points to. A list that was frozen can still grow, because `append` changes the list and does not assign to the name:
+
+::: code
+type enlng
+
+freeze ITEMS as [1, 2]
+append(ITEMS, 3)
+show ITEMS
+:::
+
+A function has names of its own, so inside a function the same spelling can be used for something else. In toolchain 5.5.0 and earlier, `freeze` was accepted but not enforced and the program above printed 200; from 5.5.1 it is an error.
 
 ## Name rules
 

@@ -107,7 +107,16 @@ use "lib_std.enlng"
 show sort_list with [5, 2, 8, 1]
 :::
 
-The file also defines `arrange` and `arrange_list`, but they cannot be called in toolchain 5.5.0: `arrange` is a word of the language (the statement from chapter 18), and the definitions that start with it are not usable. Use the `arrange` statement instead.
+The file also has `arrange_text(text, positions)` and `arrange_items(list, positions)`, the function forms of the `arrange` statement from chapter 18. They build a new text or list from the positions you name, and a negative position counts from the end. (In 5.5.0 they were named `arrange` and `arrange_list`, which clashed with the language word and could not be called.)
+
+::: code
+type enlng
+use "lib_std.enlng"
+
+show arrange_text("abcdef", [5, 4, 3])
+show arrange_items([10, 20, 30], [2, 0])
+show arrange_text("abcdef", [-1, 0])
+:::
 
 ### Cells and references
 

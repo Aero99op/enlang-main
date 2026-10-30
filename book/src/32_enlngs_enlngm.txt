@@ -31,29 +31,66 @@ show name
 enlngs count.enlngs
 :::
 
-### Two honest warnings
+### Calculating and showing several values
 
-The `enlngs` tool is the youngest of the seven, and in 5.5.0 its two ways of running do not always agree.
-
-First, the tool that runs a script directly does not calculate everything. Here it prints the text of an expression where a number would be expected, while the JavaScript translation of the same line gives the number:
+Expressions use the usual precedence: multiplication and division bind tighter than addition and subtraction, and brackets override both. The operators can be symbols or words (`times`, `divided by`, `mod`, `plus`, `minus`, `is greater than`, `and`, `or`):
 
 ::: cmd
 @@ calc.enlngs
 create total as 5
 show total * 2
+show 2 + 3 * 4
+show (2 + 3) * 4
+show 10 - 3 - 2
+show 7 / 2
+show total times 3 plus 1
+show total is greater than 3 and total is less than 9
 @@@
 enlngs calc.enlngs
-enlngs compile calc.enlngs -o calc.js
-tail -n 2 calc.js
 :::
 
-The first command printed `total * 2` as text. The generated JavaScript line is correct, and if you run it with Node it prints 10. When a script matters, compile it and run the JavaScript, or keep the calculation in a Enlangg program.
+`show` accepts several values in a row and prints them with a space between, the way `show` does in Enlangg:
 
-Second, `show` with several values in a row, which works in Enlangg, is not understood here. Join the pieces with `+` instead, as in `show "total is " + total`.
+::: cmd
+@@ many.enlngs
+create total as 5
+create name as "Asha"
+show "total is" total
+show name total * 2 "end"
+@@@
+enlngs many.enlngs
+enlngs compile many.enlngs -o many.js
+tail -n 2 many.js
+:::
+
+The JavaScript that `compile` writes passes the values to `console.log` as separate arguments, so it is valid JavaScript and prints the same thing. Division is true division, as in JavaScript: 7 divided by 2 is 3.5, and dividing by zero gives `Infinity`.
+
+In 5.5.0 this was different. The tool printed `total * 2` as text instead of 10, and `show "total is" total` became `console.log("total is" total)`, which is not valid JavaScript.
+
+### Blocks and indentation
+
+A line ending in a colon owns the lines indented under it. `repeat`, `if` with an optional `else:`, and `function` run natively:
+
+::: cmd
+@@ loop.enlngs
+in script:
+    create total as 0
+    repeat 3 times:
+        set total = total + 2
+        if total > 3:
+            show "big" total
+        else:
+            show "small" total
+    show "done" total
+@@@
+enlngs loop.enlngs
+:::
+
+Blocks that describe a web page, such as `every 1 second:`, `after 3 seconds:` and `fetch data from ...:`, have nothing to act on in a terminal. The tool skips them and the lines under them when you run a script, and translates them to JavaScript when you compile.
 
 ### Scripts written for pages
 
-The `to do` blocks, `every 1 second:` timers and `set text of "id" to ...` lines in the larger example scripts are meant for pages: they describe what happens in a browser. Compiling them to JavaScript is the intended use; running them in the terminal has nothing to act on.
+The `to do` blocks, `every 1 second:` timers and `set text of "id" to ...` lines in the larger example scripts are meant for pages: they describe what happens in a browser. Compiling them to JavaScript is the intended use; running them in the terminal skips them.
 
 ## enlngm: mobile app previews
 
@@ -78,7 +115,7 @@ enlngm export app.enlngm -o app.c
 
 ### Building an APK or IPA
 
-The `build` command accepts `--target apk` and `--target ipa`. In toolchain 5.5.0 it does not produce either. This is what it says:
+The `build` command accepts `--target apk` and `--target ipa`. In toolchain 5.5.1 it does not produce either. This is what it says:
 
 ::: cmd
 @@ app.enlngm

@@ -74,7 +74,7 @@ show shop["items"][1]["sku"]
 show shop.name
 :::
 
-Only reading is chained. Assigning through two levels at once is not supported in toolchain 5.5.0; read the inner value into a name first, as the chapter on maps shows.
+Only reading is chained. Assigning through two levels at once is not supported in toolchain 5.5.1; read the inner value into a name first, as the chapter on maps shows.
 
 ## Spoken positions
 

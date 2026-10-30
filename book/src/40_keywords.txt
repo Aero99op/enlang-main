@@ -35,7 +35,7 @@ Because the rule is not obvious, the safe habit is to avoid every word in the li
 
 | Group | Words | Used for |
 |---|---|---|
-| Making names | `remember`, `define`, `keep`, `freeze`, `forget`, `discard`, `as` | Create a value, mark it constant (not enforced), or let it go. |
+| Making names | `remember`, `define`, `keep`, `freeze`, `forget`, `discard`, `as` | Create a value, mark it constant, or let it go. |
 | Showing and asking | `show`, `print`, `display`, `ask`, `input` | Print values; read a line of text. |
 | Deciding | `when`, `if`, `otherwise`, `else`, `is`, `not`, `and`, `or` | Choose between blocks. |
 | Comparing | `equal`, `less`, `greater`, `least`, `most`, `than`, `at` | Words for `==`, `<`, `>`, `<=`, `>=`, written after `is`, as in `is at least`. |

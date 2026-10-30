@@ -43,7 +43,7 @@ This is the most common surprise for new programmers, so it is worth saying plai
 
 ## Dividing by zero
 
-In toolchain 5.5.0, dividing by zero does not stop the program. The result is `0`:
+In toolchain 5.5.1, dividing by zero does not stop the program. The result is `0`:
 
 ::: code
 type enlng
