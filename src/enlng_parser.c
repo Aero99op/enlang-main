@@ -1504,6 +1504,7 @@ typedef struct {
   const char **names;
   int count;
   int cap;
+  bool pair_frozen; /* inside `for each pair in <frozen list>` */
 } FrozenSet;
 
 static bool frozen_has(FrozenSet *f, const char *name) {
@@ -1530,6 +1531,64 @@ static void frozen_refuse(Parser *p, const char *name, int line) {
   set_error(p, err, line);
 }
 
+/* A frozen list or map also keeps its contents: element assignment, sort,
+ * reverse, arrange, swap and the in-place builtins append and pop are refused.
+ * Only calls written directly on the name are seen; a function that is handed
+ * the list can still change it. */
+static void frozen_refuse_contents(Parser *p, const char *name, int line) {
+  char err[256];
+  snprintf(err, sizeof(err),
+           "'%s' was declared with freeze, so its contents cannot be changed "
+           "either. Use remember instead if the list or map needs to change.",
+           name);
+  set_error(p, err, line);
+}
+
+static void frozen_check_contents(Parser *p, FrozenSet *f, const char *name,
+                                  int line) {
+  if (name && !p->has_error && frozen_has(f, name))
+    frozen_refuse_contents(p, name, line);
+}
+
+static void frozen_check_expr(Parser *p, FrozenSet *f, ASTNode *e) {
+  if (!e || p->has_error)
+    return;
+  switch (e->type) {
+  case AST_EXPR_BINARY:
+    frozen_check_expr(p, f, e->as.binary_expr.left);
+    frozen_check_expr(p, f, e->as.binary_expr.right);
+    break;
+  case AST_EXPR_UNARY:
+    frozen_check_expr(p, f, e->as.unary_expr.operand);
+    break;
+  case AST_EXPR_INDEX:
+    frozen_check_expr(p, f, e->as.index_expr.target);
+    frozen_check_expr(p, f, e->as.index_expr.index_expr);
+    break;
+  case AST_EXPR_CALL:
+    if (e->as.call_expr.arg_count > 0 && e->as.call_expr.args[0] &&
+        e->as.call_expr.args[0]->type == AST_EXPR_VARIABLE &&
+        e->as.call_expr.func_name &&
+        (strcmp(e->as.call_expr.func_name, "append") == 0 ||
+         strcmp(e->as.call_expr.func_name, "pop") == 0))
+      frozen_check_contents(p, f, e->as.call_expr.args[0]->as.variable.name,
+                            e->line);
+    for (int i = 0; i < e->as.call_expr.arg_count; i++)
+      frozen_check_expr(p, f, e->as.call_expr.args[i]);
+    break;
+  case AST_EXPR_LIST_LITERAL:
+    for (int i = 0; i < e->as.list_literal.count; i++)
+      frozen_check_expr(p, f, e->as.list_literal.elements[i]);
+    break;
+  case AST_EXPR_MAP_LITERAL:
+    for (int i = 0; i < e->as.map_literal.count; i++)
+      frozen_check_expr(p, f, e->as.map_literal.values[i]);
+    break;
+  default:
+    break;
+  }
+}
+
 static void frozen_check_block(Parser *p, ASTNode **stmts, int count,
                                FrozenSet *f) {
   int keep = f->count; /* names frozen inside this block end with it */
@@ -1539,37 +1598,92 @@ static void frozen_check_block(Parser *p, ASTNode **stmts, int count,
       continue;
     switch (n->type) {
     case AST_DECLARATION:
+      frozen_check_expr(p, f, n->as.decl.init_expr);
+      if (p->has_error)
+        break;
       if (frozen_has(f, n->as.decl.name))
         frozen_refuse(p, n->as.decl.name, n->line);
       else if (n->as.decl.is_frozen)
         frozen_add(f, n->as.decl.name);
       break;
     case AST_MUTATION:
+      frozen_check_expr(p, f, n->as.mutation.val_expr);
+      if (p->has_error)
+        break;
       if (frozen_has(f, n->as.mutation.name))
         frozen_refuse(p, n->as.mutation.name, n->line);
       break;
+    case AST_INDEX_MUTATION:
+      frozen_check_expr(p, f, n->as.index_mutation.index_expr);
+      frozen_check_expr(p, f, n->as.index_mutation.val_expr);
+      frozen_check_contents(p, f, n->as.index_mutation.arr_name, n->line);
+      break;
+    case AST_SORT:
+      frozen_check_contents(p, f, n->as.sort_stmt.target_name, n->line);
+      break;
+    case AST_REVERSE_STMT:
+      frozen_check_contents(p, f, n->as.reverse_stmt.target_name, n->line);
+      break;
+    case AST_ARRANGE_STMT:
+      frozen_check_contents(p, f, n->as.arrange_stmt.target_name, n->line);
+      break;
+    case AST_SWAP:
+      if (n->as.swap_stmt.is_pair) {
+        if (f->pair_frozen)
+          frozen_refuse_contents(p, "the list being looped over", n->line);
+      } else {
+        ASTNode *l = n->as.swap_stmt.left;
+        ASTNode *r = n->as.swap_stmt.right;
+        if (l && l->type == AST_EXPR_INDEX)
+          frozen_check_contents(p, f, l->as.index_expr.arr_name, n->line);
+        if (r && r->type == AST_EXPR_INDEX)
+          frozen_check_contents(p, f, r->as.index_expr.arr_name, n->line);
+      }
+      break;
+    case AST_EXPR_STMT:
+      frozen_check_expr(p, f, n->as.expr_stmt.expr);
+      break;
+    case AST_GIVE:
+      frozen_check_expr(p, f, n->as.give_stmt.expr);
+      break;
+    case AST_SHOW:
+      for (int k = 0; k < n->as.show_stmt.count; k++)
+        frozen_check_expr(p, f, n->as.show_stmt.items[k]);
+      break;
     case AST_WHEN:
+      frozen_check_expr(p, f, n->as.when_stmt.condition);
       frozen_check_block(p, n->as.when_stmt.then_body,
                          n->as.when_stmt.then_count, f);
       frozen_check_block(p, n->as.when_stmt.else_body,
                          n->as.when_stmt.else_count, f);
       break;
     case AST_FOR_RANGE:
+      frozen_check_expr(p, f, n->as.for_range.start_expr);
+      frozen_check_expr(p, f, n->as.for_range.end_expr);
+      frozen_check_expr(p, f, n->as.for_range.step_expr);
       frozen_check_block(p, n->as.for_range.body, n->as.for_range.body_count,
                          f);
       break;
-    case AST_FOR_PAIR:
+    case AST_FOR_PAIR: {
+      bool saved = f->pair_frozen;
+      f->pair_frozen = n->as.for_pair.list_name &&
+                       frozen_has(f, n->as.for_pair.list_name);
       frozen_check_block(p, n->as.for_pair.body, n->as.for_pair.body_count, f);
+      f->pair_frozen = saved;
       break;
+    }
     case AST_FOR_EACH:
+      frozen_check_expr(p, f, n->as.for_each.list_expr);
       frozen_check_block(p, n->as.for_each.body, n->as.for_each.body_count, f);
       break;
     case AST_REPEAT_WHILE:
     case AST_REPEAT_UNTIL:
+      frozen_check_expr(p, f, n->as.repeat_loop.condition);
       frozen_check_block(p, n->as.repeat_loop.body,
                          n->as.repeat_loop.body_count, f);
       break;
     case AST_REPEAT_TIMES:
+      frozen_check_expr(p, f, n->as.repeat_times.count_expr);
       frozen_check_block(p, n->as.repeat_times.body,
                          n->as.repeat_times.body_count, f);
       break;

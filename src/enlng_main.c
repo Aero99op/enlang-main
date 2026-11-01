@@ -167,7 +167,7 @@ static void print_human_error_c(const char* filepath, const char* source, int ta
             fprintf(stderr, "  * If '%s' is your own name, define it first, e.g.: remember %s as 0\n", word, word);
         }
     } else if (strstr(raw_msg, "declared with freeze") != NULL) {
-        fprintf(stderr, "Why:  A name made with 'freeze' is a constant and may not be assigned to again.\n\n");
+        fprintf(stderr, "Why:  A name made with 'freeze' is a constant: the name may not be assigned again, and a list or map it holds may not be changed.\n\n");
         fprintf(stderr, "Suggestions:\n");
         fprintf(stderr, "  * Declare it with 'remember' if the value has to change.\n");
         fprintf(stderr, "  * Use a different name for the new value.\n");
