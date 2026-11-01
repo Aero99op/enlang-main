@@ -183,5 +183,5 @@ show "the program goes on"
 
 `fail "message"` raises an error of your own. Outside any `try` it stops the program and prints the message like any other error. A `try` block can sit inside a function and inside a loop, can contain another `try`, and `give`, `stop` and `skip` work inside it. A change to a frozen list made inside a function is caught too. In the built-in interpreter, an error the toolchain finds while running (an unknown name, a call with the wrong number of inputs) is caught the same way; with `--native` such a mistake is refused when the program is built, before it runs.
 
-Dividing by zero is not an error in Enlangg (it gives 0), so `try` will not catch it. Check the divisor first.
+From 5.5.2, dividing by zero and arithmetic on values that are not numbers (such as `"a" minus 1`) are errors that `try` catches, in both modes. In 5.5.1 and earlier they gave a number without any message.
 

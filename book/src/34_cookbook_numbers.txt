@@ -259,13 +259,13 @@ show max of values min of values
 
 ## Counting down
 
-There is no counting-down loop, so count up and subtract:
+A negative step counts down (from 5.5.2):
 
 ::: code
 type enlng
 
-for i from 0 to 4:
-    show 5 - i
+for i from 5 to 1 by -1:
+    show i
 show "liftoff"
 :::
 

@@ -1,0 +1,85 @@
+type enlng
+show 7.5 mod 2
+show -7.5 mod 2
+show 10 mod 3
+show [1, 2] is [1, 2]
+show [1, [2, 3]] is [1, [2, 3]]
+show [1, 2] is [2, 1]
+show {"a": 1, "b": [1]} is {"b": [1], "a": 1}
+show {"a": 1} is {"a": 2}
+remember xs as [1, 2]
+show xs is xs
+show xs is not [1, 2]
+show [] is []
+show 1 is 1.0
+remember m as {"x": 1, "y": 2}
+remember total as 0
+for each k in m:
+    total = total plus m[k]
+show total
+for each ch in "abc":
+    show ch
+for i from 3 to 1 by -1:
+    show i
+for i from 10 to 1 by -4:
+    show i
+for i from 1 to 3 by -1:
+    show "never"
+for i from 2 to 2 by -1:
+    show "once" i
+for i from 1 to 7 by 3:
+    show i
+show "a" + 1 + true + null
+show "ab" times 2
+show 2 times "ab"
+try:
+    show "a" minus 1
+on error as e:
+    show "caught:" e
+try:
+    show [1, 2] times 3
+on error as e:
+    show "caught:" e
+try:
+    show 7 divided by 0
+on error as e:
+    show "caught:" e
+try:
+    show 7.0 divided by 0
+on error as e:
+    show "caught:" e
+try:
+    show 7 mod 0
+on error as e:
+    show "caught:" e
+try:
+    show sqrt("abc")
+on error as e:
+    show "caught:" e
+try:
+    remember c as {}
+    c["a"] += 1
+on error as e:
+    show "caught:" e
+try:
+    show true plus 1
+on error as e:
+    show "caught:" e
+try:
+    show "x" + [1]
+on error as e:
+    show "caught:" e
+try:
+    for i from 1 to 3 by 0:
+        show i
+on error as e:
+    show "caught:" e
+function bad with x:
+    give x minus "y"
+try:
+    show bad(1)
+on error as e:
+    show "caught in function:" e
+show -9223372036854775807 - 1
+show (-9223372036854775807 - 1) divided by -1
+show "end"

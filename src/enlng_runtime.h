@@ -340,6 +340,21 @@ static inline EnlngVal enlng_freeze_val(EnlngVal v) {
   return v;
 }
 
+/* `for each k in m`: a map is walked by its keys, a list or text item by item */
+static inline EnlngVal enlng_each_source(EnlngVal v) {
+  if (v.type == ENLNG_VAL_MAP)
+    return enlng_map_keys(v);
+  return v;
+}
+
+/* `for i from a to b by s`: a positive step counts up to b, a negative one
+   counts down to b, and a step of 0 would never end. */
+static inline void enlng_check_step(int64_t step) {
+  if (step == 0)
+    enlng_throw("This loop would never end because the step is 0. Use a "
+                "step such as 1, or -1 to count down.");
+}
+
 /* --- Container Length --- */
 static inline int64_t enlng_count_of(EnlngVal v) {
   if (v.type == ENLNG_VAL_LIST && v.as.l)
@@ -578,6 +593,29 @@ static inline bool enlng_vals_equal(EnlngVal a, EnlngVal b) {
   }
   if (a.type == ENLNG_VAL_NULL && b.type == ENLNG_VAL_NULL)
     return true;
+  /* Lists and maps are equal when they hold equal items. */
+  if (a.type == ENLNG_VAL_LIST && b.type == ENLNG_VAL_LIST) {
+    if (a.as.l == b.as.l)
+      return true;
+    if (!a.as.l || !b.as.l || a.as.l->count != b.as.l->count)
+      return false;
+    for (int i = 0; i < a.as.l->count; i++)
+      if (!enlng_vals_equal(a.as.l->items[i], b.as.l->items[i]))
+        return false;
+    return true;
+  }
+  if (a.type == ENLNG_VAL_MAP && b.type == ENLNG_VAL_MAP) {
+    if (a.as.m == b.as.m)
+      return true;
+    if (!a.as.m || !b.as.m || a.as.m->count != b.as.m->count)
+      return false;
+    for (int i = 0; i < a.as.m->capacity; i++)
+      for (EnlngMapEntry *e = a.as.m->buckets[i]; e; e = e->next)
+        if (!enlng_map_has(b, e->key) ||
+            !enlng_vals_equal(e->val, enlng_map_get(b, e->key)))
+          return false;
+    return true;
+  }
   return false;
 }
 
@@ -656,17 +694,56 @@ static inline const char *enlng_val_to_str_buf(EnlngVal v, char *buf,
 }
 
 /* --- Arithmetic --- */
+static inline bool enlng_is_num(EnlngVal v) {
+  return v.type == ENLNG_VAL_INT || v.type == ENLNG_VAL_FLOAT;
+}
+
+static inline double enlng_num_d(EnlngVal v) {
+  return v.type == ENLNG_VAL_FLOAT ? v.as.f : (double)v.as.i;
+}
+
+static inline const char *enlng_kind(EnlngVal v) {
+  switch (v.type) {
+  case ENLNG_VAL_INT:
+  case ENLNG_VAL_FLOAT: return "a number";
+  case ENLNG_VAL_STRING: return "text";
+  case ENLNG_VAL_BOOL: return "true/false";
+  case ENLNG_VAL_LIST: return "a list";
+  case ENLNG_VAL_MAP: return "a map";
+  default: return "null";
+  }
+}
+
+/* An operator was given values it cannot work on, such as "a" minus 1. */
+static inline void enlng_bad_operands(const char *op, EnlngVal a, EnlngVal b) {
+  char msg[300];
+  snprintf(msg, sizeof(msg), "'%s' needs two numbers, but got %s and %s.%s", op,
+           enlng_kind(a), enlng_kind(b),
+           (a.type == ENLNG_VAL_NULL || b.type == ENLNG_VAL_NULL)
+               ? " A missing key or position gives null; check it with has_key "
+                 "or 'is null' first."
+               : "");
+  enlng_throw(msg);
+}
+
+/* A built-in such as sqrt was given something that is not a number. */
+static inline double enlng_need_num(const char *fn, EnlngVal v) {
+  if (!enlng_is_num(v)) {
+    char msg[200];
+    snprintf(msg, sizeof(msg), "'%s' needs a number, but got %s.", fn, enlng_kind(v));
+    enlng_throw(msg);
+  }
+  return enlng_num_d(v);
+}
+
 static inline EnlngVal enlng_val_add(EnlngVal a, EnlngVal b) {
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
     return enlng_make_int(a.as.i + b.as.i);
-  if (a.type == ENLNG_VAL_FLOAT || b.type == ENLNG_VAL_FLOAT) {
-    if (a.type != ENLNG_VAL_STRING && b.type != ENLNG_VAL_STRING) {
-      double da = (a.type == ENLNG_VAL_FLOAT) ? a.as.f : (double)a.as.i;
-      double db = (b.type == ENLNG_VAL_FLOAT) ? b.as.f : (double)b.as.i;
-      return enlng_make_float(da + db);
-    }
-  }
-  if (a.type == ENLNG_VAL_STRING || b.type == ENLNG_VAL_STRING) {
+  if (enlng_is_num(a) && enlng_is_num(b))
+    return enlng_make_float(enlng_num_d(a) + enlng_num_d(b));
+  if ((a.type == ENLNG_VAL_STRING || b.type == ENLNG_VAL_STRING) &&
+      a.type != ENLNG_VAL_LIST && a.type != ENLNG_VAL_MAP &&
+      b.type != ENLNG_VAL_LIST && b.type != ENLNG_VAL_MAP) {
     char buf_a[128];
     char buf_b[128];
     const char *sa = enlng_val_to_str_buf(a, buf_a, sizeof(buf_a));
@@ -682,21 +759,26 @@ static inline EnlngVal enlng_val_add(EnlngVal a, EnlngVal b) {
     res.as.s = comb;
     return res;
   }
-  return enlng_make_int(0);
+  enlng_bad_operands("plus", a, b);
+  return enlng_make_null();
 }
 
 static inline EnlngVal enlng_val_sub(EnlngVal a, EnlngVal b) {
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
     return enlng_make_int(a.as.i - b.as.i);
-  double da = (a.type == ENLNG_VAL_FLOAT) ? a.as.f : (double)a.as.i;
-  double db = (b.type == ENLNG_VAL_FLOAT) ? b.as.f : (double)b.as.i;
-  return enlng_make_float(da - db);
+  if (!enlng_is_num(a) || !enlng_is_num(b)) {
+    enlng_bad_operands("minus", a, b);
+    return enlng_make_null();
+  }
+  return enlng_make_float(enlng_num_d(a) - enlng_num_d(b));
 }
 
 static inline EnlngVal enlng_val_mul(EnlngVal a, EnlngVal b) {
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
     return enlng_make_int(a.as.i * b.as.i);
-  if (a.type == ENLNG_VAL_STRING || b.type == ENLNG_VAL_STRING) {
+  /* text times a whole number repeats the text */
+  if ((a.type == ENLNG_VAL_STRING && b.type == ENLNG_VAL_INT) ||
+      (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_STRING)) {
     const char *str = (a.type == ENLNG_VAL_STRING) ? (a.as.s ? a.as.s : "") : (b.as.s ? b.as.s : "");
     int64_t count = (a.type == ENLNG_VAL_STRING) ? enlng_val_to_int(b) : enlng_val_to_int(a);
     if (count <= 0)
@@ -714,29 +796,43 @@ static inline EnlngVal enlng_val_mul(EnlngVal a, EnlngVal b) {
     res.as.s = buf;
     return res;
   }
-  double da = (a.type == ENLNG_VAL_FLOAT) ? a.as.f : (double)a.as.i;
-  double db = (b.type == ENLNG_VAL_FLOAT) ? b.as.f : (double)b.as.i;
-  return enlng_make_float(da * db);
+  if (!enlng_is_num(a) || !enlng_is_num(b)) {
+    enlng_bad_operands("times", a, b);
+    return enlng_make_null();
+  }
+  return enlng_make_float(enlng_num_d(a) * enlng_num_d(b));
+}
+
+static inline void enlng_zero_divisor(EnlngVal a, EnlngVal b, const char *op) {
+  if (enlng_is_num(b) && enlng_num_d(b) == 0.0) {
+    char buf[64], msg[200];
+    snprintf(msg, sizeof(msg), "Cannot divide by zero: %s %s 0.",
+             enlng_val_to_str_buf(a, buf, sizeof(buf)), op);
+    enlng_throw(msg);
+  }
 }
 
 static inline EnlngVal enlng_val_div(EnlngVal a, EnlngVal b) {
-  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT) {
-    if (b.as.i == 0)
-      return enlng_make_int(0);
-    return enlng_make_int(a.as.i / b.as.i);
+  if (!enlng_is_num(a) || !enlng_is_num(b)) {
+    enlng_bad_operands("divided by", a, b);
+    return enlng_make_null();
   }
-  double da = (a.type == ENLNG_VAL_FLOAT) ? a.as.f : (double)a.as.i;
-  double db = (b.type == ENLNG_VAL_FLOAT) ? b.as.f : (double)b.as.i;
-  if (db == 0.0)
-    return enlng_make_float(0.0);
-  return enlng_make_float(da / db);
+  enlng_zero_divisor(a, b, "divided by");
+  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
+    return enlng_make_int(b.as.i == -1 ? (int64_t)(0 - (uint64_t)a.as.i)
+                                       : a.as.i / b.as.i);
+  return enlng_make_float(enlng_num_d(a) / enlng_num_d(b));
 }
 
 static inline EnlngVal enlng_val_mod(EnlngVal a, EnlngVal b) {
-  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT && b.as.i != 0) {
-    return enlng_make_int(a.as.i % b.as.i);
+  if (!enlng_is_num(a) || !enlng_is_num(b)) {
+    enlng_bad_operands("mod", a, b);
+    return enlng_make_null();
   }
-  return enlng_make_int(0);
+  enlng_zero_divisor(a, b, "mod");
+  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
+    return enlng_make_int(b.as.i == -1 ? 0 : a.as.i % b.as.i);
+  return enlng_make_float(fmod(enlng_num_d(a), enlng_num_d(b)));
 }
 
 /* --- Stream Printing --- */
@@ -814,13 +910,13 @@ static inline EnlngVal enlng_ask(const char *prompt) {
 
 /* --- Math Built-ins --- */
 static inline EnlngVal enlng_builtin_sqrt(EnlngVal v) {
-  double d = (v.type == ENLNG_VAL_INT) ? (double)v.as.i : v.as.f;
+  double d = enlng_need_num("sqrt", v);
   return enlng_make_float(sqrt(d));
 }
 
 static inline EnlngVal enlng_builtin_pow(EnlngVal base, EnlngVal exp) {
-  double b = (base.type == ENLNG_VAL_INT) ? (double)base.as.i : base.as.f;
-  double e = (exp.type == ENLNG_VAL_INT) ? (double)exp.as.i : exp.as.f;
+  double b = enlng_need_num("pow", base);
+  double e = enlng_need_num("pow", exp);
   return enlng_make_float(pow(b, e));
 }
 
@@ -828,21 +924,21 @@ static inline EnlngVal enlng_builtin_abs(EnlngVal v) {
   if (v.type == ENLNG_VAL_INT) {
     return enlng_make_int(v.as.i < 0 ? -v.as.i : v.as.i);
   }
-  return enlng_make_float(fabs(v.as.f));
+  return enlng_make_float(fabs(enlng_need_num("abs", v)));
 }
 
 static inline EnlngVal enlng_builtin_floor(EnlngVal v) {
-  double d = (v.type == ENLNG_VAL_INT) ? (double)v.as.i : v.as.f;
+  double d = enlng_need_num("floor", v);
   return enlng_make_int((int64_t)floor(d));
 }
 
 static inline EnlngVal enlng_builtin_ceil(EnlngVal v) {
-  double d = (v.type == ENLNG_VAL_INT) ? (double)v.as.i : v.as.f;
+  double d = enlng_need_num("ceil", v);
   return enlng_make_int((int64_t)ceil(d));
 }
 
 static inline EnlngVal enlng_builtin_round(EnlngVal v) {
-  double d = (v.type == ENLNG_VAL_INT) ? (double)v.as.i : v.as.f;
+  double d = enlng_need_num("round", v);
   return enlng_make_int((int64_t)round(d));
 }
 

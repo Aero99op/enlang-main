@@ -43,16 +43,21 @@ This is the most common surprise for new programmers, so it is worth saying plai
 
 ## Dividing by zero
 
-In toolchain 5.5.1, dividing by zero does not stop the program. The result is `0`:
+From 5.5.2, dividing by zero is an error, for `divided by` and for `mod` alike. A `try` block catches it (chapter 21), so the program can decide what to do:
 
 ::: code
 type enlng
 
-show 5 divided by 0
+try:
+    show 5 divided by 0
+on error as problem:
+    show "caught:" problem
 show "still running"
 :::
 
-If a zero divisor would be a mistake in your program, test for it first with `when`.
+Toolchain 5.5.1 and earlier gave `0` here without any message. If a zero divisor is possible in your program, test for it with `when`, or wrap the division in `try`.
+
+The same goes for arithmetic on values that are not numbers. `"a" minus 1`, `[1, 2] times 3` and `null plus 1` are errors that name both kinds of value, such as "'minus' needs two numbers, but got text and a number". Two exceptions are on purpose: `plus` with text joins the two as text, and text `times` a whole number repeats the text.
 
 ## Order of operations
 

@@ -22,14 +22,16 @@ for i from 0 to 20 by 5:
     show i
 :::
 
-The end value is included, and the step must be positive. A loop that is meant to count downwards, such as `for i from 3 to 1 by -1`, does not run at all in toolchain 5.5.1. To count down, count up and subtract:
+The end value is included. From 5.5.2 a negative step counts down to the end value:
 
 ::: code
 type enlng
 
-for i from 0 to 2:
-    show 3 minus i
+for i from 3 to 1 by -1:
+    show i
 :::
+
+A step of 0 is an error, because the loop would never end. Without `by`, the step is 1, so `for i from 3 to 1` does not run at all. In toolchain 5.5.1 and earlier a negative step did not run either; there, count up and subtract.
 
 ## Doing something a fixed number of times
 

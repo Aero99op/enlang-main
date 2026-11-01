@@ -46,6 +46,7 @@ typedef struct {
   char err[512];
   int err_line;
   int depth;
+  int line; /* the statement running now, for errors the runtime throws */
   bool *sorted; /* the innermost `repeat until sorted` flag */
   EnlngVal ret;
 } Interp;
@@ -470,6 +471,7 @@ static int itry_run(Interp *it, IFrame *f, ASTNode *n, int *code, char *msg,
 static int iexec(Interp *it, IFrame *f, ASTNode *n) {
   if (!n || it->failed)
     return EX_OK;
+  it->line = n->line;
 
   switch (n->type) {
   case AST_DECLARATION: {
@@ -560,12 +562,12 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
                        : 1;
     if (it->failed)
       return EX_OK;
-    if (step <= 0 && start <= end) {
-      ifail(it, n->line, "This loop would never end because the step is %lld. Use a step of 1 or more.", (long long)step);
+    if (step == 0) {
+      ifail(it, n->line, "This loop would never end because the step is 0. Use a step such as 1, or -1 to count down.");
       return EX_OK;
     }
     int out = EX_OK;
-    for (int64_t i = start; i <= end && !it->failed; i += step) {
+    for (int64_t i = start; (step > 0 ? i <= end : i >= end) && !it->failed; i += step) {
       int saved = f->scope;
       f->scope = f->n;
       idefine(f, n->as.for_range.var_name, enlng_make_int(i));
@@ -610,9 +612,9 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
   }
 
   case AST_FOR_EACH: {
-    EnlngVal coll = n->as.for_each.list_expr
-                        ? ieval(it, f, n->as.for_each.list_expr)
-                        : iget(it, f, n->as.for_each.list_name, n->line);
+    EnlngVal coll = enlng_each_source(
+        n->as.for_each.list_expr ? ieval(it, f, n->as.for_each.list_expr)
+                                 : iget(it, f, n->as.for_each.list_name, n->line));
     int64_t cnt = enlng_count_of(coll);
     int out = EX_OK;
     for (int64_t i = 0; i < cnt && !it->failed; i++) {
@@ -818,13 +820,21 @@ static int interp_main(InterpJob *job) {
   IFrame top = {0};
   it.globals = &top;
   ASTNode *p = job->prog;
-  for (int i = 0; i < p->as.program.count && !it.failed; i++) {
-    ASTNode *s = p->as.program.statements[i];
-    if (!s || s->type == AST_FUNCTION)
-      continue;
-    if (iexec(&it, &top, s) == EX_RETURN)
-      break;
+  /* An error the runtime throws outside any `try` (such as "a" minus 1)
+   * comes back here, so it is reported with its line like any other. */
+  enlng_try_stack.eg_depth = 1;
+  if (setjmp(enlng_try_stack.eg_jb[0]) == 0) {
+    for (int i = 0; i < p->as.program.count && !it.failed; i++) {
+      ASTNode *s = p->as.program.statements[i];
+      if (!s || s->type == AST_FUNCTION)
+        continue;
+      if (iexec(&it, &top, s) == EX_RETURN)
+        break;
+    }
+  } else {
+    ifail(&it, it.line, "%s", enlng_try_stack.eg_msg);
   }
+  enlng_try_stack.eg_depth = 0;
   free(top.v);
   fflush(stdout);
   if (it.failed) {

@@ -629,7 +629,10 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
     }
 
     emit_indent(cg);
-    emit(cg, "for (int64_t _it = _start; _it <= _end; _it += _step) {\n");
+    emit(cg, "enlng_check_step(_step);\n");
+    emit_indent(cg);
+    emit(cg, "for (int64_t _it = _start; _step > 0 ? _it <= _end : _it >= _end; "
+             "_it += _step) {\n");
     cg->indent_level++;
 
     emit_indent(cg);
@@ -701,13 +704,13 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
     cg->indent_level++;
 
     emit_indent(cg);
-    emit(cg, "EnlngVal _coll%d = ", lid);
+    emit(cg, "EnlngVal _coll%d = enlng_each_source(", lid);
     if (n->as.for_each.list_expr) {
       generate_expression(cg, n->as.for_each.list_expr);
     } else {
       emit(cg, "%s", cn(n->as.for_each.list_name));
     }
-    emit(cg, ";\n");
+    emit(cg, ");\n");
 
     emit_indent(cg);
     emit(cg, "int64_t _each_cnt%d = enlng_count_of(_coll%d);\n", lid, lid);
