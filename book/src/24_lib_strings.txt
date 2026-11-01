@@ -194,7 +194,7 @@ show slugify("Hello World Again")
 
 ## Predictable names for the built-in helpers
 
-The module also defines `string_arrange(text, positions)`, a function version of the `arrange` statement that does work as a function, and wrappers for the position-based built-ins. Prefer the functions in this chapter over the length-guessing built-ins (`string_add`, `string_insert`, `string_replace`) described in chapter 22.
+The module also defines `string_arrange(text, positions)`, a function version of the `arrange` statement that does work as a function, and wrappers for the position-based built-ins. Use the functions in this chapter when you want to work with words; the built-ins `string_add`, `string_insert` and `string_replace` (chapter 8) work by position.
 
 ::: code
 type enlng

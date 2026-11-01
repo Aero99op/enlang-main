@@ -29,7 +29,7 @@ These functions are part of the language and need no `use` line. They are the sa
 | `string_remove_at(text, position)` | The text without the character at `position`. |
 | `string_remove(text, piece)` | The text with the first `piece` taken out. |
 
-`string_add`, `string_insert` and `string_replace` also exist. They decide which argument is the text by comparing lengths, so their results can surprise you. The standard library module `lib_strings.enlng` has predictable replacements: `string_replace_first`, `string_replace_all`, and others.
+`string_add`, `string_insert` and `string_replace` also exist. They take the text, then the piece, then a position (chapter 8). To replace a word rather than a position, the standard library module `lib_strings.enlng` has `string_replace_first`, `string_replace_all`, and others.
 
 ## Lists
 

@@ -123,7 +123,23 @@ show word
 
 `word` itself is unchanged; assign the result if you want to keep it: `word = string_set_at(word, 0, "J")`.
 
-`string_add`, `string_insert` and `string_replace` also exist, but they work out which of their arguments is the text and which is the piece by comparing lengths. That makes their behaviour hard to predict, so this book avoids them. Build the new text with `+` and a loop instead.
+Three more built-ins work by position, and they take the text first, then the piece, then the position:
+
+| Function | Result |
+|---|---|
+| `string_add(text, piece, position)` | The text with `piece` put in at that position. `string_insert` does the same. |
+| `string_replace(text, piece, position)` | The text with the one character at that position replaced by `piece`. |
+
+::: code
+type enlng
+
+show string_add("hello", "XY", 2)
+show string_replace("hello", "J", 1)
+:::
+
+Note that `string_replace` works on a position, not on a word. To replace a word wherever it appears, use `string_replace_first` or `string_replace_all` from `lib_strings` (chapter 24).
+
+These three also accept the text and the piece in either order, and they decide which is which by comparing lengths. In normal use that is invisible. It only shows when the text is shorter than the piece and the position lies beyond the text, so write them in the order above and you will not meet it.
 
 ## Counting letters: a small program
 

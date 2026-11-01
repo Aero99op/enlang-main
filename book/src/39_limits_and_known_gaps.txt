@@ -40,7 +40,7 @@ These are faults in the toolchain or its library files, not in the way they are 
 | `lib_ds`: `lru_size` | Counts entries that were already forgotten. |
 | `lib_net`: `parse_url` | Leaves a `#fragment` attached to the query. |
 | `enlng emit-c` | The comment at the top of the generated C names an old version number. |
-| `string_add`, `string_insert`, `string_replace` | Decide which argument is the text by comparing lengths; results are hard to predict. The book avoids them. |
+| `string_add`, `string_insert`, `string_replace` | They accept the text and the piece in either order and guess which is which from their lengths. Written as text, piece, position they behave; the guess goes wrong only for a short text with a position beyond its end. |
 | `enlngs` | Runs only a small part of the script language natively: `create`, `set`, `show`, `repeat`, `if`, `function`. Page-oriented lines are for the JavaScript translation. |
 | `freeze` | Protects the name only. A frozen list can still be changed with `append`, and elements can still be assigned. |
 
