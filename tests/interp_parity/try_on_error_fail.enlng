@@ -1,0 +1,56 @@
+type enlng
+function risky with n:
+    when n is 3:
+        fail "three is not allowed"
+    give n * 2
+
+function safe_double with n:
+    try:
+        give risky(n)
+    on error as problem:
+        show "caught:" problem
+        give -1
+
+remember total as 0
+try:
+    total increases by 5
+    show risky(1)
+    show risky(3)
+    show "not reached"
+on error as e:
+    show "error was:" e
+    show "total is" total
+
+show safe_double(2) safe_double(3)
+
+for each x in [1, 2, 3, 4]:
+    try:
+        when x is 2:
+            skip
+        when x is 4:
+            stop
+        show "x" x
+        fail "boom"
+    on error:
+        show "handled" x error
+
+try:
+    try:
+        fail "inner"
+    on error as a:
+        show "inner caught" a
+        fail "from handler"
+on error as b:
+    show "outer caught" b
+
+freeze nums as [1, 2]
+function bad with xs:
+    append(xs, 9)
+try:
+    bad(nums)
+on error as f:
+    show "frozen:" f
+show nums
+show "after"
+fail "final failure"
+show "never"

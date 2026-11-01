@@ -103,34 +103,37 @@ show make(4)
 show secret
 :::
 
-## A function cannot see the caller's names
+## A function can read the program's top-level names
 
-In this release a function body cannot read names that were created outside it. If the function needs a value, pass it in as an input:
+A name made at the top of the program, outside every function, can be read from inside a function. This is how a constant is shared:
 
-::: err
+::: code
 type enlng
 
-remember rate as 18
+freeze rate as 18
+
 function tax with price:
     give price times rate divided by 100
 
 show tax(200)
 :::
 
-The fix is to make the rate an input:
+A function can read such a name but cannot assign to it. An assignment inside the function makes a new name that belongs to the function, and the top-level name is untouched:
 
 ::: code
 type enlng
 
-remember rate as 18
+remember counter as 5
 
-function tax with price, percent:
-    give price times percent divided by 100
+function bump with x:
+    remember counter as 100
+    give counter + x
 
-show tax(200, rate)
+show bump(1)
+show counter
 :::
 
-This keeps functions self-contained: what a function does depends only on its inputs.
+A parameter or a name made inside the function hides a top-level name of the same spelling. A list or map is shared, so a function that changes one changes it for everyone. Passing what a function needs as inputs is still the clearer habit, because then what the function does depends only on its inputs. (In toolchain 5.5.1 and earlier a function could not see outer names at all.)
 
 ## Blocks
 

@@ -1,0 +1,41 @@
+type enlng
+class Stack:
+    remember items as []
+    method push with x:
+        append(items of self, x)
+    method pop_top:
+        when count of items of self is 0:
+            fail "stack is empty"
+        give pop(items of self)
+    method size:
+        give count of items of self
+    method is_empty:
+        give count of items of self is 0
+class Queue:
+    remember items as []
+    method add with x:
+        append(items of self, x)
+    method take:
+        remember all as items of self
+        remember first_item as all at 0
+        remember rest as []
+        for i from 1 to count of items of self minus 1:
+            append(rest, all at i)
+        change items of self to rest
+        give first_item
+st = new Stack
+for i from 1 to 5:
+    tell st to push with i times i
+show ask st to size
+show ask st to pop_top
+show ask st to pop_top
+show ask st to is_empty
+q = new Queue
+tell q to add with "a"
+tell q to add with "b"
+tell q to add with "c"
+show ask q to take ask q to take
+try:
+    tell new Stack to pop_top
+on error as e:
+    show "error:" e

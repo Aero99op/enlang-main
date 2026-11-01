@@ -23,6 +23,7 @@
 
 #include <ctype.h>
 #include <math.h>
+#include <setjmp.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -198,14 +199,34 @@ static inline bool enlng_is_frozen(EnlngVal v) {
   return false;
 }
 
-static inline void enlng_frozen_refuse(void) {
+/* --- try / on error: a thrown error jumps to the innermost open `try`,
+   or stops the program with a message when there is none --- */
+#define ENLNG_MAX_TRY 256
+static struct {
+  jmp_buf eg_jb[ENLNG_MAX_TRY];
+  int eg_depth; /* how many `try` blocks are open right now */
+  char eg_msg[512];
+} enlng_try_stack;
+
+static inline void enlng_throw(const char *msg) {
+  if (!msg)
+    msg = "error";
+  if (enlng_try_stack.eg_depth > 0) {
+    snprintf(enlng_try_stack.eg_msg, sizeof(enlng_try_stack.eg_msg), "%s", msg);
+    longjmp(enlng_try_stack.eg_jb[enlng_try_stack.eg_depth - 1], 1);
+  }
   fflush(stdout);
   fprintf(stderr,
           "\n-- Enlang RuntimeError --------------------------------------------------\n"
-          "What: This list or map was made with 'freeze', so it cannot be changed, "
-          "not even inside a function. Use 'remember' if it needs to change.\n"
-          "------------------------------------------------------------------------\n\n");
+          "What: %s\n"
+          "------------------------------------------------------------------------\n\n",
+          msg);
   exit(1);
+}
+
+static inline void enlng_frozen_refuse(void) {
+  enlng_throw("This list or map was made with 'freeze', so it cannot be changed, "
+              "not even inside a function. Use 'remember' if it needs to change.");
 }
 
 #define ENLNG_NOT_FROZEN(v)\

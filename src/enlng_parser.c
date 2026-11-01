@@ -6,6 +6,7 @@
  */
 
 #include "enlng_parser.h"
+#include <stdarg.h>
 
 void parser_init(Parser *parser, Token *tokens, int count) {
   parser->tokens = tokens;
@@ -94,6 +95,188 @@ static bool is_operator_or_closing(EnlngTokenType t) {
 
 /* Forward declarations */
 static ASTNode *parse_statement(Parser *p);
+static ASTNode *ast_new(ASTNodeType type, int line);
+static bool oop_starts_call(Parser *p);
+static bool oop_starts_new(Parser *p);
+static ASTNode *parse_oop_call(Parser *p);
+static ASTNode *parse_oop_new(Parser *p);
+
+/* ---------------------------------------------------------------------
+ *  OOP: class / method / new / call / tell / ask
+ *  A class is rewritten while parsing into ordinary functions and map
+ *  expressions, so the interpreter and the native build need no changes.
+ * --------------------------------------------------------------------- */
+typedef struct {
+  char *name;
+  int parents[8];
+  int nparents;
+  char **fields;
+  ASTNode **defaults;
+  int nfields;
+  char **methods;
+  int *margc;
+  int nmethods;
+  int mro[32];
+  int nmro;
+} OopClass;
+
+typedef struct {
+  char *name;
+  int argc;
+  int line;
+} OopDisp;
+
+static OopClass *g_cls = NULL;
+static int g_ncls = 0, g_capcls = 0;
+static OopDisp *g_disp = NULL;
+static int g_ndisp = 0, g_capdisp = 0;
+static char **g_isnames = NULL;
+static int *g_isline = NULL;
+static int g_nis = 0, g_capis = 0;
+static ASTNode **g_extra = NULL;
+static int g_nextra = 0, g_capextra = 0;
+static int g_parse_depth = 0;
+static int g_block_depth = 0; /* how many blocks deep the parser is */
+static ASTNode **g_gen = NULL;
+static int g_ngen = 0, g_capgen = 0;
+
+static void oop_reset(void) {
+  g_block_depth = 0;
+  g_ncls = 0;
+  g_ndisp = 0;
+  g_nis = 0;
+  g_nextra = 0;
+  g_ngen = 0;
+}
+
+static int oop_find_class(const char *name) {
+  for (int i = 0; i < g_ncls; i++)
+    if (strcmp(g_cls[i].name, name) == 0)
+      return i;
+  return -1;
+}
+
+static bool oop_is_ident(Token *t, const char *word) {
+  return t->type == ENLNG_TOKEN_IDENTIFIER && t->text &&
+         strcmp(t->text, word) == 0;
+}
+
+static bool oop_build_mro(int self_idx) {
+  OopClass *c = &g_cls[self_idx];
+  int seq[9][40], len[9], ns = 0;
+  for (int i = 0; i < c->nparents; i++) {
+    OopClass *pc = &g_cls[c->parents[i]];
+    memcpy(seq[ns], pc->mro, sizeof(int) * pc->nmro);
+    len[ns++] = pc->nmro;
+  }
+  if (c->nparents > 0) {
+    memcpy(seq[ns], c->parents, sizeof(int) * c->nparents);
+    len[ns++] = c->nparents;
+  }
+  int n = 0;
+  c->mro[n++] = self_idx;
+  for (;;) {
+    bool any = false;
+    int cand = -1;
+    for (int s = 0; s < ns && cand < 0; s++) {
+      if (len[s] == 0)
+        continue;
+      any = true;
+      int h = seq[s][0];
+      bool bad = false;
+      for (int t = 0; t < ns && !bad; t++)
+        for (int k = 1; k < len[t]; k++)
+          if (seq[t][k] == h) {
+            bad = true;
+            break;
+          }
+      if (!bad)
+        cand = h;
+    }
+    if (!any)
+      break;
+    if (cand < 0 || n >= 32)
+      return false;
+    c->mro[n++] = cand;
+    for (int s = 0; s < ns; s++)
+      if (len[s] > 0 && seq[s][0] == cand) {
+        memmove(seq[s], seq[s] + 1, sizeof(int) * (len[s] - 1));
+        len[s]--;
+      }
+  }
+  c->nmro = n;
+  return true;
+}
+
+static bool oop_find_method(int ci, const char *m, int *argc, int *owner) {
+  OopClass *c = &g_cls[ci];
+  for (int k = 0; k < c->nmro; k++) {
+    OopClass *o = &g_cls[c->mro[k]];
+    for (int j = 0; j < o->nmethods; j++)
+      if (strcmp(o->methods[j], m) == 0) {
+        *argc = o->margc[j];
+        *owner = c->mro[k];
+        return true;
+      }
+  }
+  return false;
+}
+
+static void oop_queue_extra(ASTNode *n) {
+  if (g_nextra >= g_capextra) {
+    g_capextra = g_capextra ? g_capextra * 2 : 16;
+    g_extra = (ASTNode **)realloc(g_extra, sizeof(ASTNode *) * g_capextra);
+  }
+  g_extra[g_nextra++] = n;
+}
+
+static ASTNode *oop_string_node(const char *s, int line) {
+  ASTNode *n = ast_new(AST_EXPR_LITERAL_STRING, line);
+  n->as.literal.string_val = enlng_strdup(s);
+  return n;
+}
+
+static ASTNode *oop_call_node(const char *fname, ASTNode **args, int argc,
+                              int line) {
+  ASTNode *n = ast_new(AST_EXPR_CALL, line);
+  n->as.call_expr.func_name = enlng_strdup(fname);
+  n->as.call_expr.args = args;
+  n->as.call_expr.arg_count = argc;
+  return n;
+}
+
+static void oop_note_dispatch(const char *m, int argc, int line) {
+  for (int i = 0; i < g_ndisp; i++)
+    if (g_disp[i].argc == argc && strcmp(g_disp[i].name, m) == 0)
+      return;
+  if (g_ndisp >= g_capdisp) {
+    g_capdisp = g_capdisp ? g_capdisp * 2 : 16;
+    g_disp = (OopDisp *)realloc(g_disp, sizeof(OopDisp) * g_capdisp);
+  }
+  g_disp[g_ndisp].name = enlng_strdup(m);
+  g_disp[g_ndisp].argc = argc;
+  g_disp[g_ndisp].line = line;
+  g_ndisp++;
+}
+
+static void oop_note_is(const char *cls, int line) {
+  for (int i = 0; i < g_nis; i++)
+    if (strcmp(g_isnames[i], cls) == 0)
+      return;
+  if (g_nis >= g_capis) {
+    g_capis = g_capis ? g_capis * 2 : 8;
+    g_isnames = (char **)realloc(g_isnames, sizeof(char *) * g_capis);
+    g_isline = (int *)realloc(g_isline, sizeof(int) * g_capis);
+  }
+  g_isnames[g_nis] = enlng_strdup(cls);
+  g_isline[g_nis] = line;
+  g_nis++;
+}
+
+static ASTNode *parse_additive(Parser *p);
+static ASTNode *parse_primary_internal(Parser *p, bool allow_with);
+static void parse_block(Parser *p, ASTNode ***out_stmts, int *out_count);
+static ASTNode *parse_expression(Parser *p);
 static ASTNode *parse_expression(Parser *p);
 static ASTNode *parse_additive(Parser *p);
 static ASTNode *parse_unary(Parser *p);
@@ -114,6 +297,11 @@ static inline ASTNode *parse_primary(Parser *p) {
 
 static ASTNode *parse_atom(Parser *p, bool allow_with) {
   Token *t = peek(p, 0);
+
+  if (oop_starts_call(p))
+    return parse_oop_call(p);
+  if (oop_starts_new(p))
+    return parse_oop_new(p);
 
   /* Int Literal */
   if (match(p, ENLNG_TOKEN_INT_LITERAL)) {
@@ -713,7 +901,22 @@ static ASTNode *parse_comparison(Parser *p) {
       continue;
     }
     Token *op = advance(p);
+    /* "x is a Dog": the article a / an is skipped when a word follows it */
+    if (op->type == ENLNG_TOKEN_EQ &&
+        (oop_is_ident(peek(p, 0), "a") || oop_is_ident(peek(p, 0), "an")) &&
+        peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER)
+      advance(p);
     ASTNode *right = parse_additive(p);
+    if (op->type == ENLNG_TOKEN_EQ && right && right->type == AST_EXPR_VARIABLE &&
+        oop_find_class(right->as.variable.name) >= 0) {
+      char fname[300];
+      oop_note_is(right->as.variable.name, op->line);
+      snprintf(fname, sizeof(fname), "oop_is_%s", right->as.variable.name);
+      ASTNode **cargs = (ASTNode **)malloc(sizeof(ASTNode *));
+      cargs[0] = left;
+      left = oop_call_node(fname, cargs, 1, op->line);
+      continue;
+    }
     ASTNode *n = ast_new(AST_EXPR_BINARY, op->line);
     n->as.binary_expr.op = op->type;
     n->as.binary_expr.left = left;
@@ -752,7 +955,7 @@ static ASTNode *parse_expression(Parser *p) {
 }
 
 /* Parse a block of statements governed by INDENT ... DEDENT */
-static void parse_block(Parser *p, ASTNode ***out_stmts, int *out_count) {
+static void parse_block_inner(Parser *p, ASTNode ***out_stmts, int *out_count) {
   if (!match(p, ENLNG_TOKEN_COLON)) {
     set_error(p, "Expected ':' before block", peek(p, 0)->line);
     return;
@@ -792,6 +995,14 @@ static void parse_block(Parser *p, ASTNode ***out_stmts, int *out_count) {
       }
       stmts[count++] = stmt;
     }
+    for (int e = 0; e < g_nextra; e++) {
+      if (count >= cap) {
+        cap *= 2;
+        stmts = (ASTNode **)realloc(stmts, sizeof(ASTNode *) * cap);
+      }
+      stmts[count++] = g_extra[e];
+    }
+    g_nextra = 0;
     skip_newlines(p);
   }
 
@@ -800,9 +1011,579 @@ static void parse_block(Parser *p, ASTNode ***out_stmts, int *out_count) {
   *out_count = count;
 }
 
+static void parse_block(Parser *p, ASTNode ***out_stmts, int *out_count) {
+  g_block_depth++;
+  parse_block_inner(p, out_stmts, out_count);
+  g_block_depth--;
+}
+
+/* ---------------- OOP parsing ---------------- */
+
+static bool oop_starts_class(Parser *p) {
+  Token *t = peek(p, 0);
+  if (!(oop_is_ident(t, "class") || oop_is_ident(t, "blueprint") ||
+        oop_is_ident(t, "model")))
+    return false;
+  if (peek(p, 1)->type != ENLNG_TOKEN_IDENTIFIER)
+    return false;
+  Token *t2 = peek(p, 2);
+  return t2->type == ENLNG_TOKEN_COLON || oop_is_ident(t2, "inherits") ||
+         oop_is_ident(t2, "extends");
+}
+
+static bool oop_starts_call(Parser *p) {
+  Token *t = peek(p, 0);
+  if (oop_is_ident(t, "call") && peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER &&
+      (peek(p, 2)->type == ENLNG_TOKEN_ON ||
+       peek(p, 2)->type == ENLNG_TOKEN_FROM))
+    return true;
+  if (oop_is_ident(t, "tell") && peek(p, 1)->type != ENLNG_TOKEN_ASSIGN &&
+      has_token_on_line(p, ENLNG_TOKEN_TO))
+    return true;
+  if (t->type == ENLNG_TOKEN_ASK &&
+      peek(p, 1)->type != ENLNG_TOKEN_STRING_LITERAL &&
+      has_token_on_line(p, ENLNG_TOKEN_TO))
+    return true;
+  return false;
+}
+
+static bool oop_starts_new(Parser *p) {
+  Token *t = peek(p, 0);
+  if (!(oop_is_ident(t, "new") || oop_is_ident(t, "instantiate")))
+    return false;
+  Token *c = peek(p, 1);
+  return c->type == ENLNG_TOKEN_IDENTIFIER && c->text &&
+         oop_find_class(c->text) >= 0;
+}
+
+static void oop_parse_args(Parser *p, ASTNode ***out, int *count) {
+  int cap = 4, n = 0;
+  ASTNode **args = (ASTNode **)malloc(sizeof(ASTNode *) * cap);
+  if (match(p, ENLNG_TOKEN_WITH)) {
+    do {
+      if (n >= cap) {
+        cap *= 2;
+        args = (ASTNode **)realloc(args, sizeof(ASTNode *) * cap);
+      }
+      args[n++] = parse_additive(p);
+    } while (match(p, ENLNG_TOKEN_COMMA));
+  }
+  *out = args;
+  *count = n;
+}
+
+/* call m on obj [with ...] | call m from Base on obj [with ...]
+   tell obj to m [with ...] | ask obj to m [with ...] */
+static ASTNode *parse_oop_call(Parser *p) {
+  Token *first = advance(p);
+  int line = first->line;
+  char mname[128];
+  char base[128];
+  base[0] = '\0';
+  ASTNode *obj = NULL;
+
+  if (oop_is_ident(first, "call")) {
+    Token *m = advance(p);
+    snprintf(mname, sizeof(mname), "%s", m->text);
+    if (match(p, ENLNG_TOKEN_FROM)) {
+      Token *b = peek(p, 0);
+      if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+        set_error(p, "Expected a class name after 'from'", line);
+        return ast_new(AST_EXPR_LITERAL_INT, line);
+      }
+      snprintf(base, sizeof(base), "%s", b->text);
+    }
+    if (!match(p, ENLNG_TOKEN_ON)) {
+      set_error(p, "Expected 'on' and an object after the method name", line);
+      return ast_new(AST_EXPR_LITERAL_INT, line);
+    }
+    obj = parse_primary_internal(p, false);
+  } else {
+    obj = parse_primary_internal(p, false);
+    if (!match(p, ENLNG_TOKEN_TO)) {
+      set_error(p, "Expected 'to' and a method name after the object", line);
+      return ast_new(AST_EXPR_LITERAL_INT, line);
+    }
+    Token *m = peek(p, 0);
+    if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+      set_error(p, "Expected a method name after 'to'", line);
+      return ast_new(AST_EXPR_LITERAL_INT, line);
+    }
+    snprintf(mname, sizeof(mname), "%s", m->text);
+  }
+
+  ASTNode **extra = NULL;
+  int nextra = 0;
+  oop_parse_args(p, &extra, &nextra);
+  ASTNode **args = (ASTNode **)malloc(sizeof(ASTNode *) * (nextra + 1));
+  args[0] = obj;
+  for (int i = 0; i < nextra; i++)
+    args[i + 1] = extra[i];
+  free(extra);
+
+  char fname[300];
+  if (base[0]) {
+    int ci = oop_find_class(base);
+    if (ci < 0) {
+      char err[256];
+      snprintf(err, sizeof(err), "I don't know a class named '%s'", base);
+      set_error(p, err, line);
+      return ast_new(AST_EXPR_LITERAL_INT, line);
+    }
+    int argc = 0, owner = 0;
+    if (!oop_find_method(ci, mname, &argc, &owner)) {
+      char err[256];
+      snprintf(err, sizeof(err), "Class '%s' has no method '%s'", base, mname);
+      set_error(p, err, line);
+      return ast_new(AST_EXPR_LITERAL_INT, line);
+    }
+    if (argc != nextra) {
+      char err[256];
+      snprintf(err, sizeof(err),
+               "Method '%s' of '%s' takes %d input(s) but got %d", mname, base,
+               argc, nextra);
+      set_error(p, err, line);
+      return ast_new(AST_EXPR_LITERAL_INT, line);
+    }
+    snprintf(fname, sizeof(fname), "%s__%s", g_cls[owner].name, mname);
+  } else {
+    oop_note_dispatch(mname, nextra, line);
+    snprintf(fname, sizeof(fname), "oop_call_%s_%d", mname, nextra);
+  }
+  return oop_call_node(fname, args, nextra + 1, line);
+}
+
+/* new Class [with field as value, ...] */
+static ASTNode *parse_oop_new(Parser *p) {
+  Token *nw = advance(p);
+  Token *ct = advance(p);
+  int line = nw->line;
+  int ci = oop_find_class(ct->text);
+  OopClass *c = &g_cls[ci];
+
+  /* all fields, base classes first, a later class overrides an earlier one */
+  int cap = 16, nf = 0;
+  char **keys = (char **)malloc(sizeof(char *) * cap);
+  ASTNode **vals = (ASTNode **)malloc(sizeof(ASTNode *) * cap);
+  for (int k = c->nmro - 1; k >= 0; k--) {
+    OopClass *o = &g_cls[c->mro[k]];
+    for (int j = 0; j < o->nfields; j++) {
+      int at = -1;
+      for (int q = 0; q < nf; q++)
+        if (strcmp(keys[q], o->fields[j]) == 0)
+          at = q;
+      if (at < 0) {
+        if (nf >= cap) {
+          cap *= 2;
+          keys = (char **)realloc(keys, sizeof(char *) * cap);
+          vals = (ASTNode **)realloc(vals, sizeof(ASTNode *) * cap);
+        }
+        at = nf++;
+        keys[at] = o->fields[j];
+      }
+      vals[at] = o->defaults[j];
+    }
+  }
+
+  if (match(p, ENLNG_TOKEN_WITH)) {
+    bool more = true;
+    while (more) {
+      Token *ft = peek(p, 0);
+      if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+        set_error(p, "Expected a field name after 'with'", line);
+        break;
+      }
+      if (!match(p, ENLNG_TOKEN_AS) && !match(p, ENLNG_TOKEN_ASSIGN)) {
+        set_error(p, "Expected 'as' and a value after the field name", line);
+        break;
+      }
+      ASTNode *v = parse_additive(p);
+      int at = -1;
+      for (int q = 0; q < nf; q++)
+        if (strcmp(keys[q], ft->text) == 0)
+          at = q;
+      if (at < 0) {
+        char err[256];
+        snprintf(err, sizeof(err), "Class '%s' has no field named '%s'",
+                 c->name, ft->text);
+        set_error(p, err, line);
+        break;
+      }
+      vals[at] = v;
+      /* a comma continues the list only when another "field as" follows, so
+         [new A with x as 1, new B] still reads as two items */
+      more = check(p, ENLNG_TOKEN_COMMA) &&
+             peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER &&
+             (peek(p, 2)->type == ENLNG_TOKEN_AS ||
+              peek(p, 2)->type == ENLNG_TOKEN_ASSIGN);
+      if (more)
+        advance(p);
+    }
+  }
+
+  ASTNode *m = ast_new(AST_EXPR_MAP_LITERAL, line);
+  m->as.map_literal.count = nf + 1;
+  m->as.map_literal.keys = (char **)malloc(sizeof(char *) * (nf + 1));
+  m->as.map_literal.values = (ASTNode **)malloc(sizeof(ASTNode *) * (nf + 1));
+  m->as.map_literal.keys[0] = enlng_strdup("__class");
+  m->as.map_literal.values[0] = oop_string_node(c->name, line);
+  for (int i = 0; i < nf; i++) {
+    m->as.map_literal.keys[i + 1] = enlng_strdup(keys[i]);
+    m->as.map_literal.values[i + 1] = vals[i];
+  }
+  free(keys);
+  free(vals);
+  return m;
+}
+
+static void oop_parse_params(Parser *p, char ***out, int *count, int line) {
+  int cap = 6, n = 0;
+  char **params = (char **)malloc(sizeof(char *) * cap);
+  params[n++] = enlng_strdup("self");
+  if (check(p, ENLNG_TOKEN_WITH) || check(p, ENLNG_TOKEN_LPAREN)) {
+    bool paren = check(p, ENLNG_TOKEN_LPAREN);
+    advance(p);
+    if (!(paren && check(p, ENLNG_TOKEN_RPAREN))) {
+      do {
+        Token *pt = peek(p, 0);
+        if (match(p, ENLNG_TOKEN_IDENTIFIER)) {
+          if (n >= cap) {
+            cap *= 2;
+            params = (char **)realloc(params, sizeof(char *) * cap);
+          }
+          params[n++] = enlng_strdup(pt->text);
+        }
+      } while (match(p, ENLNG_TOKEN_COMMA));
+    }
+    if (paren && !match(p, ENLNG_TOKEN_RPAREN))
+      set_error(p, "Expected ')' after method parameters", line);
+  }
+  *out = params;
+  *count = n;
+}
+
+static ASTNode *parse_class_def(Parser *p) {
+  Token *kw = advance(p);
+  Token *nt = advance(p);
+  int line = kw->line;
+  if (g_block_depth > 0) {
+    set_error(p, "A class must be written at the top level of the file, not inside a function or a block", line);
+    return NULL;
+  }
+  if (oop_find_class(nt->text) >= 0) {
+    char err[256];
+    snprintf(err, sizeof(err), "A class named '%s' already exists", nt->text);
+    set_error(p, err, line);
+    return NULL;
+  }
+  if (g_ncls >= g_capcls) {
+    g_capcls = g_capcls ? g_capcls * 2 : 16;
+    g_cls = (OopClass *)realloc(g_cls, sizeof(OopClass) * g_capcls);
+  }
+  int ci = g_ncls++;
+  memset(&g_cls[ci], 0, sizeof(OopClass));
+  g_cls[ci].name = enlng_strdup(nt->text);
+
+  if (oop_is_ident(peek(p, 0), "inherits") ||
+      oop_is_ident(peek(p, 0), "extends")) {
+    advance(p);
+    match(p, ENLNG_TOKEN_FROM);
+    do {
+      Token *pt = peek(p, 0);
+      if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+        set_error(p, "Expected a class name after 'inherits'", line);
+        return NULL;
+      }
+      int pi = oop_find_class(pt->text);
+      if (pi < 0 || pi == ci) {
+        char err[256];
+        snprintf(err, sizeof(err),
+                 "I don't know a class named '%s'. Define it before '%s'.",
+                 pt->text, nt->text);
+        set_error(p, err, line);
+        return NULL;
+      }
+      if (g_cls[ci].nparents >= 8) {
+        set_error(p, "A class can inherit from at most 8 classes", line);
+        return NULL;
+      }
+      g_cls[ci].parents[g_cls[ci].nparents++] = pi;
+    } while (match(p, ENLNG_TOKEN_COMMA));
+  }
+  if (!oop_build_mro(ci)) {
+    set_error(p, "These base classes cannot be combined: their order conflicts",
+              line);
+    return NULL;
+  }
+
+  if (!match(p, ENLNG_TOKEN_COLON)) {
+    set_error(p, "Expected ':' after the class name", line);
+    return NULL;
+  }
+  skip_newlines(p);
+  ASTNode **fns = NULL;
+  int nfns = 0;
+  if (match(p, ENLNG_TOKEN_INDENT)) {
+    skip_newlines(p);
+    while (!check(p, ENLNG_TOKEN_DEDENT) && !check(p, ENLNG_TOKEN_EOF) &&
+           !p->has_error) {
+      Token *t = peek(p, 0);
+      if (t->type == ENLNG_TOKEN_REMEMBER) {
+        advance(p);
+        Token *ft = peek(p, 0);
+        if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+          set_error(p, "Expected a field name after 'remember' in a class",
+                    t->line);
+          return NULL;
+        }
+        if (!match(p, ENLNG_TOKEN_AS) && !match(p, ENLNG_TOKEN_ASSIGN)) {
+          set_error(p, "Expected 'as' and a default value for the field",
+                    t->line);
+          return NULL;
+        }
+        ASTNode *dv = parse_expression(p);
+        OopClass *c = &g_cls[ci];
+        int at = -1;
+        for (int q = 0; q < c->nfields; q++)
+          if (strcmp(c->fields[q], ft->text) == 0)
+            at = q;
+        if (at < 0) {
+          at = c->nfields++;
+          c->fields = (char **)realloc(c->fields, sizeof(char *) * c->nfields);
+          c->defaults =
+              (ASTNode **)realloc(c->defaults, sizeof(ASTNode *) * c->nfields);
+          c->fields[at] = enlng_strdup(ft->text);
+        }
+        c->defaults[at] = dv;
+      } else if (oop_is_ident(t, "method")) {
+        advance(p);
+        Token *mt = peek(p, 0);
+        if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+          set_error(p, "Expected a method name after 'method'", t->line);
+          return NULL;
+        }
+        char **params = NULL;
+        int pc = 0;
+        oop_parse_params(p, &params, &pc, t->line);
+        OopClass *c = &g_cls[ci];
+        int at = -1;
+        for (int q = 0; q < c->nmethods; q++)
+          if (strcmp(c->methods[q], mt->text) == 0)
+            at = q;
+        if (at < 0) {
+          at = c->nmethods++;
+          c->methods =
+              (char **)realloc(c->methods, sizeof(char *) * c->nmethods);
+          c->margc = (int *)realloc(c->margc, sizeof(int) * c->nmethods);
+          c->methods[at] = enlng_strdup(mt->text);
+        }
+        c->margc[at] = pc - 1;
+        ASTNode *fn = ast_new(AST_FUNCTION, t->line);
+        char fname[300];
+        snprintf(fname, sizeof(fname), "%s__%s", c->name, mt->text);
+        fn->as.func_def.name = enlng_strdup(fname);
+        fn->as.func_def.params = params;
+        fn->as.func_def.param_count = pc;
+        parse_block(p, &fn->as.func_def.body, &fn->as.func_def.body_count);
+        fns = (ASTNode **)realloc(fns, sizeof(ASTNode *) * (nfns + 1));
+        fns[nfns++] = fn;
+      } else {
+        set_error(p,
+                  "Inside a class, write 'remember field as value' or "
+                  "'method name:'",
+                  t->line);
+        return NULL;
+      }
+      skip_newlines(p);
+    }
+    match(p, ENLNG_TOKEN_DEDENT);
+  }
+  if (nfns == 0)
+    return NULL;
+  for (int i = 1; i < nfns; i++)
+    oop_queue_extra(fns[i]);
+  ASTNode *first = fns[0];
+  free(fns);
+  return first;
+}
+
+/* Walk the small AST shapes the generated helpers use and stamp one line. */
+static void oop_set_line(ASTNode *n, int line) {
+  if (!n)
+    return;
+  n->line = line;
+  switch (n->type) {
+  case AST_FUNCTION:
+    for (int i = 0; i < n->as.func_def.body_count; i++)
+      oop_set_line(n->as.func_def.body[i], line);
+    break;
+  case AST_WHEN:
+    oop_set_line(n->as.when_stmt.condition, line);
+    for (int i = 0; i < n->as.when_stmt.then_count; i++)
+      oop_set_line(n->as.when_stmt.then_body[i], line);
+    for (int i = 0; i < n->as.when_stmt.else_count; i++)
+      oop_set_line(n->as.when_stmt.else_body[i], line);
+    break;
+  case AST_DECLARATION:
+    oop_set_line(n->as.decl.init_expr, line);
+    break;
+  case AST_GIVE:
+    oop_set_line(n->as.give_stmt.expr, line);
+    break;
+  case AST_FAIL:
+    oop_set_line(n->as.fail_stmt.message, line);
+    break;
+  case AST_EXPR_STMT:
+    oop_set_line(n->as.expr_stmt.expr, line);
+    break;
+  case AST_EXPR_BINARY:
+    oop_set_line(n->as.binary_expr.left, line);
+    oop_set_line(n->as.binary_expr.right, line);
+    break;
+  case AST_EXPR_CALL:
+    for (int i = 0; i < n->as.call_expr.arg_count; i++)
+      oop_set_line(n->as.call_expr.args[i], line);
+    break;
+  case AST_EXPR_FIELD:
+    oop_set_line(n->as.field_expr.target, line);
+    break;
+  default:
+    break;
+  }
+}
+
+static void oop_append(char **buf, size_t *len, size_t *cap, const char *fmt,
+                       ...) {
+  char tmp[1024];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(tmp, sizeof(tmp), fmt, ap);
+  va_end(ap);
+  size_t add = strlen(tmp);
+  if (*len + add + 1 > *cap) {
+    while (*len + add + 1 > *cap)
+      *cap = *cap ? *cap * 2 : 4096;
+    *buf = (char *)realloc(*buf, *cap);
+  }
+  memcpy(*buf + *len, tmp, add + 1);
+  *len += add;
+}
+
+static void oop_parse_generated(char *buf, int line) {
+  Lexer lx;
+  lexer_init(&lx, buf);
+  lexer_tokenize(&lx);
+  Parser sp;
+  parser_init(&sp, lx.tokens, lx.token_count);
+  ASTNode *sub = parser_parse_program(&sp);
+  if (sub && sub->type == AST_PROGRAM && !sp.has_error) {
+    for (int s = 0; s < sub->as.program.count; s++) {
+      oop_set_line(sub->as.program.statements[s], line);
+      if (g_ngen >= g_capgen) {
+        g_capgen = g_capgen ? g_capgen * 2 : 16;
+        g_gen = (ASTNode **)realloc(g_gen, sizeof(ASTNode *) * g_capgen);
+      }
+      g_gen[g_ngen++] = sub->as.program.statements[s];
+    }
+  }
+  lexer_free(&lx);
+}
+
+/* Build the dispatcher and "is a" helpers as plain Enlng source, parse them,
+   and put them in front of the program. */
+static void oop_generate_helpers(ASTNode *prog) {
+  if (g_ndisp == 0 && g_nis == 0)
+    return;
+  for (int d = 0; d < g_ndisp; d++) {
+    char *buf = NULL;
+    size_t len = 0, cap = 0;
+    int argc = g_disp[d].argc;
+    oop_append(&buf, &len, &cap,
+               "type enlng\nfunction oop_call_%s_%d with oop_obj",
+               g_disp[d].name, argc);
+    for (int i = 1; i <= argc; i++)
+      oop_append(&buf, &len, &cap, ", oop_a%d", i);
+    oop_append(&buf, &len, &cap, ":\n    remember oop_c as __class of oop_obj\n");
+    for (int ci = 0; ci < g_ncls; ci++) {
+      int margc = 0, owner = 0;
+      if (!oop_find_method(ci, g_disp[d].name, &margc, &owner))
+        continue;
+      oop_append(&buf, &len, &cap, "    when oop_c == \"%s\":\n",
+                 g_cls[ci].name);
+      if (margc != argc) {
+        oop_append(&buf, &len, &cap,
+                   "        fail \"Method '%s' of '%s' takes %d input(s) but "
+                   "got %d\"\n",
+                   g_disp[d].name, g_cls[ci].name, margc, argc);
+      } else {
+        oop_append(&buf, &len, &cap, "        give %s__%s(oop_obj",
+                   g_cls[owner].name, g_disp[d].name);
+        for (int i = 1; i <= argc; i++)
+          oop_append(&buf, &len, &cap, ", oop_a%d", i);
+        oop_append(&buf, &len, &cap, ")\n");
+      }
+    }
+    oop_append(&buf, &len, &cap,
+               "    when oop_c == null:\n"
+               "        fail \"This value is not an object, so it has no "
+               "method '%s'\"\n"
+               "    remember oop_msg as \"Class \" + oop_c + \" has no method "
+               "'%s'\"\n"
+               "    fail oop_msg\n",
+               g_disp[d].name, g_disp[d].name);
+    oop_parse_generated(buf, g_disp[d].line);
+    free(buf);
+  }
+  for (int k = 0; k < g_nis; k++) {
+    int target = oop_find_class(g_isnames[k]);
+    char *buf = NULL;
+    size_t len = 0, cap = 0;
+    oop_append(&buf, &len, &cap,
+               "type enlng\nfunction oop_is_%s with oop_obj:\n"
+               "    remember oop_c as __class of oop_obj\n",
+               g_isnames[k]);
+    for (int ci = 0; ci < g_ncls; ci++) {
+      bool is_sub = false;
+      for (int m = 0; m < g_cls[ci].nmro; m++)
+        if (g_cls[ci].mro[m] == target)
+          is_sub = true;
+      if (is_sub)
+        oop_append(&buf, &len, &cap,
+                   "    when oop_c == \"%s\":\n        give true\n",
+                   g_cls[ci].name);
+    }
+    oop_append(&buf, &len, &cap, "    give false\n");
+    oop_parse_generated(buf, g_isline[k]);
+    free(buf);
+  }
+  int total = prog->as.program.count + g_ngen;
+  ASTNode **all = (ASTNode **)malloc(sizeof(ASTNode *) * (total + 1));
+  int n = 0;
+  for (int i = 0; i < g_ngen; i++)
+    all[n++] = g_gen[i];
+  for (int i = 0; i < prog->as.program.count; i++)
+    all[n++] = prog->as.program.statements[i];
+  free(prog->as.program.statements);
+  prog->as.program.statements = all;
+  prog->as.program.count = n;
+  prog->as.program.capacity = total + 1;
+  g_ngen = 0;
+}
+
 static ASTNode *parse_statement(Parser *p) {
   skip_newlines(p);
   Token *t = peek(p, 0);
+
+  /* class Name [inherits from A, B]: fields and methods */
+  if (oop_starts_class(p))
+    return parse_class_def(p);
+
+  /* call m on obj / tell obj to m / ask obj to m, as a statement */
+  if (oop_starts_call(p)) {
+    ASTNode *e = ast_new(AST_EXPR_STMT, t->line);
+    e->as.expr_stmt.expr = parse_oop_call(p);
+    return e;
+  }
 
   /* 0. Module Import: use "filename.enlng" / import "filename.enlng" */
   if (match(p, ENLNG_TOKEN_USE)) {
@@ -890,6 +1671,51 @@ static ASTNode *parse_statement(Parser *p) {
     n->as.mutation.name = name;
     n->as.mutation.op = ENLNG_TOKEN_ASSIGN;
     n->as.mutation.val_expr = val_expr;
+    return n;
+  }
+
+  /* try: block, then `on error [as name]:` block. `try` and `error` are read
+     as words only here, so they stay usable as names elsewhere. */
+  if (t->type == ENLNG_TOKEN_IDENTIFIER && t->text &&
+      strcmp(t->text, "try") == 0 && peek(p, 1)->type == ENLNG_TOKEN_COLON) {
+    advance(p); /* try */
+    ASTNode *n = ast_new(AST_TRY, t->line);
+    parse_block(p, &n->as.try_stmt.body, &n->as.try_stmt.body_count);
+    skip_newlines(p);
+    Token *on_tok = peek(p, 0);
+    Token *err_tok = peek(p, 1);
+    if (on_tok->type != ENLNG_TOKEN_ON ||
+        err_tok->type != ENLNG_TOKEN_IDENTIFIER || !err_tok->text ||
+        strcmp(err_tok->text, "error") != 0) {
+      set_error(p, "A 'try' block needs an 'on error:' block right after it, for example:  on error as problem:",
+                t->line);
+      return NULL;
+    }
+    advance(p); /* on */
+    advance(p); /* error */
+    n->as.try_stmt.err_name = enlng_strdup("error");
+    if (match(p, ENLNG_TOKEN_AS)) {
+      Token *name_tok = peek(p, 0);
+      if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+        set_error(p, "Expected a name after 'on error as'", t->line);
+        return NULL;
+      }
+      free(n->as.try_stmt.err_name);
+      n->as.try_stmt.err_name = enlng_strdup(name_tok->text);
+    }
+    parse_block(p, &n->as.try_stmt.handler, &n->as.try_stmt.handler_count);
+    return n;
+  }
+
+  /* fail "message": stop the current try block (or the program) with an error */
+  if (t->type == ENLNG_TOKEN_IDENTIFIER && t->text &&
+      strcmp(t->text, "fail") == 0 &&
+      (peek(p, 1)->type == ENLNG_TOKEN_STRING_LITERAL ||
+       peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER ||
+       peek(p, 1)->type == ENLNG_TOKEN_INT_LITERAL)) {
+    advance(p); /* fail */
+    ASTNode *n = ast_new(AST_FAIL, t->line);
+    n->as.fail_stmt.message = parse_expression(p);
     return n;
   }
 
@@ -1375,12 +2201,35 @@ static ASTNode *parse_statement(Parser *p) {
       if (!match(p, ENLNG_TOKEN_RBRACKET)) {
         set_error(p, "Expected ']' after index in assignment", t->line);
       }
+      /* Nested: g[1][2] = v  ->  the container is the expression g[1]. */
+      ASTNode *target_expr = NULL;
+      while (check(p, ENLNG_TOKEN_LBRACKET) && !p->has_error) {
+        ASTNode *base = target_expr;
+        if (!base) {
+          base = ast_new(AST_EXPR_VARIABLE, t->line);
+          base->as.variable.name = enlng_strdup(id_tok->text);
+        }
+        ASTNode *inner = ast_new(AST_EXPR_INDEX, t->line);
+        inner->as.index_expr.target = base;
+        inner->as.index_expr.arr_name =
+            (base->type == AST_EXPR_VARIABLE)
+                ? enlng_strdup(base->as.variable.name)
+                : NULL;
+        inner->as.index_expr.index_expr = index_expr;
+        target_expr = inner;
+        advance(p); /* consume '[' */
+        index_expr = parse_expression(p);
+        if (!match(p, ENLNG_TOKEN_RBRACKET))
+          set_error(p, "Expected ']' after index in assignment", t->line);
+      }
       if (check(p, ENLNG_TOKEN_ASSIGN) || check(p, ENLNG_TOKEN_INC_BY) ||
           check(p, ENLNG_TOKEN_DEC_BY)) {
         EnlngTokenType op = advance(p)->type;
         ASTNode *val_expr = parse_expression(p);
         ASTNode *n = ast_new(AST_INDEX_MUTATION, t->line);
-        n->as.index_mutation.arr_name = enlng_strdup(id_tok->text);
+        n->as.index_mutation.arr_name =
+            target_expr ? NULL : enlng_strdup(id_tok->text);
+        n->as.index_mutation.target_expr = target_expr;
         n->as.index_mutation.index_expr = index_expr;
         n->as.index_mutation.op = op;
         n->as.index_mutation.val_expr = val_expr;
@@ -1657,6 +2506,14 @@ static void frozen_check_block(Parser *p, ASTNode **stmts, int count,
       frozen_check_block(p, n->as.when_stmt.else_body,
                          n->as.when_stmt.else_count, f);
       break;
+    case AST_TRY:
+      frozen_check_block(p, n->as.try_stmt.body, n->as.try_stmt.body_count, f);
+      frozen_check_block(p, n->as.try_stmt.handler,
+                         n->as.try_stmt.handler_count, f);
+      break;
+    case AST_FAIL:
+      frozen_check_expr(p, f, n->as.fail_stmt.message);
+      break;
     case AST_FOR_RANGE:
       frozen_check_expr(p, f, n->as.for_range.start_expr);
       frozen_check_expr(p, f, n->as.for_range.end_expr);
@@ -1701,7 +2558,7 @@ static void frozen_check_block(Parser *p, ASTNode **stmts, int count,
   f->count = keep;
 }
 
-ASTNode *parser_parse_program(Parser *p) {
+static ASTNode *parser_parse_program_inner(Parser *p) {
   skip_newlines(p);
 
   /* --- DOMAIN GUARD: First statement must be 'type enlng' --- */
@@ -1776,6 +2633,15 @@ ASTNode *parser_parse_program(Parser *p) {
       }
       prog->as.program.statements[prog->as.program.count++] = stmt;
     }
+    for (int e = 0; e < g_nextra; e++) {
+      if (prog->as.program.count >= prog->as.program.capacity) {
+        prog->as.program.capacity *= 2;
+        prog->as.program.statements = (ASTNode **)realloc(
+            prog->as.program.statements, sizeof(ASTNode *) * prog->as.program.capacity);
+      }
+      prog->as.program.statements[prog->as.program.count++] = g_extra[e];
+    }
+    g_nextra = 0;
     skip_newlines(p);
   }
 
@@ -1786,6 +2652,21 @@ ASTNode *parser_parse_program(Parser *p) {
     free(top.names);
   }
 
+  return prog;
+}
+
+ASTNode *parser_parse_program(Parser *p) {
+  bool outer = (g_parse_depth == 0);
+  if (outer)
+    oop_reset();
+  g_parse_depth++;
+  ASTNode *prog = parser_parse_program_inner(p);
+  g_parse_depth--;
+  if (outer && prog && prog->type == AST_PROGRAM && !p->has_error) {
+    g_parse_depth++; /* the helpers are parsed by this same function */
+    oop_generate_helpers(prog);
+    g_parse_depth--;
+  }
   return prog;
 }
 

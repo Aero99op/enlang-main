@@ -1,0 +1,24 @@
+type enlng
+class Greeter:
+    method greet with who:
+        give "hello " + who
+class Shouter inherits from Greeter:
+    method greet with who:
+        give "HELLO " + uppercase of who + "!"
+class Polite inherits from Greeter:
+    method greet with who, title:
+        give "good day " + title + " " + who
+class Silent:
+    method greet:
+        give "..."
+people = [new Greeter, new Shouter, new Silent]
+for each p in people:
+    try:
+        show ask p to greet with "sam"
+    on error as e:
+        show "error:" e
+show ask new Polite to greet with "lee", "dr"
+try:
+    show ask new Polite to greet with "lee"
+on error as e:
+    show "error:" e

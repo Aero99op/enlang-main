@@ -1,0 +1,57 @@
+type enlng
+class Engine:
+    remember hp as 100
+    method boost with extra:
+        hp of self increases by extra
+        give hp of self
+class Car:
+    remember model as "basic"
+    remember engine as null
+    remember trips as []
+    method setup:
+        change engine of self to new Engine
+        give self
+    method drive with km:
+        append(trips of self, km)
+        give count of trips of self
+    method upgrade:
+        give call boost on engine of self with 50
+    method clone_named with new_name:
+        remember c as new Car with model as new_name
+        tell c to setup
+        give c
+c1 = new Car with model as "Zed"
+tell c1 to setup
+show ask c1 to upgrade
+show ask c1 to upgrade
+c2 = ask c1 to clone_named with "Zed2"
+show model of c2 hp of engine of c2 hp of engine of c1
+show ask c1 to drive with 10
+show ask c1 to drive with 25
+show trips of c1
+show count of trips of c2
+class Tree:
+    remember value as 0
+    remember kids as []
+    method add with k:
+        append(kids of self, k)
+    method total:
+        remember s as value of self
+        for each k in kids of self:
+            s = s + ask k to total
+        give s
+    method depth:
+        remember best as 0
+        for each k in kids of self:
+            remember d as ask k to depth
+            when d is greater than best:
+                best = d
+        give best plus 1
+root = new Tree with value as 1
+a = new Tree with value as 2
+b = new Tree with value as 3
+c = new Tree with value as 4
+tell root to add with a
+tell root to add with b
+tell a to add with c
+show ask root to total ask root to depth

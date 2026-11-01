@@ -159,3 +159,29 @@ When a program prints something strange and gives no error, one of these is the 
 2. Check the line just before the one reported. A missing colon or bracket often makes the *next* line look wrong.
 3. Cut the program down until the problem is the only thing left, then add lines back.
 4. Print the values in play with `show` just before the failing line.
+
+## Catching an error yourself: try and fail
+
+From 5.5.2 a program can catch an error instead of stopping. Put the risky lines under `try:` and the recovery under `on error:`. The message of the error is available in the second block under the name you choose after `as` (it is called `error` when you leave `as` out):
+
+::: code
+type enlng
+
+function risky with n:
+    when n is 3:
+        fail "three is not allowed"
+    give n times 2
+
+try:
+    show risky(1)
+    show risky(3)
+    show "not reached"
+on error as problem:
+    show "caught:" problem
+show "the program goes on"
+:::
+
+`fail "message"` raises an error of your own. Outside any `try` it stops the program and prints the message like any other error. A `try` block can sit inside a function and inside a loop, can contain another `try`, and `give`, `stop` and `skip` work inside it. A change to a frozen list made inside a function is caught too. In the built-in interpreter, an error the toolchain finds while running (an unknown name, a call with the wrong number of inputs) is caught the same way; with `--native` such a mistake is refused when the program is built, before it runs.
+
+Dividing by zero is not an error in Enlangg (it gives 0), so `try` will not catch it. Check the divisor first.
+

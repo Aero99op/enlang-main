@@ -1,0 +1,16 @@
+type enlng
+remember grid as [[1, 2, 3], [4, 5, 6]]
+grid[1][2] = 99
+grid[0][0] increases by 10
+show grid
+remember tasks as [{"name": "a", "done": false}, {"name": "b", "done": false}]
+tasks[1]["done"] = true
+tasks[0]["name"] = "first"
+show tasks
+remember deep as [[[0, 0], [0, 0]]]
+deep[0][1][1] = 7
+show deep
+remember m as {"user": {"age": 20}, "tags": ["x", "y"]}
+m["user"]["age"] increases by 1
+m["tags"][1] = "z"
+show m["user"]["age"] m["tags"]

@@ -18,6 +18,8 @@ void codegen_init(CodeGen *cg) {
   cg->current_pair_list[0] = '\0';
   cg->in_pair_loop = false;
   cg->temp_var_id = 0;
+  cg->try_nest = 0;
+  cg->loop_depth = 0;
   cg->program = NULL;
   cg->scope_vars = NULL;
   cg->scope_var_count = 0;
@@ -147,6 +149,15 @@ static void emit_escaped_string(CodeGen *cg, const char *str) {
 
 /* Forward declarations */
 static void generate_expression(CodeGen *cg, ASTNode *node);
+/* The list or map an index assignment writes into: a plain name, or for a
+   nested assignment such as g[1][2] = v the expression g[1]. */
+static void emit_mutation_container(CodeGen *cg, ASTNode *n) {
+  if (n->as.index_mutation.target_expr)
+    generate_expression(cg, n->as.index_mutation.target_expr);
+  else
+    emit(cg, "%s", n->as.index_mutation.arr_name);
+}
+
 static void generate_statement(CodeGen *cg, ASTNode *node);
 
 static void generate_expression(CodeGen *cg, ASTNode *n) {
@@ -466,7 +477,24 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
   }
 }
 
+static void generate_statement_inner(CodeGen *cg, ASTNode *n);
+
+/* Loops remember how many `try` bodies were open when they began. */
 static void generate_statement(CodeGen *cg, ASTNode *n) {
+  bool loop = n && (n->type == AST_FOR_RANGE || n->type == AST_FOR_PAIR ||
+                    n->type == AST_FOR_EACH || n->type == AST_REPEAT_WHILE ||
+                    n->type == AST_REPEAT_UNTIL || n->type == AST_REPEAT_TIMES);
+  if (loop) {
+    if (cg->loop_depth < 64)
+      cg->loop_try_base[cg->loop_depth] = cg->try_nest;
+    cg->loop_depth++;
+  }
+  generate_statement_inner(cg, n);
+  if (loop)
+    cg->loop_depth--;
+}
+
+static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
   if (!n)
     return;
 
@@ -507,34 +535,35 @@ static void generate_statement(CodeGen *cg, ASTNode *n) {
     }
     break;
 
-  case AST_INDEX_MUTATION:
+  case AST_INDEX_MUTATION: {
+    ASTNode *im = n;
     emit_indent(cg);
-    if (n->as.index_mutation.op == ENLNG_TOKEN_INC_BY) {
-      emit(cg, "enlng_container_set(%s, ", n->as.index_mutation.arr_name);
-      generate_expression(cg, n->as.index_mutation.index_expr);
-      emit(cg, ", enlng_val_add(enlng_container_get(%s, ",
-           n->as.index_mutation.arr_name);
-      generate_expression(cg, n->as.index_mutation.index_expr);
+    if (im->as.index_mutation.op == ENLNG_TOKEN_INC_BY ||
+        im->as.index_mutation.op == ENLNG_TOKEN_DEC_BY) {
+      bool inc = im->as.index_mutation.op == ENLNG_TOKEN_INC_BY;
+      emit(cg, "enlng_container_set(");
+      emit_mutation_container(cg, im);
+      emit(cg, ", ");
+      generate_expression(cg, im->as.index_mutation.index_expr);
+      emit(cg, inc ? ", enlng_val_add(enlng_container_get("
+                   : ", enlng_val_sub(enlng_container_get(");
+      emit_mutation_container(cg, im);
+      emit(cg, ", ");
+      generate_expression(cg, im->as.index_mutation.index_expr);
       emit(cg, "), ");
-      generate_expression(cg, n->as.index_mutation.val_expr);
-      emit(cg, "));\n");
-    } else if (n->as.index_mutation.op == ENLNG_TOKEN_DEC_BY) {
-      emit(cg, "enlng_container_set(%s, ", n->as.index_mutation.arr_name);
-      generate_expression(cg, n->as.index_mutation.index_expr);
-      emit(cg, ", enlng_val_sub(enlng_container_get(%s, ",
-           n->as.index_mutation.arr_name);
-      generate_expression(cg, n->as.index_mutation.index_expr);
-      emit(cg, "), ");
-      generate_expression(cg, n->as.index_mutation.val_expr);
+      generate_expression(cg, im->as.index_mutation.val_expr);
       emit(cg, "));\n");
     } else {
-      emit(cg, "enlng_container_set(%s, ", n->as.index_mutation.arr_name);
-      generate_expression(cg, n->as.index_mutation.index_expr);
+      emit(cg, "enlng_container_set(");
+      emit_mutation_container(cg, im);
       emit(cg, ", ");
-      generate_expression(cg, n->as.index_mutation.val_expr);
+      generate_expression(cg, im->as.index_mutation.index_expr);
+      emit(cg, ", ");
+      generate_expression(cg, im->as.index_mutation.val_expr);
       emit(cg, ");\n");
     }
     break;
+  }
 
   case AST_WHEN:
     emit_indent(cg);
@@ -773,7 +802,15 @@ static void generate_statement(CodeGen *cg, ASTNode *n) {
 
   case AST_GIVE:
     emit_indent(cg);
-    if (n->as.give_stmt.expr) {
+    if (cg->try_nest > 0) {
+      /* leaving the function closes every try block that is open in it */
+      emit(cg, "{ EnlngVal _gv = ");
+      if (n->as.give_stmt.expr)
+        generate_expression(cg, n->as.give_stmt.expr);
+      else
+        emit(cg, "enlng_make_null()");
+      emit(cg, "; enlng_try_stack.eg_depth -= %d; return _gv; }\n", cg->try_nest);
+    } else if (n->as.give_stmt.expr) {
       emit(cg, "return ");
       generate_expression(cg, n->as.give_stmt.expr);
       emit(cg, ";\n");
@@ -783,14 +820,64 @@ static void generate_statement(CodeGen *cg, ASTNode *n) {
     break;
 
   case AST_STOP:
+  case AST_SKIP: {
     emit_indent(cg);
-    emit(cg, "break;\n");
+    int base = (cg->loop_depth > 0 && cg->loop_depth <= 64)
+                   ? cg->loop_try_base[cg->loop_depth - 1]
+                   : 0;
+    if (cg->try_nest > base)
+      emit(cg, "enlng_try_stack.eg_depth -= %d; ", cg->try_nest - base);
+    emit(cg, n->type == AST_STOP ? "break;\n" : "continue;\n");
+    break;
+  }
+
+  case AST_FAIL:
+    emit_indent(cg);
+    emit(cg, "{ char _fb[64]; EnlngVal _fm = ");
+    generate_expression(cg, n->as.fail_stmt.message);
+    emit(cg, "; enlng_throw(enlng_val_to_str_buf(_fm, _fb, sizeof(_fb))); }\n");
     break;
 
-  case AST_SKIP:
+  case AST_TRY: {
+    int tid = cg->temp_var_id++;
     emit_indent(cg);
-    emit(cg, "continue;\n");
+    emit(cg, "{\n");
+    cg->indent_level++;
+    emit_indent(cg);
+    emit(cg, "int _try_base%d = enlng_try_stack.eg_depth;\n", tid);
+    emit_indent(cg);
+    emit(cg, "if (_try_base%d >= ENLNG_MAX_TRY) enlng_throw(\"Too many 'try' blocks inside each other.\");\n", tid);
+    emit_indent(cg);
+    emit(cg, "enlng_try_stack.eg_depth = _try_base%d + 1;\n", tid);
+    emit_indent(cg);
+    emit(cg, "if (setjmp(enlng_try_stack.eg_jb[_try_base%d]) == 0) {\n", tid);
+    cg->indent_level++;
+    cg->try_nest++;
+    for (int i = 0; i < n->as.try_stmt.body_count; i++)
+      generate_statement(cg, n->as.try_stmt.body[i]);
+    cg->try_nest--;
+    emit_indent(cg);
+    emit(cg, "enlng_try_stack.eg_depth = _try_base%d;\n", tid);
+    cg->indent_level--;
+    emit_indent(cg);
+    emit(cg, "} else {\n");
+    cg->indent_level++;
+    emit_indent(cg);
+    emit(cg, "enlng_try_stack.eg_depth = _try_base%d;\n", tid);
+    emit_indent(cg);
+    emit(cg, "EnlngVal %s = enlng_make_string(enlng_try_stack.eg_msg);\n",
+         n->as.try_stmt.err_name);
+    scope_add(cg, n->as.try_stmt.err_name);
+    for (int i = 0; i < n->as.try_stmt.handler_count; i++)
+      generate_statement(cg, n->as.try_stmt.handler[i]);
+    cg->indent_level--;
+    emit_indent(cg);
+    emit(cg, "}\n");
+    cg->indent_level--;
+    emit_indent(cg);
+    emit(cg, "}\n");
     break;
+  }
 
   case AST_SWAP:
     emit_indent(cg);
@@ -929,6 +1016,28 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
   }
   emit(cg, "\n");
 
+  /* Names made at the top of the program are visible to functions (read
+     only). Each one becomes a file-level variable, and a macro keeps the
+     plain spelling working everywhere; a parameter or local of the same
+     name shadows it, as it should. */
+  for (int i = 0; i < program->as.program.count; i++) {
+    ASTNode *stmt = program->as.program.statements[i];
+    if (!stmt || stmt->type != AST_DECLARATION || !stmt->as.decl.name)
+      continue;
+    bool seen = false;
+    for (int j = 0; j < i && !seen; j++) {
+      ASTNode *o = program->as.program.statements[j];
+      seen = o && o->type == AST_DECLARATION && o->as.decl.name &&
+             strcmp(o->as.decl.name, stmt->as.decl.name) == 0;
+    }
+    if (seen)
+      continue;
+    emit(cg, "static EnlngVal enlng_g_%s;\n", stmt->as.decl.name);
+    emit(cg, "#define %s enlng_g_%s\n", stmt->as.decl.name,
+         stmt->as.decl.name);
+  }
+  emit(cg, "\n");
+
   /* Emit function definitions */
   for (int i = 0; i < program->as.program.count; i++) {
     ASTNode *stmt = program->as.program.statements[i];
@@ -973,7 +1082,18 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
 
   for (int i = 0; i < program->as.program.count; i++) {
     ASTNode *stmt = program->as.program.statements[i];
-    if (stmt && stmt->type != AST_FUNCTION) {
+    if (stmt && stmt->type == AST_DECLARATION) {
+      /* a top-level name is the file-level variable, not a local of main */
+      scope_add(cg, stmt->as.decl.name);
+      emit_indent(cg);
+      emit(cg, "%s = ", stmt->as.decl.name);
+      if (stmt->as.decl.is_frozen)
+        emit(cg, "enlng_freeze_val(");
+      generate_expression(cg, stmt->as.decl.init_expr);
+      if (stmt->as.decl.is_frozen)
+        emit(cg, ")");
+      emit(cg, ";\n");
+    } else if (stmt && stmt->type != AST_FUNCTION) {
       generate_statement(cg, stmt);
     }
   }

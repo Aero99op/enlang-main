@@ -102,7 +102,7 @@ Tax is worked out with whole numbers, so any fraction of a rupee is cut off. A r
 
 ## A to-do list on screen
 
-A list of maps stores the tasks. You cannot assign through two levels at once (`tasks[1]["done"] = true` is a syntax error), so pick the map out into a name first. The name and the map in the list are the same map, so the change shows in the list:
+A list of maps stores the tasks. `tasks[1]["done"] = true` reaches through two levels at once (from 5.5.2; before that the inner map had to be pulled into a name first):
 
 ::: code
 type enlng
@@ -111,10 +111,8 @@ remember tasks as []
 for each title in ["buy milk", "call Asha", "pay rent", "book tickets"]:
     append(tasks, {"title": title, "done": false})
 
-remember second as tasks[1]
-second["done"] = true
-remember fourth as tasks[3]
-fourth["done"] = true
+tasks[1]["done"] = true
+tasks[3]["done"] = true
 
 remember open_count as 0
 for each t in tasks:

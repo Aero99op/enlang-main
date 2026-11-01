@@ -8,6 +8,7 @@ directory, and compares exit code and stdout. Needs gcc for the native side.
 """
 import glob
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -39,7 +40,9 @@ def main():
             src = open(path, encoding="utf-8", errors="replace").read()
         except OSError:
             continue
-        if any(w in src for w in SKIP_WORDS) or not src.lstrip().startswith("type enlng"):
+        # "ask rex to speak" calls a method; only the input form "ask name" waits for a line
+        probe = re.sub(r"\bask\s+\S+\s+to\s+\w+", "", src)
+        if any(w in probe for w in SKIP_WORDS) or not src.lstrip().startswith("type enlng"):
             skipped += 1
             continue
         work = tempfile.mkdtemp(prefix="enlng-parity-")

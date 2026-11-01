@@ -1,0 +1,39 @@
+type enlng
+class Account:
+    remember owner as "nobody"
+    remember balance as 0
+    remember history as []
+    method deposit with amount:
+        when amount is at most 0:
+            fail "deposit must be positive"
+        balance of self increases by amount
+        append(history of self, "deposit")
+        give balance of self
+    method withdraw with amount:
+        when amount is greater than balance of self:
+            fail "not enough money"
+        balance of self decreases by amount
+        append(history of self, "withdraw")
+        give balance of self
+
+class Savings inherits from Account:
+    remember rate as 10
+    method add_interest:
+        remember extra as balance of self times rate of self divided by 100
+        give call deposit on self with extra
+
+remember a as new Account with owner as "Asha"
+remember s as new Savings with owner as "Ravi", balance as 200
+show ask a to deposit with 50
+show ask a to withdraw with 20
+show ask s to add_interest
+try:
+    tell a to withdraw with 1000
+on error as e:
+    show "error:" e
+try:
+    tell a to deposit with 0
+on error as e:
+    show "error:" e
+show history of a
+show count of history of s

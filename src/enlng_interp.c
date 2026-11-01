@@ -41,6 +41,7 @@ typedef struct {
   ASTNode *prog;
   const char *file;
   const char *source;
+  IFrame *globals; /* the top-level names, readable from inside functions */
   bool failed;
   char err[512];
   int err_line;
@@ -93,6 +94,9 @@ static void idefine(IFrame *f, const char *name, EnlngVal val) {
 
 static EnlngVal iget(Interp *it, IFrame *f, const char *name, int line) {
   IVar *v = ilookup(f, name);
+  /* A function may read (not assign) a name made at the top of the program. */
+  if (!v && it->globals && f != it->globals)
+    v = ilookup(it->globals, name);
   if (!v) {
     ifail(it, line,
           "I don't know a name '%s' here. Define it first, for example: remember %s as 0",
@@ -431,6 +435,37 @@ static void iassign(Interp *it, IFrame *f, ASTNode *target, EnlngVal val) {
   }
 }
 
+/* Runs the body of a `try`. Gives 1 when the body failed, with the message in
+ * `msg`: either an error the interpreter found (it->failed) or one thrown by
+ * the runtime (frozen list, `fail` inside native-style code), which unwinds
+ * with longjmp to here. */
+static int itry_run(Interp *it, IFrame *f, ASTNode *n, int *code, char *msg,
+                    size_t msgsz) {
+  int base = enlng_try_stack.eg_depth;
+  int saved_depth = it->depth;
+  bool *saved_sorted = it->sorted;
+  if (base >= ENLNG_MAX_TRY) {
+    ifail(it, n->line, "Too many 'try' blocks inside each other.");
+    return 0;
+  }
+  enlng_try_stack.eg_depth = base + 1;
+  if (setjmp(enlng_try_stack.eg_jb[base]) == 0) {
+    *code = iexec_block(it, f, n->as.try_stmt.body, n->as.try_stmt.body_count);
+    enlng_try_stack.eg_depth = base;
+    if (it->failed) {
+      snprintf(msg, msgsz, "%s", it->err);
+      it->failed = false;
+      return 1;
+    }
+    return 0;
+  }
+  enlng_try_stack.eg_depth = base;
+  it->depth = saved_depth;
+  it->sorted = saved_sorted;
+  snprintf(msg, msgsz, "%s", enlng_try_stack.eg_msg);
+  return 1;
+}
+
 static int iexec(Interp *it, IFrame *f, ASTNode *n) {
   if (!n || it->failed)
     return EX_OK;
@@ -468,7 +503,9 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
   }
 
   case AST_INDEX_MUTATION: {
-    EnlngVal c = iget(it, f, n->as.index_mutation.arr_name, n->line);
+    EnlngVal c = n->as.index_mutation.target_expr
+                     ? ieval(it, f, n->as.index_mutation.target_expr)
+                     : iget(it, f, n->as.index_mutation.arr_name, n->line);
     EnlngVal k = ieval(it, f, n->as.index_mutation.index_expr);
     EnlngVal v = ieval(it, f, n->as.index_mutation.val_expr);
     if (n->as.index_mutation.op == ENLNG_TOKEN_INC_BY)
@@ -478,6 +515,33 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
     if (!it->failed)
       enlng_container_set(c, k, v);
     return EX_OK;
+  }
+
+  case AST_FAIL: {
+    EnlngVal m = ieval(it, f, n->as.fail_stmt.message);
+    char buf[64];
+    ifail(it, n->line, "%s", enlng_val_to_str_buf(m, buf, sizeof(buf)));
+    return EX_OK;
+  }
+
+  case AST_TRY: {
+    char msg[512];
+    int code = EX_OK;
+    if (itry_run(it, f, n, &code, msg, sizeof(msg))) {
+      /* the handler runs in a scope of its own, with the message bound */
+      int saved = f->scope;
+      f->scope = f->n;
+      idefine(f, n->as.try_stmt.err_name, enlng_make_string(msg));
+      code = EX_OK;
+      for (int i = 0; i < n->as.try_stmt.handler_count && !it->failed; i++) {
+        code = iexec(it, f, n->as.try_stmt.handler[i]);
+        if (code != EX_OK)
+          break;
+      }
+      f->n = f->scope;
+      f->scope = saved;
+    }
+    return code;
   }
 
   case AST_WHEN:
@@ -751,6 +815,7 @@ static int interp_main(InterpJob *job) {
   it.source = job->source;
 
   IFrame top = {0};
+  it.globals = &top;
   ASTNode *p = job->prog;
   for (int i = 0; i < p->as.program.count && !it.failed; i++) {
     ASTNode *s = p->as.program.statements[i];

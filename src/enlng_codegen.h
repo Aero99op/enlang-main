@@ -26,6 +26,13 @@ typedef struct {
     int scope_var_cap;
 
     int temp_var_id;
+
+    /* try / on error: how many `try` bodies are open in the function being
+       written, and the count each enclosing loop started with, so that
+       give / stop / skip can close the try blocks they jump out of */
+    int try_nest;
+    int loop_try_base[64];
+    int loop_depth;
     ASTNode* program;
 } CodeGen;
 

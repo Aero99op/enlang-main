@@ -1,0 +1,36 @@
+type enlng
+class Animal:
+    remember name as "unknown"
+    remember legs as 4
+    method speak:
+        show name of self "makes a sound"
+    method legs_count:
+        give legs of self
+
+class Dog inherits from Animal:
+    remember breed as "mixed"
+    remember tricks as []
+    method speak:
+        show name of self "barks"
+    method learn with trick:
+        append(tricks of self, trick)
+    method count_tricks:
+        give count of tricks of self
+
+remember rex as new Dog with name as "Rex", breed as "Lab"
+remember cat as new Animal
+call speak on rex
+tell cat to speak
+tell rex to learn with "sit"
+tell rex to learn with "roll"
+show ask rex to count_tricks
+remember n as call legs_count on rex
+show n
+show name of rex breed of rex
+change name of rex to "Max"
+show name of rex
+call speak from Animal on rex
+show rex is a Dog
+show rex is a Animal
+show cat is a Dog
+show 42 is a Dog

@@ -1,0 +1,33 @@
+type enlng
+function make_pair with a, b:
+    give [a, b]
+class Counter:
+    remember n as 0
+    method bump:
+        n of self increases by 1
+        give n of self
+class Named inherits from Counter:
+    remember label as "x"
+    method tag:
+        give label of self + "#" + n of self
+tally = {"a": new Counter, "b": new Named with label as "bee"}
+tell tally["a"] to bump
+tell tally["b"] to bump
+tell tally["b"] to bump
+show n of tally["a"] n of tally["b"]
+show ask tally["b"] to tag
+duo = make_pair(new Counter, new Counter)
+tell duo at 0 to bump
+tell duo at 0 to bump
+tell duo at 1 to bump
+show n of duo at 0
+total = 0
+for each key in ["a", "b"]:
+    total = total + n of tally[key]
+show total
+freeze k as new Counter
+try:
+    tell k to bump
+on error as e:
+    show "frozen object:" e
+show n of k

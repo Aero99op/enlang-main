@@ -1,0 +1,172 @@
+# Classes and Objects
+
+From 5.5.2 Enlangg has classes. A class describes a kind of thing: which values it holds (its **fields**) and what it can do (its **methods**). An **object** is one thing of that kind. The words are the ones used everywhere else in the language: `remember` for a value, `of` to reach into an object, and `call`, `tell` and `ask` to make an object do something. There is no dot.
+
+## A first class
+
+::: code
+type enlng
+
+class Dog:
+    remember name as "unknown"
+    remember tricks as []
+    method speak:
+        show name of self "barks"
+    method learn with trick:
+        append(tricks of self, trick)
+    method count_tricks:
+        give count of tricks of self
+
+remember rex as new Dog with name as "Rex"
+tell rex to speak
+tell rex to learn with "sit"
+tell rex to learn with "roll"
+show ask rex to count_tricks
+:::
+
+- `remember name as "unknown"` inside a class gives a field and its starting value. Every new object gets its own copy, so two dogs never share one list of tricks.
+- `method speak:` defines something the object can do. Inside a method the word `self` is the object it was called on. Fields are reached with `of self`, never by their bare name.
+- `new Dog` makes an object. `with name as "Rex"` sets fields by name; any field left out keeps its starting value.
+
+## Three ways to call a method
+
+| You write | Use it when |
+|---|---|
+| `tell rex to speak` | You only want the effect |
+| `ask rex to count_tricks` | You want the answer back, as in `show ask rex to count_tricks` |
+| `call count_tricks on rex` | The same as `ask`; it reads well as a statement or a value |
+
+Inputs come after `with`: `tell rex to learn with "sit"`, or several separated by commas. Both modes give the same answer, so pick the one that reads best.
+
+## Reading and changing a field
+
+Use the same `of` forms as for any map:
+
+::: code
+type enlng
+
+class Dog:
+    remember name as "unknown"
+    remember age as 1
+
+remember rex as new Dog with name as "Rex"
+show name of rex
+change name of rex to "Max"
+age of rex increases by 1
+show name of rex age of rex
+:::
+
+## Inheritance
+
+A class can build on another with `inherits from` (or `extends`). It gets every field and method of the parent, and may replace a method by writing one with the same name.
+
+::: code
+type enlng
+
+class Animal:
+    remember name as "unknown"
+    method speak:
+        show name of self "makes a sound"
+
+class Dog inherits from Animal:
+    method speak:
+        show name of self "barks"
+
+class Puppy inherits from Dog:
+    remember age as 0
+
+remember pets as [new Animal, new Dog with name as "Rex", new Puppy with name as "Bit"]
+for each pet in pets:
+    tell pet to speak
+:::
+
+The loop shows why this is useful: each object answers `speak` in its own way, whatever its kind. A parent's method can still be reached with `from`:
+
+::: code
+type enlng
+
+class Animal:
+    method describe:
+        give "an animal"
+
+class Dog inherits from Animal:
+    method describe:
+        give "a dog, which is " + call describe from Animal on self
+
+remember d as new Dog
+show ask d to describe
+:::
+
+### More than one parent
+
+List the parents with commas. When two parents have a method of the same name, the one written first wins. If a parent is shared by two others, its methods still run only once.
+
+::: code
+type enlng
+
+class Machine:
+    method describe:
+        give "machine"
+
+class Walker:
+    method describe:
+        give "walker"
+
+class Robot inherits from Machine, Walker:
+    remember name as "R2"
+
+remember r as new Robot
+show ask r to describe
+:::
+
+Class names must be defined before a class that inherits from them. Parents whose order cannot be reconciled are refused with a message when the file is read.
+
+## Is it a Dog?
+
+`is a` asks whether an object is of a class, or of a class that inherits from it:
+
+::: code
+type enlng
+
+class Animal:
+    remember legs as 4
+class Dog inherits from Animal:
+    remember name as "x"
+
+remember rex as new Dog
+show rex is a Dog
+show rex is a Animal
+show 42 is a Dog
+:::
+
+## When something goes wrong
+
+Asking for a method that does not exist, or for the wrong number of inputs, is an error you can catch with `try` (chapter 21):
+
+::: code
+type enlng
+
+class Dog:
+    method speak:
+        show "woof"
+
+remember rex as new Dog
+try:
+    tell rex to fly
+on error as problem:
+    show "caught:" problem
+try:
+    tell 42 to speak
+on error as problem:
+    show "caught:" problem
+:::
+
+Mistakes in the class itself, such as a parent that is not defined or a field name that does not exist in `with`, are found when the file is read.
+
+## Good to know
+
+- Method names follow the rules for function names. Words the language already uses (`show`, `print`, `give`, `sort`, `reverse`) cannot be method names.
+- A name such as `new`, `call`, `tell` or `class` still works as an ordinary value name in programs that do not use classes in that spot.
+- `freeze` works on objects as it does on maps: a frozen object refuses every change, also inside methods.
+- There are no private fields and no shared (static) fields. Every field can be read and changed with `of`.
+- A class and a `try` work in the interpreter and with `--native`; the output is the same.

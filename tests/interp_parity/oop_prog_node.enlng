@@ -1,0 +1,29 @@
+type enlng
+class Node:
+    remember value as 0
+    remember next as null
+class LinkedList:
+    remember head as null
+    remember size as 0
+    method add with v:
+        remember n as new Node with value as v
+        when head of self is null:
+            change head of self to n
+        otherwise:
+            remember cur as head of self
+            repeat while next of cur is not null:
+                cur = next of cur
+            change next of cur to n
+        size of self increases by 1
+    method total:
+        remember s as 0
+        remember cur as head of self
+        repeat while cur is not null:
+            s = s + value of cur
+            cur = next of cur
+        give s
+ll = new LinkedList
+for each v in [4, 8, 15, 16, 23, 42]:
+    tell ll to add with v
+show size of ll
+show ask ll to total

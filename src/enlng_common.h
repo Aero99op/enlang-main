@@ -184,6 +184,8 @@ typedef enum {
   AST_SHOW,           /* show stream... */
   AST_ASK,            /* ask var "prompt" */
   AST_EXPR_STMT,      /* standalone expression / implicit return */
+  AST_TRY,            /* try: block  on error as name: block */
+  AST_FAIL,           /* fail "message" */
 
   /* Expressions */
   AST_EXPR_BINARY, /* a + b, a == b */
@@ -255,6 +257,20 @@ struct ASTNode {
       ASTNode **else_body;
       int else_count;
     } when_stmt;
+
+    /* AST_TRY */
+    struct {
+      ASTNode **body;
+      int body_count;
+      char *err_name; /* name the message is bound to in the handler */
+      ASTNode **handler;
+      int handler_count;
+    } try_stmt;
+
+    /* AST_FAIL */
+    struct {
+      ASTNode *message;
+    } fail_stmt;
 
     /* AST_FOR_RANGE */
     struct {
@@ -339,6 +355,7 @@ struct ASTNode {
     /* AST_INDEX_MUTATION */
     struct {
       char *arr_name;
+      ASTNode *target_expr; /* nested g[i][j] = v: the inner container; arr_name is NULL */
       ASTNode *index_expr;
       EnlngTokenType op;
       ASTNode *val_expr;

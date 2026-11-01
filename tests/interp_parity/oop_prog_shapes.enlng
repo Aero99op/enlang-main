@@ -1,0 +1,31 @@
+type enlng
+class Shape:
+    remember name as "shape"
+    method area:
+        give 0
+    method perimeter:
+        give 0
+    method report:
+        show name of self "area" ask self to area "perimeter" ask self to perimeter
+class Rect inherits from Shape:
+    remember w as 1
+    remember h as 1
+    remember name as "rect"
+    method area:
+        give w of self times h of self
+    method perimeter:
+        give 2 times w of self plus h of self
+class Square inherits from Rect:
+    remember name as "square"
+class Circle inherits from Shape:
+    remember r as 2
+    remember name as "circle"
+    method area:
+        give 3 times r of self times r of self
+shapes = [new Rect with w as 3, h as 4, new Square with w as 5, h as 5, new Circle, new Shape]
+for each sh in shapes:
+    tell sh to report
+total = 0
+for each sh in shapes:
+    total = total + ask sh to area
+show "total area" total

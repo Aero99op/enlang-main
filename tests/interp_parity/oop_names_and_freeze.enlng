@@ -1,0 +1,29 @@
+type enlng
+class Shape:
+    remember label as "shape"
+    method area:
+        give 0
+    method show_me:
+        show label of self "area" ask self to area
+class Square inherits from Shape:
+    remember side as 1
+    method area:
+        give side of self times side of self
+remember s as new Square with label as "sq", side as 4
+tell s to show_me
+remember new as 5
+remember call as 6
+remember class as 7
+show new plus call plus class
+remember a as 3
+remember b as 4
+show a plus b
+freeze fixed as new Square with side as 2
+function poke with o:
+    side of o = 99
+try:
+    poke(fixed)
+on error as e:
+    show "frozen:" e
+show side of fixed
+show s is a Shape

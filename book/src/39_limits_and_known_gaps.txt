@@ -13,7 +13,6 @@ A manual that only lists strengths is advertising. This chapter lists what toolc
 | Network access | Nothing opens a connection. `lib_net` builds and reads text only (chapter 28). |
 | Fetching packages | `enlangg pkg` links the eleven bundled library files. It does not download anything (chapter 33). |
 | Slicing such as `text[0:3]` | Not in the language. Use `sub_string` from `lib_strings`, or a loop (chapters 24 and 35). |
-| Nested assignment such as `grid[1][2] = 5` or `tasks[1]["done"] = true` | A syntax error. Pull the inner list or map into a name first, then assign through that name (chapter 38). |
 | Counting down with `for i from 3 to 1 by -1` | The loop does not run. Count up and subtract. |
 | A debugger | None in 5.5.1. `show` is the tool. |
 
@@ -25,7 +24,7 @@ These do work, but not the way a newcomer from another language would guess.
 - **Numbers wrap.** Whole numbers are 64 bits. Past that they roll over silently. Factorials above 20 are the usual place this happens.
 - **`ask` always gives text.** Convert with `parse_int` before doing arithmetic, or the `times` operator will repeat the text.
 - **Names made by `ask` belong to their block.** Inside a loop, each pass makes a new one; the outer name is not updated.
-- **Functions cannot see outer names.** Everything a function needs must be passed in. Maps and lists passed in are shared, so changes made through them are visible to the caller.
+- **Functions read top-level names but do not assign them.** Assigning inside a function makes a new name that belongs to the function. Maps and lists are shared, so changes made through them are visible to everyone.
 - **A zero-argument call needs parentheses.** `stack_size(s)` takes an argument; `create_stack()` takes none and must still be written with `()`.
 - **`split` keeps empty pieces.** `split("a,,b", ",")` has three items, the middle one empty, and a separator is matched as a whole. This changed in 5.5.1; older releases dropped empty pieces.
 - **Maps have no order.** Do not print a whole map and expect the keys in the order you typed them.
@@ -50,6 +49,12 @@ These are faults in the toolchain or its library files, not in the way they are 
 | `parse_url` left a `#fragment` attached to the query. | The fragment has its own key, and `build_url` writes it back. |
 | The comment at the top of `enlng emit-c` output named an old version. | It names the version of the tool that wrote it. |
 | `freeze` protected only the name; a frozen list could still be changed with `append` or by assigning an element. | The list or map itself is frozen, also inside a function it was handed to. |
+| Nested assignment such as `grid[1][2] = 5` was a syntax error. | It works, to any depth: `tasks[1]["done"] = true`. |
+| A function could not read any name made outside it. | It can read top-level names (it still cannot assign them). |
+
+New in 5.5.2: `try:` with `on error as name:` to catch an error, and `fail "message"` to raise one (chapter 21). Classes with fields, methods, inheritance from one or several parents, `new`, `call`/`tell`/`ask` and `is a` (chapter 43).
+
+Classes have these limits: there are no private fields and no shared (static) fields; fields are reached with `of self` inside a method, never by their bare name; parents must be defined before the class that inherits from them; and a class cannot be created inside a function or a block.
 
 ## Fixed in 5.5.1
 

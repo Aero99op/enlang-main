@@ -1,0 +1,88 @@
+type enlng
+class Machine:
+    remember power as "off"
+    method describe:
+        give "machine"
+    method start:
+        change power of self to "on"
+        give "machine starts"
+
+class Walker:
+    remember steps as 0
+    method describe:
+        give "walker"
+    method walk with n:
+        steps of self increases by n
+        give steps of self
+
+class Robot inherits from Machine, Walker:
+    remember name as "R2"
+    method describe:
+        give "robot " + name of self + " built from " + call describe from Machine on self + " and " + call describe from Walker on self
+
+remember r as new Robot
+show ask r to describe
+show ask r to start
+show ask r to walk with 3
+show ask r to walk with 4
+show power of r steps of r
+show r is a Machine
+show r is a Walker
+show r is a Robot
+
+class A:
+    method hello:
+        give "A"
+class B inherits from A:
+    method hello:
+        give "B+" + call hello from A on self
+class C inherits from A:
+    method hello:
+        give "C+" + call hello from A on self
+class D inherits from B, C:
+    method hello:
+        give "D+" + call hello from B on self
+remember d as new D
+show ask d to hello
+
+remember zoo as [new A, new B, new C, new D]
+for each z in zoo:
+    show ask z to hello
+
+class Bag:
+    remember items as []
+    method put with x:
+        append(items of self, x)
+    method size:
+        give count of items of self
+remember b1 as new Bag
+remember b2 as new Bag
+tell b1 to put with 1
+tell b1 to put with 2
+tell b2 to put with 9
+show ask b1 to size ask b2 to size
+
+class Counter:
+    remember n as 0
+    method bump:
+        n of self increases by 1
+        give self
+    method twice:
+        tell self to bump
+        tell self to bump
+        give n of self
+remember c as new Counter
+show ask c to twice
+
+try:
+    tell r to fly
+on error as e:
+    show "caught:" e
+try:
+    tell 42 to hello
+on error as e:
+    show "caught:" e
+try:
+    tell r to walk
+on error as e:
+    show "caught:" e

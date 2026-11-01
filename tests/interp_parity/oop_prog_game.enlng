@@ -1,0 +1,29 @@
+type enlng
+class Character:
+    remember name as "hero"
+    remember hp as 100
+    remember power as 10
+    method hit with target:
+        hp of target decreases by power of self
+        show name of self "hits" name of target "->" hp of target
+    method alive:
+        give hp of self is greater than 0
+class Mage inherits from Character:
+    remember power as 25
+    method hit with target:
+        show name of self "casts a spell"
+        call hit from Character on self with target
+class Tank inherits from Character:
+    remember hp as 300
+    remember power as 5
+hero = new Mage with name as "Mia"
+boss = new Tank with name as "Golem"
+round = 0
+repeat while ask boss to alive and ask hero to alive:
+    round = round + 1
+    tell hero to hit with boss
+    when ask boss to alive:
+        tell boss to hit with hero
+show "rounds" round "boss hp" hp of boss "hero hp" hp of hero
+show hero is a Character
+show boss is a Mage

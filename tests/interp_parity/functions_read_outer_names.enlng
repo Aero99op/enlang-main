@@ -1,0 +1,24 @@
+type enlng
+freeze TAX as 18
+remember names as ["a", "b"]
+remember counter as 5
+function price with base:
+    give base + base * TAX / 100
+function describe with n:
+    give names[0] + str_n(n)
+function str_n with n:
+    give "#" + n
+function shadow with counter:
+    give counter + 1
+function local_only with x:
+    remember counter as 100
+    give counter + x
+show price(100)
+show describe(3)
+show shadow(1) local_only(1) counter
+counter increases by 1
+show counter
+function grow with x:
+    append(names, x)
+    give len(names)
+show grow("c") names

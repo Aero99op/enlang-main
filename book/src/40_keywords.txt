@@ -47,6 +47,8 @@ Because the rule is not obvious, the safe habit is to avoid every word in the li
 | Files and modules | `use`, `import`, `type` | Bring in another file; declare a file's kind on its first line. |
 | Plain values | `true`, `false`, `null`, `none`, `nothing` | The values that mean yes, no and absent. |
 
+From 5.5.2 a few more words take part in classes (chapter 43): `class`, `blueprint`, `model`, `inherits`, `extends`, `method`, `new`, `instantiate`, `call`, `tell`, `self`. They are not reserved. They are read as class words only in the exact shapes that chapter shows (for example `class Dog:` or `tell rex to speak`), so a program that uses `new` or `call` as an ordinary name keeps working. `try`, `error` and `fail` (chapter 21) work the same way.
+
 Two of these deserve a note.
 
 **`stop` and `break`** both leave the current loop. The cookbook uses `stop`.
