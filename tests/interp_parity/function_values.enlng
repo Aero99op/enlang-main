@@ -1,0 +1,62 @@
+type enlng
+function double with x:
+    give x times 2
+
+function inc with x:
+    give x plus 1
+
+function apply with g, x:
+    give g(x)
+
+function map_list with g, items:
+    remember out as []
+    for each item in items:
+        append(out, g(item))
+    give out
+
+function keep_if with test, items:
+    remember out as []
+    for each item in items:
+        when test(item):
+            append(out, item)
+    give out
+
+function is_even with n:
+    give n mod 2 is 0
+
+function compose with f, g, x:
+    give f(g(x))
+
+function hello:
+    give "hello"
+
+remember f as double
+show f(3)
+show apply(inc, 1)
+show apply(double, 5)
+show map_list(double, [1, 2, 3])
+show keep_if(is_even, [1, 2, 3, 4, 5, 6])
+show compose(inc, double, 10)
+show f
+show double
+show f is double
+show f is inc
+remember ops as [double, inc]
+for each op in ops:
+    show op(7)
+remember table as {"twice": double, "next": inc}
+remember nxt as table["next"]
+show nxt(41)
+remember h as hello
+show h()
+remember max as double
+show max(4)
+try:
+    remember n as 5
+    show n(1)
+on error as e:
+    show "caught:" e
+try:
+    show f(1, 2)
+on error as e:
+    show "caught:" e

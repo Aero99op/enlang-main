@@ -1,0 +1,81 @@
+type enlng
+# Values that are alive only inside an expression while a function runs,
+# deep nesting, objects, and errors that leave calls half done. The
+# interpreter frees what is unreachable; none of this may be freed early.
+
+function make_text with n:
+    remember parts as []
+    for i from 1 to n:
+        append(parts, "p" + i)
+    give join(parts, "-")
+
+function nest with depth:
+    when depth is 0:
+        give [depth]
+    give [depth, nest(depth minus 1)]
+
+function boom with x:
+    remember junk as [x, x, x]
+    fail "boom " + x
+
+class Box:
+    remember items as []
+    method put with v:
+        append(items of self, v)
+        give count of items of self
+
+remember kept as []
+for round from 1 to 300:
+    remember line as "start " + make_text(3) + " end " + make_text(2)
+    when round mod 100 is 0:
+        show line
+    append(kept, [round, make_text(1)])
+show count of kept kept[0] kept[299]
+
+remember deep as nest(200)
+remember walk as deep
+remember levels as 0
+while count of walk is 2:
+    levels increases by 1
+    walk = walk[1]
+show levels walk
+
+remember b as new Box
+for i from 1 to 500:
+    tell b to put with {"n": i, "label": "item " + i}
+show count of items of b
+remember stored as items of b
+show stored[499]
+
+remember caught as 0
+for i from 1 to 200:
+    try:
+        remember r as [make_text(2), boom(i), make_text(3)]
+    on error as e:
+        caught increases by 1
+show caught
+
+remember m as {}
+for i from 1 to 2000:
+    m["k" + i] = [i, "v" + i]
+show count of m m["k1999"]
+
+remember s as ""
+for i from 1 to 3000:
+    s = s + "x"
+show count of s
+
+function pick with f, items:
+    remember out as []
+    for each x in items:
+        when f(x):
+            append(out, "kept " + x)
+    give out
+
+function big with n:
+    give n is greater than 497
+
+show pick(big, [495, 496, 497, 498, 499, 500])
+remember words as split("alpha beta gamma delta", " ")
+for each w in words:
+    show w + "!" + make_text(1)

@@ -12,18 +12,19 @@ show n times 2
 show n plus 1
 :::
 
-Here `n` is the text `"5"`, so `n times 2` repeats the text and `n plus 1` joins `"1"` on the end. To compute with a typed number, convert it first. The standard library has `parse_int` for whole numbers (chapter on the standard library):
+Here `n` is the text `"5"`, so `n times 2` repeats the text and `n plus 1` joins `"1"` on the end. To compute with a typed number, convert it first with `to_number` (from 5.5.2), which understands whole numbers and fractions and stops with an error if the text is not a number:
 
 ::: cmd
 @@ main.enlng
 type enlng
-use "lib_std.enlng"
 
 ask n
-show (parse_int with n) times 2
+show to_number(n) times 2
 @@@
 echo 21 | enlng run main.enlng
 :::
+
+Wrap it in `try` (chapter 21) to ask again when the user types something else. The standard library's older `parse_int` still works, but it skips any character that is not a digit, so `parse_int("3.5")` gives 35.
 
 At the end of the input `ask` gives an empty text, not an error, which makes loops that read until a blank line straightforward.
 

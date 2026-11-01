@@ -1,0 +1,52 @@
+type enlng
+remember total as 0
+remember name as "start"
+remember a as 1
+remember b as 2
+remember result as "mine"
+function add with n:
+    global total
+    total = total plus n
+function bump:
+    total increases by 10
+function rename with t:
+    global name
+    change name to t
+function local_only:
+    total = 999
+    give total
+function uses_result:
+    result = "library local"
+    give result
+function swap_globals:
+    global a, b
+    swap a and b
+function new_local:
+    fresh = 5
+    give fresh
+add(5)
+add(2)
+show total
+bump()
+show total
+rename("done")
+show name
+show local_only()
+show total
+show uses_result()
+show result
+swap_globals()
+show a b
+show new_local()
+for i from 1 to 3:
+    add(i)
+show total
+remember global as "a name"
+show global
+function bad:
+    global missing
+    missing = 1
+try:
+    bad()
+on error as e:
+    show "caught:" e

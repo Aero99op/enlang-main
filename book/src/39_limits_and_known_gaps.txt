@@ -20,9 +20,9 @@ These do work, but not the way a newcomer from another language would guess.
 
 - **Whole numbers divide whole.** `7 divided by 2` is 3. Write one side as `7.0` for a fraction. From 5.5.2 dividing by zero is an error that `try` catches.
 - **Numbers wrap.** Whole numbers are 64 bits. Past that they roll over silently. Factorials above 20 are the usual place this happens.
-- **`ask` always gives text.** Convert with `parse_int` before doing arithmetic, or the `times` operator will repeat the text.
+- **`ask` always gives text.** Convert with `to_number` before doing arithmetic, or the `times` operator will repeat the text.
 - **Names made by `ask` belong to their block.** Inside a loop, each pass makes a new one; the outer name is not updated.
-- **Functions read top-level names but do not assign them.** Assigning inside a function makes a new name that belongs to the function. Maps and lists are shared, so changes made through them are visible to everyone.
+- **Functions change a top-level name only after `global`.** Without it, assigning inside a function makes a new name that belongs to the function (chapter 16). Maps and lists are shared, so changes made through them are visible to everyone.
 - **A zero-argument call needs parentheses.** `stack_size(s)` takes an argument; `create_stack()` takes none and must still be written with `()`.
 - **`split` keeps empty pieces.** `split("a,,b", ",")` has three items, the middle one empty, and a separator is matched as a whole. This changed in 5.5.1; older releases dropped empty pieces.
 - **Maps have no order.** Do not print a whole map and expect the keys in the order you typed them.
@@ -55,10 +55,13 @@ These are faults in the toolchain or its library files, not in the way they are 
 | `null plus 1` gave 0, so `counts[word] += 1` on a missing key counted wrong. | It is an error that suggests `has_key`. |
 | Two lists or maps were never equal, not even a list compared with itself. | They are equal when they hold equal items. |
 | `for each k in m` over a map gave `null` for every key. | It gives the keys. |
+| Text was counted in bytes: `length of "café"` was 5. | It is counted in characters, so it is 4. |
+| The interpreter never gave memory back, so a long program grew without limit. | Memory the program can no longer reach is freed. |
+| `sort` took seconds on a few thousand items, and big maps got slower as they grew. | Both stay fast on tens of thousands of items. |
 | `for i from 3 to 1 by -1` did not run. | A negative step counts down; a step of 0 is an error. |
 | With `--native`, a name that is also a word of C, such as `int`, `double` or `argc`, stopped the program from compiling. | Every name is given a prefix in the C code, so any name works. |
 
-New in 5.5.2: `try:` with `on error as name:` to catch an error, and `fail "message"` to raise one (chapter 21). Classes with fields, methods, inheritance from one or several parents, `new`, `call`/`tell`/`ask` and `is a` (chapter 43). Slices such as `text[0:3]` and `items[1:]` for text and lists, also written `slc(text, 0, 3)` (chapters 8 and 12). Using a word of the language as a name now says so, for example "'stop' is a word of the language and cannot be used as a name", and `@stop` makes it a name anyway (chapter 40).
+New in 5.5.2: `try:` with `on error as name:` to catch an error, and `fail "message"` to raise one (chapter 21). Classes with fields, methods, inheritance from one or several parents, `new`, `call`/`tell`/`ask` and `is a` (chapter 43). Slices such as `text[0:3]` and `items[1:]` for text and lists, also written `slc(text, 0, 3)` (chapters 8 and 12). Using a word of the language as a name now says so, for example "'stop' is a word of the language and cannot be used as a name", and `@stop` makes it a name anyway (chapter 40). Functions are values that can be stored and passed to other functions (chapter 15). `global` lets a function change a top-level name (chapter 16). `to_number` and `to_text` convert between text and numbers, and text is counted in characters rather than bytes (chapter 8). The built-in interpreter frees memory the program no longer uses.
 
 Classes have these limits: there are no private fields and no shared (static) fields; fields are reached with `of self` inside a method, never by their bare name; parents must be defined before the class that inherits from them; and a class cannot be created inside a function or a block.
 
@@ -83,7 +86,19 @@ The first edition of this book listed these as faults of 5.5.0. They are fixed f
 
 ## Speed
 
-The numbers on the Enlangg website come from one Windows machine and one small program: starting and printing "hello" took about 12 milliseconds, against about 73 for a Python script doing the same. That says something about start-up time and nothing about speed on large problems. The built-in interpreter is an ordinary interpreter. If you have a heavy calculation, expect it to be slower than compiled C and probably slower than Python's optimised libraries. Measure your own program before you decide.
+The numbers on the Enlangg website come from one Windows machine and one small program: starting and printing "hello" took about 12 milliseconds, against about 73 for a Python script doing the same. That says something about start-up time and nothing about speed on large problems.
+
+For 5.5.2 a few larger programs were timed on one Windows machine, with the interpreter built as a 64-bit program, the way the release builds it, and compared with Python 3.13 on the same machine:
+
+| Program | Enlangg 5.5.1 | Enlangg 5.5.2 | Python |
+|---|---|---|---|
+| fib(30), recursive | 0.24 s | 0.20 s | 0.08 s |
+| 2 million additions in a loop | 0.06 s | 0.07 s | 0.04 s |
+| A map with 50,000 keys | 0.95 s | 0.02 s | 0.01 s |
+| Sorting 50,000 numbers | 2.42 s | 0.02 s | 0.005 s |
+| 3 million short texts made and dropped | 0.55 s, 174 MB | 0.84 s, 8 MB | 0.23 s |
+
+The built-in interpreter is an ordinary interpreter: on most programs it is within a few times of Python, and slower than compiled C. Each figure is the best of three runs and includes starting the program. Measure your own program before you decide. A 32-bit build made with an old compiler (GCC 6.3) ran the same programs up to thirty times slower, so if your copy is much slower than these numbers, check how it was built.
 
 ## How to report a problem
 

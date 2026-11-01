@@ -30,6 +30,34 @@ show len(word)
 show len("")
 :::
 
+From 5.5.2 text is counted in characters, also for letters outside English, such as é, Hindi or emoji. Positions, slices, `split(text, "")` and `for each` all work on whole characters:
+
+::: code
+type enlng
+
+remember word as "café"
+show length of word
+show word[3]
+show word[0:3]
+:::
+
+Earlier toolchains counted bytes, so the same word had a length of 5 and `word[3]` gave half of the é.
+
+## Text and numbers
+
+`to_number` turns text into a number and `to_text` turns any value into text, the way `show` prints it:
+
+::: code
+type enlng
+
+show to_number("42") plus 1
+show to_number("2.5") times 2
+show to_text(42) + "!"
+show to_text([1, 2])
+:::
+
+Text that is not a number, such as `to_number("12abc")`, is an error that `try` can catch.
+
 ## Picking characters
 
 A character is picked by its position, counting from zero. A negative position counts from the end:

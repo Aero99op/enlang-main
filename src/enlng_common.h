@@ -217,7 +217,8 @@ typedef enum {
   AST_EXPR_REVERSE,      /* reverse word (expression) */
   AST_EXPR_LIST_LITERAL, /* [1, 2, 3] */
   AST_EXPR_MAP_LITERAL,  /* {"key": "val"} */
-  AST_USE                /* use "file.enlng" */
+  AST_USE,               /* use "file.enlng" */
+  AST_GLOBAL             /* global total, count: these names are the top-level ones */
 } ASTNodeType;
 
 /* Forward declaration */
@@ -273,6 +274,12 @@ struct ASTNode {
     struct {
       ASTNode *message;
     } fail_stmt;
+
+    /* AST_GLOBAL */
+    struct {
+      char **names;
+      int count;
+    } global_stmt;
 
     /* AST_FOR_RANGE */
     struct {
@@ -426,6 +433,8 @@ struct ASTNode {
       ASTNode **args;
       int arg_count;
       bool builtin_only; /* slc and x[a:b]: never a user function, even @slc */
+      bool resolved;     /* interpreter: the lookup below has been done */
+      ASTNode *fn;       /* interpreter: the user function, or NULL */
     } call_expr;
 
     /* AST_EXPR_COUNT_OF / AST_EXPR_REVERSE */

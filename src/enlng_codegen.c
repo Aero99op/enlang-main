@@ -79,13 +79,81 @@ static bool is_builtin_func(const char *name) {
       "append",     "pop",         "keys",        "values",        "has_key",
       "len",        "split",       "join",        "contains",
       "string_add", "string_insert", "string_remove_at", "string_remove", "string_set_at", "string_replace",
-      "slc",
+      "slc",        "to_number",   "to_text",
       NULL};
   for (int i = 0; builtins[i]; i++) {
     if (strcmp(name, builtins[i]) == 0)
       return true;
   }
   return false;
+}
+
+/* A name made at the top of the program (a file-level variable). */
+static bool is_global_decl(CodeGen *cg, const char *name) {
+  ASTNode *program = cg->program;
+  if (!name || !program || program->type != AST_PROGRAM)
+    return false;
+  for (int i = 0; i < program->as.program.count; i++) {
+    ASTNode *s = program->as.program.statements[i];
+    if (s && s->type == AST_DECLARATION && s->as.decl.name &&
+        strcmp(s->as.decl.name, name) == 0)
+      return true;
+  }
+  return false;
+}
+
+static bool scope_has(CodeGen *cg, const char *name);
+
+/* Loop names (for each item / for i from) of the loops being generated now.
+   They are variables inside their loop, so op(7) in `for each op in ops`
+   calls the function op holds. */
+static const char *loop_names[256];
+static int loop_name_count = 0;
+
+static void loop_name_push(const char *name) {
+  if (loop_name_count < 256)
+    loop_names[loop_name_count] = name;
+  loop_name_count++;
+}
+
+static void loop_name_pop(void) { loop_name_count--; }
+
+/* Names the function being generated declared with `global`. */
+static const char *fn_globals[64];
+static int fn_global_count = 0;
+
+static bool fn_global_has(const char *name) {
+  for (int i = 0; i < fn_global_count && i < 64; i++)
+    if (strcmp(fn_globals[i], name) == 0)
+      return true;
+  return false;
+}
+
+/* A name that is a variable where it is used, rather than a function name. */
+static bool is_known_var(CodeGen *cg, const char *name) {
+  for (int i = 0; i < loop_name_count && i < 256; i++)
+    if (loop_names[i] && strcmp(loop_names[i], name) == 0)
+      return true;
+  return scope_has(cg, name) || is_global_decl(cg, name);
+}
+
+/* Inputs a built-in takes, or -1 for a name that is not a built-in. */
+static int builtin_arity(const char *name) {
+  static const struct { const char *name; int arity; } t[] = {
+      {"sqrt", 1}, {"pow", 2}, {"abs", 1}, {"floor", 1}, {"ceil", 1},
+      {"round", 1}, {"min", 2}, {"max", 2}, {"random_number", 2},
+      {"read_file", 1}, {"write_file", 2}, {"append_file", 2},
+      {"file_exists", 1}, {"time_now", 0}, {"sleep", 1}, {"append", 2},
+      {"pop", 1}, {"keys", 1}, {"values", 1}, {"has_key", 2}, {"len", 1},
+      {"split", 2}, {"join", 2}, {"contains", 2}, {"string_add", 3},
+      {"string_insert", 3}, {"string_remove_at", 2}, {"string_remove", 2},
+      {"string_set_at", 3}, {"string_replace", 3}, {"slc", 3},
+      {"to_number", 1}, {"to_text", 1},
+      {NULL, 0}};
+  for (int i = 0; t[i].name; i++)
+    if (strcmp(t[i].name, name) == 0)
+      return t[i].arity;
+  return -1;
 }
 
 void codegen_free(CodeGen *cg) {
@@ -173,6 +241,35 @@ static void emit_mutation_container(CodeGen *cg, ASTNode *n) {
 
 static void generate_statement(CodeGen *cg, ASTNode *node);
 
+/* prefix + name(arg, arg, ...) */
+static void emit_direct_call(CodeGen *cg, ASTNode *n, const char *prefix) {
+  emit(cg, "%s%s(", prefix, n->as.call_expr.func_name);
+  for (int i = 0; i < n->as.call_expr.arg_count; i++) {
+    generate_expression(cg, n->as.call_expr.args[i]);
+    if (i < n->as.call_expr.arg_count - 1)
+      emit(cg, ", ");
+  }
+  emit(cg, ")");
+}
+
+/* Calls the function held by the variable named like the call. */
+static void emit_value_call(CodeGen *cg, ASTNode *n) {
+  const char *fname = n->as.call_expr.func_name;
+  int argc = n->as.call_expr.arg_count;
+  emit(cg, "enlng_call_value(%s, \"%s\", %d, ", cn(fname), fname, argc);
+  if (argc == 0) {
+    emit(cg, "NULL)");
+    return;
+  }
+  emit(cg, "(EnlngVal[]){");
+  for (int i = 0; i < argc; i++) {
+    generate_expression(cg, n->as.call_expr.args[i]);
+    if (i < argc - 1)
+      emit(cg, ", ");
+  }
+  emit(cg, "})");
+}
+
 static void generate_expression(CodeGen *cg, ASTNode *n) {
   if (!n) {
     emit(cg, "enlng_make_null()");
@@ -204,7 +301,12 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     break;
 
   case AST_EXPR_VARIABLE:
-    emit(cg, "%s", cn(n->as.variable.name));
+    /* the name of a function, where no variable has that name, is a value */
+    if (!is_known_var(cg, n->as.variable.name) &&
+        is_user_function(cg->program, n->as.variable.name))
+      emit(cg, "enlng_make_func(\"%s\")", n->as.variable.name);
+    else
+      emit(cg, "%s", cn(n->as.variable.name));
     break;
 
   case AST_EXPR_INDEX:
@@ -469,21 +571,30 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     }
     break;
 
-  case AST_EXPR_CALL:
-    if (n->as.call_expr.builtin_only ||
-        (!is_user_function(cg->program, n->as.call_expr.func_name) &&
-         is_builtin_func(n->as.call_expr.func_name))) {
-      emit(cg, "enlng_builtin_%s(", n->as.call_expr.func_name);
+  case AST_EXPR_CALL: {
+    const char *fname = n->as.call_expr.func_name;
+    bool user = !n->as.call_expr.builtin_only && is_user_function(cg->program, fname);
+    bool builtin = is_builtin_func(fname);
+    if (!n->as.call_expr.builtin_only && !user && is_known_var(cg, fname)) {
+      /* a name that holds a function: g(x) inside apply(g, x). When a
+         built-in has the same name, it is used unless the name holds a
+         function, as in the interpreter. */
+      if (builtin && builtin_arity(fname) == n->as.call_expr.arg_count) {
+        emit(cg, "(%s.type == ENLNG_VAL_FUNC ? ", cn(fname));
+        emit_value_call(cg, n);
+        emit(cg, " : ");
+        emit_direct_call(cg, n, "enlng_builtin_");
+        emit(cg, ")");
+      } else {
+        emit_value_call(cg, n);
+      }
+    } else if (n->as.call_expr.builtin_only || (!user && builtin)) {
+      emit_direct_call(cg, n, "enlng_builtin_");
     } else {
-      emit(cg, "enlng_user_%s(", n->as.call_expr.func_name);
+      emit_direct_call(cg, n, "enlng_user_");
     }
-    for (int i = 0; i < n->as.call_expr.arg_count; i++) {
-      generate_expression(cg, n->as.call_expr.args[i]);
-      if (i < n->as.call_expr.arg_count - 1)
-        emit(cg, ", ");
-    }
-    emit(cg, ")");
     break;
+  }
 
   default:
     emit(cg, "enlng_make_null()");
@@ -538,7 +649,18 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
       generate_expression(cg, n->as.mutation.val_expr);
       emit(cg, ");\n");
     } else {
-      if (!scope_has(cg, n->as.mutation.name)) {
+      /* x = v changes a local x, or the top-level x after `global x`;
+         only a new name is declared here */
+      if (fn_global_has(n->as.mutation.name) &&
+          !scope_has(cg, n->as.mutation.name) &&
+          !is_global_decl(cg, n->as.mutation.name)) {
+        emit(cg, "enlng_throw(\"There is no name '%s' at the top of the program "
+                 "to change. Make it there first, for example: remember %s as 0\");\n",
+             n->as.mutation.name, n->as.mutation.name);
+        break;
+      }
+      if (!scope_has(cg, n->as.mutation.name) &&
+          !fn_global_has(n->as.mutation.name)) {
         scope_add(cg, n->as.mutation.name);
         emit(cg, "EnlngVal %s = ", cn(n->as.mutation.name));
       } else {
@@ -638,9 +760,11 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
     emit_indent(cg);
     emit(cg, "EnlngVal %s = enlng_make_int(_it);\n", cn(n->as.for_range.var_name));
 
+    loop_name_push(n->as.for_range.var_name);
     for (int i = 0; i < n->as.for_range.body_count; i++) {
       generate_statement(cg, n->as.for_range.body[i]);
     }
+    loop_name_pop();
     cg->indent_level--;
     emit_indent(cg);
     emit(cg, "}\n");
@@ -724,9 +848,11 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
     emit(cg, "EnlngVal %s = enlng_list_get(_coll%d, _each_i%d);\n",
          cn(n->as.for_each.item_name), lid, lid);
 
+    loop_name_push(n->as.for_each.item_name);
     for (int i = 0; i < n->as.for_each.body_count; i++) {
       generate_statement(cg, n->as.for_each.body[i]);
     }
+    loop_name_pop();
 
     cg->indent_level--;
     emit_indent(cg);
@@ -847,6 +973,16 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
     emit(cg, n->type == AST_STOP ? "break;\n" : "continue;\n");
     break;
   }
+
+  case AST_GLOBAL:
+    /* nothing to run: later assignments in this function use the file-level
+       variable, which the v_ name already reaches through its macro */
+    for (int i = 0; i < n->as.global_stmt.count; i++) {
+      if (fn_global_count < 64)
+        fn_globals[fn_global_count] = n->as.global_stmt.names[i];
+      fn_global_count++;
+    }
+    break;
 
   case AST_FAIL:
     emit_indent(cg);
@@ -1031,6 +1167,7 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
       emit(cg, ");\n");
     }
   }
+  emit(cg, "static EnlngVal enlng_call_value(EnlngVal f, const char *name, int argc, EnlngVal *a);\n");
   emit(cg, "\n");
 
   /* Names made at the top of the program are visible to functions (read
@@ -1067,6 +1204,7 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
       }
       emit(cg, ") {\n");
       scope_clear(cg);
+      fn_global_count = 0;
       for (int p = 0; p < stmt->as.func_def.param_count; p++) {
         scope_add(cg, stmt->as.func_def.params[p]);
       }
@@ -1092,8 +1230,32 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
     }
   }
 
+  /* Calling a function held in a value: find it by name, check the inputs. */
+  emit(cg, "static EnlngVal enlng_call_value(EnlngVal f, const char *name, int argc, EnlngVal *a) {\n");
+  emit(cg, "    if (f.type != ENLNG_VAL_FUNC) {\n");
+  emit(cg, "        enlng_not_a_function(name, f);\n");
+  emit(cg, "        return enlng_make_null();\n");
+  emit(cg, "    }\n");
+  for (int i = 0; i < program->as.program.count; i++) {
+    ASTNode *stmt = program->as.program.statements[i];
+    if (!stmt || stmt->type != AST_FUNCTION)
+      continue;
+    int pc = stmt->as.func_def.param_count;
+    emit(cg, "    if (strcmp(f.as.s, \"%s\") == 0) {\n", stmt->as.func_def.name);
+    emit(cg, "        if (argc != %d) enlng_wrong_arity(\"%s\", %d, argc);\n", pc,
+         stmt->as.func_def.name, pc);
+    emit(cg, "        return enlng_user_%s(", stmt->as.func_def.name);
+    for (int p = 0; p < pc; p++)
+      emit(cg, "a[%d]%s", p, p < pc - 1 ? ", " : "");
+    emit(cg, ");\n    }\n");
+  }
+  emit(cg, "    (void)a;\n");
+  emit(cg, "    return enlng_make_null();\n");
+  emit(cg, "}\n\n");
+
   /* Emit main() */
   emit(cg, "int main(int argc, char* argv[]) {\n");
+  emit(cg, "    enlng_console_utf8();\n");
   cg->indent_level = 1;
   scope_clear(cg);
 

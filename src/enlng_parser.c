@@ -1665,6 +1665,30 @@ static ASTNode *parse_statement(Parser *p) {
   if (oop_starts_class(p))
     return parse_class_def(p);
 
+  /* global total, count: inside a function, `total = ...` then changes the
+     name made at the top of the program instead of making a new one */
+  if (t->type == ENLNG_TOKEN_IDENTIFIER && strcmp(t->text, "global") == 0 &&
+      peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER) {
+    advance(p);
+    ASTNode *g = ast_new(AST_GLOBAL, t->line);
+    int cap = 4;
+    g->as.global_stmt.names = (char **)malloc(sizeof(char *) * cap);
+    do {
+      Token *nt = peek(p, 0);
+      if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+        name_error(p, "Expected a name after 'global'", t->line);
+        return g;
+      }
+      if (g->as.global_stmt.count >= cap) {
+        cap *= 2;
+        g->as.global_stmt.names =
+            (char **)realloc(g->as.global_stmt.names, sizeof(char *) * cap);
+      }
+      g->as.global_stmt.names[g->as.global_stmt.count++] = enlng_strdup(nt->text);
+    } while (match(p, ENLNG_TOKEN_COMMA));
+    return g;
+  }
+
   /* call m on obj / tell obj to m / ask obj to m, as a statement */
   if (oop_starts_call(p)) {
     ASTNode *e = ast_new(AST_EXPR_STMT, t->line);

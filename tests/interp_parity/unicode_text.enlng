@@ -1,0 +1,22 @@
+type enlng
+remember t as "नमस्ते दुनिया"
+show t
+show count of t
+show t[0] t[1] t[-1]
+show t[0:6]
+show slc(t, 7)
+show reverse t
+show split("héllo", "")
+for each ch in "añb":
+    show ch
+show find "दुनिया" in t
+remember e as "a😀b"
+show count of e e[1] e[2]
+show string_add(e, "!", 1)
+show string_remove_at(e, 1)
+show string_replace("X", e, 1)
+show uppercase of "héllo"
+show "é" is "é"
+show contains("नमस्ते", "मस")
+show count of "plain ascii"
+show "abc"[1:]

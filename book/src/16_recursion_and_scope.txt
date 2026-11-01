@@ -118,7 +118,7 @@ function tax with price:
 show tax(200)
 :::
 
-A function can read such a name but cannot assign to it. An assignment inside the function makes a new name that belongs to the function, and the top-level name is untouched:
+An assignment inside a function makes a new name that belongs to the function, and the top-level name is untouched:
 
 ::: code
 type enlng
@@ -126,12 +126,32 @@ type enlng
 remember counter as 5
 
 function bump with x:
-    remember counter as 100
+    counter = 100
     give counter + x
 
 show bump(1)
 show counter
 :::
+
+To change the top-level name instead, say so first with `global` (from 5.5.2). After `global counter`, an assignment in that function changes the name made at the top of the program:
+
+::: code
+type enlng
+
+remember counter as 5
+
+function add with x:
+    global counter
+    counter = counter + x
+
+add(10)
+add(1)
+show counter
+:::
+
+Several names can follow one `global`, separated by commas. The name must already exist at the top of the program; if it does not, the assignment is an error. `increases by` and `decreases by` change a top-level name even without `global`, because they need a value to start from.
+
+Asking for it by name keeps one rule safe: a function in a library cannot change a name in your program by accident, just because it happens to use the same spelling.
 
 A parameter or a name made inside the function hides a top-level name of the same spelling. A list or map is shared, so a function that changes one changes it for everyone. Passing what a function needs as inputs is still the clearer habit, because then what the function does depends only on its inputs. (In toolchain 5.5.1 and earlier a function could not see outer names at all.)
 

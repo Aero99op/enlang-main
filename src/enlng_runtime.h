@@ -43,6 +43,55 @@ typedef struct EnlngList EnlngList;
 typedef struct EnlngMap EnlngMap;
 typedef struct EnlngMapEntry EnlngMapEntry;
 
+/* --- Console: text is UTF-8, so the Windows console must show UTF-8 while
+   the program runs; the code page it had is put back when the program ends. */
+#ifdef _WIN32
+static UINT enlng_saved_cp = 0;
+static void enlng_restore_console(void) {
+  if (enlng_saved_cp)
+    SetConsoleOutputCP(enlng_saved_cp);
+}
+static inline void enlng_console_utf8(void) {
+  enlng_saved_cp = GetConsoleOutputCP();
+  if (enlng_saved_cp && enlng_saved_cp != 65001) {
+    SetConsoleOutputCP(65001);
+    atexit(enlng_restore_console);
+  }
+}
+#else
+static inline void enlng_console_utf8(void) {}
+#endif
+
+/* --- Heap objects ---------------------------------------------------------
+   Every text, list and map the program makes starts with this header and is
+   linked into one list. The built-in interpreter uses it to find and free the
+   ones the program can no longer reach (enlng_gc_* below); a program built
+   with --native never collects, and the header only costs a few bytes. */
+#define ENLNG_GC_MAGIC 0xE61C
+enum { ENLNG_OBJ_STRING = 1, ENLNG_OBJ_LIST, ENLNG_OBJ_MAP };
+
+typedef struct EnlngObj {
+  struct EnlngObj *next;
+  unsigned short magic;
+  unsigned char kind;
+  unsigned char mark;
+} EnlngObj;
+
+static EnlngObj *enlng_gc_all = NULL;  /* every live object */
+static size_t enlng_gc_count = 0;      /* how many there are */
+static size_t enlng_gc_new = 0;        /* made since the last collection */
+static size_t enlng_gc_live = 0;       /* still in use after the last collection */
+
+static inline void enlng_gc_link(EnlngObj *o, int kind) {
+  o->magic = ENLNG_GC_MAGIC;
+  o->kind = (unsigned char)kind;
+  o->mark = 0;
+  o->next = enlng_gc_all;
+  enlng_gc_all = o;
+  enlng_gc_count++;
+  enlng_gc_new++;
+}
+
 /* --- Value Types --- */
 typedef enum {
   ENLNG_VAL_INT,
@@ -51,7 +100,8 @@ typedef enum {
   ENLNG_VAL_BOOL,
   ENLNG_VAL_LIST,
   ENLNG_VAL_MAP,
-  ENLNG_VAL_NULL
+  ENLNG_VAL_NULL,
+  ENLNG_VAL_FUNC /* a function used as a value; as.s is its name (not owned) */
 } EnlngValType;
 
 struct EnlngVal {
@@ -67,6 +117,7 @@ struct EnlngVal {
 };
 
 struct EnlngList {
+  EnlngObj gc;
   EnlngVal *items;
   int count;
   int capacity;
@@ -80,6 +131,7 @@ struct EnlngMapEntry {
 };
 
 struct EnlngMap {
+  EnlngObj gc;
   EnlngMapEntry **buckets;
   int capacity;
   int count;
@@ -118,15 +170,63 @@ static inline EnlngVal enlng_make_null(void) {
 static inline EnlngVal enlng_make_string(const char *s) {
   EnlngVal val;
   val.type = ENLNG_VAL_STRING;
-  if (!s) {
-    val.as.s = (char *)malloc(1);
+  size_t len = s ? strlen(s) : 0;
+  EnlngObj *o = (EnlngObj *)malloc(sizeof(EnlngObj) + len + 1);
+  enlng_gc_link(o, ENLNG_OBJ_STRING);
+  val.as.s = (char *)(o + 1);
+  if (s)
+    memcpy(val.as.s, s, len + 1);
+  else
     val.as.s[0] = '\0';
-    return val;
-  }
-  size_t len = strlen(s);
-  val.as.s = (char *)malloc(len + 1);
-  memcpy(val.as.s, s, len + 1);
   return val;
+}
+
+static inline EnlngVal enlng_make_func(const char *name) {
+  EnlngVal val;
+  val.type = ENLNG_VAL_FUNC;
+  val.as.s = (char *)name;
+  return val;
+}
+
+/* --- Text is UTF-8: positions and counts are in characters, not bytes --- */
+static inline int enlng_u8_clen(unsigned char c) {
+  if (c < 0x80)
+    return 1;
+  if ((c & 0xE0) == 0xC0)
+    return 2;
+  if ((c & 0xF0) == 0xE0)
+    return 3;
+  if ((c & 0xF8) == 0xF0)
+    return 4;
+  return 1; /* a stray byte counts as one character */
+}
+
+/* bytes of the character at s, never past the end of the text */
+static inline int enlng_u8_step(const char *s) {
+  int k = enlng_u8_clen((unsigned char)s[0]);
+  for (int i = 1; i < k; i++)
+    if (s[i] == '\0')
+      return i;
+  return k;
+}
+
+static inline int64_t enlng_u8_count(const char *s) {
+  int64_t n = 0;
+  while (*s) {
+    s += enlng_u8_step(s);
+    n++;
+  }
+  return n;
+}
+
+/* byte offset of character number idx (the end of the text if past it) */
+static inline size_t enlng_u8_off(const char *s, int64_t idx) {
+  const char *p = s;
+  while (idx > 0 && *p) {
+    p += enlng_u8_step(p);
+    idx--;
+  }
+  return (size_t)(p - s);
 }
 
 static inline int64_t enlng_val_to_int(EnlngVal v) {
@@ -142,6 +242,7 @@ static inline int64_t enlng_val_to_int(EnlngVal v) {
 /* --- Dynamic List Operations --- */
 static inline EnlngList *enlng_list_create(void) {
   EnlngList *list = (EnlngList *)malloc(sizeof(EnlngList));
+  enlng_gc_link(&list->gc, ENLNG_OBJ_LIST);
   list->count = 0;
   list->frozen = false;
   list->capacity = 8;
@@ -176,6 +277,7 @@ static inline unsigned long enlng_hash_str(const char *str) {
 
 static inline EnlngMap *enlng_map_create(void) {
   EnlngMap *m = (EnlngMap *)malloc(sizeof(EnlngMap));
+  enlng_gc_link(&m->gc, ENLNG_OBJ_MAP);
   m->capacity = 16;
   m->count = 0;
   m->frozen = false;
@@ -263,6 +365,25 @@ static inline void enlng_map_set(EnlngVal v, const char *key, EnlngVal item) {
     }
     e = e->next;
   }
+  /* Grow before the chains get long, so lookups stay fast on big maps */
+  if (m->count + 1 > m->capacity * 3 / 4) {
+    int ncap = m->capacity * 2;
+    EnlngMapEntry **nb = (EnlngMapEntry **)calloc(ncap, sizeof(EnlngMapEntry *));
+    for (int i = 0; i < m->capacity; i++) {
+      EnlngMapEntry *x = m->buckets[i];
+      while (x) {
+        EnlngMapEntry *next = x->next;
+        unsigned long nh = enlng_hash_str(x->key) % ncap;
+        x->next = nb[nh];
+        nb[nh] = x;
+        x = next;
+      }
+    }
+    free(m->buckets);
+    m->buckets = nb;
+    m->capacity = ncap;
+    h = enlng_hash_str(key) % m->capacity;
+  }
   /* Add new key-value pair */
   EnlngMapEntry *ne = (EnlngMapEntry *)malloc(sizeof(EnlngMapEntry));
   size_t klen = strlen(key);
@@ -341,9 +462,12 @@ static inline EnlngVal enlng_freeze_val(EnlngVal v) {
 }
 
 /* `for each k in m`: a map is walked by its keys, a list or text item by item */
+static inline EnlngVal enlng_builtin_split(EnlngVal str, EnlngVal sep);
 static inline EnlngVal enlng_each_source(EnlngVal v) {
   if (v.type == ENLNG_VAL_MAP)
     return enlng_map_keys(v);
+  if (v.type == ENLNG_VAL_STRING) /* characters, found in one pass */
+    return enlng_builtin_split(v, enlng_make_string(""));
   return v;
 }
 
@@ -355,12 +479,123 @@ static inline void enlng_check_step(int64_t step) {
                 "step such as 1, or -1 to count down.");
 }
 
+/* --- Collector (used by the built-in interpreter) ---
+   enlng_gc_mark_val() marks what a root value reaches, with an explicit stack
+   so deep nesting cannot overflow the C stack; enlng_gc_sweep() frees every
+   object left unmarked. Set ENLNG_GC_STRESS=1 to collect at every chance and
+   fill freed memory with junk, which makes a missing root show up at once. */
+static EnlngObj **enlng_gc_stack = NULL;
+static size_t enlng_gc_sp = 0, enlng_gc_cap = 0;
+static int enlng_gc_stress = -1;
+
+static inline EnlngObj *enlng_gc_obj_of(EnlngVal v) {
+  if (v.type == ENLNG_VAL_STRING && v.as.s) {
+    EnlngObj *o = ((EnlngObj *)v.as.s) - 1;
+    return o->magic == ENLNG_GC_MAGIC && o->kind == ENLNG_OBJ_STRING ? o : NULL;
+  }
+  if (v.type == ENLNG_VAL_LIST && v.as.l)
+    return &v.as.l->gc;
+  if (v.type == ENLNG_VAL_MAP && v.as.m)
+    return &v.as.m->gc;
+  return NULL;
+}
+
+static inline void enlng_gc_push(EnlngVal v) {
+  EnlngObj *o = enlng_gc_obj_of(v);
+  if (!o || o->mark)
+    return;
+  o->mark = 1;
+  if (o->kind == ENLNG_OBJ_STRING)
+    return;
+  if (enlng_gc_sp >= enlng_gc_cap) {
+    enlng_gc_cap = enlng_gc_cap ? enlng_gc_cap * 2 : 256;
+    enlng_gc_stack = (EnlngObj **)realloc(enlng_gc_stack, sizeof(EnlngObj *) * enlng_gc_cap);
+  }
+  enlng_gc_stack[enlng_gc_sp++] = o;
+}
+
+static inline void enlng_gc_mark_val(EnlngVal v) {
+  enlng_gc_push(v);
+  while (enlng_gc_sp > 0) {
+    EnlngObj *o = enlng_gc_stack[--enlng_gc_sp];
+    if (o->kind == ENLNG_OBJ_LIST) {
+      EnlngList *l = (EnlngList *)o;
+      for (int i = 0; i < l->count; i++)
+        enlng_gc_push(l->items[i]);
+    } else if (o->kind == ENLNG_OBJ_MAP) {
+      EnlngMap *m = (EnlngMap *)o;
+      for (int b = 0; b < m->capacity; b++)
+        for (EnlngMapEntry *e = m->buckets[b]; e; e = e->next)
+          enlng_gc_push(e->val);
+    }
+  }
+}
+
+static inline void enlng_gc_free_obj(EnlngObj *o) {
+  bool junk = enlng_gc_stress > 0;
+  if (o->kind == ENLNG_OBJ_LIST) {
+    EnlngList *l = (EnlngList *)o;
+    if (junk)
+      memset(l->items, 0xDD, sizeof(EnlngVal) * (size_t)l->capacity);
+    free(l->items);
+  } else if (o->kind == ENLNG_OBJ_MAP) {
+    EnlngMap *m = (EnlngMap *)o;
+    for (int b = 0; b < m->capacity; b++) {
+      EnlngMapEntry *e = m->buckets[b];
+      while (e) {
+        EnlngMapEntry *next = e->next;
+        free(e->key);
+        free(e);
+        e = next;
+      }
+    }
+    free(m->buckets);
+  } else if (junk) {
+    char *s = (char *)(o + 1);
+    memset(s, 0xDD, strlen(s));
+  }
+  if (junk)
+    o->magic = 0;
+  free(o);
+}
+
+static inline void enlng_gc_sweep(void) {
+  EnlngObj **link = &enlng_gc_all;
+  size_t alive = 0;
+  while (*link) {
+    EnlngObj *o = *link;
+    if (o->mark) {
+      o->mark = 0;
+      alive++;
+      link = &o->next;
+    } else {
+      *link = o->next;
+      enlng_gc_free_obj(o);
+    }
+  }
+  enlng_gc_count = alive;
+  enlng_gc_live = alive;
+  enlng_gc_new = 0;
+}
+
+/* Time to collect: many objects were made since the last time, relative to
+   how many were still in use then. */
+static inline bool enlng_gc_due(void) {
+  if (enlng_gc_stress < 0) {
+    const char *e = getenv("ENLNG_GC_STRESS");
+    enlng_gc_stress = (e && e[0] == '1') ? 1 : 0;
+  }
+  if (enlng_gc_stress)
+    return true;
+  return enlng_gc_new > 100000 && enlng_gc_new > enlng_gc_live;
+}
+
 /* --- Container Length --- */
 static inline int64_t enlng_count_of(EnlngVal v) {
   if (v.type == ENLNG_VAL_LIST && v.as.l)
     return v.as.l->count;
   if (v.type == ENLNG_VAL_STRING && v.as.s)
-    return (int64_t)strlen(v.as.s);
+    return enlng_u8_count(v.as.s);
   if (v.type == ENLNG_VAL_MAP && v.as.m)
     return (int64_t)v.as.m->count;
   return 0;
@@ -374,10 +609,15 @@ static inline EnlngVal enlng_list_get(EnlngVal v, int64_t idx) {
     return v.as.l->items[idx];
   }
   if (v.type == ENLNG_VAL_STRING && v.as.s) {
-    int64_t len = (int64_t)strlen(v.as.s);
-    if (idx < 0 || idx >= len)
+    if (idx < 0)
       return enlng_make_null();
-    char buf[2] = {v.as.s[idx], '\0'};
+    const char *p = v.as.s + enlng_u8_off(v.as.s, idx);
+    if (*p == '\0')
+      return enlng_make_null();
+    char buf[8];
+    int k = enlng_u8_step(p);
+    memcpy(buf, p, (size_t)k);
+    buf[k] = '\0';
     return enlng_make_string(buf);
   }
   return enlng_make_null();
@@ -474,13 +714,16 @@ static inline EnlngVal enlng_val_reverse(EnlngVal v) {
   if (v.type == ENLNG_VAL_STRING && v.as.s) {
     size_t len = strlen(v.as.s);
     char *rev = (char *)malloc(len + 1);
-    for (size_t i = 0; i < len; i++) {
-      rev[i] = v.as.s[len - 1 - i];
+    size_t at = len;
+    for (const char *p = v.as.s; *p;) {
+      int k = enlng_u8_step(p);
+      at -= (size_t)k;
+      memcpy(rev + at, p, (size_t)k);
+      p += k;
     }
     rev[len] = '\0';
-    EnlngVal res;
-    res.type = ENLNG_VAL_STRING;
-    res.as.s = rev;
+    EnlngVal res = enlng_make_string(rev);
+    free(rev);
     return res;
   }
   if (v.type == ENLNG_VAL_LIST && v.as.l) {
@@ -496,36 +739,32 @@ static inline EnlngVal enlng_val_reverse(EnlngVal v) {
 /* Permutation / arrangement expression */
 static inline EnlngVal enlng_val_arrange(EnlngVal target, EnlngVal indices) {
   if (target.type == ENLNG_VAL_STRING && target.as.s) {
-    int n = (int)strlen(target.as.s);
+    int64_t n = enlng_u8_count(target.as.s);
+    int count = 0;
+    EnlngVal *picks = NULL;
     if (indices.type == ENLNG_VAL_LIST && indices.as.l) {
-      int count = indices.as.l->count;
-      char *buf = (char *)malloc(count + 1);
-      int out_len = 0;
+      count = indices.as.l->count;
+      picks = indices.as.l->items;
+    } else if (indices.type == ENLNG_VAL_INT) {
+      count = 1;
+      picks = &indices;
+    }
+    if (picks) {
+      char *buf = (char *)malloc((size_t)count * 4 + 1);
+      size_t out_len = 0;
       for (int i = 0; i < count; i++) {
-        int64_t idx = enlng_val_to_int(indices.as.l->items[i]);
+        int64_t idx = enlng_val_to_int(picks[i]);
         if (idx < 0) idx = n + idx;
         if (idx >= 0 && idx < n) {
-          buf[out_len++] = target.as.s[idx];
+          const char *p = target.as.s + enlng_u8_off(target.as.s, idx);
+          int k = enlng_u8_step(p);
+          memcpy(buf + out_len, p, (size_t)k);
+          out_len += (size_t)k;
         }
       }
       buf[out_len] = '\0';
-      EnlngVal res;
-      res.type = ENLNG_VAL_STRING;
-      res.as.s = buf;
-      return res;
-    }
-    if (indices.type == ENLNG_VAL_INT) {
-      int64_t idx = indices.as.i;
-      if (idx < 0) idx = n + idx;
-      char *buf = (char *)malloc(2);
-      int out_len = 0;
-      if (idx >= 0 && idx < n) {
-        buf[out_len++] = target.as.s[idx];
-      }
-      buf[out_len] = '\0';
-      EnlngVal res;
-      res.type = ENLNG_VAL_STRING;
-      res.as.s = buf;
+      EnlngVal res = enlng_make_string(buf);
+      free(buf);
       return res;
     }
   }
@@ -570,6 +809,8 @@ static inline bool enlng_is_truthy(EnlngVal v) {
     return v.as.l && v.as.l->count > 0;
   if (v.type == ENLNG_VAL_MAP)
     return v.as.m && v.as.m->count > 0;
+  if (v.type == ENLNG_VAL_FUNC)
+    return true;
   return false;
 }
 
@@ -593,6 +834,8 @@ static inline bool enlng_vals_equal(EnlngVal a, EnlngVal b) {
   }
   if (a.type == ENLNG_VAL_NULL && b.type == ENLNG_VAL_NULL)
     return true;
+  if (a.type == ENLNG_VAL_FUNC && b.type == ENLNG_VAL_FUNC)
+    return strcmp(a.as.s, b.as.s) == 0;
   /* Lists and maps are equal when they hold equal items. */
   if (a.type == ENLNG_VAL_LIST && b.type == ENLNG_VAL_LIST) {
     if (a.as.l == b.as.l)
@@ -655,23 +898,37 @@ static inline bool enlng_vals_lte(EnlngVal a, EnlngVal b) {
   return enlng_vals_lt(a, b) || enlng_vals_equal(a, b);
 }
 
-/* In-place list sort */
+/* In-place list sort: a stable merge sort, so equal items keep their order */
+static inline void enlng_merge_sort(EnlngVal *a, EnlngVal *tmp, int n,
+                                    bool descending) {
+  if (n < 2)
+    return;
+  int mid = n / 2;
+  enlng_merge_sort(a, tmp, mid, descending);
+  enlng_merge_sort(a + mid, tmp, n - mid, descending);
+  int i = 0, j = mid, k = 0;
+  while (i < mid && j < n) {
+    /* take from the right half only when it must come first */
+    bool right_first = descending ? enlng_vals_lt(a[i], a[j])
+                                  : enlng_vals_gt(a[i], a[j]);
+    tmp[k++] = right_first ? a[j++] : a[i++];
+  }
+  while (i < mid)
+    tmp[k++] = a[i++];
+  while (j < n)
+    tmp[k++] = a[j++];
+  memcpy(a, tmp, sizeof(EnlngVal) * (size_t)n);
+}
+
 static inline void enlng_list_sort(EnlngVal v, bool descending) {
   if (v.type == ENLNG_VAL_LIST && v.as.l) {
     ENLNG_NOT_FROZEN(v);
     int n = v.as.l->count;
-    for (int i = 0; i < n - 1; i++) {
-      for (int j = 0; j < n - i - 1; j++) {
-        bool should_swap =
-            descending ? enlng_vals_lt(v.as.l->items[j], v.as.l->items[j + 1])
-                       : enlng_vals_gt(v.as.l->items[j], v.as.l->items[j + 1]);
-        if (should_swap) {
-          EnlngVal tmp = v.as.l->items[j];
-          v.as.l->items[j] = v.as.l->items[j + 1];
-          v.as.l->items[j + 1] = tmp;
-        }
-      }
-    }
+    if (n < 2)
+      return;
+    EnlngVal *tmp = (EnlngVal *)malloc(sizeof(EnlngVal) * (size_t)n);
+    enlng_merge_sort(v.as.l->items, tmp, n, descending);
+    free(tmp);
   }
 }
 
@@ -689,6 +946,10 @@ static inline const char *enlng_val_to_str_buf(EnlngVal v, char *buf,
   }
   if (v.type == ENLNG_VAL_BOOL) {
     return v.as.b ? "true" : "false";
+  }
+  if (v.type == ENLNG_VAL_FUNC) {
+    snprintf(buf, sz, "<function %s>", v.as.s);
+    return buf;
   }
   return "";
 }
@@ -710,6 +971,7 @@ static inline const char *enlng_kind(EnlngVal v) {
   case ENLNG_VAL_BOOL: return "true/false";
   case ENLNG_VAL_LIST: return "a list";
   case ENLNG_VAL_MAP: return "a map";
+  case ENLNG_VAL_FUNC: return "a function";
   default: return "null";
   }
 }
@@ -754,9 +1016,8 @@ static inline EnlngVal enlng_val_add(EnlngVal a, EnlngVal b) {
     memcpy(comb, sa, la);
     memcpy(comb + la, sb, lb);
     comb[la + lb] = '\0';
-    EnlngVal res;
-    res.type = ENLNG_VAL_STRING;
-    res.as.s = comb;
+    EnlngVal res = enlng_make_string(comb);
+    free(comb);
     return res;
   }
   enlng_bad_operands("plus", a, b);
@@ -791,9 +1052,8 @@ static inline EnlngVal enlng_val_mul(EnlngVal a, EnlngVal b) {
       memcpy(buf + (i * slen), str, slen);
     }
     buf[total_len] = '\0';
-    EnlngVal res;
-    res.type = ENLNG_VAL_STRING;
-    res.as.s = buf;
+    EnlngVal res = enlng_make_string(buf);
+    free(buf);
     return res;
   }
   if (!enlng_is_num(a) || !enlng_is_num(b)) {
@@ -882,7 +1142,25 @@ static inline void enlng_print_val(EnlngVal v) {
   case ENLNG_VAL_NULL:
     printf("null");
     break;
+  case ENLNG_VAL_FUNC:
+    printf("<function %s>", v.as.s);
+    break;
   }
+}
+
+/* Calling a value that holds a function: the errors both modes give. */
+static inline void enlng_not_a_function(const char *name, EnlngVal v) {
+  char msg[300];
+  snprintf(msg, sizeof(msg), "'%s' is %s, not a function, so it cannot be called.",
+           name, enlng_kind(v));
+  enlng_throw(msg);
+}
+
+static inline void enlng_wrong_arity(const char *name, int need, int got) {
+  char msg[300];
+  snprintf(msg, sizeof(msg), "'%s' needs %d input%s but was given %d.", name, need,
+           need == 1 ? "" : "s", got);
+  enlng_throw(msg);
 }
 
 /* --- Input --- */
@@ -1073,6 +1351,119 @@ static inline EnlngVal enlng_builtin_has_key(EnlngVal map, EnlngVal key) {
   return enlng_make_bool(enlng_map_has(map, k));
 }
 
+/* --- to_text / to_number --- */
+typedef struct {
+  char *s;
+  size_t n, cap;
+} EnlngBuf;
+
+static inline void enlng_buf_add(EnlngBuf *b, const char *t) {
+  size_t k = strlen(t);
+  if (b->n + k + 1 > b->cap) {
+    b->cap = (b->n + k + 1) * 2;
+    b->s = (char *)realloc(b->s, b->cap);
+  }
+  memcpy(b->s + b->n, t, k + 1);
+  b->n += k;
+}
+
+/* The text `show` would print for v. */
+static inline void enlng_buf_val(EnlngBuf *b, EnlngVal v) {
+  char tmp[64];
+  switch (v.type) {
+  case ENLNG_VAL_INT:
+    snprintf(tmp, sizeof(tmp), "%lld", (long long)v.as.i);
+    enlng_buf_add(b, tmp);
+    break;
+  case ENLNG_VAL_FLOAT:
+    snprintf(tmp, sizeof(tmp), "%.6g", v.as.f);
+    enlng_buf_add(b, tmp);
+    break;
+  case ENLNG_VAL_STRING:
+    enlng_buf_add(b, v.as.s ? v.as.s : "");
+    break;
+  case ENLNG_VAL_BOOL:
+    enlng_buf_add(b, v.as.b ? "true" : "false");
+    break;
+  case ENLNG_VAL_LIST:
+    enlng_buf_add(b, "[");
+    for (int i = 0; v.as.l && i < v.as.l->count; i++) {
+      if (i > 0)
+        enlng_buf_add(b, ", ");
+      enlng_buf_val(b, v.as.l->items[i]);
+    }
+    enlng_buf_add(b, "]");
+    break;
+  case ENLNG_VAL_MAP: {
+    enlng_buf_add(b, "{");
+    int shown = 0;
+    for (int i = 0; v.as.m && i < v.as.m->capacity; i++)
+      for (EnlngMapEntry *e = v.as.m->buckets[i]; e; e = e->next) {
+        if (shown++ > 0)
+          enlng_buf_add(b, ", ");
+        enlng_buf_add(b, "\"");
+        enlng_buf_add(b, e->key);
+        enlng_buf_add(b, "\": ");
+        enlng_buf_val(b, e->val);
+      }
+    enlng_buf_add(b, "}");
+    break;
+  }
+  case ENLNG_VAL_FUNC:
+    snprintf(tmp, sizeof(tmp), "<function %.40s>", v.as.s);
+    enlng_buf_add(b, tmp);
+    break;
+  default:
+    enlng_buf_add(b, "null");
+  }
+}
+
+static inline EnlngVal enlng_builtin_to_text(EnlngVal v) {
+  if (v.type == ENLNG_VAL_STRING)
+    return v;
+  EnlngBuf b = {NULL, 0, 0};
+  enlng_buf_add(&b, "");
+  enlng_buf_val(&b, v);
+  EnlngVal r = enlng_make_string(b.s);
+  free(b.s);
+  return r;
+}
+
+/* "42" -> 42, " 3.5 " -> 3.5; text that is not a number is an error. */
+static inline EnlngVal enlng_builtin_to_number(EnlngVal v) {
+  if (v.type == ENLNG_VAL_INT || v.type == ENLNG_VAL_FLOAT)
+    return v;
+  if (v.type == ENLNG_VAL_STRING && v.as.s) {
+    const char *p = v.as.s;
+    while (*p == ' ' || *p == '\t')
+      p++;
+    char *end = NULL;
+    if (*p) {
+      long long iv = strtoll(p, &end, 10);
+      const char *q = end;
+      while (*q == ' ' || *q == '\t' || *q == '\r' || *q == '\n')
+        q++;
+      if (end != p && *q == '\0')
+        return enlng_make_int((int64_t)iv);
+      double dv = strtod(p, &end);
+      q = end;
+      while (*q == ' ' || *q == '\t' || *q == '\r' || *q == '\n')
+        q++;
+      if (end != p && *q == '\0')
+        return enlng_make_float(dv);
+    }
+    char msg[200];
+    snprintf(msg, sizeof(msg), "'%.80s' is not a number.", v.as.s);
+    enlng_throw(msg);
+    return enlng_make_null();
+  }
+  char msg[200];
+  snprintf(msg, sizeof(msg), "'to_number' needs text or a number, but got %s.",
+           enlng_kind(v));
+  enlng_throw(msg);
+  return enlng_make_null();
+}
+
 static inline EnlngVal enlng_builtin_len(EnlngVal v) {
   return enlng_make_int(enlng_count_of(v));
 }
@@ -1106,9 +1497,11 @@ static inline EnlngVal enlng_builtin_slc(EnlngVal v, EnlngVal from, EnlngVal to)
     return enlng_make_list(res);
   }
   if (v.type == ENLNG_VAL_STRING && v.as.s) {
-    char *buf = (char *)malloc((size_t)(b - a) + 1);
-    memcpy(buf, v.as.s + a, (size_t)(b - a));
-    buf[b - a] = '\0';
+    size_t ba = enlng_u8_off(v.as.s, a);
+    size_t bb = ba + enlng_u8_off(v.as.s + ba, b - a);
+    char *buf = (char *)malloc(bb - ba + 1);
+    memcpy(buf, v.as.s + ba, bb - ba);
+    buf[bb - ba] = '\0';
     EnlngVal res = enlng_make_string(buf);
     free(buf);
     return res;
@@ -1125,10 +1518,13 @@ static inline EnlngVal enlng_builtin_split(EnlngVal str, EnlngVal sep) {
   size_t dlen = strlen(d);
   if (dlen == 0) {
     /* Split into individual characters */
-    size_t slen = strlen(s);
-    for (size_t i = 0; i < slen; i++) {
-      char ch[2] = {s[i], '\0'};
+    while (*s) {
+      char ch[8];
+      int k = enlng_u8_step(s);
+      memcpy(ch, s, (size_t)k);
+      ch[k] = '\0';
       enlng_list_push(res, enlng_make_string(ch));
+      s += k;
     }
     return enlng_make_list(res);
   }
@@ -1261,7 +1657,10 @@ static inline EnlngVal enlng_builtin_find(EnlngVal target, EnlngVal container) {
     if (target.type != ENLNG_VAL_STRING || !target.as.s) return enlng_make_int(-1);
     const char *p = strstr(container.as.s, target.as.s);
     if (!p) return enlng_make_int(-1);
-    return enlng_make_int((int64_t)(p - container.as.s));
+    int64_t chars = 0;
+    for (const char *q = container.as.s; q < p; q += enlng_u8_step(q))
+      chars++;
+    return enlng_make_int(chars);
   }
   if (container.type == ENLNG_VAL_LIST && container.as.l) {
     for (int i = 0; i < container.as.l->count; i++) {
@@ -1401,8 +1800,8 @@ static inline EnlngVal enlng_builtin_string_add(EnlngVal arg1, EnlngVal arg2, En
   EnlngVal target = arg2;
 
   if (arg1.type == ENLNG_VAL_STRING && arg2.type == ENLNG_VAL_STRING && arg1.as.s && arg2.as.s) {
-    size_t l1 = strlen(arg1.as.s);
-    size_t l2 = strlen(arg2.as.s);
+    size_t l1 = (size_t)enlng_u8_count(arg1.as.s);
+    size_t l2 = (size_t)enlng_u8_count(arg2.as.s);
     if (l1 == 1 && l2 > 1) {
       item = arg1;
       target = arg2;
@@ -1440,7 +1839,8 @@ static inline EnlngVal enlng_builtin_string_add(EnlngVal arg1, EnlngVal arg2, En
   }
   size_t ilen = strlen(to_insert);
 
-  int64_t idx = enlng_parse_position(pos, (int64_t)slen, true);
+  int64_t idx = (int64_t)enlng_u8_off(
+      s, enlng_parse_position(pos, enlng_u8_count(s), true));
 
   char *buf = (char *)malloc(slen + ilen + 1);
   memcpy(buf, s, (size_t)idx);
@@ -1464,13 +1864,15 @@ static inline EnlngVal enlng_builtin_string_remove_at(EnlngVal str, EnlngVal pos
   if (slen == 0)
     return str;
 
-  int64_t idx = enlng_parse_position(pos, (int64_t)slen, false);
+  int64_t idx = (int64_t)enlng_u8_off(
+      s, enlng_parse_position(pos, enlng_u8_count(s), false));
+  int ck = s[idx] ? enlng_u8_step(s + idx) : 1;
   if (idx < 0 || idx >= (int64_t)slen)
     return str;
 
   char *buf = (char *)malloc(slen);
   memcpy(buf, s, (size_t)idx);
-  strcpy(buf + idx, s + idx + 1);
+  strcpy(buf + idx, s + idx + ck);
 
   EnlngVal res = enlng_make_string(buf);
   free(buf);
@@ -1522,8 +1924,8 @@ static inline EnlngVal enlng_builtin_string_replace(EnlngVal arg1, EnlngVal arg2
   EnlngVal target = arg2;
 
   if (arg1.type == ENLNG_VAL_STRING && arg2.type == ENLNG_VAL_STRING && arg1.as.s && arg2.as.s) {
-    size_t l1 = strlen(arg1.as.s);
-    size_t l2 = strlen(arg2.as.s);
+    size_t l1 = (size_t)enlng_u8_count(arg1.as.s);
+    size_t l2 = (size_t)enlng_u8_count(arg2.as.s);
     if (l1 == 1 && l2 > 1) {
       new_val = arg1;
       target = arg2;
@@ -1563,12 +1965,14 @@ static inline EnlngVal enlng_builtin_string_replace(EnlngVal arg1, EnlngVal arg2
   }
   size_t rlen = strlen(rep);
 
-  int64_t idx = enlng_parse_position(pos, (int64_t)slen, false);
+  int64_t idx = (int64_t)enlng_u8_off(
+      s, enlng_parse_position(pos, enlng_u8_count(s), false));
+  int ck = s[idx] ? enlng_u8_step(s + idx) : 1;
 
   char *buf = (char *)malloc(slen + rlen + 1);
   memcpy(buf, s, (size_t)idx);
   memcpy(buf + idx, rep, rlen);
-  strcpy(buf + idx + rlen, s + idx + 1);
+  strcpy(buf + idx + rlen, s + idx + ck);
 
   EnlngVal res = enlng_make_string(buf);
   free(buf);

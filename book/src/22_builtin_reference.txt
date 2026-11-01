@@ -21,6 +21,8 @@ These functions are part of the language and need no `use` line. They are the sa
 | Call | Gives |
 |---|---|
 | `len(text)` | The number of characters. |
+| `to_number(text)` | The number the text spells: `to_number("42")` is 42, `to_number("3.5")` is 3.5. Text that is not a number is an error. |
+| `to_text(value)` | The value as text, the way `show` prints it. |
 | `split(text, separator)` | A list of the pieces. With `""` as separator, one piece per character. |
 | `join(list, separator)` | The text items of the list glued together with the separator. |
 | `contains(text, piece)` | True if `piece` appears in `text`. Also works on lists. |

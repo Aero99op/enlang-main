@@ -152,6 +152,42 @@ function count_evens with numbers:
 show count_evens([1, 2, 3, 4, 6, 7, 8])
 :::
 
+## Functions as values
+
+From 5.5.2 the name of a function is a value, like a number or a list. It can be kept in a name, put in a list or a map, and handed to another function, which calls it like any function:
+
+::: code
+type enlng
+
+function double with x:
+    give x times 2
+
+function is_even with n:
+    give n mod 2 is 0
+
+function apply_to_all with operation, items:
+    remember out as []
+    for each item in items:
+        append(out, operation(item))
+    give out
+
+function keep_if with test, items:
+    remember out as []
+    for each item in items:
+        when test(item):
+            append(out, item)
+    give out
+
+show apply_to_all(double, [1, 2, 3])
+show keep_if(is_even, [1, 2, 3, 4, 5, 6])
+
+remember f as double
+show f(21)
+show f
+:::
+
+`show f` prints `<function double>`. When a call such as `operation(item)` names no function of the program, the name is looked up as a value, and the function it holds runs, with the same check on the number of inputs. Calling a name that holds something else, such as a number, is an error. Built-in functions such as `sqrt` cannot be passed this way yet; wrap one in a function of your own.
+
 ## Giving good names
 
 Name a function for what it gives back or does: `average_of`, `is_leap`, `print_receipt`. A reader should know what a call does without opening the body.

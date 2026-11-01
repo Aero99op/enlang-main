@@ -35,6 +35,9 @@ typedef struct {
   IVar *v;
   int n, cap;
   int scope; /* index where the innermost scope starts */
+  bool owned; /* v was malloc'd here (a call starts on a stack buffer) */
+  const char *gl[32]; /* names this function declared with `global` */
+  int gln;
 } IFrame;
 
 typedef struct {
@@ -49,6 +52,12 @@ typedef struct {
   int line; /* the statement running now, for errors the runtime throws */
   bool *sorted; /* the innermost `repeat until sorted` flag */
   EnlngVal ret;
+  /* Roots for the collector: the frames of the calls running now, and
+     values an expression holds while it evaluates more (see iroot). */
+  IFrame **frames;
+  int nframes, capframes;
+  EnlngVal *tmp;
+  int ntmp, captmp;
 } Interp;
 
 enum { EX_OK = 0, EX_BREAK, EX_CONTINUE, EX_RETURN };
@@ -56,6 +65,39 @@ enum { EX_OK = 0, EX_BREAK, EX_CONTINUE, EX_RETURN };
 static EnlngVal ieval(Interp *it, IFrame *f, ASTNode *n);
 static EnlngVal ibinary(Interp *it, IFrame *f, ASTNode *n);
 static int iexec(Interp *it, IFrame *f, ASTNode *n);
+
+/* Keep v alive while the expression that holds it evaluates something else
+   (which may run statements, and so a collection). Callers reset it->ntmp. */
+static void iroot(Interp *it, EnlngVal v) {
+  if (it->ntmp >= it->captmp) {
+    it->captmp = it->captmp ? it->captmp * 2 : 64;
+    it->tmp = (EnlngVal *)realloc(it->tmp, sizeof(EnlngVal) * it->captmp);
+  }
+  it->tmp[it->ntmp++] = v;
+}
+
+static void ipush_frame(Interp *it, IFrame *f) {
+  if (it->nframes >= it->capframes) {
+    it->capframes = it->capframes ? it->capframes * 2 : 64;
+    it->frames = (IFrame **)realloc(it->frames, sizeof(IFrame *) * it->capframes);
+  }
+  it->frames[it->nframes++] = f;
+}
+
+/* Free everything the program can no longer reach. Runs only at the start
+   of a statement, when every live value is in a frame, on the root stack,
+   or about to be returned. */
+static void igc(Interp *it) {
+  for (int i = 0; i < it->nframes; i++) {
+    IFrame *f = it->frames[i];
+    for (int k = 0; k < f->n; k++)
+      enlng_gc_mark_val(f->v[k].val);
+  }
+  for (int i = 0; i < it->ntmp; i++)
+    enlng_gc_mark_val(it->tmp[i]);
+  enlng_gc_mark_val(it->ret);
+  enlng_gc_sweep();
+}
 
 static void ifail(Interp *it, int line, const char *fmt, ...) {
   if (it->failed)
@@ -70,7 +112,8 @@ static void ifail(Interp *it, int line, const char *fmt, ...) {
 
 static IVar *ilookup(IFrame *f, const char *name) {
   for (int i = f->n - 1; i >= 0; i--) {
-    if (strcmp(f->v[i].name, name) == 0)
+    const char *vn = f->v[i].name;
+    if (vn == name || (vn[0] == name[0] && strcmp(vn, name) == 0))
       return &f->v[i];
   }
   return NULL;
@@ -79,26 +122,67 @@ static IVar *ilookup(IFrame *f, const char *name) {
 /* New name in the current scope (or overwrite one declared in this scope). */
 static void idefine(IFrame *f, const char *name, EnlngVal val) {
   for (int i = f->n - 1; i >= f->scope; i--) {
-    if (strcmp(f->v[i].name, name) == 0) {
+    const char *vn = f->v[i].name;
+    if (vn == name || (vn[0] == name[0] && strcmp(vn, name) == 0)) {
       f->v[i].val = val;
       return;
     }
   }
   if (f->n >= f->cap) {
-    f->cap = f->cap ? f->cap * 2 : 16;
-    f->v = (IVar *)realloc(f->v, sizeof(IVar) * f->cap);
+    int ncap = f->cap ? f->cap * 2 : 16;
+    if (f->owned || !f->v) {
+      f->v = (IVar *)realloc(f->v, sizeof(IVar) * ncap);
+    } else {
+      IVar *nv = (IVar *)malloc(sizeof(IVar) * ncap);
+      memcpy(nv, f->v, sizeof(IVar) * f->n);
+      f->v = nv;
+    }
+    f->owned = true;
+    f->cap = ncap;
   }
   f->v[f->n].name = name;
   f->v[f->n].val = val;
   f->n++;
 }
 
-static EnlngVal iget(Interp *it, IFrame *f, const char *name, int line) {
+static ASTNode *ifind_func(Interp *it, const char *name);
+
+/* A name in this frame, or else at the top of the program. */
+static IVar *ifind_var(Interp *it, IFrame *f, const char *name) {
   IVar *v = ilookup(f, name);
-  /* A function may read (not assign) a name made at the top of the program. */
   if (!v && it->globals && f != it->globals)
     v = ilookup(it->globals, name);
+  return v;
+}
+
+/* The variable `name = value` changes: a local of this frame, or the
+   top-level name when the function said `global name`. NULL means the
+   assignment makes a new local. */
+static IVar *iassign_var(Interp *it, IFrame *f, const char *name, int line) {
+  IVar *v = ilookup(f, name);
+  if (v || f == it->globals)
+    return v;
+  for (int i = 0; i < f->gln && i < 32; i++) {
+    if (strcmp(f->gl[i], name) == 0) {
+      v = it->globals ? ilookup(it->globals, name) : NULL;
+      if (!v)
+        ifail(it, line,
+              "There is no name '%s' at the top of the program to change. "
+              "Make it there first, for example: remember %s as 0",
+              name, name);
+      return v;
+    }
+  }
+  return NULL;
+}
+
+static EnlngVal iget(Interp *it, IFrame *f, const char *name, int line) {
+  IVar *v = ifind_var(it, f, name);
   if (!v) {
+    /* the name of a function is a value too: remember f as double */
+    ASTNode *fn = ifind_func(it, name);
+    if (fn)
+      return enlng_make_func(fn->as.func_def.name);
     ifail(it, line,
           "I don't know a name '%s' here. Define it first, for example: remember %s as 0",
           name, name);
@@ -125,7 +209,7 @@ static const IBuiltin ibuiltins[] = {
     {"split", 2},        {"join", 2},        {"contains", 2},
     {"string_add", 3},   {"string_insert", 3}, {"string_remove_at", 2},
     {"string_remove", 2}, {"string_set_at", 3}, {"string_replace", 3},
-    {"slc", 3},
+    {"slc", 3},          {"to_number", 1},    {"to_text", 1},
     {NULL, 0}};
 
 static const IBuiltin *ifind_builtin(const char *name) {
@@ -146,7 +230,7 @@ static EnlngVal icall_builtin(const char *name, EnlngVal *a) {
   B1(file_exists) B0(time_now) B1(sleep) B2(append) B1(pop) B1(keys)
   B1(values) B2(has_key) B1(len) B2(split) B2(join) B2(contains)
   B3(string_add) B3(string_insert) B2(string_remove_at) B2(string_remove)
-  B3(string_set_at) B3(string_replace) B3(slc)
+  B3(string_set_at) B3(string_replace) B3(slc) B1(to_number) B1(to_text)
 #undef B0
 #undef B1
 #undef B2
@@ -172,13 +256,35 @@ static EnlngVal icall(Interp *it, IFrame *f, ASTNode *n) {
   EnlngVal argbuf[8];
   EnlngVal *args = argc <= 8 ? argbuf : (EnlngVal *)malloc(sizeof(EnlngVal) * argc);
   EnlngVal result = enlng_make_null();
+  int tmp_base = it->ntmp, frame_base = it->nframes;
 
-  for (int i = 0; i < argc; i++)
+  for (int i = 0; i < argc; i++) {
     args[i] = ieval(it, f, n->as.call_expr.args[i]);
+    iroot(it, args[i]);
+  }
 
   if (!it->failed) {
-    ASTNode *fn = n->as.call_expr.builtin_only ? NULL : ifind_func(it, name);
-    if (fn) {
+    /* The functions of a program never change while it runs, so each call
+     * site looks its function up once. */
+    if (!n->as.call_expr.resolved) {
+      n->as.call_expr.fn = n->as.call_expr.builtin_only ? NULL : ifind_func(it, name);
+      n->as.call_expr.resolved = true;
+    }
+    ASTNode *fn = n->as.call_expr.fn;
+    /* No function has this name: a name that holds a function can be called,
+     * as in apply(inc, 1) where apply calls g(x). */
+    if (!fn && !n->as.call_expr.builtin_only) {
+      IVar *v = ifind_var(it, f, name);
+      if (v && v->val.type == ENLNG_VAL_FUNC) {
+        fn = ifind_func(it, v->val.as.s);
+        name = v->val.as.s;
+      } else if (v && !ifind_builtin(name)) {
+        ifail(it, n->line, "'%s' is %s, not a function, so it cannot be called.",
+              name, enlng_kind(v->val));
+      }
+    }
+    if (it->failed) {
+    } else if (fn) {
       if (argc != fn->as.func_def.param_count) {
         ifail(it, n->line, "'%s' needs %d input%s but was given %d.", name,
               fn->as.func_def.param_count,
@@ -188,12 +294,14 @@ static EnlngVal icall(Interp *it, IFrame *f, ASTNode *n) {
               "'%s' called itself too many times (over %d levels deep). Check that it has a way to stop.",
               name, INTERP_MAX_DEPTH);
       } else {
-        IFrame nf = {0};
+        IVar stackv[16];
+        IFrame nf = {stackv, 0, 16, 0, false};
         for (int p = 0; p < argc; p++)
           idefine(&nf, fn->as.func_def.params[p], args[p]);
         bool *saved_sorted = it->sorted;
         it->sorted = NULL;
         it->depth++;
+        ipush_frame(it, &nf);
         int count = fn->as.func_def.body_count;
         for (int b = 0; b < count && !it->failed; b++) {
           ASTNode *s = fn->as.func_def.body[b];
@@ -209,7 +317,9 @@ static EnlngVal icall(Interp *it, IFrame *f, ASTNode *n) {
         }
         it->depth--;
         it->sorted = saved_sorted;
-        free(nf.v);
+        it->nframes = frame_base;
+        if (nf.owned)
+          free(nf.v);
       }
     } else {
       const IBuiltin *b = ifind_builtin(name);
@@ -227,6 +337,8 @@ static EnlngVal icall(Interp *it, IFrame *f, ASTNode *n) {
   }
   if (args != argbuf)
     free(args);
+  it->ntmp = tmp_base;
+  it->nframes = frame_base;
   return result;
 }
 
@@ -244,8 +356,11 @@ static EnlngVal ibinary(Interp *it, IFrame *f, ASTNode *n) {
         return enlng_make_bool(true);
       return enlng_make_bool(enlng_is_truthy(ieval(it, f, n->as.binary_expr.right)));
     }
+    int base = it->ntmp;
     EnlngVal a = ieval(it, f, n->as.binary_expr.left);
+    iroot(it, a);
     EnlngVal b = ieval(it, f, n->as.binary_expr.right);
+    it->ntmp = base;
     switch (op) {
     case ENLNG_TOKEN_ADD: return enlng_val_add(a, b);
     case ENLNG_TOKEN_SUB: return enlng_val_sub(a, b);
@@ -282,10 +397,13 @@ static EnlngVal ieval(Interp *it, IFrame *f, ASTNode *n) {
     return iget(it, f, n->as.variable.name, n->line);
 
   case AST_EXPR_INDEX: {
+    int base = it->ntmp;
     EnlngVal c = n->as.index_expr.target
                      ? ieval(it, f, n->as.index_expr.target)
                      : iget(it, f, n->as.index_expr.arr_name, n->line);
+    iroot(it, c);
     EnlngVal k = ieval(it, f, n->as.index_expr.index_expr);
+    it->ntmp = base;
     return enlng_container_get(c, k);
   }
 
@@ -307,30 +425,31 @@ static EnlngVal ieval(Interp *it, IFrame *f, ASTNode *n) {
 
   case AST_EXPR_COUNT_OF:
     return enlng_make_int(enlng_count_of(ieval(it, f, n->as.single_target_expr.target)));
-  case AST_EXPR_COUNT_IN: {
-    EnlngVal t = ieval(it, f, n->as.count_in_expr.target);
-    EnlngVal c = ieval(it, f, n->as.count_in_expr.container);
-    return enlng_make_int(enlng_count_in(t, c));
-  }
-  case AST_EXPR_SPLIT: {
-    EnlngVal t = ieval(it, f, n->as.count_in_expr.target);
-    EnlngVal c = ieval(it, f, n->as.count_in_expr.container);
-    return enlng_builtin_split(t, c);
-  }
-  case AST_EXPR_JOIN: {
-    EnlngVal t = ieval(it, f, n->as.count_in_expr.target);
-    EnlngVal c = ieval(it, f, n->as.count_in_expr.container);
-    return enlng_builtin_join(t, c);
-  }
+  case AST_EXPR_COUNT_IN:
+  case AST_EXPR_SPLIT:
+  case AST_EXPR_JOIN:
   case AST_EXPR_FIND: {
+    int base = it->ntmp;
     EnlngVal t = ieval(it, f, n->as.count_in_expr.target);
+    iroot(it, t);
     EnlngVal c = ieval(it, f, n->as.count_in_expr.container);
+    it->ntmp = base;
+    if (n->type == AST_EXPR_COUNT_IN)
+      return enlng_make_int(enlng_count_in(t, c));
+    if (n->type == AST_EXPR_SPLIT)
+      return enlng_builtin_split(t, c);
+    if (n->type == AST_EXPR_JOIN)
+      return enlng_builtin_join(t, c);
     return enlng_builtin_find(t, c);
   }
   case AST_EXPR_REPLACE: {
+    int base = it->ntmp;
     EnlngVal t = ieval(it, f, n->as.replace_expr.target);
+    iroot(it, t);
     EnlngVal r = ieval(it, f, n->as.replace_expr.replacement);
+    iroot(it, r);
     EnlngVal c = ieval(it, f, n->as.replace_expr.container);
+    it->ntmp = base;
     return enlng_builtin_replace(t, r, c);
   }
   case AST_EXPR_TRIM:
@@ -351,17 +470,26 @@ static EnlngVal ieval(Interp *it, IFrame *f, ASTNode *n) {
     return enlng_val_reverse(ieval(it, f, n->as.single_target_expr.target));
 
   case AST_EXPR_LIST_LITERAL: {
+    int base = it->ntmp;
     EnlngList *l = enlng_list_create();
-    for (int i = 0; i < n->as.list_literal.count; i++)
-      enlng_list_push(l, ieval(it, f, n->as.list_literal.elements[i]));
+    iroot(it, enlng_make_list(l));
+    for (int i = 0; i < n->as.list_literal.count; i++) {
+      EnlngVal item = ieval(it, f, n->as.list_literal.elements[i]);
+      enlng_list_push(l, item);
+    }
+    it->ntmp = base;
     return enlng_make_list(l);
   }
 
   case AST_EXPR_MAP_LITERAL: {
+    int base = it->ntmp;
     EnlngVal m = enlng_make_map(enlng_map_create());
-    for (int i = 0; i < n->as.map_literal.count; i++)
-      enlng_map_set(m, n->as.map_literal.keys[i],
-                    ieval(it, f, n->as.map_literal.values[i]));
+    iroot(it, m);
+    for (int i = 0; i < n->as.map_literal.count; i++) {
+      EnlngVal item = ieval(it, f, n->as.map_literal.values[i]);
+      enlng_map_set(m, n->as.map_literal.keys[i], item);
+    }
+    it->ntmp = base;
     return m;
   }
 
@@ -422,16 +550,22 @@ static bool is_sorted_cond(ASTNode *c) {
 
 static void iassign(Interp *it, IFrame *f, ASTNode *target, EnlngVal val) {
   if (target->type == AST_EXPR_VARIABLE) {
-    IVar *v = ilookup(f, target->as.variable.name);
+    IVar *v = iassign_var(it, f, target->as.variable.name, target->line);
+    if (it->failed)
+      return;
     if (v)
       v->val = val;
     else
       idefine(f, target->as.variable.name, val);
   } else if (target->type == AST_EXPR_INDEX) {
+    int base = it->ntmp;
     EnlngVal c = target->as.index_expr.target
                      ? ieval(it, f, target->as.index_expr.target)
                      : iget(it, f, target->as.index_expr.arr_name, target->line);
-    enlng_container_set(c, ieval(it, f, target->as.index_expr.index_expr), val);
+    iroot(it, c);
+    EnlngVal k = ieval(it, f, target->as.index_expr.index_expr);
+    it->ntmp = base;
+    enlng_container_set(c, k, val);
   } else {
     ifail(it, target->line, "I can't change that with 'swap'. Use names or list items like items[0].");
   }
@@ -446,6 +580,7 @@ static int itry_run(Interp *it, IFrame *f, ASTNode *n, int *code, char *msg,
   int base = enlng_try_stack.eg_depth;
   int saved_depth = it->depth;
   bool *saved_sorted = it->sorted;
+  int saved_tmp = it->ntmp, saved_frames = it->nframes;
   if (base >= ENLNG_MAX_TRY) {
     ifail(it, n->line, "Too many 'try' blocks inside each other.");
     return 0;
@@ -457,6 +592,8 @@ static int itry_run(Interp *it, IFrame *f, ASTNode *n, int *code, char *msg,
     if (it->failed) {
       snprintf(msg, msgsz, "%s", it->err);
       it->failed = false;
+      it->ntmp = saved_tmp;
+      it->nframes = saved_frames;
       return 1;
     }
     return 0;
@@ -464,6 +601,8 @@ static int itry_run(Interp *it, IFrame *f, ASTNode *n, int *code, char *msg,
   enlng_try_stack.eg_depth = base;
   it->depth = saved_depth;
   it->sorted = saved_sorted;
+  it->ntmp = saved_tmp;
+  it->nframes = saved_frames;
   snprintf(msg, msgsz, "%s", enlng_try_stack.eg_msg);
   return 1;
 }
@@ -472,6 +611,8 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
   if (!n || it->failed)
     return EX_OK;
   it->line = n->line;
+  if (enlng_gc_due())
+    igc(it);
 
   switch (n->type) {
   case AST_DECLARATION: {
@@ -487,7 +628,7 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
     const char *name = n->as.mutation.name;
     if (n->as.mutation.op == ENLNG_TOKEN_INC_BY ||
         n->as.mutation.op == ENLNG_TOKEN_DEC_BY) {
-      IVar *var = ilookup(f, name);
+      IVar *var = ifind_var(it, f, name);
       if (!var) {
         ifail(it, n->line, "I don't know a name '%s' here. Define it first, for example: remember %s as 0", name, name);
         return EX_OK;
@@ -496,7 +637,11 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
                      ? enlng_val_add(var->val, v)
                      : enlng_val_sub(var->val, v);
     } else {
-      IVar *var = ilookup(f, name);
+      /* x = v changes a local x, or the top-level x after `global x`;
+         otherwise it makes a new local */
+      IVar *var = iassign_var(it, f, name, n->line);
+      if (it->failed)
+        return EX_OK;
       if (var)
         var->val = v;
       else
@@ -506,11 +651,15 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
   }
 
   case AST_INDEX_MUTATION: {
+    int base = it->ntmp;
     EnlngVal c = n->as.index_mutation.target_expr
                      ? ieval(it, f, n->as.index_mutation.target_expr)
                      : iget(it, f, n->as.index_mutation.arr_name, n->line);
+    iroot(it, c);
     EnlngVal k = ieval(it, f, n->as.index_mutation.index_expr);
+    iroot(it, k);
     EnlngVal v = ieval(it, f, n->as.index_mutation.val_expr);
+    it->ntmp = base;
     if (n->as.index_mutation.op == ENLNG_TOKEN_INC_BY)
       v = enlng_val_add(enlng_container_get(c, k), v);
     else if (n->as.index_mutation.op == ENLNG_TOKEN_DEC_BY)
@@ -519,6 +668,14 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
       enlng_container_set(c, k, v);
     return EX_OK;
   }
+
+  case AST_GLOBAL:
+    for (int i = 0; i < n->as.global_stmt.count; i++) {
+      if (f->gln < 32)
+        f->gl[f->gln] = n->as.global_stmt.names[i];
+      f->gln++;
+    }
+    return EX_OK;
 
   case AST_FAIL: {
     EnlngVal m = ieval(it, f, n->as.fail_stmt.message);
@@ -617,6 +774,8 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
                                  : iget(it, f, n->as.for_each.list_name, n->line));
     int64_t cnt = enlng_count_of(coll);
     int out = EX_OK;
+    int base = it->ntmp;
+    iroot(it, coll); /* the loop walks it, whoever else holds it */
     for (int64_t i = 0; i < cnt && !it->failed; i++) {
       int saved = f->scope;
       f->scope = f->n;
@@ -629,9 +788,12 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
       }
       f->n = f->scope;
       f->scope = saved;
-      if (iloop_done(code, &out))
+      if (iloop_done(code, &out)) {
+        it->ntmp = base;
         return out;
+      }
     }
+    it->ntmp = base;
     return EX_OK;
   }
 
@@ -716,10 +878,14 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
       enlng_list_swap(c, a, b);
       return EX_OK;
     }
+    int base = it->ntmp;
     EnlngVal lv = ieval(it, f, l);
+    iroot(it, lv);
     EnlngVal rv = ieval(it, f, r);
+    iroot(it, rv);
     iassign(it, f, l, rv);
     iassign(it, f, r, lv);
+    it->ntmp = base;
     return EX_OK;
   }
 
@@ -817,8 +983,10 @@ static int interp_main(InterpJob *job) {
   it.file = job->file;
   it.source = job->source;
 
+  enlng_console_utf8();
   IFrame top = {0};
   it.globals = &top;
+  ipush_frame(&it, &top);
   ASTNode *p = job->prog;
   /* An error the runtime throws outside any `try` (such as "a" minus 1)
    * comes back here, so it is reported with its line like any other. */

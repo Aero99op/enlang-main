@@ -686,9 +686,17 @@ bool lexer_tokenize(Lexer *lexer) {
       continue;
     }
 
-    if (match_word(lexer, "function") || match_word(lexer, "define") ||
-        match_word(lexer, "action")) {
+    /* the token keeps the word written, so an error can name it */
+    if (match_word(lexer, "function")) {
       add_token(lexer, ENLNG_TOKEN_FUNCTION, "function", start_line, start_col);
+      continue;
+    }
+    if (match_word(lexer, "define")) {
+      add_token(lexer, ENLNG_TOKEN_FUNCTION, "define", start_line, start_col);
+      continue;
+    }
+    if (match_word(lexer, "action")) {
+      add_token(lexer, ENLNG_TOKEN_FUNCTION, "action", start_line, start_col);
       continue;
     }
     if (match_word(lexer, "with") || match_word(lexer, "needs")) {
