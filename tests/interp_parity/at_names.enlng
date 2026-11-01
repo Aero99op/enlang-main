@@ -1,0 +1,43 @@
+type enlng
+remember @times as 3
+show @times
+show 2 times @times
+function @show with @stop:
+    give @stop plus 1
+show @show(4)
+for each @from in [1, 2]:
+    show @from
+remember @total as 10
+show total @total
+remember @int as 7
+remember @for as [3, 1, 2]
+sort @for
+show @for @int
+function @slc with x:
+    give "mine"
+show @slc(1)
+show slc([1, 2, 3], 1)
+remember nums as [1, 2, 3]
+show nums[0:2]
+remember @return as {"if": 1}
+show @if of @return
+remember @count as 4
+show @count
+remember items as [1, 2]
+show count of items
+remember @when as 1
+@when increases by 2
+show @when
+@when = 9
+show @when
+change @when to 11
+show @when
+remember @fail as 1
+@fail = 5
+show @fail
+remember @new as 3
+show @new
+remember @class as "c"
+show @class
+remember @self as 1
+show @self

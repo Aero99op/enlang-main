@@ -124,6 +124,7 @@ static const IBuiltin ibuiltins[] = {
     {"split", 2},        {"join", 2},        {"contains", 2},
     {"string_add", 3},   {"string_insert", 3}, {"string_remove_at", 2},
     {"string_remove", 2}, {"string_set_at", 3}, {"string_replace", 3},
+    {"slc", 3},
     {NULL, 0}};
 
 static const IBuiltin *ifind_builtin(const char *name) {
@@ -144,7 +145,7 @@ static EnlngVal icall_builtin(const char *name, EnlngVal *a) {
   B1(file_exists) B0(time_now) B1(sleep) B2(append) B1(pop) B1(keys)
   B1(values) B2(has_key) B1(len) B2(split) B2(join) B2(contains)
   B3(string_add) B3(string_insert) B2(string_remove_at) B2(string_remove)
-  B3(string_set_at) B3(string_replace)
+  B3(string_set_at) B3(string_replace) B3(slc)
 #undef B0
 #undef B1
 #undef B2
@@ -175,7 +176,7 @@ static EnlngVal icall(Interp *it, IFrame *f, ASTNode *n) {
     args[i] = ieval(it, f, n->as.call_expr.args[i]);
 
   if (!it->failed) {
-    ASTNode *fn = ifind_func(it, name);
+    ASTNode *fn = n->as.call_expr.builtin_only ? NULL : ifind_func(it, name);
     if (fn) {
       if (argc != fn->as.func_def.param_count) {
         ifail(it, n->line, "'%s' needs %d input%s but was given %d.", name,

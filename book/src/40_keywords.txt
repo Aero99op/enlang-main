@@ -8,8 +8,8 @@ define discard display divided each else enlng equal every false for
 forget freeze from function give greater if import in increases input
 is it keep least len length less minus mod modulo most multiplied needs
 none not nothing null of on or otherwise pair plus print remember repeat
-return reverse show skip sort step stop swap than that the times to true
-type until use when where while with
+return reverse show skip slc sort step stop swap than that the times to
+true type until use when where while with
 ```
 
 Not every word on that list refuses to be a name. A short experiment shows the difference: `count`, `first`, `last`, `item`, `list`, `text`, `name`, `value`, `result`, `key`, `start`, `end` and `next` all worked as names. `stop`, `times` and `from` did not:
@@ -29,7 +29,30 @@ remember times as 3
 show times
 :::
 
-Because the rule is not obvious, the safe habit is to avoid every word in the list as a name, and to pick names that describe the data, such as `total`, `items`, `price`, `index`. When a function fails with "Expected ':' before block" and its first line looks right, check the parameter names against the list.
+From 5.5.2 the message says what went wrong, for a value, a function, a parameter or a loop name: "'stop' is a word of the language and cannot be used as a name". For the arithmetic and logic words, as above, it lists them: "Words such as plus, minus, times, ...". The safe habit is still to avoid every word in the list as a name (or to write it with `@`, described next), and to pick names that describe the data, such as `total`, `items`, `price`, `index`.
+
+## Using a word of the language as a name
+
+From 5.5.2, writing `@` directly before a word makes it an ordinary name, even when it is a word of the language. `@times` is a name; `times` without `@` is still the operator, so both can appear on one line:
+
+::: code
+type enlng
+
+remember @times as 3
+show 2 times @times
+
+function @show with @stop:
+    give @stop plus 1
+show @show(4)
+:::
+
+Three rules:
+
+- Write the `@` every time the name is used, not only where it is made. Without it the word keeps its normal meaning.
+- `@` does not change what the word itself does. Defining `@show` makes a new function; `show` still prints.
+- For a word that is already allowed as a name, the `@` makes no difference: `@total` and `total` are the same name.
+
+`@` works for values, functions, parameters, loop names, fields and methods. A `@` that is not followed directly by a name, as in `@ 5`, is an error when the file is read.
 
 ## What the words do
 
@@ -43,7 +66,7 @@ Because the rule is not obvious, the safe habit is to avoid every word in the li
 | Changing numbers | `increases`, `decreases` | `x increases by 1`, `x decreases by 2`. |
 | Looping | `for`, `each`, `in`, `from`, `to`, `step`, `while`, `until`, `repeat`, `every`, `break`, `continue`, `stop`, `skip` | Repeat a block; leave or skip an iteration. |
 | Functions | `function`, `action`, `with`, `give`, `return`, `needs` | Define and use named blocks of code. |
-| Lists and text | `len`, `length`, `count`, `of`, `reverse`, `sort`, `swap`, `pair`, `arrange`, `change`, `that`, `the`, `it`, `on`, `where` | Work with collections and their parts; several also connect phrases. |
+| Lists and text | `len`, `length`, `count`, `of`, `reverse`, `slc`, `sort`, `swap`, `pair`, `arrange`, `change`, `that`, `the`, `it`, `on`, `where` | Work with collections and their parts; several also connect phrases. |
 | Files and modules | `use`, `import`, `type` | Bring in another file; declare a file's kind on its first line. |
 | Plain values | `true`, `false`, `null`, `none`, `nothing` | The values that mean yes, no and absent. |
 

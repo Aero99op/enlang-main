@@ -147,7 +147,9 @@ typedef enum {
   ENLNG_TOKEN_USE,      /* 'use' / 'import' */
   ENLNG_TOKEN_AT,       /* 'at' */
   ENLNG_TOKEN_OF,       /* 'of' */
-  ENLNG_TOKEN_ON        /* 'on' */
+  ENLNG_TOKEN_ON,       /* 'on' */
+  ENLNG_TOKEN_SLC,      /* 'slc' */
+  ENLNG_TOKEN_LONE_AT   /* '@' not followed by a name */
 } EnlngTokenType;
 
 /* --- Token Structure --- */
@@ -423,6 +425,7 @@ struct ASTNode {
       char *func_name;
       ASTNode **args;
       int arg_count;
+      bool builtin_only; /* slc and x[a:b]: never a user function, even @slc */
     } call_expr;
 
     /* AST_EXPR_COUNT_OF / AST_EXPR_REVERSE */

@@ -6,6 +6,7 @@
  */
 
 #include "enlng_parser.h"
+#include <ctype.h>
 #include <stdarg.h>
 
 void parser_init(Parser *parser, Token *tokens, int count) {
@@ -52,6 +53,37 @@ static void set_error(Parser *p, const char *msg, int line) {
     p->error_line = line;
     snprintf(p->error_msg, sizeof(p->error_msg), "%s", msg);
   }
+}
+
+/* A word of the language (stop, times, slc, ...) where a name was expected.
+ * The lexer gives these their own token types, so the plain message would
+ * not say why an ordinary-looking word was refused. */
+static void name_error(Parser *p, const char *msg, int line) {
+  Token *t = peek(p, 0);
+  if (t && t->text && isalpha((unsigned char)t->text[0]) &&
+      t->type != ENLNG_TOKEN_IDENTIFIER &&
+      t->type != ENLNG_TOKEN_STRING_LITERAL &&
+      t->type != ENLNG_TOKEN_AS && /* "remember as 5": the name is missing */
+      !strchr(t->text, ' ')) {
+    char buf[256];
+    snprintf(buf, sizeof(buf),
+             "'%s' is a word of the language and cannot be used as a name. "
+             "Pick another name, such as my_%s",
+             t->text, t->text);
+    set_error(p, buf, line);
+    return;
+  }
+  /* plus, times, and, ... reach the parser as their symbols */
+  if (t && (t->type == ENLNG_TOKEN_ADD || t->type == ENLNG_TOKEN_SUB ||
+            t->type == ENLNG_TOKEN_MUL || t->type == ENLNG_TOKEN_DIV ||
+            t->type == ENLNG_TOKEN_MOD || t->type == ENLNG_TOKEN_AND ||
+            t->type == ENLNG_TOKEN_OR || t->type == ENLNG_TOKEN_NOT)) {
+    set_error(p, "Words such as plus, minus, times, divided, mod, and, or "
+                 "and not are words of the language and cannot be used as "
+                 "a name. Pick another name", line);
+    return;
+  }
+  set_error(p, msg, line);
 }
 
 static void skip_newlines(Parser *p) {
@@ -245,6 +277,49 @@ static ASTNode *oop_call_node(const char *fname, ASTNode **args, int argc,
   return n;
 }
 
+static ASTNode *parse_expression(Parser *p);
+
+/* The call behind x[a:b] and slc(x, a, b). It always reaches the built-in,
+ * even when a program defines a function named @slc. */
+static ASTNode *slc_call(ASTNode **args, int line) {
+  ASTNode *n = oop_call_node("slc", args, 3, line);
+  n->as.call_expr.builtin_only = true;
+  return n;
+}
+
+/* After '[' has been read: either an index, x[i], or a slice, x[a:b],
+ * x[a:] or x[:b]. A slice becomes a call to the slc built-in, with null
+ * for a bound that was left out. */
+static ASTNode *parse_index_or_slice(Parser *p, ASTNode *target,
+                                     const char *arr_name, int line) {
+  ASTNode *start = NULL;
+  if (!check(p, ENLNG_TOKEN_COLON))
+    start = parse_expression(p);
+  if (match(p, ENLNG_TOKEN_COLON)) {
+    ASTNode *end = NULL;
+    if (!check(p, ENLNG_TOKEN_RBRACKET))
+      end = parse_expression(p);
+    if (!match(p, ENLNG_TOKEN_RBRACKET))
+      set_error(p, "Expected ']' after a slice such as items[1:3]", line);
+    if (!target) {
+      target = ast_new(AST_EXPR_VARIABLE, line);
+      target->as.variable.name = enlng_strdup(arr_name);
+    }
+    ASTNode **args = (ASTNode **)malloc(sizeof(ASTNode *) * 3);
+    args[0] = target;
+    args[1] = start ? start : ast_new(AST_EXPR_LITERAL_NULL, line);
+    args[2] = end ? end : ast_new(AST_EXPR_LITERAL_NULL, line);
+    return slc_call(args, line);
+  }
+  if (!match(p, ENLNG_TOKEN_RBRACKET))
+    set_error(p, "Expected ']' after array index", line);
+  ASTNode *n = ast_new(AST_EXPR_INDEX, line);
+  n->as.index_expr.target = target;
+  n->as.index_expr.arr_name = arr_name ? enlng_strdup(arr_name) : NULL;
+  n->as.index_expr.index_expr = start;
+  return n;
+}
+
 static void oop_note_dispatch(const char *m, int argc, int line) {
   for (int i = 0; i < g_ndisp; i++)
     if (g_disp[i].argc == argc && strcmp(g_disp[i].name, m) == 0)
@@ -302,6 +377,34 @@ static ASTNode *parse_atom(Parser *p, bool allow_with) {
     return parse_oop_call(p);
   if (oop_starts_new(p))
     return parse_oop_new(p);
+
+  /* slc(items, a) or slc(items, a, b): the same as items[a:] and items[a:b] */
+  if (match(p, ENLNG_TOKEN_SLC)) {
+    if (!match(p, ENLNG_TOKEN_LPAREN)) {
+      set_error(p, "'slc' is a word of the language and cannot be used as a "
+                   "name. Use it as slc(items, 1, 3) to take a part of a "
+                   "list or text", t->line);
+      return ast_new(AST_EXPR_LITERAL_NULL, t->line);
+    }
+    ASTNode **args = (ASTNode **)malloc(sizeof(ASTNode *) * 3);
+    int argc = 0;
+    if (!check(p, ENLNG_TOKEN_RPAREN)) {
+      do {
+        ASTNode *a = parse_expression(p);
+        if (argc < 3)
+          args[argc] = a;
+        argc++;
+      } while (match(p, ENLNG_TOKEN_COMMA));
+    }
+    if (!match(p, ENLNG_TOKEN_RPAREN))
+      set_error(p, "Expected ')' after the inputs of slc", t->line);
+    if (argc < 2 || argc > 3)
+      set_error(p, "slc needs 2 or 3 inputs: slc(items, start) or "
+                   "slc(items, start, end)", t->line);
+    if (argc == 2)
+      args[argc++] = ast_new(AST_EXPR_LITERAL_NULL, t->line);
+    return slc_call(args, t->line);
+  }
 
   /* Int Literal */
   if (match(p, ENLNG_TOKEN_INT_LITERAL)) {
@@ -685,16 +788,8 @@ static ASTNode *parse_atom(Parser *p, bool allow_with) {
     }
 
     /* Array index: arr[i] */
-    if (match(p, ENLNG_TOKEN_LBRACKET)) {
-      ASTNode *idx_expr = parse_expression(p);
-      if (!match(p, ENLNG_TOKEN_RBRACKET)) {
-        set_error(p, "Expected ']' after array index", t->line);
-      }
-      ASTNode *n = ast_new(AST_EXPR_INDEX, t->line);
-      n->as.index_expr.arr_name = name;
-      n->as.index_expr.index_expr = idx_expr;
-      return n;
-    }
+    if (match(p, ENLNG_TOKEN_LBRACKET))
+      return parse_index_or_slice(p, NULL, name, t->line);
 
     /* Direct s at_last or s at_first */
     if (check(p, ENLNG_TOKEN_IDENTIFIER) &&
@@ -783,18 +878,10 @@ static ASTNode *parse_primary_internal(Parser *p, bool allow_with) {
   /* Universal Postfix Chaining: node[index], node.field, node at index, node at_first/at_last */
   while (!p->has_error) {
     if (match(p, ENLNG_TOKEN_LBRACKET)) {
-      ASTNode *idx_expr = parse_expression(p);
-      if (!match(p, ENLNG_TOKEN_RBRACKET)) {
-        set_error(p, "Expected ']' after array index", node->line);
-      }
-      ASTNode *idx_node = ast_new(AST_EXPR_INDEX, node->line);
-      idx_node->as.index_expr.target = node;
-      idx_node->as.index_expr.arr_name =
-          (node->type == AST_EXPR_VARIABLE)
-              ? enlng_strdup(node->as.variable.name)
-              : NULL;
-      idx_node->as.index_expr.index_expr = idx_expr;
-      node = idx_node;
+      node = parse_index_or_slice(
+          p, node,
+          node->type == AST_EXPR_VARIABLE ? node->as.variable.name : NULL,
+          node->line);
     } else if (match(p, ENLNG_TOKEN_DOT)) {
       Token *field_tok = peek(p, 0);
       if (match(p, ENLNG_TOKEN_IDENTIFIER)) {
@@ -1332,7 +1419,7 @@ static ASTNode *parse_class_def(Parser *p) {
         advance(p);
         Token *ft = peek(p, 0);
         if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-          set_error(p, "Expected a field name after 'remember' in a class",
+          name_error(p, "Expected a field name after 'remember' in a class",
                     t->line);
           return NULL;
         }
@@ -1359,7 +1446,7 @@ static ASTNode *parse_class_def(Parser *p) {
         advance(p);
         Token *mt = peek(p, 0);
         if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-          set_error(p, "Expected a method name after 'method'", t->line);
+          name_error(p, "Expected a method name after 'method'", t->line);
           return NULL;
         }
         char **params = NULL;
@@ -1604,7 +1691,7 @@ static ASTNode *parse_statement(Parser *p) {
 
     Token *id_tok = peek(p, 0);
     if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-      set_error(p, "Expected variable name after remember/freeze", t->line);
+      name_error(p, "Expected variable name after remember/freeze", t->line);
       return NULL;
     }
     char *name = enlng_strdup(id_tok->text);
@@ -1625,7 +1712,7 @@ static ASTNode *parse_statement(Parser *p) {
   if (match(p, ENLNG_TOKEN_CHANGE)) {
     Token *id_tok = peek(p, 0);
     if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-      set_error(p, "Expected variable name after 'change'", t->line);
+      name_error(p, "Expected variable name after 'change'", t->line);
       return NULL;
     }
     char *name = enlng_strdup(id_tok->text);
@@ -1697,7 +1784,7 @@ static ASTNode *parse_statement(Parser *p) {
     if (match(p, ENLNG_TOKEN_AS)) {
       Token *name_tok = peek(p, 0);
       if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-        set_error(p, "Expected a name after 'on error as'", t->line);
+        name_error(p, "Expected a name after 'on error as'", t->line);
         return NULL;
       }
       free(n->as.try_stmt.err_name);
@@ -1770,7 +1857,7 @@ static ASTNode *parse_statement(Parser *p) {
 
     Token *var_tok = peek(p, 0);
     if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-      set_error(p, "Expected variable name after 'for'", t->line);
+      name_error(p, "Expected variable name after 'for'", t->line);
       return NULL;
     }
     char *var_name = enlng_strdup(var_tok->text);
@@ -1874,7 +1961,7 @@ static ASTNode *parse_statement(Parser *p) {
   if (match(p, ENLNG_TOKEN_FUNCTION)) {
     Token *name_tok = peek(p, 0);
     if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-      set_error(p, "Expected function name", t->line);
+      name_error(p, "Expected function name", t->line);
       return NULL;
     }
     char *name = enlng_strdup(name_tok->text);
@@ -1892,6 +1979,8 @@ static ASTNode *parse_statement(Parser *p) {
             params = (char **)realloc(params, sizeof(char *) * param_cap);
           }
           params[param_count++] = enlng_strdup(pt->text);
+        } else {
+          name_error(p, "Expected a parameter name after 'with'", t->line);
         }
       } while (match(p, ENLNG_TOKEN_COMMA));
     } else if (match(p, ENLNG_TOKEN_LPAREN)) {
@@ -2058,7 +2147,7 @@ static ASTNode *parse_statement(Parser *p) {
   if (match(p, ENLNG_TOKEN_ASK)) {
     Token *var_tok = peek(p, 0);
     if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-      set_error(p, "Expected variable name after 'ask'", t->line);
+      name_error(p, "Expected variable name after 'ask'", t->line);
       return NULL;
     }
     char *var_name = enlng_strdup(var_tok->text);
@@ -2198,7 +2287,9 @@ static ASTNode *parse_statement(Parser *p) {
       advance(p); /* consume ident */
       advance(p); /* consume '[' */
       ASTNode *index_expr = parse_expression(p);
-      if (!match(p, ENLNG_TOKEN_RBRACKET)) {
+      if (check(p, ENLNG_TOKEN_COLON)) {
+        set_error(p, "A slice such as items[1:3] is a copy and cannot be assigned to", t->line);
+      } else if (!match(p, ENLNG_TOKEN_RBRACKET)) {
         set_error(p, "Expected ']' after index in assignment", t->line);
       }
       /* Nested: g[1][2] = v  ->  the container is the expression g[1]. */
@@ -2559,6 +2650,13 @@ static void frozen_check_block(Parser *p, ASTNode **stmts, int count,
 }
 
 static ASTNode *parser_parse_program_inner(Parser *p) {
+  for (int i = 0; i < p->token_count; i++) {
+    if (p->tokens[i].type == ENLNG_TOKEN_LONE_AT) {
+      set_error(p, "'@' must be followed directly by a name, as in @times",
+                p->tokens[i].line);
+      return NULL;
+    }
+  }
   skip_newlines(p);
 
   /* --- DOMAIN GUARD: First statement must be 'type enlng' --- */

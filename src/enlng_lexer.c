@@ -708,6 +708,10 @@ bool lexer_tokenize(Lexer *lexer) {
       add_token(lexer, ENLNG_TOKEN_SWAP, "swap", start_line, start_col);
       continue;
     }
+    if (match_word(lexer, "slc")) {
+      add_token(lexer, ENLNG_TOKEN_SLC, "slc", start_line, start_col);
+      continue;
+    }
     if (match_word(lexer, "reverse")) {
       add_token(lexer, ENLNG_TOKEN_REVERSE, "reverse", start_line, start_col);
       continue;
@@ -773,6 +777,29 @@ bool lexer_tokenize(Lexer *lexer) {
     if (match_word(lexer, "null") || match_word(lexer, "none") ||
         match_word(lexer, "nothing")) {
       add_token(lexer, ENLNG_TOKEN_NULL, "null", start_line, start_col);
+      continue;
+    }
+
+    /* @word: any word, even a word of the language, used as a plain name.
+     * @times is the name "times"; times without @ is still the operator. */
+    if (c == '@' && (isalpha((unsigned char)peek(lexer, 1)) || peek(lexer, 1) == '_')) {
+      advance(lexer); /* '@' */
+      char id_buf[128];
+      int id_len = 0;
+      while (isalnum((unsigned char)peek(lexer, 0)) || peek(lexer, 0) == '_') {
+        if (id_len < 127)
+          id_buf[id_len++] = advance(lexer);
+        else
+          advance(lexer);
+      }
+      id_buf[id_len] = '\0';
+      add_token(lexer, ENLNG_TOKEN_IDENTIFIER, id_buf, start_line, start_col);
+      continue;
+    }
+
+    if (c == '@') {
+      advance(lexer);
+      add_token(lexer, ENLNG_TOKEN_LONE_AT, "@", start_line, start_col);
       continue;
     }
 

@@ -41,7 +41,7 @@ def main():
         except OSError:
             continue
         # "ask rex to speak" calls a method; only the input form "ask name" waits for a line
-        probe = re.sub(r"\bask\s+\S+\s+to\s+\w+", "", src)
+        probe = re.sub(r"\bask\s+\S+\s+to\s+@?\w+", "", src)
         if any(w in probe for w in SKIP_WORDS) or not src.lstrip().startswith("type enlng"):
             skipped += 1
             continue

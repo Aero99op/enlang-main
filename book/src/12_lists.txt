@@ -39,6 +39,22 @@ remember grid as [[1, 2], [3, 4]]
 show grid[1][0]
 :::
 
+From 5.5.2, `items[a:b]` gives a new list with the items from position `a` up to, but not including, `b`, with the same rules as for text (chapter 8):
+
+::: code
+type enlng
+
+remember scores as [10, 20, 30, 40, 50]
+show scores[1:3]
+show scores[:2]
+show scores[-2:]
+remember top as scores[0:2]
+append(top, 99)
+show top scores
+:::
+
+The last line shows that the slice is a separate list: adding to `top` leaves `scores` as it was. A slice cannot be assigned to; `scores[0:2] = 5` is an error when the file is read.
+
 ## How many items
 
 `count of`, `length of` and `len(...)` all work. `sum of`, `max of`, `min of` and `average of` summarise a list of numbers, and `first of` and `last of` give the ends:

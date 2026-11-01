@@ -1,0 +1,18 @@
+type enlng
+class Item:
+    remember @type as "box"
+    remember @size as 2
+    method @show:
+        give "item " + @type of self
+    method @sort with @by:
+        give @by times @size of self
+remember thing as new Item with @type as "crate"
+show tell thing to @show
+show ask thing to @show
+show call @sort on thing with 5
+show @type of thing
+change @type of thing to "bag"
+show ask thing to @show
+remember @list as [3, 1]
+append(@list, 2)
+show @list[0:2] count of @list

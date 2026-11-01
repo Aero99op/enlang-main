@@ -79,6 +79,7 @@ static bool is_builtin_func(const char *name) {
       "append",     "pop",         "keys",        "values",        "has_key",
       "len",        "split",       "join",        "contains",
       "string_add", "string_insert", "string_remove_at", "string_remove", "string_set_at", "string_replace",
+      "slc",
       NULL};
   for (int i = 0; builtins[i]; i++) {
     if (strcmp(name, builtins[i]) == 0)
@@ -147,6 +148,18 @@ static void emit_escaped_string(CodeGen *cg, const char *str) {
   emit(cg, "\"");
 }
 
+/* The C name of an Enlng name. Every name gets the v_ prefix, so a program
+ * can use names such as int, for, argc or main without breaking the C code.
+ * Rotating buffers let one emit() call take several names. */
+static const char *cn(const char *name) {
+  static char bufs[4][300];
+  static int next = 0;
+  char *b = bufs[next];
+  next = (next + 1) % 4;
+  snprintf(b, sizeof(bufs[0]), "v_%s", name ? name : "");
+  return b;
+}
+
 /* Forward declarations */
 static void generate_expression(CodeGen *cg, ASTNode *node);
 /* The list or map an index assignment writes into: a plain name, or for a
@@ -155,7 +168,7 @@ static void emit_mutation_container(CodeGen *cg, ASTNode *n) {
   if (n->as.index_mutation.target_expr)
     generate_expression(cg, n->as.index_mutation.target_expr);
   else
-    emit(cg, "%s", n->as.index_mutation.arr_name);
+    emit(cg, "%s", cn(n->as.index_mutation.arr_name));
 }
 
 static void generate_statement(CodeGen *cg, ASTNode *node);
@@ -191,7 +204,7 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     break;
 
   case AST_EXPR_VARIABLE:
-    emit(cg, "%s", n->as.variable.name);
+    emit(cg, "%s", cn(n->as.variable.name));
     break;
 
   case AST_EXPR_INDEX:
@@ -199,7 +212,7 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     if (n->as.index_expr.target) {
       generate_expression(cg, n->as.index_expr.target);
     } else {
-      emit(cg, "%s", n->as.index_expr.arr_name);
+      emit(cg, "%s", cn(n->as.index_expr.arr_name));
     }
     emit(cg, ", ");
     generate_expression(cg, n->as.index_expr.index_expr);
@@ -219,7 +232,7 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
       if (n->as.field_expr.target) {
         generate_expression(cg, n->as.field_expr.target);
       } else {
-        emit(cg, "%s", n->as.field_expr.obj_name ? n->as.field_expr.obj_name : "enlng_make_null()");
+        emit(cg, "%s", n->as.field_expr.obj_name ? cn(n->as.field_expr.obj_name) : "enlng_make_null()");
       }
       emit(cg, ", \"%s\")", n->as.field_expr.field_name);
     }
@@ -457,8 +470,9 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     break;
 
   case AST_EXPR_CALL:
-    if (!is_user_function(cg->program, n->as.call_expr.func_name) &&
-        is_builtin_func(n->as.call_expr.func_name)) {
+    if (n->as.call_expr.builtin_only ||
+        (!is_user_function(cg->program, n->as.call_expr.func_name) &&
+         is_builtin_func(n->as.call_expr.func_name))) {
       emit(cg, "enlng_builtin_%s(", n->as.call_expr.func_name);
     } else {
       emit(cg, "enlng_user_%s(", n->as.call_expr.func_name);
@@ -502,7 +516,7 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
   case AST_DECLARATION:
     scope_add(cg, n->as.decl.name);
     emit_indent(cg);
-    emit(cg, "EnlngVal %s = ", n->as.decl.name);
+    emit(cg, "EnlngVal %s = ", cn(n->as.decl.name));
     if (n->as.decl.is_frozen)
       emit(cg, "enlng_freeze_val(");
     generate_expression(cg, n->as.decl.init_expr);
@@ -514,21 +528,21 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
   case AST_MUTATION:
     emit_indent(cg);
     if (n->as.mutation.op == ENLNG_TOKEN_INC_BY) {
-      emit(cg, "%s = enlng_val_add(%s, ", n->as.mutation.name,
-           n->as.mutation.name);
+      emit(cg, "%s = enlng_val_add(%s, ", cn(n->as.mutation.name),
+           cn(n->as.mutation.name));
       generate_expression(cg, n->as.mutation.val_expr);
       emit(cg, ");\n");
     } else if (n->as.mutation.op == ENLNG_TOKEN_DEC_BY) {
-      emit(cg, "%s = enlng_val_sub(%s, ", n->as.mutation.name,
-           n->as.mutation.name);
+      emit(cg, "%s = enlng_val_sub(%s, ", cn(n->as.mutation.name),
+           cn(n->as.mutation.name));
       generate_expression(cg, n->as.mutation.val_expr);
       emit(cg, ");\n");
     } else {
       if (!scope_has(cg, n->as.mutation.name)) {
         scope_add(cg, n->as.mutation.name);
-        emit(cg, "EnlngVal %s = ", n->as.mutation.name);
+        emit(cg, "EnlngVal %s = ", cn(n->as.mutation.name));
       } else {
-        emit(cg, "%s = ", n->as.mutation.name);
+        emit(cg, "%s = ", cn(n->as.mutation.name));
       }
       generate_expression(cg, n->as.mutation.val_expr);
       emit(cg, ";\n");
@@ -619,7 +633,7 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
     cg->indent_level++;
 
     emit_indent(cg);
-    emit(cg, "EnlngVal %s = enlng_make_int(_it);\n", n->as.for_range.var_name);
+    emit(cg, "EnlngVal %s = enlng_make_int(_it);\n", cn(n->as.for_range.var_name));
 
     for (int i = 0; i < n->as.for_range.body_count; i++) {
       generate_statement(cg, n->as.for_range.body[i]);
@@ -641,7 +655,7 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
 
     emit_indent(cg);
     emit(cg, "int64_t _pair_cnt = enlng_count_of(%s);\n",
-         n->as.for_pair.list_name);
+         cn(n->as.for_pair.list_name));
 
     emit_indent(cg);
     emit(cg,
@@ -650,10 +664,10 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
 
     emit_indent(cg);
     emit(cg, "EnlngVal pair_left = enlng_list_get(%s, _pair_i);\n",
-         n->as.for_pair.list_name);
+         cn(n->as.for_pair.list_name));
     emit_indent(cg);
     emit(cg, "EnlngVal pair_right = enlng_list_get(%s, _pair_i + 1);\n",
-         n->as.for_pair.list_name);
+         cn(n->as.for_pair.list_name));
 
     char prev_pair_list[64];
     strncpy(prev_pair_list, cg->current_pair_list, sizeof(prev_pair_list));
@@ -691,7 +705,7 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
     if (n->as.for_each.list_expr) {
       generate_expression(cg, n->as.for_each.list_expr);
     } else {
-      emit(cg, "%s", n->as.for_each.list_name);
+      emit(cg, "%s", cn(n->as.for_each.list_name));
     }
     emit(cg, ";\n");
 
@@ -705,7 +719,7 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
 
     emit_indent(cg);
     emit(cg, "EnlngVal %s = enlng_list_get(_coll%d, _each_i%d);\n",
-         n->as.for_each.item_name, lid, lid);
+         cn(n->as.for_each.item_name), lid, lid);
 
     for (int i = 0; i < n->as.for_each.body_count; i++) {
       generate_statement(cg, n->as.for_each.body[i]);
@@ -866,7 +880,7 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
     emit(cg, "enlng_try_stack.eg_depth = _try_base%d;\n", tid);
     emit_indent(cg);
     emit(cg, "EnlngVal %s = enlng_make_string(enlng_try_stack.eg_msg);\n",
-         n->as.try_stmt.err_name);
+         cn(n->as.try_stmt.err_name));
     scope_add(cg, n->as.try_stmt.err_name);
     for (int i = 0; i < n->as.try_stmt.handler_count; i++)
       generate_statement(cg, n->as.try_stmt.handler[i]);
@@ -884,7 +898,7 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
     if (n->as.swap_stmt.is_pair) {
       if (cg->in_pair_loop && cg->current_pair_list[0] != '\0') {
         emit(cg, "enlng_list_swap(%s, _pair_i, _pair_i + 1);\n",
-             cg->current_pair_list);
+             cn(cg->current_pair_list));
         emit_indent(cg);
         emit(cg, "_enlng_sorted = false;\n");
       }
@@ -894,19 +908,19 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
       cg->indent_level++;
       emit_indent(cg);
       emit(cg, "EnlngVal _swap_tmp = %s;\n",
-           n->as.swap_stmt.left->as.variable.name);
+           cn(n->as.swap_stmt.left->as.variable.name));
       emit_indent(cg);
-      emit(cg, "%s = %s;\n", n->as.swap_stmt.left->as.variable.name,
-           n->as.swap_stmt.right->as.variable.name);
+      emit(cg, "%s = %s;\n", cn(n->as.swap_stmt.left->as.variable.name),
+           cn(n->as.swap_stmt.right->as.variable.name));
       emit_indent(cg);
-      emit(cg, "%s = _swap_tmp;\n", n->as.swap_stmt.right->as.variable.name);
+      emit(cg, "%s = _swap_tmp;\n", cn(n->as.swap_stmt.right->as.variable.name));
       cg->indent_level--;
       emit_indent(cg);
       emit(cg, "}\n");
     } else if (n->as.swap_stmt.left->type == AST_EXPR_INDEX &&
                n->as.swap_stmt.right->type == AST_EXPR_INDEX) {
       emit(cg, "enlng_list_swap(%s, enlng_val_to_int(",
-           n->as.swap_stmt.left->as.index_expr.arr_name);
+           cn(n->as.swap_stmt.left->as.index_expr.arr_name));
       generate_expression(cg, n->as.swap_stmt.left->as.index_expr.index_expr);
       emit(cg, "), enlng_val_to_int(");
       generate_expression(cg, n->as.swap_stmt.right->as.index_expr.index_expr);
@@ -934,21 +948,21 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
 
   case AST_REVERSE_STMT:
     emit_indent(cg);
-    emit(cg, "%s = enlng_val_reverse(%s);\n", n->as.reverse_stmt.target_name,
-         n->as.reverse_stmt.target_name);
+    emit(cg, "%s = enlng_val_reverse(%s);\n", cn(n->as.reverse_stmt.target_name),
+         cn(n->as.reverse_stmt.target_name));
     break;
 
   case AST_ARRANGE_STMT:
     emit_indent(cg);
-    emit(cg, "%s = enlng_val_arrange(%s, ", n->as.arrange_stmt.target_name,
-         n->as.arrange_stmt.target_name);
+    emit(cg, "%s = enlng_val_arrange(%s, ", cn(n->as.arrange_stmt.target_name),
+         cn(n->as.arrange_stmt.target_name));
     generate_expression(cg, n->as.arrange_stmt.indices_expr);
     emit(cg, ");\n");
     break;
 
   case AST_SORT:
     emit_indent(cg);
-    emit(cg, "enlng_list_sort(%s, %s);\n", n->as.sort_stmt.target_name,
+    emit(cg, "enlng_list_sort(%s, %s);\n", cn(n->as.sort_stmt.target_name),
          n->as.sort_stmt.descending ? "true" : "false");
     break;
 
@@ -967,7 +981,7 @@ static void generate_statement_inner(CodeGen *cg, ASTNode *n) {
 
   case AST_ASK:
     emit_indent(cg);
-    emit(cg, "EnlngVal %s = enlng_ask(\"%s\");\n", n->as.ask_stmt.var_name,
+    emit(cg, "EnlngVal %s = enlng_ask(\"%s\");\n", cn(n->as.ask_stmt.var_name),
          n->as.ask_stmt.prompt ? n->as.ask_stmt.prompt : "");
     break;
 
@@ -1007,7 +1021,7 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
     if (stmt && stmt->type == AST_FUNCTION) {
       emit(cg, "EnlngVal enlng_user_%s(", stmt->as.func_def.name);
       for (int p = 0; p < stmt->as.func_def.param_count; p++) {
-        emit(cg, "EnlngVal %s", stmt->as.func_def.params[p]);
+        emit(cg, "EnlngVal %s", cn(stmt->as.func_def.params[p]));
         if (p < stmt->as.func_def.param_count - 1)
           emit(cg, ", ");
       }
@@ -1033,7 +1047,7 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
     if (seen)
       continue;
     emit(cg, "static EnlngVal enlng_g_%s;\n", stmt->as.decl.name);
-    emit(cg, "#define %s enlng_g_%s\n", stmt->as.decl.name,
+    emit(cg, "#define %s enlng_g_%s\n", cn(stmt->as.decl.name),
          stmt->as.decl.name);
   }
   emit(cg, "\n");
@@ -1044,7 +1058,7 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
     if (stmt && stmt->type == AST_FUNCTION) {
       emit(cg, "EnlngVal enlng_user_%s(", stmt->as.func_def.name);
       for (int p = 0; p < stmt->as.func_def.param_count; p++) {
-        emit(cg, "EnlngVal %s", stmt->as.func_def.params[p]);
+        emit(cg, "EnlngVal %s", cn(stmt->as.func_def.params[p]));
         if (p < stmt->as.func_def.param_count - 1)
           emit(cg, ", ");
       }
@@ -1086,7 +1100,7 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
       /* a top-level name is the file-level variable, not a local of main */
       scope_add(cg, stmt->as.decl.name);
       emit_indent(cg);
-      emit(cg, "%s = ", stmt->as.decl.name);
+      emit(cg, "%s = ", cn(stmt->as.decl.name));
       if (stmt->as.decl.is_frozen)
         emit(cg, "enlng_freeze_val(");
       generate_expression(cg, stmt->as.decl.init_expr);

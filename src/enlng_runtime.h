@@ -981,6 +981,45 @@ static inline EnlngVal enlng_builtin_len(EnlngVal v) {
   return enlng_make_int(enlng_count_of(v));
 }
 
+/* items[a:b] and slc(items, a, b): the part from position a up to, not including, b. A null bound
+ * means the start or the end; a negative one counts from the end. Bounds
+ * outside the value are clamped, so a slice never fails. */
+static inline int64_t enlng_slice_bound(EnlngVal b, int64_t len, int64_t dflt) {
+  if (b.type == ENLNG_VAL_NULL)
+    return dflt;
+  int64_t i = enlng_val_to_int(b);
+  if (i < 0)
+    i += len;
+  if (i < 0)
+    i = 0;
+  if (i > len)
+    i = len;
+  return i;
+}
+
+static inline EnlngVal enlng_builtin_slc(EnlngVal v, EnlngVal from, EnlngVal to) {
+  int64_t len = enlng_count_of(v);
+  int64_t a = enlng_slice_bound(from, len, 0);
+  int64_t b = enlng_slice_bound(to, len, len);
+  if (b < a)
+    b = a;
+  if (v.type == ENLNG_VAL_LIST && v.as.l) {
+    EnlngList *res = enlng_list_create();
+    for (int64_t i = a; i < b; i++)
+      enlng_list_push(res, v.as.l->items[i]);
+    return enlng_make_list(res);
+  }
+  if (v.type == ENLNG_VAL_STRING && v.as.s) {
+    char *buf = (char *)malloc((size_t)(b - a) + 1);
+    memcpy(buf, v.as.s + a, (size_t)(b - a));
+    buf[b - a] = '\0';
+    EnlngVal res = enlng_make_string(buf);
+    free(buf);
+    return res;
+  }
+  return enlng_make_null();
+}
+
 static inline EnlngVal enlng_builtin_split(EnlngVal str, EnlngVal sep) {
   EnlngList *res = enlng_list_create();
   if (str.type != ENLNG_VAL_STRING || !str.as.s)

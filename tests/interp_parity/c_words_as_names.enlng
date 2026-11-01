@@ -1,0 +1,15 @@
+type enlng
+function f with int, char:
+    remember double as int plus char
+    give double
+show f(2, 3)
+remember argc as 3
+remember main as [3, 1, 2]
+sort main
+show main argc
+remember void as 1
+remember struct as 2
+swap void and struct
+show void struct
+for each return_value in main:
+    show return_value

@@ -1,0 +1,15 @@
+type enlng
+remember t as "hello world"
+remember xs as [10, 20, 30, 40, 50]
+show slc(t, 0, 5)
+show slc(t, 6)
+show slc(xs, 1, 3)
+show slc(xs, -2)
+show slc(xs, null, 2)
+show slc(slc(t, 0, 5), 1, 3)
+show t[0:5] xs[1:3]
+remember n as 1
+show slc(xs, n, n plus 2)
+function first_two with items:
+    give slc(items, 0, 2)
+show first_two(xs)

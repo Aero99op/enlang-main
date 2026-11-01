@@ -1,6 +1,6 @@
 # Cookbook 2: Text
 
-Text has no slicing syntax and few built-in editing functions, so many of these recipes build a new text one character at a time. That is the normal Enlangg way, and it is easy to read.
+Text has few built-in editing functions, so many of these recipes build a new text one character at a time. That is the normal Enlangg way, and it is easy to read.
 
 ## Count the vowels
 
@@ -204,19 +204,13 @@ These are the same three inputs that `string_replace_all` got wrong in 5.5.0, an
 
 ## Take a piece of a string
 
-No slicing, so a small function does it:
+A slice does it (chapter 8):
 
 ::: code
 type enlng
 
-function piece with text, lo, hi:
-    remember out as ""
-    for i from lo to hi - 1:
-        out = out + text[i]
-    give out
-
-show piece("enlangg", 0, 3)
-show piece("enlangg", 2, 5)
+show "enlangg"[0:3]
+show "enlangg"[2:5]
 :::
 
 ## Pad a number with zeros

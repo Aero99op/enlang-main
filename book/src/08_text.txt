@@ -44,7 +44,33 @@ show word[-1]
 show word at 2
 :::
 
-There is no slicing syntax such as `word[0:3]` in toolchain 5.5.1. To take a piece, build it character by character in a loop, as the cookbook does.
+## Taking a piece
+
+From 5.5.2, `word[a:b]` gives the characters from position `a` up to, but not including, `b`. Leave out `a` to start at the beginning, or `b` to go to the end. A negative position counts from the end, and a position past either end is treated as the end, so a slice never fails:
+
+::: code
+type enlng
+
+remember word as "enlangg"
+show word[0:3]
+show word[2:]
+show word[:-1]
+show word[-3:]
+show word[5:100]
+:::
+
+A slice is a new text; the original does not change. The same form works on lists (chapter 12).
+
+`slc` does the same as a function: `slc(word, 0, 3)` is `word[0:3]`, and `slc(word, 2)` is `word[2:]`. Use whichever reads better, for example when the value comes from a call:
+
+::: code
+type enlng
+
+show slc("enlangg", 0, 3)
+show slc(split("a b c d", " "), 1)
+:::
+
+`slc` is a word of the language, so it cannot be the name of a value or a function.
 
 ## Searching
 

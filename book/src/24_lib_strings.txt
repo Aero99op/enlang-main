@@ -57,7 +57,7 @@ show string_substring(s, 6, 11)
 show string_slice(s, 6, 5)
 :::
 
-This is the answer to "there is no slicing syntax": `sub_string` does the job in one call.
+From 5.5.2 the language itself has slices: `s[0:5]` is the same as `sub_string(s, 0, 5)` (chapter 8).
 
 ## Trimming
 

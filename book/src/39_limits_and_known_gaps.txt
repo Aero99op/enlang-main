@@ -12,7 +12,6 @@ A manual that only lists strengths is advertising. This chapter lists what toolc
 | Threads and real parallelism | None. `lib_concurrency` models queues and locks in ordinary single-threaded code (chapter 29). |
 | Network access | Nothing opens a connection. `lib_net` builds and reads text only (chapter 28). |
 | Fetching packages | `enlangg pkg` links the eleven bundled library files. It does not download anything (chapter 33). |
-| Slicing such as `text[0:3]` | Not in the language. Use `sub_string` from `lib_strings`, or a loop (chapters 24 and 35). |
 | Counting down with `for i from 3 to 1 by -1` | The loop does not run. Count up and subtract. |
 | A debugger | None in 5.5.1. `show` is the tool. |
 
@@ -28,7 +27,7 @@ These do work, but not the way a newcomer from another language would guess.
 - **A zero-argument call needs parentheses.** `stack_size(s)` takes an argument; `create_stack()` takes none and must still be written with `()`.
 - **`split` keeps empty pieces.** `split("a,,b", ",")` has three items, the middle one empty, and a separator is matched as a whole. This changed in 5.5.1; older releases dropped empty pieces.
 - **Maps have no order.** Do not print a whole map and expect the keys in the order you typed them.
-- **Some ordinary words are reserved.** `stop`, `times`, `from` and others cannot be names (chapter 40 lists them). A function written `function f with times:` fails to read with the message "Expected ':' before block". If you meet that message on a line that looks fine, check for a reserved word.
+- **Some ordinary words are reserved.** `stop`, `times`, `from` and others cannot be names (chapter 40 lists them). From 5.5.2 the message says so in most places, such as "'stop' is a word of the language and cannot be used as a name". If an older message such as "Expected ':' before block" appears on a line that looks fine, still check for a reserved word.
 
 ## Bugs that remain
 
@@ -51,8 +50,9 @@ These are faults in the toolchain or its library files, not in the way they are 
 | `freeze` protected only the name; a frozen list could still be changed with `append` or by assigning an element. | The list or map itself is frozen, also inside a function it was handed to. |
 | Nested assignment such as `grid[1][2] = 5` was a syntax error. | It works, to any depth: `tasks[1]["done"] = true`. |
 | A function could not read any name made outside it. | It can read top-level names (it still cannot assign them). |
+| With `--native`, a name that is also a word of C, such as `int`, `double` or `argc`, stopped the program from compiling. | Every name is given a prefix in the C code, so any name works. |
 
-New in 5.5.2: `try:` with `on error as name:` to catch an error, and `fail "message"` to raise one (chapter 21). Classes with fields, methods, inheritance from one or several parents, `new`, `call`/`tell`/`ask` and `is a` (chapter 43).
+New in 5.5.2: `try:` with `on error as name:` to catch an error, and `fail "message"` to raise one (chapter 21). Classes with fields, methods, inheritance from one or several parents, `new`, `call`/`tell`/`ask` and `is a` (chapter 43). Slices such as `text[0:3]` and `items[1:]` for text and lists, also written `slc(text, 0, 3)` (chapters 8 and 12). Using a word of the language as a name now says so, for example "'stop' is a word of the language and cannot be used as a name", and `@stop` makes it a name anyway (chapter 40).
 
 Classes have these limits: there are no private fields and no shared (static) fields; fields are reached with `of self` inside a method, never by their bare name; parents must be defined before the class that inherits from them; and a class cannot be created inside a function or a block.
 
