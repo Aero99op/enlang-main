@@ -147,7 +147,7 @@ Some mistakes are not reported at all, so it is worth knowing them:
 | `remember total as 10` then a typo `totl = 5` | A new name `totl` is created. Nothing warns you. |
 | `show 5 divided by 0` | Prints 0. |
 | `show xs[99]` on a short list | Prints `null`. |
-| `change FROZEN to 5` after `freeze FROZEN as 1` | Changes it. |
+| `change FROZEN to 5` after `freeze FROZEN as 1` | Refused when the file is read (from 5.5.1). |
 | `ask n` then `n times 2` | Repeats the text. |
 | A line indented by an odd amount | Read as outside the block above it. |
 

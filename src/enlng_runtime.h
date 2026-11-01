@@ -69,6 +69,7 @@ struct EnlngList {
   EnlngVal *items;
   int count;
   int capacity;
+  bool frozen; /* set by `freeze`: no change allowed, wherever it is held */
 };
 
 struct EnlngMapEntry {
@@ -81,6 +82,7 @@ struct EnlngMap {
   EnlngMapEntry **buckets;
   int capacity;
   int count;
+  bool frozen;
 };
 
 /* --- Constructors --- */
@@ -140,6 +142,7 @@ static inline int64_t enlng_val_to_int(EnlngVal v) {
 static inline EnlngList *enlng_list_create(void) {
   EnlngList *list = (EnlngList *)malloc(sizeof(EnlngList));
   list->count = 0;
+  list->frozen = false;
   list->capacity = 8;
   list->items = (EnlngVal *)malloc(sizeof(EnlngVal) * list->capacity);
   return list;
@@ -174,6 +177,7 @@ static inline EnlngMap *enlng_map_create(void) {
   EnlngMap *m = (EnlngMap *)malloc(sizeof(EnlngMap));
   m->capacity = 16;
   m->count = 0;
+  m->frozen = false;
   m->buckets = (EnlngMapEntry **)calloc(m->capacity, sizeof(EnlngMapEntry *));
   return m;
 }
@@ -184,6 +188,31 @@ static inline EnlngVal enlng_make_map(EnlngMap *m) {
   val.as.m = m;
   return val;
 }
+
+/* --- freeze: a frozen list or map refuses every change --- */
+static inline bool enlng_is_frozen(EnlngVal v) {
+  if (v.type == ENLNG_VAL_LIST && v.as.l)
+    return v.as.l->frozen;
+  if (v.type == ENLNG_VAL_MAP && v.as.m)
+    return v.as.m->frozen;
+  return false;
+}
+
+static inline void enlng_frozen_refuse(void) {
+  fflush(stdout);
+  fprintf(stderr,
+          "\n-- Enlang RuntimeError --------------------------------------------------\n"
+          "What: This list or map was made with 'freeze', so it cannot be changed, "
+          "not even inside a function. Use 'remember' if it needs to change.\n"
+          "------------------------------------------------------------------------\n\n");
+  exit(1);
+}
+
+#define ENLNG_NOT_FROZEN(v)\
+  do {\
+    if (enlng_is_frozen(v))\
+      enlng_frozen_refuse();\
+  } while (0)
 
 static inline EnlngVal enlng_map_get(EnlngVal v, const char *key) {
   if (v.type != ENLNG_VAL_MAP || !v.as.m || !key)
@@ -202,6 +231,7 @@ static inline EnlngVal enlng_map_get(EnlngVal v, const char *key) {
 static inline void enlng_map_set(EnlngVal v, const char *key, EnlngVal item) {
   if (v.type != ENLNG_VAL_MAP || !v.as.m || !key)
     return;
+  ENLNG_NOT_FROZEN(v);
   EnlngMap *m = v.as.m;
   unsigned long h = enlng_hash_str(key) % m->capacity;
   EnlngMapEntry *e = m->buckets[h];
@@ -267,6 +297,28 @@ static inline EnlngVal enlng_map_values(EnlngVal v) {
   return enlng_make_list(l);
 }
 
+/* `freeze x as <value>`: a shallow copy, marked frozen, so freezing never
+   locks a list that some other name still uses. */
+static inline EnlngVal enlng_freeze_val(EnlngVal v) {
+  if (v.type == ENLNG_VAL_LIST && v.as.l) {
+    EnlngList *c = enlng_list_create();
+    for (int i = 0; i < v.as.l->count; i++)
+      enlng_list_push(c, v.as.l->items[i]);
+    c->frozen = true;
+    return enlng_make_list(c);
+  }
+  if (v.type == ENLNG_VAL_MAP && v.as.m) {
+    EnlngMap *src = v.as.m;
+    EnlngVal out = enlng_make_map(enlng_map_create());
+    for (int b = 0; b < src->capacity; b++)
+      for (EnlngMapEntry *e = src->buckets[b]; e; e = e->next)
+        enlng_map_set(out, e->key, e->val);
+    out.as.m->frozen = true;
+    return out;
+  }
+  return v;
+}
+
 /* --- Container Length --- */
 static inline int64_t enlng_count_of(EnlngVal v) {
   if (v.type == ENLNG_VAL_LIST && v.as.l)
@@ -297,6 +349,7 @@ static inline EnlngVal enlng_list_get(EnlngVal v, int64_t idx) {
 
 static inline void enlng_list_set(EnlngVal v, int64_t idx, EnlngVal item) {
   if (v.type == ENLNG_VAL_LIST && v.as.l && idx >= 0) {
+    ENLNG_NOT_FROZEN(v);
     while (v.as.l->count <= idx) {
       enlng_list_push(v.as.l, enlng_make_null());
     }
@@ -356,6 +409,7 @@ static inline void enlng_container_set(EnlngVal c, EnlngVal key, EnlngVal val) {
 /* In-place list swap */
 static inline void enlng_list_swap(EnlngVal v, int64_t i, int64_t j) {
   if (v.type == ENLNG_VAL_LIST && v.as.l) {
+    ENLNG_NOT_FROZEN(v);
     if (i >= 0 && i < v.as.l->count && j >= 0 && j < v.as.l->count) {
       EnlngVal temp = v.as.l->items[i];
       v.as.l->items[i] = v.as.l->items[j];
@@ -545,6 +599,7 @@ static inline bool enlng_vals_lte(EnlngVal a, EnlngVal b) {
 /* In-place list sort */
 static inline void enlng_list_sort(EnlngVal v, bool descending) {
   if (v.type == ENLNG_VAL_LIST && v.as.l) {
+    ENLNG_NOT_FROZEN(v);
     int n = v.as.l->count;
     for (int i = 0; i < n - 1; i++) {
       for (int j = 0; j < n - i - 1; j++) {
@@ -872,6 +927,7 @@ static inline EnlngVal enlng_builtin_sleep(EnlngVal sec) {
 /* --- Container Operations Built-ins --- */
 static inline EnlngVal enlng_builtin_append(EnlngVal list, EnlngVal item) {
   if (list.type == ENLNG_VAL_LIST && list.as.l) {
+    ENLNG_NOT_FROZEN(list);
     enlng_list_push(list.as.l, item);
   }
   return list;
@@ -879,6 +935,7 @@ static inline EnlngVal enlng_builtin_append(EnlngVal list, EnlngVal item) {
 
 static inline EnlngVal enlng_builtin_pop(EnlngVal list) {
   if (list.type == ENLNG_VAL_LIST && list.as.l && list.as.l->count > 0) {
+    ENLNG_NOT_FROZEN(list);
     EnlngVal last = list.as.l->items[list.as.l->count - 1];
     list.as.l->count--;
     return last;

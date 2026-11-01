@@ -37,12 +37,19 @@ These are faults in the toolchain or its library files, not in the way they are 
 
 | Where | What happens |
 |---|---|
-| `lib_ds`: `lru_size` | Counts entries that were already forgotten. |
-| `lib_net`: `parse_url` | Leaves a `#fragment` attached to the query. |
-| `enlng emit-c` | The comment at the top of the generated C names an old version number. |
-| `string_add`, `string_insert`, `string_replace` | They accept the text and the piece in either order and guess which is which from their lengths. Written as text, piece, position they behave; the guess goes wrong only for a short text with a position beyond its end. |
 | `enlngs` | Runs only a small part of the script language natively: `create`, `set`, `show`, `repeat`, `if`, `function`. Page-oriented lines are for the JavaScript translation. |
-| `freeze` | Protects the name only. A frozen list can still be changed with `append`, and elements can still be assigned. |
+| `freeze` | Freezes the list or map itself. A list stored inside a frozen list is a separate value and can still change. |
+
+`string_add`, `string_insert` and `string_replace` are position-based and take their arguments in one fixed order: text, piece, position. Write them in that order, as every example in this book does.
+
+## Fixed in 5.5.2
+
+| Was | Now |
+|---|---|
+| `lru_size` counted entries that were already forgotten. | It counts only what is kept. |
+| `parse_url` left a `#fragment` attached to the query. | The fragment has its own key, and `build_url` writes it back. |
+| The comment at the top of `enlng emit-c` output named an old version. | It names the version of the tool that wrote it. |
+| `freeze` protected only the name; a frozen list could still be changed with `append` or by assigning an element. | The list or map itself is frozen, also inside a function it was handed to. |
 
 ## Fixed in 5.5.1
 

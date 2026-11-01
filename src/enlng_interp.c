@@ -438,6 +438,8 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
   switch (n->type) {
   case AST_DECLARATION: {
     EnlngVal v = ieval(it, f, n->as.decl.init_expr);
+    if (n->as.decl.is_frozen)
+      v = enlng_freeze_val(v);
     idefine(f, n->as.decl.name, v);
     return EX_OK;
   }

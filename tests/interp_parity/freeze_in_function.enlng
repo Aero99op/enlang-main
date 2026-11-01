@@ -1,0 +1,19 @@
+type enlng
+function add_one with xs:
+    append(xs, 9)
+    give xs
+
+function set_a with m:
+    m["a"] = 5
+    give m
+
+remember loose as [1, 2]
+show add_one(loose)
+freeze items as [3, 1, 2]
+freeze cfg as {"a": 1}
+show items cfg["a"] len(items)
+for each x in items:
+    show x
+show "before"
+show set_a(cfg)
+show "not reached"

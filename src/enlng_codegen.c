@@ -475,7 +475,11 @@ static void generate_statement(CodeGen *cg, ASTNode *n) {
     scope_add(cg, n->as.decl.name);
     emit_indent(cg);
     emit(cg, "EnlngVal %s = ", n->as.decl.name);
+    if (n->as.decl.is_frozen)
+      emit(cg, "enlng_freeze_val(");
     generate_expression(cg, n->as.decl.init_expr);
+    if (n->as.decl.is_frozen)
+      emit(cg, ")");
     emit(cg, ";\n");
     break;
 
