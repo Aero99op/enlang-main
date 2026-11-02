@@ -185,6 +185,8 @@ static EnlngVal iget(Interp *it, IFrame *f, const char *name, int line) {
     ASTNode *fn = ifind_func(it, name);
     if (fn)
       return enlng_make_func(fn->as.func_def.name);
+    if (strcmp(name, "pi") == 0)
+      return enlng_make_float(3.14159265358979323846);
     if (iis_builtin(name))
       return enlng_make_builtin_func(name);
     ifail(it, line,
@@ -213,15 +215,22 @@ static ASTNode *ifind_func(Interp *it, const char *name) {
   return NULL;
 }
 
-/* Runs a function of the program with its inputs already checked. */
+/* Runs a function of the program. nargs inputs were given; ncap values an
+ * inner function kept follow them. An input left out takes its default. */
 static EnlngVal irun_func(Interp *it, ASTNode *fn, const char *name,
-                          EnlngVal *args, int argc, int line) {
+                          EnlngVal *args, int nargs, EnlngVal *caps, int ncap,
+                          int line) {
   EnlngVal result = enlng_make_null();
   int frame_base = it->nframes;
-  if (argc != fn->as.func_def.param_count) {
-    int own = fn->as.func_def.param_count - fn->as.func_def.hidden_count;
-    ifail(it, line, "'%s' needs %d input%s but was given %d.", name, own,
-          own == 1 ? "" : "s", argc - fn->as.func_def.hidden_count);
+  int own = fn->as.func_def.param_count - fn->as.func_def.hidden_count;
+  int lo = fn->as.func_def.has_defaults ? fn->as.func_def.min_count : own;
+  if (nargs < lo || nargs > own) {
+    if (lo == own)
+      ifail(it, line, "'%s' needs %d input%s but was given %d.", name, own,
+            own == 1 ? "" : "s", nargs);
+    else
+      ifail(it, line, "'%s' needs %d to %d inputs but was given %d.", name, lo,
+            own, nargs);
     return result;
   }
   if (it->depth >= INTERP_MAX_DEPTH) {
@@ -232,8 +241,10 @@ static EnlngVal irun_func(Interp *it, ASTNode *fn, const char *name,
   }
   IVar stackv[16];
   IFrame nf = {stackv, 0, 16, 0, false};
-  for (int p = 0; p < argc; p++)
-    idefine(&nf, fn->as.func_def.params[p], args[p]);
+  for (int p = 0; p < own; p++)
+    idefine(&nf, fn->as.func_def.params[p], p < nargs ? args[p] : enlng_make_null());
+  for (int c = 0; c < ncap; c++)
+    idefine(&nf, fn->as.func_def.params[own + c], caps[c]);
   bool *saved_sorted = it->sorted;
   it->sorted = NULL;
   it->depth++;
@@ -277,23 +288,7 @@ static EnlngVal icall_value(Interp *it, EnlngFunc *h, EnlngVal *args, int argc,
     ifail(it, line, "I don't know a function called '%s'.", h->shown);
     return enlng_make_null();
   }
-  int own = fn->as.func_def.param_count - h->ncap;
-  if (argc != own) {
-    ifail(it, line, "'%s' needs %d input%s but was given %d.", h->shown, own,
-          own == 1 ? "" : "s", argc);
-    return enlng_make_null();
-  }
-  if (h->ncap == 0)
-    return irun_func(it, fn, h->shown, args, argc, line);
-  EnlngVal buf[16];
-  int total = argc + h->ncap;
-  EnlngVal *all = total <= 16 ? buf : (EnlngVal *)malloc(sizeof(EnlngVal) * total);
-  memcpy(all, args, sizeof(EnlngVal) * argc);
-  memcpy(all + argc, h->caps, sizeof(EnlngVal) * h->ncap);
-  EnlngVal r = irun_func(it, fn, h->shown, all, total, line);
-  if (all != buf)
-    free(all);
-  return r;
+  return irun_func(it, fn, h->shown, args, argc, h->caps, h->ncap, line);
 }
 
 static EnlngVal icall(Interp *it, IFrame *f, ASTNode *n) {
@@ -334,7 +329,7 @@ static EnlngVal icall(Interp *it, IFrame *f, ASTNode *n) {
     } else if (held) {
       result = icall_value(it, held, args, argc, n->line);
     } else if (fn) {
-      result = irun_func(it, fn, name, args, argc, n->line);
+      result = irun_func(it, fn, name, args, argc, NULL, 0, n->line);
     } else {
       int need = enlng_builtin_arity(name);
       if (need < 0) {
@@ -464,7 +459,7 @@ static EnlngVal ieval(Interp *it, IFrame *f, ASTNode *n) {
     iroot(it, r);
     EnlngVal c = ieval(it, f, n->as.replace_expr.container);
     it->ntmp = base;
-    return enlng_builtin_replace(t, r, c);
+    return enlng_phrase_replace(t, r, c);
   }
   case AST_EXPR_TRIM:
     return enlng_builtin_trim(ieval(it, f, n->as.single_target_expr.target));

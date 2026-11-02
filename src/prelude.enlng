@@ -1,0 +1,190 @@
+type enlng
+
+function map with xs, f:
+    remember out as []
+    for each item in xs:
+        append(out, f(item))
+    give out
+
+function filter with xs, f:
+    remember out as []
+    for each item in xs:
+        when f(item):
+            append(out, item)
+    give out
+
+function reduce with xs, f, start:
+    remember acc as start
+    for each item in xs:
+        acc = f(acc, item)
+    give acc
+
+function any with xs, f as null:
+    for each item in xs:
+        when f is null:
+            when item:
+                give true
+        otherwise:
+            when f(item):
+                give true
+    give false
+
+function all with xs, f as null:
+    for each item in xs:
+        when f is null:
+            when not item:
+                give false
+        otherwise:
+            when not f(item):
+                give false
+    give true
+
+function count_if with xs, f:
+    remember total as 0
+    for each item in xs:
+        when f(item):
+            total = total plus 1
+    give total
+
+function find_if with xs, f, missing as null:
+    for each item in xs:
+        when f(item):
+            give item
+    give missing
+
+function sum with xs:
+    remember total as 0
+    for each item in xs:
+        total = total plus item
+    give total
+
+function product with xs:
+    remember total as 1
+    for each item in xs:
+        total = total times item
+    give total
+
+function range with a, b as null, gap as 1:
+    remember lo as a
+    remember hi as b
+    when b is null:
+        lo = 0
+        hi = a
+    when gap is 0:
+        fail "range needs a step that is not 0."
+    remember out as []
+    remember i as lo
+    when gap > 0:
+        while i < hi:
+            append(out, i)
+            i = i plus gap
+    otherwise:
+        while i > hi:
+            append(out, i)
+            i = i plus gap
+    give out
+
+function zip with xs, ys:
+    remember out as []
+    remember n as min(len(xs), len(ys))
+    remember i as 0
+    while i < n:
+        append(out, [xs[i], ys[i]])
+        i = i plus 1
+    give out
+
+function enumerate with xs, first_index as 0:
+    remember out as []
+    remember i as 0
+    for each item in xs:
+        append(out, [first_index plus i, item])
+        i = i plus 1
+    give out
+
+function first with xs, missing as null:
+    when len(xs) is 0:
+        give missing
+    give xs[0]
+
+function last with xs, missing as null:
+    when len(xs) is 0:
+        give missing
+    give xs[len(xs) minus 1]
+
+function take with xs, n:
+    give slc(xs, 0, min(max(n, 0), len(xs)))
+
+function drop with xs, n:
+    give slc(xs, min(max(n, 0), len(xs)), len(xs))
+
+function chunk with xs, size:
+    when size < 1:
+        fail "chunk needs a size of at least 1."
+    remember out as []
+    remember i as 0
+    while i < len(xs):
+        append(out, slc(xs, i, min(i plus size, len(xs))))
+        i = i plus size
+    give out
+
+function flatten with xs:
+    remember out as []
+    for each item in xs:
+        when type_of(item) is "list":
+            for each inner in item:
+                append(out, inner)
+        otherwise:
+            append(out, item)
+    give out
+
+function sort_by with xs, f:
+    remember out as []
+    remember keys_of as []
+    for each item in xs:
+        remember k as f(item)
+        remember pos as len(out)
+        while pos > 0 and keys_of[pos minus 1] > k:
+            pos = pos minus 1
+        insert_at(out, pos, item)
+        insert_at(keys_of, pos, k)
+    give out
+
+function min_by with xs, f:
+    when len(xs) is 0:
+        fail "min_by needs a list with at least one item."
+    remember best as xs[0]
+    remember best_key as f(best)
+    for each item in xs:
+        remember k as f(item)
+        when k < best_key:
+            best = item
+            best_key = k
+    give best
+
+function max_by with xs, f:
+    when len(xs) is 0:
+        fail "max_by needs a list with at least one item."
+    remember best as xs[0]
+    remember best_key as f(best)
+    for each item in xs:
+        remember k as f(item)
+        when k > best_key:
+            best = item
+            best_key = k
+    give best
+
+function shuffle with xs:
+    remember out as copy(xs)
+    remember i as len(out) minus 1
+    while i > 0:
+        remember j as random_number(0, i)
+        remember tmp as out[i]
+        out[i] = out[j]
+        out[j] = tmp
+        i = i minus 1
+    give out
+
+function random_choice with xs:
+    when len(xs) is 0:
+        fail "random_choice needs a list with at least one item."
+    give xs[random_number(0, len(xs) minus 1)]

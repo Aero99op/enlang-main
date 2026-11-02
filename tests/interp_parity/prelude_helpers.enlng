@@ -1,0 +1,38 @@
+type enlng
+
+remember nums as [5, 3, 8, 1, 9, 2]
+show map(nums, function with x: x times 2)
+show filter(nums, function with x: x > 4)
+show reduce(nums, function with a, b: a plus b, 0)
+show sum(nums), " ", product([1, 2, 3, 4]), " ", sum([])
+show any(nums, function with x: x > 8), " ", any([false, 0]), " ", all(nums, function with x: x > 0), " ", all([true, false])
+show count_if(nums, function with x: x is greater than 4)
+show find_if(nums, function with x: x > 5), " ", find_if(nums, function with x: x > 50, "none")
+show range(4), " ", range(2, 6), " ", range(10, 0, -3), " ", range(3, 3)
+show zip([1, 2, 3], ["a", "b"]), " ", enumerate(["x", "y"]), " ", enumerate(["x", "y"], 1)
+show first(nums), " ", last(nums), " ", first([], "empty"), " ", last([])
+show take(nums, 2), " ", drop(nums, 4), " ", take(nums, 99), " ", drop(nums, 99)
+show chunk([1, 2, 3, 4, 5], 2), " ", flatten([1, [2, 3], [4], 5])
+show sort_by(["ccc", "a", "bb", "dd"], function with s: len(s))
+show sort_by([[2, "b"], [1, "a"], [2, "c"]], function with p: p[0])
+show min_by(["ccc", "a", "bb"], function with s: len(s)), " ", max_by(["ccc", "a", "bb"], function with s: len(s))
+
+random_seed(3)
+remember sh as shuffle(nums)
+show len(sh), " ", sum(sh), " ", sorted(sh)
+show contains(nums, random_choice(nums))
+
+function double with x:
+    give x times 2
+
+show map([1, 2, 3], double)
+show map(range(1, 4), function with i: i times i)
+
+try:
+    range(1, 5, 0)
+on error as e:
+    show e
+try:
+    max_by([], function with x: x)
+on error as e:
+    show e

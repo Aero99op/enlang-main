@@ -1,0 +1,8 @@
+type enlng
+
+function sum with xs:
+    give "my own sum"
+
+show sum([1, 2])
+
+show sum([1, 2]), " ", map([1, 2], function with x: x plus 1)

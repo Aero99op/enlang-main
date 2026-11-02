@@ -772,6 +772,93 @@ static ASTNode *ast_new(ASTNodeType type, int line) {
 }
 
 /* Expression parsing with Precedence */
+/* The inputs of a function: "with a, b as 5" or "(a, b = 5)". An input may
+ * have a default, which is used when the call leaves it out (or gives null).
+ * Inputs with a default come last. */
+typedef struct {
+  char **names;
+  ASTNode **defaults;
+  int count;
+  bool has_defaults;
+  int min_count;
+} ParamList;
+
+static void parse_param_list(Parser *p, ParamList *pl, bool paren, int line) {
+  int cap = 4;
+  pl->names = (char **)malloc(sizeof(char *) * cap);
+  pl->defaults = (ASTNode **)calloc((size_t)cap, sizeof(ASTNode *));
+  pl->count = 0;
+  pl->has_defaults = false;
+  pl->min_count = 0;
+  if (paren && check(p, ENLNG_TOKEN_RPAREN))
+    return;
+  do {
+    Token *pt = peek(p, 0);
+    if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+      name_error(p, paren ? "Expected a name for an input of the function"
+                          : "Expected a parameter name after 'with'",
+                 line);
+      return;
+    }
+    if (pl->count >= cap) {
+      cap *= 2;
+      pl->names = (char **)realloc(pl->names, sizeof(char *) * cap);
+      pl->defaults = (ASTNode **)realloc(pl->defaults, sizeof(ASTNode *) * cap);
+    }
+    pl->names[pl->count] = enlng_strdup(pt->text);
+    pl->defaults[pl->count] = NULL;
+    if (match(p, ENLNG_TOKEN_AS) || match(p, ENLNG_TOKEN_ASSIGN)) {
+      pl->defaults[pl->count] = parse_expression(p);
+      pl->has_defaults = true;
+    } else if (pl->has_defaults) {
+      set_error(p, "Inputs with a default value must come last. Move this one "
+                   "before the inputs that have a default.", line);
+      return;
+    } else {
+      pl->min_count = pl->count + 1;
+    }
+    pl->count++;
+  } while (match(p, ENLNG_TOKEN_COMMA));
+}
+
+/* Gives the function the inputs, and at the top of its body puts
+ * "when name is null: name = default" for each input with a default. */
+static void apply_params(ASTNode *fn, ParamList *pl) {
+  fn->as.func_def.params = pl->names;
+  fn->as.func_def.param_count = pl->count;
+  fn->as.func_def.has_defaults = pl->has_defaults;
+  fn->as.func_def.min_count = pl->min_count;
+  if (!pl->has_defaults)
+    return;
+  int nd = pl->count - pl->min_count;
+  int bc = fn->as.func_def.body_count;
+  ASTNode **nb = (ASTNode **)malloc(sizeof(ASTNode *) * (size_t)(bc + nd));
+  for (int k = 0; k < nd; k++) {
+    int i = pl->min_count + k;
+    int line = pl->defaults[i]->line;
+    ASTNode *var = ast_new(AST_EXPR_VARIABLE, line);
+    var->as.variable.name = enlng_strdup(pl->names[i]);
+    ASTNode *cond = ast_new(AST_EXPR_BINARY, line);
+    cond->as.binary_expr.op = ENLNG_TOKEN_EQ;
+    cond->as.binary_expr.left = var;
+    cond->as.binary_expr.right = ast_new(AST_EXPR_LITERAL_NULL, line);
+    ASTNode *set = ast_new(AST_MUTATION, line);
+    set->as.mutation.name = enlng_strdup(pl->names[i]);
+    set->as.mutation.op = ENLNG_TOKEN_ASSIGN;
+    set->as.mutation.val_expr = pl->defaults[i];
+    ASTNode *w = ast_new(AST_WHEN, line);
+    w->as.when_stmt.condition = cond;
+    w->as.when_stmt.then_body = (ASTNode **)malloc(sizeof(ASTNode *));
+    w->as.when_stmt.then_body[0] = set;
+    w->as.when_stmt.then_count = 1;
+    nb[k] = w;
+  }
+  for (int i = 0; i < bc; i++)
+    nb[nd + i] = fn->as.func_def.body[i];
+  fn->as.func_def.body = nb;
+  fn->as.func_def.body_count = bc + nd;
+}
+
 static ASTNode *parse_atom(Parser *p, bool allow_with);
 static ASTNode *parse_primary_internal(Parser *p, bool allow_with);
 static inline ASTNode *parse_primary(Parser *p) {
@@ -789,30 +876,14 @@ static ASTNode *parse_atom(Parser *p, bool allow_with) {
   /* function with x, y: x plus y -- a function made where it is used. With
    * nothing after the colon, the steps follow on indented lines. */
   if (match(p, ENLNG_TOKEN_FUNCTION)) {
-    int pcap = 4, pc = 0;
-    char **params = (char **)malloc(sizeof(char *) * pcap);
+    ParamList pl = {0};
     bool paren = false;
     if (match(p, ENLNG_TOKEN_WITH) || (paren = match(p, ENLNG_TOKEN_LPAREN))) {
-      if (!(paren && check(p, ENLNG_TOKEN_RPAREN))) {
-        do {
-          Token *pt = peek(p, 0);
-          if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
-            name_error(p, "Expected a name for an input of the function", t->line);
-            break;
-          }
-          if (pc >= pcap) {
-            pcap *= 2;
-            params = (char **)realloc(params, sizeof(char *) * pcap);
-          }
-          params[pc++] = enlng_strdup(pt->text);
-        } while (match(p, ENLNG_TOKEN_COMMA));
-      }
+      parse_param_list(p, &pl, paren, t->line);
       if (paren && !match(p, ENLNG_TOKEN_RPAREN))
         set_error(p, "Expected ')' after the inputs of the function", t->line);
     }
     ASTNode *fn = ast_new(AST_FUNCTION, t->line);
-    fn->as.func_def.params = params;
-    fn->as.func_def.param_count = pc;
     if (check(p, ENLNG_TOKEN_COLON) && peek(p, 1)->type == ENLNG_TOKEN_NEWLINE) {
       parse_block(p, &fn->as.func_def.body, &fn->as.func_def.body_count);
     } else {
@@ -829,6 +900,7 @@ static ASTNode *parse_atom(Parser *p, bool allow_with) {
       fn->as.func_def.body[0] = give;
       fn->as.func_def.body_count = 1;
     }
+    apply_params(fn, &pl);
     ASTNode *lam = ast_new(AST_EXPR_LAMBDA, t->line);
     lam->as.lambda_expr.fn = fn;
     return lam;
@@ -2477,36 +2549,11 @@ static ASTNode *parse_statement(Parser *p) {
     }
     char *name = enlng_strdup(name_tok->text);
 
-    int param_cap = 4;
-    int param_count = 0;
-    char **params = (char **)malloc(sizeof(char *) * param_cap);
-
+    ParamList pl = {0};
     if (match(p, ENLNG_TOKEN_WITH)) {
-      do {
-        Token *pt = peek(p, 0);
-        if (match(p, ENLNG_TOKEN_IDENTIFIER)) {
-          if (param_count >= param_cap) {
-            param_cap *= 2;
-            params = (char **)realloc(params, sizeof(char *) * param_cap);
-          }
-          params[param_count++] = enlng_strdup(pt->text);
-        } else {
-          name_error(p, "Expected a parameter name after 'with'", t->line);
-        }
-      } while (match(p, ENLNG_TOKEN_COMMA));
+      parse_param_list(p, &pl, false, t->line);
     } else if (match(p, ENLNG_TOKEN_LPAREN)) {
-      if (!check(p, ENLNG_TOKEN_RPAREN)) {
-        do {
-          Token *pt = peek(p, 0);
-          if (match(p, ENLNG_TOKEN_IDENTIFIER)) {
-            if (param_count >= param_cap) {
-              param_cap *= 2;
-              params = (char **)realloc(params, sizeof(char *) * param_cap);
-            }
-            params[param_count++] = enlng_strdup(pt->text);
-          }
-        } while (match(p, ENLNG_TOKEN_COMMA));
-      }
+      parse_param_list(p, &pl, true, t->line);
       if (!match(p, ENLNG_TOKEN_RPAREN)) {
         set_error(p, "Expected ')' after function parameters", t->line);
       }
@@ -2514,9 +2561,8 @@ static ASTNode *parse_statement(Parser *p) {
 
     ASTNode *n = ast_new(AST_FUNCTION, t->line);
     n->as.func_def.name = name;
-    n->as.func_def.params = params;
-    n->as.func_def.param_count = param_count;
     parse_block(p, &n->as.func_def.body, &n->as.func_def.body_count);
+    apply_params(n, &pl);
     return n;
   }
 
@@ -3344,6 +3390,23 @@ static void check_duplicate_functions(Parser *p, ASTNode *prog) {
 
 static ASTNode *parser_parse_program_inner(Parser *p) {
   for (int i = 0; i < p->token_count; i++) {
+    if (p->tokens[i].type == ENLNG_TOKEN_BAD_CHAR) {
+      char buf[300];
+      char ch = p->tokens[i].text ? p->tokens[i].text[0] : '?';
+      const char *hint = "";
+      if (ch == '&')
+        hint = " Write and, or use bit_and(a, b) for bits.";
+      else if (ch == '|')
+        hint = " Write or, or use bit_or(a, b) for bits.";
+      else if (ch == '^')
+        hint = " For bits use bit_xor(a, b); for a power use pow(a, b).";
+      else if (ch == '~')
+        hint = " For bits use bit_not(a).";
+      snprintf(buf, sizeof(buf), "The character '%c' is not part of Enlng.%s",
+               ch, hint);
+      set_error(p, buf, p->tokens[i].line);
+      return NULL;
+    }
     if (p->tokens[i].type == ENLNG_TOKEN_LONE_AT) {
       set_error(p, "'@' must be followed directly by a name, as in @times",
                 p->tokens[i].line);
@@ -3469,6 +3532,66 @@ static ASTNode *parser_parse_program_inner(Parser *p) {
 }
 
 
+/* The prelude is ordinary Enlng source (src/prelude.enlng) for everyday list
+ * helpers such as map, filter and range. Only the functions a program
+ * mentions, and does not define itself, are added to it. */
+static void add_prelude(ASTNode *prog) {
+  Lexer lx;
+  lexer_init(&lx, (char *)ENLNG_PRELUDE_SRC);
+  lexer_tokenize(&lx);
+  Parser pp;
+  parser_init(&pp, lx.tokens, lx.token_count);
+  g_parse_depth++;
+  ASTNode *pre = parser_parse_program(&pp);
+  g_parse_depth--;
+  if (!pre || pre->type != AST_PROGRAM || pp.has_error) {
+    return;
+  }
+  int pc = pre->as.program.count;
+  bool *used = (bool *)calloc((size_t)(pc > 0 ? pc : 1), sizeof(bool));
+  NameSet user = {0}, seen = {0};
+  for (int i = 0; i < prog->as.program.count; i++) {
+    ASTNode *s = prog->as.program.statements[i];
+    if (s->type == AST_FUNCTION)
+      ns_add(&user, s->as.func_def.name);
+    ASTNode *slot = s;
+    mention_slot(&slot, &seen);
+  }
+  bool grew = true;
+  while (grew) {
+    grew = false;
+    for (int i = 0; i < pc; i++) {
+      ASTNode *f = pre->as.program.statements[i];
+      if (used[i] || f->type != AST_FUNCTION)
+        continue;
+      const char *name = f->as.func_def.name;
+      if (ns_has(&user, name) || !ns_has(&seen, name))
+        continue;
+      used[i] = true;
+      grew = true;
+      ASTNode *slot = f;
+      mention_slot(&slot, &seen);
+    }
+  }
+  int add = 0;
+  for (int i = 0; i < pc; i++)
+    add += used[i] ? 1 : 0;
+  if (add > 0) {
+    int old = prog->as.program.count;
+    if (old + add > prog->as.program.capacity)
+      prog->as.program.capacity = old + add;
+    prog->as.program.statements = (ASTNode **)realloc(
+        prog->as.program.statements,
+        sizeof(ASTNode *) * (size_t)prog->as.program.capacity);
+    for (int i = 0; i < pc; i++)
+      if (used[i])
+        prog->as.program.statements[prog->as.program.count++] =
+            pre->as.program.statements[i];
+  }
+  free(used);
+  /* the tree may point into the tokens, so they stay */
+}
+
 ASTNode *parser_parse_program(Parser *p) {
   bool outer = (g_parse_depth == 0);
   if (outer)
@@ -3481,6 +3604,8 @@ ASTNode *parser_parse_program(Parser *p) {
     oop_generate_helpers(prog);
     g_parse_depth--;
   }
+  if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)
+    add_prelude(prog);
   if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)
     check_duplicate_functions(p, prog);
   if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)

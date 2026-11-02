@@ -1,0 +1,107 @@
+# Everyday Tools: Defaults, Text Templates and List Helpers
+
+This chapter collects the features that make everyday programs shorter. Every example is run by the real tool when the book is built, so the output you see is what you get.
+
+## Default values for inputs
+
+An input can have a default, written with `as` (or `=` in the bracket form). The default is used when the call leaves that input out. Inputs with a default must come last.
+
+::: code
+type enlng
+
+function greet with name, greeting as "Hello":
+    give greeting + ", " + name
+
+show greet("Asha")
+show greet("Rao", "Hi")
+:::
+
+Giving `null` on purpose also picks the default. A call with too few or too many inputs stops with a clear message that names the range:
+
+::: code
+type enlng
+
+function add with x, y as 5:
+    give x plus y
+
+show add(1), add(1, 2)
+try:
+    show add()
+on error as e:
+    show e
+:::
+
+Anonymous functions can have defaults too: `function with a, b as 10: a times b`.
+
+## Text templates with f"..."
+
+Put `f` in front of a string and write any expression inside curly braces. Write `{{` and `}}` for a literal brace.
+
+::: code
+type enlng
+
+remember name as "Asha"
+remember age as 30
+show f"Hi {name}, next year you are {age plus 1}!"
+show f"{{braces}} and {[1, 2]}"
+:::
+
+## Number and text literals
+
+Numbers can be written in hexadecimal (`0xFF`), binary (`0b1010`), with an exponent (`1e3`) and with underscores for reading (`1_000_000`). Text in triple quotes may span lines and contain double quotes.
+
+::: code
+type enlng
+
+show 0xFF, 0b1010, 1e3, 1_000_000
+remember poem as """first line
+second "quoted" line
+"""
+show poem
+:::
+
+A stray symbol such as `$`, `&` or `?` is now an error with a hint. It is no longer skipped silently.
+
+## List helpers
+
+These functions are written in Enlng itself and are added to a program only when it uses them. A function you define with the same name always wins.
+
+| Function | What it does |
+|---|---|
+| `map(list, f)` | a new list with `f` applied to each item |
+| `filter(list, f)` | the items for which `f` is true |
+| `reduce(list, f, start)` | folds the list into one value |
+| `any(list, f)`, `all(list, f)` | true if some or every item passes (`f` is optional) |
+| `count_if(list, f)`, `find_if(list, f, missing)` | count or find by a test |
+| `sum(list)`, `product(list)` | total and product |
+| `range(n)`, `range(a, b)`, `range(a, b, step)` | a list of numbers, `b` not included |
+| `zip(a, b)`, `enumerate(list, first)` | pairs of items, or of index and item |
+| `first`, `last`, `take`, `drop`, `chunk`, `flatten` | pieces of lists |
+| `sort_by(list, f)`, `min_by`, `max_by` | order or pick by a key |
+| `shuffle(list)`, `random_choice(list)` | random order, random item |
+
+::: code
+type enlng
+
+remember nums as [5, 3, 8, 1, 9, 2]
+show map(nums, function with x: x times 2)
+show filter(nums, function with x: x > 4)
+show reduce(nums, function with a, b: a plus b, 0)
+show range(10, 0, -3)
+show zip([1, 2, 3], ["a", "b"])
+show sort_by(["ccc", "a", "bb"], function with s: len(s))
+show chunk([1, 2, 3, 4, 5], 2)
+:::
+
+## More built-in functions
+
+Besides the helpers above, the language now has built-ins for text (`upper`, `lower`, `trim`, `replace`, `starts_with`, `ends_with`, `pad_left`), numbers (`sin`, `cos`, `sqrt`, `gcd`, `clamp`, `round_to`, the `bit_` family), data (`to_json`, `from_json`, `parse_csv`, `regex_find`, `regex_replace`), files and folders (`path_join`, `list_folder`, `make_folder`), time (`time_now`, `format_time`), hashing (`sha256`, `base64_encode`) and the web (`http_get`, `http_post`). Chapter 22 lists them all.
+
+::: code
+type enlng
+
+show upper("abc"), replace("a-b-c", "-", "+"), pad_left("5", 3, "0")
+show to_json({"n": 3, "t": ["a", "b"]})
+show regex_find_all("\\d+", "order 66 and 7")
+show sha256("abc")
+:::

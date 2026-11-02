@@ -98,6 +98,154 @@ static void skip_spaces_only(Lexer *lexer) {
   }
 }
 
+/* The text of a string whose opening quote has been read. The closing quote
+ * ends it (three in a row for a """ string, which may span lines). */
+static char *lex_string_body(Lexer *lexer, char quote, bool triple) {
+  size_t cap = 64, len = 0;
+  char *buf = (char *)malloc(cap);
+  if (triple && peek(lexer, 0) == '\r' && peek(lexer, 1) == '\n') {
+    advance(lexer);
+    advance(lexer);
+  } else if (triple && peek(lexer, 0) == '\n') {
+    advance(lexer);
+  }
+  for (;;) {
+    char c = peek(lexer, 0);
+    if (c == '\0')
+      break;
+    if (triple) {
+      if (c == quote && peek(lexer, 1) == quote && peek(lexer, 2) == quote) {
+        advance(lexer);
+        advance(lexer);
+        advance(lexer);
+        break;
+      }
+    } else {
+      if (c == quote) {
+        advance(lexer);
+        break;
+      }
+      if (c == '\n')
+        break;
+    }
+    char sc = advance(lexer);
+    if (sc == '\\') {
+      char esc = advance(lexer);
+      if (esc == 'n')
+        sc = '\n';
+      else if (esc == 't')
+        sc = '\t';
+      else if (esc == 'r')
+        sc = '\r';
+      else if (esc == '\\')
+        sc = '\\';
+      else if (esc == quote)
+        sc = quote;
+      else
+        sc = esc;
+    }
+    if (len + 2 >= cap) {
+      cap *= 2;
+      buf = (char *)realloc(buf, cap);
+    }
+    buf[len++] = sc;
+  }
+  buf[len] = '\0';
+  return buf;
+}
+
+/* f"Hello {name}, you are {age plus 1}": the text with each {expression}
+ * put in. It becomes ordinary tokens, ("Hello " + to_text(name) + ...), so
+ * everything after the lexer sees a plain expression. {{ and }} are braces. */
+static void lex_fstring(Lexer *lexer, char quote, int line, int col) {
+  char *body = lex_string_body(lexer, quote, false);
+  size_t n = strlen(body);
+  char *lit = (char *)malloc(n + 1);
+  size_t ll = 0;
+  add_token(lexer, ENLNG_TOKEN_LPAREN, "(", line, col);
+  add_token(lexer, ENLNG_TOKEN_STRING_LITERAL, "", line, col);
+  for (size_t i = 0; i <= n;) {
+    bool at_end = i == n;
+    bool open = !at_end && body[i] == '{' && body[i + 1] != '{';
+    if (!at_end && body[i] == '{' && body[i + 1] == '{') {
+      lit[ll++] = '{';
+      i += 2;
+      continue;
+    }
+    if (!at_end && body[i] == '}' && body[i + 1] == '}') {
+      lit[ll++] = '}';
+      i += 2;
+      continue;
+    }
+    if (!at_end && !open) {
+      lit[ll++] = body[i++];
+      continue;
+    }
+    /* text so far */
+    if (ll > 0 || at_end) {
+      if (ll > 0) {
+        lit[ll] = '\0';
+        add_token(lexer, ENLNG_TOKEN_ADD, "+", line, col);
+        add_token(lexer, ENLNG_TOKEN_STRING_LITERAL, lit, line, col);
+        ll = 0;
+      }
+    }
+    if (at_end)
+      break;
+    /* find the } that closes this { */
+    size_t j = i + 1;
+    int depth = 1;
+    char q = 0;
+    while (j < n && depth > 0) {
+      char ch = body[j];
+      if (q) {
+        if (ch == q)
+          q = 0;
+      } else if (ch == '"' || ch == '\'') {
+        q = ch;
+      } else if (ch == '{') {
+        depth++;
+      } else if (ch == '}') {
+        depth--;
+        if (depth == 0)
+          break;
+      }
+      j++;
+    }
+    if (depth != 0 || j == i + 1) { /* no closing } or {}: keep it as text */
+      lit[ll++] = '{';
+      i++;
+      continue;
+    }
+    size_t elen = j - i - 1;
+    char *expr = (char *)malloc(elen + 1);
+    memcpy(expr, body + i + 1, elen);
+    expr[elen] = '\0';
+    Lexer sub;
+    lexer_init(&sub, expr);
+    lexer_tokenize(&sub);
+    add_token(lexer, ENLNG_TOKEN_ADD, "+", line, col);
+    add_token(lexer, ENLNG_TOKEN_IDENTIFIER, "to_text", line, col);
+    add_token(lexer, ENLNG_TOKEN_LPAREN, "(", line, col);
+    for (int k = 0; k < sub.token_count; k++) {
+      Token *st = &sub.tokens[k];
+      if (st->type == ENLNG_TOKEN_NEWLINE || st->type == ENLNG_TOKEN_INDENT ||
+          st->type == ENLNG_TOKEN_DEDENT || st->type == ENLNG_TOKEN_EOF)
+        continue;
+      add_token(lexer, st->type, st->text, line, col);
+      lexer->tokens[lexer->token_count - 1].int_val = st->int_val;
+      lexer->tokens[lexer->token_count - 1].float_val = st->float_val;
+    }
+    add_token(lexer, ENLNG_TOKEN_RPAREN, ")", line, col);
+    lexer_free(&sub);
+    free(expr);
+    i = j + 1;
+  }
+  add_token(lexer, ENLNG_TOKEN_RPAREN, ")", line, col);
+  free(lit);
+  free(body);
+}
+
 bool lexer_tokenize(Lexer *lexer) {
   while (lexer->cursor < lexer->length) {
     /* Handle line beginning & indentation */
@@ -324,61 +472,101 @@ bool lexer_tokenize(Lexer *lexer) {
       continue;
     }
 
-    /* String Literals */
+    /* String Literals: "text", 'text' and """text over several lines""" */
     if (c == '"' || c == '\'') {
       char quote = advance(lexer);
-      size_t str_cap = 64;
-      size_t str_len = 0;
-      char *str_buf = (char *)malloc(str_cap);
-
-      while (peek(lexer, 0) != quote && peek(lexer, 0) != '\0' &&
-             peek(lexer, 0) != '\n') {
-        char sc = advance(lexer);
-        if (sc == '\\') {
-          char esc = advance(lexer);
-          if (esc == 'n')
-            sc = '\n';
-          else if (esc == 't')
-            sc = '\t';
-          else if (esc == 'r')
-            sc = '\r';
-          else if (esc == '\\')
-            sc = '\\';
-          else if (esc == quote)
-            sc = quote;
-          else
-            sc = esc;
-        }
-        if (str_len + 2 >= str_cap) {
-          str_cap *= 2;
-          str_buf = (char *)realloc(str_buf, str_cap);
-        }
-        str_buf[str_len++] = sc;
-      }
-      if (peek(lexer, 0) == quote)
+      bool triple = peek(lexer, 0) == quote && peek(lexer, 1) == quote;
+      if (triple) {
         advance(lexer);
-      str_buf[str_len] = '\0';
-
+        advance(lexer);
+      }
+      char *str_buf = lex_string_body(lexer, quote, triple);
       add_token(lexer, ENLNG_TOKEN_STRING_LITERAL, str_buf, start_line,
                 start_col);
       free(str_buf);
       continue;
     }
 
-    /* Number Literals */
+    /* Number Literals: 42, 3.5, 1e3, 2.5e-3, 1_000_000, 0xFF, 0b1010 */
     if (isdigit((unsigned char)c)) {
       char num_buf[64];
       int nlen = 0;
       bool is_float = false;
+      int radix = 0;
+      if (c == '0' && (peek(lexer, 1) == 'x' || peek(lexer, 1) == 'X') &&
+          isxdigit((unsigned char)peek(lexer, 2)))
+        radix = 16;
+      else if (c == '0' && (peek(lexer, 1) == 'b' || peek(lexer, 1) == 'B') &&
+               (peek(lexer, 2) == '0' || peek(lexer, 2) == '1'))
+        radix = 2;
+      if (radix) {
+        advance(lexer);
+        advance(lexer);
+        unsigned long long v = 0;
+        bool too_big = false;
+        for (;;) {
+          char d = peek(lexer, 0);
+          int dv;
+          if (d == '_' && peek(lexer, 1) != '\0') {
+            advance(lexer);
+            continue;
+          }
+          if (d >= '0' && d <= '9')
+            dv = d - '0';
+          else if (radix == 16 && d >= 'a' && d <= 'f')
+            dv = d - 'a' + 10;
+          else if (radix == 16 && d >= 'A' && d <= 'F')
+            dv = d - 'A' + 10;
+          else
+            break;
+          if (dv >= radix)
+            break;
+          if (v > ((unsigned long long)INT64_MAX - dv) / radix)
+            too_big = true;
+          else
+            v = v * radix + dv;
+          advance(lexer);
+        }
+        if (too_big)
+          snprintf(num_buf, sizeof(num_buf), "99999999999999999999");
+        else
+          snprintf(num_buf, sizeof(num_buf), "%llu", v);
+        add_token(lexer, ENLNG_TOKEN_INT_LITERAL, num_buf, start_line,
+                  start_col);
+        lexer->tokens[lexer->token_count - 1].int_val = (int64_t)v;
+        continue;
+      }
       while (
           isdigit((unsigned char)peek(lexer, 0)) ||
+          (peek(lexer, 0) == '_' && isdigit((unsigned char)peek(lexer, 1)) &&
+           nlen > 0) ||
           (peek(lexer, 0) == '.' && isdigit((unsigned char)peek(lexer, 1)))) {
+        if (peek(lexer, 0) == '_') {
+          advance(lexer);
+          continue;
+        }
         if (peek(lexer, 0) == '.')
           is_float = true;
         if (nlen < 63)
           num_buf[nlen++] = advance(lexer);
         else
           advance(lexer);
+      }
+      /* an exponent: 1e3, 2.5E-3 */
+      if ((peek(lexer, 0) == 'e' || peek(lexer, 0) == 'E') &&
+          (isdigit((unsigned char)peek(lexer, 1)) ||
+           ((peek(lexer, 1) == '+' || peek(lexer, 1) == '-') &&
+            isdigit((unsigned char)peek(lexer, 2))))) {
+        is_float = true;
+        num_buf[nlen++] = advance(lexer);
+        if (peek(lexer, 0) == '+' || peek(lexer, 0) == '-')
+          num_buf[nlen++] = advance(lexer);
+        while (isdigit((unsigned char)peek(lexer, 0))) {
+          if (nlen < 63)
+            num_buf[nlen++] = advance(lexer);
+          else
+            advance(lexer);
+        }
       }
       num_buf[nlen] = '\0';
 
@@ -822,11 +1010,25 @@ bool lexer_tokenize(Lexer *lexer) {
           advance(lexer);
       }
       id_buf[id_len] = '\0';
+      /* f"..." (the f touching the quote) is text with {expressions} in it */
+      if (id_len == 1 && id_buf[0] == 'f' &&
+          (peek(lexer, 0) == '"' || peek(lexer, 0) == '\'')) {
+        char fq = advance(lexer);
+        lex_fstring(lexer, fq, start_line, start_col);
+        continue;
+      }
       add_token(lexer, ENLNG_TOKEN_IDENTIFIER, id_buf, start_line, start_col);
       continue;
     }
 
-    /* Unknown character fallback */
+    /* A character with no meaning in the language must not vanish quietly
+     * (5 & 3 would otherwise read as 5 3). Other bytes, such as the byte
+     * order mark of a file, are skipped. */
+    if (strchr("&|^~$?`\\", c)) {
+      char bad[2] = {advance(lexer), '\0'};
+      add_token(lexer, ENLNG_TOKEN_BAD_CHAR, bad, start_line, start_col);
+      continue;
+    }
     advance(lexer);
   }
 

@@ -10,6 +10,7 @@
 #include "src/enlng_common.h"
 #include "src/enlng_runtime.h"
 #include "src/enlng_runtime_embed.h"
+#include "src/enlng_prelude.h"
 #include "src/enlng_lexer.c"
 #include "src/enlng_parser.c"
 #include "src/enlng_codegen.c"

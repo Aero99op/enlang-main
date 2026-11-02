@@ -1,0 +1,19 @@
+type enlng
+
+remember name as "Asha"
+remember age as 30
+remember m as {"a": 1}
+show f"Hi {name}, next year you are {age plus 1}!"
+show f"{{literal}} and {m['a']} and {[1, 2]}"
+show f"no braces"
+show f"{name}{name}"
+show 0xFF, " ", 0b1010, " ", 1e3, " ", 2.5e-3, " ", 1_000_000
+show 0xFF plus 1
+remember text as """line one
+line two with "quotes"
+"""
+show text
+show len(text)
+remember f as 5
+show f
+show "a" "b"

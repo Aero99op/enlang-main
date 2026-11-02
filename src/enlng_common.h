@@ -149,7 +149,8 @@ typedef enum {
   ENLNG_TOKEN_OF,       /* 'of' */
   ENLNG_TOKEN_ON,       /* 'on' */
   ENLNG_TOKEN_SLC,      /* 'slc' */
-  ENLNG_TOKEN_LONE_AT   /* '@' not followed by a name */
+  ENLNG_TOKEN_LONE_AT,  /* '@' not followed by a name */
+  ENLNG_TOKEN_BAD_CHAR  /* a character that is not part of the language */
 } EnlngTokenType;
 
 /* --- Token Structure --- */
@@ -331,6 +332,8 @@ struct ASTNode {
       ASTNode **body;
       int body_count;
       int hidden_count; /* inner functions: the last params hold outer values */
+      bool has_defaults; /* some inputs have a default (they come last) */
+      int min_count;     /* inputs a call must give, when has_defaults */
       char *shown;      /* inner functions: the name `show` prints */
     } func_def;
 

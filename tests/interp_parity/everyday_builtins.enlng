@@ -1,0 +1,55 @@
+type enlng
+
+show upper("abC é"), " ", lower("ABc"), " [", trim("  x y  "), "]"
+show starts_with("hello", "he"), " ", ends_with("hello", "lo"), " ", ends_with("hi", "hello")
+show index_of("café au lait", "au"), " ", index_of("abc", "z"), " ", index_of([5, 6, 7], 7)
+show replace("a-b-c", "-", "+"), " ", replace("aaa", "a", "bb"), " ", replace("x", "", "y")
+show pad_left("5", 3, "0"), " ", pad_right("ab", 5, "."), " ", pad_left("long", 2, "0"), " ", pad_left("7", 4, "ab")
+show is_digit("123"), " ", is_digit("12a"), " ", is_letter("abc"), " ", is_space(" \t")
+
+remember original as [1, [2, 3], {"k": [4]}]
+remember shallow as copy(original)
+remember deep as deep_copy(original)
+append(original[1], 99)
+show shallow[1], " ", deep[1]
+show sorted([3, 1, 2]), " ", get({"a": 1}, "b", "none"), " ", get([10, 20], -1, 0), " ", get([10], 5, "x")
+
+show sin(0), " ", cos(0), " ", round_to(pi, 4), " ", round_to(log(exp(2)), 3), " ", round_to(atan2(1, 1) times 4, 5)
+show round_to(degrees(pi), 1), " ", round_to(sqrt(2), 3), " ", hypot(3, 4), " ", cbrt(27)
+show trunc(-2.7), " ", sign(-5), " ", sign(0), " ", clamp(15, 0, 10), " ", clamp(2.5, 0, 1), " ", gcd(12, 18), " ", lcm(4, 6)
+show bit_and(12, 10), " ", bit_or(12, 10), " ", bit_xor(12, 10), " ", bit_not(0), " ", shift_left(1, 10), " ", shift_right(1024, 3)
+
+show sha256("abc")
+show sha256("")
+show hex_encode("Az"), " ", base64_encode("Hello, World!"), " ", base64_decode("SGVsbG8sIFdvcmxkIQ==")
+show base64_encode("a"), " ", base64_encode("ab"), " ", base64_encode("")
+show len(uuid()), " ", len(sha256("x" times 200))
+
+show path_join("a", "b.txt"), " ", path_join("a/", "/abs"), " ", path_basename("x/y/z.tar.gz"), " ", path_dirname("x/y/z.txt"), " ", path_extension("x/y/z.tar.gz")
+show os_name() is "windows" or os_name() is "linux" or os_name() is "mac"
+show len(current_folder()) > 0
+
+remember rows as parse_csv("name,age\nAsha,30\n\"Rao, K\",\"say \"\"hi\"\"\"\n")
+show rows
+show to_csv([["a", "b,c"], [1, "say \"hi\""]])
+show parse_csv("")
+show parse_csv("x")
+
+random_seed(7)
+remember r as random_number(1, 6)
+show r >= 1 and r <= 6
+remember f as random_float()
+show f >= 0 and f < 1
+
+try:
+    show upper(5)
+on error as e:
+    show e
+try:
+    show shift_left(1, 99)
+on error as e:
+    show e
+try:
+    show base64_decode("!!!")
+on error as e:
+    show e

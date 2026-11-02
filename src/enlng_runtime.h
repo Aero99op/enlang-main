@@ -1235,6 +1235,17 @@ static inline void enlng_wrong_arity(const char *name, int need, int got) {
   enlng_throw(msg);
 }
 
+/* A call gave too few or too many inputs to a function with defaults. */
+static inline void enlng_wrong_arity_range(const char *name, int lo, int hi, int got) {
+  if (lo == hi) {
+    enlng_wrong_arity(name, lo, got);
+    return;
+  }
+  char msg[300];
+  snprintf(msg, sizeof(msg), "'%s' needs %d to %d inputs but was given %d.", name, lo, hi, got);
+  enlng_throw(msg);
+}
+
 /* --- Input --- */
 static inline EnlngVal enlng_ask(const char *prompt) {
   if (prompt && prompt[0] != '\0') {
@@ -1302,8 +1313,10 @@ static inline EnlngVal enlng_builtin_max(EnlngVal a, EnlngVal b) {
   return enlng_vals_gt(a, b) ? a : b;
 }
 
+static inline void enlng_seed_once(void);
 static inline EnlngVal enlng_builtin_random_number(EnlngVal low,
                                                    EnlngVal high) {
+  enlng_seed_once();
   int64_t l = enlng_val_to_int(low);
   int64_t h = enlng_val_to_int(high);
   if (h < l) {
@@ -1694,7 +1707,7 @@ static inline int64_t enlng_count_in(EnlngVal target, EnlngVal container) {
   return 0;
 }
 
-static inline EnlngVal enlng_builtin_replace(EnlngVal target, EnlngVal repl, EnlngVal container) {
+static inline EnlngVal enlng_phrase_replace(EnlngVal target, EnlngVal repl, EnlngVal container) {
   if (container.type != ENLNG_VAL_STRING || !container.as.s) return container;
   if (target.type != ENLNG_VAL_STRING || !target.as.s) return container;
   const char *s = container.as.s;
@@ -3599,13 +3612,716 @@ static inline EnlngVal enlng_builtin_http_post(EnlngVal url, EnlngVal body) {
   return enlng_http("http_post", enlng_need_text("http_post", url), &body);
 }
 
+/* characters in the first `bytes` bytes of s */
+static inline int64_t enlng_u8_count_n(const char *s, size_t bytes) {
+  int64_t n = 0;
+  for (size_t i = 0; i < bytes && s[i]; i += (size_t)enlng_u8_clen((unsigned char)s[i]))
+    n++;
+  return n;
+}
+
+/* ======================================================================
+   Everyday built-ins: text, math, bits, hashes, paths, tables, input
+   ====================================================================== */
+
+/* --- Random numbers: seeded from the clock unless random_seed(n) is used --- */
+static int enlng_seeded = 0;
+static inline void enlng_seed_once(void) {
+  if (!enlng_seeded) {
+    enlng_seeded = 1;
+    srand((unsigned int)(time(NULL) * 2654435761u) ^ (unsigned int)clock());
+  }
+}
+
+static inline EnlngVal enlng_builtin_random_seed(EnlngVal n) {
+  enlng_seeded = 1;
+  srand((unsigned int)enlng_need_whole("random_seed", n));
+  return enlng_make_null();
+}
+
+static inline EnlngVal enlng_builtin_random_float(void) {
+  enlng_seed_once();
+  return enlng_make_float((double)rand() / ((double)RAND_MAX + 1.0));
+}
+
+/* --- Text (upper and lower change the letters A-Z only) --- */
+static inline EnlngVal enlng_builtin_upper(EnlngVal t) {
+  const char *s = enlng_need_text("upper", t);
+  size_t n = strlen(s);
+  char *r = (char *)malloc(n + 1);
+  for (size_t i = 0; i <= n; i++)
+    r[i] = (s[i] >= 'a' && s[i] <= 'z') ? (char)(s[i] - 32) : s[i];
+  EnlngVal v = enlng_make_string(r);
+  free(r);
+  return v;
+}
+
+static inline EnlngVal enlng_builtin_lower(EnlngVal t) {
+  const char *s = enlng_need_text("lower", t);
+  size_t n = strlen(s);
+  char *r = (char *)malloc(n + 1);
+  for (size_t i = 0; i <= n; i++)
+    r[i] = (s[i] >= 'A' && s[i] <= 'Z') ? (char)(s[i] + 32) : s[i];
+  EnlngVal v = enlng_make_string(r);
+  free(r);
+  return v;
+}
+
+static inline EnlngVal enlng_builtin_starts_with(EnlngVal t, EnlngVal p) {
+  const char *s = enlng_need_text("starts_with", t);
+  const char *q = enlng_need_text("starts_with", p);
+  return enlng_make_bool(strncmp(s, q, strlen(q)) == 0);
+}
+
+static inline EnlngVal enlng_builtin_ends_with(EnlngVal t, EnlngVal p) {
+  const char *s = enlng_need_text("ends_with", t);
+  const char *q = enlng_need_text("ends_with", p);
+  size_t a = strlen(s), b = strlen(q);
+  return enlng_make_bool(b <= a && strcmp(s + a - b, q) == 0);
+}
+
+/* Where text (or a list) first holds the piece: a position, or -1. */
+static inline EnlngVal enlng_builtin_index_of(EnlngVal hay, EnlngVal piece) {
+  if (hay.type == ENLNG_VAL_LIST && hay.as.l) {
+    for (int i = 0; i < hay.as.l->count; i++)
+      if (enlng_vals_equal(hay.as.l->items[i], piece))
+        return enlng_make_int(i);
+    return enlng_make_int(-1);
+  }
+  const char *s = enlng_need_text("index_of", hay);
+  const char *q = enlng_need_text("index_of", piece);
+  const char *at = strstr(s, q);
+  if (!at)
+    return enlng_make_int(-1);
+  return enlng_make_int(enlng_u8_count_n(s, (size_t)(at - s)));
+}
+
+/* Every `old` in the text changed to `new`. */
+static inline EnlngVal enlng_builtin_replace(EnlngVal t, EnlngVal o, EnlngVal w) {
+  const char *s = enlng_need_text("replace", t);
+  const char *old = enlng_need_text("replace", o);
+  const char *with = enlng_need_text("replace", w);
+  size_t ol = strlen(old);
+  if (ol == 0)
+    return t;
+  EnlngBuf b = {NULL, 0, 0};
+  enlng_buf_add(&b, "");
+  const char *p = s;
+  const char *at;
+  char *piece = NULL;
+  while ((at = strstr(p, old)) != NULL) {
+    size_t n = (size_t)(at - p);
+    piece = (char *)realloc(piece, n + 1);
+    memcpy(piece, p, n);
+    piece[n] = '\0';
+    enlng_buf_add(&b, piece);
+    enlng_buf_add(&b, with);
+    p = at + ol;
+  }
+  enlng_buf_add(&b, p);
+  free(piece);
+  EnlngVal r = enlng_make_string(b.s);
+  free(b.s);
+  return r;
+}
+
+static inline EnlngVal enlng_pad(const char *fn, EnlngVal t, EnlngVal width,
+                                 EnlngVal fill, bool left) {
+  const char *s = enlng_need_text(fn, t);
+  int64_t w = enlng_need_whole(fn, width);
+  const char *f = enlng_need_text(fn, fill);
+  int64_t have = enlng_u8_count(s);
+  if (!*f || have >= w)
+    return t;
+  EnlngBuf b = {NULL, 0, 0};
+  enlng_buf_add(&b, "");
+  if (!left)
+    enlng_buf_add(&b, s);
+  int64_t fc = enlng_u8_count(f);
+  for (int64_t i = 0; i < w - have; i++) {
+    int k = enlng_u8_step(f + enlng_u8_off(f, (int)(i % fc)));
+    char one[8];
+    memcpy(one, f + enlng_u8_off(f, (int)(i % fc)), (size_t)k);
+    one[k] = '\0';
+    enlng_buf_add(&b, one);
+  }
+  if (left)
+    enlng_buf_add(&b, s);
+  EnlngVal r = enlng_make_string(b.s);
+  free(b.s);
+  return r;
+}
+
+static inline EnlngVal enlng_builtin_pad_left(EnlngVal t, EnlngVal w, EnlngVal f) {
+  return enlng_pad("pad_left", t, w, f, true);
+}
+static inline EnlngVal enlng_builtin_pad_right(EnlngVal t, EnlngVal w, EnlngVal f) {
+  return enlng_pad("pad_right", t, w, f, false);
+}
+
+static inline EnlngVal enlng_char_test(const char *fn, EnlngVal t, int kind) {
+  const char *s = enlng_need_text(fn, t);
+  if (!*s)
+    return enlng_make_bool(false);
+  for (; *s; s++) {
+    unsigned char c = (unsigned char)*s;
+    bool ok = kind == 0 ? isdigit(c) : kind == 1 ? (isalpha(c) || c >= 0x80)
+                                                 : isspace(c);
+    if (!ok)
+      return enlng_make_bool(false);
+  }
+  return enlng_make_bool(true);
+}
+static inline EnlngVal enlng_builtin_is_digit(EnlngVal t) { return enlng_char_test("is_digit", t, 0); }
+static inline EnlngVal enlng_builtin_is_letter(EnlngVal t) { return enlng_char_test("is_letter", t, 1); }
+static inline EnlngVal enlng_builtin_is_space(EnlngVal t) { return enlng_char_test("is_space", t, 2); }
+
+/* --- Copies: lists and maps are shared, so copy before changing a spare --- */
+static inline EnlngVal enlng_copy_val(EnlngVal v, bool deep, int depth) {
+  if (depth > 1000)
+    enlng_throw("This value is nested too deeply to copy.");
+  if (v.type == ENLNG_VAL_LIST && v.as.l) {
+    EnlngList *l = enlng_list_create();
+    for (int i = 0; i < v.as.l->count; i++)
+      enlng_list_push(l, deep ? enlng_copy_val(v.as.l->items[i], true, depth + 1)
+                              : v.as.l->items[i]);
+    return enlng_make_list(l);
+  }
+  if (v.type == ENLNG_VAL_MAP && v.as.m) {
+    EnlngVal m = enlng_make_map(enlng_map_create());
+    for (int b = 0; b < v.as.m->capacity; b++)
+      for (EnlngMapEntry *e = v.as.m->buckets[b]; e; e = e->next)
+        enlng_map_set(m, e->key, deep ? enlng_copy_val(e->val, true, depth + 1) : e->val);
+    return m;
+  }
+  return v;
+}
+static inline EnlngVal enlng_builtin_copy(EnlngVal v) { return enlng_copy_val(v, false, 0); }
+static inline EnlngVal enlng_builtin_deep_copy(EnlngVal v) { return enlng_copy_val(v, true, 0); }
+
+/* A sorted copy; the list itself is not touched. */
+static inline EnlngVal enlng_builtin_sorted(EnlngVal v) {
+  enlng_need_list("sorted", v);
+  EnlngVal c = enlng_copy_val(v, false, 0);
+  enlng_list_sort(c, false);
+  return c;
+}
+
+/* map[key], or the fallback when the key (or position) is missing. */
+static inline EnlngVal enlng_builtin_get(EnlngVal c, EnlngVal key, EnlngVal fallback) {
+  if (c.type == ENLNG_VAL_MAP && c.as.m) {
+    char buf[64];
+    const char *k = enlng_val_to_str_buf(key, buf, sizeof(buf));
+    return enlng_map_has(c, k) ? enlng_map_get(c, k) : fallback;
+  }
+  if (c.type == ENLNG_VAL_LIST && c.as.l && key.type == ENLNG_VAL_INT) {
+    int64_t i = key.as.i < 0 ? key.as.i + c.as.l->count : key.as.i;
+    return i >= 0 && i < c.as.l->count ? c.as.l->items[i] : fallback;
+  }
+  char msg[200];
+  snprintf(msg, sizeof(msg), "'get' needs a map or a list, but got %s.", enlng_kind(c));
+  enlng_throw(msg);
+  return fallback;
+}
+
+/* --- Math --- */
+#define ENLNG_MATH1(nm, expr)                                                 \
+  static inline EnlngVal enlng_builtin_##nm(EnlngVal v) {                     \
+    double x = enlng_need_num(#nm, v);                                        \
+    return enlng_make_float(expr);                                            \
+  }
+ENLNG_MATH1(sin, sin(x))
+ENLNG_MATH1(cos, cos(x))
+ENLNG_MATH1(tan, tan(x))
+ENLNG_MATH1(asin, asin(x))
+ENLNG_MATH1(acos, acos(x))
+ENLNG_MATH1(atan, atan(x))
+ENLNG_MATH1(sinh, sinh(x))
+ENLNG_MATH1(cosh, cosh(x))
+ENLNG_MATH1(tanh, tanh(x))
+ENLNG_MATH1(exp, exp(x))
+ENLNG_MATH1(log, log(x))
+ENLNG_MATH1(log10, log10(x))
+ENLNG_MATH1(log2, log2(x))
+ENLNG_MATH1(cbrt, cbrt(x))
+ENLNG_MATH1(degrees, x * 180.0 / 3.14159265358979323846)
+ENLNG_MATH1(radians, x * 3.14159265358979323846 / 180.0)
+
+static inline EnlngVal enlng_builtin_atan2(EnlngVal y, EnlngVal x) {
+  return enlng_make_float(atan2(enlng_need_num("atan2", y), enlng_need_num("atan2", x)));
+}
+static inline EnlngVal enlng_builtin_hypot(EnlngVal a, EnlngVal b) {
+  return enlng_make_float(hypot(enlng_need_num("hypot", a), enlng_need_num("hypot", b)));
+}
+static inline EnlngVal enlng_builtin_trunc(EnlngVal v) {
+  return enlng_make_int((int64_t)trunc(enlng_need_num("trunc", v)));
+}
+static inline EnlngVal enlng_builtin_sign(EnlngVal v) {
+  double x = enlng_need_num("sign", v);
+  return enlng_make_int(x > 0 ? 1 : x < 0 ? -1 : 0);
+}
+static inline EnlngVal enlng_builtin_is_nan(EnlngVal v) {
+  double x = enlng_need_num("is_nan", v);
+  return enlng_make_bool(x != x);
+}
+/* round_to(2.567, 2) is 2.57 */
+static inline EnlngVal enlng_builtin_round_to(EnlngVal v, EnlngVal digits) {
+  double x = enlng_need_num("round_to", v);
+  int64_t d = enlng_need_whole("round_to", digits);
+  if (d < 0 || d > 15)
+    enlng_throw("'round_to' needs a number of digits from 0 to 15.");
+  double m = pow(10.0, (double)d);
+  return enlng_make_float(round(x * m) / m);
+}
+static inline EnlngVal enlng_builtin_clamp(EnlngVal v, EnlngVal lo, EnlngVal hi) {
+  double x = enlng_need_num("clamp", v), l = enlng_need_num("clamp", lo),
+         h = enlng_need_num("clamp", hi);
+  if (l > h)
+    enlng_throw("'clamp' needs the low limit to be at most the high limit.");
+  if (v.type == ENLNG_VAL_INT && lo.type == ENLNG_VAL_INT && hi.type == ENLNG_VAL_INT)
+    return enlng_make_int(v.as.i < lo.as.i ? lo.as.i : v.as.i > hi.as.i ? hi.as.i : v.as.i);
+  return enlng_make_float(x < l ? l : x > h ? h : x);
+}
+static inline EnlngVal enlng_builtin_gcd(EnlngVal a, EnlngVal b) {
+  int64_t x = enlng_need_whole("gcd", a), y = enlng_need_whole("gcd", b);
+  if (x == INT64_MIN || y == INT64_MIN)
+    enlng_int_overflow("gcd of", x, y);
+  x = x < 0 ? -x : x;
+  y = y < 0 ? -y : y;
+  while (y) {
+    int64_t t = x % y;
+    x = y;
+    y = t;
+  }
+  return enlng_make_int(x);
+}
+static inline EnlngVal enlng_builtin_lcm(EnlngVal a, EnlngVal b) {
+  int64_t x = enlng_need_whole("lcm", a), y = enlng_need_whole("lcm", b);
+  if (x == 0 || y == 0)
+    return enlng_make_int(0);
+  int64_t g = enlng_builtin_gcd(a, b).as.i, r;
+  if (__builtin_mul_overflow(x / g, y, &r))
+    enlng_int_overflow("lcm of", x, y);
+  return enlng_make_int(r < 0 ? -r : r);
+}
+
+/* --- Bits --- */
+static inline EnlngVal enlng_builtin_bit_and(EnlngVal a, EnlngVal b) {
+  return enlng_make_int(enlng_need_whole("bit_and", a) & enlng_need_whole("bit_and", b));
+}
+static inline EnlngVal enlng_builtin_bit_or(EnlngVal a, EnlngVal b) {
+  return enlng_make_int(enlng_need_whole("bit_or", a) | enlng_need_whole("bit_or", b));
+}
+static inline EnlngVal enlng_builtin_bit_xor(EnlngVal a, EnlngVal b) {
+  return enlng_make_int(enlng_need_whole("bit_xor", a) ^ enlng_need_whole("bit_xor", b));
+}
+static inline EnlngVal enlng_builtin_bit_not(EnlngVal a) {
+  return enlng_make_int(~enlng_need_whole("bit_not", a));
+}
+static inline EnlngVal enlng_builtin_shift_left(EnlngVal a, EnlngVal n) {
+  int64_t x = enlng_need_whole("shift_left", a), k = enlng_need_whole("shift_left", n);
+  if (k < 0 || k > 62)
+    enlng_throw("'shift_left' needs a shift from 0 to 62.");
+  if (x < 0 || (x != 0 && x > (INT64_MAX >> k)))
+    enlng_int_overflow("shifted left by", x, k);
+  return enlng_make_int(x << k);
+}
+static inline EnlngVal enlng_builtin_shift_right(EnlngVal a, EnlngVal n) {
+  int64_t x = enlng_need_whole("shift_right", a), k = enlng_need_whole("shift_right", n);
+  if (k < 0 || k > 62)
+    enlng_throw("'shift_right' needs a shift from 0 to 62.");
+  return enlng_make_int(x >> k);
+}
+
+/* --- SHA-256, base64 and hex --- */
+typedef struct {
+  uint32_t h[8];
+  uint64_t bits;
+  unsigned char buf[64];
+  size_t n;
+} EnlngSha;
+
+static const uint32_t enlng_sha_k[64] = {
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4,
+    0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe,
+    0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f,
+    0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+    0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
+    0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+    0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116,
+    0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
+    0xc67178f2};
+
+#define ENLNG_ROR(x, n) (((x) >> (n)) | ((x) << (32 - (n))))
+
+static inline void enlng_sha_block(EnlngSha *s, const unsigned char *p) {
+  uint32_t w[64];
+  for (int i = 0; i < 16; i++)
+    w[i] = ((uint32_t)p[i * 4] << 24) | ((uint32_t)p[i * 4 + 1] << 16) |
+           ((uint32_t)p[i * 4 + 2] << 8) | (uint32_t)p[i * 4 + 3];
+  for (int i = 16; i < 64; i++) {
+    uint32_t s0 = ENLNG_ROR(w[i - 15], 7) ^ ENLNG_ROR(w[i - 15], 18) ^ (w[i - 15] >> 3);
+    uint32_t s1 = ENLNG_ROR(w[i - 2], 17) ^ ENLNG_ROR(w[i - 2], 19) ^ (w[i - 2] >> 10);
+    w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+  }
+  uint32_t a = s->h[0], b = s->h[1], c = s->h[2], d = s->h[3], e = s->h[4],
+           f = s->h[5], g = s->h[6], h = s->h[7];
+  for (int i = 0; i < 64; i++) {
+    uint32_t t1 = h + (ENLNG_ROR(e, 6) ^ ENLNG_ROR(e, 11) ^ ENLNG_ROR(e, 25)) +
+                  ((e & f) ^ (~e & g)) + enlng_sha_k[i] + w[i];
+    uint32_t t2 = (ENLNG_ROR(a, 2) ^ ENLNG_ROR(a, 13) ^ ENLNG_ROR(a, 22)) +
+                  ((a & b) ^ (a & c) ^ (b & c));
+    h = g; g = f; f = e; e = d + t1; d = c; c = b; b = a; a = t1 + t2;
+  }
+  s->h[0] += a; s->h[1] += b; s->h[2] += c; s->h[3] += d;
+  s->h[4] += e; s->h[5] += f; s->h[6] += g; s->h[7] += h;
+}
+
+static inline EnlngVal enlng_builtin_sha256(EnlngVal text) {
+  const unsigned char *m = (const unsigned char *)enlng_need_text("sha256", text);
+  size_t len = strlen((const char *)m);
+  EnlngSha s;
+  static const uint32_t init[8] = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+                                   0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
+  memcpy(s.h, init, sizeof(init));
+  size_t i = 0;
+  for (; i + 64 <= len; i += 64)
+    enlng_sha_block(&s, m + i);
+  unsigned char tail[128];
+  size_t rest = len - i;
+  memset(tail, 0, sizeof(tail));
+  memcpy(tail, m + i, rest);
+  tail[rest] = 0x80;
+  size_t total = rest + 9 <= 64 ? 64 : 128;
+  uint64_t bits = (uint64_t)len * 8;
+  for (int k = 0; k < 8; k++)
+    tail[total - 1 - k] = (unsigned char)(bits >> (8 * k));
+  enlng_sha_block(&s, tail);
+  if (total == 128)
+    enlng_sha_block(&s, tail + 64);
+  char out[65];
+  for (int k = 0; k < 8; k++)
+    snprintf(out + k * 8, 9, "%08x", s.h[k]);
+  return enlng_make_string(out);
+}
+
+static inline EnlngVal enlng_builtin_hex_encode(EnlngVal text) {
+  const unsigned char *s = (const unsigned char *)enlng_need_text("hex_encode", text);
+  size_t n = strlen((const char *)s);
+  char *r = (char *)malloc(n * 2 + 1);
+  for (size_t i = 0; i < n; i++)
+    snprintf(r + i * 2, 3, "%02x", s[i]);
+  EnlngVal v = enlng_make_string(r);
+  free(r);
+  return v;
+}
+
+static inline EnlngVal enlng_builtin_base64_encode(EnlngVal text) {
+  static const char tb[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  const unsigned char *s = (const unsigned char *)enlng_need_text("base64_encode", text);
+  size_t n = strlen((const char *)s);
+  char *r = (char *)malloc((n + 2) / 3 * 4 + 1);
+  size_t o = 0;
+  for (size_t i = 0; i < n; i += 3) {
+    uint32_t v = (uint32_t)s[i] << 16;
+    if (i + 1 < n) v |= (uint32_t)s[i + 1] << 8;
+    if (i + 2 < n) v |= s[i + 2];
+    r[o++] = tb[(v >> 18) & 63];
+    r[o++] = tb[(v >> 12) & 63];
+    r[o++] = i + 1 < n ? tb[(v >> 6) & 63] : '=';
+    r[o++] = i + 2 < n ? tb[v & 63] : '=';
+  }
+  r[o] = '\0';
+  EnlngVal v = enlng_make_string(r);
+  free(r);
+  return v;
+}
+
+static inline EnlngVal enlng_builtin_base64_decode(EnlngVal text) {
+  const char *s = enlng_need_text("base64_decode", text);
+  size_t n = strlen(s);
+  char *r = (char *)malloc(n / 4 * 3 + 4);
+  size_t o = 0;
+  uint32_t acc = 0;
+  int bits = 0;
+  for (size_t i = 0; i < n; i++) {
+    char c = s[i];
+    int v;
+    if (c >= 'A' && c <= 'Z') v = c - 'A';
+    else if (c >= 'a' && c <= 'z') v = c - 'a' + 26;
+    else if (c >= '0' && c <= '9') v = c - '0' + 52;
+    else if (c == '+') v = 62;
+    else if (c == '/') v = 63;
+    else if (c == '=' || c == '\n' || c == '\r' || c == ' ') continue;
+    else {
+      free(r);
+      enlng_throw("This is not valid base64 text.");
+      return enlng_make_null();
+    }
+    acc = (acc << 6) | (uint32_t)v;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      r[o++] = (char)((acc >> bits) & 0xFF);
+    }
+  }
+  r[o] = '\0';
+  EnlngVal v = enlng_make_string(r);
+  free(r);
+  return v;
+}
+
+static inline EnlngVal enlng_builtin_uuid(void) {
+  enlng_seed_once();
+  unsigned char b[16];
+  for (int i = 0; i < 16; i++)
+    b[i] = (unsigned char)(rand() & 0xFF);
+  b[6] = (unsigned char)((b[6] & 0x0F) | 0x40);
+  b[8] = (unsigned char)((b[8] & 0x3F) | 0x80);
+  char out[40];
+  snprintf(out, sizeof(out), "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+           b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10],
+           b[11], b[12], b[13], b[14], b[15]);
+  return enlng_make_string(out);
+}
+
+/* --- Paths and the system --- */
+static inline EnlngVal enlng_builtin_path_join(EnlngVal a, EnlngVal b) {
+  const char *x = enlng_need_text("path_join", a), *y = enlng_need_text("path_join", b);
+  size_t lx = strlen(x);
+  if (lx == 0)
+    return b;
+  if (y[0] == '/' || y[0] == '\\' || (y[0] && y[1] == ':'))
+    return b;
+  char *r = (char *)malloc(lx + strlen(y) + 2);
+  strcpy(r, x);
+  if (x[lx - 1] != '/' && x[lx - 1] != '\\')
+    strcat(r, "/");
+  strcat(r, y);
+  EnlngVal v = enlng_make_string(r);
+  free(r);
+  return v;
+}
+
+static inline size_t enlng_last_sep(const char *s) {
+  size_t cut = 0;
+  bool found = false;
+  for (size_t i = 0; s[i]; i++)
+    if (s[i] == '/' || s[i] == '\\') {
+      cut = i;
+      found = true;
+    }
+  return found ? cut + 1 : 0;
+}
+
+static inline EnlngVal enlng_builtin_path_basename(EnlngVal p) {
+  const char *s = enlng_need_text("path_basename", p);
+  return enlng_make_string(s + enlng_last_sep(s));
+}
+
+static inline EnlngVal enlng_builtin_path_dirname(EnlngVal p) {
+  const char *s = enlng_need_text("path_dirname", p);
+  size_t cut = enlng_last_sep(s);
+  if (cut > 1)
+    cut--;
+  char *r = (char *)malloc(cut + 1);
+  memcpy(r, s, cut);
+  r[cut] = '\0';
+  EnlngVal v = enlng_make_string(r);
+  free(r);
+  return v;
+}
+
+/* ".txt" for "notes/a.txt"; empty text when there is none */
+static inline EnlngVal enlng_builtin_path_extension(EnlngVal p) {
+  const char *s = enlng_need_text("path_extension", p);
+  const char *base = s + enlng_last_sep(s);
+  const char *dot = strrchr(base, '.');
+  return enlng_make_string(dot && dot != base ? dot : "");
+}
+
+static inline EnlngVal enlng_builtin_current_folder(void) {
+  char buf[4096];
+#ifdef _WIN32
+  DWORD n = GetCurrentDirectoryA(sizeof(buf), buf);
+  if (n == 0 || n >= sizeof(buf))
+    return enlng_make_string("");
+  for (char *q = buf; *q; q++)
+    if (*q == '\\')
+      *q = '/';
+#else
+  if (!getcwd(buf, sizeof(buf)))
+    return enlng_make_string("");
+#endif
+  return enlng_make_string(buf);
+}
+
+static inline EnlngVal enlng_builtin_os_name(void) {
+#ifdef _WIN32
+  return enlng_make_string("windows");
+#elif defined(__APPLE__)
+  return enlng_make_string("mac");
+#else
+  return enlng_make_string("linux");
+#endif
+}
+
+static inline EnlngVal enlng_builtin_file_size(EnlngVal p) {
+  FILE *f = fopen(enlng_need_text("file_size", p), "rb");
+  if (!f)
+    return enlng_make_int(-1);
+  fseek(f, 0, SEEK_END);
+  long n = ftell(f);
+  fclose(f);
+  return enlng_make_int(n);
+}
+
+/* --- Tables: CSV text to a list of rows and back --- */
+static inline EnlngVal enlng_builtin_parse_csv(EnlngVal text) {
+  const char *s = enlng_need_text("parse_csv", text);
+  EnlngList *rows = enlng_list_create();
+  EnlngList *row = enlng_list_create();
+  EnlngBuf cell = {NULL, 0, 0};
+  enlng_buf_add(&cell, "");
+  bool quoted = false, any = false;
+  char one[2] = {0, 0};
+  for (const char *p = s;; p++) {
+    char c = *p;
+    if (quoted) {
+      if (c == '\0')
+        break;
+      if (c == '"' && p[1] == '"') {
+        enlng_buf_add(&cell, "\"");
+        p++;
+      } else if (c == '"') {
+        quoted = false;
+      } else {
+        one[0] = c;
+        enlng_buf_add(&cell, one);
+      }
+      continue;
+    }
+    if (c == '"') {
+      quoted = true;
+      any = true;
+    } else if (c == ',' || c == '\n' || c == '\0' || c == '\r') {
+      if (c == '\r' && p[1] == '\n')
+        continue;
+      if (c == '\0' && !any && cell.n == 0 && row->count == 0)
+        break;
+      enlng_list_push(row, enlng_make_string(cell.s));
+      cell.n = 0;
+      cell.s[0] = '\0';
+      any = false;
+      if (c != ',') {
+        enlng_list_push(rows, enlng_make_list(row));
+        row = enlng_list_create();
+      }
+      if (c == '\0')
+        break;
+    } else {
+      one[0] = c;
+      enlng_buf_add(&cell, one);
+      any = true;
+    }
+  }
+  free(cell.s);
+  return enlng_make_list(rows);
+}
+
+static inline EnlngVal enlng_builtin_to_csv(EnlngVal rows) {
+  EnlngList *l = enlng_need_list("to_csv", rows);
+  EnlngBuf b = {NULL, 0, 0};
+  enlng_buf_add(&b, "");
+  for (int i = 0; i < l->count; i++) {
+    EnlngList *r = enlng_need_list("to_csv (each row)", l->items[i]);
+    for (int j = 0; j < r->count; j++) {
+      if (j > 0)
+        enlng_buf_add(&b, ",");
+      EnlngBuf c = {NULL, 0, 0};
+      enlng_buf_add(&c, "");
+      enlng_buf_val(&c, r->items[j]);
+      if (strpbrk(c.s, ",\"\n\r")) {
+        enlng_buf_add(&b, "\"");
+        for (const char *q = c.s; *q; q++) {
+          char one[3] = {*q, 0, 0};
+          if (*q == '"') {
+            one[1] = '"';
+          }
+          enlng_buf_add(&b, one);
+        }
+        enlng_buf_add(&b, "\"");
+      } else {
+        enlng_buf_add(&b, c.s);
+      }
+      free(c.s);
+    }
+    enlng_buf_add(&b, "\n");
+  }
+  EnlngVal v = enlng_make_string(b.s);
+  free(b.s);
+  return v;
+}
+
+/* --- Input: read_line() is null at the end of the input --- */
+static inline EnlngVal enlng_builtin_read_line(void) {
+  EnlngBuf b = {NULL, 0, 0};
+  enlng_buf_add(&b, "");
+  char chunk[1024];
+  bool got = false;
+  while (fgets(chunk, sizeof(chunk), stdin)) {
+    got = true;
+    size_t n = strlen(chunk);
+    bool done = n > 0 && chunk[n - 1] == '\n';
+    while (n > 0 && (chunk[n - 1] == '\n' || chunk[n - 1] == '\r'))
+      chunk[--n] = '\0';
+    enlng_buf_add(&b, chunk);
+    if (done)
+      break;
+  }
+  EnlngVal v = got ? enlng_make_string(b.s) : enlng_make_null();
+  free(b.s);
+  return v;
+}
+
+static inline EnlngVal enlng_builtin_read_all_input(void) {
+  EnlngBuf b = {NULL, 0, 0};
+  enlng_buf_add(&b, "");
+  char chunk[4096];
+  size_t n;
+  while ((n = fread(chunk, 1, sizeof(chunk) - 1, stdin)) > 0) {
+    chunk[n] = '\0';
+    enlng_buf_add(&b, chunk);
+  }
+  EnlngVal v = enlng_make_string(b.s);
+  free(b.s);
+  return v;
+}
+
+#define ENLNG_MORE_BUILTINS2(X)                                               \
+  X(random_seed, 1) X(random_float, 0) X(upper, 1) X(lower, 1) X(trim, 1)     \
+  X(starts_with, 2) X(ends_with, 2) X(index_of, 2) X(replace, 3)              \
+  X(pad_left, 3) X(pad_right, 3) X(is_digit, 1) X(is_letter, 1)               \
+  X(is_space, 1) X(copy, 1) X(deep_copy, 1) X(sorted, 1) X(get, 3)            \
+  X(sin, 1) X(cos, 1) X(tan, 1) X(asin, 1) X(acos, 1) X(atan, 1)              \
+  X(sinh, 1) X(cosh, 1) X(tanh, 1) X(exp, 1) X(log, 1) X(log10, 1)            \
+  X(log2, 1) X(cbrt, 1) X(degrees, 1) X(radians, 1) X(atan2, 2)               \
+  X(hypot, 2) X(trunc, 1) X(sign, 1) X(is_nan, 1) X(round_to, 2)              \
+  X(clamp, 3) X(gcd, 2) X(lcm, 2) X(bit_and, 2) X(bit_or, 2)                  \
+  X(bit_xor, 2) X(bit_not, 1) X(shift_left, 2) X(shift_right, 2)              \
+  X(sha256, 1) X(hex_encode, 1) X(base64_encode, 1) X(base64_decode, 1)       \
+  X(uuid, 0) X(path_join, 2) X(path_basename, 1) X(path_dirname, 1)           \
+  X(path_extension, 1) X(current_folder, 0) X(os_name, 0) X(file_size, 1)     \
+  X(parse_csv, 1) X(to_csv, 1) X(read_line, 0) X(read_all_input, 0)
+
 #define ENLNG_MORE_BUILTINS(X)                                                \
   X(to_json, 1) X(to_json_pretty, 1) X(from_json, 1) X(regex_match, 2)        \
   X(regex_find, 2) X(regex_find_all, 2) X(regex_groups, 2)                    \
   X(regex_replace, 3) X(regex_split, 2) X(format_time, 2) X(date_parts, 1)    \
   X(make_time, 1) X(is_folder, 1) X(list_folder, 1) X(make_folder, 1)         \
   X(delete_file, 1) X(rename_file, 2) X(run_command, 1) X(http_get, 1)        \
-  X(http_post, 2)
+  X(http_post, 2) ENLNG_MORE_BUILTINS2(X)
 
 /* --- The table of built-ins ---------------------------------------------
    One row per built-in: its name and how many inputs it takes. The

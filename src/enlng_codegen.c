@@ -213,12 +213,46 @@ static void emit_mutation_container(CodeGen *cg, ASTNode *n) {
 
 static void generate_statement(CodeGen *cg, ASTNode *node);
 
-/* prefix + name(arg, arg, ...) */
+static ASTNode *find_user_function(ASTNode *program, const char *name) {
+  if (!program || program->type != AST_PROGRAM)
+    return NULL;
+  for (int i = 0; i < program->as.program.count; i++) {
+    ASTNode *s = program->as.program.statements[i];
+    if (s && s->type == AST_FUNCTION && strcmp(s->as.func_def.name, name) == 0)
+      return s;
+  }
+  return NULL;
+}
+
+/* prefix + name(arg, arg, ...). A function with defaults gets null for the
+ * inputs left out; a call with the wrong number of inputs stops the program
+ * when it runs, as it does in the interpreter. */
 static void emit_direct_call(CodeGen *cg, ASTNode *n, const char *prefix) {
-  emit(cg, "%s%s(", prefix, n->as.call_expr.func_name);
-  for (int i = 0; i < n->as.call_expr.arg_count; i++) {
-    generate_expression(cg, n->as.call_expr.args[i]);
-    if (i < n->as.call_expr.arg_count - 1)
+  const char *fname = n->as.call_expr.func_name;
+  int argc = n->as.call_expr.arg_count;
+  int lo = argc, hi = argc;
+  bool user = strcmp(prefix, "enlng_user_") == 0;
+  if (user) {
+    ASTNode *fn = find_user_function(cg->program, fname);
+    if (fn) {
+      hi = fn->as.func_def.param_count - fn->as.func_def.hidden_count;
+      lo = fn->as.func_def.has_defaults ? fn->as.func_def.min_count : hi;
+    }
+  } else if (builtin_arity(fname) >= 0) {
+    lo = hi = builtin_arity(fname);
+  }
+  if (argc < lo || argc > hi) {
+    emit(cg, "(enlng_wrong_arity_range(\"%s\", %d, %d, %d), enlng_make_null())",
+         fname, lo, hi, argc);
+    return;
+  }
+  emit(cg, "%s%s(", prefix, fname);
+  for (int i = 0; i < hi; i++) {
+    if (i < argc)
+      generate_expression(cg, n->as.call_expr.args[i]);
+    else
+      emit(cg, "enlng_make_null()");
+    if (i < hi - 1)
       emit(cg, ", ");
   }
   emit(cg, ")");
@@ -277,6 +311,9 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     if (!is_known_var(cg, n->as.variable.name) &&
         is_user_function(cg->program, n->as.variable.name))
       emit(cg, "enlng_make_func(\"%s\")", n->as.variable.name);
+    else if (!is_known_var(cg, n->as.variable.name) &&
+             strcmp(n->as.variable.name, "pi") == 0)
+      emit(cg, "enlng_make_float(3.14159265358979323846)");
     else if (!is_known_var(cg, n->as.variable.name) &&
              is_builtin_func(n->as.variable.name))
       emit(cg, "enlng_make_builtin_func(\"%s\")", n->as.variable.name);
@@ -346,7 +383,7 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     break;
 
   case AST_EXPR_REPLACE:
-    emit(cg, "enlng_builtin_replace(");
+    emit(cg, "enlng_phrase_replace(");
     generate_expression(cg, n->as.replace_expr.target);
     emit(cg, ", ");
     generate_expression(cg, n->as.replace_expr.replacement);
@@ -1237,17 +1274,21 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
       continue;
     int pc = stmt->as.func_def.param_count;
     int hc = stmt->as.func_def.hidden_count;
+    int own = pc - hc;
+    int lo = stmt->as.func_def.has_defaults ? stmt->as.func_def.min_count : own;
     const char *shown = stmt->as.func_def.shown ? stmt->as.func_def.shown
                                                 : stmt->as.func_def.name;
     emit(cg, "    if (strcmp(f.as.fn->name, \"%s\") == 0) {\n", stmt->as.func_def.name);
-    emit(cg, "        if (argc != %d) enlng_wrong_arity(\"%s\", %d, argc);\n",
-         pc - hc, shown, pc - hc);
+    emit(cg, "        if (argc < %d || argc > %d) enlng_wrong_arity_range(\"%s\", %d, %d, argc);\n",
+         lo, own, shown, lo, own);
     emit(cg, "        return enlng_user_%s(", stmt->as.func_def.name);
     for (int p = 0; p < pc; p++) {
-      if (p < pc - hc)
+      if (p < lo)
         emit(cg, "a[%d]", p);
+      else if (p < own)
+        emit(cg, "(argc > %d ? a[%d] : enlng_make_null())", p, p);
       else
-        emit(cg, "f.as.fn->caps[%d]", p - (pc - hc));
+        emit(cg, "f.as.fn->caps[%d]", p - own);
       emit(cg, "%s", p < pc - 1 ? ", " : "");
     }
     emit(cg, ");\n    }\n");

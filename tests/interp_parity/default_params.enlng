@@ -1,0 +1,26 @@
+type enlng
+
+function add with x, y as 5:
+    give x plus y
+
+function greet(name, greeting = "Hello"):
+    give greeting + ", " + name
+
+show add(1), " ", add(1, 2), " ", add(1, null)
+show greet("Asha"), " ", greet("Rao", "Hi")
+remember f as function with a, b as 10: a times b
+show f(2), " ", f(2, 3)
+remember g as add
+show g(7), " ", g(7, 7)
+try:
+    show add()
+on error as e:
+    show e
+try:
+    show add(1, 2, 3)
+on error as e:
+    show e
+try:
+    show g(1, 2, 3)
+on error as e:
+    show e
