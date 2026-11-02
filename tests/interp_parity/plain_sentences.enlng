@@ -77,8 +77,9 @@ function half with value:
     check that value is a number
     give value divided by 2
 show half(8)
+remember answers as ["eight"]
 try:
-    show half("eight")
+    show half(answers[0])
 on error as problem:
     show problem
 show 5 is a whole number, 2.5 is a whole number, 2.5 is a decimal, "x" is a text

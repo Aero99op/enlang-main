@@ -84,7 +84,9 @@ static char* read_file_string(const char* filepath) {
 }
 
 static void print_human_error_c(const char* filepath, const char* source, int target_line, const char* raw_msg) {
-    fprintf(stderr, "\n-- Enlang SyntaxError ---------------------------------------------------\n");
+    int kind_error = strstr(raw_msg, "' checks that its input '") != NULL;
+    fprintf(stderr, kind_error ? "\n-- Enlang KindError -----------------------------------------------------\n"
+                               : "\n-- Enlang SyntaxError ---------------------------------------------------\n");
     fprintf(stderr, "Location: %s:%d\n\n", filepath, target_line > 0 ? target_line : 1);
 
     if (source && target_line > 0) {
@@ -173,6 +175,11 @@ static void print_human_error_c(const char* filepath, const char* source, int ta
         fprintf(stderr, "Suggestions:\n");
         fprintf(stderr, "  * Declare it with 'remember' if the value has to change.\n");
         fprintf(stderr, "  * Use a different name for the new value.\n");
+    } else if (kind_error) {
+        fprintf(stderr, "Why:  The kind of this value is clear before the program runs, and it is not the kind the function checks for. Nothing was run.\n\n");
+        fprintf(stderr, "Suggestions:\n");
+        fprintf(stderr, "  * Give the function a value of the kind it checks for.\n");
+        fprintf(stderr, "  * Text that holds a number can be changed with to_number(...).\n");
     } else if (strstr(raw_msg, "type enlng") != NULL) {
         fprintf(stderr, "Why:  Sovereign native Enlang compilation units must declare domain type on line 1.\n\n");
         fprintf(stderr, "Suggestions:\n");

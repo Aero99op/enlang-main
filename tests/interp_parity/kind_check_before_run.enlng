@@ -1,0 +1,10 @@
+type enlng
+
+# The wrong kind is clear before the program runs, so nothing is shown
+# and the program ends with an error.
+show "this line must not show"
+function half with value:
+    check that value is a number
+    give value divided by 2
+remember word as "eight"
+show half(word)

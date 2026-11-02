@@ -1,0 +1,34 @@
+type enlng
+
+# Kinds that can only be known while the program runs are not reported
+# before it runs: each wrong one here is caught by try instead.
+function half with value:
+    check that value is a number
+    give value divided by 2
+
+function area with width, height as 1:
+    check that width is a whole number
+    check that height is a number
+    give width times height
+
+show half(8), half(2.5), half(f"{3}" if false otherwise 4)
+remember changing as 1
+changing = "one"
+for each v in [6, "six", changing]:
+    try:
+        show half(v)
+    on error as problem:
+        show problem
+show area(3), area(4, null), area(height as 2, width as 5)
+remember w as 7
+show area(w, 2)
+
+# a function that only checks after doing something else
+function late with value:
+    show "before the check"
+    check that value is a number
+    give value
+try:
+    show late("x")
+on error as problem:
+    show problem

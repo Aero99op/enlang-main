@@ -4,8 +4,8 @@
 
 **Built and tested** in both `enlng run` and `enlng run --native`, with identical output:
 
-- 1–7 and 9–15 (`when the color is:`, `if ... otherwise`, `is in`, power, taking apart, list building, inputs by name, `stop the program`, tests, `run together:`, bytes, web server, network, big whole numbers)
-- 8: `check that x is a number` works while the program runs. Reporting a wrong kind before the program runs is **not built yet**.
+- 1–15 (`when the color is:`, `if ... otherwise`, `is in`, power, taking apart, list building, inputs by name, kinds, `stop the program`, tests, `run together:`, bytes, web server, network, big whole numbers)
+- 8: `check that x is a number` works while the program runs. A call whose value has a kind clear from the file alone (written out, or a top-level name remembered once from one) is reported before the program runs.
 - Tools: interactive mode (`enlng`) and `enlng test`
 
 **Not built yet:**

@@ -4340,6 +4340,211 @@ static void resolve_named_inputs(Parser *p, ASTNode *prog) {
     named_slot(&prog->as.program.statements[i], &c);
 }
 
+/* ---------------------------------------------------------------------
+ * Kinds known before the program runs
+ *
+ * `check that value is a number` at the start of a function says what kind
+ * of value each call must give. When a call gives a value whose kind is
+ * clear from the file alone (written out, or a top-level name remembered
+ * once from such a value), a wrong kind is reported before anything runs.
+ * Every other value is still checked while the program runs.
+ * ------------------------------------------------------------------ */
+typedef struct {
+  NameSet seen, twice;    /* names given a value anywhere, and more than once */
+  NameSet names;          /* top-level names remembered once, with a known kind */
+  const char **kinds;     /* the kind of each of those */
+  int nkinds, capkinds;
+} KindCtx;
+
+/* Notes every name that gets a value anywhere in the program. */
+static void kind_note(KindCtx *k, const char *name) {
+  if (!name)
+    return;
+  if (ns_has(&k->seen, name))
+    ns_add(&k->twice, name);
+  else
+    ns_add(&k->seen, name);
+}
+
+static void kind_assign_slot(ASTNode **slot, void *ctx) {
+  ASTNode *n = *slot;
+  KindCtx *k = (KindCtx *)ctx;
+  if (!n)
+    return;
+  switch (n->type) {
+  case AST_DECLARATION: kind_note(k, n->as.decl.name); break;
+  case AST_MUTATION: kind_note(k, n->as.mutation.name); break;
+  case AST_FOR_RANGE: kind_note(k, n->as.for_range.var_name); break;
+  case AST_FOR_PAIR: kind_note(k, n->as.for_pair.pair_name); break;
+  case AST_FOR_EACH: kind_note(k, n->as.for_each.item_name); break;
+  case AST_TRY: kind_note(k, n->as.try_stmt.err_name); break;
+  case AST_ASK: kind_note(k, n->as.ask_stmt.var_name); break;
+  case AST_SWAP:
+    kind_note(k, n->as.swap_stmt.pair_name);
+    if (n->as.swap_stmt.left && n->as.swap_stmt.left->type == AST_EXPR_VARIABLE)
+      kind_note(k, n->as.swap_stmt.left->as.variable.name);
+    if (n->as.swap_stmt.right && n->as.swap_stmt.right->type == AST_EXPR_VARIABLE)
+      kind_note(k, n->as.swap_stmt.right->as.variable.name);
+    break;
+  case AST_FUNCTION:
+    kind_note(k, n->as.func_def.name);
+    for (int i = 0; i < n->as.func_def.param_count; i++)
+      kind_note(k, n->as.func_def.params[i]);
+    break;
+  default: break;
+  }
+  ast_each_child(n, kind_assign_slot, ctx);
+}
+
+static bool kind_fits(const char *have, const char *want);
+
+/* The kind a value surely has, or NULL when only running it can tell. */
+static const char *known_kind(ASTNode *e, KindCtx *k) {
+  if (!e)
+    return NULL;
+  switch (e->type) {
+  case AST_EXPR_LITERAL_INT: return "whole number";
+  case AST_EXPR_LITERAL_FLOAT: return "decimal";
+  case AST_EXPR_LITERAL_STRING: return "text";
+  case AST_EXPR_LITERAL_BOOL: return "true/false";
+  case AST_EXPR_LIST_LITERAL: return "list";
+  case AST_EXPR_MAP_LITERAL: return "map";
+  case AST_EXPR_LAMBDA: return "function";
+  case AST_EXPR_CALL:
+    return e->as.call_expr.func_name && strcmp(e->as.call_expr.func_name, "to_text") == 0 &&
+                   !ns_has(&k->seen, "to_text")
+               ? "text"
+               : NULL;
+  case AST_EXPR_BINARY: {
+    /* text joined to text or a number, as f"..." makes */
+    const char *l = known_kind(e->as.binary_expr.left, k);
+    const char *r = known_kind(e->as.binary_expr.right, k);
+    if (e->as.binary_expr.op != ENLNG_TOKEN_ADD || !l || !r)
+      return NULL;
+    bool lt = strcmp(l, "text") == 0, rt = strcmp(r, "text") == 0;
+    return (lt && (rt || kind_fits(r, "number"))) || (rt && kind_fits(l, "number")) ? "text" : NULL;
+  }
+  case AST_EXPR_VARIABLE:
+    for (int i = 0; i < k->nkinds; i++)
+      if (strcmp(k->names.v[i], e->as.variable.name) == 0)
+        return k->kinds[i];
+    return NULL;
+  default: return NULL;
+  }
+}
+
+/* Does a value of kind `have` pass `check that it is a <want>`? */
+static bool kind_fits(const char *have, const char *want) {
+  if (strcmp(want, "number") == 0)
+    return strcmp(have, "whole number") == 0 || strcmp(have, "decimal") == 0;
+  return strcmp(have, want) == 0;
+}
+
+static const char *kind_words(const char *kind) {
+  if (strcmp(kind, "text") == 0 || strcmp(kind, "true/false") == 0)
+    return kind;
+  if (strcmp(kind, "whole number") == 0)
+    return "a whole number";
+  if (strcmp(kind, "number") == 0)
+    return "a number";
+  if (strcmp(kind, "decimal") == 0)
+    return "a decimal";
+  if (strcmp(kind, "list") == 0)
+    return "a list";
+  if (strcmp(kind, "map") == 0)
+    return "a map";
+  return "a function";
+}
+
+/* The kind `check that <input> is a <kind>` asks of one input, when the
+ * statement is such a check. */
+static const char *kind_check_of(ASTNode *st, ASTNode *fn, int *param) {
+  if (!st || st->type != AST_WHEN || st->as.when_stmt.else_count != 0 ||
+      st->as.when_stmt.then_count != 1 || st->as.when_stmt.then_body[0]->type != AST_FAIL)
+    return NULL;
+  ASTNode *c = st->as.when_stmt.condition;
+  if (!c || c->type != AST_EXPR_UNARY || c->as.unary_expr.op != ENLNG_TOKEN_NOT)
+    return NULL;
+  c = c->as.unary_expr.operand;
+  if (!c || c->type != AST_EXPR_CALL || strcmp(c->as.call_expr.func_name, "is_kind") != 0 ||
+      c->as.call_expr.arg_count != 2 || c->as.call_expr.args[0]->type != AST_EXPR_VARIABLE ||
+      c->as.call_expr.args[1]->type != AST_EXPR_LITERAL_STRING)
+    return NULL;
+  for (int i = 0; i < fn->as.func_def.param_count; i++)
+    if (strcmp(fn->as.func_def.params[i], c->as.call_expr.args[0]->as.variable.name) == 0) {
+      *param = i;
+      return c->as.call_expr.args[1]->as.literal.string_val;
+    }
+  return NULL;
+}
+
+typedef struct {
+  Parser *p;
+  ASTNode *prog;
+  KindCtx *k;
+} KindCallCtx;
+
+static void kind_call_slot(ASTNode **slot, void *ctx) {
+  ASTNode *n = *slot;
+  KindCallCtx *c = (KindCallCtx *)ctx;
+  if (!n || c->p->has_error)
+    return;
+  ast_each_child(n, kind_call_slot, ctx);
+  if (n->type != AST_EXPR_CALL || !n->as.call_expr.func_name ||
+      ns_has(&c->k->twice, n->as.call_expr.func_name))
+    return;
+  ASTNode *fn = find_top_function(c->prog, n->as.call_expr.func_name);
+  if (!fn)
+    return;
+  /* the checks at the start of the function run before anything else in it,
+     after the inputs left out are given their defaults */
+  int first = fn->as.func_def.has_defaults ? fn->as.func_def.param_count - fn->as.func_def.min_count : 0;
+  for (int s = first; s < fn->as.func_def.body_count && !c->p->has_error; s++) {
+    int at = -1;
+    const char *want = kind_check_of(fn->as.func_def.body[s], fn, &at);
+    if (!want)
+      break;
+    if (at >= n->as.call_expr.arg_count)
+      continue;
+    const char *have = known_kind(n->as.call_expr.args[at], c->k);
+    if (!have || kind_fits(have, want))
+      continue;
+    char msg[500];
+    snprintf(msg, sizeof(msg),
+             "'%s' checks that its input '%s' is %s, but this gives it %s.",
+             fn->as.func_def.name, fn->as.func_def.params[at], kind_words(want),
+             kind_words(have));
+    set_error(c->p, msg, n->line);
+  }
+}
+
+static void check_kinds(Parser *p, ASTNode *prog) {
+  KindCtx k = {0};
+  for (int i = 0; i < prog->as.program.count; i++)
+    kind_assign_slot(&prog->as.program.statements[i], &k);
+  for (int i = 0; i < prog->as.program.count; i++) {
+    ASTNode *s = prog->as.program.statements[i];
+    if (s->type != AST_DECLARATION || ns_has(&k.twice, s->as.decl.name))
+      continue;
+    const char *kind = known_kind(s->as.decl.init_expr, &k);
+    if (!kind)
+      continue;
+    ns_add(&k.names, s->as.decl.name);
+    if (k.nkinds >= k.capkinds) {
+      k.capkinds = k.capkinds ? k.capkinds * 2 : 16;
+      k.kinds = (const char **)realloc((void *)k.kinds, sizeof(char *) * (size_t)k.capkinds);
+    }
+    k.kinds[k.nkinds++] = kind;
+  }
+  KindCallCtx c = {p, prog, &k};
+  for (int i = 0; i < prog->as.program.count && !p->has_error; i++)
+    kind_call_slot(&prog->as.program.statements[i], &c);
+  free(k.seen.v);
+  free(k.twice.v);
+  free(k.names.v);
+  free((void *)k.kinds);
+}
+
 ASTNode *parser_parse_program(Parser *p) {
   bool outer = (g_parse_depth == 0);
   if (outer)
@@ -4358,6 +4563,8 @@ ASTNode *parser_parse_program(Parser *p) {
     resolve_named_inputs(p, prog);
   if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)
     check_duplicate_functions(p, prog);
+  if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)
+    check_kinds(p, prog);
   if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)
     lift_program(prog);
   if (outer) {
