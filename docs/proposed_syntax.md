@@ -6,11 +6,12 @@
 
 - 1–15 (`when the color is:`, `if ... otherwise`, `is in`, power, taking apart, list building, inputs by name, kinds, `stop the program`, tests, `run together:`, bytes, web server, network, big whole numbers)
 - 8: `check that x is a number` works while the program runs. A call whose value has a kind clear from the file alone (written out, or a top-level name remembered once from one) is reported before the program runs.
-- Tools: interactive mode (`enlng`) and `enlng test`
+- Tools: interactive mode (`enlng`), `enlng test`, packages (`enlng add`, `install`, `remove`, `packages`, then `use "name"`), the debugger (`enlng debug`) and editor help (`enlng lsp`)
 
 **Not built yet:**
 
-- Editor help, debugger, packages, release
+- Release: the version bump and the merge into main (done by the owner)
+- The VS Code extension does not use `enlng lsp` yet, and the debugger has no editor integration (it is a terminal debugger)
 
 Every Enlng line is a short English sentence made of three kinds of words:
 
@@ -240,10 +241,10 @@ show 2 to the power of 100      # 1267650600228229401496703205376
 
 - **Interactive mode:** type `enlng` with no file, then write lines one by one.
 - **Tests:** `enlng test` runs every file ending in `_test.enlng`.
-- **Editor help:** errors underlined while typing, completion, hover help and go to definition, in VS Code and Enlangg Studio.
-- **Debugger:** click a line in the editor to stop there and see the values.
-- **Packages:** `enlngm add charts`, then `use "charts"`.
-- **Release:** a new version, so the installed `enlng` (4.0.0 today) is replaced.
+- **Editor help:** `enlng lsp` speaks LSP: mistakes while typing, completion, hover help, go to definition and the outline of a file. Any editor with LSP support can use it.
+- **Debugger:** `enlng debug file.enlng` steps through a program in the terminal, with breakpoints, `print` of any expression, `vars` and `where`.
+- **Packages:** `enlng add ../shared/charts` (a folder, a file or a git address), then `use "charts"`. `enlng install` brings back everything listed in `enlng_packages.txt`.
+- **Release:** a new version, so the installed `enlng` is replaced.
 
 ---
 

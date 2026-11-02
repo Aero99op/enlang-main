@@ -1,0 +1,110 @@
+# Packages, the Debugger and Editor Help
+
+Three tools go with the language. Packages let you share code between programs. The debugger runs a program one statement at a time. Editor help shows mistakes while you type. None of them add anything to the language itself, except that `use` now also accepts the name of a package.
+
+## Packages
+
+A package is a folder with a file called `main.enlng` in it, or a single `.enlng` file. `enlng add` copies it into a folder called `enlng_packages` next to your program:
+
+::: sh
+$ enlng add ../shared/geometry
+Installed 'geometry'. Use it with:  use "geometry"
+$ enlng add ../shared/greeter.enlng
+Installed 'greeter'. Use it with:  use "greeter"
+:::
+
+The source can be a folder, a file, or a git address (`https://...`, `git@...` or `file://...`). A second word gives the package another name: `enlng add ../shared/geometry shapes`. Git addresses are fetched with the `git` program, which must be installed.
+
+Then `use` takes the name, with no `.enlng` and no folder:
+
+::: src
+type enlng
+
+use "geometry"
+use "greeter"
+
+show circle_area(2)
+show hello("Asha")
+:::
+
+Enlng looks for a file with that name first. When there is none, it looks for `enlng_packages/name.enlng`, then `enlng_packages/name/main.enlng`, in the folder of the program and in each folder above it. The folder named by the `ENLNG_PACKAGES` environment variable is looked at last. A package can use its own files with `use "helpers.enlng"`, and those are found next to its `main.enlng`.
+
+Every package you add is written to `enlng_packages.txt`, one per line with the place it came from. Keep that file with your program. On another computer, or after deleting the folder, one command brings everything back:
+
+::: sh
+$ enlng install
+Installed 'geometry'. Use it with:  use "geometry"
+Installed 'greeter'. Use it with:  use "greeter"
+2 packages installed, 0 failed.
+:::
+
+`enlng packages` lists what is installed, and `enlng remove greeter` takes one away. A name may only have letters, digits, `_`, `-` and `.`. A folder without `main.enlng` is refused, so a package that cannot be used is never left behind.
+
+A package is the code of someone else, and `use` runs it with the same power as your own code. Only add packages you trust.
+
+## The debugger
+
+`enlng debug file.enlng` stops before the first statement and waits for a command:
+
+::: sh
+$ enlng debug total.enlng
+Debugging total.enlng. Type help to see the commands.
+
+->   7 | remember total as 0
+(debug) next
+
+->   8 | for each size in [2, 3]:
+(debug) next
+
+->   9 |     total = total plus area(size, 4)
+(debug) step
+
+->   4 |     remember result as width times height
+(debug) print width plus 1
+width plus 1 = 3  (a number)
+(debug) where
+  area (called from line 9)
+  the top of the program
+(debug) continue
+20
+:::
+
+| Command | What it does |
+|---|---|
+| `step`, `s` | Run the next statement, going into the functions it calls |
+| `next`, `n` | Run the next statement, going over the functions it calls |
+| `out`, `o` | Run until the current function gives back its value |
+| `continue`, `c` | Run until a breakpoint, or the end |
+| `break 12`, `break area` | Stop at line 12, or at the start of the function `area` |
+| `breaks`, `delete 12` | List the breakpoints, or remove the one at line 12 |
+| `print total`, `p` | Show the value of a name or of any expression, with its kind |
+| `vars` | Show every name and value here, and the ones at the top of the program |
+| `where`, `w` | Show the calls that led here |
+| `list`, `l` | Show the lines around this one |
+| `quit`, `q` | End the program |
+
+`enlng debug file.enlng --break 12` starts with a breakpoint already set. A mistake in `print` is only reported; the debugger goes on. When there are no more commands to read (the input ended), the program simply runs to the end.
+
+Functions from other files, such as a `use`d file or a package, are run through without stopping, because their lines are not lines of the file on the screen. The debugger reads its commands from the same keyboard as `ask`, so a program that asks for input shares it. It works with the built-in interpreter only, not with `--native`. Only the main flow of the program is followed: the lines of a `run together:` block run without stopping.
+
+## Editor help
+
+`enlng lsp` is a small server for the Language Server Protocol. An editor starts it and talks to it; you do not run it yourself. It gives:
+
+- **Mistakes while you type.** They are the same ones `enlng run` reports, including a call that gives a function the wrong kind of value. The file is read again when you press Enter or save, not on every key.
+- **Hover.** On a word of the language it explains it. On a function or class of your file it shows the line that makes it.
+- **Finishing words.** Names from your file, built-in functions and the words of the language.
+- **Go to definition** for functions, classes and names made at the top of the file, and **the outline** of the file.
+
+To use it in an editor that supports LSP, set the server command to `enlng lsp` for files ending in `.enlng`. In Neovim, for example:
+
+::: sh
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "enlng",
+  callback = function()
+    vim.lsp.start({ name = "enlng", cmd = { "enlng", "lsp" } })
+  end,
+})
+:::
+
+The server reads a file's own lines to find names, so it knows the functions and names written in that file, not those of a `use`d file or package. The VS Code extension in `vscode-enlang` does not use this server yet.

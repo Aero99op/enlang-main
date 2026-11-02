@@ -3893,18 +3893,69 @@ static void use_set_dir(const char *file) {
 
 void parser_set_source_file(const char *path) { use_set_dir(path ? path : ""); }
 
+static bool use_exists(const char *path) {
+  FILE *f = fopen(path, "rb");
+  if (!f)
+    return false;
+  fclose(f);
+  return true;
+}
+
+/* `use "mathx"`: a package installed with `enlng add`. It is looked for in
+ * the folder enlng_packages next to the program, then in each folder above
+ * it, then in the folder named by ENLNG_PACKAGES. A package is a file
+ * name.enlng or a folder name with main.enlng (or name.enlng) inside. */
+static bool pkg_find(const char *name, char *found, size_t sz) {
+  if (!name[0] || strstr(name, "..") || name[0] == '/' || name[0] == '\\' || strchr(name, ':'))
+    return false;
+  char up[256] = "";
+  const char *dir = g_src_dir[0] ? g_src_dir : "./";
+  for (int level = 0; level < 8; level++) {
+    const char *forms[3] = {"%s%senlng_packages/%s.enlng", "%s%senlng_packages/%s/main.enlng",
+                            "%s%senlng_packages/%s/%s.enlng"};
+    for (int k = 0; k < 3; k++) {
+      if (k == 2)
+        snprintf(found, sz, forms[k], dir, up, name, name);
+      else
+        snprintf(found, sz, forms[k], dir, up, name);
+      if (use_exists(found))
+        return true;
+    }
+    if (strlen(up) + 4 < sizeof(up))
+      strcat(up, "../");
+  }
+  const char *env = getenv("ENLNG_PACKAGES");
+  if (env && *env) {
+    const char *forms[3] = {"%s/%s.enlng", "%s/%s/main.enlng", "%s/%s/%s.enlng"};
+    for (int k = 0; k < 3; k++) {
+      if (k == 2)
+        snprintf(found, sz, forms[k], env, name, name);
+      else
+        snprintf(found, sz, forms[k], env, name);
+      if (use_exists(found))
+        return true;
+    }
+  }
+  return false;
+}
+
 static char *use_read(const char *name, char *found, size_t sz) {
   bool absolute = name[0] == '/' || name[0] == '\\' || (name[0] && name[1] == ':');
   if (!absolute && g_src_dir[0]) {
     snprintf(found, sz, "%s%s", g_src_dir, name);
-    FILE *f = fopen(found, "rb");
-    if (f) {
-      fclose(f);
+    if (use_exists(found))
       return enlng_read_file_string(found);
-    }
   }
   snprintf(found, sz, "%s", name);
-  return enlng_read_file_string(name);
+  /* a file here, or one of the standard library files (lib_math.enlng, ...) */
+  char *src = enlng_read_file_string(name);
+  if (src)
+    return src;
+  /* not a file: a name such as "mathx" may be an installed package */
+  if (!absolute && pkg_find(name, found, sz))
+    return enlng_read_file_string(found);
+  snprintf(found, sz, "%s", name);
+  return NULL;
 }
 
 /* Names made by the language itself (class methods and helpers) have a
@@ -4146,9 +4197,14 @@ static ASTNode *parser_parse_program_inner(Parser *p) {
           lexer_free(&sub_lexer);
           free(sub_src);
         } else {
-          char err[256];
-          snprintf(err, sizeof(err), "Could not load imported file: %s",
-                   stmt->as.use_stmt.filename);
+          char err[400];
+          const char *fname = stmt->as.use_stmt.filename;
+          if (strpbrk(fname, "./\\"))
+            snprintf(err, sizeof(err), "Could not load imported file: %s", fname);
+          else /* a bare name such as "charts" is a package */
+            snprintf(err, sizeof(err),
+                     "There is no package called '%s'. Install it first with: "
+                     "enlng add <folder, file or git address>", fname);
           set_error(p, err, stmt->line);
         }
         continue;

@@ -242,6 +242,270 @@ static ASTNode *ifind_func(Interp *it, const char *name) {
   return NULL;
 }
 
+static Interp *g_main_interp;
+
+/* ---------------------------------------------------------------------
+ * Debugger: `enlng debug file.enlng`
+ *
+ * Stops before a statement of the main thread, shows its line, and reads
+ * commands from the keyboard. Functions that come from another file
+ * (a `use`d file or the list helpers) are run through without stopping,
+ * because their lines are not lines of the file being debugged.
+ * ------------------------------------------------------------------ */
+typedef struct {
+  const char *name;
+  int line; /* where it was called from */
+} DbgCall;
+
+static struct {
+  bool on;
+  int mode;  /* 0 go on to a breakpoint, 1 step, 2 next, 3 out */
+  int depth; /* the call depth step/next/out is measured from */
+  int breaks[64];
+  int nbreaks;
+  ASTNode *last;
+  int last_line, last_depth;
+  DbgCall calls[256];
+  int ncalls;
+  int nforeign; /* calls running now that belong to another file */
+} g_dbg;
+
+void enlng_debug_setup(const int *breaks, int n) {
+  g_dbg.on = true;
+  g_dbg.mode = 1;
+  g_dbg.last_line = -1;
+  for (int i = 0; i < n && g_dbg.nbreaks < 64; i++)
+    g_dbg.breaks[g_dbg.nbreaks++] = breaks[i];
+}
+
+static const char *dbg_source_line(const char *src, int line, int *len) {
+  const char *p = src ? src : "";
+  for (int l = 1; l < line && *p; p++)
+    if (*p == '\n')
+      l++;
+  const char *e = p;
+  while (*e && *e != '\n' && *e != '\r')
+    e++;
+  *len = (int)(e - p);
+  return p;
+}
+
+static void dbg_show_line(Interp *it, int line, bool arrow) {
+  int len;
+  const char *t = dbg_source_line(it->source, line, &len);
+  printf("%s%3d | %.*s\n", arrow ? "-> " : "   ", line, len, t);
+}
+
+/* A function belongs to the debugged file when its own name is on the
+   line it says it starts on. */
+static bool dbg_own_function(Interp *it, ASTNode *fn, const char *name) {
+  if (strstr(name, "__"))
+    return true; /* made by the language from a line of this file */
+  int len;
+  const char *t = dbg_source_line(it->source, fn->line, &len);
+  size_t nl = strlen(name);
+  for (int i = 0; i + (int)nl <= len; i++)
+    if (strncmp(t + i, name, nl) == 0)
+      return true;
+  return false;
+}
+
+static void dbg_print_value(const char *label, EnlngVal v) {
+  printf("%s = ", label);
+  enlng_print_val(v);
+  printf("  (%s)\n", enlng_kind(v));
+}
+
+/* Works out an expression typed at the prompt, in the frame stopped at. */
+static void dbg_eval(Interp *it, IFrame *f, const char *text) {
+  size_t n = strlen(text) + 64;
+  char *src = (char *)malloc(n);
+  snprintf(src, n, "type enlng\nremember debug_value as %s\n", text);
+  Lexer lx;
+  lexer_init(&lx, src);
+  lexer_tokenize(&lx);
+  Parser ps;
+  parser_init(&ps, lx.tokens, lx.token_count);
+  ASTNode *prog = parser_parse_program(&ps);
+  if (ps.has_error || !prog || prog->as.program.count < 1 ||
+      prog->as.program.statements[0]->type != AST_DECLARATION) {
+    printf("That is not a value I can work out.\n");
+    return;
+  }
+  ASTNode *expr = prog->as.program.statements[0]->as.decl.init_expr;
+  int saved_line = it->line;
+  int saved_tmp = it->ntmp;
+  int saved_depth = enlng_try_stack.eg_depth;
+  EnlngVal v = enlng_make_null();
+  bool bad = false;
+  if (saved_depth < ENLNG_MAX_TRY - 1) {
+    enlng_try_stack.eg_depth = saved_depth + 1;
+    if (setjmp(enlng_try_stack.eg_jb[saved_depth]) == 0) {
+      v = ieval(it, f, expr);
+    } else {
+      printf("Problem: %s\n", enlng_try_stack.eg_msg);
+      bad = true;
+    }
+    enlng_try_stack.eg_depth = saved_depth;
+  }
+  if (it->failed) {
+    printf("Problem: %s\n", it->err);
+    it->failed = false;
+    bad = true;
+  }
+  it->ntmp = saved_tmp;
+  it->line = saved_line;
+  if (!bad)
+    dbg_print_value(text, v);
+}
+
+static void dbg_help(void) {
+  printf("  step, s          run the next statement, going into calls\n"
+         "  next, n          run the next statement, going over calls\n"
+         "  out, o           run until the current function gives back\n"
+         "  continue, c      run until a breakpoint\n"
+         "  break N          stop at line N (or at a function: break area)\n"
+         "  breaks           list the breakpoints\n"
+         "  delete N         remove the breakpoint at line N\n"
+         "  print EXPR, p    show the value of a name or expression\n"
+         "  vars             show the names and values here\n"
+         "  where, w         show the calls that led here\n"
+         "  list, l          show the lines around this one\n"
+         "  quit, q          end the program\n");
+}
+
+static void dbg_vars(Interp *it, IFrame *f) {
+  for (int i = 0; i < f->n; i++)
+    if (!strstr(f->v[i].name, "__"))
+      dbg_print_value(f->v[i].name, f->v[i].val);
+  if (it->globals && f != it->globals) {
+    printf("-- at the top of the program --\n");
+    for (int i = 0; i < it->globals->n; i++)
+      if (!strstr(it->globals->v[i].name, "__"))
+        dbg_print_value(it->globals->v[i].name, it->globals->v[i].val);
+  }
+}
+
+static void dbg_stop(Interp *it, IFrame *f, ASTNode *n) {
+  fflush(stdout);
+  printf("\n");
+  dbg_show_line(it, n->line, true);
+  char buf[512];
+  for (;;) {
+    printf("(debug) ");
+    fflush(stdout);
+    if (!fgets(buf, sizeof(buf), stdin)) {
+      g_dbg.on = false; /* no more commands: let the program finish */
+      return;
+    }
+    size_t l = strlen(buf);
+    while (l > 0 && (buf[l - 1] == '\n' || buf[l - 1] == '\r' || buf[l - 1] == ' '))
+      buf[--l] = '\0';
+    char *cmd = buf;
+    while (*cmd == ' ')
+      cmd++;
+    char *arg = cmd;
+    while (*arg && *arg != ' ')
+      arg++;
+    if (*arg) {
+      *arg++ = '\0';
+      while (*arg == ' ')
+        arg++;
+    }
+    if (!*cmd)
+      continue;
+    if (!strcmp(cmd, "step") || !strcmp(cmd, "s")) {
+      g_dbg.mode = 1;
+      return;
+    }
+    if (!strcmp(cmd, "next") || !strcmp(cmd, "n")) {
+      g_dbg.mode = 2;
+      g_dbg.depth = it->depth;
+      return;
+    }
+    if (!strcmp(cmd, "out") || !strcmp(cmd, "o")) {
+      g_dbg.mode = 3;
+      g_dbg.depth = it->depth;
+      return;
+    }
+    if (!strcmp(cmd, "continue") || !strcmp(cmd, "c")) {
+      g_dbg.mode = 0;
+      return;
+    }
+    if (!strcmp(cmd, "quit") || !strcmp(cmd, "q")) {
+      fflush(stdout);
+      exit(0);
+    }
+    if (!strcmp(cmd, "help") || !strcmp(cmd, "h")) {
+      dbg_help();
+    } else if (!strcmp(cmd, "break") || !strcmp(cmd, "b")) {
+      int line = atoi(arg);
+      if (!line && *arg) {
+        ASTNode *fn = ifind_func(it, arg);
+        line = fn ? fn->line : 0;
+        if (!fn)
+          printf("There is no function called '%s'.\n", arg);
+      }
+      if (line > 0 && g_dbg.nbreaks < 64) {
+        g_dbg.breaks[g_dbg.nbreaks++] = line;
+        printf("Will stop at line %d.\n", line);
+      } else if (line <= 0 && !*arg) {
+        printf("Give a line number, for example: break 12\n");
+      }
+    } else if (!strcmp(cmd, "breaks")) {
+      if (!g_dbg.nbreaks)
+        printf("No breakpoints.\n");
+      for (int i = 0; i < g_dbg.nbreaks; i++)
+        dbg_show_line(it, g_dbg.breaks[i], false);
+    } else if (!strcmp(cmd, "delete") || !strcmp(cmd, "d")) {
+      int line = atoi(arg), k = 0;
+      for (int i = 0; i < g_dbg.nbreaks; i++)
+        if (g_dbg.breaks[i] != line)
+          g_dbg.breaks[k++] = g_dbg.breaks[i];
+      printf(k < g_dbg.nbreaks ? "Removed.\n" : "No breakpoint at line %d.\n", line);
+      g_dbg.nbreaks = k;
+    } else if (!strcmp(cmd, "print") || !strcmp(cmd, "p")) {
+      if (*arg)
+        dbg_eval(it, f, arg);
+      else
+        printf("Give a name or expression, for example: print total\n");
+    } else if (!strcmp(cmd, "vars") || !strcmp(cmd, "v")) {
+      dbg_vars(it, f);
+    } else if (!strcmp(cmd, "where") || !strcmp(cmd, "w")) {
+      for (int i = g_dbg.ncalls - 1; i >= 0; i--)
+        printf("  %s (called from line %d)\n", g_dbg.calls[i].name, g_dbg.calls[i].line);
+      printf("  the top of the program\n");
+    } else if (!strcmp(cmd, "list") || !strcmp(cmd, "l")) {
+      for (int ln = n->line - 3; ln <= n->line + 3; ln++)
+        if (ln >= 1)
+          dbg_show_line(it, ln, ln == n->line);
+    } else {
+      printf("I don't know '%s'. Type help to see the commands.\n", cmd);
+    }
+  }
+}
+
+static void dbg_check(Interp *it, IFrame *f, ASTNode *n) {
+  if (!g_dbg.on || it != g_main_interp || g_dbg.nforeign > 0 || n->line <= 0)
+    return;
+  int depth = it->depth;
+  /* a line that was split into several statements stops once */
+  bool same_line = n != g_dbg.last && n->line == g_dbg.last_line && depth == g_dbg.last_depth;
+  g_dbg.last = n;
+  g_dbg.last_line = n->line;
+  g_dbg.last_depth = depth;
+  if (same_line)
+    return;
+  bool hit = g_dbg.mode == 1 || (g_dbg.mode == 2 && depth <= g_dbg.depth) ||
+             (g_dbg.mode == 3 && depth < g_dbg.depth);
+  for (int i = 0; i < g_dbg.nbreaks && !hit; i++)
+    if (g_dbg.breaks[i] == n->line)
+      hit = true;
+  if (hit)
+    dbg_stop(it, f, n);
+  g_dbg.last_line = n->line;
+}
+
 /* Runs a function of the program. nargs inputs were given; ncap values an
  * inner function kept follow them. An input left out takes its default. */
 static EnlngVal irun_func(Interp *it, ASTNode *fn, const char *name,
@@ -275,6 +539,16 @@ static EnlngVal irun_func(Interp *it, ASTNode *fn, const char *name,
   bool *saved_sorted = it->sorted;
   it->sorted = NULL;
   it->depth++;
+  bool dbg_tracked = g_dbg.on && it == g_main_interp;
+  if (dbg_tracked) {
+    if (g_dbg.ncalls < 256) {
+      g_dbg.calls[g_dbg.ncalls].name = name;
+      g_dbg.calls[g_dbg.ncalls].line = line;
+    }
+    g_dbg.ncalls++;
+    if (!dbg_own_function(it, fn, name))
+      g_dbg.nforeign++;
+  }
   ipush_frame(it, &nf);
   int count = fn->as.func_def.body_count;
   for (int b = 0; b < count && !it->failed; b++) {
@@ -290,6 +564,11 @@ static EnlngVal irun_func(Interp *it, ASTNode *fn, const char *name,
     }
   }
   it->depth--;
+  if (dbg_tracked) {
+    g_dbg.ncalls--;
+    if (g_dbg.ncalls < 256 && g_dbg.nforeign > 0 && !dbg_own_function(it, fn, name))
+      g_dbg.nforeign--;
+  }
   it->sorted = saved_sorted;
   it->nframes = frame_base;
   if (nf.owned)
@@ -666,6 +945,8 @@ static int iexec(Interp *it, IFrame *f, ASTNode *n) {
   if (!n || it->failed)
     return EX_OK;
   it->line = n->line;
+  if (g_dbg.on)
+    dbg_check(it, f, n);
   if (enlng_gc_due())
     igc(it);
 
@@ -1034,7 +1315,7 @@ typedef struct {
 /* The runtime calls a function value through this (serve calls the
  * program's function for each request). */
 static ENLNG_TLS Interp *g_hook_interp = NULL;
-static Interp *g_main_interp = NULL;
+static Interp *g_main_interp;
 
 /* A line of run together, in its own thread with its own Interp. */
 static EnlngVal interp_thread_call(EnlngVal f, char *err, size_t errsz, int *failed) {

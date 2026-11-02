@@ -55,7 +55,7 @@ $(BIN_OUT):
 $(BIN_OUT)/enlangg: enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c src/enlangg_version.h | $(BIN_OUT)
 	$(CC) $(CFLAGS) -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c $(LDFLAGS) -o $@
 
-$(BIN_OUT)/enlng: enlng.c src/enlng_main.c src/enlng_lexer.c src/enlng_parser.c src/enlng_codegen.c src/enlng_interp.c src/enlng_common.h src/enlng_runtime.h src/enlng_runtime_embed.h src/enlng_prelude.h src/enlangg_version.h | $(BIN_OUT)
+$(BIN_OUT)/enlng: enlng.c src/enlng_main.c src/enlng_lexer.c src/enlng_parser.c src/enlng_codegen.c src/enlng_interp.c src/enlng_lsp.c src/enlng_common.h src/enlng_runtime.h src/enlng_runtime_embed.h src/enlng_prelude.h src/enlangg_version.h | $(BIN_OUT)
 	$(CC) $(CFLAGS) -I. -Isrc enlng.c $(LDFLAGS) -o $@
 
 $(BIN_OUT)/enlngdb: enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlngdb/c/enlngdb.h src/enlangg_version.h | $(BIN_OUT)

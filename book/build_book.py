@@ -51,7 +51,7 @@ ENLNG = os.environ.get('ENLNG_BIN', r'D:/enlangg/scratch/w551/bin/enlng.exe')
 CACHE = os.path.join(HERE, '.runcache.json')
 OUT = os.path.join(HERE, 'out', 'enlangg_the_enlng.pdf')
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
-VERSION = '5.5.1'
+VERSION = '5.6.0'
 
 F = 'C:/Windows/Fonts/'
 pdfmetrics.registerFont(TTFont('Body', F + 'georgia.ttf'))
