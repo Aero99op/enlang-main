@@ -4,9 +4,8 @@
   "build": "5.1.0.0",
   "publishedAt": "2026-11-02T00:00:00Z",
   "releaseNotes": "Enlangg Studio 5.1.0: runs the Enlng 5.6.0 tools. Programs of an open folder run next to their own file, so use \"file\" and installed packages work. The debug console drives the real enlng debugger (step, next, out, break, print, vars). The command palette has Enlng commands for packages and tests. The browser version runs the same interpreter as enlng.exe, built to WebAssembly.",
-  "downloadUrl": "https://github.com/Aero99op/enlang-main/releases/download/studio-v5.1.0/Enlangg-Studio-Setup-5.1.0.exe",
+  "downloadUrl": "https://enlangg.site/enlangg-studio-setup.exe",
   "mirrors": [
-    "https://enlangg.site/enlangg-studio-setup.exe",
     "https://enlangg.vercel.app/enlangg-studio-setup.exe"
   ],
   "assetName": "Enlangg-Studio-Setup-5.1.0.exe",

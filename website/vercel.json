@@ -8,26 +8,6 @@
   "trailingSlash": false,
   "redirects": [
     {
-      "source": "/enlangg-setup.exe",
-      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.6.0/enlangg-setup.exe",
-      "permanent": false
-    },
-    {
-      "source": "/enlangg-install.sh",
-      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.6.0/enlangg-install.sh",
-      "permanent": false
-    },
-    {
-      "source": "/enlangg-studio-setup.exe",
-      "destination": "https://github.com/Aero99op/enlang-main/releases/download/studio-v5.1.0/Enlangg-Studio-Setup-5.1.0.exe",
-      "permanent": false
-    },
-    {
-      "source": "/Enlangg-Studio-Setup-5.1.0.exe",
-      "destination": "https://github.com/Aero99op/enlang-main/releases/download/studio-v5.1.0/Enlangg-Studio-Setup-5.1.0.exe",
-      "permanent": false
-    },
-    {
       "source": "/Enlangg-Studio-Setup-5.0.1.exe",
       "destination": "https://github.com/Aero99op/enlang-main/releases/download/v5.0.1/Enlangg-Studio-Setup-5.0.1.exe",
       "permanent": false
@@ -255,6 +235,12 @@
           "value": "no-cache, no-store, must-revalidate"
         }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/Enlangg-Studio-Setup-5.1.0.exe",
+      "destination": "/enlangg-studio-setup.exe"
     }
   ]
 }
