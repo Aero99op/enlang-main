@@ -55,6 +55,17 @@ desktop/ui/
 *.blockmap
 *.exe
 website/*.exe
+# the installers and tools the site serves for download
+!website/enlangg-setup.exe
+!website/setup.exe
+!website/enlangg-studio-setup.exe
+!website/enlangg.exe
+!website/enlng.exe
+!website/enlngdb.exe
+!website/enlngf.exe
+!website/enlngd.exe
+!website/enlngs.exe
+!website/enlngm.exe
 desktop/bin/*.exe
 enlang-core/*.exe
 nexora/*.exe
