@@ -399,8 +399,13 @@ int main(int argc, char* argv[]) {
                  home_dir);
     }
 
-    snprintf(cmd, sizeof(cmd), "gcc -O2 -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE -I\"%s\" -I\"src\" -I\".\"%s \"%s\" -o \"%s\" -lm",
-             temp_dir, extra_inc, temp_c, final_exe_target);
+    snprintf(cmd, sizeof(cmd), "gcc -O2 -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE -I\"%s\" -I\"src\" -I\".\"%s \"%s\" -o \"%s\" -lm%s",
+             temp_dir, extra_inc, temp_c, final_exe_target,
+#ifdef _WIN32
+             "");
+#else
+             " -pthread");
+#endif
     int compile_ret = system(cmd);
 
     if (compile_ret != 0) {

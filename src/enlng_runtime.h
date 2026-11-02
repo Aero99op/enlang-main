@@ -38,6 +38,7 @@
 #else
 #include <unistd.h>
 #ifndef __EMSCRIPTEN__
+#include <pthread.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -355,7 +356,12 @@ static inline bool enlng_is_frozen(EnlngVal v) {
 /* --- try / on error: a thrown error jumps to the innermost open `try`,
    or stops the program with a message when there is none --- */
 #define ENLNG_MAX_TRY 256
-static struct {
+#if defined(__GNUC__) || defined(__clang__)
+#define ENLNG_TLS __thread /* one for each thread (run together) */
+#else
+#define ENLNG_TLS
+#endif
+static ENLNG_TLS struct {
   jmp_buf eg_jb[ENLNG_MAX_TRY];
   int eg_depth; /* how many `try` blocks are open right now */
   char eg_msg[512];
@@ -956,7 +962,10 @@ static inline void enlng_gc_sweep(void) {
 
 /* Time to collect: many objects were made since the last time, relative to
    how many were still in use then. */
+static int enlng_gc_hold = 0; /* threads waiting outside the lock (run together) */
 static inline bool enlng_gc_due(void) {
+  if (enlng_gc_hold > 0)
+    return false;
   if (enlng_gc_stress < 0) {
     const char *e = getenv("ENLNG_GC_STRESS");
     enlng_gc_stress = (e && e[0] == '1') ? 1 : 0;
@@ -1351,6 +1360,48 @@ static inline const char *enlng_val_to_str_buf(EnlngVal v, char *buf,
   return "";
 }
 
+
+/* --- run together ---------------------------------------------------------
+   Each line of `run together:` is a function that runs in its own thread.
+   Only one thread runs Enlng code at a time (it holds enlng_gil); a thread
+   lets the others run while it waits for the clock, the network, a web page,
+   a command or typed input (enlng_wait_begin/end). Nothing made by the
+   program is touched while waiting, and the collector does not run then. */
+static int enlng_threads_on = 0; /* run together blocks open now */
+#if defined(_WIN32)
+static CRITICAL_SECTION enlng_gil;
+static int enlng_gil_ready = 0;
+static inline void enlng_gil_lock(void) {
+  if (!enlng_gil_ready) {
+    InitializeCriticalSection(&enlng_gil);
+    enlng_gil_ready = 1;
+  }
+  EnterCriticalSection(&enlng_gil);
+}
+static inline void enlng_gil_unlock(void) { LeaveCriticalSection(&enlng_gil); }
+#elif !defined(__EMSCRIPTEN__)
+static pthread_mutex_t enlng_gil = PTHREAD_MUTEX_INITIALIZER;
+static inline void enlng_gil_lock(void) { pthread_mutex_lock(&enlng_gil); }
+static inline void enlng_gil_unlock(void) { pthread_mutex_unlock(&enlng_gil); }
+#else
+static inline void enlng_gil_lock(void) {}
+static inline void enlng_gil_unlock(void) {}
+#endif
+
+static inline void enlng_wait_begin(void) {
+  if (enlng_threads_on) {
+    enlng_gc_hold++;
+    enlng_gil_unlock();
+  }
+}
+
+static inline void enlng_wait_end(void) {
+  if (enlng_threads_on) {
+    enlng_gil_lock();
+    enlng_gc_hold--;
+  }
+}
+
 /* --- Arithmetic --- */
 static inline bool enlng_is_num(EnlngVal v) {
   return v.type == ENLNG_VAL_INT || v.type == ENLNG_VAL_FLOAT || v.type == ENLNG_VAL_BIG;
@@ -1618,7 +1669,10 @@ static inline EnlngVal enlng_ask(const char *prompt) {
     fflush(stdout);
   }
   char buffer[1024];
-  if (!fgets(buffer, sizeof(buffer), stdin)) {
+  enlng_wait_begin();
+  char *got = fgets(buffer, sizeof(buffer), stdin);
+  enlng_wait_end();
+  if (!got) {
     return enlng_make_string("");
   }
   size_t len = strlen(buffer);
@@ -1768,11 +1822,13 @@ static inline EnlngVal enlng_builtin_time_now(void) {
 
 static inline EnlngVal enlng_builtin_sleep(EnlngVal sec) {
   int64_t ms = (int64_t)(enlng_val_to_int(sec) * 1000);
+  enlng_wait_begin();
 #ifdef _WIN32
   Sleep((DWORD)ms);
 #else
   usleep((unsigned int)(ms * 1000));
 #endif
+  enlng_wait_end();
   return enlng_make_null();
 }
 
@@ -3813,8 +3869,10 @@ static inline EnlngVal enlng_builtin_rename_file(EnlngVal from, EnlngVal to) {
 
 /* Everything a command prints, and the number it ends with. */
 static inline EnlngVal enlng_run_shell(const char *cmd, int *code) {
+  enlng_wait_begin();
   FILE *f = enlng_popen(cmd, "r");
   if (!f) {
+    enlng_wait_end();
     *code = -1;
     return enlng_make_string("");
   }
@@ -3827,6 +3885,7 @@ static inline EnlngVal enlng_run_shell(const char *cmd, int *code) {
     enlng_buf_add(&b, chunk);
   }
   int st = enlng_pclose(f);
+  enlng_wait_end();
 #ifdef _WIN32
   *code = st;
 #else
@@ -5008,7 +5067,9 @@ static inline EnlngVal enlng_builtin_net_listen(EnlngVal port) {
 static inline EnlngVal enlng_builtin_net_accept(EnlngVal server) {
   enlng_sock_t s = enlng_need_conn("accept from", server);
   ENLNG_NET_OK();
+  enlng_wait_begin();
   enlng_sock_t c = enlng_sk_accept(s);
+  enlng_wait_end();
   if (c == ENLNG_BAD_SOCK)
     enlng_throw("Could not accept a connection.");
   return enlng_make_int((int64_t)c);
@@ -5032,7 +5093,13 @@ static inline EnlngVal enlng_builtin_net_connect(EnlngVal host, EnlngVal port) {
   a.sin_family = AF_INET;
   a.sin_port = enlng_sk_htons(p);
   memcpy(&a.sin_addr, he->h_addr_list[0], 4);
-  if (s == ENLNG_BAD_SOCK || enlng_sk_connect(s, (struct sockaddr *)&a, sizeof(a)) != 0) {
+  int failed = s == ENLNG_BAD_SOCK;
+  if (!failed) {
+    enlng_wait_begin();
+    failed = enlng_sk_connect(s, (struct sockaddr *)&a, sizeof(a)) != 0;
+    enlng_wait_end();
+  }
+  if (failed) {
     if (s != ENLNG_BAD_SOCK)
       enlng_sk_close(s);
     snprintf(msg, sizeof(msg), "Could not connect to '%s' at port %d.", host.as.s, p);
@@ -5061,7 +5128,9 @@ static inline EnlngVal enlng_builtin_net_send(EnlngVal text, EnlngVal conn) {
 static inline EnlngVal enlng_builtin_net_receive(EnlngVal conn) {
   enlng_sock_t c = enlng_need_conn("receive from", conn);
   char buf[65536];
+  enlng_wait_begin();
   int n = (int)enlng_sk_recv(c, buf, sizeof(buf) - 1);
+  enlng_wait_end();
   if (n < 0)
     n = 0;
   buf[n] = '\0';
@@ -5090,13 +5159,17 @@ static inline EnlngVal enlng_builtin_serve(EnlngVal fn, EnlngVal port) {
   printf("Serving on http://localhost:%d (press Ctrl+C to stop)\n", (int)port.as.i);
   fflush(stdout);
   for (;;) {
+    enlng_wait_begin();
     enlng_sock_t c = enlng_sk_accept(s);
+    enlng_wait_end();
     if (c == ENLNG_BAD_SOCK)
       continue;
     char *req = (char *)malloc(65536);
     int got = 0;
     while (got < 65535) {
+      enlng_wait_begin();
       int n = (int)enlng_sk_recv(c, req + got, 65535 - got);
+      enlng_wait_end();
       if (n <= 0)
         break;
       got += n;
@@ -5157,11 +5230,163 @@ static inline EnlngVal enlng_builtin_serve(EnlngVal fn, EnlngVal port) {
   return enlng_make_null();
 }
 
+/* Values the collector must keep while run together waits for its threads */
+static EnlngVal enlng_gc_extra[256];
+static int enlng_gc_nextra = 0;
+
+/* The interpreter runs a function value in a new thread through this; the
+   generated program leaves it NULL and uses enlng_call_hook. On an error it
+   sets *failed and the message. */
+static EnlngVal (*enlng_thread_call_hook)(EnlngVal f, char *err, size_t errsz,
+                                          int *failed) = NULL;
+
+typedef struct {
+  EnlngVal fn;
+  EnlngList *out;
+  int i;
+  int failed;
+  char err[512];
+} EnlngTogetherJob;
+
+static void enlng_together_run(EnlngTogetherJob *j) {
+  EnlngVal r = enlng_make_null();
+  if (enlng_thread_call_hook) {
+    r = enlng_thread_call_hook(j->fn, j->err, sizeof(j->err), &j->failed);
+  } else {
+    int saved = enlng_try_stack.eg_depth;
+    enlng_try_stack.eg_depth = 1;
+    if (setjmp(enlng_try_stack.eg_jb[0]) == 0) {
+      r = enlng_call_hook(j->fn, 0, NULL);
+    } else {
+      j->failed = 1;
+      snprintf(j->err, sizeof(j->err), "%s", enlng_try_stack.eg_msg);
+    }
+    enlng_try_stack.eg_depth = saved;
+  }
+  j->out->items[j->i] = r;
+}
+
+#define ENLNG_THREAD_STACK ((size_t)512 * 1024 * 1024)
+#if defined(_WIN32)
+static DWORD WINAPI enlng_together_thread(LPVOID arg) {
+  enlng_gil_lock();
+  enlng_together_run((EnlngTogetherJob *)arg);
+  enlng_gil_unlock();
+  return 0;
+}
+#elif !defined(__EMSCRIPTEN__)
+static void *enlng_together_thread(void *arg) {
+  enlng_gil_lock();
+  enlng_together_run((EnlngTogetherJob *)arg);
+  enlng_gil_unlock();
+  return NULL;
+}
+#endif
+
+/* run together: calls every function in the list at the same time and
+   gives the list of what each gave back, once all are done. */
+static inline EnlngVal enlng_builtin_run_together(EnlngVal fns) {
+  if (fns.type != ENLNG_VAL_LIST || !fns.as.l)
+    enlng_throw("'run together' needs a list of functions.");
+  int n = fns.as.l->count;
+  for (int i = 0; i < n; i++)
+    if (fns.as.l->items[i].type != ENLNG_VAL_FUNC)
+      enlng_throw("'run together' needs a list of functions.");
+  if (!enlng_call_hook && !enlng_thread_call_hook)
+    enlng_throw("'run together' is not available here.");
+  if (enlng_gc_nextra + 2 > (int)(sizeof(enlng_gc_extra) / sizeof(enlng_gc_extra[0])))
+    enlng_throw("Too many 'run together' blocks inside each other.");
+  EnlngList *out = enlng_list_create();
+  for (int i = 0; i < n; i++)
+    enlng_list_push(out, enlng_make_null());
+  EnlngVal outv = enlng_make_list(out);
+  int base = enlng_gc_nextra;
+  enlng_gc_extra[enlng_gc_nextra++] = fns;
+  enlng_gc_extra[enlng_gc_nextra++] = outv;
+  EnlngTogetherJob *jobs = (EnlngTogetherJob *)calloc((size_t)(n ? n : 1), sizeof(EnlngTogetherJob));
+  for (int i = 0; i < n; i++) {
+    jobs[i].fn = fns.as.l->items[i];
+    jobs[i].out = out;
+    jobs[i].i = i;
+  }
+  fflush(stdout);
+#if defined(__EMSCRIPTEN__)
+  for (int i = 0; i < n; i++)
+    enlng_together_run(&jobs[i]);
+#else
+  bool outer = enlng_threads_on == 0;
+  if (outer)
+    enlng_gil_lock();
+  enlng_threads_on++;
+#if defined(_WIN32)
+  HANDLE *th = (HANDLE *)calloc((size_t)(n ? n : 1), sizeof(HANDLE));
+#else
+  pthread_t *th = (pthread_t *)calloc((size_t)(n ? n : 1), sizeof(pthread_t));
+  bool *started = (bool *)calloc((size_t)(n ? n : 1), sizeof(bool));
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setstacksize(&attr, ENLNG_THREAD_STACK);
+#endif
+  for (int i = 0; i < n; i++) {
+#if defined(_WIN32)
+    th[i] = CreateThread(NULL, ENLNG_THREAD_STACK, enlng_together_thread, &jobs[i],
+                         STACK_SIZE_PARAM_IS_A_RESERVATION, NULL);
+#else
+    started[i] = pthread_create(&th[i], &attr, enlng_together_thread, &jobs[i]) == 0;
+#endif
+  }
+  enlng_gil_unlock();
+  for (int i = 0; i < n; i++) {
+#if defined(_WIN32)
+    if (th[i]) {
+      WaitForSingleObject(th[i], INFINITE);
+      CloseHandle(th[i]);
+    }
+#else
+    if (started[i])
+      pthread_join(th[i], NULL);
+#endif
+  }
+  enlng_gil_lock();
+  /* a thread that could not be made: its line runs here */
+  for (int i = 0; i < n; i++) {
+#if defined(_WIN32)
+    bool ran = th[i] != NULL;
+#else
+    bool ran = started[i];
+#endif
+    if (!ran)
+      enlng_together_run(&jobs[i]);
+  }
+#if !defined(_WIN32)
+  pthread_attr_destroy(&attr);
+  free(started);
+#endif
+  free(th);
+  enlng_threads_on--;
+  if (outer)
+    enlng_gil_unlock();
+#endif
+  enlng_gc_nextra = base;
+  for (int i = 0; i < n; i++) {
+    if (jobs[i].failed) {
+      char msg[512];
+      snprintf(msg, sizeof(msg), "%s", jobs[i].err);
+      free(jobs);
+      fflush(stdout);
+      enlng_throw(msg);
+    }
+  }
+  free(jobs);
+  fflush(stdout);
+  return outv;
+}
+
 #define ENLNG_MORE_BUILTINS3(X)                                               \
   X(power, 2) X(test_result, 3) X(stop_program, 0) X(take_part, 3)            \
   X(pairs_of, 1) X(is_kind, 2) X(read_bytes, 1) X(write_data, 2)              \
   X(net_listen, 1) X(net_accept, 1) X(net_connect, 2) X(net_send, 2)          \
-  X(net_receive, 1) X(net_close, 1) X(serve, 2)
+  X(net_receive, 1) X(net_close, 1) X(serve, 2) X(run_together, 1)
 
 #define ENLNG_MORE_BUILTINS2(X)                                               \
   X(random_seed, 1) X(random_float, 0) X(upper, 1) X(lower, 1) X(trim, 1)     \

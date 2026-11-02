@@ -4,13 +4,12 @@
 
 **Built and tested** in both `enlng run` and `enlng run --native`, with identical output:
 
-- 1–7, 9, 10 and 12–15 (`when the color is:`, `if ... otherwise`, `is in`, power, taking apart, list building, inputs by name, `stop the program`, tests, bytes, web server, network, big whole numbers)
+- 1–7 and 9–15 (`when the color is:`, `if ... otherwise`, `is in`, power, taking apart, list building, inputs by name, `stop the program`, tests, `run together:`, bytes, web server, network, big whole numbers)
 - 8: `check that x is a number` works while the program runs. Reporting a wrong kind before the program runs is **not built yet**.
 - Tools: interactive mode (`enlng`) and `enlng test`
 
 **Not built yet:**
 
-- 11 `run together:`
 - Editor help, debugger, packages, release
 
 Every Enlng line is a short English sentence made of three kinds of words:
@@ -185,7 +184,7 @@ show b
 |---|---|---|
 | `run` | `together` | (none) |
 
-The lines inside run at the same time. The program goes on when all of them are done.
+The lines inside run at the same time. The program goes on when all of them are done. Only one line runs Enlng at a time, so this helps when lines wait (web pages, the network, commands, the clock), not for pure calculation.
 
 ### 12. Files that are not text (images, ...)
 

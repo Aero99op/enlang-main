@@ -1,0 +1,32 @@
+type enlng
+
+function slow_square with n:
+    sleep(1)
+    give n times n
+
+remember start as time_now()
+run together:
+    remember a as slow_square(3)
+    remember b as slow_square(4)
+    remember c as slow_square(5)
+show a, b, c
+show time_now() minus start is less than 3
+
+remember base as 10
+run together:
+    remember x as base times 2
+    remember first and second from [7, 8]
+show x, first, second
+
+try:
+    run together:
+        remember p as 1
+        remember q as 1 divided by 0
+on error as problem:
+    show "caught:", problem
+
+run together:
+    run together:
+        remember inner as slow_square(6)
+    remember outer as 2
+show inner, outer

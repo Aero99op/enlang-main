@@ -1,4 +1,4 @@
-# Plain Sentences: Choosing, Taking Apart, Tests and the Network
+# Plain Sentences: Choosing, Taking Apart, Tests, Doing Things Together and the Network
 
 Every sentence in this chapter has the usual Enlng shape. An action word comes first (`remember`, `show`, `when`, `check`, `send`). Connector words join the parts (`as`, `from`, `in`, `to`, `on`, `at`, `where`). Silent words (`the`, `that`, `it`) may be added and are skipped. Every example was run when the book was built.
 
@@ -151,6 +151,28 @@ for i from 1 to 5:
         stop the program
     show i
 :::
+
+## Doing things at the same time
+
+The lines inside `run together:` run at the same time, and the program goes on when all of them are done. The names they remember are there after the block. This saves time when the lines wait for something: a web page, the network, a command or the clock. Here three waits of one second take about one second in all:
+
+::: code
+type enlng
+
+function slow_square with n:
+    sleep(1)
+    give n times n
+
+remember start as time_now()
+run together:
+    remember a as slow_square(3)
+    remember b as slow_square(4)
+    remember c as slow_square(5)
+show a, b, c
+show time_now() minus start is less than 3
+:::
+
+Each line must stand on its own: a line cannot use a name another line of the same block remembers. When a line stops with an error, the whole block gives that error, so `try` can catch it. Lines that only work out numbers or text do not get faster, because only one line runs Enlng at a time; the others go on while it waits. Lines that show something may show it in any order.
 
 ## Files that are not text
 

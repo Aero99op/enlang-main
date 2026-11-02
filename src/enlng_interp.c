@@ -87,7 +87,25 @@ static void ipush_frame(Interp *it, IFrame *f) {
 /* Free everything the program can no longer reach. Runs only at the start
    of a statement, when every live value is in a frame, on the root stack,
    or about to be returned. */
-static void igc(Interp *it) {
+/* Every Interp running now: the program's, and one for each thread of a
+   run together block. */
+static Interp *g_live[256];
+static int g_nlive = 0;
+
+static void ilive_add(Interp *it) {
+  if (g_nlive < (int)(sizeof(g_live) / sizeof(g_live[0])))
+    g_live[g_nlive++] = it;
+}
+
+static void ilive_remove(Interp *it) {
+  for (int i = 0; i < g_nlive; i++)
+    if (g_live[i] == it) {
+      g_live[i] = g_live[--g_nlive];
+      return;
+    }
+}
+
+static void igc_mark(Interp *it) {
   for (int i = 0; i < it->nframes; i++) {
     IFrame *f = it->frames[i];
     for (int k = 0; k < f->n; k++)
@@ -96,6 +114,15 @@ static void igc(Interp *it) {
   for (int i = 0; i < it->ntmp; i++)
     enlng_gc_mark_val(it->tmp[i]);
   enlng_gc_mark_val(it->ret);
+}
+
+static void igc(Interp *it) {
+  igc_mark(it);
+  for (int i = 0; i < g_nlive; i++)
+    if (g_live[i] != it)
+      igc_mark(g_live[i]);
+  for (int i = 0; i < enlng_gc_nextra; i++)
+    enlng_gc_mark_val(enlng_gc_extra[i]);
   enlng_gc_sweep();
 }
 
@@ -1006,7 +1033,38 @@ typedef struct {
 
 /* The runtime calls a function value through this (serve calls the
  * program's function for each request). */
-static Interp *g_hook_interp = NULL;
+static ENLNG_TLS Interp *g_hook_interp = NULL;
+static Interp *g_main_interp = NULL;
+
+/* A line of run together, in its own thread with its own Interp. */
+static EnlngVal interp_thread_call(EnlngVal f, char *err, size_t errsz, int *failed) {
+  Interp t;
+  memset(&t, 0, sizeof(t));
+  Interp *m = g_main_interp;
+  t.prog = m->prog;
+  t.file = m->file;
+  t.source = m->source;
+  t.globals = m->globals;
+  t.line = m->line;
+  g_hook_interp = &t;
+  ilive_add(&t);
+  EnlngVal r = enlng_make_null();
+  enlng_try_stack.eg_depth = 1;
+  if (setjmp(enlng_try_stack.eg_jb[0]) == 0)
+    r = icall_value(&t, f.as.fn, NULL, 0, t.line);
+  else
+    ifail(&t, t.line, "%s", enlng_try_stack.eg_msg);
+  enlng_try_stack.eg_depth = 0;
+  if (t.failed) {
+    *failed = 1;
+    snprintf(err, errsz, "%s", t.err);
+    r = enlng_make_null();
+  }
+  ilive_remove(&t);
+  free(t.frames);
+  free(t.tmp);
+  return r;
+}
 static EnlngVal interp_call_hook(EnlngVal f, int argc, EnlngVal *a) {
   Interp *it = g_hook_interp;
   EnlngVal r = icall_value(it, f.as.fn, a, argc, it->line);
@@ -1021,7 +1079,10 @@ static int interp_main(InterpJob *job) {
   Interp it;
   memset(&it, 0, sizeof(it));
   g_hook_interp = &it;
+  g_main_interp = &it;
+  ilive_add(&it);
   enlng_call_hook = interp_call_hook;
+  enlng_thread_call_hook = interp_thread_call;
   it.prog = job->prog;
   it.file = job->file;
   it.source = job->source;
@@ -1120,7 +1181,10 @@ static int repl_main(void) {
   Interp it;
   memset(&it, 0, sizeof(it));
   g_hook_interp = &it;
+  g_main_interp = &it;
+  ilive_add(&it);
   enlng_call_hook = interp_call_hook;
+  enlng_thread_call_hook = interp_thread_call;
   it.file = "input";
   enlng_console_utf8();
   IFrame top = {0};

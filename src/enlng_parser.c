@@ -1885,8 +1885,55 @@ static ASTNode *parse_expression(Parser *p) {
   return left;
 }
 
+/* Gives names a line of run together declares a name of their own, so the
+   function made from the line never takes them from outside. */
+typedef struct {
+  char **from, **to;
+  int n;
+} TgRename;
+
+static void tg_rename_name(char **name, void *ctx) {
+  TgRename *r = (TgRename *)ctx;
+  for (int i = 0; *name && i < r->n; i++)
+    if (strcmp(*name, r->from[i]) == 0) {
+      *name = r->to[i];
+      return;
+    }
+}
+
+static void tg_rename_slot(ASTNode **slot, void *ctx) {
+  ASTNode *n = *slot;
+  if (!n)
+    return;
+  ast_each_name(n, tg_rename_name, ctx);
+  if (n->type == AST_FUNCTION)
+    for (int i = 0; i < n->as.func_def.param_count; i++)
+      tg_rename_name(&n->as.func_def.params[i], ctx);
+  ast_each_child(n, tg_rename_slot, ctx);
+}
+
+/* run together asks which line each statement of its block came from (a
+   line such as `remember a and b from x` makes more than one) */
+static bool g_want_groups = false;
+static int *g_last_groups = NULL;
+
+#define BLOCK_PUSH(x)                                                          \
+  do {                                                                         \
+    if (count >= cap) {                                                        \
+      cap *= 2;                                                                \
+      stmts = (ASTNode **)realloc(stmts, sizeof(ASTNode *) * cap);             \
+      if (groups)                                                              \
+        groups = (int *)realloc(groups, sizeof(int) * cap);                    \
+    }                                                                          \
+    if (groups)                                                                \
+      groups[count] = gid;                                                     \
+    stmts[count++] = (x);                                                      \
+  } while (0)
+
 /* Parse a block of statements governed by INDENT ... DEDENT */
 static void parse_block_inner(Parser *p, ASTNode ***out_stmts, int *out_count) {
+  bool want = g_want_groups;
+  g_want_groups = false;
   if (!match(p, ENLNG_TOKEN_COLON)) {
     set_error(p, "Expected ':' before block", peek(p, 0)->line);
     return;
@@ -1896,22 +1943,21 @@ static void parse_block_inner(Parser *p, ASTNode ***out_stmts, int *out_count) {
   skip_newlines(p);
 
   int cap = 8;
-  int count = 0;
+  int count = 0, gid = 0;
   ASTNode **stmts = (ASTNode **)malloc(sizeof(ASTNode *) * cap);
+  int *groups = want ? (int *)malloc(sizeof(int) * cap) : NULL;
 
   /* Single line block: when x > 0: swap a, b */
   if (!check(p, ENLNG_TOKEN_INDENT)) {
     if (!check(p, ENLNG_TOKEN_NEWLINE) && !check(p, ENLNG_TOKEN_EOF)) {
-      stmts[count++] = parse_statement(p);
-      for (int e = 0; e < g_nextra; e++) {
-        if (count >= cap) {
-          cap *= 2;
-          stmts = (ASTNode **)realloc(stmts, sizeof(ASTNode *) * cap);
-        }
-        stmts[count++] = g_extra[e];
-      }
+      ASTNode *stmt = parse_statement(p);
+      BLOCK_PUSH(stmt);
+      for (int e = 0; e < g_nextra; e++)
+        BLOCK_PUSH(g_extra[e]);
       g_nextra = 0;
     }
+    if (want)
+      g_last_groups = groups;
     *out_stmts = stmts;
     *out_count = count;
     return;
@@ -1927,25 +1973,18 @@ static void parse_block_inner(Parser *p, ASTNode ***out_stmts, int *out_count) {
       break;
 
     ASTNode *stmt = parse_statement(p);
-    if (stmt) {
-      if (count >= cap) {
-        cap *= 2;
-        stmts = (ASTNode **)realloc(stmts, sizeof(ASTNode *) * cap);
-      }
-      stmts[count++] = stmt;
-    }
-    for (int e = 0; e < g_nextra; e++) {
-      if (count >= cap) {
-        cap *= 2;
-        stmts = (ASTNode **)realloc(stmts, sizeof(ASTNode *) * cap);
-      }
-      stmts[count++] = g_extra[e];
-    }
+    if (stmt)
+      BLOCK_PUSH(stmt);
+    for (int e = 0; e < g_nextra; e++)
+      BLOCK_PUSH(g_extra[e]);
     g_nextra = 0;
+    gid++;
     skip_newlines(p);
   }
 
   match(p, ENLNG_TOKEN_DEDENT);
+  if (want)
+    g_last_groups = groups;
   *out_stmts = stmts;
   *out_count = count;
 }
@@ -2596,6 +2635,72 @@ static ASTNode *parse_statement(Parser *p) {
       g->as.global_stmt.names[g->as.global_stmt.count++] = enlng_strdup(nt->text);
     } while (match(p, ENLNG_TOKEN_COMMA));
     return g;
+  }
+
+  /* run together: each line runs at the same time; the names its lines
+     remember are there once all of them are done */
+  if (tok_is(t, "run") && tok_is(peek(p, 1), "together") &&
+      peek(p, 2)->type == ENLNG_TOKEN_COLON) {
+    advance(p);
+    advance(p);
+    ASTNode **body = NULL;
+    int count = 0;
+    g_want_groups = true;
+    parse_block(p, &body, &count);
+    int *groups = g_last_groups;
+    g_last_groups = NULL;
+    if (p->has_error || !groups)
+      return NULL;
+    char *rt = hidden_name("together");
+    int nlines = count ? groups[count - 1] + 1 : 0;
+    ASTNode *list = ast_new(AST_EXPR_LIST_LITERAL, t->line);
+    list->as.list_literal.elements = (ASTNode **)malloc(sizeof(ASTNode *) * (size_t)(nlines ? nlines : 1));
+    list->as.list_literal.count = 0;
+    for (int s = 0; s < count;) {
+      int e = s;
+      while (e < count && groups[e] == groups[s])
+        e++;
+      int line = body[s]->line, i = list->as.list_literal.count;
+      ASTNode *fn = ast_new(AST_FUNCTION, line);
+      fn->as.func_def.params = (char **)malloc(sizeof(char *));
+      fn->as.func_def.param_count = 0;
+      fn->as.func_def.body = (ASTNode **)malloc(sizeof(ASTNode *) * (size_t)(e - s + 1));
+      fn->as.func_def.body_count = 0;
+      ASTNode *names = ast_new(AST_EXPR_LIST_LITERAL, line);
+      names->as.list_literal.elements = (ASTNode **)malloc(sizeof(ASTNode *) * (size_t)(e - s));
+      names->as.list_literal.count = 0;
+      TgRename rn = {(char **)malloc(sizeof(char *) * (size_t)(e - s)),
+                      (char **)malloc(sizeof(char *) * (size_t)(e - s)), 0};
+      for (int k = s; k < e; k++)
+        if (body[k]->type == AST_DECLARATION) {
+          rn.from[rn.n] = body[k]->as.decl.name;
+          rn.to[rn.n++] = hidden_name(body[k]->as.decl.name);
+        }
+      for (int k = s; k < e; k++) {
+        ASTNode *st = body[k];
+        const char *user_name = st->type == AST_DECLARATION ? st->as.decl.name : NULL;
+        tg_rename_slot(&body[k], &rn);
+        fn->as.func_def.body[fn->as.func_def.body_count++] = st;
+        if (!user_name)
+          continue;
+        /* the name is there after the block */
+        int j = names->as.list_literal.count;
+        names->as.list_literal.elements[names->as.list_literal.count++] = var_node(st->as.decl.name, line);
+        ASTNode *part = call3("take_part", var_node(rt, line), int_node(i, line), str_node("", line), line);
+        oop_queue_extra(decl_node(user_name,
+                                  call3("take_part", part, int_node(j, line), str_node("", line), line),
+                                  st->as.decl.is_frozen, line));
+      }
+      ASTNode *give = ast_new(AST_GIVE, line);
+      give->as.give_stmt.expr = names;
+      fn->as.func_def.body[fn->as.func_def.body_count++] = give;
+      ASTNode *lam = ast_new(AST_EXPR_LAMBDA, line);
+      lam->as.lambda_expr.fn = fn;
+      list->as.list_literal.elements[list->as.list_literal.count++] = lam;
+      s = e;
+    }
+    free(groups);
+    return decl_node(rt, call1("run_together", list, t->line), false, t->line);
   }
 
   /* stop the program */
