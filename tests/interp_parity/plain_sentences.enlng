@@ -1,0 +1,99 @@
+type enlng
+
+# 1. choosing by a value
+for each color in ["red", "blue", "pink"]:
+    when the color is:
+        "red": show "stop"
+        "green" or "blue": show "go"
+        otherwise: show "wait"
+
+remember n as 7
+when n is:
+    1, 2, 3:
+        show "small"
+    7:
+        show "lucky"
+
+# 2. picking one of two values
+remember age as 20
+remember the label as "adult" if the age is at least 18 otherwise "child"
+show label
+show "big" if 2 > 5 otherwise "small" if 2 > 1 otherwise "none"
+
+# 3. is in
+remember numbers as [1, 2, 3]
+when 3 is in the numbers:
+    show "3 is there"
+when 9 is not in the numbers:
+    show "9 is not there"
+show "ell" is in "hello", "name" is in {"name": 1}
+
+# 4. power
+show 2 to the power of 10
+show 5 squared, 2.0 to the power of 0.5 is greater than 1.41
+try:
+    show 2 to the power of 100
+on error as problem:
+    show problem
+
+# 5. taking apart
+remember point as [3, 4]
+remember x and y from point
+show x, y
+remember person as {"name": "Asha", "age": 30}
+remember the name and the age from the person
+show name, age
+for each who and score in [["Asha", 90], ["Rao", 75]]:
+    show who, score
+remember prices as {"tea": 5}
+for each key and value in prices:
+    show key, value
+try:
+    remember a, b, c from point
+on error as problem:
+    show problem
+
+# 6. making a list from a list
+remember nums as [5, 12, 8, 20]
+remember big as every v in the nums where v is greater than 10
+show big
+remember doubled as v times 2 for every v in nums
+show doubled
+show v plus 1 for every v in nums where v < 10
+remember limit as 9
+show every v in nums where v > limit
+
+# 7. inputs by name
+function area with width, height:
+    give width times height
+show area with width as 3 and height as 4
+show area(height as 2, width as 5)
+function greet with name, greeting as "Hello":
+    give greeting + ", " + name
+show greet("Asha", greeting as "Hi"), greet(name as "Rao")
+
+# 8. kinds
+function half with value:
+    check that value is a number
+    give value divided by 2
+show half(8)
+try:
+    show half("eight")
+on error as problem:
+    show problem
+show 5 is a whole number, 2.5 is a whole number, 2.5 is a decimal, "x" is a text
+show [1] is a list, {} is a map, half is a function, 3 is not a text
+
+# 10. checks
+try:
+    check that half(10) is 4
+on error as problem:
+    show problem
+
+# 12. bytes
+write [72, 105, 10] to "bytes_test.tmp"
+remember data as read bytes from "bytes_test.tmp"
+show data, count of data
+write "text now" to "bytes_test.tmp"
+show read_file("bytes_test.tmp")
+delete_file("bytes_test.tmp")

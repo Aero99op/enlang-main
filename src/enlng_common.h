@@ -220,7 +220,8 @@ typedef enum {
   AST_EXPR_MAP_LITERAL,  /* {"key": "val"} */
   AST_USE,               /* use "file.enlng" */
   AST_GLOBAL,            /* global total, count: these names are the top-level ones */
-  AST_EXPR_LAMBDA        /* function with x: x times 2, or an inner function */
+  AST_EXPR_LAMBDA,       /* function with x: x times 2, or an inner function */
+  AST_EXPR_TERNARY       /* "adult" if age >= 18 otherwise "child" */
 } ASTNodeType;
 
 /* Forward declaration */
@@ -439,6 +440,7 @@ struct ASTNode {
       ASTNode **args;
       int arg_count;
       bool builtin_only; /* slc and x[a:b]: never a user function, even @slc */
+      char **arg_names;  /* area(width as 3): the name of each input, or NULL */
       bool resolved;     /* interpreter: the lookup below has been done */
       ASTNode *fn;       /* interpreter: the user function, or NULL */
     } call_expr;
@@ -488,6 +490,13 @@ struct ASTNode {
       char **caps;
       int ncap;
     } lambda_expr;
+
+    /* AST_EXPR_TERNARY: yes if cond otherwise no */
+    struct {
+      ASTNode *cond;
+      ASTNode *yes;
+      ASTNode *no;
+    } ternary;
   } as;
 };
 

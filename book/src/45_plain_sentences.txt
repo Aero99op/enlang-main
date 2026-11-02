@@ -1,0 +1,208 @@
+# Plain Sentences: Choosing, Taking Apart, Tests and the Network
+
+Every sentence in this chapter has the usual Enlng shape. An action word comes first (`remember`, `show`, `when`, `check`, `send`). Connector words join the parts (`as`, `from`, `in`, `to`, `on`, `at`, `where`). Silent words (`the`, `that`, `it`) may be added and are skipped. Every example was run when the book was built.
+
+## Choosing by a value
+
+Write `when ... is:` and then one value per line. Several values can share a line with `or`, and `otherwise` takes everything else:
+
+::: code
+type enlng
+
+for each color in ["red", "blue", "pink"]:
+    when the color is:
+        "red": show "stop"
+        "green" or "blue": show "go"
+        otherwise: show "wait"
+:::
+
+## Picking one of two values
+
+::: code
+type enlng
+
+remember age as 20
+remember the label as "adult" if the age is at least 18 otherwise "child"
+show label
+:::
+
+## Is it in the list
+
+`is in` is the other way round from `contains`. It works for lists, text and the keys of a map:
+
+::: code
+type enlng
+
+remember numbers as [1, 2, 3]
+when 3 is in the numbers:
+    show "3 is there"
+when 9 is not in the numbers:
+    show "9 is not there"
+show "ell" is in "hello"
+:::
+
+## Power
+
+A whole number to a whole power gives a whole number:
+
+::: code
+type enlng
+
+show 2 to the power of 10
+show 5 squared
+:::
+
+## Taking a list or map apart
+
+From a list, the names take the items in order. From a map, each name takes the value of the key with the same name:
+
+::: code
+type enlng
+
+remember x and y from [3, 4]
+show x y
+remember person as {"name": "Asha", "age": 30}
+remember the name and the age from the person
+show name age
+for each who and score in [["Asha", 90], ["Rao", 75]]:
+    show who score
+for each key and value in {"tea": 5}:
+    show key value
+:::
+
+## Making a list from a list
+
+::: code
+type enlng
+
+remember nums as [5, 12, 8, 20]
+show every n in the nums where n is greater than 10
+show n times 2 for every n in nums
+show n plus 1 for every n in nums where n < 10
+:::
+
+## Giving inputs by name
+
+Inputs given by name can come in any order, after the ones given in order. An input with a default can be left out:
+
+::: code
+type enlng
+
+function area with width, height:
+    give width times height
+show area with width as 3 and height as 4
+show area(height as 2, width as 5)
+
+function greet with name, greeting as "Hello":
+    give greeting + ", " + name
+show greet("Asha", greeting as "Hi")
+:::
+
+## Checking the kind of a value
+
+`is a number`, `is a whole number`, `is a decimal`, `is a text`, `is a list`, `is a map` and `is a function` give true or false. `check that ...` stops with a message when something does not hold:
+
+::: code
+type enlng
+
+function half with value:
+    check that value is a number
+    give value divided by 2
+show half(8)
+try:
+    show half("eight")
+on error as problem:
+    show problem
+:::
+
+## Tests
+
+A test is a named group of checks. When a check compares with `is`, a failure says what was expected and what came out:
+
+::: code
+type enlng
+
+function add with a, b:
+    give a plus b
+
+test "adding works":
+    check that add(1, 2) is 3
+    check that add(-1, 1) is 0
+:::
+
+When a check fails, the test says so, and the program ends with an error code. With `check that add(2, 2) is 5`, the output is:
+
+::: sh
+FAILED: wrong on purpose
+        Expected 5 but got 4
+
+0 passed, 1 failed
+:::
+
+`enlng test` runs every file ending in `_test.enlng` in the folder and the folders inside it. `enlng test file.enlng` runs one file. A file with a failed test ends with an error code, so other tools can see it.
+
+## Ending the program
+
+::: code
+type enlng
+
+for i from 1 to 5:
+    when i is 3:
+        stop the program
+    show i
+:::
+
+## Files that are not text
+
+`read bytes from` gives the bytes of any file as a list of numbers from 0 to 255. `write ... to` writes a list of numbers as bytes, and anything else as text:
+
+::: code
+type enlng
+
+write [72, 105] to "two_bytes.tmp"
+show read bytes from "two_bytes.tmp"
+delete_file("two_bytes.tmp")
+:::
+
+## A small web server
+
+`serve` calls your function with each request: a map with `method`, `path` and `body`. Give back text, a map or list (sent as JSON), or a map with `status` and `body`:
+
+::: src
+type enlng
+
+function answer with request:
+    when the request["path"] is:
+        "/": give "Hello from Enlng"
+        "/json": give {"ok": true}
+        otherwise: give {"status": 404, "body": "nothing here"}
+
+serve answer on port 8080
+:::
+
+## Network connections
+
+::: src
+type enlng
+
+remember the server as listen on port 8080
+remember the client as accept from the server
+remember the line as receive from the client
+send "hello" to the client
+close the client
+
+remember the link as connect to "example.com" at port 80
+:::
+
+`receive from` gives the text that has arrived so far, or empty text when the other side has closed the connection.
+
+## Interactive mode
+
+Type `enlng` with no file to write lines one at a time. A line that is only a value shows the value. A line ending in `:` waits for the indented lines that follow it, until an empty line. `exit` leaves.
+
+::: sh
+enlng> remember x as 5
+enlng> x times 2
+10
+enlng> exit
+:::

@@ -397,6 +397,10 @@ static EnlngVal ieval(Interp *it, IFrame *f, ASTNode *n) {
     return enlng_make_float(n->as.literal.float_val);
   case AST_EXPR_LITERAL_BOOL:
     return enlng_make_bool(n->as.literal.bool_val);
+  case AST_EXPR_TERNARY:
+    return enlng_is_truthy(ieval(it, f, n->as.ternary.cond))
+               ? ieval(it, f, n->as.ternary.yes)
+               : ieval(it, f, n->as.ternary.no);
   case AST_EXPR_LITERAL_NULL:
     return enlng_make_null();
   case AST_EXPR_LITERAL_STRING:
@@ -1000,9 +1004,24 @@ typedef struct {
   int rc;
 } InterpJob;
 
+/* The runtime calls a function value through this (serve calls the
+ * program's function for each request). */
+static Interp *g_hook_interp = NULL;
+static EnlngVal interp_call_hook(EnlngVal f, int argc, EnlngVal *a) {
+  Interp *it = g_hook_interp;
+  EnlngVal r = icall_value(it, f.as.fn, a, argc, it->line);
+  if (it->failed) {
+    fflush(stdout);
+    exit(1);
+  }
+  return r;
+}
+
 static int interp_main(InterpJob *job) {
   Interp it;
   memset(&it, 0, sizeof(it));
+  g_hook_interp = &it;
+  enlng_call_hook = interp_call_hook;
   it.prog = job->prog;
   it.file = job->file;
   it.source = job->source;
@@ -1078,4 +1097,185 @@ int enlng_interp_run(ASTNode *prog, const char *file, const char *source) {
   pthread_join(th, NULL);
 #endif
   return job.rc;
+}
+
+/* ---------------------------------------------------------------------
+ * Interactive mode: `enlng` with no file. Each input is added to the
+ * program so far, which is read again; only the new lines run, and the
+ * names made before keep their values.
+ * ------------------------------------------------------------------ */
+static char *repl_read_line(const char *prompt) {
+  printf("%s", prompt);
+  fflush(stdout);
+  char buf[4096];
+  if (!fgets(buf, sizeof(buf), stdin))
+    return NULL;
+  size_t n = strlen(buf);
+  while (n > 0 && (buf[n - 1] == '\n' || buf[n - 1] == '\r'))
+    buf[--n] = '\0';
+  return enlng_strdup(buf);
+}
+
+static int repl_main(void) {
+  Interp it;
+  memset(&it, 0, sizeof(it));
+  g_hook_interp = &it;
+  enlng_call_hook = interp_call_hook;
+  it.file = "input";
+  enlng_console_utf8();
+  IFrame top = {0};
+  it.globals = &top;
+  ipush_frame(&it, &top);
+
+  size_t cap = 4096, len = 0;
+  char *src = (char *)malloc(cap);
+  len = (size_t)sprintf(src, "type enlng\n");
+  int done = 0; /* statements of the program so far that have run */
+
+  printf("Enlng %s interactive mode. Write a line and press Enter; "
+         "'exit' leaves.\n", ENLNG_VERSION);
+  for (;;) {
+    char *line = repl_read_line("enlng> ");
+    if (!line)
+      break;
+    const char *s = line;
+    while (*s == ' ' || *s == '\t')
+      s++;
+    if (strcmp(s, "exit") == 0 || strcmp(s, "quit") == 0) {
+      free(line);
+      break;
+    }
+    if (!*s) {
+      free(line);
+      continue;
+    }
+    /* a line ending in ':' opens a block: read until an empty line */
+    size_t ilen = strlen(line);
+    char *input = (char *)malloc(ilen + 2);
+    sprintf(input, "%s\n", line);
+    if (ilen > 0 && line[ilen - 1] == ':') {
+      for (;;) {
+        char *more = repl_read_line("  ...  ");
+        if (!more || !more[0]) {
+          free(more);
+          break;
+        }
+        size_t ml = strlen(more);
+        input = (char *)realloc(input, strlen(input) + ml + 2);
+        strcat(input, more);
+        strcat(input, "\n");
+        free(more);
+      }
+    }
+    free(line);
+
+    size_t need = len + strlen(input) + 1;
+    char *cand = (char *)malloc(need);
+    memcpy(cand, src, len);
+    strcpy(cand + len, input);
+
+    Lexer lx;
+    lexer_init(&lx, cand);
+    lexer_tokenize(&lx);
+    Parser ps;
+    parser_init(&ps, lx.tokens, lx.token_count);
+    g_lift_counter = 0;
+    g_hidden_n = 0;
+    ASTNode *prog = parser_parse_program(&ps);
+    if (ps.has_error || !prog) {
+      printf("Problem: %s\n", ps.error_msg);
+      free(cand);
+      free(input);
+      continue;
+    }
+
+    it.prog = prog;
+    it.source = cand;
+    it.failed = false;
+    int idx = 0, ran = done;
+    int total = 0;
+    for (int i = 0; i < prog->as.program.count; i++)
+      if (prog->as.program.statements[i] &&
+          prog->as.program.statements[i]->type != AST_FUNCTION)
+        total++;
+    enlng_try_stack.eg_depth = 1;
+    if (setjmp(enlng_try_stack.eg_jb[0]) == 0) {
+      for (int i = 0; i < prog->as.program.count && !it.failed; i++) {
+        ASTNode *st = prog->as.program.statements[i];
+        if (!st || st->type == AST_FUNCTION)
+          continue;
+        if (idx++ < done)
+          continue;
+        /* a line that is only a value shows the value */
+        if (idx == total && st->type == AST_EXPR_STMT) {
+          it.line = st->line;
+          EnlngVal v = ieval(&it, &top, st->as.expr_stmt.expr);
+          if (!it.failed && v.type != ENLNG_VAL_NULL) {
+            enlng_print_val(v);
+            printf("\n");
+          }
+        } else {
+          iexec(&it, &top, st);
+        }
+        ran = idx;
+      }
+    } else {
+      ifail(&it, it.line, "%s", enlng_try_stack.eg_msg);
+    }
+    enlng_try_stack.eg_depth = 0;
+    fflush(stdout);
+    if (it.failed) {
+      printf("Problem: %s\n", it.err);
+      it.failed = false;
+      free(cand);
+    } else {
+      done = ran > total ? total : total;
+      if (need > cap) {
+        while (need > cap)
+          cap *= 2;
+        src = (char *)realloc(src, cap);
+      }
+      memcpy(src, cand, need);
+      len = need - 1;
+    }
+    free(input);
+  }
+  printf("\n");
+  return 0;
+}
+
+#ifdef _WIN32
+static DWORD WINAPI repl_thread(LPVOID arg) {
+  *(int *)arg = repl_main();
+  return 0;
+}
+#else
+static void *repl_thread(void *arg) {
+  *(int *)arg = repl_main();
+  return NULL;
+}
+#endif
+
+int enlng_repl(void) {
+  int rc = 0;
+#ifdef _WIN32
+  HANDLE h = CreateThread(NULL, INTERP_STACK_BYTES, repl_thread, &rc,
+                          STACK_SIZE_PARAM_IS_A_RESERVATION, NULL);
+  if (!h)
+    return repl_main();
+  WaitForSingleObject(h, INFINITE);
+  CloseHandle(h);
+#else
+  pthread_t th;
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setstacksize(&attr, INTERP_STACK_BYTES);
+  if (pthread_create(&th, &attr, repl_thread, &rc) != 0) {
+    pthread_attr_destroy(&attr);
+    return repl_main();
+  }
+  pthread_attr_destroy(&attr);
+  pthread_join(th, NULL);
+#endif
+  return rc;
 }

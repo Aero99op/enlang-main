@@ -188,3 +188,22 @@ function random_choice with xs:
     when len(xs) is 0:
         fail "random_choice needs a list with at least one item."
     give xs[random_number(0, len(xs) minus 1)]
+
+function _keep_where with xs, f:
+    remember out as []
+    for each item in xs:
+        when f(item):
+            append(out, item)
+    give out
+
+function _map_each with xs, f:
+    remember out as []
+    for each item in xs:
+        append(out, f(item))
+    give out
+
+function _keep_all with xs:
+    remember out as []
+    for each item in xs:
+        append(out, item)
+    give out

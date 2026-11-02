@@ -295,6 +295,16 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     emit(cg, "enlng_make_bool(%s)", n->as.literal.bool_val ? "true" : "false");
     break;
 
+  case AST_EXPR_TERNARY:
+    emit(cg, "(enlng_is_truthy(");
+    generate_expression(cg, n->as.ternary.cond);
+    emit(cg, ") ? (");
+    generate_expression(cg, n->as.ternary.yes);
+    emit(cg, ") : (");
+    generate_expression(cg, n->as.ternary.no);
+    emit(cg, "))");
+    break;
+
   case AST_EXPR_LITERAL_NULL:
     emit(cg, "enlng_make_null()");
     break;
@@ -1297,9 +1307,14 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
   emit(cg, "    return enlng_make_null();\n");
   emit(cg, "}\n\n");
 
+  emit(cg, "static EnlngVal enlng_hook_call(EnlngVal f, int argc, EnlngVal *a) {\n");
+  emit(cg, "    return enlng_call_value(f, \"function\", argc, a);\n");
+  emit(cg, "}\n\n");
+
   /* Emit main() */
   emit(cg, "int main(int argc, char* argv[]) {\n");
   emit(cg, "    enlng_console_utf8();\n");
+  emit(cg, "    enlng_call_hook = enlng_hook_call;\n");
   emit(cg, "    enlng_set_args(argc - 1, argv + 1);\n");
   cg->indent_level = 1;
   scope_clear(cg);

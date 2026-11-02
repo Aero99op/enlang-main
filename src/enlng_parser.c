@@ -289,6 +289,11 @@ static void ast_each_child(ASTNode *n, AstSlotFn fn, void *ctx) {
   case AST_EXPR_LAMBDA:
     fn(&n->as.lambda_expr.fn, ctx);
     break;
+  case AST_EXPR_TERNARY:
+    fn(&n->as.ternary.cond, ctx);
+    fn(&n->as.ternary.yes, ctx);
+    fn(&n->as.ternary.no, ctx);
+    break;
   default:
     break;
   }
@@ -685,6 +690,112 @@ static ASTNode *oop_call_node(const char *fname, ASTNode **args, int argc,
   return n;
 }
 
+/* ---------------------------------------------------------------------
+ * Small builders for the sentences that are written in terms of others
+ * ------------------------------------------------------------------ */
+static ASTNode *call1(const char *fname, ASTNode *a, int line) {
+  ASTNode **args = (ASTNode **)malloc(sizeof(ASTNode *));
+  args[0] = a;
+  return oop_call_node(fname, args, 1, line);
+}
+
+static ASTNode *call2(const char *fname, ASTNode *a, ASTNode *b, int line) {
+  ASTNode **args = (ASTNode **)malloc(sizeof(ASTNode *) * 2);
+  args[0] = a;
+  args[1] = b;
+  return oop_call_node(fname, args, 2, line);
+}
+
+static ASTNode *call3(const char *fname, ASTNode *a, ASTNode *b, ASTNode *c,
+                      int line) {
+  ASTNode **args = (ASTNode **)malloc(sizeof(ASTNode *) * 3);
+  args[0] = a;
+  args[1] = b;
+  args[2] = c;
+  return oop_call_node(fname, args, 3, line);
+}
+
+static ASTNode *var_node(const char *name, int line) {
+  ASTNode *n = ast_new(AST_EXPR_VARIABLE, line);
+  n->as.variable.name = enlng_strdup(name);
+  return n;
+}
+
+static ASTNode *str_node(const char *s, int line) {
+  ASTNode *n = ast_new(AST_EXPR_LITERAL_STRING, line);
+  n->as.literal.string_val = enlng_strdup(s);
+  return n;
+}
+
+static ASTNode *int_node(int64_t v, int line) {
+  ASTNode *n = ast_new(AST_EXPR_LITERAL_INT, line);
+  n->as.literal.int_val = v;
+  return n;
+}
+
+static ASTNode *bool_node(bool v, int line) {
+  ASTNode *n = ast_new(AST_EXPR_LITERAL_BOOL, line);
+  n->as.literal.bool_val = v;
+  return n;
+}
+
+static ASTNode *binary_node(EnlngTokenType op, ASTNode *l, ASTNode *r, int line) {
+  ASTNode *n = ast_new(AST_EXPR_BINARY, line);
+  n->as.binary_expr.op = op;
+  n->as.binary_expr.left = l;
+  n->as.binary_expr.right = r;
+  return n;
+}
+
+static ASTNode *not_node(ASTNode *e, int line) {
+  ASTNode *n = ast_new(AST_EXPR_UNARY, line);
+  n->as.unary_expr.op = ENLNG_TOKEN_NOT;
+  n->as.unary_expr.operand = e;
+  return n;
+}
+
+static ASTNode *decl_node(const char *name, ASTNode *init, bool frozen, int line) {
+  ASTNode *n = ast_new(AST_DECLARATION, line);
+  n->as.decl.name = enlng_strdup(name);
+  n->as.decl.init_expr = init;
+  n->as.decl.is_frozen = frozen;
+  return n;
+}
+
+static ASTNode *expr_stmt_node(ASTNode *e, int line) {
+  ASTNode *n = ast_new(AST_EXPR_STMT, line);
+  n->as.expr_stmt.expr = e;
+  return n;
+}
+
+/* function with param: body -- for list building */
+static ASTNode *lambda1(const char *param, ASTNode *body, int line) {
+  ASTNode *fn = ast_new(AST_FUNCTION, line);
+  ASTNode *give = ast_new(AST_GIVE, line);
+  give->as.give_stmt.expr = body;
+  fn->as.func_def.body = (ASTNode **)malloc(sizeof(ASTNode *));
+  fn->as.func_def.body[0] = give;
+  fn->as.func_def.body_count = 1;
+  fn->as.func_def.params = (char **)malloc(sizeof(char *));
+  fn->as.func_def.params[0] = enlng_strdup(param);
+  fn->as.func_def.param_count = 1;
+  ASTNode *lam = ast_new(AST_EXPR_LAMBDA, line);
+  lam->as.lambda_expr.fn = fn;
+  return lam;
+}
+
+/* A hidden name for a value a sentence needs to keep for a moment. */
+static int g_hidden_n = 0;
+static char *hidden_name(const char *what) {
+  char buf[64];
+  snprintf(buf, sizeof(buf), "%s__%d", what, ++g_hidden_n);
+  return enlng_strdup(buf);
+}
+
+static bool tok_is(Token *t, const char *word) {
+  return t && t->type == ENLNG_TOKEN_IDENTIFIER && t->text && strcmp(t->text, word) == 0;
+}
+
 static ASTNode *parse_expression(Parser *p);
 
 /* The call behind x[a:b] and slc(x, a, b). It always reaches the built-in,
@@ -860,13 +971,85 @@ static void apply_params(ASTNode *fn, ParamList *pl) {
 }
 
 static ASTNode *parse_atom(Parser *p, bool allow_with);
+static ASTNode *parse_or_expr(Parser *p);
+static ASTNode *parse_list_source(Parser *p, const char *var, int line);
 static ASTNode *parse_primary_internal(Parser *p, bool allow_with);
 static inline ASTNode *parse_primary(Parser *p) {
   return parse_primary_internal(p, true);
 }
 
+/* One input of a call. `width as 3` (or `width = 3` in brackets) gives the
+ * input by name; names[i] is set then. */
+static ASTNode *parse_call_arg(Parser *p, char ***names, int i, int cap,
+                               bool paren) {
+  if (peek(p, 0)->type == ENLNG_TOKEN_IDENTIFIER &&
+      (peek(p, 1)->type == ENLNG_TOKEN_AS ||
+       (paren && peek(p, 1)->type == ENLNG_TOKEN_ASSIGN))) {
+    if (!*names)
+      *names = (char **)calloc((size_t)cap, sizeof(char *));
+    (*names)[i] = enlng_strdup(advance(p)->text);
+    advance(p);
+  }
+  return paren ? parse_expression(p) : parse_additive(p);
+}
+
 static ASTNode *parse_atom(Parser *p, bool allow_with) {
   Token *t = peek(p, 0);
+
+  /* every n in numbers where n > 10 */
+  if (tok_is(t, "every") && peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER &&
+      peek(p, 2)->type == ENLNG_TOKEN_IN) {
+    advance(p);
+    const char *var = advance(p)->text;
+    return call1("_keep_all", parse_list_source(p, var, t->line), t->line);
+  }
+  /* read bytes from "photo.png" */
+  if (tok_is(t, "read") && tok_is(peek(p, 1), "bytes") &&
+      peek(p, 2)->type == ENLNG_TOKEN_FROM) {
+    advance(p);
+    advance(p);
+    advance(p);
+    return call1("read_bytes", parse_additive(p), t->line);
+  }
+  /* listen on port 8080 */
+  if (tok_is(t, "listen") && peek(p, 1)->type == ENLNG_TOKEN_ON &&
+      tok_is(peek(p, 2), "port")) {
+    advance(p);
+    advance(p);
+    advance(p);
+    return call1("net_listen", parse_additive(p), t->line);
+  }
+  /* accept from the server / receive from the client */
+  if ((tok_is(t, "accept") || tok_is(t, "receive")) &&
+      peek(p, 1)->type == ENLNG_TOKEN_FROM) {
+    advance(p);
+    advance(p);
+    return call1(t->text[0] == 'a' ? "net_accept" : "net_receive",
+                 parse_additive(p), t->line);
+  }
+  /* connect to "example.com" at port 80 */
+  if (tok_is(t, "connect") && peek(p, 1)->type == ENLNG_TOKEN_TO) {
+    advance(p);
+    advance(p);
+    ASTNode *host;
+    Token *h = peek(p, 0);
+    if (h->type == ENLNG_TOKEN_STRING_LITERAL) {
+      advance(p);
+      host = str_node(h->text, h->line);
+    } else if (h->type == ENLNG_TOKEN_IDENTIFIER) {
+      advance(p);
+      host = var_node(h->text, h->line);
+    } else {
+      host = parse_unary(p);
+    }
+    if (!match(p, ENLNG_TOKEN_AT) || !tok_is(peek(p, 0), "port")) {
+      set_error(p, "Expected 'at port' and a number, as in: connect to \"example.com\" at port 80",
+                t->line);
+      return ast_new(AST_EXPR_LITERAL_NULL, t->line);
+    }
+    advance(p);
+    return call2("net_connect", host, parse_additive(p), t->line);
+  }
 
   if (oop_starts_call(p))
     return parse_oop_call(p);
@@ -1369,17 +1552,26 @@ static ASTNode *parse_atom(Parser *p, bool allow_with) {
       int cap = 4;
       int count = 0;
       ASTNode **args = (ASTNode **)malloc(sizeof(ASTNode *) * cap);
+      char **names = NULL;
 
       do {
         if (count >= cap) {
           cap *= 2;
           args = (ASTNode **)realloc(args, sizeof(ASTNode *) * cap);
+          if (names)
+            names = (char **)realloc(names, sizeof(char *) * cap);
         }
-        args[count++] = parse_additive(p);
-      } while (match(p, ENLNG_TOKEN_COMMA));
+        if (names)
+          names[count] = NULL;
+        args[count] = parse_call_arg(p, &names, count, cap, false);
+        count++;
+      } while (match(p, ENLNG_TOKEN_COMMA) ||
+               (check(p, ENLNG_TOKEN_AND) && peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER &&
+                peek(p, 2)->type == ENLNG_TOKEN_AS && match(p, ENLNG_TOKEN_AND)));
 
       n->as.call_expr.args = args;
       n->as.call_expr.arg_count = count;
+      n->as.call_expr.arg_names = names;
       return n;
     }
 
@@ -1391,13 +1583,19 @@ static ASTNode *parse_atom(Parser *p, bool allow_with) {
       int count = 0;
       ASTNode **args = (ASTNode **)malloc(sizeof(ASTNode *) * cap);
 
+      char **names = NULL;
       if (!check(p, ENLNG_TOKEN_RPAREN)) {
         do {
           if (count >= cap) {
             cap *= 2;
             args = (ASTNode **)realloc(args, sizeof(ASTNode *) * cap);
+            if (names)
+              names = (char **)realloc(names, sizeof(char *) * cap);
           }
-          args[count++] = parse_expression(p);
+          if (names)
+            names[count] = NULL;
+          args[count] = parse_call_arg(p, &names, count, cap, true);
+          count++;
         } while (match(p, ENLNG_TOKEN_COMMA));
       }
 
@@ -1406,6 +1604,7 @@ static ASTNode *parse_atom(Parser *p, bool allow_with) {
       }
       n->as.call_expr.args = args;
       n->as.call_expr.arg_count = count;
+      n->as.call_expr.arg_names = names;
       return n;
     }
 
@@ -1490,12 +1689,31 @@ static ASTNode *parse_unary(Parser *p) {
   return parse_primary(p);
 }
 
+/* 2 to the power of 10, 5 squared */
+static ASTNode *parse_power(Parser *p) {
+  ASTNode *base = parse_unary(p);
+  for (;;) {
+    if (check(p, ENLNG_TOKEN_TO) && tok_is(peek(p, 1), "power") &&
+        peek(p, 2)->type == ENLNG_TOKEN_OF) {
+      int line = advance(p)->line;
+      advance(p);
+      advance(p);
+      base = call2("power", base, parse_unary(p), line);
+    } else if (tok_is(peek(p, 0), "squared")) {
+      int line = advance(p)->line;
+      base = call2("power", base, int_node(2, line), line);
+    } else {
+      return base;
+    }
+  }
+}
+
 static ASTNode *parse_multiplicative(Parser *p) {
-  ASTNode *left = parse_unary(p);
+  ASTNode *left = parse_power(p);
   while (check(p, ENLNG_TOKEN_MUL) || check(p, ENLNG_TOKEN_DIV) ||
          check(p, ENLNG_TOKEN_MOD)) {
     Token *op = advance(p);
-    ASTNode *right = parse_unary(p);
+    ASTNode *right = parse_power(p);
     ASTNode *n = ast_new(AST_EXPR_BINARY, op->line);
     n->as.binary_expr.op = op->type;
     n->as.binary_expr.left = left;
@@ -1538,6 +1756,38 @@ static ASTNode *parse_comparison(Parser *p) {
       continue;
     }
     Token *op = advance(p);
+    bool negated = op->type == ENLNG_TOKEN_NEQ;
+    /* 3 is in numbers / "x" is not in word */
+    if ((op->type == ENLNG_TOKEN_EQ || negated) && match(p, ENLNG_TOKEN_IN)) {
+      ASTNode *found = call2("contains", parse_additive(p), left, op->line);
+      left = negated ? not_node(found, op->line) : found;
+      continue;
+    }
+    /* x is a number / x is not a whole number */
+    if ((op->type == ENLNG_TOKEN_EQ || negated) &&
+        (oop_is_ident(peek(p, 0), "a") || oop_is_ident(peek(p, 0), "an"))) {
+      const char *kind = NULL;
+      int words = 0;
+      Token *k1 = peek(p, 1);
+      if (tok_is(k1, "whole") && tok_is(peek(p, 2), "number")) {
+        kind = "whole number";
+        words = 2;
+      } else if (tok_is(k1, "number") || tok_is(k1, "decimal") ||
+                 tok_is(k1, "list") || tok_is(k1, "map") ||
+                 k1->type == ENLNG_TOKEN_FUNCTION ||
+                 (k1->text && strcmp(k1->text, "text") == 0)) {
+        kind = k1->type == ENLNG_TOKEN_FUNCTION ? "function" : k1->text;
+        words = 1;
+      }
+      if (kind) {
+        advance(p); /* a / an */
+        for (int w = 0; w < words; w++)
+          advance(p);
+        ASTNode *is = call2("is_kind", left, str_node(kind, op->line), op->line);
+        left = negated ? not_node(is, op->line) : is;
+        continue;
+      }
+    }
     /* "x is a Dog": the article a / an is skipped when a word follows it */
     if (op->type == ENLNG_TOKEN_EQ &&
         (oop_is_ident(peek(p, 0), "a") || oop_is_ident(peek(p, 0), "an")) &&
@@ -1577,7 +1827,7 @@ static ASTNode *parse_logical_and(Parser *p) {
   return left;
 }
 
-static ASTNode *parse_expression(Parser *p) {
+static ASTNode *parse_or_expr(Parser *p) {
   ASTNode *left = parse_logical_and(p);
   while (check(p, ENLNG_TOKEN_OR)) {
     Token *op = advance(p);
@@ -1586,6 +1836,47 @@ static ASTNode *parse_expression(Parser *p) {
     n->as.binary_expr.op = op->type;
     n->as.binary_expr.left = left;
     n->as.binary_expr.right = right;
+    left = n;
+  }
+  return left;
+}
+
+/* "every n in numbers where n > 10" and "n times 2 for every n in numbers":
+   the loop part, after the name. Gives the list to work on, already kept to
+   the items that pass `where`. */
+static ASTNode *parse_list_source(Parser *p, const char *var, int line) {
+  if (!match(p, ENLNG_TOKEN_IN)) {
+    set_error(p, "Expected 'in' and a list, as in: every n in numbers", line);
+    return ast_new(AST_EXPR_LITERAL_NULL, line);
+  }
+  ASTNode *coll = parse_or_expr(p);
+  if (match(p, ENLNG_TOKEN_WHERE))
+    coll = call2("_keep_where", coll, lambda1(var, parse_or_expr(p), line), line);
+  return coll;
+}
+
+static ASTNode *parse_expression(Parser *p) {
+  ASTNode *left = parse_or_expr(p);
+  /* n times 2 for every n in numbers [where n > 0] */
+  if (check(p, ENLNG_TOKEN_FOR) && peek(p, 1)->type == ENLNG_TOKEN_EACH &&
+      peek(p, 2)->type == ENLNG_TOKEN_IDENTIFIER &&
+      peek(p, 3)->type == ENLNG_TOKEN_IN) {
+    int line = advance(p)->line;
+    advance(p);
+    const char *var = advance(p)->text;
+    ASTNode *src = parse_list_source(p, var, line);
+    left = call2("_map_each", src, lambda1(var, left, line), line);
+  }
+  /* "adult" if age >= 18 otherwise "child" */
+  if (check(p, ENLNG_TOKEN_WHEN) && has_token_on_line(p, ENLNG_TOKEN_OTHERWISE)) {
+    int line = advance(p)->line;
+    ASTNode *n = ast_new(AST_EXPR_TERNARY, line);
+    n->as.ternary.cond = parse_or_expr(p);
+    if (!match(p, ENLNG_TOKEN_OTHERWISE))
+      set_error(p, "Expected 'otherwise' and the other value, as in: "
+                   "\"adult\" if age >= 18 otherwise \"child\"", line);
+    n->as.ternary.yes = left;
+    n->as.ternary.no = parse_expression(p);
     left = n;
   }
   return left;
@@ -1609,6 +1900,14 @@ static void parse_block_inner(Parser *p, ASTNode ***out_stmts, int *out_count) {
   if (!check(p, ENLNG_TOKEN_INDENT)) {
     if (!check(p, ENLNG_TOKEN_NEWLINE) && !check(p, ENLNG_TOKEN_EOF)) {
       stmts[count++] = parse_statement(p);
+      for (int e = 0; e < g_nextra; e++) {
+        if (count >= cap) {
+          cap *= 2;
+          stmts = (ASTNode **)realloc(stmts, sizeof(ASTNode *) * cap);
+        }
+        stmts[count++] = g_extra[e];
+      }
+      g_nextra = 0;
     }
     *out_stmts = stmts;
     *out_count = count;
@@ -2207,6 +2506,63 @@ static void oop_generate_helpers(ASTNode *prog) {
   g_ngen = 0;
 }
 
+/* when the color is: then one line per value. Written as a `when` for each
+ * value, so the interpreter and the C generator need nothing new. */
+static ASTNode *parse_choose_by_value(Parser *p) {
+  Token *t = advance(p); /* when */
+  ASTNode *subject = parse_additive(p);
+  match(p, ENLNG_TOKEN_EQ);
+  match(p, ENLNG_TOKEN_COLON);
+  skip_newlines(p);
+  if (!match(p, ENLNG_TOKEN_INDENT)) {
+    set_error(p, "After 'when ... is:' write one value per line, indented, as in:  \"red\": show \"stop\"",
+              t->line);
+    return NULL;
+  }
+  char *tmp = hidden_name("value");
+  ASTNode *first = decl_node(tmp, subject, false, t->line);
+  ASTNode *head = NULL, *last = NULL;
+  for (;;) {
+    skip_newlines(p);
+    if (match(p, ENLNG_TOKEN_DEDENT) || check(p, ENLNG_TOKEN_EOF))
+      break;
+    Token *ct = peek(p, 0);
+    if (match(p, ENLNG_TOKEN_OTHERWISE)) {
+      ASTNode **body = NULL;
+      int count = 0;
+      parse_block(p, &body, &count);
+      if (!last) {
+        set_error(p, "'otherwise' comes after the values, as the last line", ct->line);
+        return NULL;
+      }
+      last->as.when_stmt.else_body = body;
+      last->as.when_stmt.else_count = count;
+      continue;
+    }
+    ASTNode *cond = NULL;
+    do {
+      ASTNode *eq = binary_node(ENLNG_TOKEN_EQ, var_node(tmp, ct->line), parse_additive(p), ct->line);
+      cond = cond ? binary_node(ENLNG_TOKEN_OR, cond, eq, ct->line) : eq;
+    } while (match(p, ENLNG_TOKEN_OR) || match(p, ENLNG_TOKEN_COMMA));
+    ASTNode *w = ast_new(AST_WHEN, ct->line);
+    w->as.when_stmt.condition = cond;
+    parse_block(p, &w->as.when_stmt.then_body, &w->as.when_stmt.then_count);
+    if (p->has_error)
+      return NULL;
+    if (!head) {
+      head = w;
+    } else {
+      last->as.when_stmt.else_body = (ASTNode **)malloc(sizeof(ASTNode *));
+      last->as.when_stmt.else_body[0] = w;
+      last->as.when_stmt.else_count = 1;
+    }
+    last = w;
+  }
+  if (head)
+    oop_queue_extra(head);
+  return first;
+}
+
 static ASTNode *parse_statement(Parser *p) {
   skip_newlines(p);
   Token *t = peek(p, 0);
@@ -2237,6 +2593,108 @@ static ASTNode *parse_statement(Parser *p) {
       g->as.global_stmt.names[g->as.global_stmt.count++] = enlng_strdup(nt->text);
     } while (match(p, ENLNG_TOKEN_COMMA));
     return g;
+  }
+
+  /* stop the program */
+  if (t->type == ENLNG_TOKEN_STOP && tok_is(peek(p, 1), "program")) {
+    advance(p);
+    advance(p);
+    return expr_stmt_node(oop_call_node("stop_program", NULL, 0, t->line), t->line);
+  }
+
+  /* check that total is 10 -- stops with a message when it does not hold */
+  if (tok_is(t, "check") && peek(p, 1)->type != ENLNG_TOKEN_LPAREN &&
+      peek(p, 1)->type != ENLNG_TOKEN_ASSIGN && peek(p, 1)->type != ENLNG_TOKEN_AS &&
+      peek(p, 1)->type != ENLNG_TOKEN_NEWLINE) {
+    advance(p);
+    ASTNode *cond = parse_expression(p);
+    ASTNode *w = ast_new(AST_WHEN, t->line);
+    ASTNode *f = ast_new(AST_FAIL, t->line);
+    if (cond && cond->type == AST_EXPR_BINARY && cond->as.binary_expr.op == ENLNG_TOKEN_EQ) {
+      /* keep both sides, so the message can say what came out */
+      char *l = hidden_name("check_got");
+      char *r = hidden_name("check_want");
+      ASTNode *first = decl_node(l, cond->as.binary_expr.left, false, t->line);
+      oop_queue_extra(decl_node(r, cond->as.binary_expr.right, false, t->line));
+      w->as.when_stmt.condition =
+          not_node(binary_node(ENLNG_TOKEN_EQ, var_node(l, t->line), var_node(r, t->line), t->line), t->line);
+      ASTNode *msg = binary_node(ENLNG_TOKEN_ADD, str_node("Expected ", t->line),
+                                 call1("to_text", var_node(r, t->line), t->line), t->line);
+      msg = binary_node(ENLNG_TOKEN_ADD, msg, str_node(" but got ", t->line), t->line);
+      msg = binary_node(ENLNG_TOKEN_ADD, msg, call1("to_text", var_node(l, t->line), t->line), t->line);
+      f->as.fail_stmt.message = msg;
+      w->as.when_stmt.then_body = (ASTNode **)malloc(sizeof(ASTNode *));
+      w->as.when_stmt.then_body[0] = f;
+      w->as.when_stmt.then_count = 1;
+      oop_queue_extra(w);
+      return first;
+    }
+    w->as.when_stmt.condition = not_node(cond, t->line);
+    f->as.fail_stmt.message = str_node("This check did not hold.", t->line);
+    w->as.when_stmt.then_body = (ASTNode **)malloc(sizeof(ASTNode *));
+    w->as.when_stmt.then_body[0] = f;
+    w->as.when_stmt.then_count = 1;
+    return w;
+  }
+
+  /* test "adding works": a named group of checks */
+  if (tok_is(t, "test") && peek(p, 1)->type == ENLNG_TOKEN_STRING_LITERAL &&
+      peek(p, 2)->type == ENLNG_TOKEN_COLON) {
+    advance(p);
+    const char *name = advance(p)->text;
+    ASTNode *n = ast_new(AST_TRY, t->line);
+    ASTNode **body = NULL;
+    int count = 0;
+    parse_block(p, &body, &count);
+    body = (ASTNode **)realloc(body, sizeof(ASTNode *) * (size_t)(count + 1));
+    body[count++] = expr_stmt_node(
+        call3("test_result", str_node(name, t->line), bool_node(true, t->line),
+              str_node("", t->line), t->line), t->line);
+    n->as.try_stmt.body = body;
+    n->as.try_stmt.body_count = count;
+    n->as.try_stmt.err_name = hidden_name("test_problem");
+    n->as.try_stmt.handler = (ASTNode **)malloc(sizeof(ASTNode *));
+    n->as.try_stmt.handler[0] = expr_stmt_node(
+        call3("test_result", str_node(name, t->line), bool_node(false, t->line),
+              var_node(n->as.try_stmt.err_name, t->line), t->line), t->line);
+    n->as.try_stmt.handler_count = 1;
+    return n;
+  }
+
+  /* write the data to "copy.png" / send "hello" to the client */
+  if ((tok_is(t, "write") || tok_is(t, "send")) &&
+      peek(p, 1)->type != ENLNG_TOKEN_ASSIGN && peek(p, 1)->type != ENLNG_TOKEN_AS &&
+      peek(p, 1)->type != ENLNG_TOKEN_LPAREN && has_token_on_line(p, ENLNG_TOKEN_TO)) {
+    advance(p);
+    ASTNode *what = parse_or_expr(p);
+    if (!match(p, ENLNG_TOKEN_TO)) {
+      set_error(p, t->text[0] == 'w' ? "Expected 'to' and a file name, as in: write the data to \"copy.png\""
+                                     : "Expected 'to' and a connection, as in: send \"hello\" to the client",
+                t->line);
+      return NULL;
+    }
+    ASTNode *where = parse_or_expr(p);
+    return expr_stmt_node(t->text[0] == 'w' ? call2("write_data", what, where, t->line)
+                                            : call2("net_send", what, where, t->line),
+                          t->line);
+  }
+
+  /* close the client */
+  if (tok_is(t, "close") && (peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER) &&
+      (peek(p, 2)->type == ENLNG_TOKEN_NEWLINE || peek(p, 2)->type == ENLNG_TOKEN_EOF ||
+       peek(p, 2)->type == ENLNG_TOKEN_DEDENT)) {
+    advance(p);
+    return expr_stmt_node(call1("net_close", var_node(advance(p)->text, t->line), t->line), t->line);
+  }
+
+  /* serve answer on port 8080 */
+  if (tok_is(t, "serve") && peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER &&
+      peek(p, 2)->type == ENLNG_TOKEN_ON && tok_is(peek(p, 3), "port")) {
+    advance(p);
+    const char *fn = advance(p)->text;
+    advance(p);
+    advance(p);
+    return expr_stmt_node(call2("serve", var_node(fn, t->line), parse_additive(p), t->line), t->line);
   }
 
   /* call m on obj / tell obj to m / ask obj to m, as a statement */
@@ -2278,6 +2736,37 @@ static ASTNode *parse_statement(Parser *p) {
       return NULL;
     }
     char *name = enlng_strdup(id_tok->text);
+
+    /* remember the name and the age from the person */
+    if ((check(p, ENLNG_TOKEN_AND) || check(p, ENLNG_TOKEN_COMMA)) &&
+        peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER) {
+      int cap = 4, count = 1;
+      char **names = (char **)malloc(sizeof(char *) * cap);
+      names[0] = name;
+      while ((check(p, ENLNG_TOKEN_AND) || check(p, ENLNG_TOKEN_COMMA)) &&
+             peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER) {
+        advance(p);
+        if (count >= cap) {
+          cap *= 2;
+          names = (char **)realloc(names, sizeof(char *) * cap);
+        }
+        names[count++] = enlng_strdup(advance(p)->text);
+      }
+      if (!match(p, ENLNG_TOKEN_FROM) && !match(p, ENLNG_TOKEN_AS) &&
+          !match(p, ENLNG_TOKEN_ASSIGN)) {
+        set_error(p, "Expected 'from' and a list or map, as in: remember name and age from person",
+                  t->line);
+        return NULL;
+      }
+      char *whole = hidden_name("parts");
+      ASTNode *first = decl_node(whole, parse_expression(p), false, t->line);
+      for (int i = 0; i < count; i++)
+        oop_queue_extra(decl_node(names[i],
+                                  call3("take_part", var_node(whole, t->line),
+                                        int_node(i, t->line), str_node(names[i], t->line), t->line),
+                                  is_frozen, t->line));
+      return first;
+    }
 
     if (!match(p, ENLNG_TOKEN_AS) && !match(p, ENLNG_TOKEN_ASSIGN)) {
       set_error(p, "Expected 'as' or '=' in declaration", t->line);
@@ -2389,6 +2878,20 @@ static ASTNode *parse_statement(Parser *p) {
     return n;
   }
 
+  /* when the color is:
+         "red": show "stop"
+         "green" or "blue": show "go"
+         otherwise: show "wait"            */
+  if (check(p, ENLNG_TOKEN_WHEN)) {
+    int k = 1;
+    while (peek(p, k)->type != ENLNG_TOKEN_COLON && peek(p, k)->type != ENLNG_TOKEN_NEWLINE &&
+           peek(p, k)->type != ENLNG_TOKEN_EOF)
+      k++;
+    if (peek(p, k)->type == ENLNG_TOKEN_COLON && k >= 3 &&
+        peek(p, k - 1)->type == ENLNG_TOKEN_EQ && peek(p, k + 1)->type == ENLNG_TOKEN_NEWLINE)
+      return parse_choose_by_value(p);
+  }
+
   /* 3. Conditionals: when cond: block [otherwise: block] */
   if (match(p, ENLNG_TOKEN_WHEN)) {
     ASTNode *cond = parse_expression(p);
@@ -2444,6 +2947,48 @@ static ASTNode *parse_statement(Parser *p) {
       return NULL;
     }
     char *var_name = enlng_strdup(var_tok->text);
+
+    /* for each name and score in results / for each key and value in prices */
+    if ((check(p, ENLNG_TOKEN_AND) || check(p, ENLNG_TOKEN_COMMA)) &&
+        peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER) {
+      int cap = 4, count = 1;
+      char **names = (char **)malloc(sizeof(char *) * cap);
+      names[0] = var_name;
+      while ((check(p, ENLNG_TOKEN_AND) || check(p, ENLNG_TOKEN_COMMA)) &&
+             peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER) {
+        advance(p);
+        if (count >= cap) {
+          cap *= 2;
+          names = (char **)realloc(names, sizeof(char *) * cap);
+        }
+        names[count++] = enlng_strdup(advance(p)->text);
+      }
+      if (!match(p, ENLNG_TOKEN_IN)) {
+        set_error(p, "Expected 'in' and a list, as in: for each name and score in results",
+                  t->line);
+        return NULL;
+      }
+      ASTNode *coll = parse_expression(p);
+      char *item = hidden_name("item");
+      ASTNode *n = ast_new(AST_FOR_EACH, t->line);
+      n->as.for_each.item_name = item;
+      n->as.for_each.list_name = enlng_strdup("_each_coll");
+      n->as.for_each.list_expr = call1("pairs_of", coll, t->line);
+      ASTNode **body = NULL;
+      int bc = 0;
+      parse_block(p, &body, &bc);
+      ASTNode **nb = (ASTNode **)malloc(sizeof(ASTNode *) * (size_t)(bc + count));
+      for (int i = 0; i < count; i++)
+        nb[i] = decl_node(names[i],
+                          call3("take_part", var_node(item, t->line), int_node(i, t->line),
+                                str_node(names[i], t->line), t->line),
+                          false, t->line);
+      for (int i = 0; i < bc; i++)
+        nb[count + i] = body[i];
+      n->as.for_each.body = nb;
+      n->as.for_each.body_count = bc + count;
+      return n;
+    }
 
     /* Case A: Range loop: for i from 1 to 5 [by 1]: OR for i in 1 to 5 [by 1]: */
     if (match(p, ENLNG_TOKEN_FROM) || (check(p, ENLNG_TOKEN_IN) && has_token_on_line(p, ENLNG_TOKEN_TO))) {
@@ -3592,6 +4137,101 @@ static void add_prelude(ASTNode *prog) {
   /* the tree may point into the tokens, so they stay */
 }
 
+typedef struct {
+  Parser *p;
+  ASTNode *prog;
+} NamedCtx;
+
+static ASTNode *find_top_function(ASTNode *prog, const char *name) {
+  for (int i = 0; i < prog->as.program.count; i++) {
+    ASTNode *s = prog->as.program.statements[i];
+    if (s && s->type == AST_FUNCTION && s->as.func_def.name &&
+        strcmp(s->as.func_def.name, name) == 0)
+      return s;
+  }
+  return NULL;
+}
+
+/* area(width as 3, height as 4): puts each input in the place of its name,
+ * and gives null (so the default) for an input with a default left out. */
+static void named_slot(ASTNode **slot, void *ctx) {
+  ASTNode *n = *slot;
+  NamedCtx *c = (NamedCtx *)ctx;
+  if (!n || c->p->has_error)
+    return;
+  ast_each_child(n, named_slot, ctx);
+  if (n->type != AST_EXPR_CALL || !n->as.call_expr.arg_names)
+    return;
+  char msg[400];
+  const char *fname = n->as.call_expr.func_name;
+  ASTNode *fn = find_top_function(c->prog, fname);
+  if (!fn) {
+    snprintf(msg, sizeof(msg),
+             "Inputs by name work with functions written in the program, and '%s' is not one. "
+             "Give its inputs in order instead.", fname);
+    set_error(c->p, msg, n->line);
+    return;
+  }
+  int own = fn->as.func_def.param_count;
+  int lo = fn->as.func_def.has_defaults ? fn->as.func_def.min_count : own;
+  ASTNode **args = (ASTNode **)calloc((size_t)(own > 0 ? own : 1), sizeof(ASTNode *));
+  bool seen_name = false;
+  for (int i = 0; i < n->as.call_expr.arg_count; i++) {
+    const char *an = n->as.call_expr.arg_names[i];
+    int at = i;
+    if (an) {
+      seen_name = true;
+      at = -1;
+      for (int k = 0; k < own; k++)
+        if (strcmp(fn->as.func_def.params[k], an) == 0)
+          at = k;
+      if (at < 0) {
+        snprintf(msg, sizeof(msg), "'%s' has no input called '%s'.", fname, an);
+        set_error(c->p, msg, n->line);
+        return;
+      }
+    } else if (seen_name) {
+      set_error(c->p, "Inputs given by name come after the ones given in order.", n->line);
+      return;
+    }
+    if (at >= own) {
+      snprintf(msg, sizeof(msg), "'%s' takes %d input%s but was given more.", fname, own,
+               own == 1 ? "" : "s");
+      set_error(c->p, msg, n->line);
+      return;
+    }
+    if (args[at]) {
+      snprintf(msg, sizeof(msg), "The input '%s' of '%s' is given twice.",
+               fn->as.func_def.params[at], fname);
+      set_error(c->p, msg, n->line);
+      return;
+    }
+    args[at] = n->as.call_expr.args[i];
+  }
+  int count = own;
+  while (count > lo && !args[count - 1])
+    count--;
+  for (int k = 0; k < count; k++) {
+    if (args[k])
+      continue;
+    if (k < lo) {
+      snprintf(msg, sizeof(msg), "'%s' needs its input '%s'.", fname, fn->as.func_def.params[k]);
+      set_error(c->p, msg, n->line);
+      return;
+    }
+    args[k] = ast_new(AST_EXPR_LITERAL_NULL, n->line);
+  }
+  n->as.call_expr.args = args;
+  n->as.call_expr.arg_count = count;
+  n->as.call_expr.arg_names = NULL;
+}
+
+static void resolve_named_inputs(Parser *p, ASTNode *prog) {
+  NamedCtx c = {p, prog};
+  for (int i = 0; i < prog->as.program.count && !p->has_error; i++)
+    named_slot(&prog->as.program.statements[i], &c);
+}
+
 ASTNode *parser_parse_program(Parser *p) {
   bool outer = (g_parse_depth == 0);
   if (outer)
@@ -3606,6 +4246,8 @@ ASTNode *parser_parse_program(Parser *p) {
   }
   if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)
     add_prelude(prog);
+  if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)
+    resolve_named_inputs(p, prog);
   if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)
     check_duplicate_functions(p, prog);
   if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)

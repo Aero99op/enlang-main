@@ -33,9 +33,16 @@
 #include <time.h>
 
 #ifdef _WIN32
+
 #include <windows.h>
 #else
 #include <unistd.h>
+#ifndef __EMSCRIPTEN__
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#endif
 #endif
 
 /* Forward declarations */
@@ -4299,6 +4306,484 @@ static inline EnlngVal enlng_builtin_read_all_input(void) {
   return v;
 }
 
+/* --- Sentences of 5.6: power, taking apart, kinds, tests, bytes, network -- */
+
+/* Lets the runtime call a function value (the web server calls the
+   program's function for each request). The interpreter and the generated
+   program each set it. */
+static EnlngVal (*enlng_call_hook)(EnlngVal f, int argc, EnlngVal *a) = NULL;
+
+/* 2 to the power of 10. Whole numbers give a whole number. */
+static inline EnlngVal enlng_builtin_power(EnlngVal a, EnlngVal b) {
+  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT && b.as.i >= 0) {
+    int64_t r = 1, base = a.as.i, e = b.as.i;
+    while (e > 0) {
+      if ((e & 1) && __builtin_mul_overflow(r, base, &r))
+        enlng_int_overflow("to the power of", a.as.i, b.as.i);
+      e >>= 1;
+      if (e > 0 && __builtin_mul_overflow(base, base, &base))
+        enlng_int_overflow("to the power of", a.as.i, b.as.i);
+    }
+    return enlng_make_int(r);
+  }
+  return enlng_make_float(pow(enlng_need_num("power", a), enlng_need_num("power", b)));
+}
+
+/* --- Tests ------------------------------------------------------------- */
+static int enlng_tests_passed = 0, enlng_tests_failed = 0;
+
+static void enlng_tests_report(void) {
+  if (enlng_tests_passed + enlng_tests_failed == 0)
+    return;
+  printf("\n%d passed, %d failed\n", enlng_tests_passed, enlng_tests_failed);
+  fflush(stdout);
+  if (enlng_tests_failed > 0)
+    _Exit(1);
+}
+
+static inline EnlngVal enlng_builtin_test_result(EnlngVal name, EnlngVal ok,
+                                                 EnlngVal msg) {
+  if (enlng_tests_passed + enlng_tests_failed == 0)
+    atexit(enlng_tests_report);
+  char nb[64], mb[64];
+  const char *n = enlng_val_to_str_buf(name, nb, sizeof(nb));
+  if (enlng_is_truthy(ok)) {
+    enlng_tests_passed++;
+    printf("passed: %s\n", n);
+  } else {
+    enlng_tests_failed++;
+    printf("FAILED: %s\n        %s\n", n, enlng_val_to_str_buf(msg, mb, sizeof(mb)));
+  }
+  fflush(stdout);
+  return enlng_make_null();
+}
+
+/* stop the program */
+static inline EnlngVal enlng_builtin_stop_program(void) {
+  fflush(stdout);
+  exit(0);
+  return enlng_make_null();
+}
+
+/* --- Taking a list or map apart ----------------------------------------- */
+/* remember name and age from person: part i of a list, or the key of a map */
+static inline EnlngVal enlng_builtin_take_part(EnlngVal v, EnlngVal index,
+                                               EnlngVal key) {
+  char msg[300];
+  if (v.type == ENLNG_VAL_MAP && v.as.m) {
+    const char *k = key.type == ENLNG_VAL_STRING && key.as.s ? key.as.s : "";
+    if (enlng_map_has(v, k))
+      return enlng_map_get(v, k);
+    snprintf(msg, sizeof(msg), "The map has no key '%s' to take out.", k);
+    enlng_throw(msg);
+  }
+  if (v.type == ENLNG_VAL_LIST && v.as.l) {
+    int64_t i = index.as.i;
+    if (i < v.as.l->count)
+      return v.as.l->items[i];
+    snprintf(msg, sizeof(msg),
+             "The list has %d item%s, so there is nothing for name number %lld.",
+             v.as.l->count, v.as.l->count == 1 ? "" : "s", (long long)i + 1);
+    enlng_throw(msg);
+  }
+  snprintf(msg, sizeof(msg), "Only a list or a map can be taken apart, but got %s.",
+           enlng_kind(v));
+  enlng_throw(msg);
+  return enlng_make_null();
+}
+
+/* for each key and value in a map: the map as a list of [key, value] */
+static inline EnlngVal enlng_builtin_pairs_of(EnlngVal v) {
+  if (v.type != ENLNG_VAL_MAP)
+    return v;
+  EnlngVal ks = enlng_builtin_keys(v);
+  EnlngList *out = enlng_list_create();
+  for (int i = 0; ks.as.l && i < ks.as.l->count; i++) {
+    EnlngList *pair = enlng_list_create();
+    enlng_list_push(pair, ks.as.l->items[i]);
+    enlng_list_push(pair, enlng_map_get(v, ks.as.l->items[i].as.s));
+    enlng_list_push(out, enlng_make_list(pair));
+  }
+  return enlng_make_list(out);
+}
+
+/* x is a number / x is a whole number / x is a text / ... */
+static inline EnlngVal enlng_builtin_is_kind(EnlngVal v, EnlngVal kind) {
+  const char *k = kind.type == ENLNG_VAL_STRING && kind.as.s ? kind.as.s : "";
+  bool r = false;
+  if (strcmp(k, "number") == 0)
+    r = v.type == ENLNG_VAL_INT || v.type == ENLNG_VAL_FLOAT;
+  else if (strcmp(k, "whole number") == 0)
+    r = v.type == ENLNG_VAL_INT;
+  else if (strcmp(k, "decimal") == 0)
+    r = v.type == ENLNG_VAL_FLOAT;
+  else if (strcmp(k, "text") == 0)
+    r = v.type == ENLNG_VAL_STRING;
+  else if (strcmp(k, "list") == 0)
+    r = v.type == ENLNG_VAL_LIST;
+  else if (strcmp(k, "map") == 0)
+    r = v.type == ENLNG_VAL_MAP;
+  else if (strcmp(k, "function") == 0)
+    r = v.type == ENLNG_VAL_FUNC;
+  return enlng_make_bool(r);
+}
+
+/* --- Bytes ------------------------------------------------------------- */
+/* read bytes from "photo.png": a list of numbers from 0 to 255 */
+static inline EnlngVal enlng_builtin_read_bytes(EnlngVal path) {
+  char msg[300];
+  if (path.type != ENLNG_VAL_STRING || !path.as.s)
+    enlng_throw("'read bytes from' needs the name of a file as text.");
+  FILE *f = fopen(path.as.s, "rb");
+  if (!f) {
+    snprintf(msg, sizeof(msg), "Could not open the file '%s'.", path.as.s);
+    enlng_throw(msg);
+  }
+  EnlngList *out = enlng_list_create();
+  unsigned char chunk[4096];
+  size_t n;
+  while ((n = fread(chunk, 1, sizeof(chunk), f)) > 0)
+    for (size_t i = 0; i < n; i++)
+      enlng_list_push(out, enlng_make_int(chunk[i]));
+  fclose(f);
+  return enlng_make_list(out);
+}
+
+/* write the data to "copy.png": a list of numbers as bytes, anything else as text */
+static inline EnlngVal enlng_builtin_write_data(EnlngVal data, EnlngVal path) {
+  char msg[300];
+  if (path.type != ENLNG_VAL_STRING || !path.as.s)
+    enlng_throw("'write ... to' needs the name of a file as text after 'to'.");
+  FILE *f = fopen(path.as.s, "wb");
+  if (!f) {
+    snprintf(msg, sizeof(msg), "Could not write the file '%s'.", path.as.s);
+    enlng_throw(msg);
+  }
+  if (data.type == ENLNG_VAL_LIST && data.as.l) {
+    for (int i = 0; i < data.as.l->count; i++) {
+      EnlngVal b = data.as.l->items[i];
+      if (b.type != ENLNG_VAL_INT || b.as.i < 0 || b.as.i > 255) {
+        fclose(f);
+        snprintf(msg, sizeof(msg),
+                 "Item %d of the list is not a byte. Bytes are whole numbers from 0 to 255.",
+                 i);
+        enlng_throw(msg);
+      }
+      fputc((int)b.as.i, f);
+    }
+  } else {
+    EnlngVal t = enlng_builtin_to_text(data);
+    if (t.as.s)
+      fputs(t.as.s, f);
+  }
+  fclose(f);
+  return enlng_make_null();
+}
+
+/* --- Network ----------------------------------------------------------- */
+#if defined(__EMSCRIPTEN__)
+static inline int64_t enlng_net_unavailable(void) {
+  enlng_throw("Network connections are not available in the browser version.");
+  return -1;
+}
+#define ENLNG_NET_OK() enlng_net_unavailable()
+typedef int64_t enlng_sock_t;
+#define ENLNG_BAD_SOCK (-1)
+#define enlng_sk_socket(a, b, c) ((enlng_sock_t)-1)
+#define enlng_sk_bind(s, a, l) (-1)
+#define enlng_sk_listen(s, n) (-1)
+#define enlng_sk_accept(s) ((enlng_sock_t)-1)
+#define enlng_sk_connect(s, a, l) (-1)
+#define enlng_sk_send(s, b, n) (-1)
+#define enlng_sk_recv(s, b, n) (-1)
+#define enlng_sk_close(s) (0)
+#define enlng_sk_reuse(s) ((void)0)
+#define enlng_sk_host(h) ((struct hostent *)NULL)
+#define enlng_sk_htons(p) (p)
+struct sockaddr_in { int sin_family; int sin_port; struct { uint32_t s_addr; } sin_addr; };
+struct hostent { char **h_addr_list; };
+#define AF_INET 2
+#define SOCK_STREAM 1
+#define INADDR_ANY 0
+#elif defined(_WIN32)
+/* Windows: ws2_32.dll is loaded when the first connection is made, so no
+   program needs an extra library to build. */
+typedef SOCKET enlng_sock_t;
+#define ENLNG_BAD_SOCK INVALID_SOCKET
+static struct {
+  int ready;
+  int(WINAPI *startup)(WORD, void *);
+  SOCKET(WINAPI *socket_)(int, int, int);
+  int(WINAPI *bind_)(SOCKET, const struct sockaddr *, int);
+  int(WINAPI *listen_)(SOCKET, int);
+  SOCKET(WINAPI *accept_)(SOCKET, struct sockaddr *, int *);
+  int(WINAPI *connect_)(SOCKET, const struct sockaddr *, int);
+  int(WINAPI *send_)(SOCKET, const char *, int, int);
+  int(WINAPI *recv_)(SOCKET, char *, int, int);
+  int(WINAPI *close_)(SOCKET);
+  int(WINAPI *setopt_)(SOCKET, int, int, const char *, int);
+  struct hostent *(WINAPI *host_)(const char *);
+} enlng_ws;
+static inline int64_t enlng_net_ready(void) {
+  if (enlng_ws.ready)
+    return 0;
+  HMODULE h = LoadLibraryA("ws2_32.dll");
+  if (!h)
+    enlng_throw("Could not load the network library (ws2_32.dll).");
+#define ENLNG_WS_LOAD(field, name) *(FARPROC *)&enlng_ws.field = GetProcAddress(h, name)
+  ENLNG_WS_LOAD(startup, "WSAStartup");
+  ENLNG_WS_LOAD(socket_, "socket");
+  ENLNG_WS_LOAD(bind_, "bind");
+  ENLNG_WS_LOAD(listen_, "listen");
+  ENLNG_WS_LOAD(accept_, "accept");
+  ENLNG_WS_LOAD(connect_, "connect");
+  ENLNG_WS_LOAD(send_, "send");
+  ENLNG_WS_LOAD(recv_, "recv");
+  ENLNG_WS_LOAD(close_, "closesocket");
+  ENLNG_WS_LOAD(setopt_, "setsockopt");
+  ENLNG_WS_LOAD(host_, "gethostbyname");
+#undef ENLNG_WS_LOAD
+  char wsa[512];
+  if (!enlng_ws.startup || enlng_ws.startup(MAKEWORD(2, 2), wsa) != 0)
+    enlng_throw("Could not start the network library.");
+  enlng_ws.ready = 1;
+  return 0;
+}
+#define ENLNG_NET_OK() enlng_net_ready()
+#define enlng_sk_socket(a, b, c) enlng_ws.socket_(a, b, c)
+#define enlng_sk_bind(s, a, l) enlng_ws.bind_(s, a, l)
+#define enlng_sk_listen(s, n) enlng_ws.listen_(s, n)
+#define enlng_sk_accept(s) enlng_ws.accept_(s, NULL, NULL)
+#define enlng_sk_connect(s, a, l) enlng_ws.connect_(s, a, l)
+#define enlng_sk_send(s, b, n) enlng_ws.send_(s, b, (int)(n), 0)
+#define enlng_sk_recv(s, b, n) enlng_ws.recv_(s, b, (int)(n), 0)
+#define enlng_sk_close(s) enlng_ws.close_(s)
+#define enlng_sk_reuse(s)                                                     \
+  do {                                                                        \
+    int one_ = 1;                                                             \
+    enlng_ws.setopt_(s, SOL_SOCKET, SO_REUSEADDR, (const char *)&one_, sizeof(one_)); \
+  } while (0)
+#define enlng_sk_host(h) enlng_ws.host_(h)
+#define enlng_sk_htons(p) ((uint16_t)((((p) & 0xFF) << 8) | (((p) >> 8) & 0xFF)))
+#else
+typedef int enlng_sock_t;
+#define ENLNG_BAD_SOCK (-1)
+#define ENLNG_NET_OK() 0
+#define enlng_sk_socket(a, b, c) socket(a, b, c)
+#define enlng_sk_bind(s, a, l) bind(s, a, l)
+#define enlng_sk_listen(s, n) listen(s, n)
+#define enlng_sk_accept(s) accept(s, NULL, NULL)
+#define enlng_sk_connect(s, a, l) connect(s, a, l)
+#define enlng_sk_send(s, b, n) send(s, b, n, 0)
+#define enlng_sk_recv(s, b, n) recv(s, b, n, 0)
+#define enlng_sk_close(s) close(s)
+#define enlng_sk_reuse(s)                                                     \
+  do {                                                                        \
+    int one_ = 1;                                                             \
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one_, sizeof(one_));             \
+  } while (0)
+#define enlng_sk_host(h) gethostbyname(h)
+#define enlng_sk_htons(p) htons(p)
+#endif
+
+static inline int enlng_need_port(EnlngVal port) {
+  int64_t p = enlng_need_whole("port", port);
+  if (p < 1 || p > 65535)
+    enlng_throw("A port is a whole number from 1 to 65535.");
+  return (int)p;
+}
+
+static inline enlng_sock_t enlng_need_conn(const char *what, EnlngVal c) {
+  if (c.type != ENLNG_VAL_INT) {
+    char msg[200];
+    snprintf(msg, sizeof(msg), "'%s' needs a connection, but got %s.", what, enlng_kind(c));
+    enlng_throw(msg);
+  }
+  return (enlng_sock_t)c.as.i;
+}
+
+/* listen on port 8080 */
+static inline EnlngVal enlng_builtin_net_listen(EnlngVal port) {
+  int p = enlng_need_port(port);
+  ENLNG_NET_OK();
+  enlng_sock_t s = enlng_sk_socket(AF_INET, SOCK_STREAM, 0);
+  if (s == ENLNG_BAD_SOCK)
+    enlng_throw("Could not open a network connection.");
+  enlng_sk_reuse(s);
+  struct sockaddr_in a;
+  memset(&a, 0, sizeof(a));
+  a.sin_family = AF_INET;
+  a.sin_port = enlng_sk_htons(p);
+  a.sin_addr.s_addr = INADDR_ANY;
+  if (enlng_sk_bind(s, (struct sockaddr *)&a, sizeof(a)) != 0 ||
+      enlng_sk_listen(s, 16) != 0) {
+    enlng_sk_close(s);
+    char msg[200];
+    snprintf(msg, sizeof(msg), "Could not listen on port %d. Another program may be using it.", p);
+    enlng_throw(msg);
+  }
+  return enlng_make_int((int64_t)s);
+}
+
+/* accept from the server: waits for the next connection */
+static inline EnlngVal enlng_builtin_net_accept(EnlngVal server) {
+  enlng_sock_t s = enlng_need_conn("accept from", server);
+  ENLNG_NET_OK();
+  enlng_sock_t c = enlng_sk_accept(s);
+  if (c == ENLNG_BAD_SOCK)
+    enlng_throw("Could not accept a connection.");
+  return enlng_make_int((int64_t)c);
+}
+
+/* connect to "example.com" at port 80 */
+static inline EnlngVal enlng_builtin_net_connect(EnlngVal host, EnlngVal port) {
+  int p = enlng_need_port(port);
+  if (host.type != ENLNG_VAL_STRING || !host.as.s)
+    enlng_throw("'connect to' needs the name of a computer as text.");
+  ENLNG_NET_OK();
+  struct hostent *he = enlng_sk_host(host.as.s);
+  char msg[300];
+  if (!he || !he->h_addr_list || !he->h_addr_list[0]) {
+    snprintf(msg, sizeof(msg), "Could not find the computer '%s'.", host.as.s);
+    enlng_throw(msg);
+  }
+  enlng_sock_t s = enlng_sk_socket(AF_INET, SOCK_STREAM, 0);
+  struct sockaddr_in a;
+  memset(&a, 0, sizeof(a));
+  a.sin_family = AF_INET;
+  a.sin_port = enlng_sk_htons(p);
+  memcpy(&a.sin_addr, he->h_addr_list[0], 4);
+  if (s == ENLNG_BAD_SOCK || enlng_sk_connect(s, (struct sockaddr *)&a, sizeof(a)) != 0) {
+    if (s != ENLNG_BAD_SOCK)
+      enlng_sk_close(s);
+    snprintf(msg, sizeof(msg), "Could not connect to '%s' at port %d.", host.as.s, p);
+    enlng_throw(msg);
+  }
+  return enlng_make_int((int64_t)s);
+}
+
+/* send "hello" to the client */
+static inline EnlngVal enlng_builtin_net_send(EnlngVal text, EnlngVal conn) {
+  enlng_sock_t c = enlng_need_conn("send ... to", conn);
+  EnlngVal t = enlng_builtin_to_text(text);
+  const char *s = t.as.s ? t.as.s : "";
+  size_t left = strlen(s);
+  while (left > 0) {
+    int n = (int)enlng_sk_send(c, s, left);
+    if (n <= 0)
+      enlng_throw("Could not send: the connection is closed.");
+    s += n;
+    left -= (size_t)n;
+  }
+  return enlng_make_null();
+}
+
+/* receive from the client: the text that has arrived, or "" when it closed */
+static inline EnlngVal enlng_builtin_net_receive(EnlngVal conn) {
+  enlng_sock_t c = enlng_need_conn("receive from", conn);
+  char buf[65536];
+  int n = (int)enlng_sk_recv(c, buf, sizeof(buf) - 1);
+  if (n < 0)
+    n = 0;
+  buf[n] = '\0';
+  return enlng_make_string(buf);
+}
+
+/* close the client */
+static inline EnlngVal enlng_builtin_net_close(EnlngVal conn) {
+  enlng_sock_t c = enlng_need_conn("close", conn);
+  enlng_sk_close(c);
+  return enlng_make_null();
+}
+
+/* serve answer on port 8080: calls answer with each request and sends back
+   what it gives. The request is a map with method, path and body. The answer
+   is text, or a map with status, body and type. */
+static inline EnlngVal enlng_builtin_serve(EnlngVal fn, EnlngVal port) {
+  if (fn.type != ENLNG_VAL_FUNC)
+    enlng_throw("'serve' needs a function that answers each request.");
+  if (!enlng_call_hook)
+    enlng_throw("'serve' is not available here.");
+  EnlngVal server = enlng_builtin_net_listen(port);
+  enlng_sock_t s = (enlng_sock_t)server.as.i;
+  const char *limit_env = getenv("ENLNG_SERVE_LIMIT");
+  long limit = limit_env ? atol(limit_env) : 0, served = 0;
+  printf("Serving on http://localhost:%d (press Ctrl+C to stop)\n", (int)port.as.i);
+  fflush(stdout);
+  for (;;) {
+    enlng_sock_t c = enlng_sk_accept(s);
+    if (c == ENLNG_BAD_SOCK)
+      continue;
+    char *req = (char *)malloc(65536);
+    int got = 0;
+    while (got < 65535) {
+      int n = (int)enlng_sk_recv(c, req + got, 65535 - got);
+      if (n <= 0)
+        break;
+      got += n;
+      req[got] = '\0';
+      char *end = strstr(req, "\r\n\r\n");
+      if (end) {
+        const char *cl = strstr(req, "Content-Length:");
+        if (!cl)
+          cl = strstr(req, "content-length:");
+        long need = cl ? atol(cl + 15) : 0;
+        if ((long)(got - (end + 4 - req)) >= need)
+          break;
+      }
+    }
+    req[got] = '\0';
+    char method[16] = "", path[2048] = "";
+    sscanf(req, "%15s %2047s", method, path);
+    char *body = strstr(req, "\r\n\r\n");
+    EnlngMap *m = enlng_map_create();
+    EnlngVal mv = enlng_make_map(m);
+    enlng_map_set(mv, "method", enlng_make_string(method));
+    enlng_map_set(mv, "path", enlng_make_string(path));
+    enlng_map_set(mv, "body", enlng_make_string(body ? body + 4 : ""));
+    free(req);
+    EnlngVal r = enlng_call_hook(fn, 1, &mv);
+    int status = 200;
+    const char *type = NULL;
+    EnlngVal bodyv = r;
+    if (r.type == ENLNG_VAL_MAP && (enlng_map_has(r, "status") || enlng_map_has(r, "body"))) {
+      if (enlng_map_has(r, "status"))
+        status = (int)enlng_val_to_int(enlng_map_get(r, "status"));
+      if (enlng_map_has(r, "type") && enlng_map_get(r, "type").type == ENLNG_VAL_STRING)
+        type = enlng_map_get(r, "type").as.s;
+      bodyv = enlng_map_has(r, "body") ? enlng_map_get(r, "body") : enlng_make_string("");
+    }
+    EnlngVal bt = bodyv.type == ENLNG_VAL_STRING ? bodyv
+                  : (bodyv.type == ENLNG_VAL_MAP || bodyv.type == ENLNG_VAL_LIST)
+                      ? enlng_builtin_to_json(bodyv)
+                      : enlng_builtin_to_text(bodyv);
+    const char *b = bt.as.s ? bt.as.s : "";
+    if (!type)
+      type = b[0] == '<' ? "text/html; charset=utf-8"
+             : (b[0] == '{' || b[0] == '[') ? "application/json"
+                                            : "text/plain; charset=utf-8";
+    char head[512];
+    snprintf(head, sizeof(head),
+             "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %lu\r\nConnection: close\r\n\r\n",
+             status, status == 200 ? "OK" : status == 404 ? "Not Found" : "Status", type,
+             (unsigned long)strlen(b));
+    enlng_builtin_net_send(enlng_make_string(head), enlng_make_int((int64_t)c));
+    enlng_builtin_net_send(bt, enlng_make_int((int64_t)c));
+    enlng_sk_close(c);
+    served++;
+    if (limit > 0 && served >= limit)
+      break;
+  }
+  enlng_sk_close(s);
+  return enlng_make_null();
+}
+
+#define ENLNG_MORE_BUILTINS3(X)                                               \
+  X(power, 2) X(test_result, 3) X(stop_program, 0) X(take_part, 3)            \
+  X(pairs_of, 1) X(is_kind, 2) X(read_bytes, 1) X(write_data, 2)              \
+  X(net_listen, 1) X(net_accept, 1) X(net_connect, 2) X(net_send, 2)          \
+  X(net_receive, 1) X(net_close, 1) X(serve, 2)
+
 #define ENLNG_MORE_BUILTINS2(X)                                               \
   X(random_seed, 1) X(random_float, 0) X(upper, 1) X(lower, 1) X(trim, 1)     \
   X(starts_with, 2) X(ends_with, 2) X(index_of, 2) X(replace, 3)              \
@@ -4313,7 +4798,8 @@ static inline EnlngVal enlng_builtin_read_all_input(void) {
   X(sha256, 1) X(hex_encode, 1) X(base64_encode, 1) X(base64_decode, 1)       \
   X(uuid, 0) X(path_join, 2) X(path_basename, 1) X(path_dirname, 1)           \
   X(path_extension, 1) X(current_folder, 0) X(os_name, 0) X(file_size, 1)     \
-  X(parse_csv, 1) X(to_csv, 1) X(read_line, 0) X(read_all_input, 0)
+  X(parse_csv, 1) X(to_csv, 1) X(read_line, 0) X(read_all_input, 0)           \
+  ENLNG_MORE_BUILTINS3(X)
 
 #define ENLNG_MORE_BUILTINS(X)                                                \
   X(to_json, 1) X(to_json_pretty, 1) X(from_json, 1) X(regex_match, 2)        \

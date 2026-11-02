@@ -64,6 +64,8 @@ static void print_help(void) {
     printf("  enlng build <file.enlng> -o <out>   Compile to standalone native executable (.exe)\n");
     printf("  enlng emit-c <file.enlng>           Emit generated ANSI C99 source code to stdout\n");
     printf("  enlng <file.enlng>                  Direct run\n");
+    printf("  enlng                               Interactive mode: write lines one by one\n");
+    printf("  enlng test [file or folder]         Run every file ending in _test.enlng\n");
     printf("  enlng --version                     Display version information\n");
 }
 
@@ -183,10 +185,80 @@ static void print_human_error_c(const char* filepath, const char* source, int ta
     fprintf(stderr, "------------------------------------------------------------------------\n\n");
 }
 
+/* enlng test [file or folder]: runs every file ending in _test.enlng */
+static int test_is_file(const char *name) {
+  size_t n = strlen(name), k = strlen("_test.enlng");
+  return n >= k && strcmp(name + n - k, "_test.enlng") == 0;
+}
+
+static void test_collect(const char *dir, char ***files, int *nfiles, int *cap) {
+  EnlngVal names = enlng_builtin_list_folder(enlng_make_string(dir));
+  if (names.type != ENLNG_VAL_LIST || !names.as.l)
+    return;
+  for (int i = 0; i < names.as.l->count; i++) {
+    const char *nm = names.as.l->items[i].as.s;
+    if (!nm || nm[0] == '.')
+      continue;
+    EnlngVal full = enlng_builtin_path_join(enlng_make_string(dir), enlng_make_string(nm));
+    if (enlng_is_truthy(enlng_builtin_is_folder(full))) {
+      test_collect(full.as.s, files, nfiles, cap);
+    } else if (test_is_file(nm)) {
+      if (*nfiles >= *cap) {
+        *cap = *cap ? *cap * 2 : 16;
+        *files = (char **)realloc(*files, sizeof(char *) * (size_t)*cap);
+      }
+      (*files)[(*nfiles)++] = enlng_strdup(full.as.s);
+    }
+  }
+}
+
+static int run_tests(const char *self, const char *target) {
+  char **files = NULL;
+  int nfiles = 0, cap = 0;
+  if (enlng_is_truthy(enlng_builtin_is_folder(enlng_make_string(target)))) {
+    test_collect(target, &files, &nfiles, &cap);
+  } else {
+    files = (char **)malloc(sizeof(char *));
+    files[nfiles++] = enlng_strdup(target);
+  }
+  if (nfiles == 0) {
+    printf("No test files found. Test files end in _test.enlng.\n");
+    return 1;
+  }
+  int bad = 0;
+  for (int i = 0; i < nfiles; i++) {
+    printf("== %s\n", files[i]);
+    fflush(stdout);
+    char cmd[4096];
+#ifdef _WIN32
+    snprintf(cmd, sizeof(cmd), "\"\"%s\" run \"%s\"\"", self, files[i]);
+#else
+    snprintf(cmd, sizeof(cmd), "\"%s\" run \"%s\"", self, files[i]);
+#endif
+    if (system(cmd) != 0)
+      bad++;
+    printf("\n");
+  }
+  printf("%d test file%s, %d with failures\n", nfiles, nfiles == 1 ? "" : "s", bad);
+  return bad ? 1 : 0;
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2) {
+        return enlng_repl();
+    }
+
+    if (strcmp(argv[1], "help") == 0) {
         print_help();
         return 0;
+    }
+
+    if (strcmp(argv[1], "repl") == 0) {
+        return enlng_repl();
+    }
+
+    if (strcmp(argv[1], "test") == 0) {
+        return run_tests(argv[0], argc >= 3 ? argv[2] : ".");
     }
 
     if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
