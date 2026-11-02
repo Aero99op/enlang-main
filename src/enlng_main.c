@@ -204,10 +204,15 @@ int main(int argc, char* argv[]) {
     const char* output_exe = NULL;
 
     int native = 0;
+    /* inputs for the program itself: enlng run app.enlng first second */
+    char** prog_args = (char**)malloc(sizeof(char*) * (argc + 1));
+    int prog_argc = 0;
     if (strcmp(argv[1], "run") == 0) {
         for (int ai = 2; ai < argc; ai++) {
-            if (strcmp(argv[ai], "--native") == 0 || strcmp(argv[ai], "--compile") == 0) native = 1;
+            if (!input_file && (strcmp(argv[ai], "--native") == 0 || strcmp(argv[ai], "--compile") == 0)) native = 1;
+            else if (input_file && prog_argc == 0 && (strcmp(argv[ai], "--native") == 0 || strcmp(argv[ai], "--compile") == 0)) native = 1;
             else if (!input_file) input_file = argv[ai];
+            else prog_args[prog_argc++] = argv[ai];
         }
         if (!input_file) { fprintf(stderr, "[ENLANG ERROR] Missing file for 'run'.\n"); return 1; }
     } else if (strcmp(argv[1], "emit-c") == 0) {
@@ -225,7 +230,10 @@ int main(int argc, char* argv[]) {
         }
     } else {
         input_file = argv[1];
+        for (int ai = 2; ai < argc; ai++)
+            prog_args[prog_argc++] = argv[ai];
     }
+    enlng_set_args(prog_argc, prog_args);
 
     char* source = read_file_string(input_file);
     if (!source) {
@@ -241,6 +249,7 @@ int main(int argc, char* argv[]) {
     /* 2. AST Parsing */
     Parser parser;
     parser_init(&parser, lexer.tokens, lexer.token_count);
+    parser_set_source_file(input_file);
     ASTNode* prog = parser_parse_program(&parser);
 
     if (parser.has_error || !prog) {
@@ -342,7 +351,42 @@ int main(int argc, char* argv[]) {
             snprintf(run_cmd, sizeof(run_cmd), "\"%s\"", temp_exe);
         }
 #endif
-        exec_ret = system(run_cmd);
+        /* hand the program its inputs, each quoted */
+        size_t full_len = strlen(run_cmd) + 16;
+        for (int ai = 0; ai < prog_argc; ai++)
+            full_len += strlen(prog_args[ai]) * 2 + 4;
+        char* full_cmd = (char*)malloc(full_len);
+        strcpy(full_cmd, run_cmd);
+        for (int ai = 0; ai < prog_argc; ai++) {
+            char* w = full_cmd + strlen(full_cmd);
+            *w++ = ' ';
+#ifdef _WIN32
+            *w++ = '"';
+            for (const char* q = prog_args[ai]; *q; q++) {
+                if (*q == '"') *w++ = '\\';
+                *w++ = *q;
+            }
+            *w++ = '"';
+#else
+            *w++ = '\'';
+            for (const char* q = prog_args[ai]; *q; q++) {
+                if (*q == '\'') { strcpy(w, "'\\''"); w += 4; }
+                else *w++ = *q;
+            }
+            *w++ = '\'';
+#endif
+            *w = '\0';
+        }
+#ifdef _WIN32
+        /* cmd.exe drops the outer quotes of a line that starts with one */
+        char* wrapped = (char*)malloc(strlen(full_cmd) + 3);
+        sprintf(wrapped, "\"%s\"", full_cmd);
+        exec_ret = system(prog_argc ? wrapped : run_cmd);
+        free(wrapped);
+#else
+        exec_ret = system(full_cmd);
+#endif
+        free(full_cmd);
         remove(temp_exe);
     } else if (strcmp(mode, "build") == 0) {
         printf("[ENLANG SUCCESS] Standalone native executable built: %s\n", final_exe_target);

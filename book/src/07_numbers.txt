@@ -87,15 +87,23 @@ show 22 divided by 7.0
 
 ## Big whole numbers
 
-Whole numbers are 64-bit. The largest is 9223372036854775807. Going past it wraps around to a large negative number instead of stopping with an error, so do not rely on whole numbers for very large values:
+Whole numbers are 64-bit. The largest is 9223372036854775807. From 5.5.2 a result that does not fit is an error, never a quietly wrong number:
 
 ::: code
 type enlng
 
 show 1000000 times 1000000
 show 9223372036854775807
+show 9223372036854775807 minus 1
+:::
+
+::: err
+type enlng
+
 show 9223372036854775807 plus 1
 :::
+
+A number written in the program that is too big is refused in the same way. When an approximate answer is enough, write one side as a decimal, such as `9223372036854775807.0 plus 1`: decimals reach very large values and keep about 15 digits.
 
 ## Remainders and negative numbers
 

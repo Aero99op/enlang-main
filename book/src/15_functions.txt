@@ -186,7 +186,41 @@ show f(21)
 show f
 :::
 
-`show f` prints `<function double>`. When a call such as `operation(item)` names no function of the program, the name is looked up as a value, and the function it holds runs, with the same check on the number of inputs. Calling a name that holds something else, such as a number, is an error. Built-in functions such as `sqrt` cannot be passed this way yet; wrap one in a function of your own.
+`show f` prints `<function double>`. When a call such as `operation(item)` names no function of the program, the name is looked up as a value, and the function it holds runs, with the same check on the number of inputs. Calling a name that holds something else, such as a number, is an error. Built-in functions such as `sqrt` can be passed in the same way: `apply_to_all(sqrt, [4, 9, 16])` is `[2, 3, 4]`.
+
+## Functions made where they are used
+
+`function with x: x times 2` makes a function with no name, right where a value is wanted. After the colon comes what it gives back; to write several lines, put the colon at the end of the line and indent the steps, as in any other function. An inner function is the same thing with a name, written inside another function. Both keep the values of the outer names they use, as they were when the function was made. That is what lets a function build other functions:
+
+::: code
+type enlng
+
+function make_adder with n:
+    function add with x:
+        give x plus n
+    give add
+
+remember add5 as make_adder(5)
+remember add10 as make_adder(10)
+show add5(1)
+show add10(1)
+
+show apply_to_all(function with n: n times n, [1, 2, 3])
+
+remember multipliers as []
+for i from 1 to 3:
+    append(multipliers, function with x: x times i)
+for each m in multipliers:
+    show m(10)
+
+function apply_to_all with operation, items:
+    remember out as []
+    for each item in items:
+        append(out, operation(item))
+    give out
+:::
+
+An inner function can call itself, so recursion works inside a function too. The kept values are copies: a number or text the outer function changes afterwards is not seen by the inner one, while a list or map is shared, so changes made through it are seen by both. To keep a count that several calls update, keep it in a list: `remember count as [0]`, then `count[0] = count[0] plus 1`.
 
 ## Giving good names
 

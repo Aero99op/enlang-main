@@ -1,0 +1,73 @@
+type enlng
+
+remember double as function with x: x times 2
+show double(21)
+show double
+
+function apply_to_all with operation, items:
+    remember out as []
+    for each item in items:
+        append(out, operation(item))
+    give out
+
+show apply_to_all(function with n: n times n, [1, 2, 3])
+show apply_to_all(sqrt, [4, 9, 16])
+show apply_to_all(to_text, [1, 2.5, true])
+
+function make_adder with n:
+    function add with x:
+        give x plus n
+    give add
+
+remember add5 as make_adder(5)
+remember add10 as make_adder(10)
+show add5(1), " ", add10(1)
+show add5
+
+function countdown_list with start:
+    function go with k:
+        when k is 0:
+            give [0]
+        remember rest as go(k minus 1)
+        insert_at(rest, 0, k)
+        give rest
+    give go(start)
+show countdown_list(4)
+
+remember fns as []
+for i from 1 to 3:
+    append(fns, function with x: x times i)
+for each g in fns:
+    show g(10)
+
+remember counter as [0]
+remember bump as function():
+    counter[0] = counter[0] plus 1
+    give counter[0]
+bump()
+bump()
+show bump()
+
+function outer with a:
+    function middle with b:
+        function inner with c:
+            give a plus b plus c
+        give inner(100)
+    give middle(10)
+show outer(1)
+
+remember pick as function: 7
+show pick()
+
+remember f as sqrt
+show f(16)
+show f
+show f is sqrt
+try:
+    show double(1, 2)
+on error as e:
+    show e
+try:
+    show f()
+on error as e:
+    show e

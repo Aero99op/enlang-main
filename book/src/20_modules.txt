@@ -27,6 +27,41 @@ enlng run main.enlng
 
 Each file begins with its own `type enlng` line. Only the main file is run; the imported file is read in as if its lines were written where the `use` line is.
 
+## Giving a file a name
+
+A file used as it is pours all its functions into the program. If two files define a function with the same name, the program refuses to start and says which name clashes. To keep a file apart, give it a name with `as`; its functions and its top-level names then need that name in front:
+
+::: cmd
+@@ shapes.enlng
+type enlng
+
+remember sides as 4
+
+function describe with x:
+    give "shape " plus x
+@@ colors.enlng
+type enlng
+
+function describe with x:
+    give "color " plus x
+@@ main.enlng
+type enlng
+use "shapes.enlng" as shapes
+use "colors.enlng" as colors
+
+function describe with x:
+    give "mine " plus x
+
+show shapes.describe(1)
+show colors.describe(2)
+show describe(3)
+show shapes.sides
+@@@
+enlng run main.enlng
+:::
+
+The name works like any other: `remember f as colors.describe` keeps the function in a name. A name the file does not have is an error that says so. Inside the file itself, nothing changes; its functions still call each other by their plain names. Using the same file twice without `as` reads it once.
+
 ## Where a path is looked up
 
 A path in `use` is read relative to the file that contains the `use` line, not relative to the folder you were in when you started the program. That means a project keeps working when started from anywhere. Use `../` to go up a folder:

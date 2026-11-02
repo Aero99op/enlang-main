@@ -1,0 +1,20 @@
+type enlng
+
+show 9223372036854775807 minus 1
+show 4611686018427387904 plus 4611686018427387903
+try:
+    show 9223372036854775807 plus 1
+on error as e:
+    show e
+try:
+    remember x as 3037000500
+    show x times x
+on error as e:
+    show e
+try:
+    remember y as 0 minus 9223372036854775807
+    show y minus 2
+on error as e:
+    show e
+show 9223372036854775807.0 plus 1 is greater than 9000000000000000000
+show 3037000500 times 3037000500.0 is greater than 9000000000000000000

@@ -128,11 +128,419 @@ static bool is_operator_or_closing(EnlngTokenType t) {
 /* Forward declarations */
 static ASTNode *parse_statement(Parser *p);
 static ASTNode *ast_new(ASTNodeType type, int line);
+static int mod_resolve(Parser *p, const char *alias, const char *member,
+                       char *out, size_t outsz, int line);
 static bool oop_starts_call(Parser *p);
 static bool oop_starts_new(Parser *p);
 static ASTNode *parse_oop_call(Parser *p);
 static ASTNode *parse_oop_new(Parser *p);
 
+/* ---------------------------------------------------------------------
+ * Walking the tree
+ * ------------------------------------------------------------------ */
+typedef struct {
+  char **v;
+  int n, cap;
+} NameSet;
+
+static bool ns_has(const NameSet *s, const char *name) {
+  if (!name)
+    return false;
+  for (int i = 0; i < s->n; i++)
+    if (strcmp(s->v[i], name) == 0)
+      return true;
+  return false;
+}
+
+static void ns_add(NameSet *s, const char *name) {
+  if (!name || ns_has(s, name))
+    return;
+  if (s->n >= s->cap) {
+    s->cap = s->cap ? s->cap * 2 : 16;
+    s->v = (char **)realloc(s->v, sizeof(char *) * s->cap);
+  }
+  s->v[s->n++] = (char *)name;
+}
+
+typedef void (*AstSlotFn)(ASTNode **slot, void *ctx);
+
+static void ast_body_slots(ASTNode **body, int count, AstSlotFn fn, void *ctx) {
+  for (int i = 0; i < count; i++)
+    fn(&body[i], ctx);
+}
+
+/* Calls fn with the place of every node directly inside n, so a walker can
+ * also replace a node. */
+static void ast_each_child(ASTNode *n, AstSlotFn fn, void *ctx) {
+  switch (n->type) {
+  case AST_PROGRAM:
+    ast_body_slots(n->as.program.statements, n->as.program.count, fn, ctx);
+    break;
+  case AST_DECLARATION:
+    fn(&n->as.decl.init_expr, ctx);
+    break;
+  case AST_MUTATION:
+    fn(&n->as.mutation.val_expr, ctx);
+    break;
+  case AST_WHEN:
+    fn(&n->as.when_stmt.condition, ctx);
+    ast_body_slots(n->as.when_stmt.then_body, n->as.when_stmt.then_count, fn, ctx);
+    ast_body_slots(n->as.when_stmt.else_body, n->as.when_stmt.else_count, fn, ctx);
+    break;
+  case AST_TRY:
+    ast_body_slots(n->as.try_stmt.body, n->as.try_stmt.body_count, fn, ctx);
+    ast_body_slots(n->as.try_stmt.handler, n->as.try_stmt.handler_count, fn, ctx);
+    break;
+  case AST_FAIL:
+    fn(&n->as.fail_stmt.message, ctx);
+    break;
+  case AST_FOR_RANGE:
+    fn(&n->as.for_range.start_expr, ctx);
+    fn(&n->as.for_range.end_expr, ctx);
+    fn(&n->as.for_range.step_expr, ctx);
+    ast_body_slots(n->as.for_range.body, n->as.for_range.body_count, fn, ctx);
+    break;
+  case AST_FOR_PAIR:
+    ast_body_slots(n->as.for_pair.body, n->as.for_pair.body_count, fn, ctx);
+    break;
+  case AST_FOR_EACH:
+    fn(&n->as.for_each.list_expr, ctx);
+    ast_body_slots(n->as.for_each.body, n->as.for_each.body_count, fn, ctx);
+    break;
+  case AST_REPEAT_WHILE:
+  case AST_REPEAT_UNTIL:
+    fn(&n->as.repeat_loop.condition, ctx);
+    ast_body_slots(n->as.repeat_loop.body, n->as.repeat_loop.body_count, fn, ctx);
+    break;
+  case AST_REPEAT_TIMES:
+    fn(&n->as.repeat_times.count_expr, ctx);
+    ast_body_slots(n->as.repeat_times.body, n->as.repeat_times.body_count, fn, ctx);
+    break;
+  case AST_FUNCTION:
+    ast_body_slots(n->as.func_def.body, n->as.func_def.body_count, fn, ctx);
+    break;
+  case AST_GIVE:
+    fn(&n->as.give_stmt.expr, ctx);
+    break;
+  case AST_SWAP:
+    fn(&n->as.swap_stmt.left, ctx);
+    fn(&n->as.swap_stmt.right, ctx);
+    break;
+  case AST_ARRANGE_STMT:
+    fn(&n->as.arrange_stmt.indices_expr, ctx);
+    break;
+  case AST_INDEX_MUTATION:
+    fn(&n->as.index_mutation.target_expr, ctx);
+    fn(&n->as.index_mutation.index_expr, ctx);
+    fn(&n->as.index_mutation.val_expr, ctx);
+    break;
+  case AST_SHOW:
+    ast_body_slots(n->as.show_stmt.items, n->as.show_stmt.count, fn, ctx);
+    break;
+  case AST_EXPR_STMT:
+    fn(&n->as.expr_stmt.expr, ctx);
+    break;
+  case AST_EXPR_BINARY:
+    fn(&n->as.binary_expr.left, ctx);
+    fn(&n->as.binary_expr.right, ctx);
+    break;
+  case AST_EXPR_UNARY:
+    fn(&n->as.unary_expr.operand, ctx);
+    break;
+  case AST_EXPR_INDEX:
+    fn(&n->as.index_expr.target, ctx);
+    fn(&n->as.index_expr.index_expr, ctx);
+    break;
+  case AST_EXPR_FIELD:
+    fn(&n->as.field_expr.target, ctx);
+    break;
+  case AST_EXPR_CALL:
+    ast_body_slots(n->as.call_expr.args, n->as.call_expr.arg_count, fn, ctx);
+    break;
+  case AST_EXPR_COUNT_OF:
+  case AST_EXPR_REVERSE:
+  case AST_EXPR_TRIM:
+  case AST_EXPR_TO_UPPER:
+  case AST_EXPR_TO_LOWER:
+  case AST_EXPR_SUM:
+  case AST_EXPR_AVG:
+  case AST_EXPR_MAX:
+  case AST_EXPR_MIN:
+    fn(&n->as.single_target_expr.target, ctx);
+    break;
+  case AST_EXPR_COUNT_IN:
+  case AST_EXPR_SPLIT:
+  case AST_EXPR_JOIN:
+  case AST_EXPR_FIND:
+    fn(&n->as.count_in_expr.target, ctx);
+    fn(&n->as.count_in_expr.container, ctx);
+    break;
+  case AST_EXPR_REPLACE:
+    fn(&n->as.replace_expr.target, ctx);
+    fn(&n->as.replace_expr.replacement, ctx);
+    fn(&n->as.replace_expr.container, ctx);
+    break;
+  case AST_EXPR_LIST_LITERAL:
+    ast_body_slots(n->as.list_literal.elements, n->as.list_literal.count, fn, ctx);
+    break;
+  case AST_EXPR_MAP_LITERAL:
+    ast_body_slots(n->as.map_literal.values, n->as.map_literal.count, fn, ctx);
+    break;
+  case AST_EXPR_LAMBDA:
+    fn(&n->as.lambda_expr.fn, ctx);
+    break;
+  default:
+    break;
+  }
+}
+
+/* The places in a node that hold a name (not the nodes below it). */
+typedef void (*AstNameFn)(char **name, void *ctx);
+
+static void ast_each_name(ASTNode *n, AstNameFn fn, void *ctx) {
+  switch (n->type) {
+  case AST_DECLARATION: fn(&n->as.decl.name, ctx); break;
+  case AST_MUTATION: fn(&n->as.mutation.name, ctx); break;
+  case AST_FOR_RANGE: fn(&n->as.for_range.var_name, ctx); break;
+  case AST_FOR_PAIR:
+    fn(&n->as.for_pair.pair_name, ctx);
+    fn(&n->as.for_pair.list_name, ctx);
+    break;
+  case AST_FOR_EACH:
+    fn(&n->as.for_each.item_name, ctx);
+    fn(&n->as.for_each.list_name, ctx);
+    break;
+  case AST_TRY: fn(&n->as.try_stmt.err_name, ctx); break;
+  case AST_SWAP: fn(&n->as.swap_stmt.pair_name, ctx); break;
+  case AST_REVERSE_STMT: fn(&n->as.reverse_stmt.target_name, ctx); break;
+  case AST_SORT: fn(&n->as.sort_stmt.target_name, ctx); break;
+  case AST_ARRANGE_STMT: fn(&n->as.arrange_stmt.target_name, ctx); break;
+  case AST_INDEX_MUTATION: fn(&n->as.index_mutation.arr_name, ctx); break;
+  case AST_ASK: fn(&n->as.ask_stmt.var_name, ctx); break;
+  case AST_EXPR_VARIABLE: fn(&n->as.variable.name, ctx); break;
+  case AST_EXPR_INDEX: fn(&n->as.index_expr.arr_name, ctx); break;
+  case AST_EXPR_FIELD: fn(&n->as.field_expr.obj_name, ctx); break;
+  case AST_EXPR_CALL: fn(&n->as.call_expr.func_name, ctx); break;
+  case AST_GLOBAL:
+    for (int i = 0; i < n->as.global_stmt.count; i++)
+      fn(&n->as.global_stmt.names[i], ctx);
+    break;
+  case AST_FUNCTION: fn(&n->as.func_def.name, ctx); break;
+  case AST_EXPR_LAMBDA:
+    for (int i = 0; i < n->as.lambda_expr.ncap; i++)
+      fn(&n->as.lambda_expr.caps[i], ctx);
+    break;
+  default:
+    break;
+  }
+}
+
+static void ns_add_name(char **name, void *ctx) {
+  if (*name)
+    ns_add((NameSet *)ctx, *name);
+}
+
+/* Every name used anywhere inside a node, inner functions included. */
+static void mention_slot(ASTNode **slot, void *ctx) {
+  if (!*slot)
+    return;
+  ast_each_name(*slot, ns_add_name, ctx);
+  ast_each_child(*slot, mention_slot, ctx);
+}
+
+/* Names a body gives a value to itself, not inside its inner functions. */
+static void assigned_slot(ASTNode **slot, void *ctx) {
+  ASTNode *n = *slot;
+  NameSet *s = (NameSet *)ctx;
+  if (!n)
+    return;
+  switch (n->type) {
+  case AST_DECLARATION: ns_add(s, n->as.decl.name); break;
+  case AST_MUTATION: ns_add(s, n->as.mutation.name); break;
+  case AST_FOR_RANGE: ns_add(s, n->as.for_range.var_name); break;
+  case AST_FOR_PAIR: ns_add(s, n->as.for_pair.pair_name); break;
+  case AST_FOR_EACH: ns_add(s, n->as.for_each.item_name); break;
+  case AST_TRY: ns_add(s, n->as.try_stmt.err_name); break;
+  case AST_ASK: ns_add(s, n->as.ask_stmt.var_name); break;
+  case AST_FUNCTION: ns_add(s, n->as.func_def.name); return;
+  case AST_EXPR_LAMBDA: return;
+  default: break;
+  }
+  ast_each_child(n, assigned_slot, ctx);
+}
+
+/* Names a body declares with `global`, not inside its inner functions. */
+static void global_slot(ASTNode **slot, void *ctx) {
+  ASTNode *n = *slot;
+  if (!n || n->type == AST_FUNCTION || n->type == AST_EXPR_LAMBDA)
+    return;
+  if (n->type == AST_GLOBAL)
+    for (int i = 0; i < n->as.global_stmt.count; i++)
+      ns_add((NameSet *)ctx, n->as.global_stmt.names[i]);
+  ast_each_child(n, global_slot, ctx);
+}
+
+/* ---------------------------------------------------------------------
+ * Inner functions and `function with x: ...`
+ *
+ * Each one becomes a function at the top of the program with a hidden name.
+ * The outer names it uses become extra inputs at the end, and the place
+ * where it was written makes a function value that keeps their values at
+ * that moment. `function inner with x:` inside a function also sets the
+ * name inner to that value, and inner can call itself.
+ * ------------------------------------------------------------------ */
+typedef struct {
+  const char *owner;
+  NameSet *visible; /* outer names an inner function may keep */
+} LiftCtx;
+
+static ASTNode **g_lifted = NULL;
+static int g_nlifted = 0, g_lift_counter = 0;
+
+static void lift_slot(ASTNode **slot, void *ctx);
+
+static void lift_body(ASTNode **body, int count, const char *owner, NameSet *visible) {
+  LiftCtx c = {owner, visible};
+  ast_body_slots(body, count, lift_slot, &c);
+}
+
+static void lift_one(ASTNode *lam, const char *self, LiftCtx *c) {
+  ASTNode *fn = lam->as.lambda_expr.fn;
+  NameSet own = {0}, used = {0}, globals = {0};
+  for (int i = 0; i < fn->as.func_def.param_count; i++)
+    ns_add(&own, fn->as.func_def.params[i]);
+  if (self)
+    ns_add(&own, self);
+  ast_body_slots(fn->as.func_def.body, fn->as.func_def.body_count, mention_slot, &used);
+  ast_body_slots(fn->as.func_def.body, fn->as.func_def.body_count, global_slot, &globals);
+
+  char **caps = (char **)malloc(sizeof(char *) * (used.n + 1));
+  int ncap = 0;
+  for (int i = 0; i < used.n; i++)
+    if (!ns_has(&own, used.v[i]) && !ns_has(&globals, used.v[i]) &&
+        ns_has(c->visible, used.v[i]))
+      caps[ncap++] = used.v[i];
+
+  char hidden[300];
+  snprintf(hidden, sizeof(hidden), "%s__%s_%d", c->owner, self ? self : "fn",
+           ++g_lift_counter);
+  fn->as.func_def.name = enlng_strdup(hidden);
+  fn->as.func_def.shown = enlng_strdup(self ? self : "unnamed");
+  int pc = fn->as.func_def.param_count;
+  fn->as.func_def.params =
+      (char **)realloc(fn->as.func_def.params, sizeof(char *) * (pc + ncap + 1));
+  for (int i = 0; i < ncap; i++)
+    fn->as.func_def.params[pc + i] = caps[i];
+  fn->as.func_def.param_count = pc + ncap;
+  fn->as.func_def.hidden_count = ncap;
+  lam->as.lambda_expr.caps = caps;
+  lam->as.lambda_expr.ncap = ncap;
+
+  if (self) { /* inner = the function itself, so it can call itself */
+    ASTNode *again = ast_new(AST_EXPR_LAMBDA, lam->line);
+    again->as.lambda_expr.fn = fn;
+    again->as.lambda_expr.caps = caps;
+    again->as.lambda_expr.ncap = ncap;
+    ASTNode *set = ast_new(AST_MUTATION, lam->line);
+    set->as.mutation.name = (char *)self;
+    set->as.mutation.op = ENLNG_TOKEN_ASSIGN;
+    set->as.mutation.val_expr = again;
+    int bc = fn->as.func_def.body_count;
+    ASTNode **nb = (ASTNode **)malloc(sizeof(ASTNode *) * (bc + 1));
+    nb[0] = set;
+    for (int i = 0; i < bc; i++)
+      nb[i + 1] = fn->as.func_def.body[i];
+    fn->as.func_def.body = nb;
+    fn->as.func_def.body_count = bc + 1;
+  }
+
+  NameSet inner = {0};
+  for (int i = 0; i < fn->as.func_def.param_count; i++)
+    ns_add(&inner, fn->as.func_def.params[i]);
+  ast_body_slots(fn->as.func_def.body, fn->as.func_def.body_count, assigned_slot, &inner);
+  lift_body(fn->as.func_def.body, fn->as.func_def.body_count, fn->as.func_def.name, &inner);
+
+  g_lifted = (ASTNode **)realloc(g_lifted, sizeof(ASTNode *) * (g_nlifted + 1));
+  g_lifted[g_nlifted++] = fn;
+  free(own.v);
+  free(used.v);
+  free(globals.v);
+}
+
+static void lift_slot(ASTNode **slot, void *ctx) {
+  ASTNode *n = *slot;
+  LiftCtx *c = (LiftCtx *)ctx;
+  if (!n)
+    return;
+  if (n->type == AST_FUNCTION) { /* an inner function: inner = its value */
+    char *self = n->as.func_def.name;
+    n->as.func_def.name = NULL;
+    ASTNode *lam = ast_new(AST_EXPR_LAMBDA, n->line);
+    lam->as.lambda_expr.fn = n;
+    ASTNode *set = ast_new(AST_MUTATION, n->line);
+    set->as.mutation.name = self;
+    set->as.mutation.op = ENLNG_TOKEN_ASSIGN;
+    set->as.mutation.val_expr = lam;
+    *slot = set;
+    lift_one(lam, self, c);
+    return;
+  }
+  if (n->type == AST_EXPR_LAMBDA) {
+    if (!n->as.lambda_expr.fn->as.func_def.name) /* not moved yet */
+      lift_one(n, NULL, c);
+    return;
+  }
+  ast_each_child(n, lift_slot, ctx);
+}
+
+static void lift_program(ASTNode *prog) {
+  int count = prog->as.program.count;
+  g_nlifted = 0;
+  /* At the top of the program, names made with remember are seen by every
+   * function anyway; the others (loop names and the like) are kept. */
+  NameSet top = {0}, decls = {0};
+  for (int i = 0; i < count; i++) {
+    ASTNode *s = prog->as.program.statements[i];
+    if (!s || s->type == AST_FUNCTION)
+      continue;
+    if (s->type == AST_DECLARATION)
+      ns_add(&decls, s->as.decl.name);
+    assigned_slot(&prog->as.program.statements[i], &top);
+  }
+  NameSet main_vis = {0};
+  for (int i = 0; i < top.n; i++)
+    if (!ns_has(&decls, top.v[i]))
+      ns_add(&main_vis, top.v[i]);
+
+  for (int i = 0; i < count; i++) {
+    ASTNode *s = prog->as.program.statements[i];
+    if (!s)
+      continue;
+    if (s->type == AST_FUNCTION) {
+      NameSet vis = {0}, glob = {0}, all = {0};
+      for (int k = 0; k < s->as.func_def.param_count; k++)
+        ns_add(&all, s->as.func_def.params[k]);
+      ast_body_slots(s->as.func_def.body, s->as.func_def.body_count, assigned_slot, &all);
+      ast_body_slots(s->as.func_def.body, s->as.func_def.body_count, global_slot, &glob);
+      for (int k = 0; k < all.n; k++)
+        if (!ns_has(&glob, all.v[k]))
+          ns_add(&vis, all.v[k]);
+      lift_body(s->as.func_def.body, s->as.func_def.body_count, s->as.func_def.name, &vis);
+    } else {
+      LiftCtx c = {"main", &main_vis};
+      lift_slot(&prog->as.program.statements[i], &c);
+    }
+  }
+  for (int i = 0; i < g_nlifted; i++) {
+    if (prog->as.program.count >= prog->as.program.capacity) {
+      prog->as.program.capacity = prog->as.program.capacity * 2 + 1;
+      prog->as.program.statements = (ASTNode **)realloc(
+          prog->as.program.statements, sizeof(ASTNode *) * prog->as.program.capacity);
+    }
+    prog->as.program.statements[prog->as.program.count++] = g_lifted[i];
+  }
+  g_nlifted = 0;
+}
 /* ---------------------------------------------------------------------
  *  OOP: class / method / new / call / tell / ask
  *  A class is rewritten while parsing into ordinary functions and map
@@ -378,6 +786,54 @@ static ASTNode *parse_atom(Parser *p, bool allow_with) {
   if (oop_starts_new(p))
     return parse_oop_new(p);
 
+  /* function with x, y: x plus y -- a function made where it is used. With
+   * nothing after the colon, the steps follow on indented lines. */
+  if (match(p, ENLNG_TOKEN_FUNCTION)) {
+    int pcap = 4, pc = 0;
+    char **params = (char **)malloc(sizeof(char *) * pcap);
+    bool paren = false;
+    if (match(p, ENLNG_TOKEN_WITH) || (paren = match(p, ENLNG_TOKEN_LPAREN))) {
+      if (!(paren && check(p, ENLNG_TOKEN_RPAREN))) {
+        do {
+          Token *pt = peek(p, 0);
+          if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+            name_error(p, "Expected a name for an input of the function", t->line);
+            break;
+          }
+          if (pc >= pcap) {
+            pcap *= 2;
+            params = (char **)realloc(params, sizeof(char *) * pcap);
+          }
+          params[pc++] = enlng_strdup(pt->text);
+        } while (match(p, ENLNG_TOKEN_COMMA));
+      }
+      if (paren && !match(p, ENLNG_TOKEN_RPAREN))
+        set_error(p, "Expected ')' after the inputs of the function", t->line);
+    }
+    ASTNode *fn = ast_new(AST_FUNCTION, t->line);
+    fn->as.func_def.params = params;
+    fn->as.func_def.param_count = pc;
+    if (check(p, ENLNG_TOKEN_COLON) && peek(p, 1)->type == ENLNG_TOKEN_NEWLINE) {
+      parse_block(p, &fn->as.func_def.body, &fn->as.func_def.body_count);
+    } else {
+      if (!match(p, ENLNG_TOKEN_COLON)) {
+        set_error(p,
+                  "Expected ':' and then what the function gives, as in: "
+                  "function with x: x times 2",
+                  t->line);
+        return ast_new(AST_EXPR_LITERAL_NULL, t->line);
+      }
+      ASTNode *give = ast_new(AST_GIVE, t->line);
+      give->as.give_stmt.expr = parse_expression(p);
+      fn->as.func_def.body = (ASTNode **)malloc(sizeof(ASTNode *));
+      fn->as.func_def.body[0] = give;
+      fn->as.func_def.body_count = 1;
+    }
+    ASTNode *lam = ast_new(AST_EXPR_LAMBDA, t->line);
+    lam->as.lambda_expr.fn = fn;
+    return lam;
+  }
+
   /* slc(items, a) or slc(items, a, b): the same as items[a:] and items[a:b] */
   if (match(p, ENLNG_TOKEN_SLC)) {
     if (!match(p, ENLNG_TOKEN_LPAREN)) {
@@ -410,6 +866,17 @@ static ASTNode *parse_atom(Parser *p, bool allow_with) {
   if (match(p, ENLNG_TOKEN_INT_LITERAL)) {
     ASTNode *n = ast_new(AST_EXPR_LITERAL_INT, t->line);
     n->as.literal.int_val = t->int_val;
+    /* 9223372036854775807 is the largest whole number */
+    if (t->text && (strlen(t->text) > 19 ||
+                    (strlen(t->text) == 19 &&
+                     strcmp(t->text, "9223372036854775807") > 0))) {
+      char buf[300];
+      snprintf(buf, sizeof(buf),
+               "The number %s is too big for a whole number (the largest is "
+               "9223372036854775807). Write it as a decimal, such as %s.0, "
+               "if an approximate value is enough.", t->text, t->text);
+      set_error(p, buf, t->line);
+    }
     return n;
   }
 
@@ -569,6 +1036,17 @@ static ASTNode *parse_atom(Parser *p, bool allow_with) {
   /* Identifiers, Indexing, and Calls */
   if (match(p, ENLNG_TOKEN_IDENTIFIER) || match(p, ENLNG_TOKEN_PAIR)) {
     char *name = enlng_strdup(t->text);
+
+    /* m.helper: a function or name of the file used as m */
+    if (check(p, ENLNG_TOKEN_DOT) && peek(p, 1)->type == ENLNG_TOKEN_IDENTIFIER) {
+      char mangled[300];
+      if (mod_resolve(p, name, peek(p, 1)->text, mangled, sizeof(mangled), t->line)) {
+        advance(p);
+        advance(p);
+        free(name);
+        name = enlng_strdup(mangled);
+      }
+    }
 
     /* Natural count target in container: count "a" in word */
     if (strcmp(name, "count") == 0 && has_token_on_line(p, ENLNG_TOKEN_IN) &&
@@ -1705,6 +2183,15 @@ static ASTNode *parse_statement(Parser *p) {
     }
     ASTNode *n = ast_new(AST_USE, t->line);
     n->as.use_stmt.filename = enlng_strdup(file_tok->text);
+    if (match(p, ENLNG_TOKEN_AS)) {
+      Token *at = peek(p, 0);
+      if (!match(p, ENLNG_TOKEN_IDENTIFIER)) {
+        name_error(p, "Expected a name after 'as', as in: use \"tools.enlng\" as tools",
+                   t->line);
+        return NULL;
+      }
+      n->as.use_stmt.alias = enlng_strdup(at->text);
+    }
     return n;
   }
 
@@ -2673,6 +3160,188 @@ static void frozen_check_block(Parser *p, ASTNode **stmts, int count,
   f->count = keep;
 }
 
+/* ---------------------------------------------------------------------
+ * Using other files: use "tools.enlng" and use "tools.enlng" as tools
+ *
+ * A file is looked for next to the file that uses it, then in the folder
+ * the program runs in, then in the standard library. Used without a name,
+ * its functions join the program (once, however often it is used). Used
+ * with a name, its functions and top-level names get that name in front:
+ * tools.clean(x) calls the clean of tools.enlng, and it cannot clash with
+ * a clean of the program or of another file.
+ * ------------------------------------------------------------------ */
+static char g_src_dir[1024] = "";
+static NameSet g_loaded = {0};
+
+typedef struct {
+  char *alias;
+  NameSet names;
+} ModAlias;
+static ModAlias g_mods[64];
+static int g_nmods = 0;
+
+static void use_set_dir(const char *file) {
+  snprintf(g_src_dir, sizeof(g_src_dir), "%s", file);
+  char *cut = NULL;
+  for (char *q = g_src_dir; *q; q++)
+    if (*q == '/' || *q == '\\')
+      cut = q;
+  if (cut)
+    cut[1] = '\0';
+  else
+    g_src_dir[0] = '\0';
+}
+
+void parser_set_source_file(const char *path) { use_set_dir(path ? path : ""); }
+
+static char *use_read(const char *name, char *found, size_t sz) {
+  bool absolute = name[0] == '/' || name[0] == '\\' || (name[0] && name[1] == ':');
+  if (!absolute && g_src_dir[0]) {
+    snprintf(found, sz, "%s%s", g_src_dir, name);
+    FILE *f = fopen(found, "rb");
+    if (f) {
+      fclose(f);
+      return enlng_read_file_string(found);
+    }
+  }
+  snprintf(found, sz, "%s", name);
+  return enlng_read_file_string(name);
+}
+
+/* Names made by the language itself (class methods and helpers) have a
+ * double underscore and are never given a file's name. */
+static bool mod_generated(const char *name) { return strstr(name, "__") != NULL; }
+
+typedef struct {
+  NameSet *top;
+  NameSet *locals;
+  const char *alias;
+} RenameCtx;
+
+static void rename_name(char **name, void *ctx) {
+  RenameCtx *c = (RenameCtx *)ctx;
+  if (!*name || !ns_has(c->top, *name) || ns_has(c->locals, *name))
+    return;
+  char buf[300];
+  snprintf(buf, sizeof(buf), "%s__%s", c->alias, *name);
+  *name = enlng_strdup(buf);
+}
+
+/* The names a function uses as its own: inputs and names it sets, except
+ * those it declares global. */
+static void fn_locals(ASTNode *fn, NameSet *out) {
+  NameSet all = {0}, glob = {0};
+  for (int k = 0; k < fn->as.func_def.param_count; k++)
+    ns_add(&all, fn->as.func_def.params[k]);
+  ast_body_slots(fn->as.func_def.body, fn->as.func_def.body_count, assigned_slot, &all);
+  ast_body_slots(fn->as.func_def.body, fn->as.func_def.body_count, global_slot, &glob);
+  for (int k = 0; k < all.n; k++)
+    if (!ns_has(&glob, all.v[k]))
+      ns_add(out, all.v[k]);
+  free(all.v);
+  free(glob.v);
+}
+
+static void rename_slot(ASTNode **slot, void *ctx) {
+  ASTNode *n = *slot;
+  RenameCtx *c = (RenameCtx *)ctx;
+  if (!n)
+    return;
+  if (n->type == AST_FUNCTION) { /* an inner function has names of its own */
+    NameSet inner = {0};
+    for (int k = 0; k < c->locals->n; k++)
+      ns_add(&inner, c->locals->v[k]);
+    fn_locals(n, &inner);
+    RenameCtx ic = {c->top, &inner, c->alias};
+    ast_body_slots(n->as.func_def.body, n->as.func_def.body_count, rename_slot, &ic);
+    free(inner.v);
+    return;
+  }
+  ast_each_name(n, rename_name, ctx);
+  ast_each_child(n, rename_slot, ctx);
+}
+
+static void mod_rename(ASTNode *prog, const char *alias) {
+  NameSet top = {0};
+  for (int i = 0; i < prog->as.program.count; i++) {
+    ASTNode *s = prog->as.program.statements[i];
+    if (!s)
+      continue;
+    if (s->type == AST_FUNCTION && !mod_generated(s->as.func_def.name))
+      ns_add(&top, s->as.func_def.name);
+    else if (s->type == AST_DECLARATION)
+      ns_add(&top, s->as.decl.name);
+    else if (s->type == AST_MUTATION)
+      ns_add(&top, s->as.mutation.name);
+  }
+  NameSet none = {0};
+  for (int i = 0; i < prog->as.program.count; i++) {
+    ASTNode *s = prog->as.program.statements[i];
+    if (!s)
+      continue;
+    if (s->type == AST_FUNCTION) {
+      RenameCtx tc = {&top, &none, alias};
+      rename_name(&s->as.func_def.name, &tc);
+      NameSet locals = {0};
+      fn_locals(s, &locals);
+      RenameCtx fc = {&top, &locals, alias};
+      ast_body_slots(s->as.func_def.body, s->as.func_def.body_count, rename_slot, &fc);
+      free(locals.v);
+    } else {
+      RenameCtx tc = {&top, &none, alias};
+      rename_slot(&prog->as.program.statements[i], &tc);
+    }
+  }
+  if (g_nmods < 64) {
+    g_mods[g_nmods].alias = enlng_strdup(alias);
+    g_mods[g_nmods].names = top;
+    g_nmods++;
+  }
+}
+
+/* alias.member: 1 when alias names a used file (out is the member's full
+ * name, or an error is set), 0 when it does not. */
+static int mod_resolve(Parser *p, const char *alias, const char *member,
+                       char *out, size_t outsz, int line) {
+  for (int i = g_nmods - 1; i >= 0; i--) {
+    if (strcmp(g_mods[i].alias, alias) != 0)
+      continue;
+    if (!ns_has(&g_mods[i].names, member)) {
+      char err[400];
+      snprintf(err, sizeof(err),
+               "The file used as '%s' has no function or name called '%s'.",
+               alias, member);
+      set_error(p, err, line);
+    }
+    snprintf(out, outsz, "%s__%s", alias, member);
+    return 1;
+  }
+  return 0;
+}
+
+/* Two functions with one name: the program would call only one of them. */
+static void check_duplicate_functions(Parser *p, ASTNode *prog) {
+  for (int i = 0; i < prog->as.program.count; i++) {
+    ASTNode *a = prog->as.program.statements[i];
+    if (!a || a->type != AST_FUNCTION)
+      continue;
+    for (int j = i + 1; j < prog->as.program.count; j++) {
+      ASTNode *b = prog->as.program.statements[j];
+      if (!b || b->type != AST_FUNCTION ||
+          strcmp(a->as.func_def.name, b->as.func_def.name) != 0)
+        continue;
+      char err[600];
+      snprintf(err, sizeof(err),
+               "There are two functions called '%s'. Rename one of them. If "
+               "one comes from a file you used, give that file a name "
+               "instead: use \"file.enlng\" as tools, then call tools.%s(...).",
+               a->as.func_def.name, a->as.func_def.name);
+      set_error(p, err, b->line);
+      return;
+    }
+  }
+}
+
 static ASTNode *parser_parse_program_inner(Parser *p) {
   for (int i = 0; i < p->token_count; i++) {
     if (p->tokens[i].type == ENLNG_TOKEN_LONE_AT) {
@@ -2716,14 +3385,36 @@ static ASTNode *parser_parse_program_inner(Parser *p) {
     ASTNode *stmt = parse_statement(p);
     if (stmt) {
       if (stmt->type == AST_USE) {
-        char *sub_src = enlng_read_file_string(stmt->as.use_stmt.filename);
+        char found[1024];
+        const char *alias = stmt->as.use_stmt.alias;
+        char *sub_src = use_read(stmt->as.use_stmt.filename, found, sizeof(found));
+        if (sub_src && !alias && ns_has(&g_loaded, found)) {
+          free(sub_src); /* used already: its functions are here */
+          continue;
+        }
         if (sub_src) {
+          if (!alias)
+            ns_add(&g_loaded, enlng_strdup(found));
           Lexer sub_lexer;
           lexer_init(&sub_lexer, sub_src);
           lexer_tokenize(&sub_lexer);
           Parser sub_parser;
           parser_init(&sub_parser, sub_lexer.tokens, sub_lexer.token_count);
+          char saved_dir[1024];
+          snprintf(saved_dir, sizeof(saved_dir), "%s", g_src_dir);
+          use_set_dir(found);
           ASTNode *sub_prog = parser_parse_program(&sub_parser);
+          snprintf(g_src_dir, sizeof(g_src_dir), "%s", saved_dir);
+          if (sub_parser.has_error) {
+            char err[1200];
+            snprintf(err, sizeof(err), "In the file \"%s\", line %d: %s",
+                     stmt->as.use_stmt.filename, sub_parser.error_line,
+                     sub_parser.error_msg);
+            set_error(p, err, stmt->line);
+            sub_prog = NULL;
+          }
+          if (sub_prog && sub_prog->type == AST_PROGRAM && alias)
+            mod_rename(sub_prog, alias);
           if (sub_prog && sub_prog->type == AST_PROGRAM) {
             for (int s = 0; s < sub_prog->as.program.count; s++) {
               if (prog->as.program.count >= prog->as.program.capacity) {
@@ -2777,6 +3468,7 @@ static ASTNode *parser_parse_program_inner(Parser *p) {
   return prog;
 }
 
+
 ASTNode *parser_parse_program(Parser *p) {
   bool outer = (g_parse_depth == 0);
   if (outer)
@@ -2788,6 +3480,14 @@ ASTNode *parser_parse_program(Parser *p) {
     g_parse_depth++; /* the helpers are parsed by this same function */
     oop_generate_helpers(prog);
     g_parse_depth--;
+  }
+  if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)
+    check_duplicate_functions(p, prog);
+  if (outer && prog && prog->type == AST_PROGRAM && !p->has_error)
+    lift_program(prog);
+  if (outer) {
+    g_nmods = 0;
+    g_loaded.n = 0;
   }
   return prog;
 }

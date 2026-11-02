@@ -1,0 +1,9 @@
+type enlng
+
+remember greeting as "hi"
+
+function helper with x:
+    give "A:" plus x
+
+function shout with x:
+    give helper(x) plus "!" plus greeting

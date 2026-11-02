@@ -1,0 +1,62 @@
+type enlng
+
+show type_of(5), " ", type_of(2.5), " ", type_of("x"), " ", type_of([1]), " ", type_of(null), " ", type_of(true)
+show char_code("A"), " ", char_code("é"), " ", char_of(2309)
+show unique([3, 1, 3, "a", "a", 1.0, [1], [1]])
+remember m as {"a": 1, "b": 2}
+show remove_key(m, "a"), " ", m
+remember xs as [1, 2, 3]
+insert_at(xs, 1, 9)
+show xs, " ", remove_at(xs, -1), " ", xs
+show env("ENLNG_SURELY_NOT_SET_12345")
+show check(1 is 1, "fine")
+try:
+    check(1 is 2, "one is not two")
+on error as e:
+    show e
+
+show from_json("[1, 2.5, \"x\\u00e9\", \"\\ud83d\\ude00\", {\"k\": [true, null]}]")
+show to_json([0.1, 100, -3, "tab\there", true, null])
+show to_json_pretty({"a": [1, {"b": []}]})
+show from_json(to_json({"n": 3, "t": ["a", "b"]})) is {"n": 3, "t": ["a", "b"]}
+try:
+    from_json("{\"a\": }")
+on error as e:
+    show e
+
+show regex_match("^[a-z]+@[a-z]+\\.com$", "bob@site.com")
+show regex_match("^[a-z]+@[a-z]+\\.com$", "bob@site.org")
+show regex_find("\\d+", "order 66 and 7")
+show regex_find_all("\\d+", "order 66 and 7")
+show regex_groups("(\\w+)=(\\d+)", "x=10;y=20")
+show regex_replace("(\\w+)@(\\w+)", "a@b c@d", "$2 at $1")
+show regex_replace("\\s+", "a   b \t c", " ")
+show regex_split("[,;] *", "a, b;c,   d")
+show regex_find("a.*?b", "aXbXb")
+show regex_find("a.*b", "aXbXb")
+show regex_find_all("\\bcat\\b", "cat concat cat")
+show regex_find("\\d{2,3}", "1 22 4444")
+show regex_find("(cat|dog)s?", "hotdogs")
+show regex_find("[^aeiou\\s]+", "aeixyz")
+show regex_find_all("x*", "axb")
+show regex_find("é+", "caféé")
+show regex_find_all("(?i)HELLO", "Hello hello")
+try:
+    regex_match("(abc", "x")
+on error as e:
+    show e
+
+show format_time(make_time({"year": 2026, "month": 11, "day": 1, "hour": 9, "minute": 5}), "%Y-%m-%d %H:%M")
+show date_parts(make_time({"year": 2024, "month": 2, "day": 29}))["weekday"]
+
+make_folder("probe_dir/a/b")
+write_file("probe_dir/a/b/f.txt", "x")
+show is_folder("probe_dir/a"), " ", list_folder("probe_dir/a/b")
+rename_file("probe_dir/a/b/f.txt", "probe_dir/a/b/g.txt")
+show list_folder("probe_dir/a/b")
+delete_file("probe_dir/a/b/g.txt")
+delete_file("probe_dir/a/b")
+delete_file("probe_dir/a")
+delete_file("probe_dir")
+show is_folder("probe_dir")
+show run_command("echo hello")["code"]

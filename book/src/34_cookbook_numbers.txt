@@ -49,7 +49,7 @@ for each n in [0, 1, 5, 10, 15]:
     show n fact(n)
 :::
 
-Whole numbers in Enlangg are 64 bits wide. Past 20 factorial the value no longer fits and the result wraps around to nonsense; there is no warning. A program that needs larger numbers must keep them in another way, such as a list of digits.
+Whole numbers in Enlangg are 64 bits wide. Past 20 factorial the value no longer fits, and from 5.5.2 the program stops with an error that says so (chapter 7). A program that needs exact larger numbers must keep them in another way, such as a list of digits; a decimal such as `fact(25.0)` gives an approximation.
 
 ## Fibonacci numbers
 

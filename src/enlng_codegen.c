@@ -71,21 +71,9 @@ static bool is_user_function(ASTNode *program, const char *name) {
   return false;
 }
 
+/* The table of built-ins is the runtime's (ENLNG_BUILTINS). */
 static bool is_builtin_func(const char *name) {
-  static const char *builtins[] = {
-      "sqrt",       "pow",         "abs",         "floor",         "ceil",
-      "round",      "min",         "max",         "random_number", "read_file",
-      "write_file", "append_file", "file_exists", "time_now",      "sleep",
-      "append",     "pop",         "keys",        "values",        "has_key",
-      "len",        "split",       "join",        "contains",
-      "string_add", "string_insert", "string_remove_at", "string_remove", "string_set_at", "string_replace",
-      "slc",        "to_number",   "to_text",
-      NULL};
-  for (int i = 0; builtins[i]; i++) {
-    if (strcmp(name, builtins[i]) == 0)
-      return true;
-  }
-  return false;
+  return enlng_builtin_arity(name) >= 0;
 }
 
 /* A name made at the top of the program (a file-level variable). */
@@ -138,23 +126,7 @@ static bool is_known_var(CodeGen *cg, const char *name) {
 }
 
 /* Inputs a built-in takes, or -1 for a name that is not a built-in. */
-static int builtin_arity(const char *name) {
-  static const struct { const char *name; int arity; } t[] = {
-      {"sqrt", 1}, {"pow", 2}, {"abs", 1}, {"floor", 1}, {"ceil", 1},
-      {"round", 1}, {"min", 2}, {"max", 2}, {"random_number", 2},
-      {"read_file", 1}, {"write_file", 2}, {"append_file", 2},
-      {"file_exists", 1}, {"time_now", 0}, {"sleep", 1}, {"append", 2},
-      {"pop", 1}, {"keys", 1}, {"values", 1}, {"has_key", 2}, {"len", 1},
-      {"split", 2}, {"join", 2}, {"contains", 2}, {"string_add", 3},
-      {"string_insert", 3}, {"string_remove_at", 2}, {"string_remove", 2},
-      {"string_set_at", 3}, {"string_replace", 3}, {"slc", 3},
-      {"to_number", 1}, {"to_text", 1},
-      {NULL, 0}};
-  for (int i = 0; t[i].name; i++)
-    if (strcmp(t[i].name, name) == 0)
-      return t[i].arity;
-  return -1;
-}
+static int builtin_arity(const char *name) { return enlng_builtin_arity(name); }
 
 void codegen_free(CodeGen *cg) {
   if (cg->buffer) {
@@ -305,6 +277,9 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     if (!is_known_var(cg, n->as.variable.name) &&
         is_user_function(cg->program, n->as.variable.name))
       emit(cg, "enlng_make_func(\"%s\")", n->as.variable.name);
+    else if (!is_known_var(cg, n->as.variable.name) &&
+             is_builtin_func(n->as.variable.name))
+      emit(cg, "enlng_make_builtin_func(\"%s\")", n->as.variable.name);
     else
       emit(cg, "%s", cn(n->as.variable.name));
     break;
@@ -436,6 +411,24 @@ static void generate_expression(CodeGen *cg, ASTNode *n) {
     emit(cg, ")");
     break;
 
+  case AST_EXPR_LAMBDA: { /* a function value that keeps outer values */
+    ASTNode *fn = n->as.lambda_expr.fn;
+    int k = n->as.lambda_expr.ncap;
+    emit(cg, "enlng_make_closure(\"%s\", \"%s\", false, %d, ", fn->as.func_def.name,
+         fn->as.func_def.shown, k);
+    if (k == 0) {
+      emit(cg, "NULL)");
+      break;
+    }
+    emit(cg, "(EnlngVal[]){");
+    for (int i = 0; i < k; i++) {
+      const char *cap = n->as.lambda_expr.caps[i];
+      emit(cg, "%s%s", is_known_var(cg, cap) ? cn(cap) : "enlng_make_null()",
+           i < k - 1 ? ", " : "");
+    }
+    emit(cg, "})");
+    break;
+  }
   case AST_EXPR_LIST_LITERAL: {
     int lid = cg->temp_var_id++;
     emit(cg, "({ EnlngList* _nl%d = enlng_list_create(); ", lid);
@@ -1236,17 +1229,27 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
   emit(cg, "        enlng_not_a_function(name, f);\n");
   emit(cg, "        return enlng_make_null();\n");
   emit(cg, "    }\n");
+  emit(cg, "    if (f.as.fn->builtin)\n");
+  emit(cg, "        return enlng_call_builtin_value(f.as.fn->name, argc, a);\n");
   for (int i = 0; i < program->as.program.count; i++) {
     ASTNode *stmt = program->as.program.statements[i];
     if (!stmt || stmt->type != AST_FUNCTION)
       continue;
     int pc = stmt->as.func_def.param_count;
-    emit(cg, "    if (strcmp(f.as.s, \"%s\") == 0) {\n", stmt->as.func_def.name);
-    emit(cg, "        if (argc != %d) enlng_wrong_arity(\"%s\", %d, argc);\n", pc,
-         stmt->as.func_def.name, pc);
+    int hc = stmt->as.func_def.hidden_count;
+    const char *shown = stmt->as.func_def.shown ? stmt->as.func_def.shown
+                                                : stmt->as.func_def.name;
+    emit(cg, "    if (strcmp(f.as.fn->name, \"%s\") == 0) {\n", stmt->as.func_def.name);
+    emit(cg, "        if (argc != %d) enlng_wrong_arity(\"%s\", %d, argc);\n",
+         pc - hc, shown, pc - hc);
     emit(cg, "        return enlng_user_%s(", stmt->as.func_def.name);
-    for (int p = 0; p < pc; p++)
-      emit(cg, "a[%d]%s", p, p < pc - 1 ? ", " : "");
+    for (int p = 0; p < pc; p++) {
+      if (p < pc - hc)
+        emit(cg, "a[%d]", p);
+      else
+        emit(cg, "f.as.fn->caps[%d]", p - (pc - hc));
+      emit(cg, "%s", p < pc - 1 ? ", " : "");
+    }
     emit(cg, ");\n    }\n");
   }
   emit(cg, "    (void)a;\n");
@@ -1256,6 +1259,7 @@ char *codegen_generate(CodeGen *cg, ASTNode *program) {
   /* Emit main() */
   emit(cg, "int main(int argc, char* argv[]) {\n");
   emit(cg, "    enlng_console_utf8();\n");
+  emit(cg, "    enlng_set_args(argc - 1, argv + 1);\n");
   cg->indent_level = 1;
   scope_clear(cg);
 

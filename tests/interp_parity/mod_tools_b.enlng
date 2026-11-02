@@ -1,0 +1,6 @@
+type enlng
+
+remember greeting as "hello"
+
+function helper with x:
+    give "B:" plus x

@@ -218,7 +218,8 @@ typedef enum {
   AST_EXPR_LIST_LITERAL, /* [1, 2, 3] */
   AST_EXPR_MAP_LITERAL,  /* {"key": "val"} */
   AST_USE,               /* use "file.enlng" */
-  AST_GLOBAL             /* global total, count: these names are the top-level ones */
+  AST_GLOBAL,            /* global total, count: these names are the top-level ones */
+  AST_EXPR_LAMBDA        /* function with x: x times 2, or an inner function */
 } ASTNodeType;
 
 /* Forward declaration */
@@ -329,6 +330,8 @@ struct ASTNode {
       int param_count;
       ASTNode **body;
       int body_count;
+      int hidden_count; /* inner functions: the last params hold outer values */
+      char *shown;      /* inner functions: the name `show` prints */
     } func_def;
 
     /* AST_GIVE */
@@ -471,7 +474,17 @@ struct ASTNode {
     /* AST_USE */
     struct {
       char *filename;
+      char *alias; /* use "file.enlng" as m */
     } use_stmt;
+
+    /* AST_EXPR_LAMBDA: makes a function value. The parser moves the
+       function itself to the top of the program; caps are the outer names
+       whose values it keeps (its last params). */
+    struct {
+      ASTNode *fn;
+      char **caps;
+      int ncap;
+    } lambda_expr;
   } as;
 };
 

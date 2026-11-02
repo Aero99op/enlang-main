@@ -49,7 +49,7 @@ typedef struct {
   char err[512];
   int err_line;
   int depth;
-  int line; /* the statement running now, for errors the runtime throws */
+  volatile int line; /* the statement running now, for errors the runtime throws */
   bool *sorted; /* the innermost `repeat until sorted` flag */
   EnlngVal ret;
   /* Roots for the collector: the frames of the calls running now, and
@@ -176,6 +176,8 @@ static IVar *iassign_var(Interp *it, IFrame *f, const char *name, int line) {
   return NULL;
 }
 
+static bool iis_builtin(const char *name);
+
 static EnlngVal iget(Interp *it, IFrame *f, const char *name, int line) {
   IVar *v = ifind_var(it, f, name);
   if (!v) {
@@ -183,6 +185,8 @@ static EnlngVal iget(Interp *it, IFrame *f, const char *name, int line) {
     ASTNode *fn = ifind_func(it, name);
     if (fn)
       return enlng_make_func(fn->as.func_def.name);
+    if (iis_builtin(name))
+      return enlng_make_builtin_func(name);
     ifail(it, line,
           "I don't know a name '%s' here. Define it first, for example: remember %s as 0",
           name, name);
@@ -193,50 +197,9 @@ static EnlngVal iget(Interp *it, IFrame *f, const char *name, int line) {
 
 /* ------------------------------------------------------------- built-ins */
 
-typedef struct {
-  const char *name;
-  int arity;
-} IBuiltin;
-
-static const IBuiltin ibuiltins[] = {
-    {"sqrt", 1},         {"pow", 2},         {"abs", 1},
-    {"floor", 1},        {"ceil", 1},        {"round", 1},
-    {"min", 2},          {"max", 2},         {"random_number", 2},
-    {"read_file", 1},    {"write_file", 2},  {"append_file", 2},
-    {"file_exists", 1},  {"time_now", 0},    {"sleep", 1},
-    {"append", 2},       {"pop", 1},         {"keys", 1},
-    {"values", 1},       {"has_key", 2},     {"len", 1},
-    {"split", 2},        {"join", 2},        {"contains", 2},
-    {"string_add", 3},   {"string_insert", 3}, {"string_remove_at", 2},
-    {"string_remove", 2}, {"string_set_at", 3}, {"string_replace", 3},
-    {"slc", 3},          {"to_number", 1},    {"to_text", 1},
-    {NULL, 0}};
-
-static const IBuiltin *ifind_builtin(const char *name) {
-  for (int i = 0; ibuiltins[i].name; i++) {
-    if (strcmp(ibuiltins[i].name, name) == 0)
-      return &ibuiltins[i];
-  }
-  return NULL;
-}
-
-static EnlngVal icall_builtin(const char *name, EnlngVal *a) {
-#define B0(nm) if (strcmp(name, #nm) == 0) return enlng_builtin_##nm();
-#define B1(nm) if (strcmp(name, #nm) == 0) return enlng_builtin_##nm(a[0]);
-#define B2(nm) if (strcmp(name, #nm) == 0) return enlng_builtin_##nm(a[0], a[1]);
-#define B3(nm) if (strcmp(name, #nm) == 0) return enlng_builtin_##nm(a[0], a[1], a[2]);
-  B1(sqrt) B2(pow) B1(abs) B1(floor) B1(ceil) B1(round) B2(min) B2(max)
-  B2(random_number) B1(read_file) B2(write_file) B2(append_file)
-  B1(file_exists) B0(time_now) B1(sleep) B2(append) B1(pop) B1(keys)
-  B1(values) B2(has_key) B1(len) B2(split) B2(join) B2(contains)
-  B3(string_add) B3(string_insert) B2(string_remove_at) B2(string_remove)
-  B3(string_set_at) B3(string_replace) B3(slc) B1(to_number) B1(to_text)
-#undef B0
-#undef B1
-#undef B2
-#undef B3
-  return enlng_make_null();
-}
+/* The table of built-ins lives in the runtime (ENLNG_BUILTINS), shared with
+ * the C generator. */
+static bool iis_builtin(const char *name) { return enlng_builtin_arity(name) >= 0; }
 
 /* ----------------------------------------------------------------- calls */
 
@@ -248,6 +211,89 @@ static ASTNode *ifind_func(Interp *it, const char *name) {
       return s;
   }
   return NULL;
+}
+
+/* Runs a function of the program with its inputs already checked. */
+static EnlngVal irun_func(Interp *it, ASTNode *fn, const char *name,
+                          EnlngVal *args, int argc, int line) {
+  EnlngVal result = enlng_make_null();
+  int frame_base = it->nframes;
+  if (argc != fn->as.func_def.param_count) {
+    int own = fn->as.func_def.param_count - fn->as.func_def.hidden_count;
+    ifail(it, line, "'%s' needs %d input%s but was given %d.", name, own,
+          own == 1 ? "" : "s", argc - fn->as.func_def.hidden_count);
+    return result;
+  }
+  if (it->depth >= INTERP_MAX_DEPTH) {
+    ifail(it, line,
+          "'%s' called itself too many times (over %d levels deep). Check that it has a way to stop.",
+          name, INTERP_MAX_DEPTH);
+    return result;
+  }
+  IVar stackv[16];
+  IFrame nf = {stackv, 0, 16, 0, false};
+  for (int p = 0; p < argc; p++)
+    idefine(&nf, fn->as.func_def.params[p], args[p]);
+  bool *saved_sorted = it->sorted;
+  it->sorted = NULL;
+  it->depth++;
+  ipush_frame(it, &nf);
+  int count = fn->as.func_def.body_count;
+  for (int b = 0; b < count && !it->failed; b++) {
+    ASTNode *s = fn->as.func_def.body[b];
+    if (b == count - 1 && s->type == AST_EXPR_STMT) {
+      result = ieval(it, &nf, s->as.expr_stmt.expr);
+      break;
+    }
+    int code = iexec(it, &nf, s);
+    if (code == EX_RETURN) {
+      result = it->ret;
+      break;
+    }
+  }
+  it->depth--;
+  it->sorted = saved_sorted;
+  it->nframes = frame_base;
+  if (nf.owned)
+    free(nf.v);
+  return result;
+}
+
+/* Calls the function a value holds: a built-in, a function of the program,
+ * or an inner function, which also gets the outer values it kept. */
+static EnlngVal icall_value(Interp *it, EnlngFunc *h, EnlngVal *args, int argc,
+                            int line) {
+  if (h->builtin) {
+    int need = enlng_builtin_arity(h->name);
+    if (argc != need) {
+      ifail(it, line, "'%s' needs %d input%s but was given %d.", h->name, need,
+            need == 1 ? "" : "s", argc);
+      return enlng_make_null();
+    }
+    return enlng_call_builtin(h->name, args);
+  }
+  ASTNode *fn = ifind_func(it, h->name);
+  if (!fn) {
+    ifail(it, line, "I don't know a function called '%s'.", h->shown);
+    return enlng_make_null();
+  }
+  int own = fn->as.func_def.param_count - h->ncap;
+  if (argc != own) {
+    ifail(it, line, "'%s' needs %d input%s but was given %d.", h->shown, own,
+          own == 1 ? "" : "s", argc);
+    return enlng_make_null();
+  }
+  if (h->ncap == 0)
+    return irun_func(it, fn, h->shown, args, argc, line);
+  EnlngVal buf[16];
+  int total = argc + h->ncap;
+  EnlngVal *all = total <= 16 ? buf : (EnlngVal *)malloc(sizeof(EnlngVal) * total);
+  memcpy(all, args, sizeof(EnlngVal) * argc);
+  memcpy(all + argc, h->caps, sizeof(EnlngVal) * h->ncap);
+  EnlngVal r = irun_func(it, fn, h->shown, all, total, line);
+  if (all != buf)
+    free(all);
+  return r;
 }
 
 static EnlngVal icall(Interp *it, IFrame *f, ASTNode *n) {
@@ -271,67 +317,35 @@ static EnlngVal icall(Interp *it, IFrame *f, ASTNode *n) {
       n->as.call_expr.resolved = true;
     }
     ASTNode *fn = n->as.call_expr.fn;
+    EnlngFunc *held = NULL;
     /* No function has this name: a name that holds a function can be called,
      * as in apply(inc, 1) where apply calls g(x). */
     if (!fn && !n->as.call_expr.builtin_only) {
       IVar *v = ifind_var(it, f, name);
       if (v && v->val.type == ENLNG_VAL_FUNC) {
-        fn = ifind_func(it, v->val.as.s);
-        name = v->val.as.s;
-      } else if (v && !ifind_builtin(name)) {
+        held = v->val.as.fn;
+        iroot(it, v->val);
+      } else if (v && !iis_builtin(name)) {
         ifail(it, n->line, "'%s' is %s, not a function, so it cannot be called.",
               name, enlng_kind(v->val));
       }
     }
     if (it->failed) {
+    } else if (held) {
+      result = icall_value(it, held, args, argc, n->line);
     } else if (fn) {
-      if (argc != fn->as.func_def.param_count) {
-        ifail(it, n->line, "'%s' needs %d input%s but was given %d.", name,
-              fn->as.func_def.param_count,
-              fn->as.func_def.param_count == 1 ? "" : "s", argc);
-      } else if (it->depth >= INTERP_MAX_DEPTH) {
-        ifail(it, n->line,
-              "'%s' called itself too many times (over %d levels deep). Check that it has a way to stop.",
-              name, INTERP_MAX_DEPTH);
-      } else {
-        IVar stackv[16];
-        IFrame nf = {stackv, 0, 16, 0, false};
-        for (int p = 0; p < argc; p++)
-          idefine(&nf, fn->as.func_def.params[p], args[p]);
-        bool *saved_sorted = it->sorted;
-        it->sorted = NULL;
-        it->depth++;
-        ipush_frame(it, &nf);
-        int count = fn->as.func_def.body_count;
-        for (int b = 0; b < count && !it->failed; b++) {
-          ASTNode *s = fn->as.func_def.body[b];
-          if (b == count - 1 && s->type == AST_EXPR_STMT) {
-            result = ieval(it, &nf, s->as.expr_stmt.expr);
-            break;
-          }
-          int code = iexec(it, &nf, s);
-          if (code == EX_RETURN) {
-            result = it->ret;
-            break;
-          }
-        }
-        it->depth--;
-        it->sorted = saved_sorted;
-        it->nframes = frame_base;
-        if (nf.owned)
-          free(nf.v);
-      }
+      result = irun_func(it, fn, name, args, argc, n->line);
     } else {
-      const IBuiltin *b = ifind_builtin(name);
-      if (!b) {
+      int need = enlng_builtin_arity(name);
+      if (need < 0) {
         ifail(it, n->line,
               "I don't know a function called '%s'. Check the spelling, or define it with: action %s(...):",
               name, name);
-      } else if (argc != b->arity) {
+      } else if (argc != need) {
         ifail(it, n->line, "'%s' needs %d input%s but was given %d.", name,
-              b->arity, b->arity == 1 ? "" : "s", argc);
+              need, need == 1 ? "" : "s", argc);
       } else {
-        result = icall_builtin(name, args);
+        result = enlng_call_builtin(name, args);
       }
     }
   }
@@ -469,6 +483,21 @@ static EnlngVal ieval(Interp *it, IFrame *f, ASTNode *n) {
   case AST_EXPR_REVERSE:
     return enlng_val_reverse(ieval(it, f, n->as.single_target_expr.target));
 
+  case AST_EXPR_LAMBDA: { /* a function value that keeps outer values */
+    ASTNode *fn = n->as.lambda_expr.fn;
+    int k = n->as.lambda_expr.ncap;
+    EnlngVal buf[16];
+    EnlngVal *vals = k <= 16 ? buf : (EnlngVal *)malloc(sizeof(EnlngVal) * k);
+    for (int i = 0; i < k; i++) {
+      IVar *v = ifind_var(it, f, n->as.lambda_expr.caps[i]);
+      vals[i] = v ? v->val : enlng_make_null();
+    }
+    EnlngVal r = enlng_make_closure(fn->as.func_def.name, fn->as.func_def.shown,
+                                    false, k, vals);
+    if (vals != buf)
+      free(vals);
+    return r;
+  }
   case AST_EXPR_LIST_LITERAL: {
     int base = it->ntmp;
     EnlngList *l = enlng_list_create();

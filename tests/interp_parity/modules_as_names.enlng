@@ -1,0 +1,17 @@
+type enlng
+
+use "mod_tools_a.enlng" as a
+use "mod_tools_b.enlng" as b
+
+function helper with x:
+    give "main:" plus x
+
+show a.helper(1)
+show b.helper(2)
+show helper(3)
+show a.shout(4)
+show a.greeting
+show b.greeting
+remember f as b.helper
+show f(5)
+show a.helper with 6

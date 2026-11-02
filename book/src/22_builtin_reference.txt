@@ -64,6 +64,66 @@ These functions are part of the language and need no `use` line. They are the sa
 | `time_now()` | Seconds since 1970. |
 | `sleep(seconds)` | Waits. |
 
+## More built-ins (5.5.2)
+
+| Call | Gives |
+|---|---|
+| `arguments()` | The words typed after the file name: `enlng run app.enlng one two` gives `["one", "two"]`. |
+| `env("NAME")` | The environment variable, or `null` if it is not set. |
+| `type_of(x)` | `"number"`, `"decimal"`, `"text"`, `"list"`, `"map"`, `"true/false"`, `"function"` or `"null"`. |
+| `char_code(text)` | The number of the first character (Unicode): `char_code("A")` is 65. |
+| `char_of(number)` | The character with that number: `char_of(65)` is `"A"`. |
+| `unique(list)` | A new list with each value once, in the order first seen. |
+| `insert_at(list, position, value)` | Puts `value` before `position`; a negative position counts from the end. |
+| `remove_at(list, position)` | Removes the item and gives it back. |
+| `remove_key(map, key)` | Removes the key; true if it was there. |
+| `check(condition, message)` | Does nothing when the condition is true; otherwise an error "Check failed: message". |
+| `time_ms()` | A clock in milliseconds, for timing a piece of code. |
+
+## JSON
+
+| Call | Gives |
+|---|---|
+| `to_json(value)` | The value as JSON text. Maps, lists, text, numbers, true/false and null can be written; a function cannot. |
+| `to_json_pretty(value)` | The same, spread over indented lines. |
+| `from_json(text)` | The map, list or value the JSON describes. Invalid JSON is an error that says where. |
+
+## Patterns (regular expressions)
+
+A pattern is written in text, so a backslash is doubled: `"\\d+"` means one or more digits. Supported: `.` `[abc]` `[^a-z]` `\\d` `\\w` `\\s` (and `\\D` `\\W` `\\S`) `\\b` `^` `$` `( )` `(?: )` `|` `*` `+` `?` `{2,3}`, lazy forms such as `*?`, and `(?i)` at the start to ignore capitals.
+
+| Call | Gives |
+|---|---|
+| `regex_match(pattern, text)` | True if the pattern is found anywhere in the text. |
+| `regex_find(pattern, text)` | The first match, or `null`. |
+| `regex_find_all(pattern, text)` | A list of all matches. |
+| `regex_groups(pattern, text)` | The whole match followed by what each `( )` matched, or `null`. |
+| `regex_replace(pattern, text, with)` | Every match replaced. In `with`, `$1` to `$9` are the groups and `$$` is a dollar sign. |
+| `regex_split(pattern, text)` | The pieces between matches. |
+
+## Dates and times
+
+| Call | Gives |
+|---|---|
+| `make_time({"year": 2026, "month": 11, "day": 1, "hour": 9})` | Seconds since 1970 for that local date; missing parts are 0 (month and day 1). |
+| `date_parts(seconds)` | A map with `year`, `month`, `day`, `hour`, `minute`, `second`, `weekday` and `day_of_year`. |
+| `format_time(seconds, pattern)` | The time as text, with `%Y` `%m` `%d` `%H` `%M` `%S` `%A` `%B` and the other C patterns. |
+
+## Folders and other programs
+
+| Call | Gives |
+|---|---|
+| `is_folder(path)` | True if the path is a folder. |
+| `list_folder(path)` | The names inside, sorted. A missing folder is an error. |
+| `make_folder(path)` | Makes the folder and any missing ones above it. |
+| `delete_file(path)` | Deletes a file or an empty folder; true if it worked. |
+| `rename_file(from, to)` | Renames or moves; true if it worked. |
+| `run_command(command)` | Runs the command and gives `{"code": 0, "output": "..."}`; the output holds everything it printed. |
+| `http_get(url)` | `{"status": 200, "body": "..."}`. An address that cannot be reached is an error; a 404 is not, check `status`. |
+| `http_post(url, body)` | The same, sending the body. A map or list is sent as JSON, anything else as text. |
+
+`http_get` and `http_post` use the `curl` program, which comes with Windows 10 and later, macOS and most Linux systems. They need an address that starts with `http://` or `https://`.
+
 ## Phrases that act like functions
 
 Some summaries are written as phrases instead of calls:

@@ -7,30 +7,6 @@ type enlng
 
 use "lib_file.enlng"
 
-action file_read_lines_str(content):
-    raw_lines = split(content, "\n")
-    clean_lines = []
-    for line in raw_lines:
-        l = line
-        n = len(l)
-        when n > 0 and "" + l[n - 1] == "\r":
-            sub_l = ""
-            for i from 0 to n - 2:
-                sub_l = sub_l + l[i]
-            l = sub_l
-        append(clean_lines, l)
-    last = len(clean_lines) - 1
-    when last >= 0 and clean_lines[last] == "":
-        trimmed = []
-        for i from 0 to last - 1:
-            append(trimmed, clean_lines[i])
-        return trimmed
-    return clean_lines
-
-action file_read_lines(filepath):
-    content = file_read(filepath)
-    return file_read_lines_str(content)
-
 action fs_read(path):
     return file_read(path)
 

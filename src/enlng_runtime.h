@@ -22,6 +22,7 @@
 #endif
 
 #include <ctype.h>
+#include <errno.h>
 #include <math.h>
 #include <setjmp.h>
 #include <stdbool.h>
@@ -42,6 +43,7 @@ typedef struct EnlngVal EnlngVal;
 typedef struct EnlngList EnlngList;
 typedef struct EnlngMap EnlngMap;
 typedef struct EnlngMapEntry EnlngMapEntry;
+typedef struct EnlngFunc EnlngFunc;
 
 /* --- Console: text is UTF-8, so the Windows console must show UTF-8 while
    the program runs; the code page it had is put back when the program ends. */
@@ -68,7 +70,7 @@ static inline void enlng_console_utf8(void) {}
    ones the program can no longer reach (enlng_gc_* below); a program built
    with --native never collects, and the header only costs a few bytes. */
 #define ENLNG_GC_MAGIC 0xE61C
-enum { ENLNG_OBJ_STRING = 1, ENLNG_OBJ_LIST, ENLNG_OBJ_MAP };
+enum { ENLNG_OBJ_STRING = 1, ENLNG_OBJ_LIST, ENLNG_OBJ_MAP, ENLNG_OBJ_FUNC };
 
 typedef struct EnlngObj {
   struct EnlngObj *next;
@@ -101,7 +103,7 @@ typedef enum {
   ENLNG_VAL_LIST,
   ENLNG_VAL_MAP,
   ENLNG_VAL_NULL,
-  ENLNG_VAL_FUNC /* a function used as a value; as.s is its name (not owned) */
+  ENLNG_VAL_FUNC /* a function used as a value; as.fn says which */
 } EnlngValType;
 
 struct EnlngVal {
@@ -113,7 +115,20 @@ struct EnlngVal {
     bool b;
     EnlngList *l;
     EnlngMap *m;
+    EnlngFunc *fn;
   } as;
+};
+
+/* A function used as a value. An inner function or `function with x: ...`
+   keeps the values its outer names had when it was made (caps); they are
+   handed to it after the caller's inputs. */
+struct EnlngFunc {
+  EnlngObj gc;
+  const char *name;  /* the function that runs, or the built-in (not owned) */
+  const char *shown; /* the name `show` prints (not owned) */
+  bool builtin;
+  int ncap;
+  EnlngVal *caps;
 };
 
 struct EnlngList {
@@ -181,11 +196,32 @@ static inline EnlngVal enlng_make_string(const char *s) {
   return val;
 }
 
-static inline EnlngVal enlng_make_func(const char *name) {
+static inline EnlngVal enlng_make_closure(const char *name, const char *shown,
+                                          bool builtin, int ncap,
+                                          const EnlngVal *caps) {
+  EnlngFunc *fn = (EnlngFunc *)malloc(sizeof(EnlngFunc));
+  enlng_gc_link(&fn->gc, ENLNG_OBJ_FUNC);
+  fn->name = name;
+  fn->shown = shown;
+  fn->builtin = builtin;
+  fn->ncap = ncap;
+  fn->caps = NULL;
+  if (ncap > 0) {
+    fn->caps = (EnlngVal *)malloc(sizeof(EnlngVal) * (size_t)ncap);
+    memcpy(fn->caps, caps, sizeof(EnlngVal) * (size_t)ncap);
+  }
   EnlngVal val;
   val.type = ENLNG_VAL_FUNC;
-  val.as.s = (char *)name;
+  val.as.fn = fn;
   return val;
+}
+
+static inline EnlngVal enlng_make_func(const char *name) {
+  return enlng_make_closure(name, name, false, 0, NULL);
+}
+
+static inline EnlngVal enlng_make_builtin_func(const char *name) {
+  return enlng_make_closure(name, name, true, 0, NULL);
 }
 
 /* --- Text is UTF-8: positions and counts are in characters, not bytes --- */
@@ -497,6 +533,8 @@ static inline EnlngObj *enlng_gc_obj_of(EnlngVal v) {
     return &v.as.l->gc;
   if (v.type == ENLNG_VAL_MAP && v.as.m)
     return &v.as.m->gc;
+  if (v.type == ENLNG_VAL_FUNC && v.as.fn)
+    return &v.as.fn->gc;
   return NULL;
 }
 
@@ -527,6 +565,10 @@ static inline void enlng_gc_mark_val(EnlngVal v) {
       for (int b = 0; b < m->capacity; b++)
         for (EnlngMapEntry *e = m->buckets[b]; e; e = e->next)
           enlng_gc_push(e->val);
+    } else if (o->kind == ENLNG_OBJ_FUNC) {
+      EnlngFunc *fn = (EnlngFunc *)o;
+      for (int i = 0; i < fn->ncap; i++)
+        enlng_gc_push(fn->caps[i]);
     }
   }
 }
@@ -550,6 +592,8 @@ static inline void enlng_gc_free_obj(EnlngObj *o) {
       }
     }
     free(m->buckets);
+  } else if (o->kind == ENLNG_OBJ_FUNC) {
+    free(((EnlngFunc *)o)->caps);
   } else if (junk) {
     char *s = (char *)(o + 1);
     memset(s, 0xDD, strlen(s));
@@ -835,7 +879,9 @@ static inline bool enlng_vals_equal(EnlngVal a, EnlngVal b) {
   if (a.type == ENLNG_VAL_NULL && b.type == ENLNG_VAL_NULL)
     return true;
   if (a.type == ENLNG_VAL_FUNC && b.type == ENLNG_VAL_FUNC)
-    return strcmp(a.as.s, b.as.s) == 0;
+    return a.as.fn == b.as.fn ||
+           (a.as.fn->ncap == 0 && b.as.fn->ncap == 0 &&
+            strcmp(a.as.fn->name, b.as.fn->name) == 0);
   /* Lists and maps are equal when they hold equal items. */
   if (a.type == ENLNG_VAL_LIST && b.type == ENLNG_VAL_LIST) {
     if (a.as.l == b.as.l)
@@ -948,7 +994,7 @@ static inline const char *enlng_val_to_str_buf(EnlngVal v, char *buf,
     return v.as.b ? "true" : "false";
   }
   if (v.type == ENLNG_VAL_FUNC) {
-    snprintf(buf, sz, "<function %s>", v.as.s);
+    snprintf(buf, sz, "<function %s>", v.as.fn->shown);
     return buf;
   }
   return "";
@@ -998,9 +1044,25 @@ static inline double enlng_need_num(const char *fn, EnlngVal v) {
   return enlng_num_d(v);
 }
 
+/* A whole number result that does not fit in 64 bits is an error, never a
+   silently wrapped value. */
+static inline void enlng_int_overflow(const char *op, int64_t a, int64_t b) {
+  char msg[300];
+  snprintf(msg, sizeof(msg),
+           "The result of %lld %s %lld is too big for a whole number (the "
+           "largest is 9223372036854775807). Write one of the numbers as a "
+           "decimal, such as %lld.0, if an approximate answer is enough.",
+           (long long)a, op, (long long)b, (long long)a);
+  enlng_throw(msg);
+}
+
 static inline EnlngVal enlng_val_add(EnlngVal a, EnlngVal b) {
-  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
-    return enlng_make_int(a.as.i + b.as.i);
+  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT) {
+    int64_t r;
+    if (__builtin_add_overflow(a.as.i, b.as.i, &r))
+      enlng_int_overflow("plus", a.as.i, b.as.i);
+    return enlng_make_int(r);
+  }
   if (enlng_is_num(a) && enlng_is_num(b))
     return enlng_make_float(enlng_num_d(a) + enlng_num_d(b));
   if ((a.type == ENLNG_VAL_STRING || b.type == ENLNG_VAL_STRING) &&
@@ -1025,8 +1087,12 @@ static inline EnlngVal enlng_val_add(EnlngVal a, EnlngVal b) {
 }
 
 static inline EnlngVal enlng_val_sub(EnlngVal a, EnlngVal b) {
-  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
-    return enlng_make_int(a.as.i - b.as.i);
+  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT) {
+    int64_t r;
+    if (__builtin_sub_overflow(a.as.i, b.as.i, &r))
+      enlng_int_overflow("minus", a.as.i, b.as.i);
+    return enlng_make_int(r);
+  }
   if (!enlng_is_num(a) || !enlng_is_num(b)) {
     enlng_bad_operands("minus", a, b);
     return enlng_make_null();
@@ -1035,8 +1101,12 @@ static inline EnlngVal enlng_val_sub(EnlngVal a, EnlngVal b) {
 }
 
 static inline EnlngVal enlng_val_mul(EnlngVal a, EnlngVal b) {
-  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
-    return enlng_make_int(a.as.i * b.as.i);
+  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT) {
+    int64_t r;
+    if (__builtin_mul_overflow(a.as.i, b.as.i, &r))
+      enlng_int_overflow("times", a.as.i, b.as.i);
+    return enlng_make_int(r);
+  }
   /* text times a whole number repeats the text */
   if ((a.type == ENLNG_VAL_STRING && b.type == ENLNG_VAL_INT) ||
       (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_STRING)) {
@@ -1078,9 +1148,11 @@ static inline EnlngVal enlng_val_div(EnlngVal a, EnlngVal b) {
     return enlng_make_null();
   }
   enlng_zero_divisor(a, b, "divided by");
-  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
-    return enlng_make_int(b.as.i == -1 ? (int64_t)(0 - (uint64_t)a.as.i)
-                                       : a.as.i / b.as.i);
+  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT) {
+    if (b.as.i == -1 && a.as.i == INT64_MIN)
+      enlng_int_overflow("divided by", a.as.i, b.as.i);
+    return enlng_make_int(a.as.i / b.as.i);
+  }
   return enlng_make_float(enlng_num_d(a) / enlng_num_d(b));
 }
 
@@ -1143,7 +1215,7 @@ static inline void enlng_print_val(EnlngVal v) {
     printf("null");
     break;
   case ENLNG_VAL_FUNC:
-    printf("<function %s>", v.as.s);
+    printf("<function %s>", v.as.fn->shown);
     break;
   }
 }
@@ -1200,6 +1272,8 @@ static inline EnlngVal enlng_builtin_pow(EnlngVal base, EnlngVal exp) {
 
 static inline EnlngVal enlng_builtin_abs(EnlngVal v) {
   if (v.type == ENLNG_VAL_INT) {
+    if (v.as.i == INT64_MIN)
+      enlng_int_overflow("times", v.as.i, -1);
     return enlng_make_int(v.as.i < 0 ? -v.as.i : v.as.i);
   }
   return enlng_make_float(fabs(enlng_need_num("abs", v)));
@@ -1410,7 +1484,7 @@ static inline void enlng_buf_val(EnlngBuf *b, EnlngVal v) {
     break;
   }
   case ENLNG_VAL_FUNC:
-    snprintf(tmp, sizeof(tmp), "<function %.40s>", v.as.s);
+    snprintf(tmp, sizeof(tmp), "<function %.40s>", v.as.fn->shown);
     enlng_buf_add(b, tmp);
     break;
   default:
@@ -1981,6 +2055,1603 @@ static inline EnlngVal enlng_builtin_string_replace(EnlngVal arg1, EnlngVal arg2
 
 static inline EnlngVal enlng_builtin_string_set_at(EnlngVal str, EnlngVal pos, EnlngVal new_char) {
   return enlng_builtin_string_replace(new_char, str, pos);
+}
+
+/* --- Inputs to built-ins: the errors when a value has the wrong kind --- */
+static inline const char *enlng_need_text(const char *fn, EnlngVal v) {
+  if (v.type == ENLNG_VAL_STRING && v.as.s)
+    return v.as.s;
+  char msg[200];
+  snprintf(msg, sizeof(msg), "'%s' needs text, but got %s.", fn, enlng_kind(v));
+  enlng_throw(msg);
+  return "";
+}
+
+static inline EnlngList *enlng_need_list(const char *fn, EnlngVal v) {
+  if (v.type == ENLNG_VAL_LIST && v.as.l)
+    return v.as.l;
+  char msg[200];
+  snprintf(msg, sizeof(msg), "'%s' needs a list, but got %s.", fn, enlng_kind(v));
+  enlng_throw(msg);
+  return NULL;
+}
+
+static inline int64_t enlng_need_whole(const char *fn, EnlngVal v) {
+  if (v.type == ENLNG_VAL_INT)
+    return v.as.i;
+  char msg[200];
+  snprintf(msg, sizeof(msg), "'%s' needs a whole number, but got %s.", fn,
+           enlng_kind(v));
+  enlng_throw(msg);
+  return 0;
+}
+
+/* --- The inputs a program was started with: enlng run app.enlng a b --- */
+static int enlng_prog_argc = 0;
+static char **enlng_prog_argv = NULL;
+
+static inline void enlng_set_args(int argc, char **argv) {
+  enlng_prog_argc = argc;
+  enlng_prog_argv = argv;
+}
+
+static inline EnlngVal enlng_builtin_arguments(void) {
+  EnlngList *l = enlng_list_create();
+  for (int i = 0; i < enlng_prog_argc; i++)
+    enlng_list_push(l, enlng_make_string(enlng_prog_argv[i]));
+  return enlng_make_list(l);
+}
+
+static inline EnlngVal enlng_builtin_env(EnlngVal name) {
+  const char *v = getenv(enlng_need_text("env", name));
+  return v ? enlng_make_string(v) : enlng_make_null();
+}
+
+static inline EnlngVal enlng_builtin_type_of(EnlngVal v) {
+  switch (v.type) {
+  case ENLNG_VAL_INT: return enlng_make_string("number");
+  case ENLNG_VAL_FLOAT: return enlng_make_string("decimal");
+  case ENLNG_VAL_STRING: return enlng_make_string("text");
+  case ENLNG_VAL_BOOL: return enlng_make_string("true/false");
+  case ENLNG_VAL_LIST: return enlng_make_string("list");
+  case ENLNG_VAL_MAP: return enlng_make_string("map");
+  case ENLNG_VAL_FUNC: return enlng_make_string("function");
+  default: return enlng_make_string("null");
+  }
+}
+
+/* --- Characters and their numbers (Unicode code points) --- */
+static inline int64_t enlng_u8_decode(const unsigned char *s, int *len) {
+  int n = enlng_u8_clen(s[0]);
+  int64_t cp = n == 1 ? s[0] : n == 2 ? (s[0] & 0x1F) : n == 3 ? (s[0] & 0x0F) : (s[0] & 0x07);
+  for (int i = 1; i < n; i++) {
+    if ((s[i] & 0xC0) != 0x80) { /* broken UTF-8: take the byte alone */
+      n = 1;
+      cp = s[0];
+      break;
+    }
+    cp = (cp << 6) | (s[i] & 0x3F);
+  }
+  *len = n;
+  return cp;
+}
+
+static inline int enlng_u8_encode(int64_t cp, char *out) {
+  if (cp < 0x80) { out[0] = (char)cp; return 1; }
+  if (cp < 0x800) {
+    out[0] = (char)(0xC0 | (cp >> 6));
+    out[1] = (char)(0x80 | (cp & 0x3F));
+    return 2;
+  }
+  if (cp < 0x10000) {
+    out[0] = (char)(0xE0 | (cp >> 12));
+    out[1] = (char)(0x80 | ((cp >> 6) & 0x3F));
+    out[2] = (char)(0x80 | (cp & 0x3F));
+    return 3;
+  }
+  out[0] = (char)(0xF0 | (cp >> 18));
+  out[1] = (char)(0x80 | ((cp >> 12) & 0x3F));
+  out[2] = (char)(0x80 | ((cp >> 6) & 0x3F));
+  out[3] = (char)(0x80 | (cp & 0x3F));
+  return 4;
+}
+
+static inline EnlngVal enlng_builtin_char_code(EnlngVal v) {
+  const char *s = enlng_need_text("char_code", v);
+  if (!*s)
+    enlng_throw("'char_code' needs text with at least one character.");
+  int n;
+  return enlng_make_int(enlng_u8_decode((const unsigned char *)s, &n));
+}
+
+static inline EnlngVal enlng_builtin_char_of(EnlngVal v) {
+  int64_t cp = enlng_need_whole("char_of", v);
+  if (cp < 1 || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) {
+    char msg[200];
+    snprintf(msg, sizeof(msg), "%lld is not the number of a character.", (long long)cp);
+    enlng_throw(msg);
+  }
+  char buf[5];
+  int n = enlng_u8_encode(cp, buf);
+  buf[n] = '\0';
+  return enlng_make_string(buf);
+}
+
+/* --- Lists and maps --- */
+
+/* A new list with each value once, in the order first seen. */
+static inline EnlngVal enlng_builtin_unique(EnlngVal v) {
+  EnlngList *in = enlng_need_list("unique", v);
+  EnlngList *out = enlng_list_create();
+  EnlngVal seen = enlng_make_map(enlng_map_create());
+  for (int i = 0; i < in->count; i++) {
+    EnlngVal x = in->items[i];
+    char key[96];
+    bool keyed = true;
+    if (x.type == ENLNG_VAL_INT)
+      snprintf(key, sizeof(key), "i%lld", (long long)x.as.i);
+    else if (x.type == ENLNG_VAL_FLOAT && x.as.f == floor(x.as.f) &&
+             fabs(x.as.f) < 9e18)
+      snprintf(key, sizeof(key), "i%lld", (long long)x.as.f);
+    else if (x.type == ENLNG_VAL_FLOAT)
+      snprintf(key, sizeof(key), "f%.17g", x.as.f);
+    else if (x.type == ENLNG_VAL_BOOL)
+      snprintf(key, sizeof(key), "b%d", x.as.b ? 1 : 0);
+    else if (x.type == ENLNG_VAL_NULL)
+      snprintf(key, sizeof(key), "n");
+    else
+      keyed = false;
+    if (x.type == ENLNG_VAL_STRING) {
+      size_t n = strlen(x.as.s ? x.as.s : "");
+      char *k = (char *)malloc(n + 2);
+      k[0] = 's';
+      memcpy(k + 1, x.as.s ? x.as.s : "", n + 1);
+      bool dup = enlng_map_has(seen, k);
+      if (!dup) {
+        enlng_map_set(seen, k, enlng_make_bool(true));
+        enlng_list_push(out, x);
+      }
+      free(k);
+      continue;
+    }
+    if (keyed) {
+      if (!enlng_map_has(seen, key)) {
+        enlng_map_set(seen, key, enlng_make_bool(true));
+        enlng_list_push(out, x);
+      }
+      continue;
+    }
+    bool dup = false;
+    for (int j = 0; j < out->count && !dup; j++)
+      dup = enlng_vals_equal(out->items[j], x);
+    if (!dup)
+      enlng_list_push(out, x);
+  }
+  return enlng_make_list(out);
+}
+
+static inline EnlngVal enlng_builtin_remove_key(EnlngVal map, EnlngVal key) {
+  if (map.type != ENLNG_VAL_MAP || !map.as.m) {
+    char msg[200];
+    snprintf(msg, sizeof(msg), "'remove_key' needs a map, but got %s.", enlng_kind(map));
+    enlng_throw(msg);
+  }
+  const char *k = enlng_need_text("remove_key", key);
+  ENLNG_NOT_FROZEN(map);
+  EnlngMap *m = map.as.m;
+  unsigned long h = enlng_hash_str(k) % m->capacity;
+  EnlngMapEntry **link = &m->buckets[h];
+  while (*link) {
+    if (strcmp((*link)->key, k) == 0) {
+      EnlngMapEntry *e = *link;
+      *link = e->next;
+      free(e->key);
+      free(e);
+      m->count--;
+      return enlng_make_bool(true);
+    }
+    link = &(*link)->next;
+  }
+  return enlng_make_bool(false);
+}
+
+/* A position in a list of `count` items; -1 is the last one. */
+static inline int enlng_list_pos(const char *fn, EnlngVal pos, int count, bool end_ok) {
+  int64_t i = enlng_need_whole(fn, pos);
+  if (i < 0)
+    i += count;
+  if (i < 0 || i > count || (i == count && !end_ok)) {
+    char msg[200];
+    snprintf(msg, sizeof(msg), "Position %lld is outside the list, which has %d item%s.",
+             (long long)enlng_need_whole(fn, pos), count, count == 1 ? "" : "s");
+    enlng_throw(msg);
+  }
+  return (int)i;
+}
+
+static inline EnlngVal enlng_builtin_insert_at(EnlngVal list, EnlngVal pos, EnlngVal item) {
+  EnlngList *l = enlng_need_list("insert_at", list);
+  ENLNG_NOT_FROZEN(list);
+  int at = enlng_list_pos("insert_at", pos, l->count, true);
+  enlng_list_push(l, item);
+  memmove(&l->items[at + 1], &l->items[at], sizeof(EnlngVal) * (size_t)(l->count - 1 - at));
+  l->items[at] = item;
+  return list;
+}
+
+static inline EnlngVal enlng_builtin_remove_at(EnlngVal list, EnlngVal pos) {
+  EnlngList *l = enlng_need_list("remove_at", list);
+  ENLNG_NOT_FROZEN(list);
+  int at = enlng_list_pos("remove_at", pos, l->count, false);
+  EnlngVal gone = l->items[at];
+  memmove(&l->items[at], &l->items[at + 1], sizeof(EnlngVal) * (size_t)(l->count - 1 - at));
+  l->count--;
+  return gone;
+}
+
+/* --- Time in milliseconds, for measuring how long something takes --- */
+static inline EnlngVal enlng_builtin_time_ms(void) {
+#ifdef _WIN32
+  LARGE_INTEGER f, c;
+  QueryPerformanceFrequency(&f);
+  QueryPerformanceCounter(&c);
+  return enlng_make_int((int64_t)(c.QuadPart / (f.QuadPart / 1000)));
+#else
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return enlng_make_int((int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+#endif
+}
+
+/* --- check(condition, message): stop with the message when it is false --- */
+static inline EnlngVal enlng_builtin_check(EnlngVal cond, EnlngVal message) {
+  if (!enlng_is_truthy(cond)) {
+    char buf[64], msg[400];
+    const char *m = message.type == ENLNG_VAL_STRING && message.as.s
+                        ? message.as.s
+                        : enlng_val_to_str_buf(message, buf, sizeof(buf));
+    snprintf(msg, sizeof(msg), "Check failed: %s", m);
+    enlng_throw(msg);
+  }
+  return enlng_make_bool(true);
+}
+
+/* --- JSON: to_json(value), to_json_pretty(value), from_json(text) --- */
+static inline void enlng_json_str(EnlngBuf *b, const char *s) {
+  enlng_buf_add(b, "\"");
+  char tmp[8];
+  for (const unsigned char *p = (const unsigned char *)s; *p; p++) {
+    switch (*p) {
+    case '"': enlng_buf_add(b, "\\\""); break;
+    case '\\': enlng_buf_add(b, "\\\\"); break;
+    case '\n': enlng_buf_add(b, "\\n"); break;
+    case '\r': enlng_buf_add(b, "\\r"); break;
+    case '\t': enlng_buf_add(b, "\\t"); break;
+    case '\b': enlng_buf_add(b, "\\b"); break;
+    case '\f': enlng_buf_add(b, "\\f"); break;
+    default:
+      if (*p < 0x20) {
+        snprintf(tmp, sizeof(tmp), "\\u%04x", *p);
+        enlng_buf_add(b, tmp);
+      } else {
+        tmp[0] = (char)*p;
+        tmp[1] = '\0';
+        enlng_buf_add(b, tmp);
+      }
+    }
+  }
+  enlng_buf_add(b, "\"");
+}
+
+static inline void enlng_json_indent(EnlngBuf *b, int pretty, int depth) {
+  if (!pretty)
+    return;
+  enlng_buf_add(b, "\n");
+  for (int i = 0; i < depth; i++)
+    enlng_buf_add(b, "  ");
+}
+
+static inline void enlng_json_val(EnlngBuf *b, EnlngVal v, int pretty, int depth) {
+  char tmp[64];
+  if (depth > 1000)
+    enlng_throw("This value is nested too deeply to turn into JSON.");
+  switch (v.type) {
+  case ENLNG_VAL_INT:
+    snprintf(tmp, sizeof(tmp), "%lld", (long long)v.as.i);
+    enlng_buf_add(b, tmp);
+    break;
+  case ENLNG_VAL_FLOAT:
+    if (v.as.f != v.as.f || v.as.f == HUGE_VAL || v.as.f == -HUGE_VAL)
+      enlng_throw("JSON has no way to write an infinite or undefined number.");
+    snprintf(tmp, sizeof(tmp), "%.15g", v.as.f);
+    if (strtod(tmp, NULL) != v.as.f)
+      snprintf(tmp, sizeof(tmp), "%.17g", v.as.f);
+    if (!strpbrk(tmp, ".eEn"))
+      strcat(tmp, ".0");
+    enlng_buf_add(b, tmp);
+    break;
+  case ENLNG_VAL_STRING:
+    enlng_json_str(b, v.as.s ? v.as.s : "");
+    break;
+  case ENLNG_VAL_BOOL:
+    enlng_buf_add(b, v.as.b ? "true" : "false");
+    break;
+  case ENLNG_VAL_LIST:
+    enlng_buf_add(b, "[");
+    for (int i = 0; v.as.l && i < v.as.l->count; i++) {
+      if (i > 0)
+        enlng_buf_add(b, ",");
+      enlng_json_indent(b, pretty, depth + 1);
+      enlng_json_val(b, v.as.l->items[i], pretty, depth + 1);
+    }
+    if (v.as.l && v.as.l->count > 0)
+      enlng_json_indent(b, pretty, depth);
+    enlng_buf_add(b, "]");
+    break;
+  case ENLNG_VAL_MAP: {
+    enlng_buf_add(b, "{");
+    int n = 0;
+    for (int i = 0; v.as.m && i < v.as.m->capacity; i++)
+      for (EnlngMapEntry *e = v.as.m->buckets[i]; e; e = e->next) {
+        if (n++ > 0)
+          enlng_buf_add(b, ",");
+        enlng_json_indent(b, pretty, depth + 1);
+        enlng_json_str(b, e->key);
+        enlng_buf_add(b, pretty ? ": " : ":");
+        enlng_json_val(b, e->val, pretty, depth + 1);
+      }
+    if (n > 0)
+      enlng_json_indent(b, pretty, depth);
+    enlng_buf_add(b, "}");
+    break;
+  }
+  case ENLNG_VAL_FUNC:
+    enlng_throw("A function cannot be turned into JSON.");
+    break;
+  default:
+    enlng_buf_add(b, "null");
+  }
+}
+
+static inline EnlngVal enlng_json_text(EnlngVal v, int pretty) {
+  EnlngBuf b = {NULL, 0, 0};
+  enlng_buf_add(&b, "");
+  enlng_json_val(&b, v, pretty, 0);
+  EnlngVal r = enlng_make_string(b.s);
+  free(b.s);
+  return r;
+}
+
+static inline EnlngVal enlng_builtin_to_json(EnlngVal v) { return enlng_json_text(v, 0); }
+static inline EnlngVal enlng_builtin_to_json_pretty(EnlngVal v) { return enlng_json_text(v, 1); }
+
+typedef struct {
+  const char *s;
+  size_t i;
+} EnlngJsonIn;
+
+static inline void enlng_json_fail(EnlngJsonIn *in, const char *why) {
+  char msg[300];
+  snprintf(msg, sizeof(msg), "This is not valid JSON: %s at character %lu.", why,
+           (unsigned long)in->i + 1);
+  enlng_throw(msg);
+}
+
+static inline void enlng_json_ws(EnlngJsonIn *in) {
+  while (in->s[in->i] == ' ' || in->s[in->i] == '\t' || in->s[in->i] == '\n' ||
+         in->s[in->i] == '\r')
+    in->i++;
+}
+
+static inline int enlng_json_hex4(EnlngJsonIn *in) {
+  int v = 0;
+  for (int k = 0; k < 4; k++) {
+    char c = in->s[in->i++];
+    v <<= 4;
+    if (c >= '0' && c <= '9') v |= c - '0';
+    else if (c >= 'a' && c <= 'f') v |= c - 'a' + 10;
+    else if (c >= 'A' && c <= 'F') v |= c - 'A' + 10;
+    else enlng_json_fail(in, "a \\u escape needs four hex digits");
+  }
+  return v;
+}
+
+/* The text of a JSON string; the caller frees it. */
+static inline char *enlng_json_strval(EnlngJsonIn *in) {
+  EnlngBuf b = {NULL, 0, 0};
+  enlng_buf_add(&b, "");
+  in->i++; /* the opening quote */
+  char tmp[8];
+  for (;;) {
+    unsigned char c = (unsigned char)in->s[in->i];
+    if (c == '\0') {
+      free(b.s);
+      enlng_json_fail(in, "a text has no closing quote");
+    }
+    if (c == '"') {
+      in->i++;
+      break;
+    }
+    if (c == '\\') {
+      in->i++;
+      char e = in->s[in->i++];
+      switch (e) {
+      case '"': enlng_buf_add(&b, "\""); break;
+      case '\\': enlng_buf_add(&b, "\\"); break;
+      case '/': enlng_buf_add(&b, "/"); break;
+      case 'n': enlng_buf_add(&b, "\n"); break;
+      case 'r': enlng_buf_add(&b, "\r"); break;
+      case 't': enlng_buf_add(&b, "\t"); break;
+      case 'b': enlng_buf_add(&b, "\b"); break;
+      case 'f': enlng_buf_add(&b, "\f"); break;
+      case 'u': {
+        int64_t cp = enlng_json_hex4(in);
+        if (cp >= 0xD800 && cp <= 0xDBFF && in->s[in->i] == '\\' && in->s[in->i + 1] == 'u') {
+          in->i += 2;
+          int lo = enlng_json_hex4(in);
+          cp = 0x10000 + ((cp - 0xD800) << 10) + (lo - 0xDC00);
+        }
+        int n = enlng_u8_encode(cp ? cp : 0xFFFD, tmp);
+        tmp[n] = '\0';
+        enlng_buf_add(&b, tmp);
+        break;
+      }
+      default:
+        free(b.s);
+        enlng_json_fail(in, "unknown escape after a backslash");
+      }
+      continue;
+    }
+    tmp[0] = (char)c;
+    tmp[1] = '\0';
+    enlng_buf_add(&b, tmp);
+    in->i++;
+  }
+  return b.s;
+}
+
+static inline EnlngVal enlng_json_parse(EnlngJsonIn *in, int depth) {
+  if (depth > 1000)
+    enlng_json_fail(in, "it is nested too deeply");
+  enlng_json_ws(in);
+  char c = in->s[in->i];
+  if (c == '{') {
+    in->i++;
+    EnlngVal m = enlng_make_map(enlng_map_create());
+    enlng_json_ws(in);
+    if (in->s[in->i] == '}') {
+      in->i++;
+      return m;
+    }
+    for (;;) {
+      enlng_json_ws(in);
+      if (in->s[in->i] != '"')
+        enlng_json_fail(in, "a key in quotes was expected");
+      char *key = enlng_json_strval(in);
+      enlng_json_ws(in);
+      if (in->s[in->i] != ':') {
+        free(key);
+        enlng_json_fail(in, "':' was expected after a key");
+      }
+      in->i++;
+      EnlngVal v = enlng_json_parse(in, depth + 1);
+      enlng_map_set(m, key, v);
+      free(key);
+      enlng_json_ws(in);
+      if (in->s[in->i] == ',') { in->i++; continue; }
+      if (in->s[in->i] == '}') { in->i++; return m; }
+      enlng_json_fail(in, "',' or '}' was expected");
+    }
+  }
+  if (c == '[') {
+    in->i++;
+    EnlngList *l = enlng_list_create();
+    enlng_json_ws(in);
+    if (in->s[in->i] == ']') {
+      in->i++;
+      return enlng_make_list(l);
+    }
+    for (;;) {
+      enlng_list_push(l, enlng_json_parse(in, depth + 1));
+      enlng_json_ws(in);
+      if (in->s[in->i] == ',') { in->i++; continue; }
+      if (in->s[in->i] == ']') { in->i++; return enlng_make_list(l); }
+      enlng_json_fail(in, "',' or ']' was expected");
+    }
+  }
+  if (c == '"') {
+    char *s = enlng_json_strval(in);
+    EnlngVal r = enlng_make_string(s);
+    free(s);
+    return r;
+  }
+  if (strncmp(in->s + in->i, "true", 4) == 0) { in->i += 4; return enlng_make_bool(true); }
+  if (strncmp(in->s + in->i, "false", 5) == 0) { in->i += 5; return enlng_make_bool(false); }
+  if (strncmp(in->s + in->i, "null", 4) == 0) { in->i += 4; return enlng_make_null(); }
+  if (c == '-' || (c >= '0' && c <= '9')) {
+    const char *start = in->s + in->i;
+    char *end;
+    double d = strtod(start, &end);
+    bool whole = true;
+    for (const char *q = start; q < end; q++)
+      if (*q == '.' || *q == 'e' || *q == 'E')
+        whole = false;
+    in->i += (size_t)(end - start);
+    if (whole) {
+      errno = 0;
+      long long iv = strtoll(start, NULL, 10);
+      if (errno == 0)
+        return enlng_make_int((int64_t)iv);
+    }
+    return enlng_make_float(d);
+  }
+  enlng_json_fail(in, c ? "a value was expected" : "the text ended too soon");
+  return enlng_make_null();
+}
+
+static inline EnlngVal enlng_builtin_from_json(EnlngVal text) {
+  EnlngJsonIn in = {enlng_need_text("from_json", text), 0};
+  EnlngVal v = enlng_json_parse(&in, 0);
+  enlng_json_ws(&in);
+  if (in.s[in.i])
+    enlng_json_fail(&in, "there is more after the value");
+  return v;
+}
+
+/* --- Patterns (regular expressions) ---------------------------------------
+   A small backtracking engine: . [abc] [^a-z] \d \w \s \D \W \S \b ^ $
+   ( ) (?: ) | * + ? {n} {n,} {n,m}, lazy *? +? ??, and (?i) at the start
+   for ignoring upper and lower case. It works on characters, not bytes. */
+enum { RX_CHAR, RX_ANY, RX_CLASS, RX_BOL, RX_EOL, RX_WORDB, RX_NWORDB, RX_GROUP };
+
+typedef struct RxNode RxNode;
+typedef struct {
+  RxNode **items;
+  int n;
+} RxSeq;
+
+struct RxNode {
+  int kind;
+  int64_t cp;
+  int64_t (*ranges)[2];
+  int nranges;
+  bool neg;
+  RxSeq *alts;
+  int nalts;
+  int group; /* -1: (?: ) */
+  int min, max; /* max -1: no limit */
+  bool lazy;
+};
+
+typedef struct {
+  const char *pat;
+  size_t i;
+  void **mem;
+  int nmem, capmem;
+  int ngroups;
+  bool icase;
+  const char *text;
+  size_t len;
+  long gs[10], ge[10]; /* group start and end, -1 when unset */
+  int depth;
+} Rx;
+
+static inline void *rx_alloc(Rx *r, size_t n) {
+  void *p = calloc(1, n);
+  if (r->nmem >= r->capmem) {
+    r->capmem = r->capmem ? r->capmem * 2 : 32;
+    r->mem = (void **)realloc(r->mem, sizeof(void *) * r->capmem);
+  }
+  r->mem[r->nmem++] = p;
+  return p;
+}
+
+static inline void rx_free(Rx *r) {
+  for (int k = 0; k < r->nmem; k++)
+    free(r->mem[k]);
+  free(r->mem);
+  r->mem = NULL;
+  r->nmem = r->capmem = 0;
+}
+
+static inline void rx_fail(Rx *r, const char *why) {
+  char msg[400];
+  snprintf(msg, sizeof(msg), "The pattern \"%.120s\" is not valid: %s.", r->pat, why);
+  rx_free(r);
+  enlng_throw(msg);
+}
+
+static inline void rx_add_range(Rx *r, RxNode *nd, int64_t a, int64_t b) {
+  int64_t (*nr)[2] = (int64_t(*)[2])rx_alloc(r, sizeof(int64_t) * 2 * (nd->nranges + 1));
+  if (nd->nranges)
+    memcpy(nr, nd->ranges, sizeof(int64_t) * 2 * nd->nranges);
+  nr[nd->nranges][0] = a;
+  nr[nd->nranges][1] = b;
+  nd->ranges = nr;
+  nd->nranges++;
+}
+
+/* \d \w \s as ranges; the capital letters are the opposite set */
+static inline void rx_add_shorthand(Rx *r, RxNode *nd, char c) {
+  switch (c) {
+  case 'd': rx_add_range(r, nd, '0', '9'); break;
+  case 'w':
+    rx_add_range(r, nd, '0', '9'); rx_add_range(r, nd, 'a', 'z');
+    rx_add_range(r, nd, 'A', 'Z'); rx_add_range(r, nd, '_', '_');
+    break;
+  case 's':
+    rx_add_range(r, nd, ' ', ' '); rx_add_range(r, nd, '\t', '\r');
+    break;
+  }
+}
+
+static inline int64_t rx_next_cp(Rx *r) {
+  int n;
+  int64_t cp = enlng_u8_decode((const unsigned char *)r->pat + r->i, &n);
+  r->i += (size_t)n;
+  return cp;
+}
+
+static inline int64_t rx_escape_cp(char c) {
+  switch (c) {
+  case 'n': return '\n';
+  case 't': return '\t';
+  case 'r': return '\r';
+  case 'f': return '\f';
+  case 'v': return '\v';
+  case '0': return 0;
+  default: return (unsigned char)c;
+  }
+}
+
+static RxSeq *rx_parse_alt(Rx *r, RxNode *owner);
+
+static inline RxNode *rx_parse_atom(Rx *r) {
+  char c = r->pat[r->i];
+  RxNode *nd = (RxNode *)rx_alloc(r, sizeof(RxNode));
+  nd->min = nd->max = 1;
+  if (c == '(') {
+    r->i++;
+    nd->kind = RX_GROUP;
+    if (r->pat[r->i] == '?' && r->pat[r->i + 1] == ':') {
+      r->i += 2;
+      nd->group = -1;
+    } else {
+      nd->group = ++r->ngroups;
+    }
+    rx_parse_alt(r, nd);
+    if (r->pat[r->i] != ')')
+      rx_fail(r, "a '(' has no matching ')'");
+    r->i++;
+    return nd;
+  }
+  if (c == '[') {
+    r->i++;
+    nd->kind = RX_CLASS;
+    if (r->pat[r->i] == '^') {
+      nd->neg = true;
+      r->i++;
+    }
+    bool first = true;
+    while (r->pat[r->i] && (r->pat[r->i] != ']' || first)) {
+      first = false;
+      int64_t a;
+      if (r->pat[r->i] == '\\') {
+        char e = r->pat[r->i + 1];
+        if (!e)
+          rx_fail(r, "it ends with a backslash");
+        r->i += 2;
+        if (e == 'd' || e == 'w' || e == 's') {
+          rx_add_shorthand(r, nd, e);
+          continue;
+        }
+        a = rx_escape_cp(e);
+      } else {
+        a = rx_next_cp(r);
+      }
+      int64_t b = a;
+      if (r->pat[r->i] == '-' && r->pat[r->i + 1] && r->pat[r->i + 1] != ']') {
+        r->i++;
+        if (r->pat[r->i] == '\\') {
+          b = rx_escape_cp(r->pat[r->i + 1]);
+          r->i += 2;
+        } else {
+          b = rx_next_cp(r);
+        }
+        if (b < a)
+          rx_fail(r, "a range in [ ] goes backwards");
+      }
+      rx_add_range(r, nd, a, b);
+    }
+    if (r->pat[r->i] != ']')
+      rx_fail(r, "a '[' has no matching ']'");
+    r->i++;
+    return nd;
+  }
+  if (c == '.') { r->i++; nd->kind = RX_ANY; return nd; }
+  if (c == '^') { r->i++; nd->kind = RX_BOL; return nd; }
+  if (c == '$') { r->i++; nd->kind = RX_EOL; return nd; }
+  if (c == '\\') {
+    char e = r->pat[r->i + 1];
+    if (!e)
+      rx_fail(r, "it ends with a backslash");
+    r->i += 2;
+    if (e == 'b') { nd->kind = RX_WORDB; return nd; }
+    if (e == 'B') { nd->kind = RX_NWORDB; return nd; }
+    if (e == 'd' || e == 'w' || e == 's' || e == 'D' || e == 'W' || e == 'S') {
+      nd->kind = RX_CLASS;
+      nd->neg = (e == 'D' || e == 'W' || e == 'S');
+      rx_add_shorthand(r, nd, (char)tolower((unsigned char)e));
+      return nd;
+    }
+    nd->kind = RX_CHAR;
+    nd->cp = rx_escape_cp(e);
+    return nd;
+  }
+  if (c == '*' || c == '+' || c == '?' || c == '{')
+    rx_fail(r, "a repeat sign such as * + ? has nothing before it");
+  nd->kind = RX_CHAR;
+  nd->cp = rx_next_cp(r);
+  return nd;
+}
+
+static inline int rx_number(Rx *r) {
+  int v = 0;
+  if (!isdigit((unsigned char)r->pat[r->i]))
+    return -1;
+  while (isdigit((unsigned char)r->pat[r->i]))
+    v = v * 10 + (r->pat[r->i++] - '0');
+  return v;
+}
+
+static inline RxSeq *rx_parse_seq(Rx *r) {
+  RxSeq *seq = (RxSeq *)rx_alloc(r, sizeof(RxSeq));
+  int cap = 0;
+  while (r->pat[r->i] && r->pat[r->i] != '|' && r->pat[r->i] != ')') {
+    RxNode *nd = rx_parse_atom(r);
+    char q = r->pat[r->i];
+    if (q == '*' || q == '+' || q == '?') {
+      r->i++;
+      nd->min = q == '+' ? 1 : 0;
+      nd->max = q == '?' ? 1 : -1;
+    } else if (q == '{' && isdigit((unsigned char)r->pat[r->i + 1])) {
+      r->i++;
+      nd->min = rx_number(r);
+      nd->max = nd->min;
+      if (r->pat[r->i] == ',') {
+        r->i++;
+        nd->max = rx_number(r);
+      }
+      if (r->pat[r->i] != '}')
+        rx_fail(r, "a '{' repeat has no matching '}'");
+      r->i++;
+      if (nd->max >= 0 && nd->max < nd->min)
+        rx_fail(r, "in {n,m} the second number is smaller than the first");
+    }
+    if ((nd->min != 1 || nd->max != 1) && r->pat[r->i] == '?') {
+      r->i++;
+      nd->lazy = true;
+    }
+    if (nd->kind == RX_BOL || nd->kind == RX_EOL || nd->kind == RX_WORDB || nd->kind == RX_NWORDB)
+      if (nd->max != 1 && nd->max != 0)
+        nd->max = 1;
+    if (seq->n >= cap) {
+      cap = cap ? cap * 2 : 8;
+      RxNode **ni = (RxNode **)rx_alloc(r, sizeof(RxNode *) * cap);
+      if (seq->n)
+        memcpy(ni, seq->items, sizeof(RxNode *) * seq->n);
+      seq->items = ni;
+    }
+    seq->items[seq->n++] = nd;
+  }
+  return seq;
+}
+
+static RxSeq *rx_parse_alt(Rx *r, RxNode *owner) {
+  int cap = 4;
+  owner->alts = (RxSeq *)rx_alloc(r, sizeof(RxSeq) * cap);
+  owner->nalts = 0;
+  for (;;) {
+    RxSeq *s = rx_parse_seq(r);
+    if (owner->nalts >= cap) {
+      cap *= 2;
+      RxSeq *na = (RxSeq *)rx_alloc(r, sizeof(RxSeq) * cap);
+      memcpy(na, owner->alts, sizeof(RxSeq) * owner->nalts);
+      owner->alts = na;
+    }
+    owner->alts[owner->nalts++] = *s;
+    if (r->pat[r->i] != '|')
+      break;
+    r->i++;
+  }
+  return owner->alts;
+}
+
+/* What is left to match after the current item. */
+enum { RXK_SEQ, RXK_REP, RXK_CLOSE };
+typedef struct RxK {
+  int kind;
+  RxSeq *seq;
+  int idx;
+  RxNode *node;
+  int count;
+  long start;
+  struct RxK *next;
+} RxK;
+
+static inline bool rx_word_at(Rx *r, long pos) {
+  if (pos < 0 || (size_t)pos >= r->len)
+    return false;
+  unsigned char c = (unsigned char)r->text[pos];
+  return isalnum(c) || c == '_';
+}
+
+static inline int64_t rx_fold(Rx *r, int64_t cp) {
+  return r->icase && cp < 128 ? tolower((int)cp) : cp;
+}
+
+/* Does one character node match at pos? Gives its length in bytes, or 0. */
+static inline int rx_char_len(Rx *r, RxNode *nd, long pos) {
+  if ((size_t)pos >= r->len)
+    return 0;
+  int n;
+  int64_t cp = enlng_u8_decode((const unsigned char *)r->text + pos, &n);
+  if (nd->kind == RX_ANY)
+    return cp == '\n' ? 0 : n;
+  if (nd->kind == RX_CHAR)
+    return rx_fold(r, cp) == rx_fold(r, nd->cp) ? n : 0;
+  bool in = false;
+  int64_t f = rx_fold(r, cp);
+  for (int k = 0; k < nd->nranges && !in; k++) {
+    in = cp >= nd->ranges[k][0] && cp <= nd->ranges[k][1];
+    if (!in && r->icase && f != cp)
+      in = f >= nd->ranges[k][0] && f <= nd->ranges[k][1];
+    if (!in && r->icase && cp < 128 && isalpha((int)cp)) {
+      int64_t u = toupper((int)cp);
+      in = u >= nd->ranges[k][0] && u <= nd->ranges[k][1];
+    }
+  }
+  return in != nd->neg ? n : 0;
+}
+
+static bool rx_cont(Rx *r, RxK *k, long pos);
+static bool rx_rep(Rx *r, RxNode *nd, int count, long pos, RxK *rest);
+
+static bool rx_one(Rx *r, RxNode *nd, long pos, RxK *k) {
+  switch (nd->kind) {
+  case RX_CHAR:
+  case RX_ANY:
+  case RX_CLASS: {
+    int n = rx_char_len(r, nd, pos);
+    return n > 0 && rx_cont(r, k, pos + n);
+  }
+  case RX_BOL: return pos == 0 && rx_cont(r, k, pos);
+  case RX_EOL: return (size_t)pos == r->len && rx_cont(r, k, pos);
+  case RX_WORDB:
+  case RX_NWORDB: {
+    bool edge = rx_word_at(r, pos - 1) != rx_word_at(r, pos);
+    return edge == (nd->kind == RX_WORDB) && rx_cont(r, k, pos);
+  }
+  case RX_GROUP: {
+    long old_s = 0, old_e = 0;
+    int g = nd->group;
+    if (g > 0 && g < 10) {
+      old_s = r->gs[g];
+      old_e = r->ge[g];
+      r->gs[g] = pos;
+    }
+    RxK close = {RXK_CLOSE, NULL, 0, nd, 0, pos, k};
+    for (int a = 0; a < nd->nalts; a++) {
+      RxK s = {RXK_SEQ, &nd->alts[a], 0, NULL, 0, 0, &close};
+      if (rx_cont(r, &s, pos))
+        return true;
+    }
+    if (g > 0 && g < 10) {
+      r->gs[g] = old_s;
+      r->ge[g] = old_e;
+    }
+    return false;
+  }
+  }
+  return false;
+}
+
+static bool rx_rep(Rx *r, RxNode *nd, int count, long pos, RxK *rest) {
+  if (++r->depth > 20000) {
+    rx_free(r);
+    enlng_throw("The pattern needs too many steps on this text. Try a simpler pattern.");
+  }
+  bool ok = false;
+  bool simple = nd->kind == RX_CHAR || nd->kind == RX_ANY || nd->kind == RX_CLASS;
+  if (simple && !nd->lazy && (nd->max < 0 || nd->max > 1)) {
+    /* a run of single characters: take as many as allowed, then give back
+       one at a time, without a step per character */
+    long p = pos;
+    int got = count;
+    while ((nd->max < 0 || got < nd->max)) {
+      int n = rx_char_len(r, nd, p);
+      if (n == 0)
+        break;
+      p += n;
+      got++;
+    }
+    while (got >= nd->min) {
+      if (rx_cont(r, rest, p)) {
+        ok = true;
+        break;
+      }
+      if (got == count)
+        break;
+      do
+        p--;
+      while (p > pos && ((unsigned char)r->text[p] & 0xC0) == 0x80);
+      got--;
+    }
+  } else {
+    bool can_more = nd->max < 0 || count < nd->max;
+    bool can_stop = count >= nd->min;
+    RxK again = {RXK_REP, NULL, 0, nd, count + 1, pos, rest};
+    if (nd->lazy) {
+      ok = (can_stop && rx_cont(r, rest, pos)) || (can_more && rx_one(r, nd, pos, &again));
+    } else {
+      ok = (can_more && rx_one(r, nd, pos, &again)) || (can_stop && rx_cont(r, rest, pos));
+    }
+  }
+  r->depth--;
+  return ok;
+}
+
+static bool rx_cont(Rx *r, RxK *k, long pos) {
+  if (!k) {
+    r->ge[0] = pos;
+    return true;
+  }
+  if (k->kind == RXK_SEQ) {
+    if (k->idx == k->seq->n)
+      return rx_cont(r, k->next, pos);
+    RxK rest = {RXK_SEQ, k->seq, k->idx + 1, NULL, 0, 0, k->next};
+    return rx_rep(r, k->seq->items[k->idx], 0, pos, &rest);
+  }
+  if (k->kind == RXK_REP) {
+    if (pos == k->start && k->count > k->node->min)
+      return false; /* a repeat that matched nothing would loop forever */
+    return rx_rep(r, k->node, k->count, pos, k->next);
+  }
+  /* RXK_CLOSE: the group ends here */
+  int g = k->node->group;
+  long old = 0;
+  if (g > 0 && g < 10) {
+    old = r->ge[g];
+    r->ge[g] = pos;
+  }
+  if (rx_cont(r, k->next, pos))
+    return true;
+  if (g > 0 && g < 10)
+    r->ge[g] = old;
+  return false;
+}
+
+static inline RxNode *rx_compile(Rx *r, const char *pat) {
+  memset(r, 0, sizeof(*r));
+  r->pat = pat;
+  if (strncmp(pat, "(?i)", 4) == 0) {
+    r->icase = true;
+    r->i = 4;
+  }
+  RxNode *top = (RxNode *)rx_alloc(r, sizeof(RxNode));
+  top->kind = RX_GROUP;
+  top->group = -1;
+  top->min = top->max = 1;
+  rx_parse_alt(r, top);
+  if (r->pat[r->i] == ')')
+    rx_fail(r, "a ')' has no matching '('");
+  return top;
+}
+
+/* Finds the first match at or after `from`; group 0 is the whole match. */
+static inline bool rx_search(Rx *r, RxNode *top, const char *text, long from) {
+  r->text = text;
+  r->len = strlen(text);
+  for (long pos = from; (size_t)pos <= r->len;) {
+    for (int g = 0; g < 10; g++)
+      r->gs[g] = r->ge[g] = -1;
+    r->depth = 0;
+    r->gs[0] = pos;
+    RxK s = {RXK_SEQ, &top->alts[0], 0, NULL, 0, 0, NULL};
+    bool hit = false;
+    for (int a = 0; a < top->nalts && !hit; a++) {
+      s.seq = &top->alts[a];
+      hit = rx_cont(r, &s, pos);
+    }
+    if (hit)
+      return true;
+    if ((size_t)pos == r->len)
+      break;
+    pos += enlng_u8_clen((unsigned char)text[pos]);
+  }
+  return false;
+}
+
+static inline EnlngVal rx_slice(const char *text, long a, long b) {
+  if (a < 0 || b < a)
+    return enlng_make_null();
+  char *t = (char *)malloc((size_t)(b - a) + 1);
+  memcpy(t, text + a, (size_t)(b - a));
+  t[b - a] = '\0';
+  EnlngVal v = enlng_make_string(t);
+  free(t);
+  return v;
+}
+
+static inline EnlngVal enlng_builtin_regex_match(EnlngVal pat, EnlngVal text) {
+  const char *p = enlng_need_text("regex_match", pat);
+  const char *t = enlng_need_text("regex_match", text);
+  Rx r;
+  RxNode *top = rx_compile(&r, p);
+  bool hit = rx_search(&r, top, t, 0);
+  rx_free(&r);
+  return enlng_make_bool(hit);
+}
+
+static inline EnlngVal enlng_builtin_regex_find(EnlngVal pat, EnlngVal text) {
+  const char *p = enlng_need_text("regex_find", pat);
+  const char *t = enlng_need_text("regex_find", text);
+  Rx r;
+  RxNode *top = rx_compile(&r, p);
+  EnlngVal out = enlng_make_null();
+  if (rx_search(&r, top, t, 0))
+    out = rx_slice(t, r.gs[0], r.ge[0]);
+  rx_free(&r);
+  return out;
+}
+
+static inline EnlngVal enlng_builtin_regex_find_all(EnlngVal pat, EnlngVal text) {
+  const char *p = enlng_need_text("regex_find_all", pat);
+  const char *t = enlng_need_text("regex_find_all", text);
+  Rx r;
+  RxNode *top = rx_compile(&r, p);
+  EnlngList *l = enlng_list_create();
+  long from = 0, len = (long)strlen(t);
+  while (from <= len && rx_search(&r, top, t, from)) {
+    enlng_list_push(l, rx_slice(t, r.gs[0], r.ge[0]));
+    from = r.ge[0] > r.gs[0] ? r.ge[0] : r.ge[0] + (r.ge[0] < len ? enlng_u8_clen((unsigned char)t[r.ge[0]]) : 1);
+  }
+  rx_free(&r);
+  return enlng_make_list(l);
+}
+
+/* The parts of the first match: [whole match, group 1, group 2, ...]. */
+static inline EnlngVal enlng_builtin_regex_groups(EnlngVal pat, EnlngVal text) {
+  const char *p = enlng_need_text("regex_groups", pat);
+  const char *t = enlng_need_text("regex_groups", text);
+  Rx r;
+  RxNode *top = rx_compile(&r, p);
+  EnlngVal out = enlng_make_null();
+  if (rx_search(&r, top, t, 0)) {
+    EnlngList *l = enlng_list_create();
+    int n = r.ngroups < 9 ? r.ngroups : 9;
+    for (int g = 0; g <= n; g++)
+      enlng_list_push(l, rx_slice(t, r.gs[g], r.ge[g]));
+    out = enlng_make_list(l);
+  }
+  rx_free(&r);
+  return out;
+}
+
+/* Every match replaced; $0 is the match and $1 to $9 its groups, $$ is $. */
+static inline EnlngVal enlng_builtin_regex_replace(EnlngVal pat, EnlngVal text, EnlngVal with) {
+  const char *p = enlng_need_text("regex_replace", pat);
+  const char *t = enlng_need_text("regex_replace", text);
+  const char *w = enlng_need_text("regex_replace", with);
+  Rx r;
+  RxNode *top = rx_compile(&r, p);
+  EnlngBuf b = {NULL, 0, 0};
+  enlng_buf_add(&b, "");
+  long from = 0, copied = 0, len = (long)strlen(t);
+  char one[2] = {0, 0};
+  while (from <= len && rx_search(&r, top, t, from)) {
+    for (long k = copied; k < r.gs[0]; k++) {
+      one[0] = t[k];
+      enlng_buf_add(&b, one);
+    }
+    for (const char *q = w; *q; q++) {
+      if (*q == '$' && q[1] == '$') {
+        enlng_buf_add(&b, "$");
+        q++;
+      } else if (*q == '$' && isdigit((unsigned char)q[1])) {
+        int g = q[1] - '0';
+        if (g <= r.ngroups && r.gs[g] >= 0 && r.ge[g] >= r.gs[g])
+          for (long k = r.gs[g]; k < r.ge[g]; k++) {
+            one[0] = t[k];
+            enlng_buf_add(&b, one);
+          }
+        q++;
+      } else {
+        one[0] = *q;
+        enlng_buf_add(&b, one);
+      }
+    }
+    copied = r.ge[0];
+    if (r.ge[0] > r.gs[0]) {
+      from = r.ge[0];
+    } else {
+      if (r.ge[0] < len) {
+        int n = enlng_u8_clen((unsigned char)t[r.ge[0]]);
+        for (int k = 0; k < n; k++) {
+          one[0] = t[r.ge[0] + k];
+          enlng_buf_add(&b, one);
+        }
+        copied = r.ge[0] + n;
+        from = copied;
+      } else {
+        from = len + 1;
+      }
+    }
+  }
+  if (copied < len)
+    enlng_buf_add(&b, t + copied);
+  rx_free(&r);
+  EnlngVal out = enlng_make_string(b.s);
+  free(b.s);
+  return out;
+}
+
+static inline EnlngVal enlng_builtin_regex_split(EnlngVal pat, EnlngVal text) {
+  const char *p = enlng_need_text("regex_split", pat);
+  const char *t = enlng_need_text("regex_split", text);
+  Rx r;
+  RxNode *top = rx_compile(&r, p);
+  EnlngList *l = enlng_list_create();
+  long from = 0, piece = 0, len = (long)strlen(t);
+  while (from <= len && rx_search(&r, top, t, from)) {
+    if (r.ge[0] == r.gs[0]) { /* an empty match does not split */
+      if (r.ge[0] >= len)
+        break;
+      from = r.ge[0] + enlng_u8_clen((unsigned char)t[r.ge[0]]);
+      continue;
+    }
+    enlng_list_push(l, rx_slice(t, piece, r.gs[0]));
+    piece = from = r.ge[0];
+  }
+  enlng_list_push(l, rx_slice(t, piece, len));
+  rx_free(&r);
+  return enlng_make_list(l);
+}
+
+/* --- Dates and times (local time) --- */
+static inline EnlngVal enlng_builtin_format_time(EnlngVal secs, EnlngVal pattern) {
+  time_t t = (time_t)enlng_need_whole("format_time", secs);
+  const char *f = enlng_need_text("format_time", pattern);
+  struct tm *tm = localtime(&t);
+  if (!tm)
+    enlng_throw("'format_time' was given a time it cannot show.");
+  char out[512];
+  size_t n = strftime(out, sizeof(out), f, tm);
+  if (n == 0 && *f)
+    out[0] = '\0';
+  return enlng_make_string(out);
+}
+
+static inline EnlngVal enlng_builtin_date_parts(EnlngVal secs) {
+  static const char *days[] = {"Sunday", "Monday", "Tuesday", "Wednesday",
+                               "Thursday", "Friday", "Saturday"};
+  time_t t = (time_t)enlng_need_whole("date_parts", secs);
+  struct tm *tm = localtime(&t);
+  if (!tm)
+    enlng_throw("'date_parts' was given a time it cannot show.");
+  EnlngVal m = enlng_make_map(enlng_map_create());
+  enlng_map_set(m, "year", enlng_make_int(tm->tm_year + 1900));
+  enlng_map_set(m, "month", enlng_make_int(tm->tm_mon + 1));
+  enlng_map_set(m, "day", enlng_make_int(tm->tm_mday));
+  enlng_map_set(m, "hour", enlng_make_int(tm->tm_hour));
+  enlng_map_set(m, "minute", enlng_make_int(tm->tm_min));
+  enlng_map_set(m, "second", enlng_make_int(tm->tm_sec));
+  enlng_map_set(m, "weekday", enlng_make_string(days[tm->tm_wday]));
+  enlng_map_set(m, "day_of_year", enlng_make_int(tm->tm_yday + 1));
+  return m;
+}
+
+static inline int enlng_part(EnlngVal m, const char *key, int dflt) {
+  if (!enlng_map_has(m, key))
+    return dflt;
+  EnlngVal v = enlng_map_get(m, key);
+  char fn[40];
+  snprintf(fn, sizeof(fn), "make_time (%s)", key);
+  return (int)enlng_need_whole(fn, v);
+}
+
+/* {"year": 2026, "month": 11, "day": 1} -> seconds; missing parts are 0
+   (month and day are 1). */
+static inline EnlngVal enlng_builtin_make_time(EnlngVal parts) {
+  if (parts.type != ENLNG_VAL_MAP) {
+    char msg[200];
+    snprintf(msg, sizeof(msg),
+             "'make_time' needs a map such as {\"year\": 2026, \"month\": 1, "
+             "\"day\": 31}, but got %s.", enlng_kind(parts));
+    enlng_throw(msg);
+  }
+  struct tm tm;
+  memset(&tm, 0, sizeof(tm));
+  tm.tm_year = enlng_part(parts, "year", 1970) - 1900;
+  tm.tm_mon = enlng_part(parts, "month", 1) - 1;
+  tm.tm_mday = enlng_part(parts, "day", 1);
+  tm.tm_hour = enlng_part(parts, "hour", 0);
+  tm.tm_min = enlng_part(parts, "minute", 0);
+  tm.tm_sec = enlng_part(parts, "second", 0);
+  tm.tm_isdst = -1;
+  time_t t = mktime(&tm);
+  if (t == (time_t)-1)
+    enlng_throw("'make_time' was given a date it cannot handle.");
+  return enlng_make_int((int64_t)t);
+}
+
+/* --- Folders --- */
+#ifdef _WIN32
+#include <direct.h>
+#define enlng_mkdir(p) _mkdir(p)
+#define enlng_rmdir(p) _rmdir(p)
+#define enlng_popen _popen
+#define enlng_pclose _pclose
+#ifndef _MSC_VER
+FILE *_popen(const char *, const char *);
+int _pclose(FILE *);
+#endif
+#else
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#define enlng_mkdir(p) mkdir(p, 0777)
+#define enlng_rmdir(p) rmdir(p)
+#define enlng_popen popen
+#define enlng_pclose pclose
+#endif
+
+static inline bool enlng_is_dir(const char *p) {
+#ifdef _WIN32
+  DWORD a = GetFileAttributesA(p);
+  return a != INVALID_FILE_ATTRIBUTES && (a & FILE_ATTRIBUTE_DIRECTORY);
+#else
+  struct stat st;
+  return stat(p, &st) == 0 && S_ISDIR(st.st_mode);
+#endif
+}
+
+static inline EnlngVal enlng_builtin_is_folder(EnlngVal path) {
+  return enlng_make_bool(enlng_is_dir(enlng_need_text("is_folder", path)));
+}
+
+static inline int enlng_cmp_cstr(const void *a, const void *b) {
+  return strcmp(*(char *const *)a, *(char *const *)b);
+}
+
+/* The names in a folder, sorted. */
+static inline EnlngVal enlng_builtin_list_folder(EnlngVal path) {
+  const char *p = enlng_need_text("list_folder", path);
+  if (!enlng_is_dir(p)) {
+    char msg[600];
+    snprintf(msg, sizeof(msg), "There is no folder called \"%.500s\".", p);
+    enlng_throw(msg);
+  }
+  char **names = NULL;
+  int n = 0, cap = 0;
+#ifdef _WIN32
+  char pattern[1100];
+  snprintf(pattern, sizeof(pattern), "%s\\*", p);
+  WIN32_FIND_DATAA fd;
+  HANDLE h = FindFirstFileA(pattern, &fd);
+  if (h != INVALID_HANDLE_VALUE) {
+    do {
+      const char *nm = fd.cFileName;
+#else
+  DIR *d = opendir(p);
+  struct dirent *de;
+  while (d && (de = readdir(d)) != NULL) {
+    {
+      const char *nm = de->d_name;
+#endif
+      if (strcmp(nm, ".") != 0 && strcmp(nm, "..") != 0) {
+        if (n >= cap) {
+          cap = cap ? cap * 2 : 32;
+          names = (char **)realloc(names, sizeof(char *) * cap);
+        }
+        size_t k = strlen(nm);
+        names[n] = (char *)malloc(k + 1);
+        memcpy(names[n], nm, k + 1);
+        n++;
+      }
+#ifdef _WIN32
+    } while (FindNextFileA(h, &fd));
+    FindClose(h);
+  }
+#else
+    }
+  }
+  if (d)
+    closedir(d);
+#endif
+  qsort(names, (size_t)n, sizeof(char *), enlng_cmp_cstr);
+  EnlngList *l = enlng_list_create();
+  for (int i = 0; i < n; i++) {
+    enlng_list_push(l, enlng_make_string(names[i]));
+    free(names[i]);
+  }
+  free(names);
+  return enlng_make_list(l);
+}
+
+/* Makes a folder and any folders above it that are missing. */
+static inline EnlngVal enlng_builtin_make_folder(EnlngVal path) {
+  const char *p = enlng_need_text("make_folder", path);
+  size_t k = strlen(p);
+  char *buf = (char *)malloc(k + 1);
+  memcpy(buf, p, k + 1);
+  for (size_t i = 1; i <= k; i++) {
+    if (buf[i] == '/' || buf[i] == '\\' || buf[i] == '\0') {
+      char c = buf[i];
+      buf[i] = '\0';
+      if (!(i == 2 && buf[1] == ':') && !enlng_is_dir(buf))
+        enlng_mkdir(buf);
+      buf[i] = c;
+    }
+  }
+  free(buf);
+  return enlng_make_bool(enlng_is_dir(p));
+}
+
+/* Deletes a file, or a folder that is empty. */
+static inline EnlngVal enlng_builtin_delete_file(EnlngVal path) {
+  const char *p = enlng_need_text("delete_file", path);
+  if (enlng_is_dir(p))
+    return enlng_make_bool(enlng_rmdir(p) == 0);
+  return enlng_make_bool(remove(p) == 0);
+}
+
+static inline EnlngVal enlng_builtin_rename_file(EnlngVal from, EnlngVal to) {
+  const char *a = enlng_need_text("rename_file", from);
+  const char *b = enlng_need_text("rename_file", to);
+  return enlng_make_bool(rename(a, b) == 0);
+}
+
+/* --- Running other programs --- */
+
+/* Everything a command prints, and the number it ends with. */
+static inline EnlngVal enlng_run_shell(const char *cmd, int *code) {
+  FILE *f = enlng_popen(cmd, "r");
+  if (!f) {
+    *code = -1;
+    return enlng_make_string("");
+  }
+  EnlngBuf b = {NULL, 0, 0};
+  enlng_buf_add(&b, "");
+  char chunk[4096];
+  size_t n;
+  while ((n = fread(chunk, 1, sizeof(chunk) - 1, f)) > 0) {
+    chunk[n] = '\0';
+    enlng_buf_add(&b, chunk);
+  }
+  int st = enlng_pclose(f);
+#ifdef _WIN32
+  *code = st;
+#else
+  *code = WIFEXITED(st) ? WEXITSTATUS(st) : -1;
+#endif
+  EnlngVal out = enlng_make_string(b.s);
+  free(b.s);
+  return out;
+}
+
+/* run_command("git status") -> {"code": 0, "output": "..."} */
+static inline EnlngVal enlng_builtin_run_command(EnlngVal command) {
+  const char *c = enlng_need_text("run_command", command);
+  size_t k = strlen(c);
+  char *full = (char *)malloc(k + 16);
+#ifdef _WIN32
+  snprintf(full, k + 16, "\"%s 2>&1\"", c); /* cmd.exe drops the outer quotes */
+#else
+  snprintf(full, k + 16, "%s 2>&1", c);
+#endif
+  fflush(stdout);
+  int code;
+  EnlngVal out = enlng_run_shell(full, &code);
+  free(full);
+  EnlngVal m = enlng_make_map(enlng_map_create());
+  enlng_map_set(m, "code", enlng_make_int(code));
+  enlng_map_set(m, "output", out);
+  return m;
+}
+
+/* --- The web: http_get(url), http_post(url, body) ---
+   These use the curl program, which comes with Windows 10 and later, macOS
+   and most Linux systems. The result is {"status": 200, "body": "..."}. */
+static inline void enlng_temp_path(char *out, size_t sz, const char *what) {
+  static int counter = 0;
+#ifdef _WIN32
+  char dir[MAX_PATH];
+  DWORD n = GetTempPathA(MAX_PATH, dir);
+  if (n == 0 || n > MAX_PATH)
+    strcpy(dir, ".\\");
+  snprintf(out, sz, "%senlng_%lu_%d_%s", dir, (unsigned long)GetCurrentProcessId(),
+           ++counter, what);
+#else
+  const char *dir = getenv("TMPDIR");
+  snprintf(out, sz, "%s/enlng_%lu_%d_%s", dir && *dir ? dir : "/tmp",
+           (unsigned long)getpid(), ++counter, what);
+#endif
+}
+
+static inline char *enlng_slurp(const char *path) {
+  FILE *f = fopen(path, "rb");
+  if (!f)
+    return NULL;
+  fseek(f, 0, SEEK_END);
+  long len = ftell(f);
+  fseek(f, 0, SEEK_SET);
+  char *buf = (char *)malloc((size_t)len + 1);
+  size_t got = fread(buf, 1, (size_t)len, f);
+  buf[got] = '\0';
+  fclose(f);
+  return buf;
+}
+
+static inline EnlngVal enlng_http(const char *fn, const char *url, EnlngVal *body) {
+  for (const char *q = url; *q; q++)
+    if (*q == '"' || *q == '\'' || *q == '\n' || *q == '\r' || *q == '`') {
+      char msg[200];
+      snprintf(msg, sizeof(msg), "'%s' was given an address with a character a web address cannot have.", fn);
+      enlng_throw(msg);
+    }
+  if (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0) {
+    char msg[200];
+    snprintf(msg, sizeof(msg), "'%s' needs an address that starts with http:// or https://.", fn);
+    enlng_throw(msg);
+  }
+  char out_path[600], err_path[600], in_path[600];
+  enlng_temp_path(out_path, sizeof(out_path), "body");
+  enlng_temp_path(err_path, sizeof(err_path), "err");
+  in_path[0] = '\0';
+  const char *ctype = "text/plain; charset=utf-8";
+  if (body) {
+    enlng_temp_path(in_path, sizeof(in_path), "send");
+    EnlngVal send = *body;
+    if (send.type == ENLNG_VAL_LIST || send.type == ENLNG_VAL_MAP) {
+      send = enlng_builtin_to_json(send);
+      ctype = "application/json";
+    } else if (send.type != ENLNG_VAL_STRING) {
+      send = enlng_builtin_to_text(send);
+    }
+    FILE *f = fopen(in_path, "wb");
+    if (f) {
+      fputs(send.as.s ? send.as.s : "", f);
+      fclose(f);
+    }
+  }
+  size_t k = strlen(url) + strlen(out_path) + strlen(err_path) + strlen(in_path) + 300;
+  char *cmd = (char *)malloc(k);
+  const char *q = "\"";
+#ifndef _WIN32
+  q = "'";
+#endif
+  if (body)
+    snprintf(cmd, k, "%scurl -s -S -L --max-time 60 -o %s%s%s -w %%{http_code} "
+             "-H %sContent-Type: %s%s --data-binary @%s%s%s %s%s%s 2>%s%s%s%s",
+#ifdef _WIN32
+             "\"",
+#else
+             "",
+#endif
+             q, out_path, q, q, ctype, q, q, in_path, q, q, url, q, q, err_path, q,
+#ifdef _WIN32
+             "\""
+#else
+             ""
+#endif
+    );
+  else
+    snprintf(cmd, k, "%scurl -s -S -L --max-time 60 -o %s%s%s -w %%{http_code} %s%s%s 2>%s%s%s%s",
+#ifdef _WIN32
+             "\"",
+#else
+             "",
+#endif
+             q, out_path, q, q, url, q, q, err_path, q,
+#ifdef _WIN32
+             "\""
+#else
+             ""
+#endif
+    );
+  int code;
+  fflush(stdout);
+  EnlngVal status_text = enlng_run_shell(cmd, &code);
+  free(cmd);
+  char *resp = enlng_slurp(out_path);
+  char *err = enlng_slurp(err_path);
+  remove(out_path);
+  remove(err_path);
+  if (in_path[0])
+    remove(in_path);
+  int status = atoi(status_text.as.s ? status_text.as.s : "0");
+  if (code != 0 || status == 0) {
+    char msg[600];
+    if (err)
+      for (char *e = err; *e; e++)
+        if (*e == '\n' || *e == '\r')
+          *e = ' ';
+    snprintf(msg, sizeof(msg), "Could not reach %.200s: %.300s", url,
+             err && *err ? err : "the curl program did not run. Check that curl is installed.");
+    free(resp);
+    free(err);
+    enlng_throw(msg);
+  }
+  EnlngVal m = enlng_make_map(enlng_map_create());
+  enlng_map_set(m, "status", enlng_make_int(status));
+  enlng_map_set(m, "body", enlng_make_string(resp ? resp : ""));
+  free(resp);
+  free(err);
+  return m;
+}
+
+static inline EnlngVal enlng_builtin_http_get(EnlngVal url) {
+  return enlng_http("http_get", enlng_need_text("http_get", url), NULL);
+}
+
+static inline EnlngVal enlng_builtin_http_post(EnlngVal url, EnlngVal body) {
+  return enlng_http("http_post", enlng_need_text("http_post", url), &body);
+}
+
+#define ENLNG_MORE_BUILTINS(X)                                                \
+  X(to_json, 1) X(to_json_pretty, 1) X(from_json, 1) X(regex_match, 2)        \
+  X(regex_find, 2) X(regex_find_all, 2) X(regex_groups, 2)                    \
+  X(regex_replace, 3) X(regex_split, 2) X(format_time, 2) X(date_parts, 1)    \
+  X(make_time, 1) X(is_folder, 1) X(list_folder, 1) X(make_folder, 1)         \
+  X(delete_file, 1) X(rename_file, 2) X(run_command, 1) X(http_get, 1)        \
+  X(http_post, 2)
+
+/* --- The table of built-ins ---------------------------------------------
+   One row per built-in: its name and how many inputs it takes. The
+   interpreter, the C generator and function values all read this table, so
+   a built-in is added in one place. */
+#define ENLNG_BUILTINS(X)                                                     \
+  X(sqrt, 1) X(pow, 2) X(abs, 1) X(floor, 1) X(ceil, 1) X(round, 1)           \
+  X(min, 2) X(max, 2) X(random_number, 2) X(read_file, 1) X(write_file, 2)    \
+  X(append_file, 2) X(file_exists, 1) X(time_now, 0) X(sleep, 1)              \
+  X(append, 2) X(pop, 1) X(keys, 1) X(values, 1) X(has_key, 2) X(len, 1)      \
+  X(split, 2) X(join, 2) X(contains, 2) X(string_add, 3)                      \
+  X(string_insert, 3) X(string_remove_at, 2) X(string_remove, 2)              \
+  X(string_set_at, 3) X(string_replace, 3) X(slc, 3) X(to_number, 1)          \
+  X(to_text, 1) X(arguments, 0) X(env, 1) X(type_of, 1) X(char_code, 1)       \
+  X(char_of, 1) X(unique, 1) X(remove_key, 2) X(insert_at, 3)                 \
+  X(remove_at, 2) X(time_ms, 0) X(check, 2) ENLNG_MORE_BUILTINS(X)
+
+#define ENLNG_BI_ARITY(nm, n)                                                 \
+  if (strcmp(name, #nm) == 0)                                                 \
+    return n;
+/* Inputs a built-in takes, or -1 when no built-in has this name. */
+static inline int enlng_builtin_arity(const char *name) {
+  ENLNG_BUILTINS(ENLNG_BI_ARITY)
+  return -1;
+}
+
+#define ENLNG_BI_ARGS0
+#define ENLNG_BI_ARGS1 a[0]
+#define ENLNG_BI_ARGS2 a[0], a[1]
+#define ENLNG_BI_ARGS3 a[0], a[1], a[2]
+#define ENLNG_BI_CALL(nm, n)                                                  \
+  if (strcmp(name, #nm) == 0)                                                 \
+    return enlng_builtin_##nm(ENLNG_BI_ARGS##n);
+/* Runs a built-in; the caller has checked the number of inputs. */
+static inline EnlngVal enlng_call_builtin(const char *name, EnlngVal *a) {
+  (void)a;
+  ENLNG_BUILTINS(ENLNG_BI_CALL)
+  return enlng_make_null();
+}
+
+/* A built-in held in a value, such as f after remember f as sqrt. */
+static inline EnlngVal enlng_call_builtin_value(const char *name, int argc, EnlngVal *a) {
+  int need = enlng_builtin_arity(name);
+  if (argc != need)
+    enlng_wrong_arity(name, need, argc);
+  return enlng_call_builtin(name, a);
 }
 
 #endif /* ENLNG_RUNTIME_H */
