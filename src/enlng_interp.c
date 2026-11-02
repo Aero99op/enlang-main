@@ -23,7 +23,12 @@
 #include <pthread.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+/* the browser gives WebAssembly about 1 MB of call stack */
+#define INTERP_MAX_DEPTH 800
+#else
 #define INTERP_MAX_DEPTH 20000
+#endif
 #define INTERP_STACK_BYTES ((size_t)512 * 1024 * 1024)
 
 typedef struct {

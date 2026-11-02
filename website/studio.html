@@ -213,6 +213,9 @@
                 <span>Run Active File</span>
                 <span class="menu-shortcut">Ctrl+Enter</span>
               </div>
+              <div class="menu-dropdown-item" data-action="startDebugging">
+                <span>Start Debugging (.enlng)</span>
+              </div>
               <div class="menu-dropdown-item" data-action="openDbConsole">
                 <span>Execute EnlangDB Query</span>
                 <span class="menu-shortcut">F5</span>
@@ -459,7 +462,6 @@
               <div class="extension-category-chips" id="extensionCategoryChips">
                 <button class="ext-chip active" data-query="">🔥 Top</button>
                 <button class="ext-chip" data-query="theme">🎨 Themes</button>
-                <button class="ext-chip" data-query="python">🐍 Python</button>
                 <button class="ext-chip" data-query="javascript">⚡ JS/TS</button>
                 <button class="ext-chip" data-query="rust">🦀 Rust</button>
                 <button class="ext-chip" data-query="ai">🤖 AI</button>
@@ -835,6 +837,10 @@
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 <span>Run File</span>
               </button>
+              <button class="editor-action-btn" id="editorDebugBtn" title="Debug this file one statement at a time (the enlng debugger)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+                <span>Debug</span>
+              </button>
               <button class="editor-action-btn" id="formatDocBtn" title="Format Document with Prettier (Shift+Alt+F)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h14"/></svg>
                 <span>Format</span>
@@ -1184,7 +1190,7 @@
 
                     <div class="vscode-wt-syntax-comparison">
                       <div class="vscode-wt-syntax-col">
-                        <div class="vscode-wt-col-tag red">Traditional Boilerplate (JS/C/Python)</div>
+                        <div class="vscode-wt-col-tag red">Traditional Boilerplate (JS/C)</div>
                         <div class="vscode-wt-code-block"><span class="syn-comment">// Manual loop indexing &amp; temp variables</span>
 <span class="syn-red">let swapped = true;</span>
 <span class="syn-red">while (swapped) {</span>
@@ -1373,7 +1379,7 @@ balance <span class="syn-kw">increases by</span> 250
                     <div class="welcome-title-row">
                       <svg class="welcome-logo-svg" viewBox="0 0 24 24"><path fill="#38bdf8" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
                       <h1 class="welcome-title">Enlangg Studio</h1>
-                      <span class="welcome-version-tag">v5.0.1</span>
+                      <span class="welcome-version-tag">v5.1.0</span>
                     </div>
                     <p class="welcome-subtitle">Code editing. Redefined for Sovereign Systems.</p>
                     <div class="welcome-tags-row">
@@ -1543,7 +1549,7 @@ balance <span class="syn-kw">increases by</span> 250
                     <span>Show Welcome page on startup</span>
                   </label>
                   <div class="welcome-footer-info">
-                    <span>Enlangg Studio v5.0.1 · Electron Native Desktop &amp; Web</span>
+                    <span>Enlangg Studio v5.1.0 · Electron Native Desktop &amp; Web</span>
                   </div>
                 </div>
 
@@ -1656,7 +1662,7 @@ balance <span class="syn-kw">increases by</span> 250
             <div class="dock-pane" id="dockOutput">
               <div class="terminal-output" id="dockOutputLogs">
 [Enlangg Studio] Initialized VFS Workspace.
-[Enlangg Studio] Mounted native Sovereign Transpiler v5.4.0.
+[Enlangg Studio] Enlng 5.6.0 ready (the same interpreter as enlng.exe, built to WebAssembly).
 [Enlangg Studio] EnlangDB Active Engine: database1.edb
               </div>
             </div>
@@ -1698,15 +1704,19 @@ balance <span class="syn-kw">increases by</span> 250
             <!-- Pane 7: Debug Console -->
             <div class="dock-pane" id="dockDebugConsole" style="display:flex;flex-direction:column;height:100%;">
               <div class="terminal-output" id="debugConsoleOutput" style="flex:1;overflow-y:auto;color:#cccccc;padding:8px 12px;font-family:var(--font-mono);font-size:12px;line-height:1.5;">
-[Debugger] Sovereign Debugger attached to active VM.
-[Debugger] Breakpoints: 0 active. Click line numbers in gutter to set breakpoints.
-[Debugger] Call stack: global-scope -&gt; main()
-[Debugger] Ready. Type expressions below to evaluate live.
+Press Debug above the editor, or run "Enlng: Debug Active File", to debug the active .enlng file.
+Click a line number to set a breakpoint.
               </div>
               <div style="display:flex;gap:8px;padding:6px 12px;background:var(--vscode-bg);border-top:1px solid var(--vscode-border);align-items:center;">
                 <span style="color:var(--vscode-blue);font-weight:700;font-family:var(--font-mono);font-size:13px;">&gt;</span>
-                <input type="text" id="debugConsoleInput" placeholder="Evaluate Enlang expression or inspect variable (e.g. x, 2 + 2, items)..." class="modal-input" style="flex:1;font-family:var(--font-mono);font-size:12px;padding:4px 8px;" />
-                <button class="titlebar-btn primary" id="debugEvalBtn">Evaluate</button>
+                <input type="text" id="debugConsoleInput" placeholder="A command (step, next, break 12) or an expression to show (e.g. total, width plus 1)" class="modal-input" style="flex:1;font-family:var(--font-mono);font-size:12px;padding:4px 8px;" />
+                <button class="titlebar-btn debug-step-btn" type="button" data-cmd="step" title="Run the next statement, going into calls" disabled>Step</button>
+                <button class="titlebar-btn debug-step-btn" type="button" data-cmd="next" title="Run the next statement, going over calls" disabled>Next</button>
+                <button class="titlebar-btn debug-step-btn" type="button" data-cmd="out" title="Run until the function gives back its value" disabled>Out</button>
+                <button class="titlebar-btn debug-step-btn" type="button" data-cmd="continue" title="Run to the next breakpoint or the end" disabled>Continue</button>
+                <button class="titlebar-btn debug-step-btn" type="button" data-cmd="vars" title="Show every name and value here" disabled>Vars</button>
+                <button class="titlebar-btn primary" id="debugEvalBtn" title="Send the command or expression">Send</button>
+                <button class="titlebar-btn" id="debugStopBtn" type="button" title="End the debugging session">Stop</button>
                 <button class="sidebar-action-btn" id="clearDebugConsoleBtn" title="Clear Debug Output">✕</button>
               </div>
             </div>
@@ -1821,6 +1831,20 @@ balance <span class="syn-kw">increases by</span> 250
       <div class="modal-footer">
         <button class="titlebar-btn" id="cancelByokBtn">Cancel</button>
         <button class="titlebar-btn primary" id="saveByokBtn">Save &amp; Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: one line of text (used by package commands) -->
+  <div class="modal-backdrop" id="askModal">
+    <div class="modal-box" style="width:520px;">
+      <div class="modal-body" style="padding:14px;">
+        <label for="askInput" id="askLabel" style="display:block;margin-bottom:8px;font-size:12.5px;color:var(--vscode-text-main);"></label>
+        <input type="text" id="askInput" class="modal-input" autocomplete="off" />
+      </div>
+      <div class="modal-footer">
+        <button class="titlebar-btn" id="askCancel" type="button">Cancel</button>
+        <button class="titlebar-btn primary" id="askOk" type="button">OK</button>
       </div>
     </div>
   </div>
@@ -1983,7 +2007,7 @@ balance <span class="syn-kw">increases by</span> 250
           <div class="update-hero-icon">🚀</div>
           <div class="update-hero-info">
             <div class="update-version-row">
-              <span class="update-badge-old" id="updateCurrentVersionBadge">Current: v5.0.1</span>
+              <span class="update-badge-old" id="updateCurrentVersionBadge">Current: v5.1.0</span>
               <span class="update-arrow">➔</span>
               <span class="update-badge-new" id="updateLatestVersionBadge">Latest: Available</span>
               <span class="update-badge-type">Stable Release</span>
@@ -2388,7 +2412,7 @@ balance <span class="syn-kw">increases by</span> 250
           <svg class="gateway-logo-svg" viewBox="0 0 24 24"><path fill="#38bdf8" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           <div class="gateway-brand-text">
             <span class="gateway-brand-name">Enlangg Studio</span>
-            <span class="gateway-brand-tag">v5.0.1</span>
+            <span class="gateway-brand-tag">v5.1.0</span>
           </div>
         </div>
 
@@ -2581,9 +2605,8 @@ balance <span class="syn-kw">increases by</span> 250
   <!-- Floating Studio Notification Toast -->
   <div class="studio-toast" id="studioToast"></div>
 
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js" defer></script>
   <script src="enlang_wasm.js"></script>
-  <script src="app.js?v=5.4.0"></script>
-  <script src="studio.js?v=1.0.0"></script>
+  <script src="app.js?v=5.6.0"></script>
+  <script src="studio.js?v=5.1.0"></script>
 </body>
 </html>

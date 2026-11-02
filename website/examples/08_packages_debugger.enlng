@@ -1,0 +1,11 @@
+type enlng
+
+# Topic 08: Functions you can step through
+function area with width, height:
+    remember result as width times height
+    give result
+
+remember total as 0
+for each size in [2, 3]:
+    total = total plus area(size, 4)
+show total

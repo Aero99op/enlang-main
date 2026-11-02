@@ -1,14 +1,14 @@
 {
   "name": "Enlangg Studio",
-  "version": "5.0.3",
-  "build": "5.0.3.0",
-  "publishedAt": "2026-10-31T00:00:00Z",
-  "releaseNotes": "Enlangg Studio 5.0.3: a green update button in the header downloads the new version, verifies its SHA-256, and restarts Studio on it with a silent install. Studio also re-checks for updates every 6 hours. Users on 5.0.0 to 5.0.2 install this version by hand once.",
-  "downloadUrl": "https://github.com/Aero99op/enlang-main/releases/download/studio-v5.0.3/Enlangg-Studio-Setup-5.0.3.exe",
+  "version": "5.1.0",
+  "build": "5.1.0.0",
+  "publishedAt": "2026-11-02T00:00:00Z",
+  "releaseNotes": "Enlangg Studio 5.1.0: runs the Enlng 5.6.0 tools. Programs of an open folder run next to their own file, so use \"file\" and installed packages work. The debug console drives the real enlng debugger (step, next, out, break, print, vars). The command palette has Enlng commands for packages and tests. The browser version runs the same interpreter as enlng.exe, built to WebAssembly.",
+  "downloadUrl": "https://github.com/Aero99op/enlang-main/releases/download/studio-v5.1.0/Enlangg-Studio-Setup-5.1.0.exe",
   "mirrors": [
     "https://enlangg.site/enlangg-studio-setup.exe",
     "https://enlangg.vercel.app/enlangg-studio-setup.exe"
   ],
-  "assetName": "Enlangg-Studio-Setup-5.0.3.exe",
-  "sha256": "05e9bbcb09f9f9fc5ab8e7cfc6370ec20695a28d677f820194c33a06d776b8c7"
+  "assetName": "Enlangg-Studio-Setup-5.1.0.exe",
+  "sha256": "753bc26b9b5c038c4f349b2c9fb073d452388647360426edc8b41655d10eb91e"
 }

@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.5.1" />
+  <link rel="stylesheet" href="style.css?v=5.6.0" />
 </head>
 <body>
 
@@ -57,7 +57,7 @@
           <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
           <span>GitHub</span>
         </a>
-        <a href="enlangg-studio-setup.exe" download="Enlangg-Studio-Setup-5.0.3.exe" class="nav-btn-download" title="Download Enlangg Studio Desktop IDE (.exe)">
+        <a href="enlangg-studio-setup.exe" download="Enlangg-Studio-Setup-5.1.0.exe" class="nav-btn-download" title="Download Enlangg Studio Desktop IDE (.exe)">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
@@ -110,7 +110,7 @@
         <div class="hero-installers-grid">
           <!-- Card A: Direct Windows Standalone Executable Setup -->
           <div class="installer-card-gui">
-            <a href="enlangg-studio-setup.exe" download="Enlangg-Studio-Setup-5.0.3.exe" class="installer-dl-btn" id="mainDownloadBtn" title="Download Enlangg Studio Desktop Setup (.exe)">
+            <a href="enlangg-studio-setup.exe" download="Enlangg-Studio-Setup-5.1.0.exe" class="installer-dl-btn" id="mainDownloadBtn" title="Download Enlangg Studio Desktop Setup (.exe)">
               <div class="dl-btn-icon-wrapper">
                 <div class="dl-btn-icon">
                   <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
@@ -145,7 +145,7 @@
               </div>
             </div>
             <div style="margin-top: 8px; font-size: 0.76rem; color: var(--text-muted); text-align: center;">
-              Looking for terminal toolchain? <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald); text-decoration: underline;">Download CLI Suite</a> · <a href="https://github.com/Aero99op/enlang-main/releases/download/studio-v5.0.3/Enlangg-Studio-Setup-5.0.3.exe" target="_blank" rel="noopener" style="color: var(--accent-emerald); text-decoration: underline;">GitHub Mirror</a> · <a href="install.html" style="color: var(--accent-emerald); text-decoration: underline;">All Platforms</a>
+              Looking for terminal toolchain? <a href="enlangg-setup.exe" download="enlangg-setup.exe" style="color: var(--accent-emerald); text-decoration: underline;">Download CLI Suite</a> · <a href="https://github.com/Aero99op/enlang-main/releases/download/studio-v5.1.0/Enlangg-Studio-Setup-5.1.0.exe" target="_blank" rel="noopener" style="color: var(--accent-emerald); text-decoration: underline;">GitHub Mirror</a> · <a href="install.html" style="color: var(--accent-emerald); text-decoration: underline;">All Platforms</a>
             </div>
           </div>
 
@@ -195,18 +195,18 @@
         <!-- Trust Badges & Architectural Specs Row -->
         <div class="hero-stats-strip">
           <div class="stat-pill">
-            <span class="stat-num">~12 ms</span>
+            <span class="stat-num">~11 ms</span>
             <span class="stat-label">Hello World, Start to Exit</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-pill">
-            <span class="stat-num">152 KB</span>
-            <span class="stat-label">enlng.exe (5.5.0)</span>
+            <span class="stat-num">546 KB</span>
+            <span class="stat-label">enlng.exe (5.6.0)</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-pill">
             <span class="stat-num">7</span>
-            <span class="stat-label">Tools, ~586 KB Total</span>
+            <span class="stat-label">Tools, ~1.1 MB Total</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-pill">
@@ -400,18 +400,19 @@
               </div>
               <pre><code id="domainCodeSample">type enlng
 
-set word to "madam"
-set reversed to ""
-set i to 0
+# Palindrome check
+remember word as "madam"
+remember reversed as ""
+remember i as 0
 
-while i less than length of word:
-    set reversed to word[i] plus reversed 
-    set i to i plus 1
+repeat while i < (count of word):
+    reversed = word at i plus reversed
+    i increases by 1
 
-if word is equal to reversed:
-    display "The word '" + word + "' is a palindrome!"
-else:
-    display "not palindrome"</code></pre>
+when word is reversed:
+    show "The word '" word "' is a palindrome!"
+otherwise:
+    show "The word '" word "' is not a palindrome"</code></pre>
             </div>
           </div>
         </div>
@@ -424,7 +425,7 @@ else:
         <div class="section-heading">
           <div class="section-kicker">Raw Performance</div>
           <h2 class="section-title">Small, Quick to Start, Easy to Install</h2>
-          <p class="section-desc">Measured on one Windows machine with release 5.5.0 (median of 30 runs of a hello-world program). Your numbers will differ.</p>
+          <p class="section-desc">Measured on one Windows machine with release 5.6.0 (median of 30 runs of a hello-world program). Your numbers will differ.</p>
         </div>
 
         <div class="benchmarks-grid">
@@ -436,18 +437,18 @@ else:
               </span>
               <span class="bench-label">Hello World, Start to Exit</span>
             </div>
-            <div class="bench-value">12 <span class="bench-unit">ms</span></div>
+            <div class="bench-value">11 <span class="bench-unit">ms</span></div>
             <p class="bench-desc"><code>enlng run hello.enlng</code> with the built-in interpreter, process start to exit.</p>
             <div class="bench-bar-group">
               <div class="bench-bar-row">
                 <span class="bar-name">enlng</span>
-                <div class="bar-track"><div class="bar-fill" style="width: 16%;"></div></div>
-                <span class="bar-val">12 ms</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 17%;"></div></div>
+                <span class="bar-val">11 ms</span>
               </div>
               <div class="bench-bar-row">
                 <span class="bar-name">Python</span>
                 <div class="bar-track"><div class="bar-fill fill-secondary" style="width: 100%;"></div></div>
-                <span class="bar-val">73 ms</span>
+                <span class="bar-val">66 ms</span>
               </div>
             </div>
           </div>
@@ -460,18 +461,18 @@ else:
               </span>
               <span class="bench-label">Size on Disk</span>
             </div>
-            <div class="bench-value">152 <span class="bench-unit">KB</span></div>
-            <p class="bench-desc">The language tool <code>enlng.exe</code> holds the lexer, parser, interpreter and C backend. All seven tools together are about 586 KB.</p>
+            <div class="bench-value">546 <span class="bench-unit">KB</span></div>
+            <p class="bench-desc">The language tool <code>enlng.exe</code> holds the lexer, parser, interpreter, debugger, editor server and C backend. All seven tools together are about 1.1 MB.</p>
             <div class="bench-bar-group">
               <div class="bench-bar-row">
                 <span class="bar-name">enlng.exe</span>
-                <div class="bar-track"><div class="bar-fill" style="width: 26%;"></div></div>
-                <span class="bar-val">152 KB</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 50%;"></div></div>
+                <span class="bar-val">546 KB</span>
               </div>
               <div class="bench-bar-row">
                 <span class="bar-name">All 7 tools</span>
                 <div class="bar-track"><div class="bar-fill fill-secondary" style="width: 100%;"></div></div>
-                <span class="bar-val">586 KB</span>
+                <span class="bar-val">1.1 MB</span>
               </div>
             </div>
           </div>
@@ -870,7 +871,7 @@ else:
               </span>
             </button>
             <div class="faq-answer">
-              <p>Not to run programs. The installer puts seven small native tools on your machine (about 586 KB in total) and needs no admin rights. A C compiler such as gcc is only needed for <code>enlng build</code> or <code>enlng run --native</code>.</p>
+              <p>Not to run programs. The installer puts seven small native tools on your machine (about 1.1 MB in total) and needs no admin rights. A C compiler such as gcc is only needed for <code>enlng build</code> or <code>enlng run --native</code>.</p>
             </div>
           </div>
 
@@ -882,7 +883,7 @@ else:
               </span>
             </button>
             <div class="faq-answer">
-              <p>The tools are small native programs with nothing to load first. On one Windows machine with release 5.5.0, <code>enlng run</code> on a hello-world file took about 12 ms against about 73 ms for <code>python hello.py</code> (median of 30 runs). That is start-up time only; the interpreter is not tuned for heavy loops, which run faster with <code>--native</code>.</p>
+              <p>The tools are small native programs with nothing to load first. On one Windows machine with release 5.6.0, <code>enlng run</code> on a hello-world file took about 11 ms against about 66 ms for <code>python hello.py</code> (median of 30 runs). That is start-up time only; the interpreter is not tuned for heavy loops, which run faster with <code>--native</code>.</p>
             </div>
           </div>
         </div>
@@ -928,7 +929,6 @@ else:
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Curriculum</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -952,6 +952,6 @@ else:
     </div>
   </footer>
 
-  <script src="app.js?v=5.5.1"></script>
+  <script src="app.js?v=5.6.0"></script>
 </body>
 </html>

@@ -142,78 +142,192 @@ function createWindow() {
 }
 
 // --- IPC: Direct Native Compiler Execution ---
-ipcMain.handle('compiler:run', async (event, { filename, content, domain }) => {
+const RUN_LIMIT_MS = 60 * 1000;
+
+// Where a program runs. A file of the open folder runs next to its own file, so that
+// `use "other.enlng"` and the enlng_packages folder are found. Anything else runs in a temporary folder.
+function runPlace(filename) {
+  if (currentWorkspacePath && typeof filename === 'string' && filename) {
+    try {
+      const target = path.resolve(path.isAbsolute(filename) ? filename : path.join(currentWorkspacePath, filename));
+      assertInWorkspace(target);
+      const dir = path.dirname(target);
+      if (fs.statSync(dir).isDirectory()) return { dir, temp: false };
+    } catch (_) {}
+  }
+  return { dir: fs.mkdtempSync(path.join(os.tmpdir(), 'enlang_studio_')), temp: true };
+}
+
+function writeRunFile(place, safeName, content) {
+  const file = path.join(place.dir, place.temp ? safeName : `.studio_run_${process.pid}_${safeName}`);
+  fs.writeFileSync(file, content, 'utf8');
+  return file;
+}
+
+function cleanRunPlace(place, file) {
+  try { fs.unlinkSync(file); } catch (_) {}
+  if (place.temp) { try { fs.rmdirSync(place.dir); } catch (_) {} }
+}
+
+// the run file of a folder has another name; show the name the person knows
+function showRealName(text, file, safeName) {
+  return String(text).split(file).join(safeName).split(path.basename(file)).join(safeName);
+}
+
+ipcMain.handle('compiler:run', async (event, { filename, content, domain, stdin }) => {
   return new Promise((resolve) => {
     const t0 = performance.now();
     const safeName = path.basename(filename || 'sandbox.enlng');
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'enlang_studio_'));
-    const tempFile = path.join(tempDir, safeName);
-
+    let place;
+    let tempFile;
     try {
-      fs.writeFileSync(tempFile, content, 'utf8');
-
-      const isDb = domain === 'enlngdb' || safeName.endsWith('.enlngdb');
-      const binName = isDb ? 'enlngdb' : 'enlng';
-      const binPath = findBinary(binName);
-
-      const proc = spawn(binPath, [tempFile]);
-      let stdout = '';
-      let stderr = '';
-
-      proc.stdout.on('data', (data) => {
-        stdout += data.toString();
-      });
-
-      proc.stderr.on('data', (data) => {
-        stderr += data.toString();
-      });
-
-      proc.on('close', (code) => {
-        const timeMs = (performance.now() - t0).toFixed(2);
-        const output = code === 0 ? stdout : (stderr || stdout);
-        
-        try {
-          fs.unlinkSync(tempFile);
-          fs.rmdirSync(tempDir);
-        } catch (_) {}
-
-        resolve({
-          success: code === 0,
-          exitCode: code,
-          output: output || (code === 0 ? '// [Execution completed with 0 output]' : 'Unknown error'),
-          stdout,
-          stderr,
-          timeMs,
-          executor: binPath
-        });
-      });
-
-      proc.on('error', (err) => {
-        const timeMs = (performance.now() - t0).toFixed(2);
-        resolve({
-          success: false,
-          exitCode: 1,
-          output: `Failed to spawn native compiler binary '${binPath}': ${err.message}`,
-          stdout: '',
-          stderr: err.message,
-          timeMs,
-          executor: binPath
-        });
-      });
+      place = runPlace(filename);
+      tempFile = writeRunFile(place, safeName, content);
     } catch (e) {
+      resolve({ success: false, exitCode: 1, output: `File I/O error: ${e.message}`, stdout: '', stderr: e.message, timeMs: (performance.now() - t0).toFixed(2), executor: 'Native Host' });
+      return;
+    }
+
+    const isDb = domain === 'enlngdb' || safeName.endsWith('.enlngdb');
+    const binPath = findBinary(isDb ? 'enlngdb' : 'enlng');
+    const args = isDb ? [tempFile] : ['run', tempFile];
+    let finished = false;
+    let stdout = '';
+    let stderr = '';
+    let limit = null;
+    const done = (result) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(limit);
+      cleanRunPlace(place, tempFile);
+      resolve(result);
+    };
+
+    const proc = spawn(binPath, args, { cwd: place.dir });
+    // a program that never ends is stopped, and a program that asks for input gets the end of the input
+    limit = setTimeout(() => {
+      stderr += `The program was stopped after ${RUN_LIMIT_MS / 1000} seconds.\n`;
+      proc.kill();
+    }, RUN_LIMIT_MS);
+    proc.stdin.on('error', () => {});
+    proc.stdin.end(typeof stdin === 'string' ? stdin : '');
+
+    proc.stdout.on('data', (data) => { stdout += data.toString(); });
+    proc.stderr.on('data', (data) => { stderr += data.toString(); });
+
+    proc.on('close', (code) => {
       const timeMs = (performance.now() - t0).toFixed(2);
-      resolve({
+      stdout = showRealName(stdout, tempFile, safeName);
+      stderr = showRealName(stderr, tempFile, safeName);
+      const output = code === 0 ? stdout : (stderr || stdout);
+      done({
+        success: code === 0,
+        exitCode: code,
+        output: output || (code === 0 ? '// [Execution completed with 0 output]' : 'Unknown error'),
+        stdout,
+        stderr,
+        timeMs,
+        executor: binPath
+      });
+    });
+
+    proc.on('error', (err) => {
+      done({
         success: false,
         exitCode: 1,
-        output: `File I/O error: ${e.message}`,
+        output: `Failed to start the tool '${binPath}': ${err.message}`,
         stdout: '',
-        stderr: e.message,
-        timeMs,
-        executor: 'Native Host'
+        stderr: err.message,
+        timeMs: (performance.now() - t0).toFixed(2),
+        executor: binPath
       });
-    }
+    });
   });
 });
+
+// --- IPC: package and test commands of the enlng tool (run in the open folder) ---
+const TOOL_COMMANDS = new Set(['packages', 'add', 'install', 'remove', 'test']);
+ipcMain.handle('tool:run', async (event, { args }) => {
+  return new Promise((resolve) => {
+    if (!currentWorkspacePath) {
+      resolve({ success: false, exitCode: 1, output: 'Open a folder first (File > Open Folder). Packages and tests belong to a folder.' });
+      return;
+    }
+    if (!Array.isArray(args) || !args.length || !TOOL_COMMANDS.has(args[0]) || args.some((a) => typeof a !== 'string' || a.length > 500)) {
+      resolve({ success: false, exitCode: 1, output: 'That command is not available from Studio.' });
+      return;
+    }
+    const binPath = findBinary('enlng');
+    let out = '';
+    const proc = spawn(binPath, args, { cwd: currentWorkspacePath });
+    const limit = setTimeout(() => { out += `\nStopped after ${RUN_LIMIT_MS / 1000} seconds.\n`; proc.kill(); }, RUN_LIMIT_MS);
+    proc.stdin.on('error', () => {});
+    proc.stdin.end('');
+    proc.stdout.on('data', (d) => { out += d.toString(); });
+    proc.stderr.on('data', (d) => { out += d.toString(); });
+    proc.on('close', (code) => { clearTimeout(limit); resolve({ success: code === 0, exitCode: code, output: out }); });
+    proc.on('error', (err) => { clearTimeout(limit); resolve({ success: false, exitCode: 1, output: `Failed to start the tool '${binPath}': ${err.message}` }); });
+  });
+});
+
+// --- IPC: the debugger (enlng debug), one live session at a time ---
+let debugSession = null;
+
+function endDebugSession() {
+  if (!debugSession) return;
+  const s = debugSession;
+  debugSession = null;
+  try { s.proc.kill(); } catch (_) {}
+  cleanRunPlace(s.place, s.file);
+}
+
+function sendToWindow(channel, payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
+}
+
+ipcMain.handle('debug:start', async (event, { filename, content, breakpoints }) => {
+  endDebugSession();
+  const safeName = path.basename(filename || 'sandbox.enlng');
+  if (!safeName.endsWith('.enlng')) return { success: false, message: 'Only .enlng files can be debugged.' };
+  try {
+    const place = runPlace(filename);
+    const file = writeRunFile(place, safeName, content);
+    const proc = spawn(findBinary('enlng'), ['debug', file], { cwd: place.dir });
+    const session = { proc, place, file };
+    debugSession = session;
+    const forward = (d) => sendToWindow('debug:output', showRealName(d.toString(), file, safeName));
+    proc.stdout.on('data', forward);
+    proc.stderr.on('data', forward);
+    proc.stdin.on('error', () => {});
+    proc.on('close', (code) => {
+      if (debugSession === session) debugSession = null;
+      cleanRunPlace(place, file);
+      sendToWindow('debug:exit', { code });
+    });
+    proc.on('error', (err) => {
+      sendToWindow('debug:output', `Failed to start the debugger: ${err.message}\n`);
+    });
+    for (const line of (Array.isArray(breakpoints) ? breakpoints : [])) {
+      if (Number.isInteger(line) && line > 0) proc.stdin.write(`break ${line}\n`);
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+});
+
+ipcMain.handle('debug:send', async (event, text) => {
+  if (!debugSession || typeof text !== 'string') return false;
+  debugSession.proc.stdin.write(text.replace(/[\r\n]+/g, ' ') + '\n');
+  return true;
+});
+
+ipcMain.handle('debug:stop', async () => {
+  endDebugSession();
+  return true;
+});
+
+app.on('before-quit', endDebugSession);
 
 // --- IPC: Native File System Operations ---
 let currentWorkspacePath = null;

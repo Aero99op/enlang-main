@@ -2967,7 +2967,7 @@ html, body {
 }
 
 /* =====================================================================
-   Library & Python Injection Reference (library.html)
+   Library Reference (library.html)
    ===================================================================== */
 .library-layout {
   display: flex;
@@ -3040,16 +3040,6 @@ html, body {
   background: rgba(251, 191, 36, 0.14);
   color: var(--accent-gold);
   border-color: rgba(251, 191, 36, 0.4);
-}
-
-.python-bridge-banner {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(245, 158, 11, 0.08) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: var(--radius-lg);
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
 }
 
 .bridge-title {

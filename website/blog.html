@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.5.1" />
+  <link rel="stylesheet" href="style.css?v=5.6.0" />
 </head>
 <body>
 
@@ -94,6 +94,38 @@
     
     <div style="display: flex; flex-direction: column; gap: 36px;">
       
+      <!-- Release notes 5.6.0 -->
+      <article style="padding: 32px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap;">
+          <span style="color: var(--accent-emerald); font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 4px;">Release</span>
+          <span>Toolchain 5.6.0 &middot; Enlangg Studio 5.1.0</span>
+        </div>
+        <h2 style="font-size: 1.55rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); line-height: 1.3;">
+          Packages, a debugger, editor help, and the real interpreter in your browser
+        </h2>
+        <p style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
+          Release 5.6.0 adds three tools and several language features. <code>enlng add</code> installs a package from a folder, a file or a git address, and <code>use "name"</code> loads it. <code>enlng debug</code> runs a program one statement at a time. <code>enlng lsp</code> gives editors mistakes while you type, hover, completion and go to definition.
+        </p>
+        <ul style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; padding-left: 20px;">
+          <li>Whole numbers stay exact past 64 bits.</li>
+          <li>Choosing by a value (<code>when n is:</code>), picking one of two values with <code>if ... otherwise</code>, and <code>is in</code>.</li>
+          <li>A wrong kind of value given to a function with <code>check that</code> is reported before the program runs when the kind is clear from the call.</li>
+          <li><code>run together:</code> runs lines that wait at the same time.</li>
+          <li><code>enlng test</code> runs every file ending in <code>_test.enlng</code>.</li>
+        </ul>
+        <p style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
+          The playground and the browser version of Studio used to run a separate reimplementation of the language. They now run the same C interpreter as <code>enlng.exe</code>, built to WebAssembly, so a program gives the same output there as on your computer. In the browser, <code>run together:</code> runs one line after another and a program stops after 15 seconds. Enlangg Studio 5.1.0 on Windows runs programs next to their own file, so <code>use</code> and installed packages work, and its debug console drives the real debugger.
+        </p>
+        <div class="code-block-card">
+          <div class="code-block-header">
+            <span>terminal</span>
+          </div>
+          <div class="code-block-body">enlng add ../shared/geometry      # then: use "geometry"
+enlng debug program.enlng         # step, next, break 12, print total
+enlng lsp                         # for editors (Language Server Protocol)</div>
+        </div>
+      </article>
+
       <!-- Release notes -->
       <article style="padding: 32px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap;">
@@ -147,7 +179,7 @@ enlng build hello.enlng -o hello # standalone executable (needs gcc)</div>
           Plain statements about gaps, so you do not have to find them yourself:
         </p>
         <ul style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; padding-left: 20px;">
-          <li>Calling Python packages and C libraries from Enlangg code is planned, not implemented.</li>
+          <li>Calling C libraries from Enlangg code is planned, not implemented.</li>
           <li>Building APK or IPA packages from <code>.enlngm</code> files is not implemented. <code>enlngm</code> gives a phone-sized preview window on Windows.</li>
           <li>The preview windows of <code>enlngf</code> and <code>enlngm</code> are Windows-only. <code>enlngf serve</code> and <code>enlngf build</code> work on every platform.</li>
           <li><code>enlngf</code>, <code>enlngd</code> and <code>enlngs</code> are native programs, but what they produce is HTML, CSS and JavaScript, not machine code.</li>
@@ -196,7 +228,6 @@ enlng build hello.enlng -o hello # standalone executable (needs gcc)</div>
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Curriculum</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -220,6 +251,6 @@ enlng build hello.enlng -o hello # standalone executable (needs gcc)</div>
     </div>
   </footer>
 
-  <script src="app.js?v=5.5.1"></script>
+  <script src="app.js?v=5.6.0"></script>
 </body>
 </html>

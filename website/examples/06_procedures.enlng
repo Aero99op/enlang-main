@@ -1,11 +1,11 @@
 type enlng
 
-// Topic 06: Procedures, Scopes & Return Values
-define calculate_tax(amount, rate):
-    set tax_val to amount multiplied by rate
-    return tax_val
+# Topic 06: Functions, Scopes & Return Values (with & give)
+function calculate_tax with amount, rate:
+    give amount times rate
 
-set bill to 250
-set tax to calculate_tax(bill, 0.08)
-display "Subtotal: $", bill
-display "Tax Calculated: $", tax
+remember bill as 250
+remember tax as calculate_tax with bill, 0.08
+
+show "Subtotal: $" bill
+show "Tax Calculated: $" tax

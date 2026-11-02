@@ -166,6 +166,60 @@ repeat until sorted:
 show "After Spatial Sort:" amounts
 show "All Sovereign Grammar Rules 100% Verified!"`,
 
+  big_numbers: `type enlng
+
+# Whole numbers do not overflow: they stay exact past 64 bits
+remember f as 1
+for i from 1 to 30:
+    f = f times i
+show "30! =" f
+show "2 to the power of 100 =" 2 to the power of 100
+show f divided by 1000000007, f mod 1000000007`,
+
+  choose_by_value: `type enlng
+
+# Choosing by a value, and picking one of two values
+for each color in ["red", "blue", "pink"]:
+    when the color is:
+        "red": show "stop"
+        "green" or "blue": show "go"
+        otherwise: show "wait"
+
+remember age as 20
+remember the label as "adult" if the age is at least 18 otherwise "child"
+show label
+
+remember numbers as [1, 2, 3]
+when 3 is in the numbers:
+    show "found it"`,
+
+  kinds: `type enlng
+
+# check that: a wrong kind is reported with a clear message
+function area with width, height:
+    check that width is a number
+    check that height is a number
+    give width times height
+
+show area(3, 4)
+for each second in [4, "four"]:
+    try:
+        show area(3, second)
+    on error as problem:
+        show problem`,
+
+  run_together: `type enlng
+
+# Lines inside run together: start at the same time (in the browser they run one after another)
+function square with n:
+    give n times n
+
+run together:
+    remember a as square(3)
+    remember b as square(4)
+    remember c as square(5)
+show a, b, c`,
+
   fibonacci: `type enlng
 
 # Fibonacci Series Generator in Pure Enlng
@@ -323,120 +377,101 @@ show "Node Health:" node_info.status`,
 
   topic8: `type enlng
 
-# Topic 08: Universal 4-Way Property Access Engine
-remember card as {"holder": "Aero", "status": "ACTIVE", "tier": "Gold"}
+# Topic 08: Functions you can step through
+function area with width, height:
+    remember result as width times height
+    give result
 
-# Access Method 1: 'property of object'
-show "Method 1 (of):" status of card
-
-# Access Method 2: 'container at key'
-show "Method 2 (at):" card at "holder"
-
-# Access Method 3: Dot notation
-show "Method 3 (dot):" card.tier
-
-# Access Method 4: Bracket notation
-show "Method 4 ([]):" card["status"]`,
+remember total as 0
+for each size in [2, 3]:
+    total = total plus area(size, 4)
+show total`,
 
   enlngdb_tour: `type enlngdb
 
--- ==============================================================================
--- 📊 ENLNGDB SOVEREIGN QUICKSTART TOUR
--- In-Memory Pure C Micro-VM Engine (<0.05ms Latency)
--- ==============================================================================
+-- Quickstart: make a table, add rows, look at them
+create table student with roll_no, name, marks, grade
+insert record into student with roll_no 101, name "Asha Rao", marks 91, grade "A"
+insert record into student with roll_no 102, name "Imran Khan", marks 78, grade "B"
+insert record into student with roll_no 103, name "Meera Nair", marks 66, grade "C"
+insert record into student with roll_no 104, name "Karan Shah", marks 85, grade "A"
+insert record into student with roll_no 105, name "Dev Patel", marks 59, grade "D"
 
-use database database1;
-show tables;
-
--- Query all records from student table
-find all records from student;
-
--- Switch to main_db and inspect accounts
-use database main_db;
-show tables;
-find all records from accounts;
-`,
+show tables
+find records from student
+count records in student`,
 
   enlngdb_schema: `type enlngdb
 
--- ==============================================================================
--- 🔍 SCHEMA DISCOVERY & DATABASE EXPLORATION
--- ==============================================================================
+-- Look around: which tables exist, and what is in them
+create table student with roll_no, name, marks
+create table faculty with id, name, subject
+insert record into student with roll_no 101, name "Asha Rao", marks 91
+insert record into faculty with id 1, name "Dr. Iyer", subject "Physics"
 
-show databases;
-
-use database database1;
-show tables;
-
-find all records from student;
-find all records from faculty;
-`,
+show tables
+find records from student
+find records from faculty`,
 
   enlngdb_crud: `type enlngdb
 
--- ==============================================================================
--- 👥 STUDENT REGISTRY (CRUD OPERATIONS)
--- ==============================================================================
+-- Create, read, update and delete
+create table student with roll_no, name, marks, grade
+insert record into student with roll_no 101, name "Asha Rao", marks 91, grade "A"
+insert record into student with roll_no 102, name "Imran Khan", marks 78, grade "B"
+insert record into student with roll_no 103, name "Meera Nair", marks 66, grade "C"
+insert record into student with roll_no 104, name "Karan Shah", marks 85, grade "A"
+insert record into student with roll_no 105, name "Dev Patel", marks 59, grade "D"
 
-use database database1;
+insert record into student with roll_no 106, name "Devansh Saxena", marks 88, grade "A"
+find records from student where roll_no is 106
 
--- 1. Read existing records
-find all records from student;
+update records in student set marks = 90 where roll_no is 106
+find records from student where roll_no is 106
 
--- 2. Insert new student record
-insert into student with roll_no 106, name "Devansh Saxena", marks 88, grade "A";
-
--- 3. Verify insertion
-find all records from student where roll_no is 106;
-`,
+delete records from student where roll_no is 106
+count records in student`,
 
   enlngdb_updates: `type enlngdb
 
--- ==============================================================================
--- ✏️ IN-TABLE ATOMIC UPDATES
--- ==============================================================================
+-- Change rows that match a condition
+create table student with roll_no, name, marks, grade
+insert record into student with roll_no 101, name "Asha Rao", marks 91, grade "A"
+insert record into student with roll_no 102, name "Imran Khan", marks 78, grade "B"
+insert record into student with roll_no 103, name "Meera Nair", marks 66, grade "C"
+insert record into student with roll_no 104, name "Karan Shah", marks 85, grade "A"
+insert record into student with roll_no 105, name "Dev Patel", marks 59, grade "D"
 
-use database database1;
-
--- Query current record for student 105
-find all records from student where roll_no is 105;
-
--- Update marks and grade
-update student set marks 75, grade "B" where roll_no is 105;
-
--- Inspect updated student
-find all records from student where roll_no is 105;
-`,
+find records from student where roll_no is 105
+update records in student set marks = 75, grade = "B" where roll_no is 105
+find records from student where roll_no is 105`,
 
   enlngdb_deletions: `type enlngdb
 
--- ==============================================================================
--- 🛡️ DELETIONS & SOVEREIGN SAFETY GUARDS
--- ==============================================================================
+-- Remove rows that match a condition
+create table student with roll_no, name, marks, grade
+insert record into student with roll_no 101, name "Asha Rao", marks 91, grade "A"
+insert record into student with roll_no 102, name "Imran Khan", marks 78, grade "B"
+insert record into student with roll_no 103, name "Meera Nair", marks 66, grade "C"
+insert record into student with roll_no 104, name "Karan Shah", marks 85, grade "A"
+insert record into student with roll_no 105, name "Dev Patel", marks 59, grade "D"
 
-use database database1;
-
--- Attempt guarded deletion (failsafe)
-delete from student where marks < 70;
-
--- Count remaining records
-count records in student;
-`,
+delete records from student where marks is less than 70
+count records in student
+find records from student`,
 
   enlngdb_filter: `type enlngdb
 
--- ==============================================================================
--- ⚡ FILTER & ADVANCED CONDITIONS
--- ==============================================================================
+-- Filter and sort
+create table student with roll_no, name, marks, grade
+insert record into student with roll_no 101, name "Asha Rao", marks 91, grade "A"
+insert record into student with roll_no 102, name "Imran Khan", marks 78, grade "B"
+insert record into student with roll_no 103, name "Meera Nair", marks 66, grade "C"
+insert record into student with roll_no 104, name "Karan Shah", marks 85, grade "A"
+insert record into student with roll_no 105, name "Dev Patel", marks 59, grade "D"
 
-use database database1;
-
--- Filter by marks threshold
-find all records from student where marks >= 85;
-
--- Filter by specific grade
-find all records from student where grade is "A";
-`
+find records from student where marks is at least 85
+find records from student where grade is "A" order by marks descending`
 };
 // --- 2. Live In-Browser Enlng & EnlngDB Sandbox Engines ---
 
@@ -1463,6 +1498,7 @@ function initPlayground() {
 
   let isPlaygroundBridgeConnected = false;
   const PLAYGROUND_BRIDGE_URL = 'http://127.0.0.1:5999';
+  const PLAYGROUND_BRIDGE_ENABLED = false;
 
   function getPlaygroundBridgeToken() {
     try {
@@ -1497,6 +1533,8 @@ function initPlayground() {
     const pill = document.getElementById('statusNativeEnginePlayground');
 
     try {
+      // The playground runs the Enlng interpreter in this page. The local bridge is off.
+      if (!PLAYGROUND_BRIDGE_ENABLED) throw new Error('bridge off');
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 1200);
       const res = await fetch(`${PLAYGROUND_BRIDGE_URL}/api/health`, {
@@ -1536,18 +1574,18 @@ function initPlayground() {
 
     isPlaygroundBridgeConnected = false;
     if (dot) {
-      dot.style.background = '#e5c07b';
+      dot.style.background = '#4ec9b0';
       dot.style.boxShadow = 'none';
     }
     if (text) {
-      text.textContent = 'Engine: Web Sandbox';
+      text.textContent = 'Engine: Enlng WebAssembly';
       text.style.color = 'var(--text-muted)';
     }
     if (pill) {
-      pill.title = 'Running in Web Sandbox mode. Run enlangg-bridge to enable running on your own machine.';
+      pill.title = 'Running the Enlng interpreter as WebAssembly in this page. Open Enlangg Studio to run on your own machine.';
     }
     if (userInitiated && terminal) {
-      terminal.innerHTML = `<span class="term-warn">[Native Bridge] Daemon is not running on port 5999.</span>\n<span class="term-dim">Run: <strong>python enlangg-bridge.py</strong> to connect playground to native compiler binaries.</span>`;
+      terminal.innerHTML = `<span class="term-warn">[Native Bridge] Daemon is not running on port 5999.</span>\n<span class="term-dim">The playground runs the real Enlng interpreter in this page. To use the tools installed on your computer, open Enlangg Studio.</span>`;
     }
     return false;
   }
@@ -1557,8 +1595,6 @@ function initPlayground() {
   if (statusNativeEnginePlayground) {
     statusNativeEnginePlayground.addEventListener('click', () => checkPlaygroundBridge(true));
   }
-  setTimeout(() => checkPlaygroundBridge(false), 200);
-  setInterval(() => checkPlaygroundBridge(false), 2000);
 
   // Helper to execute via Native Bridge in Playground
   async function executeViaPlaygroundBridge(filename, content, lang) {
@@ -2591,7 +2627,7 @@ function executeEnlngInBrowser(sourceCode, terminal) {
     }
   } catch (err) {
     const rawMsg = err.message || String(err);
-    const card = `── Enlang Sandbox Error ──────────────────────────────────────────────\nLocation: sandbox:1:1\n\nWhat: ${rawMsg}\nWhy:  Syntax or runtime constraint encountered in Web Sandbox mode.\n\nSuggestions:\n  • Run "python enlangg-bridge.py" in your terminal to enable full Native C Compilers.\n  • Check your statement syntax against Enlang documentation.\n──────────────────────────────────────────────────────────────────────`;
+    const card = `── Enlang Sandbox Error ──────────────────────────────────────────────\nLocation: sandbox:1:1\n\nWhat: ${rawMsg}\nWhy:  Syntax or runtime constraint encountered in Web Sandbox mode.\n\nSuggestions:\n  - Check your program against the Enlng documentation (docs.html).\n  - Run it on your computer with: enlng run file.enlng\n──────────────────────────────────────────────────────────────────────`;
     terminal.innerHTML = formatTerminalErrorHtml(card);
     const timePill = document.getElementById('runtimeExecTime');
     if (timePill) {
@@ -2969,12 +3005,12 @@ const BOOK_VOLUMES = {
     spinePages: '10 SECTIONS',
     backBadge: 'STORAGE SPECIFICATION',
     backTitle: 'ENLNGDB ZERO-SQL ENGINE',
-    backBlurb: 'The complete canonical manual for EnlngDB pure C embedded storage engine. Covers zero-SQL syntax, sub-microsecond seeks, binary WAL layout, C API, and Python bindings.',
+    backBlurb: 'The complete canonical manual for EnlngDB pure C embedded storage engine. Covers zero-SQL syntax, sub-microsecond seeks, binary WAL layout, C API and the command line.',
     backFeatures: [
       '• Zero SQL Parsing Overhead',
       '• Pure C99 Embedded Binary',
       '• ACID WAL Crash Resilience',
-      '• Native Python SDK & C ABI'
+      '• C API for embedding'
     ],
     backIsbn: 'SPEC-ENLNGDB-2026',
     insideTitle: 'ENLNGDB ZERO-SQL',
@@ -2982,7 +3018,7 @@ const BOOK_VOLUMES = {
     insideSpec: 'SPEC-DB-2026-PURE-C',
     infoKicker: 'EnlngDB Canonical Volume · 2nd Edition',
     infoHeading: 'EnlngDB Architecture & Reference Manual',
-    infoDesc: 'The definitive 10-section manual for the EnlngDB pure C embedded storage engine. Complete coverage of natural language DDL, DML, query operators, crash resilience, C API, Python bindings, and developer CLI.',
+    infoDesc: 'The definitive 10-section manual for the EnlngDB pure C embedded storage engine. Complete coverage of natural language DDL, DML, query operators, crash resilience, C API and the developer CLI.',
     primaryDlHref: 'enlngdb_manual.pdf',
     primaryDlDownload: 'enlngdb_manual.pdf',
     primaryDlText: 'Download EnlngDB Manual (PDF)',
@@ -3067,11 +3103,11 @@ const BOOK_VOLUMES = {
       {
         chapter: 'SECTION 9',
         pages: 'Section 9 / 10',
-        badge: 'Python Package',
-        title: 'Python SDK & Context Manager',
-        excerpt: 'Full Pythonic interface with pip install enlngdb. Native bindings, automatic cursor iteration, dictionary rows, and pandas DataFrame support.',
-        snippet: '<span class="code-kw">import</span> <span class="code-id">enlngdb</span>\n<span class="code-kw">with</span> <span class="code-id">enlngdb</span>.<span class="code-id">connect</span>(<span class="code-val">"university_db.edb"</span>) <span class="code-kw">as</span> <span class="code-id">db</span>:\n    <span class="code-id">rows</span> = <span class="code-id">db</span>.<span class="code-id">query</span>(<span class="code-val">"find all records from scholars where cgpa is at least 9.0;"</span>)\n    <span class="code-kw">for</span> <span class="code-id">r</span> <span class="code-kw">in</span> <span class="code-id">rows</span>:\n        <span class="code-kw">print</span>(<span class="code-id">f"Scholar {r[\'name\']}: {r[\'cgpa\']}"</span>)',
-        seal: 'Pythonic C-Extension'
+        badge: 'Command Line',
+        title: 'Running EnlngDB from the Terminal',
+        excerpt: 'Run a script file with enlngdb, or one statement at a time with enlangg db -e. Data is saved to a file and loaded on the next run.',
+        snippet: '<span class="code-kw">$</span> <span class="code-id">enlangg</span> <span class="code-val">db</span> <span class="code-id">-e</span> <span class="code-val">"show tables"</span>',
+        seal: 'Plain Command Line'
       },
       {
         chapter: 'SECTION 10',

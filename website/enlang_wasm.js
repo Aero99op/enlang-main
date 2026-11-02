@@ -1,231 +1,135 @@
-// Enlang Sovereign In-Browser WebAssembly Engine
-// Connects Playground and Studio directly to the REAL Enlang compiler running inside Pyodide WebAssembly.
-// Zero backend server, zero bridge daemon required.
-(function(window) {
-  let pyodideInstance = null;
-  let isInitializing = false;
-  let isReady = false;
-  const initCallbacks = [];
+// Enlangg in the browser: the real Enlng interpreter and the EnlngDB engine, built
+// to WebAssembly from the same C sources as enlng.exe and enlngdb.exe
+// (tools/build_wasm.ps1). Nothing is sent to a server, and no other runtime is loaded.
+//
+//   window.EnlangWasm.execute(filename, code, domain, stdin) -> Promise of
+//     { success, exitCode, output, error, timeMs, executor }
+(function (window) {
+  'use strict';
 
-  async function initEnlangWasm() {
-    if (isReady) return true;
-    if (isInitializing) {
-      return new Promise(resolve => initCallbacks.push(resolve));
-    }
-    isInitializing = true;
+  var RUN_LIMIT_MS = 15000;
+  var worker = null;
+  var ready = false;
+  var nextId = 1;
+  var pending = {};
+  var DOMAINS = { enlng: 'enlng', enlngdb: 'enlngdb' };
+  var EXECUTOR = 'Enlng (WebAssembly)';
 
+  function setStatus(ok) {
+    var dot = document.getElementById('statusNativeEngineDot');
+    var text = document.getElementById('statusNativeEngineText');
+    var pill = document.getElementById('statusNativeEnginePlayground');
+    if (dot) dot.style.background = ok ? '#4ec9b0' : '#e5c07b';
+    if (text) text.textContent = ok ? 'Engine: Enlng WebAssembly' : 'Engine: not loaded';
+    if (pill) pill.title = ok ? 'Running the Enlng interpreter as WebAssembly in this page.' : 'The WebAssembly engine could not be loaded.';
+  }
+
+  function start() {
+    if (worker) return worker;
     try {
-      // 1. Ensure Pyodide script is loaded
-      if (typeof loadPyodide !== 'function') {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-      }
-
-      console.log('[Enlang WASM] Initializing Pyodide WebAssembly runtime...');
-      pyodideInstance = await loadPyodide({
-        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/'
-      });
-
-      console.log('[Enlang WASM] Fetching Enlang 6-domain compiler bundle...');
-      const resp = await fetch('enlang_bundle.json');
-      const bundle = await resp.json();
-
-      console.log(`[Enlang WASM] Unpacking ${Object.keys(bundle).length} compiler files into virtual WebAssembly filesystem...`);
-      // Unpack bundle into Pyodide virtual filesystem
-      for (const [relPath, content] of Object.entries(bundle)) {
-        const fullPath = `/home/pyodide/${relPath}`;
-        const parts = fullPath.split('/');
-        let cur = '';
-        for (let i = 1; i < parts.length - 1; i++) {
-          cur += '/' + parts[i];
-          try {
-            pyodideInstance.FS.mkdir(cur);
-          } catch (e) {
-            // directory already exists
-          }
-        }
-        pyodideInstance.FS.writeFile(fullPath, content, { encoding: 'utf8' });
-      }
-
-      // Initialize Python path, mock fcntl if on WebAssembly, and import engine
-      await pyodideInstance.runPythonAsync(`
-import sys
-import types
-if '/home/pyodide' not in sys.path:
-    sys.path.insert(0, '/home/pyodide')
-
-# Provide mock fcntl module if missing (e.g. Emscripten / WebAssembly)
-if 'fcntl' not in sys.modules:
-    try:
-        import fcntl
-    except ImportError:
-        mock_fcntl = types.ModuleType('fcntl')
-        mock_fcntl.LOCK_EX = 2
-        mock_fcntl.LOCK_NB = 4
-        mock_fcntl.LOCK_UN = 8
-        mock_fcntl.LOCK_SH = 1
-        mock_fcntl.flock = lambda fd, op: None
-        mock_fcntl.fcntl = lambda fd, cmd, *args: 0
-        sys.modules['fcntl'] = mock_fcntl
-
-import enlang_engine
-`);
-
-      console.log('[Enlang WASM] Real Enlang Compiler successfully loaded in WebAssembly!');
-      isReady = true;
-      isInitializing = false;
-      
-      // Update UI pills if present
-      const dot = document.getElementById('bridgeStatusDot');
-      const text = document.getElementById('bridgeStatusText');
-      const pill = document.getElementById('statusNativeEnginePlayground');
-      if (dot && (!dot.style.background || dot.style.background.includes('229') || dot.style.background === 'rgb(229, 192, 123)')) {
-        dot.style.background = '#4ec9b0';
-        dot.style.boxShadow = '0 0 6px #4ec9b0';
-        if (text) text.textContent = 'Engine: Real WASM Compiler';
-        if (pill) pill.title = 'Running REAL Enlang 6-domain compiler natively inside WebAssembly!';
-      }
-
-      initCallbacks.forEach(cb => cb(true));
-      initCallbacks.length = 0;
-      return true;
-    } catch (err) {
-      console.warn('[Enlang WASM] WebAssembly engine init warning:', err);
-      isInitializing = false;
-      initCallbacks.forEach(cb => cb(false));
-      initCallbacks.length = 0;
-      return false;
-    }
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  async function executeEnlangWasm(filename, code, domain) {
-    const ready = await initEnlangWasm();
-    if (!ready) {
+      worker = new Worker('enlng_worker.js');
+    } catch (e) {
+      worker = null;
       return null;
     }
-
-    try {
-      // 1. Auto-load WebAssembly packages if detected in source code
-      const lower = code.toLowerCase();
-      const neededPkgs = [];
-      if ((lower.includes('numpy') || lower.includes('np.')) && (!pyodideInstance.loadedPackages || !pyodideInstance.loadedPackages['numpy'])) {
-        neededPkgs.push('numpy');
-      }
-      if ((lower.includes('matplotlib') || lower.includes('plt.')) && (!pyodideInstance.loadedPackages || !pyodideInstance.loadedPackages['matplotlib'])) {
-        neededPkgs.push('matplotlib');
-      }
-      if (lower.includes('scipy') && (!pyodideInstance.loadedPackages || !pyodideInstance.loadedPackages['scipy'])) {
-        neededPkgs.push('scipy');
-      }
-      if (neededPkgs.length > 0) {
-        console.log('[Enlang WASM] Loading WebAssembly package dependencies:', neededPkgs);
-        await pyodideInstance.loadPackage(neededPkgs);
-      }
-
-      // If skfuzzy or other pip package is needed in Pyodide WebAssembly
-      if (lower.includes('skfuzzy') || lower.includes('scikit-fuzzy')) {
-        console.log('[Enlang WASM] Installing scikit-fuzzy via micropip into WebAssembly...');
-        await pyodideInstance.loadPackage('micropip');
-        await pyodideInstance.runPythonAsync(`
-import micropip
-try:
-    import skfuzzy
-except ImportError:
-    await micropip.install('scikit-fuzzy')
-`);
-      }
-
-      pyodideInstance.globals.set('__exec_file', filename);
-      pyodideInstance.globals.set('__exec_code', code);
-      pyodideInstance.globals.set('__exec_domain', domain || 'enlng');
-
-      const rawJson = await pyodideInstance.runPythonAsync(`
-import enlang_engine
-enlang_engine.execute_enlang_wasm(__exec_file, __exec_code, __exec_domain)
-`);
-      const result = JSON.parse(rawJson);
-
-      // 2. Check Pyodide virtual filesystem for any newly generated plot images (.png, .jpg)
-      try {
-        const rootFiles = pyodideInstance.FS.readdir('/home/pyodide');
-        let imageHtml = '';
-        for (const fname of rootFiles) {
-          if (fname.endsWith('.png') || fname.endsWith('.jpg') || fname.endsWith('.jpeg')) {
-            const data = pyodideInstance.FS.readFile('/home/pyodide/' + fname);
-            if (data && data.length > 0) {
-              const b64 = btoa(Array.from(data, b => String.fromCharCode(b)).join(''));
-              const mime = fname.endsWith('.png') ? 'image/png' : 'image/jpeg';
-              imageHtml += `<div style="margin-top:14px; text-align:center;"><img src="data:${mime};base64,${b64}" style="max-width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.15); box-shadow:0 8px 24px rgba(0,0,0,0.5);" alt="${escapeHtml(fname)}"/><div style="font-size:11px; color:#888; margin-top:4px;">📊 Generated Graph: ${escapeHtml(fname)} (${Math.round(data.length / 1024)} KB)</div></div>`;
-              try { pyodideInstance.FS.unlink('/home/pyodide/' + fname); } catch (_) {}
-            }
-          }
-        }
-        if (imageHtml) {
-          result.imageHtml = imageHtml;
-        }
-      } catch (fsErr) {
-        // Virtual FS read optional
-      }
-
-      return result;
-    } catch (err) {
-      return {
-        success: false,
-        exitCode: 1,
-        output: String(err),
-        error: String(err),
-        executor: 'Enlang Real Compiler (WebAssembly Error)'
-      };
-    }
+    worker.onmessage = function (ev) {
+      var r = ev.data;
+      var p = pending[r.id];
+      if (!p) return;
+      delete pending[r.id];
+      clearTimeout(p.timer);
+      ready = true;
+      setStatus(true);
+      p.resolve(r);
+    };
+    worker.onerror = function () {
+      Object.keys(pending).forEach(function (id) {
+        var p = pending[id];
+        delete pending[id];
+        clearTimeout(p.timer);
+        p.resolve({ code: 1, out: '', err: 'The WebAssembly engine could not be loaded.', ms: 0 });
+      });
+      worker = null;
+      ready = false;
+      setStatus(false);
+    };
+    return worker;
   }
 
-  async function resetWasmDatabase() {
-    if (!pyodideInstance || !isReady) return false;
-    try {
-      await pyodideInstance.runPythonAsync(`
-import os
-from pathlib import Path
-from enlngdb.engine import NativeExecutionEngine, resolve_db_path, _maybe_seed_sample_database
+  function send(message, limit) {
+    return new Promise(function (resolve) {
+      var w = start();
+      if (!w) {
+        resolve({ code: 1, out: '', err: 'This browser cannot run the WebAssembly engine.', ms: 0 });
+        return;
+      }
+      var id = nextId++;
+      message.id = id;
+      var entry = { resolve: resolve };
+      entry.timer = setTimeout(function () {
+        // the program did not end: close its worker; the next run starts a new one
+        delete pending[id];
+        if (worker) worker.terminate();
+        worker = null;
+        ready = false;
+        resolve({ code: 124, out: '', err: 'The program was stopped after ' + (limit / 1000) + ' seconds.', ms: limit, stopped: true });
+      }, limit);
+      pending[id] = entry;
+      w.postMessage(message);
+    });
+  }
 
-for db_file in ['database1.edb', 'main_db.edb', 'university_db.edb']:
-    p = '/home/pyodide/' + db_file
-    if os.path.exists(p):
-        try: os.remove(p)
-        except Exception: pass
-    engine = NativeExecutionEngine(db_path=p, stream_output=False)
-    _maybe_seed_sample_database(engine.storage, p)
-    engine.storage.save_to_disk(p)
-`);
-      console.log('[Enlang WASM] In-memory sovereign databases successfully re-seeded!');
-      return true;
-    } catch (e) {
-      console.warn('[Enlang WASM] resetWasmDatabase warning:', e);
-      return false;
+  function init() {
+    if (!start()) return Promise.resolve(false);
+    // the engine is loaded by the first run; a small run now warms it up
+    return send({ type: 'run', domain: 'enlng', code: 'type enlng\n', stdin: '' }, RUN_LIMIT_MS).then(function (r) {
+      return r.code === 0;
+    });
+  }
+
+  function execute(filename, code, domain, stdin) {
+    var d = DOMAINS[String(domain || 'enlng').toLowerCase()];
+    if (!d) {
+      return Promise.resolve({
+        success: false,
+        exitCode: 1,
+        output: 'Files of this kind run in Enlangg Studio on your computer, or with the installed enlangg tools. The browser runs .enlng and .enlngdb files.',
+        error: 'Not available in the browser',
+        timeMs: '0.00',
+        executor: EXECUTOR
+      });
     }
+    return send({ type: 'run', domain: d, filename: filename, code: code, stdin: stdin || '' }, RUN_LIMIT_MS).then(function (r) {
+      var ok = r.code === 0;
+      return {
+        success: ok,
+        exitCode: r.code,
+        output: ok ? (r.out || '// [Execution completed with 0 output]') : (r.err || r.out || 'Unknown error'),
+        error: ok ? '' : (r.err || r.out),
+        stdout: r.out,
+        stderr: r.err,
+        timeMs: (r.ms || 0).toFixed(2),
+        executor: EXECUTOR
+      };
+    });
+  }
+
+  function resetDatabase() {
+    return send({ type: 'reset' }, 5000).then(function () { return true; });
   }
 
   window.EnlangWasm = {
-    init: initEnlangWasm,
-    execute: executeEnlangWasm,
-    resetDatabase: resetWasmDatabase,
-    isReady: () => isReady
+    init: init,
+    execute: execute,
+    resetDatabase: resetDatabase,
+    isReady: function () { return ready; }
   };
 
-  // Auto-initiate in background on page load
   if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      setTimeout(() => initEnlangWasm(), 100);
+      setTimeout(init, 100);
     } else {
-      window.addEventListener('DOMContentLoaded', () => initEnlangWasm());
+      window.addEventListener('DOMContentLoaded', function () { init(); });
     }
   }
 })(window);

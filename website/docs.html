@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.5.1" />
+  <link rel="stylesheet" href="style.css?v=5.6.0" />
 </head>
 <body>
 
@@ -113,7 +113,7 @@
         <a href="#ch4" class="chip-btn">Ch 4: Control Flow</a>
         <a href="#ch5" class="chip-btn">Ch 5: Procedures</a>
         <a href="#ch6" class="chip-btn">Ch 6: FFI & C-ABI</a>
-        <a href="#ch7" class="chip-btn">Ch 7: Python (planned)</a>
+        <a href="#ch7" class="chip-btn">Ch 7: Packages &amp; Debugger</a>
         <a href="#ch8" class="chip-btn">Ch 8: EnlngDB C Engine</a>
         <a href="#cli" class="chip-btn">CLI Toolchain</a>
         <a href="#diagnostics" class="chip-btn">Error Codes</a>
@@ -133,7 +133,7 @@
             <li class="docs-nav-item"><a href="#ch4">Chapter 4: Spoken Control Flow</a></li>
             <li class="docs-nav-item"><a href="#ch5">Chapter 5: Procedures & Exceptions</a></li>
             <li class="docs-nav-item"><a href="#ch6">Chapter 6: Foreign Function Interface</a></li>
-            <li class="docs-nav-item"><a href="#ch7">Chapter 7: Python Interop (planned)</a></li>
+            <li class="docs-nav-item"><a href="#ch7">Chapter 7: Packages, Debugger, Editor</a></li>
             <li class="docs-nav-item"><a href="#ch8">Chapter 8: EnlngDB Database Engine</a></li>
             <li class="docs-nav-item" style="border-top: 1px solid rgba(56, 189, 248, 0.2); margin-top: 6px; padding-top: 6px;"><a href="#mastercode" style="color: #38bdf8; font-weight: 700;">👑 Mastercode Showcase</a></li>
           </ul>
@@ -576,9 +576,46 @@ enlng run --native hello.enlng        # build and run through gcc</div>
 
         <!-- Chapter 7 -->
         <article class="docs-article-section" id="ch7">
-          <h2 class="docs-h2">Chapter 7: Python Interop (Planned)</h2>
+          <h2 class="docs-h2">Chapter 7: Packages, the Debugger and Editor Help</h2>
           <p class="docs-p">
-            Importing Python packages such as NumPy from Enlangg code is a goal, but it is <strong>not implemented</strong> in the current toolchain (5.5.1). Earlier drafts of this page showed an <code>import python module</code> example; that syntax does not exist yet. Use <code>use "file"</code> to include other Enlangg files.
+            Three tools come with release 5.6.0. None of them changes the language, except that <code>use</code> now also takes the name of a package.
+          </p>
+
+          <h3 class="docs-h3">Packages</h3>
+          <p class="docs-p">
+            A package is a folder with a <code>main.enlng</code> file, or a single <code>.enlng</code> file. <code>enlng add</code> copies it into <code>enlng_packages</code> next to your program. The source can be a folder, a file, or a git address.
+          </p>
+          <div class="code-block-card">
+            <div class="code-block-header"><span>terminal</span></div>
+            <div class="code-block-body">enlng add ../shared/geometry          # a folder
+enlng add ../shared/greeter.enlng     # one file
+enlng add https://example.com/x.git   # a git address (needs git)
+enlng packages                        # list what is installed
+enlng remove greeter                  # take one away
+enlng install                         # bring back everything in enlng_packages.txt</div>
+          </div>
+          <div class="code-block-card">
+            <div class="code-block-header"><span>main.enlng</span></div>
+            <div class="code-block-body">type enlng
+
+use "geometry"
+use "greeter"
+
+show circle_area(2)
+show hello("Asha")</div>
+          </div>
+          <p class="docs-p">
+            Every package you add is written to <code>enlng_packages.txt</code>; keep that file with your program. A package runs with the same power as your own code, so only add packages you trust.
+          </p>
+
+          <h3 class="docs-h3">The debugger</h3>
+          <p class="docs-p">
+            <code>enlng debug file.enlng</code> stops before the first statement and waits for a command: <code>step</code>, <code>next</code>, <code>out</code>, <code>continue</code>, <code>break 12</code> or <code>break area</code>, <code>print total</code>, <code>vars</code>, <code>where</code>, <code>list</code> and <code>quit</code>. <code>--break 12</code> starts with a breakpoint set. It works with the built-in interpreter, not with <code>--native</code>.
+          </p>
+
+          <h3 class="docs-h3">Editor help</h3>
+          <p class="docs-p">
+            <code>enlng lsp</code> is a Language Server Protocol server. An editor starts it to show mistakes while you type, explain words on hover, finish names, jump to definitions and show the outline of a file. Enlangg Studio uses the same checks. The VS Code extension in the repository does not use this server yet.
           </p>
         </article>
 
@@ -707,6 +744,36 @@ find all records from scholars;</div>
                   <td>Runs any Enlangg file with the right tool (.enlng, .enlngdb, .enlngs, .enlngf, .enlngd, .enlngm). <code>.enlng</code> files use the built-in interpreter, so no C compiler is needed</td>
                 </tr>
                 <tr>
+                  <td><code>enlng debug &lt;file.enlng&gt;</code></td>
+                  <td><code>[--break &lt;line&gt;]</code></td>
+                  <td>Runs a program one statement at a time (step, next, break, print, vars, where)</td>
+                </tr>
+                <tr>
+                  <td><code>enlng add &lt;source&gt;</code></td>
+                  <td><code>[name]</code></td>
+                  <td>Installs a package from a folder, a file or a git address into enlng_packages</td>
+                </tr>
+                <tr>
+                  <td><code>enlng install</code></td>
+                  <td>-</td>
+                  <td>Installs every package named in enlng_packages.txt</td>
+                </tr>
+                <tr>
+                  <td><code>enlng remove &lt;name&gt;</code></td>
+                  <td>-</td>
+                  <td>Removes an installed package</td>
+                </tr>
+                <tr>
+                  <td><code>enlng packages</code></td>
+                  <td>-</td>
+                  <td>Lists the installed packages</td>
+                </tr>
+                <tr>
+                  <td><code>enlng lsp</code></td>
+                  <td>-</td>
+                  <td>Starts the editor server (Language Server Protocol) on standard input and output</td>
+                </tr>
+                <tr>
                   <td><code>enlangg db &lt;script.enlngdb&gt;</code></td>
                   <td>-</td>
                   <td>Runs a database script with the native C engine</td>
@@ -719,7 +786,7 @@ find all records from scholars;</div>
                 <tr>
                   <td><code>enlangg s &lt;logic.enlngs&gt;</code></td>
                   <td><code>[-e "&lt;script&gt;"]</code></td>
-                  <td>Runs a script with the enlngs tool; no Python or Node.js needed</td>
+                  <td>Runs a script with the enlngs tool; no other runtime needed</td>
                 </tr>
                 <tr>
                   <td><code>enlangg f &lt;app.enlngf&gt;</code></td>
@@ -1129,7 +1196,6 @@ Projected 3-Yr Yield  : $ 32702.9
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Curriculum</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -1153,6 +1219,6 @@ Projected 3-Yr Yield  : $ 32702.9
     </div>
   </footer>
 
-  <script src="app.js?v=5.5.1"></script>
+  <script src="app.js?v=5.6.0"></script>
 </body>
 </html>

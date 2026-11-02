@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.5.1" />
+  <link rel="stylesheet" href="style.css?v=5.6.0" />
 </head>
 <body>
 
@@ -121,6 +121,11 @@
         <button type="button" class="chip-btn preset-btn" data-preset="palindrome">Palindrome Check</button>
         <button type="button" class="chip-btn preset-btn" data-preset="even_odd">Even / Odd Filter</button>
         <button type="button" class="chip-btn preset-btn" data-preset="smart_input">Spoken String Formatter</button>
+        <button type="button" class="chip-btn preset-btn" data-preset="big_numbers">Big Numbers</button>
+        <button type="button" class="chip-btn preset-btn" data-preset="choose_by_value">Choosing by Value</button>
+        <button type="button" class="chip-btn preset-btn" data-preset="kinds">Kind Checks</button>
+        <button type="button" class="chip-btn preset-btn" data-preset="run_together">Run Together</button>
+        <button type="button" class="chip-btn preset-btn" data-preset="topic8">Step-through Function</button>
       </div>
 
       <!-- Presets for EnlngDB Sovereign Engine -->
@@ -149,7 +154,7 @@
           <span id="editorEngineBadge" style="font-size: 0.74rem; color: var(--text-muted); background: var(--bg-card); padding: 2px 8px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">Enlangg Compiler</span>
           <div id="statusNativeEnginePlayground" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.74rem; cursor: pointer; padding: 2px 8px; border-radius: var(--radius-xs); background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle);" title="Local Compiler Bridge (enlangg-bridge) status. Click to reconnect.">
             <span id="statusNativeEngineDot" style="width: 7px; height: 7px; border-radius: 50%; background: #e5c07b; display: inline-block;"></span>
-            <span id="statusNativeEngineText" style="color: var(--text-muted);">Engine: Web Sandbox</span>
+            <span id="statusNativeEngineText" style="color: var(--text-muted);">Engine: Enlng WebAssembly</span>
           </div>
         </div>
 
@@ -311,7 +316,6 @@ Ready for execution.
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Curriculum</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -335,8 +339,7 @@ Ready for execution.
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
   <script src="enlang_wasm.js"></script>
-  <script src="app.js?v=5.5.1"></script>
+  <script src="app.js?v=5.6.0"></script>
 </body>
 </html>

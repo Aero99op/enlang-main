@@ -7,6 +7,22 @@ contextBridge.exposeInMainWorld('EnlangElectron', {
   // 1. Native Compiler Execution
   runCompiler: (data) => ipcRenderer.invoke('compiler:run', data),
 
+  // 1b. Packages, tests and the debugger of the enlng tool
+  runTool: (args) => ipcRenderer.invoke('tool:run', { args }),
+  debugStart: (data) => ipcRenderer.invoke('debug:start', data),
+  debugSend: (text) => ipcRenderer.invoke('debug:send', text),
+  debugStop: () => ipcRenderer.invoke('debug:stop'),
+  onDebugOutput: (callback) => {
+    const handler = (event, text) => callback(text);
+    ipcRenderer.on('debug:output', handler);
+    return () => ipcRenderer.removeListener('debug:output', handler);
+  },
+  onDebugExit: (callback) => {
+    const handler = (event, info) => callback(info);
+    ipcRenderer.on('debug:exit', handler);
+    return () => ipcRenderer.removeListener('debug:exit', handler);
+  },
+
   // 2. Native File System APIs
   openDirectoryDialog: () => ipcRenderer.invoke('fs:openDirectoryDialog'),
   openFileDialog: (options) => ipcRenderer.invoke('fs:openFileDialog', options),

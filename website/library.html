@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Universal Standard Library Reference - Enlangg</title>
-  <meta name="description" content="Complete API reference for Enlangg standard modules: I/O, Math, Strings, Collections, Cryptography, Networking, and the C-ABI Python God Call." />
+  <meta name="description" content="Complete API reference for Enlangg standard modules: I/O, Math, Strings, Collections, Cryptography, Networking, and more." />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.5.1" />
+  <link rel="stylesheet" href="style.css?v=5.6.0" />
 </head>
 <body>
 
@@ -84,7 +84,7 @@
       </div>
       <h1 class="page-title">Standard Library Reference</h1>
       <p class="page-desc">
-        Reference for the standard modules: I/O, math, strings, collections and more. Entries for Python bridging are design sketches and are marked as planned.
+        Reference for the standard modules: I/O, math, strings, collections and more.
       </p>
     </div>
   </section>
@@ -98,14 +98,13 @@
       
       <!-- Responsive Module Chip Bar -->
       <div class="chip-bar-scrollable" style="margin-top: 14px;">
-        <button type="button" class="chip-btn mod-pill active" data-filter="all">All Modules (24)</button>
+        <button type="button" class="chip-btn mod-pill active" data-filter="all">All Modules (18)</button>
         <button type="button" class="chip-btn mod-pill" data-filter="io">std.io</button>
         <button type="button" class="chip-btn mod-pill" data-filter="math">std.math</button>
         <button type="button" class="chip-btn mod-pill" data-filter="string">std.string</button>
         <button type="button" class="chip-btn mod-pill" data-filter="collections">std.collections</button>
         <button type="button" class="chip-btn mod-pill" data-filter="network">std.network</button>
         <button type="button" class="chip-btn mod-pill" data-filter="crypto">std.crypto</button>
-        <button type="button" class="chip-btn mod-pill" data-filter="python">python.bridge</button>
         <button type="button" class="chip-btn mod-pill" data-filter="system">std.system</button>
       </div>
     </div>
@@ -314,33 +313,6 @@
         </div>
       </div>
 
-      <!-- MODULE: python.bridge -->
-      <div class="api-card" data-module="python">
-        <div class="api-card-header">
-          <span class="api-name">python.import(module_name)</span>
-          <span class="api-mod-badge">python.bridge</span>
-        </div>
-        <p class="api-desc">
-          PLANNED, not implemented in 5.5.1. Intended to load an installed Python package.
-        </p>
-        <div class="api-code-snippet">
-          <code>set torch to python.import("torch")<br>set tensor to torch.randn([3, 3])</code>
-        </div>
-      </div>
-
-      <div class="api-card" data-module="python">
-        <div class="api-card-header">
-          <span class="api-name">python.eval(code_str)</span>
-          <span class="api-mod-badge">python.bridge</span>
-        </div>
-        <p class="api-desc">
-          PLANNED, not implemented in 5.5.1. Intended to run Python code and return its result.
-        </p>
-        <div class="api-code-snippet">
-          <code>set result to python.eval("2 ** 32 - 1")</code>
-        </div>
-      </div>
-
       <!-- MODULE: std.system -->
       <div class="api-card" data-module="system">
         <div class="api-card-header">
@@ -423,7 +395,6 @@
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Curriculum</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -447,6 +418,6 @@
     </div>
   </footer>
 
-  <script src="app.js?v=5.5.1"></script>
+  <script src="app.js?v=5.6.0"></script>
 </body>
 </html>

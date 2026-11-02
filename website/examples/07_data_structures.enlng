@@ -1,7 +1,11 @@
 type enlng
 
-// Topic 07: Structured Data: Lists & Hash Maps
-set servers to ["alpha", "beta", "gamma"]
-display "Primary Node: ", servers[0]
-display "Active Cluster Nodes: ", servers
-display "Total Cluster Size: ", length of servers
+# Topic 07: Structured Data: Lists & Universal Property Access
+remember servers as ["alpha", "beta", "gamma"]
+show "Primary Node:" servers at 0
+show "Active Cluster Nodes:" servers
+show "Total Cluster Size:" count of servers
+
+remember node_info as {"ip": "192.168.1.1", "status": "ONLINE"}
+show "Node IP Address:" ip of node_info
+show "Node Health:" node_info.status

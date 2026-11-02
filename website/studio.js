@@ -1245,6 +1245,7 @@ screen WalletHome:
   // ⚡ SOVEREIGN NATIVE BRIDGE CLIENT (Connects Studio to ~/.enlangg/bin)
   // =========================================================================
   const NATIVE_BRIDGE_URL = 'http://127.0.0.1:5999';
+  const NATIVE_BRIDGE_ENABLED = false;
   let isNativeBridgeConnected = false;
   let nativeBridgeData = null;
 
@@ -1330,6 +1331,8 @@ screen WalletHome:
 
     // 2. Priority 2: Check Local HTTP Bridge Daemon (port 5999 for Web Browser mode)
     try {
+      // In the browser the page runs the Enlng interpreter itself. The local bridge is off.
+      if (!NATIVE_BRIDGE_ENABLED) throw new Error('bridge off');
       const ctrl = new AbortController();
       const timeoutId = setTimeout(() => ctrl.abort(), 2000);
       const res = await fetch(`${NATIVE_BRIDGE_URL}/health`, {
@@ -1378,17 +1381,17 @@ screen WalletHome:
       dot.style.boxShadow = 'none';
     }
     if (text) {
-      text.textContent = 'Engine: Web Sandbox';
+      text.textContent = 'Engine: Enlng WebAssembly';
     }
     if (pillEl) {
-      pillEl.title = 'Running in Web Sandbox mode (Pure in-browser WebAssembly & JS VM). Open Enlangg Studio Desktop or run enlangg-bridge for local C99 binaries.';
+      pillEl.title = 'Running the Enlng interpreter as WebAssembly in this page. Open Enlangg Studio Desktop to run with the tools installed on your computer.';
     }
     if (userInitiated) {
       appendTerminal(`\n<span class="term-cyan">[Engine Mode: Web Sandbox]</span>`);
       appendTerminal(`<span class="term-dim">Running client-side in-memory WebAssembly & JavaScript execution VM (Zero local installation required).</span>`);
       appendTerminal(`<span class="term-dim">To run native compiled C99 binaries on your local machine:</span>`);
       appendTerminal(`<span class="term-dim">  • Open the <strong>Enlangg Studio Desktop App</strong> (auto-detects native compilers), OR</span>`);
-      appendTerminal(`<span class="term-dim">  • In terminal run: <strong style="color:#fff;">enlangg-bridge</strong> (or <strong style="color:#fff;">python enlangg-bridge.py</strong>) and click here again to reconnect.</span>`);
+      appendTerminal(`<span class="term-dim">  • Or run <strong style="color:#fff;">enlng run file.enlng</strong> in a terminal with the installed tools.</span>`);
     }
     return false;
   }
@@ -1401,8 +1404,6 @@ screen WalletHome:
         checkNativeBridge(true);
       });
     }
-    checkNativeBridge(false);
-    setInterval(() => checkNativeBridge(false), 2000);
   }, 500);
 
   // Helper to execute code via Native Bridge (~/.enlangg/bin)
@@ -1958,103 +1959,89 @@ screen WalletHome:
   const ENLNGDB_PRESETS = {
     enlngdb_tour: `type enlngdb
 
--- ==============================================================================
--- 📊 ENLNGDB SOVEREIGN QUICKSTART TOUR
--- In-Memory Pure C Micro-VM Engine (<0.05ms Latency)
--- ==============================================================================
+-- Quickstart: make a table, add rows, look at them
+create table student with roll_no, name, marks, grade
+insert record into student with roll_no 101, name "Asha Rao", marks 91, grade "A"
+insert record into student with roll_no 102, name "Imran Khan", marks 78, grade "B"
+insert record into student with roll_no 103, name "Meera Nair", marks 66, grade "C"
+insert record into student with roll_no 104, name "Karan Shah", marks 85, grade "A"
+insert record into student with roll_no 105, name "Dev Patel", marks 59, grade "D"
 
-use database database1;
-show tables;
-
--- Query all records from student table
-find all records from student;
-
--- Switch to main_db and inspect accounts
-use database main_db;
-show tables;
-find all records from accounts;
-`,
+show tables
+find records from student
+count records in student`,
 
     enlngdb_schema: `type enlngdb
 
--- ==============================================================================
--- 🔍 SCHEMA DISCOVERY & DATABASE EXPLORATION
--- ==============================================================================
+-- Look around: which tables exist, and what is in them
+create table student with roll_no, name, marks
+create table faculty with id, name, subject
+insert record into student with roll_no 101, name "Asha Rao", marks 91
+insert record into faculty with id 1, name "Dr. Iyer", subject "Physics"
 
-show databases;
-
-use database database1;
-show tables;
-
-find all records from student;
-find all records from faculty;
-`,
+show tables
+find records from student
+find records from faculty`,
 
     enlngdb_crud: `type enlngdb
 
--- ==============================================================================
--- 👥 STUDENT REGISTRY (CRUD OPERATIONS)
--- ==============================================================================
+-- Create, read, update and delete
+create table student with roll_no, name, marks, grade
+insert record into student with roll_no 101, name "Asha Rao", marks 91, grade "A"
+insert record into student with roll_no 102, name "Imran Khan", marks 78, grade "B"
+insert record into student with roll_no 103, name "Meera Nair", marks 66, grade "C"
+insert record into student with roll_no 104, name "Karan Shah", marks 85, grade "A"
+insert record into student with roll_no 105, name "Dev Patel", marks 59, grade "D"
 
-use database database1;
+insert record into student with roll_no 106, name "Devansh Saxena", marks 88, grade "A"
+find records from student where roll_no is 106
 
--- 1. Read existing records
-find all records from student;
+update records in student set marks = 90 where roll_no is 106
+find records from student where roll_no is 106
 
--- 2. Insert new student record
-insert into student with roll_no 106, name "Devansh Saxena", marks 88, grade "A";
-
--- 3. Verify insertion
-find all records from student where roll_no is 106;
-`,
+delete records from student where roll_no is 106
+count records in student`,
 
     enlngdb_updates: `type enlngdb
 
--- ==============================================================================
--- ✏️ IN-TABLE ATOMIC UPDATES
--- ==============================================================================
+-- Change rows that match a condition
+create table student with roll_no, name, marks, grade
+insert record into student with roll_no 101, name "Asha Rao", marks 91, grade "A"
+insert record into student with roll_no 102, name "Imran Khan", marks 78, grade "B"
+insert record into student with roll_no 103, name "Meera Nair", marks 66, grade "C"
+insert record into student with roll_no 104, name "Karan Shah", marks 85, grade "A"
+insert record into student with roll_no 105, name "Dev Patel", marks 59, grade "D"
 
-use database database1;
-
--- Query current record for student 105
-find all records from student where roll_no is 105;
-
--- Update marks and grade
-update student set marks 75, grade "B" where roll_no is 105;
-
--- Inspect updated student
-find all records from student where roll_no is 105;
-`,
+find records from student where roll_no is 105
+update records in student set marks = 75, grade = "B" where roll_no is 105
+find records from student where roll_no is 105`,
 
     enlngdb_deletions: `type enlngdb
 
--- ==============================================================================
--- 🛡️ DELETIONS & SOVEREIGN SAFETY GUARDS
--- ==============================================================================
+-- Remove rows that match a condition
+create table student with roll_no, name, marks, grade
+insert record into student with roll_no 101, name "Asha Rao", marks 91, grade "A"
+insert record into student with roll_no 102, name "Imran Khan", marks 78, grade "B"
+insert record into student with roll_no 103, name "Meera Nair", marks 66, grade "C"
+insert record into student with roll_no 104, name "Karan Shah", marks 85, grade "A"
+insert record into student with roll_no 105, name "Dev Patel", marks 59, grade "D"
 
-use database database1;
-
--- Attempt guarded deletion (failsafe)
-delete from student where marks < 70;
-
--- Count remaining records
-count records in student;
-`,
+delete records from student where marks is less than 70
+count records in student
+find records from student`,
 
     enlngdb_filter: `type enlngdb
 
--- ==============================================================================
--- ⚡ FILTER & ADVANCED CONDITIONS
--- ==============================================================================
+-- Filter and sort
+create table student with roll_no, name, marks, grade
+insert record into student with roll_no 101, name "Asha Rao", marks 91, grade "A"
+insert record into student with roll_no 102, name "Imran Khan", marks 78, grade "B"
+insert record into student with roll_no 103, name "Meera Nair", marks 66, grade "C"
+insert record into student with roll_no 104, name "Karan Shah", marks 85, grade "A"
+insert record into student with roll_no 105, name "Dev Patel", marks 59, grade "D"
 
-use database database1;
-
--- Filter by marks threshold
-find all records from student where marks >= 85;
-
--- Filter by specific grade
-find all records from student where grade is "A";
-`
+find records from student where marks is at least 85
+find records from student where grade is "A" order by marks descending`
   };
 
   // Extracts current query at cursor position or highlighted text
@@ -3277,16 +3264,6 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
   let isLoadingExtensions = false;
 
   const CURATED_FALLBACK_EXTENSIONS = [
-    {
-      displayName: 'Python Language Tooling',
-      name: 'python',
-      namespace: 'ms-python',
-      version: '2026.8.0',
-      description: 'IntelliSense, linting, debugging, code navigation, code formatting, refactoring, and test explorer for Python.',
-      downloadCount: 82921500,
-      averageRating: 4.8,
-      files: { icon: '' }
-    },
     {
       displayName: 'Claude Code for VS Code',
       name: 'claude-code',
@@ -6300,6 +6277,48 @@ ${escapeHtml(res.output || 'Execution succeeded.')}
 
   // 5. Command Palette System (Ctrl+Shift+P / F1)
   const COMMAND_PALETTE_ITEMS = [
+    {
+      category: 'Enlng',
+      label: 'Enlng: Debug Active File',
+      searchTerms: 'debug debugger step breakpoint enlng',
+      shortcut: '',
+      action: () => startDebuggerSession()
+    },
+    {
+      category: 'Enlng',
+      label: 'Enlng: Add Package',
+      searchTerms: 'package add install use enlng',
+      shortcut: '',
+      action: () => addPackagePrompt()
+    },
+    {
+      category: 'Enlng',
+      label: 'Enlng: Install Packages of This Folder',
+      searchTerms: 'package install enlng_packages.txt restore',
+      shortcut: '',
+      action: () => runEnlngTool(['install'], 'Install packages')
+    },
+    {
+      category: 'Enlng',
+      label: 'Enlng: List Packages',
+      searchTerms: 'package list packages installed',
+      shortcut: '',
+      action: () => runEnlngTool(['packages'], 'List packages')
+    },
+    {
+      category: 'Enlng',
+      label: 'Enlng: Remove Package',
+      searchTerms: 'package remove uninstall',
+      shortcut: '',
+      action: () => removePackagePrompt()
+    },
+    {
+      category: 'Enlng',
+      label: 'Enlng: Run Tests of This Folder',
+      searchTerms: 'test tests _test.enlng run',
+      shortcut: '',
+      action: () => runEnlngTool(['test'], 'Tests')
+    },
     {
       category: 'Help',
       label: 'Help: 🏆 First-Run Onboarding Gateway',
@@ -9607,80 +9626,69 @@ window.addEventListener('message', function(e) {
   }
 
   // ==========================================
-  // 🐞 6. INTERACTIVE DEBUGGER & EXPRESSION EVALUATOR
+  // 🐞 6. DEBUGGER (the real `enlng debug`, in Enlangg Studio Desktop)
   // ==========================================
   let debugBreakpoints = new Set();
+  let debugLive = false;
+  const DEBUG_WORDS = /^(step|s|next|n|out|o|continue|c|break|breaks|delete|print|p|vars|where|w|list|l|quit|q|help|h)\b/;
+
+  function debugAvailable() {
+    return !!(window.EnlangElectron && window.EnlangElectron.debugStart);
+  }
+
+  function debugLog(html) {
+    const out = document.getElementById('debugConsoleOutput');
+    if (!out) return;
+    out.insertAdjacentHTML('beforeend', html);
+    out.scrollTop = out.scrollHeight;
+  }
+
+  function debugLogText(text, color) {
+    debugLog(`<span style="color:${color || '#cccccc'};white-space:pre-wrap;">${escapeHtml(text)}</span>`);
+  }
+
+  function setDebugButtons() {
+    document.querySelectorAll('.debug-step-btn').forEach((b) => { b.disabled = !debugLive; });
+  }
 
   function toggleLineBreakpoint(lineNum) {
     if (debugBreakpoints.has(lineNum)) {
       debugBreakpoints.delete(lineNum);
+      if (debugLive) window.EnlangElectron.debugSend(`delete ${lineNum}`);
       showStudioToast(`Breakpoint removed from Line ${lineNum}`, null);
     } else {
       debugBreakpoints.add(lineNum);
+      if (debugLive) window.EnlangElectron.debugSend(`break ${lineNum}`);
       showStudioToast(`🔴 Breakpoint set on Line ${lineNum}`, null);
     }
     updateLineNumbers();
+  }
 
-    const debugConsoleOutput = document.getElementById('debugConsoleOutput');
-    if (debugConsoleOutput) {
-      debugConsoleOutput.innerHTML += `\n<span style="color:var(--vscode-cyan);">[Debugger] Breakpoint ${debugBreakpoints.has(lineNum) ? 'set on' : 'removed from'} Line ${lineNum}. Total active: ${debugBreakpoints.size}</span>`;
-      debugConsoleOutput.scrollTop = debugConsoleOutput.scrollHeight;
-    }
+  // The debugger prints the line it stopped at as "->  12 | text": show that line in the editor.
+  function followDebugOutput(text) {
+    const m = /^->\s+(\d+) \|/m.exec(text);
+    if (m) jumpToLine(parseInt(m[1], 10), 1);
   }
 
   function evaluateDebugExpression(expr) {
-    const debugConsoleOutput = document.getElementById('debugConsoleOutput');
-    const input = document.getElementById('debugConsoleInput');
-    if (!debugConsoleOutput || !expr || !expr.trim()) return;
-
+    if (!expr || !expr.trim()) return;
     const trimmed = expr.trim();
+    const input = document.getElementById('debugConsoleInput');
     if (input) input.value = '';
-
-    debugConsoleOutput.innerHTML += `\n<div style="margin-top:4px;"><span style="color:var(--vscode-blue);font-weight:700;">&gt; ${escapeHtml(trimmed)}</span></div>`;
-
-    // Extract variables from the current editor document
-    const code = codeEditor ? codeEditor.value : '';
-    const lines = code.split('\n');
-    const scope = {};
-
-    lines.forEach(l => {
-      const mVar = l.match(/(?:remember|freeze)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+as\s+(.+)/);
-      if (mVar) {
-        const valStr = mVar[2].trim();
-        try {
-          scope[mVar[1]] = JSON.parse(valStr);
-        } catch (_) {
-          if (!isNaN(valStr)) scope[mVar[1]] = Number(valStr);
-          else scope[mVar[1]] = valStr.replace(/^["']|["']$/g, '');
-        }
-      }
-      const mAssign = l.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+)/);
-      if (mAssign) {
-        const valStr = mAssign[2].trim();
-        if (!isNaN(valStr)) scope[mAssign[1]] = Number(valStr);
-        else scope[mAssign[1]] = valStr.replace(/^["']|["']$/g, '');
-      }
-    });
-
-    let result;
-    try {
-      if (scope.hasOwnProperty(trimmed)) {
-        result = scope[trimmed];
-      } else if (trimmed.startsWith('count of ')) {
-        const target = trimmed.replace('count of ', '').trim();
-        const arr = scope[target] || [];
-        result = Array.isArray(arr) ? arr.length : (typeof arr === 'string' ? arr.length : 0);
-      } else {
-        const func = new Function(...Object.keys(scope), `return (${trimmed});`);
-        result = func(...Object.values(scope));
-      }
-    } catch (err) {
-      result = `Error: ${err.message}`;
+    if (!debugLive) {
+      debugLogText(`No debugging session. Press Debug above the editor, or run "Enlng: Debug Active File".\n`, '#dcdcaa');
+      return;
     }
+    // a command goes as it is; anything else is an expression to show
+    const line = DEBUG_WORDS.test(trimmed) ? trimmed : `print ${trimmed}`;
+    debugLogText(`(debug) ${line}\n`, '#569cd6');
+    window.EnlangElectron.debugSend(line);
+  }
 
-    const isError = typeof result === 'string' && result.startsWith('Error:');
-    debugConsoleOutput.innerHTML += `<div><span style="color:${isError ? '#f44747' : '#4ec9b0'};font-weight:600;">&lt;= ${escapeHtml(typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result))}</span></div>`;
-    debugConsoleOutput.scrollTop = debugConsoleOutput.scrollHeight;
+  function debugCommand(command) {
+    if (!debugLive) return;
+    debugLogText(`(debug) ${command}\n`, '#569cd6');
+    window.EnlangElectron.debugSend(command);
   }
 
   function startDebuggerSession() {
@@ -9689,22 +9697,109 @@ window.addEventListener('message', function(e) {
     }
     switchDockTab('dockDebugConsole');
 
-    const debugConsoleOutput = document.getElementById('debugConsoleOutput');
-    if (!debugConsoleOutput) return;
-
-    debugConsoleOutput.innerHTML += `\n<span style="color:var(--vscode-cyan);">[Debugger] Initializing Sovereign VM thread for ${activeFile}...</span>`;
-    
-    if (debugBreakpoints.size > 0) {
-      const firstBp = Array.from(debugBreakpoints).sort((a, b) => a - b)[0];
-      jumpToLine(firstBp, 1);
-      debugConsoleOutput.innerHTML += `\n<span style="color:#dcdcaa;">[Debugger] Paused on breakpoint at line ${firstBp}.</span>`;
-      debugConsoleOutput.innerHTML += `\n<span style="color:var(--vscode-text-muted);">[Call stack] main() [Line ${firstBp}]</span>`;
-      showStudioToast(`Debugger: Paused at Line ${firstBp}`, null);
-    } else {
-      debugConsoleOutput.innerHTML += `\n<span style="color:#4ec9b0;">[Debugger] Execution finished successfully (Exit Code 0).</span>`;
-      showStudioToast('Debugger: Process completed (0 errors)', null);
+    if (!debugAvailable()) {
+      debugLogText('The debugger runs the installed enlng tool, so it is part of Enlangg Studio Desktop. In a terminal: enlng debug file.enlng\n', '#dcdcaa');
+      return;
     }
-    debugConsoleOutput.scrollTop = debugConsoleOutput.scrollHeight;
+    if (!activeFile || !activeFile.endsWith('.enlng') || vfs[activeFile] === undefined) {
+      debugLogText('Open a .enlng file to debug it.\n', '#dcdcaa');
+      return;
+    }
+    const code = codeEditor.value;
+    const out = document.getElementById('debugConsoleOutput');
+    if (out) out.innerHTML = '';
+    debugLogText(`Debugging ${activeFile}. Commands: step, next, out, continue, break N, print x, vars, where, list, quit.\n`, '#4ec9b0');
+    window.EnlangElectron.debugStart({ filename: activeFile, content: code, breakpoints: Array.from(debugBreakpoints) }).then((r) => {
+      if (!r || !r.success) {
+        debugLogText(`${(r && r.message) || 'The debugger did not start.'}\n`, '#f44747');
+        return;
+      }
+      debugLive = true;
+      setDebugButtons();
+    });
+  }
+
+  function stopDebuggerSession() {
+    if (debugAvailable()) window.EnlangElectron.debugStop();
+    debugLive = false;
+    setDebugButtons();
+  }
+
+  function initDebuggerEvents() {
+    if (!debugAvailable() || initDebuggerEvents.done) return;
+    initDebuggerEvents.done = true;
+    window.EnlangElectron.onDebugOutput((text) => {
+      debugLogText(text);
+      followDebugOutput(text);
+    });
+    window.EnlangElectron.onDebugExit((info) => {
+      debugLive = false;
+      setDebugButtons();
+      debugLogText(`The program ended${info && info.code ? ` (exit code ${info.code})` : ''}.\n`, '#4ec9b0');
+    });
+  }
+
+  // ==========================================
+  // 📦 Packages and tests (the enlng tool, in the open folder)
+  // ==========================================
+  function runEnlngTool(args, title) {
+    switchDockTab('dockTerminal');
+    if (bottomDock && bottomDock.classList.contains('collapsed')) bottomDock.classList.remove('collapsed');
+    if (!(window.EnlangElectron && window.EnlangElectron.runTool)) {
+      appendTerminal(`\n<span class="term-warn">${escapeHtml(title)} runs the installed enlng tool, so it is part of Enlangg Studio Desktop. In a terminal: enlng ${escapeHtml(args.join(' '))}</span>`);
+      return;
+    }
+    appendTerminal(`\n<span class="term-cyan">$ enlng ${escapeHtml(args.join(' '))}</span>`);
+    window.EnlangElectron.runTool(args).then((r) => {
+      if (r.output) appendTerminal(`\n${escapeHtml(r.output)}`);
+      appendTerminal(r.success
+        ? `\n<span class="term-green">✔ ${escapeHtml(title)} finished</span>`
+        : `\n<span class="term-warn">⚠ ${escapeHtml(title)} ended with code ${escapeHtml(String(r.exitCode))}</span>`);
+    });
+  }
+
+  // One line of text from the person (window.prompt does not exist in Electron).
+  function askText(question) {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('askModal');
+      const input = document.getElementById('askInput');
+      const label = document.getElementById('askLabel');
+      const ok = document.getElementById('askOk');
+      const cancel = document.getElementById('askCancel');
+      if (!modal || !input) { resolve(''); return; }
+      label.textContent = question;
+      input.value = '';
+      modal.classList.add('open');
+      input.focus();
+      const finish = (value) => {
+        modal.classList.remove('open');
+        ok.removeEventListener('click', onOk);
+        cancel.removeEventListener('click', onCancel);
+        input.removeEventListener('keydown', onKey);
+        resolve(value);
+      };
+      const onOk = () => finish(input.value.trim());
+      const onCancel = () => finish('');
+      const onKey = (e) => {
+        if (e.key === 'Enter') onOk();
+        else if (e.key === 'Escape') onCancel();
+      };
+      ok.addEventListener('click', onOk);
+      cancel.addEventListener('click', onCancel);
+      input.addEventListener('keydown', onKey);
+    });
+  }
+
+  function addPackagePrompt() {
+    askText('Package to add: a folder, a .enlng file or a git address (https://...)').then((source) => {
+      if (source) runEnlngTool(['add', source], 'Add package');
+    });
+  }
+
+  function removePackagePrompt() {
+    askText('Name of the package to remove:').then((name) => {
+      if (name) runEnlngTool(['remove', name], 'Remove package');
+    });
   }
 
   // ==========================================
@@ -10433,6 +10528,10 @@ Provide code in fenced code blocks.`;
         executeActiveFile();
         break;
 
+      case 'startDebugging':
+        startDebuggerSession();
+        break;
+
       case 'openDbConsole':
         if (bottomDock) bottomDock.classList.remove('collapsed');
         switchDockTab('dockDatabase');
@@ -10834,7 +10933,7 @@ Provide code in fenced code blocks.`;
     }
 
     // Status bar Debug Button Handler
-    const statusDebugBtn = document.getElementById('statusDebugBtn');
+    const statusDebugBtn = document.getElementById('editorDebugBtn');
     if (statusDebugBtn) {
       statusDebugBtn.addEventListener('click', () => {
         startDebuggerSession();
@@ -11180,6 +11279,17 @@ Provide code in fenced code blocks.`;
     const debugEvalBtn = document.getElementById('debugEvalBtn');
     const debugConsoleInput = document.getElementById('debugConsoleInput');
     const clearDebugConsoleBtn = document.getElementById('clearDebugConsoleBtn');
+    const debugStopBtn = document.getElementById('debugStopBtn');
+    if (debugStopBtn) {
+      debugStopBtn.addEventListener('click', () => {
+        stopDebuggerSession();
+        debugLogText('Stopped.\n', '#dcdcaa');
+      });
+    }
+    document.querySelectorAll('.debug-step-btn').forEach((b) => {
+      b.addEventListener('click', () => debugCommand(b.getAttribute('data-cmd')));
+    });
+    initDebuggerEvents();
     if (debugEvalBtn && debugConsoleInput) {
       debugEvalBtn.addEventListener('click', () => {
         const expr = debugConsoleInput.value.trim();
@@ -11202,7 +11312,7 @@ Provide code in fenced code blocks.`;
     }
     if (clearDebugConsoleBtn) {
       clearDebugConsoleBtn.addEventListener('click', () => {
-        const stream = document.getElementById('debugConsoleStream');
+        const stream = document.getElementById('debugConsoleOutput');
         if (stream) stream.innerHTML = '';
       });
     }
@@ -12682,7 +12792,7 @@ Provide code in fenced code blocks.`;
     if (!modal) return;
 
     const oldBadge = document.getElementById('updateCurrentVersionBadge');
-    if (oldBadge) oldBadge.textContent = `Current: v${info.currentVersion || '5.0.1'}`;
+    if (oldBadge) oldBadge.textContent = `Current: v${info.currentVersion || '5.1.0'}`;
 
     const newBadge = document.getElementById('updateLatestVersionBadge');
     if (newBadge) newBadge.textContent = `Latest: v${info.latestVersion || info.tag}`;
@@ -12828,7 +12938,7 @@ Provide code in fenced code blocks.`;
         info = await window.EnlangElectron.checkForUpdates();
       } else {
         // Primary: Query official enlangg.site version.json manifest
-        const curVer = '5.0.1';
+        const curVer = '5.1.0';
         const manifestUrls = [
           'version.json',
           'https://enlangg.site/version.json',
@@ -12904,7 +13014,7 @@ Provide code in fenced code blocks.`;
           showStudioToast(`🚀 New Version Available: Enlangg Studio v${info.latestVersion}!`, null);
         }
       } else if (isManual) {
-        const cur = (info && info.currentVersion) || '5.0.1';
+        const cur = (info && info.currentVersion) || '5.1.0';
         showStudioToast(`✔ Enlangg Studio is up to date (v${cur}).`, null);
       }
     } catch (err) {

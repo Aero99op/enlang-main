@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5.5.1" />
+  <link rel="stylesheet" href="style.css?v=5.6.0" />
 </head>
 <body>
 
@@ -204,7 +204,7 @@
                 08:10
               </span>
             </div>
-            <div class="curriculum-item-title">Python and C Interop (planned)</div>
+            <div class="curriculum-item-title">Packages and the Debugger</div>
           </a>
         </li>
 
@@ -290,7 +290,7 @@
           </div>
           <div class="code-block-body" id="track01Code">type enlng
 
-// Print to standard console output
+# Topic 01: Hello World &amp; The Sovereign Declaration
 show "Hello, Sovereign World!"
 show "Enlangg runs natural English as a program."</div>
         </div>
@@ -305,7 +305,7 @@ show "Enlangg runs natural English as a program."</div>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span><code>display &lt;expr&gt;</code> prints to stdout with zero format string vulnerabilities and no required imports of <code>stdio.h</code> or <code>fmt</code>.</span>
+              <span><code>show &lt;value&gt;</code> prints a value, with no imports and no format strings.</span>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
@@ -369,11 +369,12 @@ show "Enlangg runs natural English as a program."</div>
           </div>
           <div class="code-block-body" id="track02Code">type enlng
 
+# Topic 02: Deterministic Memory Slots (remember &amp; freeze)
 freeze SERVER_NAME as "Primary Gateway"
 remember server_port as 8080
 remember is_active as true
 
-# Reassign mutable memory slot
+# Mutate existing slot value with natural re-assignment
 server_port = 9000
 
 show "Server:" SERVER_NAME
@@ -386,7 +387,7 @@ show "Status Active:" is_active</div>
           <ul class="lesson-takeaways-list">
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span><code>set &lt;id&gt; to &lt;val&gt;</code> is the idiomatic standard to declare and assign variables cleanly.</span>
+              <span><code>remember name as value</code> makes a name; <code>name = value</code> changes it later.</span>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
@@ -458,6 +459,7 @@ show "Status Active:" is_active</div>
           </div>
           <div class="code-block-body" id="track03Code">type enlng
 
+# Topic 03: Spoken Math &amp; Arithmetic Operations
 remember base_salary as 65000
 remember bonus as 12000
 freeze TAX_RATE as 0.18
@@ -540,15 +542,17 @@ show "Net Take-Home: $" net_pay</div>
           </div>
           <div class="code-block-body" id="track04Code">type enlng
 
-set user_age to 22
-set has_verified_id to true
+# Topic 04: Decision Logic: Spoken Branching &amp; Fallbacks
+remember user_age as 22
+remember has_verified_id as true
 
-if user_age is greater than or equal to 21 and has_verified_id is equal to true:
-    display "Access Authorized: Primary Production System"
-otherwise if user_age is greater than 16:
-    display "Access Restricted: Observer Access Only"
+when user_age &gt;= 21 and has_verified_id:
+    show "Access Authorized: Primary Production System"
 otherwise:
-    display "Access Denied: Age verification requirement not met"</div>
+    when user_age &gt; 16:
+        show "Access Restricted: Observer Access Only"
+    otherwise:
+        show "Access Denied: Age verification requirement not met"</div>
         </div>
 
         <div class="lesson-takeaways-card">
@@ -556,7 +560,7 @@ otherwise:
           <ul class="lesson-takeaways-list">
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span>Use <code>is greater than</code>, <code>is less than</code>, and <code>is equal to</code> for unambiguous comparisons.</span>
+              <span>Use <code>when</code> and <code>otherwise</code> to choose; compare with <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code> and <code>is</code>.</span>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
@@ -619,20 +623,11 @@ otherwise:
           </div>
           <div class="code-block-body" id="track05Code">type enlng
 
-// 1. Spoken while loop
-set countdown to 5
-while countdown is greater than 0:
-    display "T-Minus: ", countdown
-    decrease countdown by 1
-
-display "Ignition sequence complete!"
-
-// 2. Deterministic bounded repeat loop
-set accumulator to 0
-repeat 4 times:
-    increase accumulator by 25
-
-display "Bounded accumulator result: ", accumulator</div>
+# Topic 05: Loops: While, Until &amp; Bounded Iteration
+remember counter as 1
+repeat while counter &lt;= 5:
+    show "Iteration count:" counter
+    counter increases by 1</div>
         </div>
 
         <div class="lesson-takeaways-card">
@@ -703,15 +698,15 @@ display "Bounded accumulator result: ", accumulator</div>
           </div>
           <div class="code-block-body" id="track06Code">type enlng
 
-procedure compute_compound_interest with principal, rate, times_per_year, years returns number:
-    set r_over_n to rate divided by times_per_year
-    set base to 1 plus r_over_n
-    set exponent to times_per_year multiplied by years
-    set factor to math.pow(base, exponent)
-    return principal multiplied by factor
+# Topic 06: Functions, Scopes &amp; Return Values (with &amp; give)
+function calculate_tax with amount, rate:
+    give amount times rate
 
-set investment to compute_compound_interest(10000, 0.07, 12, 10)
-display "Projected 10-Year Portfolio Value: ", investment</div>
+remember bill as 250
+remember tax as calculate_tax with bill, 0.08
+
+show "Subtotal: $" bill
+show "Tax Calculated: $" tax</div>
         </div>
 
         <div class="lesson-takeaways-card">
@@ -723,7 +718,7 @@ display "Projected 10-Year Portfolio Value: ", investment</div>
             </li>
             <li class="lesson-takeaway-item">
               <span>•</span>
-              <span>Every procedure is compiled with standard C-calling conventions (cdecl/fastcall).</span>
+              <span>A function ends with <code>give</code>, which hands a value back to the caller.</span>
             </li>
           </ul>
         </div>
@@ -782,22 +777,15 @@ display "Projected 10-Year Portfolio Value: ", investment</div>
           </div>
           <div class="code-block-body" id="track07Code">type enlng
 
-// Contiguous dynamic lists
-set fruits to ["Apple", "Orange", "Banana"]
-call list.append with fruits, "Mango"
+# Topic 07: Structured Data: Lists &amp; Universal Property Access
+remember servers as ["alpha", "beta", "gamma"]
+show "Primary Node:" servers at 0
+show "Active Cluster Nodes:" servers
+show "Total Cluster Size:" count of servers
 
-display "Total fruits in inventory: ", length of fruits
-display "First item: ", fruits[0]
-
-// Key-value hash maps
-set telemetry to {
-    "node_id": "us-east-1a",
-    "cpu_load": 0.42,
-    "active_conns": 1280
-}
-
-display "Node ID: ", telemetry["node_id"]
-display "Current CPU: ", telemetry["cpu_load"]</div>
+remember node_info as {"ip": "192.168.1.1", "status": "ONLINE"}
+show "Node IP Address:" ip of node_info
+show "Node Health:" node_info.status</div>
         </div>
 
         <div class="lesson-takeaways-card">
@@ -815,81 +803,61 @@ display "Current CPU: ", telemetry["cpu_load"]</div>
         </div>
       </section>
 
-      <!-- TOPIC 08: Python God Call & C-ABI -->
+      <!-- TOPIC 08: Packages and the Debugger -->
       <section class="topic-lesson-section" id="track8">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
           <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); background: rgba(234, 179, 8, 0.1); padding: 3px 8px; border-radius: 4px;">TOPIC 08</span>
-          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 10 mins · Video: 08:10</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Estimated Time: 10 mins</span>
         </div>
-        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">8. Python and C Interop (Planned)</h2>
+        <h2 class="docs-h2" style="font-size: 1.8rem; margin-bottom: 8px;">8. Packages and the Debugger</h2>
         <p class="docs-p" style="margin-bottom: 20px;">
-          Calling Python packages and C libraries from Enlangg code is planned but not implemented in the current toolchain (5.5.1). The sample below shows the intended shape only and will not run yet.
+          Share code between programs with <code>enlng add</code> and <code>use "name"</code>, and find a mistake by running a program one statement at a time with <code>enlng debug</code>. The sample below is a small program to step through.
         </p>
-
-        <!-- Video Player Card -->
-        <div class="video-player-card">
-          <div class="video-player-header">
-            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Video Briefing: Python & C-ABI Interop</span>
-            <span class="video-source-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              NotebookLM Video
-            </span>
-          </div>
-
-          <div class="video-frame-wrap">
-            <video controls preload="metadata" poster="video_poster.svg" id="video-topic8">
-              <source src="videos/08_python_god_call.mp4" type="video/mp4">
-              <div class="video-placeholder-overlay">
-                <div class="video-placeholder-icon">
-                  <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                </div>
-                <div class="video-placeholder-title">NotebookLM Video: The Python God Call & C FFI</div>
-                <p class="video-placeholder-hint">
-                  Drop your NotebookLM video file into <code>website/videos/08_python_god_call.mp4</code> or replace this tag with your video embed iframe.
-                </p>
-              </div>
-            </video>
-          </div>
-
-          <div class="video-caption-bar">
-            <span>Resolution: 1080p · Natural Voice Synthesis</span>
-            <span>Source: <code>website/videos/08_python_god_call.mp4</code></span>
-          </div>
-        </div>
 
         <div class="code-block-card">
           <div class="code-block-header">
-            <span>08_python_god_call.enlng</span>
+            <span>08_packages_debugger.enlng</span>
             <div style="display: flex; gap: 8px;">
               <a href="playground.html?topic=8" class="terminal-btn" style="text-decoration: none;">Run in Sandbox</a>
-              <a href="examples/08_python_god_call.enlng" download="08_python_god_call.enlng" class="terminal-btn" style="text-decoration: none;">Download .enlng</a>
+              <a href="examples/08_packages_debugger.enlng" download="08_packages_debugger.enlng" class="terminal-btn" style="text-decoration: none;">Download .enlng</a>
               <button type="button" class="copy-code-btn terminal-btn" data-target="track08Code">Copy Code</button>
             </div>
           </div>
           <div class="code-block-body" id="track08Code">type enlng
 
-// PLANNED SYNTAX - not implemented in 5.5.1
-import python module "math" as py_math
-import python module "statistics" as stats
+# Topic 08: Functions you can step through
+function area with width, height:
+    remember result as width times height
+    give result
 
-set dataset to [12.4, 15.8, 11.2, 19.5, 14.1]
-set mean_val to stats.mean(dataset)
-set stdev_val to stats.stdev(dataset)
+remember total as 0
+for each size in [2, 3]:
+    total = total plus area(size, 4)
+show total</div>
+        </div>
 
-display "Calculated Mean: ", mean_val
-display "Standard Deviation: ", stdev_val</div>
+        <div class="code-block-card">
+          <div class="code-block-header"><span>terminal</span></div>
+          <div class="code-block-body">enlng debug 08_packages_debugger.enlng
+(debug) step
+(debug) print total
+(debug) where
+(debug) continue
+
+enlng add ../shared/geometry        # then:  use "geometry"
+enlng packages                      # list what is installed</div>
         </div>
 
         <div class="lesson-takeaways-card">
-          <div class="lesson-takeaways-title">Key Architectural Insights</div>
+          <div class="lesson-takeaways-title">Key Insights</div>
           <ul class="lesson-takeaways-list">
             <li class="lesson-takeaway-item">
-              <span>•</span>
-              <span>Not implemented yet: the syntax shown is a design sketch.</span>
+              <span>&bull;</span>
+              <span><code>step</code> goes into a call, <code>next</code> goes over it, <code>break area</code> stops at a function.</span>
             </li>
             <li class="lesson-takeaway-item">
-              <span>•</span>
-              <span>Until then, use <code>use "file"</code> to share code between Enlangg files.</span>
+              <span>&bull;</span>
+              <span>Installed packages are listed in <code>enlng_packages.txt</code>; <code>enlng install</code> brings them back on another computer.</span>
             </li>
           </ul>
         </div>
@@ -1001,7 +969,6 @@ find all records from scholars;</div>
             <li><a href="playground.html">In-Browser IDE Sandbox</a></li>
             <li><a href="learn.html">Tutorials & Videos</a></li>
             <li><a href="library.html">Standard Library API</a></li>
-            <li><a href="library.html#python-interop">Python Interop (planned)</a></li>
           </ul>
         </div>
 
@@ -1025,6 +992,6 @@ find all records from scholars;</div>
     </div>
   </footer>
 
-  <script src="app.js?v=5.5.1"></script>
+  <script src="app.js?v=5.6.0"></script>
 </body>
 </html>

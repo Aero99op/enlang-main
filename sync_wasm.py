@@ -1,243 +1,137 @@
 #!/usr/bin/env python3
-"""
-Enlang Sovereign Auto-Sync Pipeline: Native Compiler <-> WebAssembly Engine
-Ensures that whenever enlng.exe or compiler sources change,
-the in-browser WebAssembly engine and bundle are automatically updated with 100% parity.
+"""Keeps the in-browser engine in step with the native compiler.
+
+The website playground and Enlangg Studio run the same C interpreter as
+enlng.exe, built to WebAssembly (tools/build_wasm.ps1). This script is the
+pre-commit check:
+
+  1. copies the native binaries to website/ (download mirrors),
+  2. rebuilds the WebAssembly engine when a C source is newer than it
+     (needs the Emscripten SDK; without it the old build is kept and a
+     warning is printed),
+  3. runs the programs of tests/interp_parity with enlng.exe and with the
+     WebAssembly engine under Node, and fails when their output differs.
+
+Usage: python sync_wasm.py [--no-build]
 """
 
+import glob
 import os
-import sys
-import json
-import time
 import shutil
 import subprocess
+import sys
+import tempfile
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+SITE = os.path.join(ROOT_DIR, 'website')
+WASM = os.path.join(SITE, 'enlng_engine.wasm')
+
+# Programs that touch the clock, files, the network or the keyboard differ by nature.
+SKIP_WORDS = ("random_number", "time_now", "sleep(", "ask ", "http", "serve", "read_file", "write ",
+              "delete_file", "run_command", "listen", "connect", "read bytes", "list_dir", "make_folder")
+
 
 def log(msg):
     print(f"[SYNC-WASM] {msg}")
 
-def rebuild_wasm_bundle():
-    """Packs all 12 Enlang domain modules and stdlib files into website/enlang_bundle.json."""
-    dirs = ['enlg', 'enlgd', 'enlgdb', 'enlgf', 'enlgm', 'enlgs', 'enlng', 'enlngd', 'enlngdb', 'enlngf', 'enlngm', 'enlngs']
-    bundle = {}
-
-    for d in dirs:
-        dir_path = os.path.join(ROOT_DIR, d)
-        if not os.path.exists(dir_path):
-            continue
-        for root, _, files in os.walk(dir_path):
-            if '__pycache__' in root or 'tests' in root:
-                continue
-            for f in files:
-                if f.endswith('.py') or f.endswith('.enlng'):
-                    p = os.path.join(root, f)
-                    rel = os.path.relpath(p, ROOT_DIR).replace('\\', '/')
-                    try:
-                        with open(p, 'r', encoding='utf-8') as fh:
-                            bundle[rel] = fh.read()
-                    except Exception as e:
-                        pass
-
-    engine_path = os.path.join(ROOT_DIR, 'website', 'enlang_engine.py')
-    if os.path.exists(engine_path):
-        with open(engine_path, 'r', encoding='utf-8') as f:
-            bundle['enlang_engine.py'] = f.read()
-
-    # Pack sample sovereign database files into bundle
-    for sample_edb in ['database1.edb', 'main_db.edb', 'university_db.edb']:
-        sp = os.path.join(ROOT_DIR, sample_edb)
-        if os.path.exists(sp):
-            try:
-                with open(sp, 'r', encoding='utf-8') as sf:
-                    bundle[sample_edb] = sf.read()
-            except Exception:
-                pass
-
-    out_path = os.path.join(ROOT_DIR, 'website', 'enlang_bundle.json')
-    with open(out_path, 'w', encoding='utf-8') as out:
-        json.dump(bundle, out)
-
-    size_kb = os.path.getsize(out_path) / 1024
-    log(f"Packed {len(bundle)} compiler & stdlib files into website/enlang_bundle.json ({size_kb:.1f} KB)")
-    return out_path
 
 def sync_binaries():
-    """Syncs compiled executables to website/ directory."""
-    bins = ['enlng.exe', 'enlangg.exe', 'enlngdb.exe', 'enlngf.exe', 'enlngd.exe', 'enlngs.exe', 'enlngm.exe']
-    for b in bins:
+    for b in ['enlng.exe', 'enlangg.exe', 'enlngdb.exe', 'enlngf.exe', 'enlngd.exe', 'enlngs.exe', 'enlngm.exe']:
         src = os.path.join(ROOT_DIR, b)
-        dst = os.path.join(ROOT_DIR, 'website', b)
         if os.path.exists(src):
             try:
-                shutil.copy2(src, dst)
-            except Exception:
+                shutil.copy2(src, os.path.join(SITE, b))
+            except OSError:
                 pass
     log("Synchronized native binaries to website/ directory.")
 
-def verify_parity():
-    """Runs dual-engine parity verification between native compiler and WebAssembly engine."""
-    sys.path.insert(0, os.path.join(ROOT_DIR, 'website'))
-    try:
-        import enlang_engine
-    except ImportError as e:
-        log(f"FATAL ERROR: Could not import enlang_engine for verification: {e}")
+
+def sources():
+    files = [os.path.join(ROOT_DIR, 'enlng.c')]
+    files += glob.glob(os.path.join(ROOT_DIR, 'src', '*.[ch]'))
+    files += glob.glob(os.path.join(ROOT_DIR, 'src', '*.enlng'))
+    files += glob.glob(os.path.join(ROOT_DIR, 'enlngdb', 'c', '*.[ch]'))
+    files += glob.glob(os.path.join(ROOT_DIR, 'lib_*.enlng'))
+    return [f for f in files if os.path.exists(f)]
+
+
+def needs_build():
+    if not os.path.exists(WASM):
+        return True
+    built = os.path.getmtime(WASM)
+    return any(os.path.getmtime(f) > built for f in sources())
+
+
+def rebuild():
+    script = os.path.join(ROOT_DIR, 'tools', 'build_wasm.ps1')
+    emsdk = os.environ.get('EMSDK_DIR', r'D:\emsdk' if os.name == 'nt' else os.path.expanduser('~/emsdk'))
+    if os.name != 'nt' or not os.path.isdir(emsdk):
+        log("Warning: the C sources are newer than the WebAssembly engine, but the Emscripten SDK "
+            "was not found, so the engine was not rebuilt. See tools/build_wasm.ps1.")
         return False
-
-    native_bin = os.path.join(ROOT_DIR, 'enlng.exe' if sys.platform == 'win32' else 'enlng')
-    if not os.path.exists(native_bin):
-        fallback = os.path.join(ROOT_DIR, 'enlng' if sys.platform == 'win32' else 'enlng.exe')
-        if os.path.exists(fallback):
-            native_bin = fallback
-
-    test_cases = [
-        {
-            "name": "string_mutation",
-            "code": """type enlng
-
-remember n as "spandan"
-show n
-string_replace "a" in n at 0
-show n
-""",
-            "expected_contains": "spandan\napandan"
-        },
-        {
-            "name": "connector_on_split",
-            "code": """type enlng
-
-text = "alpha:beta:gamma"
-p = split text on ":"
-show p[0]
-show p[1]
-show p[2]
-""",
-            "expected_contains": "alpha\nbeta\ngamma"
-        },
-        {
-            "name": "arithmetic_loop",
-            "code": """type enlng
-
-total = 0
-for i from 1 to 5 by 1:
-    total increases by i
-show "total:" total
-""",
-            "expected_contains": "total: 15"
-        }
-    ]
-
-    for tc in test_cases:
-        tname = tc["name"]
-        tcode = tc["code"]
-
-        # 1. WebAssembly simulated execution
-        res_raw = enlang_engine.execute_enlang_wasm('sandbox.enlng', tcode, 'enlng')
-        try:
-            res = json.loads(res_raw) if isinstance(res_raw, str) else res_raw
-        except Exception:
-            res = {}
-
-        if not res or not res.get('success'):
-            log(f"ERROR: WebAssembly engine failed on {tname}: {res_raw}")
-            return False
-
-        wasm_output = res.get('output', '').strip().replace('\r\n', '\n')
-        if tc.get("expected_contains") and tc["expected_contains"] not in wasm_output:
-            log(f"ERROR: WASM output missing expected assertion in {tname}! Got: {wasm_output}")
-            return False
-
-        # 2. Native C compiler execution
-        if os.path.exists(native_bin):
-            tmp_f = os.path.join(ROOT_DIR, f"temp_parity_{tname}.enlng")
-            try:
-                with open(tmp_f, 'w', encoding='utf-8') as f:
-                    f.write(tcode)
-
-                native_run = subprocess.run(
-                    [native_bin, "run", tmp_f],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
-                if native_run.returncode != 0:
-                    log(f"ERROR: Native compiler failed on {tname} with code {native_run.returncode}!")
-                    log(f"Stderr: {native_run.stderr}")
-                    return False
-
-                native_output = native_run.stdout.strip().replace('\r\n', '\n')
-                if tc.get("expected_contains") and tc["expected_contains"] not in native_output:
-                    log(f"ERROR: Native compiler missing expected assertion in {tname}! Got: {native_output}")
-                    return False
-
-                log(f"PASSED: Dual-engine parity verified for '{tname}' (Native C == WASM)!")
-            finally:
-                if os.path.exists(tmp_f):
-                    try: os.remove(tmp_f)
-                    except Exception: pass
-        else:
-            log(f"Warning: Native compiler {native_bin} not found. Verified WASM engine only.")
-
+    r = subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-Emsdk', emsdk],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        log("ERROR: building the WebAssembly engine failed:\n" + (r.stderr or r.stdout)[-1500:])
+        return False
+    log("Rebuilt the WebAssembly engine and the standard library file.")
     return True
+
+
+def native_binary():
+    for name in ('enlng.exe', 'enlng'):
+        p = os.path.join(ROOT_DIR, name)
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def verify_parity():
+    native = native_binary()
+    node = shutil.which('node')
+    if not native or not node or not os.path.exists(WASM):
+        log("Warning: parity not checked (needs enlng.exe, node and the built WebAssembly engine).")
+        return True
+    checked = 0
+    for f in sorted(glob.glob(os.path.join(ROOT_DIR, 'tests', 'interp_parity', '*.enlng'))):
+        src = open(f, encoding='utf-8').read()
+        if any(w in src for w in SKIP_WORDS):
+            continue
+        work = tempfile.mkdtemp(prefix='enlng-wasm-')
+        try:
+            for h in glob.glob(os.path.join(os.path.dirname(f), '*.enlng')):
+                shutil.copy(h, work)
+            prog = os.path.join(work, os.path.basename(f))
+            a = subprocess.run([native, 'run', prog], cwd=work, capture_output=True, stdin=subprocess.DEVNULL, timeout=60)
+            b = subprocess.run([node, os.path.join(ROOT_DIR, 'tools', 'wasm_run.js'), prog],
+                               capture_output=True, stdin=subprocess.DEVNULL, timeout=120)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+        ao = a.stdout.decode('utf-8', 'replace').replace('\r\n', '\n')
+        bo = b.stdout.decode('utf-8', 'replace').replace('\r\n', '\n')
+        if a.returncode != b.returncode or ao != bo:
+            log(f"ERROR: the WebAssembly engine and enlng.exe differ on {os.path.basename(f)}")
+            log(f"  native: exit {a.returncode} {ao[:160]!r}")
+            log(f"  wasm:   exit {b.returncode} {bo[:160]!r}")
+            return False
+        checked += 1
+    log(f"PASSED: {checked} programs give the same output with enlng.exe and in WebAssembly.")
+    return True
+
+
 def sync_all():
     log("==================================================")
-    log("  Enlang Automatic WebAssembly Sync Pipeline")
+    log("  Native compiler <-> WebAssembly engine check")
     log("==================================================")
     sync_binaries()
-    rebuild_wasm_bundle()
-    ok = verify_parity()
-    if ok:
-        log("[SUCCESS] WebAssembly engine is 100% in sync with native compiler!")
-    else:
-        log("[ERROR] Sync verification failed!")
+    if '--no-build' not in sys.argv and needs_build():
+        if not rebuild() and not os.path.exists(WASM):
+            sys.exit(1)
+    if not verify_parity():
+        log("[ERROR] The WebAssembly engine is not in step with the native compiler!")
         sys.exit(1)
+    log("[SUCCESS] WebAssembly engine is in step with the native compiler.")
 
-def get_watched_files():
-
-    files = [
-        os.path.join(ROOT_DIR, 'enlng.exe'),
-        os.path.join(ROOT_DIR, 'enlangg.exe'),
-        os.path.join(ROOT_DIR, 'enlng.c'),
-        os.path.join(ROOT_DIR, 'enlangg.c'),
-        os.path.join(ROOT_DIR, 'website', 'enlang_engine.py'),
-    ]
-    src_dir = os.path.join(ROOT_DIR, 'src')
-    if os.path.exists(src_dir):
-        for root, _, fs in os.walk(src_dir):
-            for f in fs:
-                if f.endswith(('.c', '.h')):
-                    files.append(os.path.join(root, f))
-    return files
-
-def watch_mode():
-    log("Starting Live Auto-Sync Watcher Daemon...")
-    log("Monitoring enlng.exe, enlangg.exe, enlng.c, and src/ for changes...")
-    log("Press Ctrl+C to stop.")
-    
-    mtimes = {}
-    for f in get_watched_files():
-        if os.path.exists(f):
-            mtimes[f] = os.path.getmtime(f)
-
-    try:
-        while True:
-            time.sleep(1)
-            changed = False
-            for f in get_watched_files():
-                if os.path.exists(f):
-                    current_mtime = os.path.getmtime(f)
-                    if f not in mtimes or current_mtime > mtimes[f]:
-                        log(f"Change detected in: {os.path.basename(f)}")
-                        mtimes[f] = current_mtime
-                        changed = True
-            if changed:
-                sync_all()
-    except KeyboardInterrupt:
-        log("Auto-Sync Watcher stopped.")
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1 and sys.argv[1] in ('--watch', '-w', 'watch'):
-        watch_mode()
-    else:
-        sync_all()
-
+    sync_all()
