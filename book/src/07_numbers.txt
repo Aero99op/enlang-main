@@ -87,23 +87,21 @@ show 22 divided by 7.0
 
 ## Big whole numbers
 
-Whole numbers are 64-bit. The largest is 9223372036854775807. From 5.5.2 a result that does not fit is an error, never a quietly wrong number:
+A whole number has no size limit. Past 9223372036854775807, the largest that fits in 64 bits, it keeps every digit, so the answer is always exact:
 
 ::: code
 type enlng
 
-show 1000000 times 1000000
-show 9223372036854775807
-show 9223372036854775807 minus 1
-:::
-
-::: err
-type enlng
-
 show 9223372036854775807 plus 1
+show 2 to the power of 100
+remember total as 1
+for i from 1 to 30:
+    total = total times i
+show total
+show 123456789012345678901234567890 mod 7
 :::
 
-A number written in the program that is too big is refused in the same way. When an approximate answer is enough, write one side as a decimal, such as `9223372036854775807.0 plus 1`: decimals reach very large values and keep about 15 digits.
+A number this big can also be written in the program, or read from text with `to_number`. Plus, minus, times, `divided by`, `mod`, power, comparing, `show`, f-strings and JSON all work with it, and a result that is small again becomes an ordinary whole number. A big number cannot be used as a position in a list or as a count; that is an error. A power with more than a million digits is also an error, because it would take too long to work out.
 
 ## Remainders and negative numbers
 

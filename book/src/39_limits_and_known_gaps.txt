@@ -19,7 +19,7 @@ A manual that only lists strengths is advertising. This chapter lists what toolc
 These do work, but not the way a newcomer from another language would guess.
 
 - **Whole numbers divide whole.** `7 divided by 2` is 3. Write one side as `7.0` for a fraction. From 5.5.2 dividing by zero is an error that `try` catches.
-- **Whole numbers stop at 64 bits.** Past 9223372036854775807 the program stops with an error; factorials above 20 are the usual place. Use a decimal when an approximation is enough.
+- **Big whole numbers are slower.** Past 9223372036854775807 a whole number keeps every digit, but working on it is slower than on a 64-bit number, and a power with more than a million digits is refused.
 - **`ask` always gives text.** Convert with `to_number` before doing arithmetic, or the `times` operator will repeat the text.
 - **Names made by `ask` belong to their block.** Inside a loop, each pass makes a new one; the outer name is not updated.
 - **Functions change a top-level name only after `global`.** Without it, assigning inside a function makes a new name that belongs to the function (chapter 16). Maps and lists are shared, so changes made through them are visible to everyone.
@@ -59,7 +59,7 @@ These are faults in the toolchain or its library files, not in the way they are 
 | The interpreter never gave memory back, so a long program grew without limit. | Memory the program can no longer reach is freed. |
 | `sort` took seconds on a few thousand items, and big maps got slower as they grew. | Both stay fast on tens of thousands of items. |
 | `for i from 3 to 1 by -1` did not run. | A negative step counts down; a step of 0 is an error. |
-| Whole numbers past 64 bits wrapped around silently: `9223372036854775807 plus 1` was a large negative number. | The program stops with an error that names the numbers. |
+| Whole numbers past 64 bits wrapped around silently: `9223372036854775807 plus 1` was a large negative number. | They keep every digit: `9223372036854775807 plus 1` is 9223372036854775808. |
 | A function could not be written inside another function, and there were no functions without a name. | Inner functions and `function with x: ...` keep the values of the outer names they use (chapter 15). |
 | Built-in functions such as `sqrt` could not be stored or passed. | They can. |
 | Two files with a function of the same name: the first one silently won. | The program refuses to start and names the clash. `use "file" as name` keeps a file's names apart (chapter 20). |

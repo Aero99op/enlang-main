@@ -6,7 +6,7 @@ A program works with values. A **value** is a piece of data such as the number `
 
 | Kind | Examples | Notes |
 |---|---|---|
-| Whole number | `0`, `42`, `-7` | 64-bit, so up to 9223372036854775807. |
+| Whole number | `0`, `42`, `-7` | Any size: past 64 bits every digit is kept. |
 | Decimal number | `3.14`, `0.5` | Printed with up to six significant digits. |
 | Text | `"hello"`, `""` | Double quotes. Position counts from 0. |
 | True or false | `true`, `false` | Written in lower case. |

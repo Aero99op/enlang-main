@@ -4,14 +4,13 @@
 
 **Built and tested** in both `enlng run` and `enlng run --native`, with identical output:
 
-- 1–7, 9, 10, 12, 13 and 14 (`when the color is:`, `if ... otherwise`, `is in`, power, taking apart, list building, inputs by name, `stop the program`, tests, bytes, web server, network)
+- 1–7, 9, 10 and 12–15 (`when the color is:`, `if ... otherwise`, `is in`, power, taking apart, list building, inputs by name, `stop the program`, tests, bytes, web server, network, big whole numbers)
 - 8: `check that x is a number` works while the program runs. Reporting a wrong kind before the program runs is **not built yet**.
 - Tools: interactive mode (`enlng`) and `enlng test`
 
 **Not built yet:**
 
 - 11 `run together:`
-- 15 big whole numbers
 - Editor help, debugger, packages, release
 
 Every Enlng line is a short English sentence made of three kinds of words:

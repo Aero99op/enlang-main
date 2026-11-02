@@ -110,7 +110,8 @@ typedef enum {
   ENLNG_VAL_LIST,
   ENLNG_VAL_MAP,
   ENLNG_VAL_NULL,
-  ENLNG_VAL_FUNC /* a function used as a value; as.fn says which */
+  ENLNG_VAL_FUNC, /* a function used as a value; as.fn says which */
+  ENLNG_VAL_BIG   /* a whole number too big for 64 bits; as.s holds its digits */
 } EnlngValType;
 
 struct EnlngVal {
@@ -272,9 +273,16 @@ static inline size_t enlng_u8_off(const char *s, int64_t idx) {
   return (size_t)(p - s);
 }
 
+static inline void enlng_throw(const char *msg);
 static inline int64_t enlng_val_to_int(EnlngVal v) {
   if (v.type == ENLNG_VAL_INT)
     return v.as.i;
+  if (v.type == ENLNG_VAL_BIG) {
+    char msg[300];
+    snprintf(msg, sizeof(msg), "The number %.60s%s is too big to use here.", v.as.s,
+             strlen(v.as.s) > 60 ? "..." : "");
+    enlng_throw(msg);
+  }
   if (v.type == ENLNG_VAL_FLOAT)
     return (int64_t)v.as.f;
   if (v.type == ENLNG_VAL_STRING && v.as.s)
@@ -367,6 +375,323 @@ static inline void enlng_throw(const char *msg) {
           "------------------------------------------------------------------------\n\n",
           msg);
   exit(1);
+}
+
+/* --- Big whole numbers ---------------------------------------------------
+   A whole number too big for 64 bits stays exact. It is kept as its digits
+   (ENLNG_VAL_BIG, as.s, a text object) and worked on in pieces of nine
+   digits. A result that fits in 64 bits is an ordinary whole number again,
+   so a big number is always outside the 64-bit range. */
+#define ENLNG_BIG_BASE 1000000000u
+#define ENLNG_BIG_MAX_DIGITS 1000000
+
+typedef struct {
+  bool neg;
+  int n;       /* pieces in use; 0 for zero */
+  uint32_t *d; /* lowest piece first */
+} EnlngBigN;
+
+static inline EnlngBigN enlng_bn_new(int cap) {
+  EnlngBigN r;
+  r.neg = false;
+  r.n = 0;
+  r.d = (uint32_t *)calloc((size_t)(cap > 0 ? cap : 1), sizeof(uint32_t));
+  return r;
+}
+
+static inline void enlng_bn_trim(EnlngBigN *a) {
+  while (a->n > 0 && a->d[a->n - 1] == 0)
+    a->n--;
+  if (a->n == 0)
+    a->neg = false;
+}
+
+static inline EnlngBigN enlng_bn_from_i64(int64_t v) {
+  EnlngBigN r = enlng_bn_new(3);
+  uint64_t u = v < 0 ? (uint64_t)0 - (uint64_t)v : (uint64_t)v;
+  r.neg = v < 0;
+  while (u) {
+    r.d[r.n++] = (uint32_t)(u % ENLNG_BIG_BASE);
+    u /= ENLNG_BIG_BASE;
+  }
+  return r;
+}
+
+/* s is an optional sign and then only digits */
+static inline EnlngBigN enlng_bn_from_digits(const char *s) {
+  bool neg = false;
+  if (*s == '-' || *s == '+')
+    neg = *s++ == '-';
+  size_t len = strlen(s);
+  EnlngBigN r = enlng_bn_new((int)(len / 9 + 1));
+  for (size_t end = len; end > 0;) {
+    size_t start = end >= 9 ? end - 9 : 0;
+    uint32_t piece = 0;
+    for (size_t i = start; i < end; i++)
+      piece = piece * 10 + (uint32_t)(s[i] - '0');
+    r.d[r.n++] = piece;
+    end = start;
+  }
+  r.neg = neg;
+  enlng_bn_trim(&r);
+  return r;
+}
+
+static inline EnlngBigN enlng_bn_of(EnlngVal v) {
+  return v.type == ENLNG_VAL_BIG ? enlng_bn_from_digits(v.as.s) : enlng_bn_from_i64(v.as.i);
+}
+
+static inline char *enlng_bn_digits(const EnlngBigN *a) {
+  char *s = (char *)malloc((size_t)a->n * 9 + 3);
+  if (a->n == 0) {
+    strcpy(s, "0");
+    return s;
+  }
+  char *p = s;
+  if (a->neg)
+    *p++ = '-';
+  p += sprintf(p, "%u", (unsigned)a->d[a->n - 1]);
+  for (int i = a->n - 2; i >= 0; i--)
+    p += sprintf(p, "%09u", (unsigned)a->d[i]);
+  return s;
+}
+
+/* Makes the value and frees a's pieces. */
+static inline EnlngVal enlng_bn_val(EnlngBigN *a) {
+  enlng_bn_trim(a);
+  if (a->n <= 3) {
+    uint64_t u = 0;
+    bool fits = true;
+    for (int i = a->n - 1; i >= 0 && fits; i--) {
+      if (u > (UINT64_MAX - a->d[i]) / ENLNG_BIG_BASE)
+        fits = false;
+      else
+        u = u * ENLNG_BIG_BASE + a->d[i];
+    }
+    if (fits && u <= (uint64_t)INT64_MAX + (a->neg ? 1u : 0u)) {
+      int64_t v = a->neg ? (u == (uint64_t)INT64_MAX + 1u ? INT64_MIN : -(int64_t)u)
+                         : (int64_t)u;
+      free(a->d);
+      return enlng_make_int(v);
+    }
+  }
+  char *s = enlng_bn_digits(a);
+  free(a->d);
+  EnlngVal r = enlng_make_string(s);
+  free(s);
+  r.type = ENLNG_VAL_BIG;
+  return r;
+}
+
+static inline int enlng_bn_cmp_abs(const EnlngBigN *a, const EnlngBigN *b) {
+  if (a->n != b->n)
+    return a->n < b->n ? -1 : 1;
+  for (int i = a->n - 1; i >= 0; i--)
+    if (a->d[i] != b->d[i])
+      return a->d[i] < b->d[i] ? -1 : 1;
+  return 0;
+}
+
+static inline EnlngBigN enlng_bn_add_abs(const EnlngBigN *a, const EnlngBigN *b) {
+  int n = (a->n > b->n ? a->n : b->n) + 1;
+  EnlngBigN r = enlng_bn_new(n + 1);
+  uint64_t carry = 0;
+  for (int i = 0; i < n; i++) {
+    uint64_t s = carry + (i < a->n ? a->d[i] : 0) + (i < b->n ? b->d[i] : 0);
+    r.d[i] = (uint32_t)(s % ENLNG_BIG_BASE);
+    carry = s / ENLNG_BIG_BASE;
+  }
+  r.n = n;
+  enlng_bn_trim(&r);
+  return r;
+}
+
+/* |a| - |b|, when |a| >= |b| */
+static inline EnlngBigN enlng_bn_sub_abs(const EnlngBigN *a, const EnlngBigN *b) {
+  EnlngBigN r = enlng_bn_new(a->n + 2);
+  int64_t borrow = 0;
+  for (int i = 0; i < a->n; i++) {
+    int64_t s = (int64_t)a->d[i] - borrow - (i < b->n ? (int64_t)b->d[i] : 0);
+    borrow = s < 0;
+    if (s < 0)
+      s += ENLNG_BIG_BASE;
+    r.d[i] = (uint32_t)s;
+  }
+  r.n = a->n;
+  enlng_bn_trim(&r);
+  return r;
+}
+
+static inline EnlngBigN enlng_bn_add(const EnlngBigN *a, const EnlngBigN *b) {
+  EnlngBigN r;
+  if (a->neg == b->neg) {
+    r = enlng_bn_add_abs(a, b);
+    r.neg = a->neg;
+  } else if (enlng_bn_cmp_abs(a, b) >= 0) {
+    r = enlng_bn_sub_abs(a, b);
+    r.neg = a->neg;
+  } else {
+    r = enlng_bn_sub_abs(b, a);
+    r.neg = b->neg;
+  }
+  enlng_bn_trim(&r);
+  return r;
+}
+
+static inline EnlngBigN enlng_bn_mul(const EnlngBigN *a, const EnlngBigN *b) {
+  EnlngBigN r = enlng_bn_new(a->n + b->n + 1);
+  for (int i = 0; i < a->n; i++) {
+    uint64_t carry = 0;
+    for (int j = 0; j < b->n; j++) {
+      uint64_t cur = r.d[i + j] + (uint64_t)a->d[i] * b->d[j] + carry;
+      r.d[i + j] = (uint32_t)(cur % ENLNG_BIG_BASE);
+      carry = cur / ENLNG_BIG_BASE;
+    }
+    for (int k = i + b->n; carry; k++) {
+      uint64_t cur = r.d[k] + carry;
+      r.d[k] = (uint32_t)(cur % ENLNG_BIG_BASE);
+      carry = cur / ENLNG_BIG_BASE;
+    }
+  }
+  r.n = a->n + b->n + 1;
+  r.neg = a->neg != b->neg;
+  enlng_bn_trim(&r);
+  return r;
+}
+
+static inline EnlngBigN enlng_bn_mul_small(const EnlngBigN *a, uint32_t m) {
+  EnlngBigN r = enlng_bn_new(a->n + 1);
+  uint64_t carry = 0;
+  for (int i = 0; i < a->n; i++) {
+    uint64_t cur = (uint64_t)a->d[i] * m + carry;
+    r.d[i] = (uint32_t)(cur % ENLNG_BIG_BASE);
+    carry = cur / ENLNG_BIG_BASE;
+  }
+  r.d[a->n] = (uint32_t)carry;
+  r.n = a->n + 1;
+  enlng_bn_trim(&r);
+  return r;
+}
+
+/* Whole-number division as Enlng does it for 64-bit numbers: the quotient
+   drops what is after the point, and the rest has the sign of a. b is not
+   zero. */
+static inline void enlng_bn_divmod(const EnlngBigN *a, const EnlngBigN *b, EnlngBigN *q,
+                                   EnlngBigN *rest) {
+  EnlngBigN Q = enlng_bn_new(a->n + 1);
+  EnlngBigN R = enlng_bn_new(b->n + 3);
+  EnlngBigN bb = *b;
+  bb.neg = false;
+  for (int i = a->n - 1; i >= 0; i--) {
+    memmove(R.d + 1, R.d, sizeof(uint32_t) * (size_t)R.n);
+    R.d[0] = a->d[i];
+    R.n++;
+    enlng_bn_trim(&R);
+    uint32_t lo = 0, hi = ENLNG_BIG_BASE - 1;
+    if (enlng_bn_cmp_abs(&bb, &R) > 0)
+      hi = 0;
+    while (lo < hi) {
+      uint32_t mid = lo + (hi - lo + 1) / 2;
+      EnlngBigN t = enlng_bn_mul_small(&bb, mid);
+      int c = enlng_bn_cmp_abs(&t, &R);
+      free(t.d);
+      if (c <= 0)
+        lo = mid;
+      else
+        hi = mid - 1;
+    }
+    if (lo) {
+      EnlngBigN t = enlng_bn_mul_small(&bb, lo);
+      EnlngBigN nr = enlng_bn_sub_abs(&R, &t);
+      free(t.d);
+      free(R.d);
+      R = nr;
+    }
+    Q.d[i] = lo;
+  }
+  Q.n = a->n;
+  Q.neg = a->neg != b->neg;
+  enlng_bn_trim(&Q);
+  R.neg = a->neg;
+  enlng_bn_trim(&R);
+  *q = Q;
+  *rest = R;
+}
+
+/* a and b are whole numbers (64-bit or big); op is + - * / or % */
+static inline EnlngVal enlng_big_op(char op, EnlngVal a, EnlngVal b) {
+  EnlngBigN x = enlng_bn_of(a), y = enlng_bn_of(b), r, rest;
+  switch (op) {
+  case '+':
+    r = enlng_bn_add(&x, &y);
+    break;
+  case '-':
+    if (y.n)
+      y.neg = !y.neg;
+    r = enlng_bn_add(&x, &y);
+    break;
+  case '*':
+    r = enlng_bn_mul(&x, &y);
+    break;
+  default:
+    enlng_bn_divmod(&x, &y, &r, &rest);
+    if (op == '%') {
+      free(r.d);
+      r = rest;
+    } else {
+      free(rest.d);
+    }
+  }
+  free(x.d);
+  free(y.d);
+  return enlng_bn_val(&r);
+}
+
+static inline int enlng_big_cmp(EnlngVal a, EnlngVal b) {
+  EnlngBigN x = enlng_bn_of(a), y = enlng_bn_of(b);
+  int c;
+  if (x.neg != y.neg)
+    c = x.neg ? -1 : 1;
+  else
+    c = x.neg ? -enlng_bn_cmp_abs(&x, &y) : enlng_bn_cmp_abs(&x, &y);
+  free(x.d);
+  free(y.d);
+  return c;
+}
+
+/* a to the power of e (e >= 0), exact */
+static inline EnlngVal enlng_big_power(EnlngVal a, int64_t e) {
+  EnlngBigN base = enlng_bn_of(a);
+  double digits = 0;
+  if (base.n > 0) {
+    char *s = enlng_bn_digits(&base);
+    digits = (double)e * log10(fabs(strtod(s, NULL)));
+    free(s);
+  }
+  if (digits > ENLNG_BIG_MAX_DIGITS) {
+    free(base.d);
+    enlng_throw("This power would have more than a million digits, which is too big to work out.");
+  }
+  EnlngBigN r = enlng_bn_from_i64(1);
+  while (e > 0) {
+    if (e & 1) {
+      EnlngBigN t = enlng_bn_mul(&r, &base);
+      free(r.d);
+      r = t;
+    }
+    e >>= 1;
+    if (e > 0) {
+      EnlngBigN t = enlng_bn_mul(&base, &base);
+      free(base.d);
+      base = t;
+    }
+  }
+  free(base.d);
+  return enlng_bn_val(&r);
+}
+
+static inline bool enlng_is_whole(EnlngVal v) {
+  return v.type == ENLNG_VAL_INT || v.type == ENLNG_VAL_BIG;
 }
 
 static inline void enlng_frozen_refuse(void) {
@@ -532,7 +857,7 @@ static size_t enlng_gc_sp = 0, enlng_gc_cap = 0;
 static int enlng_gc_stress = -1;
 
 static inline EnlngObj *enlng_gc_obj_of(EnlngVal v) {
-  if (v.type == ENLNG_VAL_STRING && v.as.s) {
+  if ((v.type == ENLNG_VAL_STRING || v.type == ENLNG_VAL_BIG) && v.as.s) {
     EnlngObj *o = ((EnlngObj *)v.as.s) - 1;
     return o->magic == ENLNG_GC_MAGIC && o->kind == ENLNG_OBJ_STRING ? o : NULL;
   }
@@ -852,6 +1177,8 @@ static inline bool enlng_is_truthy(EnlngVal v) {
     return v.as.b;
   if (v.type == ENLNG_VAL_INT)
     return v.as.i != 0;
+  if (v.type == ENLNG_VAL_BIG)
+    return true;
   if (v.type == ENLNG_VAL_FLOAT)
     return v.as.f != 0.0;
   if (v.type == ENLNG_VAL_STRING)
@@ -865,9 +1192,16 @@ static inline bool enlng_is_truthy(EnlngVal v) {
   return false;
 }
 
+static inline double enlng_num_d(EnlngVal v);
+static inline bool enlng_is_num(EnlngVal v);
 static inline bool enlng_vals_equal(EnlngVal a, EnlngVal b) {
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
     return a.as.i == b.as.i;
+  if (a.type == ENLNG_VAL_BIG || b.type == ENLNG_VAL_BIG) {
+    if (enlng_is_whole(a) && enlng_is_whole(b))
+      return enlng_big_cmp(a, b) == 0;
+    return enlng_is_num(a) && enlng_is_num(b) && enlng_num_d(a) == enlng_num_d(b);
+  }
   if (a.type == ENLNG_VAL_FLOAT && b.type == ENLNG_VAL_FLOAT)
     return a.as.f == b.as.f;
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_FLOAT)
@@ -918,6 +1252,11 @@ static inline bool enlng_vals_equal(EnlngVal a, EnlngVal b) {
 static inline bool enlng_vals_gt(EnlngVal a, EnlngVal b) {
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
     return a.as.i > b.as.i;
+  if (a.type == ENLNG_VAL_BIG || b.type == ENLNG_VAL_BIG) {
+    if (enlng_is_whole(a) && enlng_is_whole(b))
+      return enlng_big_cmp(a, b) > 0;
+    return enlng_is_num(a) && enlng_is_num(b) && enlng_num_d(a) > enlng_num_d(b);
+  }
   if (a.type == ENLNG_VAL_FLOAT && b.type == ENLNG_VAL_FLOAT)
     return a.as.f > b.as.f;
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_FLOAT)
@@ -932,6 +1271,11 @@ static inline bool enlng_vals_gt(EnlngVal a, EnlngVal b) {
 static inline bool enlng_vals_lt(EnlngVal a, EnlngVal b) {
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
     return a.as.i < b.as.i;
+  if (a.type == ENLNG_VAL_BIG || b.type == ENLNG_VAL_BIG) {
+    if (enlng_is_whole(a) && enlng_is_whole(b))
+      return enlng_big_cmp(a, b) < 0;
+    return enlng_is_num(a) && enlng_is_num(b) && enlng_num_d(a) < enlng_num_d(b);
+  }
   if (a.type == ENLNG_VAL_FLOAT && b.type == ENLNG_VAL_FLOAT)
     return a.as.f < b.as.f;
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_FLOAT)
@@ -987,7 +1331,7 @@ static inline void enlng_list_sort(EnlngVal v, bool descending) {
 
 static inline const char *enlng_val_to_str_buf(EnlngVal v, char *buf,
                                                size_t sz) {
-  if (v.type == ENLNG_VAL_STRING && v.as.s)
+  if ((v.type == ENLNG_VAL_STRING || v.type == ENLNG_VAL_BIG) && v.as.s)
     return v.as.s;
   if (v.type == ENLNG_VAL_INT) {
     snprintf(buf, sz, "%lld", (long long)v.as.i);
@@ -1009,16 +1353,19 @@ static inline const char *enlng_val_to_str_buf(EnlngVal v, char *buf,
 
 /* --- Arithmetic --- */
 static inline bool enlng_is_num(EnlngVal v) {
-  return v.type == ENLNG_VAL_INT || v.type == ENLNG_VAL_FLOAT;
+  return v.type == ENLNG_VAL_INT || v.type == ENLNG_VAL_FLOAT || v.type == ENLNG_VAL_BIG;
 }
 
 static inline double enlng_num_d(EnlngVal v) {
+  if (v.type == ENLNG_VAL_BIG)
+    return strtod(v.as.s, NULL);
   return v.type == ENLNG_VAL_FLOAT ? v.as.f : (double)v.as.i;
 }
 
 static inline const char *enlng_kind(EnlngVal v) {
   switch (v.type) {
   case ENLNG_VAL_INT:
+  case ENLNG_VAL_BIG:
   case ENLNG_VAL_FLOAT: return "a number";
   case ENLNG_VAL_STRING: return "text";
   case ENLNG_VAL_BOOL: return "true/false";
@@ -1067,9 +1414,11 @@ static inline EnlngVal enlng_val_add(EnlngVal a, EnlngVal b) {
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT) {
     int64_t r;
     if (__builtin_add_overflow(a.as.i, b.as.i, &r))
-      enlng_int_overflow("plus", a.as.i, b.as.i);
+      return enlng_big_op('+', a, b);
     return enlng_make_int(r);
   }
+  if (enlng_is_whole(a) && enlng_is_whole(b))
+    return enlng_big_op('+', a, b);
   if (enlng_is_num(a) && enlng_is_num(b))
     return enlng_make_float(enlng_num_d(a) + enlng_num_d(b));
   if ((a.type == ENLNG_VAL_STRING || b.type == ENLNG_VAL_STRING) &&
@@ -1097,9 +1446,11 @@ static inline EnlngVal enlng_val_sub(EnlngVal a, EnlngVal b) {
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT) {
     int64_t r;
     if (__builtin_sub_overflow(a.as.i, b.as.i, &r))
-      enlng_int_overflow("minus", a.as.i, b.as.i);
+      return enlng_big_op('-', a, b);
     return enlng_make_int(r);
   }
+  if (enlng_is_whole(a) && enlng_is_whole(b))
+    return enlng_big_op('-', a, b);
   if (!enlng_is_num(a) || !enlng_is_num(b)) {
     enlng_bad_operands("minus", a, b);
     return enlng_make_null();
@@ -1111,9 +1462,11 @@ static inline EnlngVal enlng_val_mul(EnlngVal a, EnlngVal b) {
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT) {
     int64_t r;
     if (__builtin_mul_overflow(a.as.i, b.as.i, &r))
-      enlng_int_overflow("times", a.as.i, b.as.i);
+      return enlng_big_op('*', a, b);
     return enlng_make_int(r);
   }
+  if (enlng_is_whole(a) && enlng_is_whole(b))
+    return enlng_big_op('*', a, b);
   /* text times a whole number repeats the text */
   if ((a.type == ENLNG_VAL_STRING && b.type == ENLNG_VAL_INT) ||
       (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_STRING)) {
@@ -1155,11 +1508,11 @@ static inline EnlngVal enlng_val_div(EnlngVal a, EnlngVal b) {
     return enlng_make_null();
   }
   enlng_zero_divisor(a, b, "divided by");
-  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT) {
-    if (b.as.i == -1 && a.as.i == INT64_MIN)
-      enlng_int_overflow("divided by", a.as.i, b.as.i);
+  if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT &&
+      !(b.as.i == -1 && a.as.i == INT64_MIN))
     return enlng_make_int(a.as.i / b.as.i);
-  }
+  if (enlng_is_whole(a) && enlng_is_whole(b))
+    return enlng_big_op('/', a, b);
   return enlng_make_float(enlng_num_d(a) / enlng_num_d(b));
 }
 
@@ -1171,6 +1524,8 @@ static inline EnlngVal enlng_val_mod(EnlngVal a, EnlngVal b) {
   enlng_zero_divisor(a, b, "mod");
   if (a.type == ENLNG_VAL_INT && b.type == ENLNG_VAL_INT)
     return enlng_make_int(b.as.i == -1 ? 0 : a.as.i % b.as.i);
+  if (enlng_is_whole(a) && enlng_is_whole(b))
+    return enlng_big_op('%', a, b);
   return enlng_make_float(fmod(enlng_num_d(a), enlng_num_d(b)));
 }
 
@@ -1179,6 +1534,9 @@ static inline void enlng_print_val(EnlngVal v) {
   switch (v.type) {
   case ENLNG_VAL_INT:
     printf("%lld", (long long)v.as.i);
+    break;
+  case ENLNG_VAL_BIG:
+    printf("%s", v.as.s);
     break;
   case ENLNG_VAL_FLOAT:
     printf("%.6g", v.as.f);
@@ -1289,25 +1647,30 @@ static inline EnlngVal enlng_builtin_pow(EnlngVal base, EnlngVal exp) {
 }
 
 static inline EnlngVal enlng_builtin_abs(EnlngVal v) {
-  if (v.type == ENLNG_VAL_INT) {
-    if (v.as.i == INT64_MIN)
-      enlng_int_overflow("times", v.as.i, -1);
+  if (v.type == ENLNG_VAL_INT && v.as.i != INT64_MIN)
     return enlng_make_int(v.as.i < 0 ? -v.as.i : v.as.i);
-  }
+  if (enlng_is_whole(v))
+    return enlng_vals_lt(v, enlng_make_int(0)) ? enlng_val_sub(enlng_make_int(0), v) : v;
   return enlng_make_float(fabs(enlng_need_num("abs", v)));
 }
 
 static inline EnlngVal enlng_builtin_floor(EnlngVal v) {
+  if (v.type == ENLNG_VAL_BIG)
+    return v;
   double d = enlng_need_num("floor", v);
   return enlng_make_int((int64_t)floor(d));
 }
 
 static inline EnlngVal enlng_builtin_ceil(EnlngVal v) {
+  if (v.type == ENLNG_VAL_BIG)
+    return v;
   double d = enlng_need_num("ceil", v);
   return enlng_make_int((int64_t)ceil(d));
 }
 
 static inline EnlngVal enlng_builtin_round(EnlngVal v) {
+  if (v.type == ENLNG_VAL_BIG)
+    return v;
   double d = enlng_need_num("round", v);
   return enlng_make_int((int64_t)round(d));
 }
@@ -1474,6 +1837,7 @@ static inline void enlng_buf_val(EnlngBuf *b, EnlngVal v) {
     enlng_buf_add(b, tmp);
     break;
   case ENLNG_VAL_STRING:
+  case ENLNG_VAL_BIG:
     enlng_buf_add(b, v.as.s ? v.as.s : "");
     break;
   case ENLNG_VAL_BOOL:
@@ -1525,13 +1889,23 @@ static inline EnlngVal enlng_builtin_to_text(EnlngVal v) {
 
 /* "42" -> 42, " 3.5 " -> 3.5; text that is not a number is an error. */
 static inline EnlngVal enlng_builtin_to_number(EnlngVal v) {
-  if (v.type == ENLNG_VAL_INT || v.type == ENLNG_VAL_FLOAT)
+  if (enlng_is_num(v))
     return v;
   if (v.type == ENLNG_VAL_STRING && v.as.s) {
     const char *p = v.as.s;
     while (*p == ' ' || *p == '\t')
       p++;
     char *end = NULL;
+    const char *dg = (*p == '-' || *p == '+') ? p + 1 : p;
+    size_t nd = strspn(dg, "0123456789");
+    if (nd > 18 && strspn(dg + nd, " \t\r\n") == strlen(dg + nd)) {
+      char *digits = (char *)malloc((size_t)(dg - p) + nd + 1);
+      memcpy(digits, p, (size_t)(dg - p) + nd);
+      digits[(dg - p) + nd] = '\0';
+      EnlngBigN n = enlng_bn_from_digits(digits);
+      free(digits);
+      return enlng_bn_val(&n);
+    }
     if (*p) {
       long long iv = strtoll(p, &end, 10);
       const char *q = end;
@@ -1804,14 +2178,13 @@ static inline EnlngVal enlng_builtin_to_lower(EnlngVal v) {
 
 static inline EnlngVal enlng_builtin_sum(EnlngVal list) {
   if (list.type != ENLNG_VAL_LIST || !list.as.l) return enlng_make_int(0);
-  double total = 0;
-  bool is_float = false;
+  EnlngVal total = enlng_make_int(0);
   for (int i = 0; i < list.as.l->count; i++) {
     EnlngVal v = list.as.l->items[i];
-    if (v.type == ENLNG_VAL_FLOAT) { total += v.as.f; is_float = true; }
-    else if (v.type == ENLNG_VAL_INT) { total += (double)v.as.i; }
+    if (enlng_is_num(v))
+      total = enlng_val_add(total, v);
   }
-  return is_float ? enlng_make_float(total) : enlng_make_int((int64_t)total);
+  return total;
 }
 
 static inline EnlngVal enlng_builtin_avg(EnlngVal list) {
@@ -2129,7 +2502,8 @@ static inline EnlngVal enlng_builtin_env(EnlngVal name) {
 
 static inline EnlngVal enlng_builtin_type_of(EnlngVal v) {
   switch (v.type) {
-  case ENLNG_VAL_INT: return enlng_make_string("number");
+  case ENLNG_VAL_INT:
+  case ENLNG_VAL_BIG: return enlng_make_string("number");
   case ENLNG_VAL_FLOAT: return enlng_make_string("decimal");
   case ENLNG_VAL_STRING: return enlng_make_string("text");
   case ENLNG_VAL_BOOL: return enlng_make_string("true/false");
@@ -2379,6 +2753,9 @@ static inline void enlng_json_val(EnlngBuf *b, EnlngVal v, int pretty, int depth
   case ENLNG_VAL_INT:
     snprintf(tmp, sizeof(tmp), "%lld", (long long)v.as.i);
     enlng_buf_add(b, tmp);
+    break;
+  case ENLNG_VAL_BIG:
+    enlng_buf_add(b, v.as.s);
     break;
   case ENLNG_VAL_FLOAT:
     if (v.as.f != v.as.f || v.as.f == HUGE_VAL || v.as.f == -HUGE_VAL)
@@ -4319,13 +4696,15 @@ static inline EnlngVal enlng_builtin_power(EnlngVal a, EnlngVal b) {
     int64_t r = 1, base = a.as.i, e = b.as.i;
     while (e > 0) {
       if ((e & 1) && __builtin_mul_overflow(r, base, &r))
-        enlng_int_overflow("to the power of", a.as.i, b.as.i);
+        return enlng_big_power(a, b.as.i);
       e >>= 1;
       if (e > 0 && __builtin_mul_overflow(base, base, &base))
-        enlng_int_overflow("to the power of", a.as.i, b.as.i);
+        return enlng_big_power(a, b.as.i);
     }
     return enlng_make_int(r);
   }
+  if (a.type == ENLNG_VAL_BIG && b.type == ENLNG_VAL_INT && b.as.i >= 0)
+    return enlng_big_power(a, b.as.i);
   return enlng_make_float(pow(enlng_need_num("power", a), enlng_need_num("power", b)));
 }
 
@@ -4412,9 +4791,9 @@ static inline EnlngVal enlng_builtin_is_kind(EnlngVal v, EnlngVal kind) {
   const char *k = kind.type == ENLNG_VAL_STRING && kind.as.s ? kind.as.s : "";
   bool r = false;
   if (strcmp(k, "number") == 0)
-    r = v.type == ENLNG_VAL_INT || v.type == ENLNG_VAL_FLOAT;
+    r = enlng_is_num(v);
   else if (strcmp(k, "whole number") == 0)
-    r = v.type == ENLNG_VAL_INT;
+    r = enlng_is_whole(v);
   else if (strcmp(k, "decimal") == 0)
     r = v.type == ENLNG_VAL_FLOAT;
   else if (strcmp(k, "text") == 0)

@@ -50,7 +50,7 @@
 
 **Null** — the value that means "nothing here". Many library functions give it when asked for something that is not there.
 
-**Overflow** — what happens when a number is too big for the space reserved for it. In Enlangg a whole number result that does not fit in 64 bits stops the program with an error.
+**Overflow** — what happens when a number is too big for the space reserved for it. In Enlangg a whole number result that does not fit in 64 bits becomes a big whole number with every digit kept, so it never overflows.
 
 **Parameter** — the name inside a function that receives an argument.
 

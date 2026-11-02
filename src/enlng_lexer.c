@@ -489,7 +489,7 @@ bool lexer_tokenize(Lexer *lexer) {
 
     /* Number Literals: 42, 3.5, 1e3, 2.5e-3, 1_000_000, 0xFF, 0b1010 */
     if (isdigit((unsigned char)c)) {
-      char num_buf[64];
+      char num_buf[1100]; /* a big whole number keeps up to 1000 digits */
       int nlen = 0;
       bool is_float = false;
       int radix = 0;
@@ -528,7 +528,7 @@ bool lexer_tokenize(Lexer *lexer) {
           advance(lexer);
         }
         if (too_big)
-          snprintf(num_buf, sizeof(num_buf), "99999999999999999999");
+          snprintf(num_buf, sizeof(num_buf), "radix");
         else
           snprintf(num_buf, sizeof(num_buf), "%llu", v);
         add_token(lexer, ENLNG_TOKEN_INT_LITERAL, num_buf, start_line,
@@ -547,7 +547,7 @@ bool lexer_tokenize(Lexer *lexer) {
         }
         if (peek(lexer, 0) == '.')
           is_float = true;
-        if (nlen < 63)
+        if (nlen < 1000)
           num_buf[nlen++] = advance(lexer);
         else
           advance(lexer);
@@ -562,7 +562,7 @@ bool lexer_tokenize(Lexer *lexer) {
         if (peek(lexer, 0) == '+' || peek(lexer, 0) == '-')
           num_buf[nlen++] = advance(lexer);
         while (isdigit((unsigned char)peek(lexer, 0))) {
-          if (nlen < 63)
+          if (nlen < 1090)
             num_buf[nlen++] = advance(lexer);
           else
             advance(lexer);

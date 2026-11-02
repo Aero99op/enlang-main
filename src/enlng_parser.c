@@ -1122,15 +1122,18 @@ static ASTNode *parse_atom(Parser *p, bool allow_with) {
     ASTNode *n = ast_new(AST_EXPR_LITERAL_INT, t->line);
     n->as.literal.int_val = t->int_val;
     /* 9223372036854775807 is the largest whole number */
+    if (t->text && strcmp(t->text, "radix") == 0) {
+      set_error(p, "This hex or binary number is too big for a whole number (the "
+                   "largest is 9223372036854775807).", t->line);
+      return n;
+    }
+    /* too big for 64 bits: kept exact as a big number */
     if (t->text && (strlen(t->text) > 19 ||
                     (strlen(t->text) == 19 &&
                      strcmp(t->text, "9223372036854775807") > 0))) {
-      char buf[300];
-      snprintf(buf, sizeof(buf),
-               "The number %s is too big for a whole number (the largest is "
-               "9223372036854775807). Write it as a decimal, such as %s.0, "
-               "if an approximate value is enough.", t->text, t->text);
-      set_error(p, buf, t->line);
+      ASTNode *c = call1("to_number", str_node(t->text, t->line), t->line);
+      c->as.call_expr.builtin_only = true;
+      return c;
     }
     return n;
   }

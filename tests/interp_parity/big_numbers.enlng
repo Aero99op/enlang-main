@@ -1,0 +1,42 @@
+type enlng
+show 2 to the power of 100
+show 9223372036854775807 plus 1
+show -9223372036854775807 - 1 - 1
+show 0 minus 9223372036854775807 minus 1
+remember f as 1
+for i from 1 to 30:
+    f = f times i
+show f
+show f divided by 1000000007, f mod 1000000007
+show f divided by f, f minus f, (f plus 1) minus f
+remember a as 123456789012345678901234567890
+show a, a times a
+show a divided by 98765432109876543210
+show a mod 98765432109876543210
+show -a divided by 7, -a mod 7
+show a is greater than 5, a > a plus 1, a is a, a is a whole number, a is a number
+show type_of(a), abs(-a), to_number("99999999999999999999999")
+show a plus 0.5 is greater than 1e29
+show sum([a, a, 1])
+show f"big: {a}", "x" + a
+show to_json([a])
+show 3 to the power of 200
+show (2 to the power of 64) divided by (2 to the power of 32)
+show (-2) to the power of 63, (-2) to the power of 64
+remember s as [a, 5, -a, 0]
+sort s
+show s
+show -(-9223372036854775807 - 1)
+remember m as {}
+m[to_text(a)] = 1
+show m
+show 100000000000000000000000000000000000000000000000000 minus 1
+show 0x7FFFFFFFFFFFFFFF
+try:
+    show 10 to the power of 2000000
+on error as problem:
+    show problem
+try:
+    show [1, 2][a]
+on error as problem:
+    show problem
