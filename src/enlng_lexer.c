@@ -120,6 +120,12 @@ static char *lex_string_body(Lexer *lexer, char quote, bool triple) {
         advance(lexer);
         break;
       }
+      /* A file saved with Windows line ends gives the same text as one
+       * with \n line ends. */
+      if (c == '\r' && peek(lexer, 1) == '\n') {
+        advance(lexer);
+        continue;
+      }
     } else {
       if (c == quote) {
         advance(lexer);
