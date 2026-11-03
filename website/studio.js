@@ -2041,7 +2041,28 @@ insert record into student with roll_no 104, name "Karan Shah", marks 85, grade 
 insert record into student with roll_no 105, name "Dev Patel", marks 59, grade "D"
 
 find records from student where marks is at least 85
-find records from student where grade is "A" order by marks descending`
+find records from student where grade is "A" order by marks descending`,
+
+    enlngdb_reports: `type enlngdb
+
+-- Reports: totals, groups and two tables together
+create table student with roll_no, name, city
+insert record into student with roll_no 101, name "Asha Rao", city "Pune"
+insert record into student with roll_no 102, name "Imran Khan", city "Goa"
+insert record into student with roll_no 103, name "Meera Nair", city "Pune"
+
+create table result with result_id, roll_no, subject, marks
+insert record into result with result_id 1, roll_no 101, subject "Maths", marks 91
+insert record into result with result_id 2, roll_no 101, subject "Science", marks 84
+insert record into result with result_id 3, roll_no 102, subject "Maths", marks 66
+insert record into result with result_id 4, roll_no 103, subject "Maths", marks 78
+
+select sum(marks), avg(marks), max(marks) from result
+find subject, count(*), avg(marks) from result group by subject
+find student.name, result.subject, result.marks from student join result on student.roll_no is result.roll_no where result.marks is at least 75 or result.subject is "Science"
+find name, avg(marks) from student join result on student.roll_no is result.roll_no group by name order by avg(marks) desc
+select distinct city from student
+find top 2 records from result order by marks highest first`
   };
 
   // Extracts current query at cursor position or highlighted text

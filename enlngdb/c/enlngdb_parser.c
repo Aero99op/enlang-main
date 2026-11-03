@@ -1,5 +1,6 @@
 #include "enlngdb.h"
 #include <ctype.h>
+#include <time.h>
 
 static char* trim(char* s) {
     while (isspace((unsigned char)*s) || *s == ';') s++;
@@ -157,6 +158,778 @@ static void print_missing_table(const EnlngDatabase* db, const char* name) {
     printf("       Tables in '%s':", db->name);
     for (int i = 0; i < db->table_count; i++) printf("%s %s", i ? "," : "", db->tables[i].name);
     printf("\n\n");
+}
+
+/* ---- Queries -------------------------------------------------------------
+ *   find|fetch|select|get [top N | first N] [distinct] <what> from <table>
+ *       [inner join | left join | join <table> on <column> is <column>] ...
+ *       [where <condition> [and|or <condition>] ...]     (and comes before or; ( ) groups)
+ *       [group by <column>]
+ *       [order by|sorted by <column> [ascending|descending|lowest first|highest first]]
+ *       [limit N] [offset N]
+ *   <what>: records, all records, *, or columns, and sum(c) avg(c) min(c) max(c) count(*)
+ *   count records in <table> [where ...] [group by <column>]
+ */
+
+typedef enum { QT_WORD, QT_STR, QT_SYM, QT_END } QTokKind;
+typedef struct {
+    QTokKind kind;
+    char text[256];
+} QTok;
+
+#define Q_MAX_TOKS 256
+#define Q_MAX_COLS 64
+#define Q_MAX_CONDS 64
+#define Q_MAX_ITEMS ENLNGDB_MAX_COLS
+
+typedef struct {
+    QTok t[Q_MAX_TOKS + 1];
+    int n, pos;
+    char err[300];
+} QLex;
+
+static void q_lex(QLex* L, const char* s) {
+    L->n = L->pos = 0;
+    L->err[0] = '\0';
+    while (*s && L->n < Q_MAX_TOKS) {
+        if (isspace((unsigned char)*s) || *s == ';') { s++; continue; }
+        QTok* t = &L->t[L->n++];
+        size_t k = 0;
+        if (*s == '"' || *s == '\'') {
+            char q = *s;
+            t->kind = QT_STR;
+            t->text[k++] = *s++;
+            while (*s && *s != q) { if (k < sizeof(t->text) - 2) t->text[k++] = *s; s++; }
+            if (*s == q) s++;
+            t->text[k++] = q;
+        } else if (strchr("(),", *s)) {
+            t->kind = QT_SYM;
+            t->text[k++] = *s++;
+        } else if (strchr("=<>!", *s)) {
+            t->kind = QT_SYM;
+            t->text[k++] = *s++;
+            if (*s == '=') t->text[k++] = *s++;
+        } else {
+            t->kind = QT_WORD;
+            while (*s && !isspace((unsigned char)*s) && !strchr("(),\"'=<>!;", *s)) {
+                if (k < sizeof(t->text) - 1) t->text[k++] = *s;
+                s++;
+            }
+        }
+        t->text[k] = '\0';
+    }
+    L->t[L->n].kind = QT_END;
+    L->t[L->n].text[0] = '\0';
+}
+
+static QTok* q_peek(QLex* L, int off) {
+    int i = L->pos + off;
+    return i < L->n ? &L->t[i] : &L->t[L->n];
+}
+
+/* the next token is the word (or symbol) w */
+static bool q_is(QLex* L, int off, const char* w) {
+    QTok* t = q_peek(L, off);
+    return t->kind != QT_END && t->kind != QT_STR && str_ci_cmp(t->text, w) == 0;
+}
+
+static bool q_take(QLex* L, const char* w) {
+    if (q_is(L, 0, w)) { L->pos++; return true; }
+    return false;
+}
+
+/* a comparison phrase made of several tokens: "is at least", ">=", "is not" ... */
+static EnlngOp q_take_op(QLex* L) {
+    static const struct { const char* words; EnlngOp op; } ops[] = {
+        {"is greater than or equal to", OP_GTE}, {"greater than or equal to", OP_GTE},
+        {"is at least", OP_GTE}, {"at least", OP_GTE}, {">=", OP_GTE},
+        {"is less than or equal to", OP_LTE}, {"less than or equal to", OP_LTE},
+        {"is at most", OP_LTE}, {"at most", OP_LTE}, {"<=", OP_LTE},
+        {"is greater than", OP_GT}, {"greater than", OP_GT}, {"is more than", OP_GT}, {"more than", OP_GT},
+        {"is above", OP_GT}, {"above", OP_GT}, {">", OP_GT},
+        {"is less than", OP_LT}, {"less than", OP_LT}, {"is under", OP_LT}, {"under", OP_LT},
+        {"is below", OP_LT}, {"below", OP_LT}, {"<", OP_LT},
+        {"is not equal to", OP_NEQ}, {"not equal to", OP_NEQ}, {"is not", OP_NEQ}, {"!=", OP_NEQ},
+        {"is equal to", OP_EQ}, {"equal to", OP_EQ}, {"equals", OP_EQ}, {"==", OP_EQ}, {"=", OP_EQ},
+        {"is like", OP_LIKE}, {"like", OP_LIKE}, {"is", OP_EQ},
+        {NULL, OP_NONE}
+    };
+    for (int i = 0; ops[i].words; i++) {
+        char buf[64];
+        strncpy(buf, ops[i].words, sizeof(buf) - 1);
+        buf[sizeof(buf) - 1] = '\0';
+        int off = 0;
+        bool ok = true;
+        for (char* w = strtok(buf, " "); w; w = strtok(NULL, " ")) {
+            if (!q_is(L, off, w)) { ok = false; break; }
+            off++;
+        }
+        if (ok) { L->pos += off; return ops[i].op; }
+    }
+    return OP_NONE;
+}
+
+typedef struct {
+    int kind;            /* 0 one comparison, 1 and, 2 or */
+    int a, b;            /* for and / or */
+    char col[128];
+    EnlngOp op;
+    EnlngVal val;
+    char rword[128];     /* the right side as written, when it may be a column */
+    int ci, rci;         /* column places, found before the rows are read */
+} QCond;
+
+typedef struct {
+    QCond c[Q_MAX_CONDS];
+    int n;
+} QConds;
+
+static int q_parse_or(QLex* L, QConds* P);
+
+static int q_parse_atom(QLex* L, QConds* P) {
+    if (q_take(L, "(")) {
+        int r = q_parse_or(L, P);
+        if (r < 0) return -1;
+        if (!q_take(L, ")")) { snprintf(L->err, sizeof(L->err), "a '(' in the condition has no ')'"); return -1; }
+        return r;
+    }
+    QTok* t = q_peek(L, 0);
+    if (t->kind != QT_WORD) {
+        snprintf(L->err, sizeof(L->err), "expected a column name in the condition, found '%s'", t->kind == QT_END ? "the end" : t->text);
+        return -1;
+    }
+    if (P->n >= Q_MAX_CONDS) { snprintf(L->err, sizeof(L->err), "the condition is too long"); return -1; }
+    QCond* c = &P->c[P->n];
+    memset(c, 0, sizeof(*c));
+    c->val = enlng_null();
+    strncpy(c->col, t->text, sizeof(c->col) - 1);
+    L->pos++;
+    /* "marks of the student is 90": the words between the column and the comparison are skipped */
+    if (q_take(L, "of")) {
+        q_take(L, "the");
+        if (q_peek(L, 0)->kind == QT_WORD) L->pos++;
+    }
+    c->op = q_take_op(L);
+    if (c->op == OP_NONE) {
+        snprintf(L->err, sizeof(L->err), "after '%s' expected a comparison such as 'is', 'is at least' or '>'", c->col);
+        return -1;
+    }
+    QTok* v = q_peek(L, 0);
+    if (v->kind == QT_END || v->kind == QT_SYM) {
+        snprintf(L->err, sizeof(L->err), "the comparison on '%s' has no value", c->col);
+        return -1;
+    }
+    c->val = parse_val_token(v->text);
+    if (v->kind == QT_WORD) strncpy(c->rword, v->text, sizeof(c->rword) - 1);
+    L->pos++;
+    return P->n++;
+}
+
+static int q_join_conds(QLex* L, QConds* P, int kind, int a, int b) {
+    if (P->n >= Q_MAX_CONDS) { snprintf(L->err, sizeof(L->err), "the condition is too long"); return -1; }
+    QCond* c = &P->c[P->n];
+    memset(c, 0, sizeof(*c));
+    c->val = enlng_null();
+    c->kind = kind;
+    c->a = a;
+    c->b = b;
+    return P->n++;
+}
+
+static int q_parse_and(QLex* L, QConds* P) {
+    int left = q_parse_atom(L, P);
+    while (left >= 0 && q_take(L, "and")) {
+        int right = q_parse_atom(L, P);
+        if (right < 0) return -1;
+        left = q_join_conds(L, P, 1, left, right);
+    }
+    return left;
+}
+
+static int q_parse_or(QLex* L, QConds* P) {
+    int left = q_parse_and(L, P);
+    while (left >= 0 && q_take(L, "or")) {
+        int right = q_parse_and(L, P);
+        if (right < 0) return -1;
+        left = q_join_conds(L, P, 2, left, right);
+    }
+    return left;
+}
+
+/* rows being worked on: every column is named table.column */
+typedef struct {
+    int ncols;
+    char names[Q_MAX_COLS][130];
+    EnlngVal** rows;
+    size_t nrows, cap;
+} QSet;
+
+static void q_set_add(QSet* S, EnlngVal* row) {
+    if (S->nrows >= S->cap) {
+        S->cap = S->cap ? S->cap * 2 : 16;
+        S->rows = (EnlngVal**)realloc(S->rows, S->cap * sizeof(EnlngVal*));
+    }
+    S->rows[S->nrows++] = row;
+}
+
+static void q_set_free(QSet* S) {
+    for (size_t r = 0; r < S->nrows; r++) {
+        if (!S->rows[r]) continue;
+        for (int c = 0; c < S->ncols; c++) enlng_free_val(&S->rows[r][c]);
+        free(S->rows[r]);
+    }
+    free(S->rows);
+    S->rows = NULL;
+    S->nrows = S->cap = 0;
+}
+
+static const char* q_short(const char* name) {
+    const char* dot = strchr(name, '.');
+    return dot ? dot + 1 : name;
+}
+
+/* the place of a column: "marks" or "student.marks"; -1 if none, -2 if more than one table has it */
+static int q_find_col(const QSet* S, const char* name) {
+    for (int c = 0; c < S->ncols; c++) {
+        if (str_ci_cmp(S->names[c], name) == 0) return c;
+    }
+    if (strchr(name, '.')) return -1;
+    int found = -1;
+    for (int c = 0; c < S->ncols; c++) {
+        if (str_ci_cmp(q_short(S->names[c]), name) == 0) {
+            if (found >= 0) return -2;
+            found = c;
+        }
+    }
+    return found;
+}
+
+static void q_col_error(const QSet* S, const char* name, int place, char* err, size_t n) {
+    if (place == -2) {
+        snprintf(err, n, "more than one table has a column '%s'; write it as table.%s", name, name);
+        return;
+    }
+    /* one table: its columns by their short names */
+    bool one_table = true;
+    size_t plen = S->ncols ? (size_t)(q_short(S->names[0]) - S->names[0]) : 0;
+    for (int c = 1; c < S->ncols; c++) one_table = one_table && strncmp(S->names[c], S->names[0], plen) == 0;
+    size_t k = (size_t)snprintf(err, n, "there is no column '%s'. The columns are:", name);
+    for (int c = 0; c < S->ncols && k < n; c++) k += (size_t)snprintf(err + k, n - k, " %s", one_table ? q_short(S->names[c]) : S->names[c]);
+}
+
+/* find each column a condition names; a word on the right that is a column is compared as one */
+static bool q_bind(QConds* P, int i, const QSet* S, bool right_may_be_column, char* err, size_t n) {
+    QCond* c = &P->c[i];
+    if (c->kind != 0) return q_bind(P, c->a, S, right_may_be_column, err, n) && q_bind(P, c->b, S, right_may_be_column, err, n);
+    c->ci = q_find_col(S, c->col);
+    if (c->ci < 0) { q_col_error(S, c->col, c->ci, err, n); return false; }
+    c->rci = -1;
+    if (c->rword[0] && (right_may_be_column || strchr(c->rword, '.'))) {
+        int r = q_find_col(S, c->rword);
+        if (r >= 0) c->rci = r;
+    }
+    return true;
+}
+
+static bool q_eval(const QConds* P, int i, EnlngVal* row) {
+    const QCond* c = &P->c[i];
+    if (c->kind == 1) return q_eval(P, c->a, row) && q_eval(P, c->b, row);
+    if (c->kind == 2) return q_eval(P, c->a, row) || q_eval(P, c->b, row);
+    const EnlngVal* target = c->rci >= 0 ? &row[c->rci] : &c->val;
+    return enlng_eval_condition(&row[c->ci], c->op, target);
+}
+
+static void q_free_conds(QConds* P) {
+    for (int i = 0; i < P->n; i++) enlng_free_val(&P->c[i].val);
+    P->n = 0;
+}
+
+static bool q_load_table(QSet* S, const EnlngTable* tbl) {
+    if (S->ncols + tbl->col_count > Q_MAX_COLS) return false;
+    for (int c = 0; c < tbl->col_count; c++) snprintf(S->names[S->ncols + c], sizeof(S->names[0]), "%s.%s", tbl->name, tbl->columns[c].name);
+    S->ncols += tbl->col_count;
+    for (size_t r = 0; r < tbl->row_count; r++) {
+        EnlngVal* row = (EnlngVal*)malloc(S->ncols * sizeof(EnlngVal));
+        for (int c = 0; c < tbl->col_count; c++) {
+            row[c] = c < tbl->rows[r].cell_count ? enlng_copy_val(&tbl->rows[r].cells[c]) : enlng_null();
+        }
+        q_set_add(S, row);
+    }
+    return true;
+}
+
+typedef enum { QA_NONE, QA_COUNT, QA_SUM, QA_AVG, QA_MIN, QA_MAX } QAgg;
+
+typedef struct {
+    QAgg agg;
+    char col[128];       /* "" for count(*) */
+    char title[64];
+    int ci;
+} QItem;
+
+static QAgg q_agg_word(const char* w) {
+    if (str_ci_cmp(w, "count") == 0) return QA_COUNT;
+    if (str_ci_cmp(w, "sum") == 0 || str_ci_cmp(w, "total") == 0) return QA_SUM;
+    if (str_ci_cmp(w, "avg") == 0 || str_ci_cmp(w, "average") == 0) return QA_AVG;
+    if (str_ci_cmp(w, "min") == 0 || str_ci_cmp(w, "lowest") == 0) return QA_MIN;
+    if (str_ci_cmp(w, "max") == 0 || str_ci_cmp(w, "highest") == 0) return QA_MAX;
+    return QA_NONE;
+}
+
+static EnlngVal q_aggregate(const QItem* it, EnlngVal** rows, size_t n) {
+    if (it->agg == QA_COUNT) {
+        int64_t k = 0;
+        for (size_t r = 0; r < n; r++) {
+            if (it->ci < 0 || rows[r][it->ci].type != ENLNG_VAL_NULL) k++;
+        }
+        return enlng_int(k);
+    }
+    if (it->agg == QA_MIN || it->agg == QA_MAX) {
+        const EnlngVal* best = NULL;
+        for (size_t r = 0; r < n; r++) {
+            const EnlngVal* v = &rows[r][it->ci];
+            if (v->type == ENLNG_VAL_NULL) continue;
+            int cmp = best ? enlng_compare_vals(v, best) : 0;
+            if (!best || (it->agg == QA_MIN ? cmp < 0 : cmp > 0)) best = v;
+        }
+        return best ? enlng_copy_val(best) : enlng_null();
+    }
+    /* sum / average of the numbers */
+    int64_t isum = 0;
+    double dsum = 0;
+    bool any_double = false;
+    size_t k = 0;
+    for (size_t r = 0; r < n; r++) {
+        const EnlngVal* v = &rows[r][it->ci];
+        if (v->type == ENLNG_VAL_INT) { isum += v->int_val; dsum += (double)v->int_val; k++; }
+        else if (v->type == ENLNG_VAL_DOUBLE) { dsum += v->double_val; any_double = true; k++; }
+    }
+    if (k == 0) return enlng_null();
+    if (it->agg == QA_AVG) return enlng_double(dsum / (double)k);
+    return any_double ? enlng_double(dsum) : enlng_int(isum);
+}
+
+/* keeps rows in the order they had when two are equal */
+static void q_sort(EnlngVal** rows, size_t n, int ci, bool desc) {
+    for (size_t i = 1; i < n; i++) {
+        EnlngVal* cur = rows[i];
+        size_t j = i;
+        while (j > 0) {
+            int cmp = enlng_compare_vals(&rows[j - 1][ci], &cur[ci]);
+            if (desc ? cmp >= 0 : cmp <= 0) break;
+            rows[j] = rows[j - 1];
+            j--;
+        }
+        rows[j] = cur;
+    }
+}
+
+static bool q_rows_same(const EnlngVal* a, const EnlngVal* b, int n) {
+    for (int c = 0; c < n; c++) {
+        if (a[c].type != b[c].type || enlng_compare_vals(&a[c], &b[c]) != 0) return false;
+        if (a[c].type == ENLNG_VAL_STRING && strcmp(a[c].str_val ? a[c].str_val : "", b[c].str_val ? b[c].str_val : "") != 0) return false;
+    }
+    return true;
+}
+
+static bool q_fail(QLex* L, bool print_output) {
+    if (print_output) printf("ERROR: %s.\n\n", L->err);
+    return false;
+}
+
+static bool run_query(EnlngDatabase* db, const char* stmt, bool print_output) {
+    clock_t t0 = clock();
+    static QLex L;
+    q_lex(&L, stmt);
+
+    bool count_style = false;
+    if (q_take(&L, "count")) {
+        count_style = true;
+    } else if (q_take(&L, "show")) {
+        if (!q_take(&L, "all")) { snprintf(L.err, sizeof(L.err), "expected 'show all records from <table>'"); return q_fail(&L, print_output); }
+    } else if (!(q_take(&L, "find") || q_take(&L, "fetch") || q_take(&L, "select") || q_take(&L, "get"))) {
+        return false;
+    }
+
+    long limit = -1, offset = 0;
+    bool distinct = false;
+    for (;;) {
+        if ((q_is(&L, 0, "top") || q_is(&L, 0, "first")) && q_peek(&L, 1)->kind == QT_WORD && isdigit((unsigned char)q_peek(&L, 1)->text[0])) {
+            limit = atol(q_peek(&L, 1)->text);
+            L.pos += 2;
+        } else if (q_take(&L, "distinct") || q_take(&L, "different") || q_take(&L, "unique")) {
+            distinct = true;
+        } else {
+            break;
+        }
+    }
+
+    /* what to show */
+    QItem items[Q_MAX_ITEMS];
+    int nitems = 0;
+    bool all_cols = false;
+    char tbl_name[64] = {0};
+    if (count_style) {
+        /* count records in t / count all from t / count employees from t */
+        while (!q_is(&L, 0, "from") && !q_is(&L, 0, "in") && q_peek(&L, 0)->kind != QT_END) L.pos++;
+        memset(&items[0], 0, sizeof(items[0]));
+        items[0].agg = QA_COUNT;
+        strcpy(items[0].title, "count(*)");
+        nitems = 1;
+    } else if (q_is(&L, 0, "from") || q_is(&L, 0, "in")) {
+        all_cols = true;
+    } else {
+        /* "all the records", "every record", "*": only such words before 'from' mean every column */
+        static const char* every[] = {"all", "the", "*", "records", "record", "rows", "row", "every", "of", NULL};
+        int k = 0;
+        for (;; k++) {
+            bool word = false;
+            for (int w = 0; every[w]; w++) word = word || q_is(&L, k, every[w]);
+            if (!word) break;
+        }
+        if (k > 0 && (q_is(&L, k, "from") || q_is(&L, k, "in"))) {
+            L.pos += k;
+            all_cols = true;
+        }
+    }
+    if (!count_style && !all_cols && !q_is(&L, 0, "from") && !q_is(&L, 0, "in")) {
+        for (;;) {
+            QTok* t = q_peek(&L, 0);
+            if (t->kind != QT_WORD) { snprintf(L.err, sizeof(L.err), "expected a column name, found '%s'", t->kind == QT_END ? "the end" : t->text); return q_fail(&L, print_output); }
+            if (nitems >= Q_MAX_ITEMS) { snprintf(L.err, sizeof(L.err), "at most %d columns can be shown", Q_MAX_ITEMS); return q_fail(&L, print_output); }
+            QItem* it = &items[nitems];
+            memset(it, 0, sizeof(*it));
+            QAgg agg = q_agg_word(t->text);
+            if (agg != QA_NONE && q_is(&L, 1, "(")) {
+                char fname[32];
+                snprintf(fname, sizeof(fname), "%s", t->text);
+                L.pos += 2;
+                QTok* a = q_peek(&L, 0);
+                if (a->kind != QT_WORD) { snprintf(L.err, sizeof(L.err), "%s( ) needs a column name", fname); return q_fail(&L, print_output); }
+                if (strcmp(a->text, "*") != 0) strncpy(it->col, a->text, sizeof(it->col) - 1);
+                else if (agg != QA_COUNT) { snprintf(L.err, sizeof(L.err), "%s(*) is not possible; name a column, like %s(marks)", fname, fname); return q_fail(&L, print_output); }
+                L.pos++;
+                if (!q_take(&L, ")")) { snprintf(L.err, sizeof(L.err), "%s( has no ')'", fname); return q_fail(&L, print_output); }
+                it->agg = agg;
+                snprintf(it->title, sizeof(it->title), "%s(%s)", fname, it->col[0] ? it->col : "*");
+            } else {
+                strncpy(it->col, t->text, sizeof(it->col) - 1);
+                L.pos++;
+            }
+            nitems++;
+            if (!(q_take(&L, ",") || q_take(&L, "and"))) break;
+        }
+        /* find users where ...: one word and no 'from' is the table */
+        if (!q_is(&L, 0, "from") && !q_is(&L, 0, "in") && nitems == 1 && items[0].agg == QA_NONE) {
+            strncpy(tbl_name, items[0].col, sizeof(tbl_name) - 1);
+            nitems = 0;
+            all_cols = true;
+        }
+    }
+    if (!tbl_name[0]) {
+        if (!(q_take(&L, "from") || q_take(&L, "in"))) { snprintf(L.err, sizeof(L.err), "expected 'from <table>'"); return q_fail(&L, print_output); }
+        QTok* t = q_peek(&L, 0);
+        if (t->kind != QT_WORD && t->kind != QT_STR) { snprintf(L.err, sizeof(L.err), "expected a table name after 'from'"); return q_fail(&L, print_output); }
+        EnlngVal nv = parse_val_token(t->text);
+        snprintf(tbl_name, sizeof(tbl_name), "%s", nv.type == ENLNG_VAL_STRING && nv.str_val ? nv.str_val : t->text);
+        enlng_free_val(&nv);
+        L.pos++;
+    }
+
+    EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
+    if (!tbl) {
+        if (print_output) print_missing_table(db, tbl_name);
+        return false;
+    }
+
+    static QSet S;
+    memset(&S, 0, sizeof(S));
+    static QConds P;
+    P.n = 0;
+    int where_root = -1;
+    char group_col[128] = {0}, order_col[128] = {0};
+    bool desc = false;
+    bool ok = false;
+    char err[300] = {0};
+    EnlngQueryResult* res = NULL;
+
+    int njoins = 0;
+    q_load_table(&S, tbl);
+
+    /* joins */
+    while (q_is(&L, 0, "join") || q_is(&L, 0, "inner") || q_is(&L, 0, "left")) {
+        bool left = q_take(&L, "left");
+        q_take(&L, "inner");
+        q_take(&L, "outer");
+        if (!q_take(&L, "join")) { snprintf(err, sizeof(err), "expected 'join <table> on ...'"); goto done; }
+        QTok* t = q_peek(&L, 0);
+        EnlngTable* t2 = t->kind == QT_WORD ? enlngdb_get_table(db, t->text) : NULL;
+        if (!t2) {
+            if (print_output) print_missing_table(db, t->text);
+            goto done_quiet;
+        }
+        L.pos++;
+        if (!q_take(&L, "on")) { snprintf(err, sizeof(err), "a join needs 'on', like: join %s on %s.id is %s.%s_id", t2->name, tbl->name, t2->name, tbl->name); goto done; }
+        int on_root = q_parse_or(&L, &P);
+        if (on_root < 0) { snprintf(err, sizeof(err), "%s", L.err); goto done; }
+
+        static QSet B, J;
+        memset(&B, 0, sizeof(B));
+        q_load_table(&B, t2);
+        memset(&J, 0, sizeof(J));
+        J.ncols = S.ncols + B.ncols;
+        if (J.ncols > Q_MAX_COLS) { q_set_free(&B); snprintf(err, sizeof(err), "the joined tables have more than %d columns", Q_MAX_COLS); goto done; }
+        for (int c = 0; c < S.ncols; c++) strcpy(J.names[c], S.names[c]);
+        for (int c = 0; c < B.ncols; c++) strcpy(J.names[S.ncols + c], B.names[c]);
+        if (!q_bind(&P, on_root, &J, true, err, sizeof(err))) { q_set_free(&B); goto done; }
+
+        EnlngVal* both = (EnlngVal*)malloc(J.ncols * sizeof(EnlngVal));
+        for (size_t a = 0; a < S.nrows; a++) {
+            bool matched = false;
+            for (size_t b = 0; b < B.nrows; b++) {
+                memcpy(both, S.rows[a], S.ncols * sizeof(EnlngVal));
+                memcpy(both + S.ncols, B.rows[b], B.ncols * sizeof(EnlngVal));
+                if (!q_eval(&P, on_root, both)) continue;
+                matched = true;
+                EnlngVal* row = (EnlngVal*)malloc(J.ncols * sizeof(EnlngVal));
+                for (int c = 0; c < J.ncols; c++) row[c] = enlng_copy_val(&both[c]);
+                q_set_add(&J, row);
+            }
+            if (!matched && left) {
+                EnlngVal* row = (EnlngVal*)malloc(J.ncols * sizeof(EnlngVal));
+                for (int c = 0; c < S.ncols; c++) row[c] = enlng_copy_val(&S.rows[a][c]);
+                for (int c = S.ncols; c < J.ncols; c++) row[c] = enlng_null();
+                q_set_add(&J, row);
+            }
+        }
+        free(both);
+        q_set_free(&B);
+        q_set_free(&S);
+        S = J;
+        njoins++;
+    }
+
+    /* where, group by, order by, limit, offset: in any order */
+    while (q_peek(&L, 0)->kind != QT_END) {
+        if (q_take(&L, "where")) {
+            if (where_root >= 0) { snprintf(err, sizeof(err), "only one 'where' is possible; join conditions with 'and' / 'or'"); goto done; }
+            where_root = q_parse_or(&L, &P);
+            if (where_root < 0) { snprintf(err, sizeof(err), "%s", L.err); goto done; }
+        } else if (q_is(&L, 0, "group") && q_is(&L, 1, "by")) {
+            L.pos += 2;
+            if (q_peek(&L, 0)->kind != QT_WORD) { snprintf(err, sizeof(err), "'group by' needs a column name"); goto done; }
+            strncpy(group_col, q_peek(&L, 0)->text, sizeof(group_col) - 1);
+            L.pos++;
+        } else if ((q_is(&L, 0, "order") || q_is(&L, 0, "sorted") || q_is(&L, 0, "sort")) && q_is(&L, 1, "by")) {
+            L.pos += 2;
+            QTok* t = q_peek(&L, 0);
+            if (t->kind != QT_WORD) { snprintf(err, sizeof(err), "'order by' needs a column name"); goto done; }
+            strncpy(order_col, t->text, sizeof(order_col) - 1);
+            L.pos++;
+            /* order by sum(marks) */
+            if (q_agg_word(order_col) != QA_NONE && q_is(&L, 0, "(") ) {
+                char inner[128] = {0};
+                L.pos++;
+                if (q_peek(&L, 0)->kind == QT_WORD) { strncpy(inner, q_peek(&L, 0)->text, sizeof(inner) - 1); L.pos++; }
+                q_take(&L, ")");
+                char whole[128];
+                snprintf(whole, sizeof(whole), "%s(%s)", order_col, inner);
+                strcpy(order_col, whole);
+            }
+            if (q_take(&L, "desc") || q_take(&L, "descending")) desc = true;
+            else if (q_take(&L, "asc") || q_take(&L, "ascending")) desc = false;
+            else if (q_is(&L, 0, "highest") || q_is(&L, 0, "largest") || q_is(&L, 0, "biggest")) { L.pos++; q_take(&L, "first"); desc = true; }
+            else if (q_is(&L, 0, "lowest") || q_is(&L, 0, "smallest")) { L.pos++; q_take(&L, "first"); desc = false; }
+        } else if (q_take(&L, "limit")) {
+            QTok* t = q_peek(&L, 0);
+            if (t->kind != QT_WORD || !isdigit((unsigned char)t->text[0])) { snprintf(err, sizeof(err), "'limit' needs a number"); goto done; }
+            limit = atol(t->text);
+            L.pos++;
+        } else if (q_take(&L, "offset") || q_take(&L, "skip")) {
+            QTok* t = q_peek(&L, 0);
+            if (t->kind != QT_WORD || !isdigit((unsigned char)t->text[0])) { snprintf(err, sizeof(err), "'offset' needs a number"); goto done; }
+            offset = atol(t->text);
+            L.pos++;
+        } else {
+            snprintf(err, sizeof(err), "I don't understand '%s' here. After the table can come: join, where, group by, order by, limit, offset", q_peek(&L, 0)->text);
+            goto done;
+        }
+    }
+
+    if (where_root >= 0) {
+        if (!q_bind(&P, where_root, &S, false, err, sizeof(err))) goto done;
+        size_t keep = 0;
+        for (size_t r = 0; r < S.nrows; r++) {
+            if (q_eval(&P, where_root, S.rows[r])) {
+                S.rows[keep++] = S.rows[r];
+            } else {
+                for (int c = 0; c < S.ncols; c++) enlng_free_val(&S.rows[r][c]);
+                free(S.rows[r]);
+            }
+        }
+        S.nrows = keep;
+    }
+
+    bool any_agg = false;
+    for (int i = 0; i < nitems; i++) {
+        if (items[i].agg != QA_NONE) any_agg = true;
+    }
+    bool joined = njoins > 0;
+    if (count_style && group_col[0]) {
+        items[1] = items[0];
+        memset(&items[0], 0, sizeof(items[0]));
+        strncpy(items[0].col, group_col, sizeof(items[0].col) - 1);
+        nitems = 2;
+    }
+
+    /* find the columns the items name */
+    if (all_cols && group_col[0]) {
+        memset(&items[0], 0, sizeof(items[0]));
+        strncpy(items[0].col, group_col, sizeof(items[0].col) - 1);
+        memset(&items[1], 0, sizeof(items[1]));
+        items[1].agg = QA_COUNT;
+        strcpy(items[1].title, "count(*)");
+        nitems = 2;
+        all_cols = false;
+        any_agg = true;
+    }
+    if (all_cols) {
+        nitems = 0;
+        for (int c = 0; c < S.ncols && nitems < Q_MAX_ITEMS; c++, nitems++) {
+            memset(&items[nitems], 0, sizeof(items[0]));
+            items[nitems].ci = c;
+            snprintf(items[nitems].title, sizeof(items[0].title), "%s", joined ? S.names[c] : q_short(S.names[c]));
+        }
+        if (S.ncols > Q_MAX_ITEMS) { snprintf(err, sizeof(err), "the result has more than %d columns; name the ones to show", Q_MAX_ITEMS); goto done; }
+    } else {
+        for (int i = 0; i < nitems; i++) {
+            if (items[i].col[0] == '\0') { items[i].ci = -1; continue; }
+            items[i].ci = q_find_col(&S, items[i].col);
+            if (items[i].ci < 0) { q_col_error(&S, items[i].col, items[i].ci, err, sizeof(err)); goto done; }
+            if (items[i].agg == QA_NONE) snprintf(items[i].title, sizeof(items[0].title), "%s", items[i].col);
+        }
+    }
+
+    /* the rows to show */
+    static QSet O;
+    memset(&O, 0, sizeof(O));
+    O.ncols = nitems;
+    for (int i = 0; i < nitems; i++) snprintf(O.names[i], sizeof(O.names[0]), "%s", items[i].title);
+
+    if (any_agg || group_col[0]) {
+        int gi = -1;
+        if (group_col[0]) {
+            gi = q_find_col(&S, group_col);
+            if (gi < 0) { q_col_error(&S, group_col, gi, err, sizeof(err)); goto done; }
+        }
+        size_t ngroups = 0;
+        size_t* first = (size_t*)malloc((S.nrows + 1) * sizeof(size_t));
+        int* group_of = (int*)malloc((S.nrows + 1) * sizeof(int));
+        for (size_t r = 0; r < S.nrows; r++) {
+            int g = -1;
+            if (gi >= 0) {
+                for (size_t k = 0; k < ngroups; k++) {
+                    if (q_rows_same(&S.rows[first[k]][gi], &S.rows[r][gi], 1)) { g = (int)k; break; }
+                }
+            } else if (ngroups > 0) {
+                g = 0;
+            }
+            if (g < 0) { first[ngroups] = r; g = (int)ngroups++; }
+            group_of[r] = g;
+        }
+        if (gi < 0 && ngroups == 0) ngroups = 1; /* sum of no rows is still one answer */
+        EnlngVal** members = (EnlngVal**)malloc((S.nrows + 1) * sizeof(EnlngVal*));
+        for (size_t g = 0; g < ngroups; g++) {
+            size_t m = 0;
+            for (size_t r = 0; r < S.nrows; r++) {
+                if (group_of[r] == (int)g) members[m++] = S.rows[r];
+            }
+            EnlngVal* row = (EnlngVal*)malloc((nitems ? nitems : 1) * sizeof(EnlngVal));
+            for (int i = 0; i < nitems; i++) {
+                if (items[i].agg != QA_NONE) row[i] = q_aggregate(&items[i], members, m);
+                else row[i] = m > 0 ? enlng_copy_val(&members[0][items[i].ci]) : enlng_null();
+            }
+            q_set_add(&O, row);
+        }
+        free(members);
+        free(first);
+        free(group_of);
+        if (order_col[0]) {
+            int oi = q_find_col(&O, order_col);
+            if (oi < 0) { q_set_free(&O); q_col_error(&O, order_col, oi, err, sizeof(err)); goto done; }
+            q_sort(O.rows, O.nrows, oi, desc);
+        }
+    } else {
+        if (order_col[0]) {
+            int oi = q_find_col(&S, order_col);
+            if (oi < 0) { q_col_error(&S, order_col, oi, err, sizeof(err)); goto done; }
+            q_sort(S.rows, S.nrows, oi, desc);
+        }
+        for (size_t r = 0; r < S.nrows; r++) {
+            EnlngVal* row = (EnlngVal*)malloc((nitems ? nitems : 1) * sizeof(EnlngVal));
+            for (int i = 0; i < nitems; i++) row[i] = enlng_copy_val(&S.rows[r][items[i].ci]);
+            q_set_add(&O, row);
+        }
+    }
+
+    if (distinct) {
+        size_t keep = 0;
+        for (size_t r = 0; r < O.nrows; r++) {
+            bool seen = false;
+            for (size_t k = 0; k < keep && !seen; k++) seen = q_rows_same(O.rows[k], O.rows[r], O.ncols);
+            if (seen) {
+                for (int c = 0; c < O.ncols; c++) enlng_free_val(&O.rows[r][c]);
+                free(O.rows[r]);
+            } else {
+                O.rows[keep++] = O.rows[r];
+            }
+        }
+        O.nrows = keep;
+    }
+
+    /* the old count box, for a plain count */
+    if (count_style && !group_col[0]) {
+        long long k = O.nrows ? (long long)O.rows[0][0].int_val : 0;
+        if (print_output) {
+            printf("+----------+\n");
+            printf("| count(*) |\n");
+            printf("+----------+\n");
+            printf("| %-8lld |\n", k);
+            printf("+----------+\n");
+            printf("1 row in set (0.01 ms)\n\n");
+        }
+        q_set_free(&O);
+        ok = true;
+        goto done;
+    }
+
+    res = (EnlngQueryResult*)calloc(1, sizeof(EnlngQueryResult));
+    res->col_count = O.ncols;
+    for (int c = 0; c < O.ncols; c++) {
+        snprintf(res->columns[c].name, sizeof(res->columns[c].name), "%s", O.names[c]);
+    }
+    size_t from_row = (size_t)offset < O.nrows ? (size_t)offset : O.nrows;
+    size_t to_row = O.nrows;
+    if (limit >= 0 && from_row + (size_t)limit < to_row) to_row = from_row + (size_t)limit;
+    res->rows = (EnlngRow*)calloc((to_row - from_row) + 1, sizeof(EnlngRow));
+    for (size_t r = from_row; r < to_row; r++) {
+        EnlngRow* dest = &res->rows[res->row_count++];
+        dest->cell_count = O.ncols;
+        dest->cells = O.rows[r];
+        O.rows[r] = NULL;
+    }
+    q_set_free(&O);
+    res->execution_time_ms = (double)(clock() - t0) * 1000.0 / CLOCKS_PER_SEC;
+    if (print_output) enlngdb_print_result(res);
+    enlngdb_free_result(res);
+    ok = true;
+
+done:
+    if (!ok && err[0] && print_output) printf("ERROR: %s.\n\n", err);
+done_quiet:
+    q_set_free(&S);
+    q_free_conds(&P);
+    return ok;
 }
 
 bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool print_output) {
@@ -412,12 +1185,14 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
             strncpy(pairs_copy, pairs_str, sizeof(pairs_copy) - 1);
             pairs_copy[sizeof(pairs_copy) - 1] = '\0';
 
+            // each value goes in its own column's place; a column not given stays null
             EnlngVal cells[ENLNGDB_MAX_COLS];
+            for (int i = 0; i < ENLNGDB_MAX_COLS; i++) cells[i] = enlng_null();
             int cell_cnt = 0;
 
             // Split pairs by comma outside quotes
             char* p = pairs_copy;
-            while (*p && cell_cnt < ENLNGDB_MAX_COLS) {
+            while (*p) {
                 while (isspace((unsigned char)*p)) p++;
                 if (!*p) break;
 
@@ -467,281 +1242,106 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
                         strncpy(tbl->columns[col_idx].name, col_k, ENLNGDB_MAX_NAME - 1);
                     }
 
-                    cells[cell_cnt++] = parse_val_token(val_part);
+                    if (col_idx >= 0) {
+                        enlng_free_val(&cells[col_idx]);
+                        cells[col_idx] = parse_val_token(val_part);
+                    }
                 }
 
                 if (saved == ',') p++;
             }
 
+            cell_cnt = tbl->col_count;
             bool ok = enlngdb_insert_row(tbl, cells, cell_cnt);
-            for (int i = 0; i < cell_cnt; i++) enlng_free_val(&cells[i]);
+            for (int i = 0; i < ENLNGDB_MAX_COLS; i++) enlng_free_val(&cells[i]);
 
             if (ok && print_output) {
-                printf("Query OK, 1 row affected (0.04 ms)\n\n");
+                if (enlngdb_last_insert_replaced[0]) {
+                    printf("Query OK, 1 row replaced: '%s' already had a row with %s. (0.04 ms)\n\n", tbl->name, enlngdb_last_insert_replaced);
+                } else {
+                    printf("Query OK, 1 row affected (0.04 ms)\n\n");
+                }
             }
             return ok;
         }
     }
 
-    // 6. find [all] records from / find records from <name> [where ...] [order by ...]
-    if (str_starts_with_ci(stmt, "find ") || str_starts_with_ci(stmt, "show all records from ") || str_starts_with_ci(stmt, "select ")) {
-        char tbl_name[64] = {0};
-        char order_col[64] = {0};
-        bool is_desc = false;
-
-        const char* from_pos = strstr(stmt, " from ");
-        int offset = 6;
-        if (!from_pos) {
-            from_pos = strstr(stmt, " in ");
-            offset = 4;
-        }
-
-        if (from_pos) {
-            const char* after_from = from_pos + offset;
-            while (isspace((unsigned char)*after_from)) after_from++;
-
-            char rest[512];
-            strncpy(rest, after_from, sizeof(rest) - 1);
-            rest[sizeof(rest) - 1] = '\0';
-
-            char* where_pos = strstr(rest, " where ");
-            if (!where_pos) where_pos = strstr(rest, " WHERE ");
-            char* order_pos = strstr(rest, " order by ");
-            if (!order_pos) order_pos = strstr(rest, " ORDER BY ");
-            if (!order_pos) order_pos = strstr(rest, " sorted by ");
-            if (!order_pos) order_pos = strstr(rest, " SORTED BY ");
-
-            if (order_pos) {
-                const char* ord_arg = order_pos + (strstr(order_pos, " sorted by ") ? 11 : 10);
-                while (isspace((unsigned char)*ord_arg)) ord_arg++;
-                sscanf(ord_arg, "%63s", order_col);
-                if (strstr(ord_arg, "desc") != NULL || strstr(ord_arg, "DESC") != NULL || strstr(ord_arg, "highest") != NULL) {
-                    is_desc = true;
-                }
-                if (!where_pos || order_pos > where_pos) {
-                    *order_pos = '\0';
-                }
-            }
-
-            typedef struct {
-                char col[64];
-                EnlngOp op;
-                EnlngVal val;
-            } FilterCond;
-            FilterCond conds[4];
-            int cond_count = 0;
-
-            if (where_pos) {
-                *where_pos = '\0';
-                strncpy(tbl_name, trim(rest), sizeof(tbl_name) - 1);
-                char* cond_str = trim(where_pos + 7);
-
-                // Split conditions by " and " / " AND "
-                char* pcond = cond_str;
-                while (*pcond && cond_count < 4) {
-                    char* and_pos = strstr(pcond, " and ");
-                    if (!and_pos) and_pos = strstr(pcond, " AND ");
-                    if (and_pos) {
-                        *and_pos = '\0';
-                    }
-                    char* single_cond = trim(pcond);
-                    char cname[64];
-                    if (sscanf(single_cond, "%63s", cname) == 1) {
-                        char* dot = strchr(cname, '.');
-                        if (dot) strncpy(conds[cond_count].col, dot + 1, sizeof(conds[cond_count].col) - 1);
-                        else strncpy(conds[cond_count].col, cname, sizeof(conds[cond_count].col) - 1);
-
-                        char* op_start = single_cond + strlen(cname);
-                        while (isspace((unsigned char)*op_start)) op_start++;
-
-                        if (str_starts_with_ci(op_start, "of ")) {
-                            op_start += 3;
-                            while (isspace((unsigned char)*op_start)) op_start++;
-                            if (str_starts_with_ci(op_start, "the ")) {
-                                op_start += 4;
-                                while (isspace((unsigned char)*op_start)) op_start++;
-                            }
-                            while (*op_start && !isspace((unsigned char)*op_start)) op_start++;
-                            while (isspace((unsigned char)*op_start)) op_start++;
-                        }
-
-                        int op_len = 0;
-                        conds[cond_count].op = parse_op_phrase(op_start, &op_len);
-                        if (conds[cond_count].op != OP_NONE) {
-                            char* val_str = trim(op_start + op_len);
-                            conds[cond_count].val = parse_val_token(val_str);
-                            cond_count++;
-                        }
-                    }
-
-                    if (and_pos) {
-                        pcond = and_pos + 5;
-                    } else {
-                        break;
-                    }
-                }
-            } else {
-                strncpy(tbl_name, trim(rest), sizeof(tbl_name) - 1);
-            }
-
-            EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
-            if (!tbl) {
-                if (print_output) {
-                    print_missing_table(db, tbl_name);
-                }
-                for (int i = 0; i < cond_count; i++) enlng_free_val(&conds[i].val);
-                return false;
-            }
-
-            EnlngQueryResult* res = NULL;
-            if (cond_count <= 1) {
-                res = enlngdb_find(tbl, cond_count == 1 ? conds[0].col : NULL, cond_count == 1 ? conds[0].op : OP_NONE, cond_count == 1 ? &conds[0].val : NULL, 0, 0);
-            } else {
-                res = (EnlngQueryResult*)calloc(1, sizeof(EnlngQueryResult));
-                res->col_count = tbl->col_count;
-                for (int c = 0; c < tbl->col_count; c++) res->columns[c] = tbl->columns[c];
-                size_t cap = 16;
-                res->rows = (EnlngRow*)malloc(cap * sizeof(EnlngRow));
-                res->row_count = 0;
-
-                int col_indices[4];
-                for (int i = 0; i < cond_count; i++) {
-                    col_indices[i] = -1;
-                    for (int c = 0; c < tbl->col_count; c++) {
-                        if (strcmp(tbl->columns[c].name, conds[i].col) == 0) {
-                            col_indices[i] = c;
-                            break;
-                        }
-                    }
-                }
-
-                for (size_t r = 0; r < tbl->row_count; r++) {
-                    EnlngRow* row = &tbl->rows[r];
-                    bool all_match = true;
-                    for (int i = 0; i < cond_count; i++) {
-                        if (col_indices[i] >= 0 && col_indices[i] < row->cell_count) {
-                            if (!enlng_eval_condition(&row->cells[col_indices[i]], conds[i].op, &conds[i].val)) {
-                                all_match = false;
-                                break;
-                            }
-                        } else {
-                            all_match = false;
-                            break;
-                        }
-                    }
-
-                    if (all_match) {
-                        if (res->row_count >= cap) {
-                            cap *= 2;
-                            res->rows = (EnlngRow*)realloc(res->rows, cap * sizeof(EnlngRow));
-                        }
-                        EnlngRow* dest_row = &res->rows[res->row_count++];
-                        dest_row->cell_count = row->cell_count;
-                        dest_row->cells = (EnlngVal*)malloc(row->cell_count * sizeof(EnlngVal));
-                        for (int c = 0; c < row->cell_count; c++) {
-                            dest_row->cells[c] = enlng_copy_val(&row->cells[c]);
-                        }
-                    }
-                }
-            }
-
-            for (int i = 0; i < cond_count; i++) enlng_free_val(&conds[i].val);
-
-            if (res) {
-                if (order_col[0] != '\0') {
-                    int ord_idx = -1;
-                    for (int c = 0; c < res->col_count; c++) {
-                        if (str_ci_cmp(res->columns[c].name, order_col) == 0) {
-                            ord_idx = c;
-                            break;
-                        }
-                    }
-                    if (ord_idx >= 0 && res->row_count > 1) {
-                        for (size_t i = 0; i < res->row_count - 1; i++) {
-                            for (size_t j = i + 1; j < res->row_count; j++) {
-                                int cmp = enlng_compare_vals(&res->rows[i].cells[ord_idx], &res->rows[j].cells[ord_idx]);
-                                if ((is_desc && cmp < 0) || (!is_desc && cmp > 0)) {
-                                    EnlngRow tmp = res->rows[i];
-                                    res->rows[i] = res->rows[j];
-                                    res->rows[j] = tmp;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (print_output) enlngdb_print_result(res);
-                enlngdb_free_result(res);
-                return true;
-            }
-        }
+    // 6. find / fetch / select / get / show all records from, and 7. count records in
+    if (str_starts_with_ci(stmt, "find ") || str_starts_with_ci(stmt, "fetch ") || str_starts_with_ci(stmt, "select ") ||
+        str_starts_with_ci(stmt, "get ") || str_starts_with_ci(stmt, "show all ") || str_starts_with_ci(stmt, "count ")) {
+        return run_query(db, stmt, print_output);
     }
 
-    // 7. count records from / count records in <name> [where ...]
-    if (str_starts_with_ci(stmt, "count ") || str_starts_with_ci(stmt, "count records from ") || str_starts_with_ci(stmt, "count records in ") || str_starts_with_ci(stmt, "count all from ") || str_starts_with_ci(stmt, "count all in ")) {
-        const char* from_pos = strstr(stmt, " from ");
-        int offset = 6;
-        if (!from_pos) {
-            from_pos = strstr(stmt, " in ");
-            offset = 4;
+    // alter table <t> add [column] <c> [as <kind>] [default <v>]  /  add column <c> to <t> ...
+    // alter table <t> drop|delete|remove column <c> [confirmed]
+    if (str_starts_with_ci(stmt, "alter table ") || str_starts_with_ci(stmt, "add column ")) {
+        static QLex A;
+        q_lex(&A, stmt);
+        char tname[64] = {0}, cname[64] = {0};
+        bool adding = true;
+        if (q_take(&A, "alter")) {
+            q_take(&A, "table");
+            if (q_peek(&A, 0)->kind != QT_WORD) goto alter_usage;
+            snprintf(tname, sizeof(tname), "%s", q_peek(&A, 0)->text);
+            A.pos++;
+            if (q_take(&A, "add")) adding = true;
+            else if (q_take(&A, "drop") || q_take(&A, "delete") || q_take(&A, "remove")) adding = false;
+            else goto alter_usage;
+            q_take(&A, "column");
+            if (q_peek(&A, 0)->kind != QT_WORD) goto alter_usage;
+            snprintf(cname, sizeof(cname), "%s", q_peek(&A, 0)->text);
+            A.pos++;
+        } else {
+            q_take(&A, "add");
+            q_take(&A, "column");
+            if (q_peek(&A, 0)->kind != QT_WORD) goto alter_usage;
+            snprintf(cname, sizeof(cname), "%s", q_peek(&A, 0)->text);
+            A.pos++;
+            if (!(q_take(&A, "to") || q_take(&A, "in"))) goto alter_usage;
+            if (q_peek(&A, 0)->kind != QT_WORD) goto alter_usage;
+            snprintf(tname, sizeof(tname), "%s", q_peek(&A, 0)->text);
+            A.pos++;
         }
-        if (from_pos) {
-            const char* p = from_pos + offset;
-            while (isspace((unsigned char)*p)) p++;
-
-            char rest[512];
-            strncpy(rest, p, sizeof(rest) - 1);
-            rest[sizeof(rest) - 1] = '\0';
-
-            char tbl_name[64] = {0};
-            char filter_col[64] = {0};
-            EnlngOp op = OP_NONE;
-            EnlngVal target_val = enlng_null();
-
-            char* where_pos = strstr(rest, " where ");
-            if (!where_pos) where_pos = strstr(rest, " WHERE ");
-
-            if (where_pos) {
-                *where_pos = '\0';
-                strncpy(tbl_name, trim(rest), sizeof(tbl_name) - 1);
-                char* cond = trim(where_pos + 7);
-                char cname[64];
-                if (sscanf(cond, "%63s", cname) == 1) {
-                    char* dot = strchr(cname, '.');
-                    if (dot) strncpy(filter_col, dot + 1, sizeof(filter_col) - 1);
-                    else strncpy(filter_col, cname, sizeof(filter_col) - 1);
-
-                    char* op_start = cond + strlen(cname);
-                    while (isspace((unsigned char)*op_start)) op_start++;
-                    int op_len = 0;
-                    op = parse_op_phrase(op_start, &op_len);
-                    if (op != OP_NONE) {
-                        char* val_str = trim(op_start + op_len);
-                        target_val = parse_val_token(val_str);
-                    }
-                }
-            } else {
-                strncpy(tbl_name, trim(rest), sizeof(tbl_name) - 1);
-            }
-
-            EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
-            if (tbl) {
-                int c = enlngdb_count(tbl, filter_col[0] ? filter_col : NULL, op, &target_val);
-                enlng_free_val(&target_val);
-                if (print_output) {
-                    printf("+----------+\n");
-                    printf("| count(*) |\n");
-                    printf("+----------+\n");
-                    printf("| %-8d |\n", c);
-                    printf("+----------+\n");
-                    printf("1 row in set (0.01 ms)\n\n");
-                }
-                return true;
-            } else {
-                if (print_output) print_missing_table(db, tbl_name);
-                return false;
-            }
+        if (!adding) {
+            char del_stmt[256];
+            snprintf(del_stmt, sizeof(del_stmt), "delete column %s from %s", cname, tname);
+            return enlngdb_execute_statement(db, del_stmt, print_output);
         }
+        EnlngVal def = enlng_null();
+        if (q_take(&A, "as")) {
+            /* the kind (text, integer, real ...) is accepted; values keep the kind they are written in */
+            if (q_peek(&A, 0)->kind == QT_WORD) A.pos++;
+        }
+        if (q_take(&A, "default")) {
+            if (q_peek(&A, 0)->kind == QT_END) goto alter_usage;
+            def = parse_val_token(q_peek(&A, 0)->text);
+            A.pos++;
+        }
+        if (q_peek(&A, 0)->kind != QT_END) goto alter_usage;
+        EnlngTable* tbl = enlngdb_get_table(db, tname);
+        if (!tbl) {
+            enlng_free_val(&def);
+            if (print_output) print_missing_table(db, tname);
+            return false;
+        }
+        bool exists = false;
+        for (int c = 0; c < tbl->col_count; c++) exists = exists || strcmp(tbl->columns[c].name, cname) == 0;
+        bool added = !exists && enlngdb_add_column(tbl, cname, &def);
+        enlng_free_val(&def);
+        if (print_output) {
+            if (added) printf("Query OK, column '%s' added to table '%s'. (0.02 ms)\n\n", cname, tname);
+            else if (exists) printf("ERROR: Table '%s' already has a column called '%s'.\n\n", tname, cname);
+            else printf("ERROR: Table '%s' already has %d columns, the most a table can have.\n\n", tname, ENLNGDB_MAX_COLS);
+        }
+        return added;
+    alter_usage:
+        if (print_output) {
+            printf("ERROR: I don't understand this column change. Write it like:\n");
+            printf("         alter table student add column age as integer default 18\n");
+            printf("         add column age to student\n");
+            printf("         alter table student drop column age confirmed\n\n");
+        }
+        return false;
     }
 
     // delete table <name> confirmed: another way to say drop table

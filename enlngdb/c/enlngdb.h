@@ -92,6 +92,8 @@ EnlngTable* enlngdb_create_table(EnlngDatabase* db, const char* name, const Enln
 EnlngTable* enlngdb_get_table(EnlngDatabase* db, const char* name);
 bool enlngdb_drop_table(EnlngDatabase* db, const char* name, bool confirmed);
 bool enlngdb_delete_column(EnlngTable* table, const char* col_name);
+bool enlngdb_add_column(EnlngTable* table, const char* col_name, const EnlngVal* default_val);
+extern char enlngdb_last_insert_replaced[96];
 
 bool enlngdb_insert_row(EnlngTable* table, const EnlngVal* cells, int cell_count);
 EnlngQueryResult* enlngdb_find(EnlngTable* table, const char* filter_col, EnlngOp op, const EnlngVal* target_val, int limit, int offset);

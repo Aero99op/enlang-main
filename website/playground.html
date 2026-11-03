@@ -136,6 +136,7 @@
         <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_updates">✏️ In-Table Updates</button>
         <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_deletions">🛡️ Deletions & Guards</button>
         <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_filter">⚡ Filter & Sort</button>
+        <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_reports">📊 Totals & Joins</button>
       </div>
     </div>
 
@@ -265,7 +266,7 @@ Ready for execution.
         <div>
           <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 4px;">EnlngDB Queries & Filtering</div>
           <code style="color: var(--text-primary); font-weight: 600;">find all records from student;</code>
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Where clause: <code>where marks is greater than 80 order by marks desc;</code></div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Where clause: <code>where marks is greater than 80 or city is "Goa" order by marks desc;</code><br>Totals: <code>find city, avg(marks) from student group by city;</code></div>
         </div>
         <div>
           <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 4px;">EnlngDB Deletions & Guards</div>

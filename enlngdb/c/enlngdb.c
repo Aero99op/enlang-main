@@ -195,6 +195,28 @@ bool enlngdb_delete_column(EnlngTable* table, const char* col_name) {
     return true;
 }
 
+bool enlngdb_add_column(EnlngTable* table, const char* col_name, const EnlngVal* default_val) {
+    if (!table || !col_name || table->col_count >= ENLNGDB_MAX_COLS) return false;
+    for (int c = 0; c < table->col_count; c++) {
+        if (strcmp(table->columns[c].name, col_name) == 0) return false;
+    }
+    int idx = table->col_count++;
+    memset(&table->columns[idx], 0, sizeof(EnlngColumn));
+    strncpy(table->columns[idx].name, col_name, ENLNGDB_MAX_NAME - 1);
+    table->columns[idx].type = ENLNG_VAL_STRING;
+
+    for (size_t r = 0; r < table->row_count; r++) {
+        EnlngRow* row = &table->rows[r];
+        row->cells = (EnlngVal*)realloc(row->cells, table->col_count * sizeof(EnlngVal));
+        for (int c = row->cell_count; c < table->col_count; c++) row->cells[c] = enlng_null();
+        row->cells[idx] = default_val ? enlng_copy_val(default_val) : enlng_null();
+        row->cell_count = table->col_count;
+        row->version++;
+    }
+    table->version++;
+    return true;
+}
+
 static int str_ci_cmp(const char* s1, const char* s2) {
     if (!s1 && !s2) return 0;
     if (!s1) return -1;
@@ -258,11 +280,39 @@ int enlng_compare_vals(const EnlngVal* a, const EnlngVal* b) {
         return (a->bool_val ? 1 : 0) - (b->bool_val ? 1 : 0);
     }
 
-    return 0;
+    // A number and a text: "90" is the number 90; other text comes after every number
+    bool a_num = a->type == ENLNG_VAL_INT || a->type == ENLNG_VAL_DOUBLE;
+    bool b_num = b->type == ENLNG_VAL_INT || b->type == ENLNG_VAL_DOUBLE;
+    if ((a_num && b->type == ENLNG_VAL_STRING) || (b_num && a->type == ENLNG_VAL_STRING)) {
+        const EnlngVal* num = a_num ? a : b;
+        const char* s = a_num ? b->str_val : a->str_val;
+        double dn = num->type == ENLNG_VAL_DOUBLE ? num->double_val : (double)num->int_val;
+        char* end = NULL;
+        double ds = s ? strtod(s, &end) : 0;
+        int cmp;
+        if (s && *s && end && *end == '\0') cmp = fabs(dn - ds) < 1e-9 ? 0 : (dn < ds ? -1 : 1);
+        else cmp = -1;
+        return a_num ? cmp : -cmp;
+    }
+
+    // Different kinds otherwise: never equal, ordered by kind
+    return (int)a->type - (int)b->type;
 }
 #define compare_vals enlng_compare_vals
 
+/* After an insert: "" when a new row was added, else which key it replaced ("id 1") */
+char enlngdb_last_insert_replaced[96];
+
+static void val_to_text(const EnlngVal* v, char* buf, size_t n) {
+    if (v->type == ENLNG_VAL_INT) snprintf(buf, n, "%lld", (long long)v->int_val);
+    else if (v->type == ENLNG_VAL_DOUBLE) snprintf(buf, n, "%.2f", v->double_val);
+    else if (v->type == ENLNG_VAL_STRING) snprintf(buf, n, "\"%s\"", v->str_val ? v->str_val : "");
+    else if (v->type == ENLNG_VAL_BOOL) snprintf(buf, n, "%s", v->bool_val ? "true" : "false");
+    else snprintf(buf, n, "null");
+}
+
 bool enlngdb_insert_row(EnlngTable* table, const EnlngVal* cells, int cell_count) {
+    enlngdb_last_insert_replaced[0] = '\0';
     if (!table || !cells) return false;
 
     // Check if table has a primary key or unique identifier column for idempotent re-runs
@@ -286,15 +336,25 @@ bool enlngdb_insert_row(EnlngTable* table, const EnlngVal* cells, int cell_count
         }
     }
 
-    if (id_col_idx >= 0 && id_col_idx < cell_count) {
+    if (id_col_idx >= 0 && id_col_idx < cell_count && cells[id_col_idx].type != ENLNG_VAL_NULL) {
         for (size_t r = 0; r < table->row_count; r++) {
             if (id_col_idx < table->rows[r].cell_count) {
                 if (compare_vals(&table->rows[r].cells[id_col_idx], &cells[id_col_idx]) == 0) {
                     // Update existing row in place (upsert idempotency)
-                    for (int c = 0; c < cell_count && c < table->rows[r].cell_count; c++) {
-                        enlng_free_val(&table->rows[r].cells[c]);
-                        table->rows[r].cells[c] = enlng_copy_val(&cells[c]);
+                    EnlngRow* row = &table->rows[r];
+                    if (row->cell_count < cell_count) {
+                        row->cells = (EnlngVal*)realloc(row->cells, cell_count * sizeof(EnlngVal));
+                        for (int c = row->cell_count; c < cell_count; c++) row->cells[c] = enlng_null();
+                        row->cell_count = cell_count;
                     }
+                    for (int c = 0; c < cell_count; c++) {
+                        enlng_free_val(&row->cells[c]);
+                        row->cells[c] = enlng_copy_val(&cells[c]);
+                    }
+                    char key[64];
+                    val_to_text(&cells[id_col_idx], key, sizeof(key));
+                    snprintf(enlngdb_last_insert_replaced, sizeof(enlngdb_last_insert_replaced), "%s %s",
+                             table->columns[id_col_idx].name, key);
                     table->rows[r].version++;
                     table->version++;
                     return true;
@@ -574,6 +634,7 @@ void enlngdb_print_result(const EnlngQueryResult* res) {
                 else if (v->type == ENLNG_VAL_DOUBLE) snprintf(buf, sizeof(buf), "%.2f", v->double_val);
                 else if (v->type == ENLNG_VAL_STRING) snprintf(buf, sizeof(buf), "%s", v->str_val ? v->str_val : "");
                 else if (v->type == ENLNG_VAL_BOOL) snprintf(buf, sizeof(buf), "%s", v->bool_val ? "true" : "false");
+                else strcpy(buf, "null");
                 len = (int)strlen(buf);
                 if (len > col_widths[c]) col_widths[c] = len;
             }
