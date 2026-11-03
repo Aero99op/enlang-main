@@ -41,7 +41,7 @@
 7. [Aggregations, Analytics & Relational Joins](#7-aggregations-analytics--relational-joins)
    - 7.1 Top-Level Direct English Counting
    - 7.2 Built-in Aggregate Functions (`count`, `sum`, `avg`, `min`, `max`)
-   - 7.3 Multi-Table Relational Joins (`inner join`, `left join`, `right join`)
+   - 7.3 Multi-Table Relational Joins (`inner`, `left`, `right`, `full` and `cross` join, as words or as marks `- <- -> <-> *`, with or without `on`)
 8. [Data Modification & Purging (DML Mutations)](#8-data-modification--purging-dml-mutations)
    - 8.1 Conversational Record Updates (`update`, `change`, `modify`, `in <table> update set`)
    - 8.2 Safe Row Deletions (Filtered vs Unconstrained Purge)
@@ -506,18 +506,61 @@ select min(price), max(price) from products
 ---
 
 ### 7.3 Multi-Table Relational Joins
-EnlngDB supports relational joins using intuitive dot-notation syntax:
+A join puts the rows of two tables side by side. You write the kind of join, with a word or with a mark;
+the `on ...` part says which columns match, and can be left out when the names make it clear.
+
+| Join | Words | Mark | What you get |
+| :--- | :--- | :---: | :--- |
+| inner | `join`, `inner join` | `-` | only the rows that have a match in both tables |
+| left | `left join`, `left outer join` | `<-` | every row of the first table; `null` where the second has no match |
+| right | `right join`, `right outer join` | `->` | every row of the second table; `null` where the first has no match |
+| full | `full join`, `full outer join` | `<->` | every row of both tables |
+| cross | `cross join` | `*` | every row paired with every row (no `on`) |
+
+The words and the marks do the same thing, so use whichever reads better. A mark is a picture: the
+arrow points at the table whose rows all stay (`student <- fees` keeps every student, `student -> fees`
+keeps every fee, `<->` keeps both). A plain `-` has no arrow, so only the matches stay.
 
 ```enlngdb
-# Inner Join
-find users.full_name, orders.total from users 
-inner join orders on users.id is orders.user_id 
+# With 'on': say which columns match
+find users.full_name, orders.total from users
+inner join orders on users.id is orders.user_id
 where orders.total is greater than 1000
 
-# Left Outer Join
-select customers.name, invoices.amount from customers 
+select customers.name, invoices.amount from customers
 left join invoices on customers.id = invoices.customer_id
+
+# Without 'on': the columns are matched by their names
+find name, amount from student inner join fees        # student.id with fees.student_id
+find name, amount from student left join fees
+find name, amount from student right join fees
+find name, amount from student full join fees
+find name, title from student cross join book
+
+# The same joins, written with marks
+find name, amount from student - fees                 # inner
+find name, amount from student <- fees                # every student
+find name, amount from student -> fees                # every fee
+find name, amount from student <-> fees               # both
+find name, title from student * book                  # cross
+find name from student <- fees where amount is null   # students who have paid nothing
+
+# Three tables, and then the usual where / group by / order by / limit
+find name, sum(amount) from student left join fees group by name order by sum(amount) desc
+find name, amount, title from student join fees on id is student_id join book on student.id is book.student_id
 ```
+
+With three tables the tables before the new one can offer more than one way to match (`student.id` and
+`fees.student_id` both fit `book.student_id`). EnlngDB then says so and shows the `on` to pick.
+
+**How the columns are matched when `on` is left out.** One of these must give exactly one match:
+* a table's `id` with the other table's `<table>_id` (`student.id` with `fees.student_id`; a table named `students` also matches `student_id`)
+* a column with the same key-like name in both tables (a name ending in `_id`, `_no`, `_code` or `_key`, like `roll_no`)
+
+A shared `name` or `title` is never used, because it is not a key. If there is no match, or more than
+one, EnlngDB does not guess: it says so and shows the `on` to write.
+
+If two joined tables have a column with the same name, write it as `table.column`.
 
 ---
 

@@ -2059,8 +2059,9 @@ insert record into result with result_id 4, roll_no 103, subject "Maths", marks 
 
 select sum(marks), avg(marks), max(marks) from result
 find subject, count(*), avg(marks) from result group by subject
-find student.name, result.subject, result.marks from student join result on student.roll_no is result.roll_no where result.marks is at least 75 or result.subject is "Science"
-find name, avg(marks) from student join result on student.roll_no is result.roll_no group by name order by avg(marks) desc
+find student.name, result.subject, result.marks from student - result where result.marks is at least 75 or result.subject is "Science"
+-- every student, with the average if there is one (the arrow points at the table whose rows all stay)
+find name, avg(marks) from student <- result group by name order by avg(marks) desc
 select distinct city from student
 find top 2 records from result order by marks highest first`
   };
@@ -9841,6 +9842,11 @@ window.addEventListener('message', function(e) {
     { text: 'delete from', type: 'db', doc: 'EnlangDB DML: delete from <table> where <condition>' },
     { text: 'delete', type: 'db', doc: 'EnlangDB DML: delete from <table>' },
     { text: 'delete column', type: 'db', doc: 'EnlangDB DDL: delete column <col> from <table>' },
+    { text: 'inner join', type: 'db', doc: 'EnlangDB: <table> inner join <table> [on <col> is <col>] (or: <table> - <table>)' },
+    { text: 'left join', type: 'db', doc: 'EnlangDB: every row of the first table (or: <table> <- <table>)' },
+    { text: 'right join', type: 'db', doc: 'EnlangDB: every row of the second table (or: <table> -> <table>)' },
+    { text: 'full join', type: 'db', doc: 'EnlangDB: every row of both tables (or: <table> <-> <table>)' },
+    { text: 'cross join', type: 'db', doc: 'EnlangDB: every row with every row (or: <table> * <table>)' },
     { text: 'add column', type: 'db', doc: 'EnlangDB DDL: add column <col> to <table> [default <val>]' },
     { text: 'alter table', type: 'db', doc: 'EnlangDB DDL: alter table <table> add column <col>' },
     { text: 'insert into', type: 'db', doc: 'EnlangDB DML: insert into <table> with col1 val1, col2 val2' },

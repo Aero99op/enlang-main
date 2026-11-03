@@ -489,8 +489,9 @@ insert record into result with result_id 4, roll_no 103, subject "Maths", marks 
 
 select sum(marks), avg(marks), max(marks) from result
 find subject, count(*), avg(marks) from result group by subject
-find student.name, result.subject, result.marks from student join result on student.roll_no is result.roll_no where result.marks is at least 75 or result.subject is "Science"
-find name, avg(marks) from student join result on student.roll_no is result.roll_no group by name order by avg(marks) desc
+find student.name, result.subject, result.marks from student - result where result.marks is at least 75 or result.subject is "Science"
+-- every student, with the average if there is one (the arrow points at the table whose rows all stay)
+find name, avg(marks) from student <- result group by name order by avg(marks) desc
 select distinct city from student
 find top 2 records from result order by marks highest first`
 };

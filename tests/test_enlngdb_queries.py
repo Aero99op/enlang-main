@@ -65,6 +65,10 @@ SETUP = (
     'insert into fees with fee_id 10, student_id 1, amount 500\n'
     'insert into fees with fee_id 11, student_id 1, amount 300\n'
     'insert into fees with fee_id 12, student_id 2, amount 900\n'
+    'insert into fees with fee_id 13, student_id 9, amount 100\n'
+    'create table book with book_id, student_id, title\n'
+    'insert into book with book_id 1, student_id 1, title "Maths"\n'
+    'create table note with note_text\n'
 )
 
 
@@ -145,6 +149,49 @@ def main():
 
         out = run(exe, tmp, 'find records from student where name is 5\n')
         check("a number is not equal to a name", len(rows(out)) == 1, out)
+
+        # the five joins, each written as words and as marks: the same rows either way
+        spellings = {
+            "inner": (["-", "join", "inner join"], 3),
+            "left": (["<-", "left join", "left outer join"], 5),
+            "right": (["->", "right join", "right outer join"], 4),
+            "full": (["<->", "full join", "full outer join"], 6),
+            "cross": (["*", "cross join"], 16),
+        }
+        for kind, (forms, count) in spellings.items():
+            results = [rows(run(exe, tmp, "find name, amount from student %s fees\n" % f)) for f in forms]
+            check("%s join: %d rows" % (kind, count), len(results[0]) - 1 == count, results[0])
+            check("%s join: %s all give the same rows" % (kind, " / ".join(forms)), all(r == results[0] for r in results), results)
+
+        out = run(exe, tmp, "find name, amount from student <- fees\n")
+        check("<- keeps every student", ["Meera", "null"] in rows(out) and ["Karan", "null"] in rows(out), out)
+        out = run(exe, tmp, "find name, amount from student -> fees\n")
+        check("-> keeps every fee", ["null", "100"] in rows(out) and ["Meera", "null"] not in rows(out), out)
+        out = run(exe, tmp, "find name, amount from student<-fees\n")
+        check("marks need no spaces", len(rows(out)) == 6, out)
+
+        out = run(exe, tmp, "find name from student <- fees where amount is null\n")
+        check("students with no fees", rows(out) == [["name"], ["Meera"], ["Karan"]], out)
+        out = run(exe, tmp, "find name, sum(amount) from student <- fees group by name order by sum(amount) desc\n")
+        check("a join with group by and order by", rows(out)[1] == ["Ravi", "900"] and len(rows(out)) == 5, out)
+        out = run(exe, tmp, "please find name from the student <- the fees where amount is null\n")
+        check("silent words: please, the", rows(out) == [["name"], ["Meera"], ["Karan"]], out)
+        out = run(exe, tmp, "find name from student where id is -5\n")
+        check("a negative number is still a number", rows(out) == [["name"]] and "ERROR" not in out, out)
+
+        # without 'on' the key columns are found by their names
+        out = run(exe, tmp, "find fee_id, title from fees - book\n")
+        check("same key name in both tables", rows(out) == [["fee_id", "title"], ["10", "Maths"], ["11", "Maths"]], out)
+        out = run(exe, tmp, "find name, amount from student - fees on student.id is fees.student_id\n")
+        check("'on' still works with a mark", len(rows(out)) == 4, out)
+        out = run(exe, tmp, "find name, title from student - note\n")
+        check("no key to match: it says so and does not guess", "will not guess" in out and "on " in out, out)
+        out = run(exe, tmp, "find name, amount, title from student - fees - book\n")
+        check("two ways to match: it says so and shows the 'on'", "more than one way" in out and "student.id is book.student_id" in out, out)
+        out = run(exe, tmp, "find name, amount, title from student - fees - book on student.id is book.student_id\n")
+        check("three tables with 'on'", rows(out) == [["name", "amount", "title"], ["Asha", "500", "Maths"], ["Asha", "300", "Maths"]], out)
+        out = run(exe, tmp, "find name from student * fees on id is student_id\n")
+        check("a cross join has no 'on'", "no 'on'" in out, out)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print(f"\n{passed} passed, {failed} failed")

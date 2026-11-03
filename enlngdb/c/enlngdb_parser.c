@@ -205,6 +205,26 @@ static void q_lex(QLex* L, const char* s) {
         } else if (strchr("(),", *s)) {
             t->kind = QT_SYM;
             t->text[k++] = *s++;
+        } else if (s[0] == '<' && s[1] == '-' && s[2] == '>') {
+            /* join marks: <-> both tables whole, <- the first whole, -> the second whole, - matches only */
+            t->kind = QT_SYM;
+            memcpy(t->text, "<->", 3);
+            k = 3;
+            s += 3;
+        } else if (s[0] == '<' && s[1] == '-' && !isdigit((unsigned char)s[2]) && s[2] != '.') {
+            t->kind = QT_SYM;
+            memcpy(t->text, "<-", 2);
+            k = 2;
+            s += 2;
+        } else if (s[0] == '-' && s[1] == '>') {
+            t->kind = QT_SYM;
+            memcpy(t->text, "->", 2);
+            k = 2;
+            s += 2;
+        } else if (s[0] == '-' && !isdigit((unsigned char)s[1]) && s[1] != '.') {
+            /* a lone '-' is a join mark; -5 stays a number */
+            t->kind = QT_SYM;
+            t->text[k++] = *s++;
         } else if (strchr("=<>!", *s)) {
             t->kind = QT_SYM;
             t->text[k++] = *s++;
@@ -532,6 +552,106 @@ static bool q_rows_same(const EnlngVal* a, const EnlngVal* b, int n) {
     return true;
 }
 
+/* ---- Joins ---------------------------------------------------------------
+ *   join, inner join      only the rows that match                         -
+ *   left join             every row of the first table                     <-
+ *   right join            every row of the table after the join word       ->
+ *   full join             every row of both                                <->
+ *   cross join            every row with every row (no 'on')               *
+ * "left outer join" and so on are the same. The marks on the right are the other way to write them:
+ * the arrow points at the table whose rows all stay.
+ */
+typedef enum { JK_INNER, JK_LEFT, JK_RIGHT, JK_FULL, JK_CROSS } JoinKind;
+
+static bool q_take_join(QLex* L, JoinKind* kind) {
+    static const struct { const char* word; JoinKind kind; bool outer_ok; } words[] = {
+        {"inner", JK_INNER, false}, {"left", JK_LEFT, true}, {"right", JK_RIGHT, true},
+        {"full", JK_FULL, true}, {"cross", JK_CROSS, false}, {NULL, JK_INNER, false}
+    };
+    static const struct { const char* mark; JoinKind kind; } marks[] = {
+        {"<->", JK_FULL}, {"<-", JK_LEFT}, {"->", JK_RIGHT}, {"-", JK_INNER}, {"*", JK_CROSS}, {NULL, JK_INNER}
+    };
+    if (q_take(L, "join")) { *kind = JK_INNER; return true; }
+    for (int i = 0; words[i].word; i++) {
+        if (!q_is(L, 0, words[i].word)) continue;
+        if (q_is(L, 1, "join")) { L->pos += 2; *kind = words[i].kind; return true; }
+        if (words[i].outer_ok && q_is(L, 1, "outer") && q_is(L, 2, "join")) { L->pos += 3; *kind = words[i].kind; return true; }
+    }
+    for (int i = 0; marks[i].mark; i++) {
+        if (q_is(L, 0, marks[i].mark)) { L->pos++; *kind = marks[i].kind; return true; }
+    }
+    return false;
+}
+
+/* "the" and "a" before a table name are skipped */
+static void q_skip_silent(QLex* L) {
+    while ((q_is(L, 0, "the") || q_is(L, 0, "a") || q_is(L, 0, "an")) && q_peek(L, 1)->kind == QT_WORD) L->pos++;
+}
+
+/* col is "<table>_id" (a table called students also has student_id) */
+static bool q_key_for(const char* table, const char* col) {
+    char want[140];
+    snprintf(want, sizeof(want), "%s_id", table);
+    if (str_ci_cmp(col, want) == 0) return true;
+    size_t n = strlen(table);
+    if (n > 1 && tolower((unsigned char)table[n - 1]) == 's') {
+        snprintf(want, sizeof(want), "%.*s_id", (int)(n - 1), table);
+        return str_ci_cmp(col, want) == 0;
+    }
+    return false;
+}
+
+/* a name that is a key: roll_no, user_id, zip_code, api_key. 'name' and 'title' are not */
+static bool q_key_like(const char* col) {
+    static const char* ends[] = {"_id", "_no", "_code", "_key", NULL};
+    size_t n = strlen(col);
+    for (int i = 0; ends[i]; i++) {
+        size_t e = strlen(ends[i]);
+        if (n > e && str_ci_cmp(col + n - e, ends[i]) == 0) return true;
+    }
+    return false;
+}
+
+typedef struct { char l[130], r[130]; } QPair;
+
+/* The columns that can be matched when a join has no 'on': a table's id with the other's <table>_id,
+ * or the same key-like name in both. Returns how many ways there are. */
+static int q_guess_on(const QSet* S, const EnlngTable* t2, QPair* out, int max) {
+    int n = 0;
+    for (int c = 0; c < S->ncols; c++) {
+        const char* full = S->names[c];
+        const char* dot = strchr(full, '.');
+        char tbl[64];
+        snprintf(tbl, sizeof(tbl), "%.*s", dot ? (int)(dot - full) : 0, full);
+        const char* col = dot ? dot + 1 : full;
+        for (int d = 0; d < t2->col_count; d++) {
+            const char* col2 = t2->columns[d].name;
+            bool hit = (str_ci_cmp(col, "id") == 0 && q_key_for(tbl, col2)) ||
+                       (str_ci_cmp(col2, "id") == 0 && q_key_for(t2->name, col)) ||
+                       (str_ci_cmp(col, col2) == 0 && q_key_like(col));
+            if (!hit) continue;
+            if (n < max) {
+                snprintf(out[n].l, sizeof(out[n].l), "%s", full);
+                snprintf(out[n].r, sizeof(out[n].r), "%s.%s", t2->name, col2);
+            }
+            n++;
+        }
+    }
+    return n;
+}
+
+static void q_guess_error(char* err, size_t n, const QSet* S, const EnlngTable* t2, const QPair* pairs, int count) {
+    if (count == 0) {
+        snprintf(err, n, "I can't tell which columns of %s match the tables before it, so I will not guess. "
+                         "Write it with 'on', like: on %s is %s.%s",
+                 t2->name, S->ncols ? S->names[0] : "a_column", t2->name, t2->col_count ? t2->columns[0].name : "a_column");
+        return;
+    }
+    size_t k = (size_t)snprintf(err, n, "there is more than one way to match %s, so I will not guess:", t2->name);
+    for (int i = 0; i < count && i < 3 && k < n; i++) k += (size_t)snprintf(err + k, n - k, " %s is %s;", pairs[i].l, pairs[i].r);
+    if (k < n) snprintf(err + k, n - k, " pick one with 'on', like: on %s is %s", pairs[0].l, pairs[0].r);
+}
+
 static bool q_fail(QLex* L, bool print_output) {
     if (print_output) printf("ERROR: %s.\n\n", L->err);
     return false;
@@ -628,6 +748,7 @@ static bool run_query(EnlngDatabase* db, const char* stmt, bool print_output) {
     }
     if (!tbl_name[0]) {
         if (!(q_take(&L, "from") || q_take(&L, "in"))) { snprintf(L.err, sizeof(L.err), "expected 'from <table>'"); return q_fail(&L, print_output); }
+        q_skip_silent(&L);
         QTok* t = q_peek(&L, 0);
         if (t->kind != QT_WORD && t->kind != QT_STR) { snprintf(L.err, sizeof(L.err), "expected a table name after 'from'"); return q_fail(&L, print_output); }
         EnlngVal nv = parse_val_token(t->text);
@@ -656,52 +777,78 @@ static bool run_query(EnlngDatabase* db, const char* stmt, bool print_output) {
     int njoins = 0;
     q_load_table(&S, tbl);
 
-    /* joins */
-    while (q_is(&L, 0, "join") || q_is(&L, 0, "inner") || q_is(&L, 0, "left")) {
-        bool left = q_take(&L, "left");
-        q_take(&L, "inner");
-        q_take(&L, "outer");
-        if (!q_take(&L, "join")) { snprintf(err, sizeof(err), "expected 'join <table> on ...'"); goto done; }
+    /* joins: join / inner|left|right|full|cross join, or the marks - <- -> <-> * */
+    JoinKind jk;
+    while (q_take_join(&L, &jk)) {
+        q_skip_silent(&L);
         QTok* t = q_peek(&L, 0);
-        EnlngTable* t2 = t->kind == QT_WORD ? enlngdb_get_table(db, t->text) : NULL;
+        if (t->kind != QT_WORD) { snprintf(err, sizeof(err), "a join needs the name of a table after it"); goto done; }
+        EnlngTable* t2 = enlngdb_get_table(db, t->text);
         if (!t2) {
             if (print_output) print_missing_table(db, t->text);
             goto done_quiet;
         }
         L.pos++;
-        if (!q_take(&L, "on")) { snprintf(err, sizeof(err), "a join needs 'on', like: join %s on %s.id is %s.%s_id", t2->name, tbl->name, t2->name, tbl->name); goto done; }
-        int on_root = q_parse_or(&L, &P);
-        if (on_root < 0) { snprintf(err, sizeof(err), "%s", L.err); goto done; }
+        if (S.ncols + t2->col_count > Q_MAX_COLS) { snprintf(err, sizeof(err), "the joined tables have more than %d columns", Q_MAX_COLS); goto done; }
+
+        /* how the rows match: 'on ...', or the key columns by their names; none for a cross join */
+        int on_root = -1;
+        if (jk == JK_CROSS) {
+            if (q_is(&L, 0, "on")) { snprintf(err, sizeof(err), "a cross join pairs every row with every row, so it has no 'on'"); goto done; }
+        } else if (q_take(&L, "on")) {
+            on_root = q_parse_or(&L, &P);
+            if (on_root < 0) { snprintf(err, sizeof(err), "%s", L.err); goto done; }
+        } else {
+            QPair pairs[4];
+            int ways = q_guess_on(&S, t2, pairs, 4);
+            if (ways != 1) { q_guess_error(err, sizeof(err), &S, t2, pairs, ways > 4 ? 4 : ways); goto done; }
+            on_root = q_join_conds(&L, &P, 0, 0, 0);
+            if (on_root < 0) { snprintf(err, sizeof(err), "%s", L.err); goto done; }
+            P.c[on_root].op = OP_EQ;
+            snprintf(P.c[on_root].col, sizeof(P.c[on_root].col), "%s", pairs[0].l);
+            snprintf(P.c[on_root].rword, sizeof(P.c[on_root].rword), "%s", pairs[0].r);
+        }
 
         static QSet B, J;
         memset(&B, 0, sizeof(B));
         q_load_table(&B, t2);
         memset(&J, 0, sizeof(J));
         J.ncols = S.ncols + B.ncols;
-        if (J.ncols > Q_MAX_COLS) { q_set_free(&B); snprintf(err, sizeof(err), "the joined tables have more than %d columns", Q_MAX_COLS); goto done; }
         for (int c = 0; c < S.ncols; c++) strcpy(J.names[c], S.names[c]);
         for (int c = 0; c < B.ncols; c++) strcpy(J.names[S.ncols + c], B.names[c]);
-        if (!q_bind(&P, on_root, &J, true, err, sizeof(err))) { q_set_free(&B); goto done; }
+        if (on_root >= 0 && !q_bind(&P, on_root, &J, true, err, sizeof(err))) { q_set_free(&B); goto done; }
 
+        bool* b_hit = (bool*)calloc(B.nrows + 1, sizeof(bool));
         EnlngVal* both = (EnlngVal*)malloc(J.ncols * sizeof(EnlngVal));
         for (size_t a = 0; a < S.nrows; a++) {
             bool matched = false;
             for (size_t b = 0; b < B.nrows; b++) {
                 memcpy(both, S.rows[a], S.ncols * sizeof(EnlngVal));
                 memcpy(both + S.ncols, B.rows[b], B.ncols * sizeof(EnlngVal));
-                if (!q_eval(&P, on_root, both)) continue;
+                if (on_root >= 0 && !q_eval(&P, on_root, both)) continue;
                 matched = true;
+                b_hit[b] = true;
                 EnlngVal* row = (EnlngVal*)malloc(J.ncols * sizeof(EnlngVal));
                 for (int c = 0; c < J.ncols; c++) row[c] = enlng_copy_val(&both[c]);
                 q_set_add(&J, row);
             }
-            if (!matched && left) {
+            if (!matched && (jk == JK_LEFT || jk == JK_FULL)) {
                 EnlngVal* row = (EnlngVal*)malloc(J.ncols * sizeof(EnlngVal));
                 for (int c = 0; c < S.ncols; c++) row[c] = enlng_copy_val(&S.rows[a][c]);
                 for (int c = S.ncols; c < J.ncols; c++) row[c] = enlng_null();
                 q_set_add(&J, row);
             }
         }
+        if (jk == JK_RIGHT || jk == JK_FULL) {
+            for (size_t b = 0; b < B.nrows; b++) {
+                if (b_hit[b]) continue;
+                EnlngVal* row = (EnlngVal*)malloc(J.ncols * sizeof(EnlngVal));
+                for (int c = 0; c < S.ncols; c++) row[c] = enlng_null();
+                for (int c = 0; c < B.ncols; c++) row[S.ncols + c] = enlng_copy_val(&B.rows[b][c]);
+                q_set_add(&J, row);
+            }
+        }
+        free(b_hit);
         free(both);
         q_set_free(&B);
         q_set_free(&S);
@@ -751,7 +898,7 @@ static bool run_query(EnlngDatabase* db, const char* stmt, bool print_output) {
             offset = atol(t->text);
             L.pos++;
         } else {
-            snprintf(err, sizeof(err), "I don't understand '%s' here. After the table can come: join, where, group by, order by, limit, offset", q_peek(&L, 0)->text);
+            snprintf(err, sizeof(err), "I don't understand '%s' here. After the table can come: a join (inner, left, right, full or cross join; or the marks - <- -> <-> *), where, group by, order by, limit, offset", q_peek(&L, 0)->text);
             goto done;
         }
     }
@@ -945,6 +1092,8 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         stmt[--slen] = '\0';
     }
     stmt = trim(stmt);
+    // "please find ..." / "kindly find ...": the polite word is skipped
+    while (str_starts_with_ci(stmt, "please ") || str_starts_with_ci(stmt, "kindly ")) stmt = trim(stmt + 7);
     if (strlen(stmt) == 0) return true;
 
     // 0. type enlngdb / type enlgdb
