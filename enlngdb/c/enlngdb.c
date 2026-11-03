@@ -92,19 +92,77 @@ EnlngDatabase* enlngdb_create(const char* name) {
     return db;
 }
 
+void enlngdb_free_rows(EnlngTable* tbl) {
+    for (size_t r = 0; r < tbl->row_count; r++) {
+        for (int c = 0; c < tbl->rows[r].cell_count; c++) {
+            enlng_free_val(&tbl->rows[r].cells[c]);
+        }
+        free(tbl->rows[r].cells);
+    }
+    free(tbl->rows);
+    tbl->rows = NULL;
+    tbl->row_count = 0;
+    tbl->row_capacity = 0;
+}
+
+void enlngdb_clear(EnlngDatabase* db) {
+    if (!db) return;
+    for (int t = 0; t < db->table_count; t++) enlngdb_free_rows(&db->tables[t]);
+    db->table_count = 0;
+}
+
 void enlngdb_free(EnlngDatabase* db) {
     if (!db) return;
-    for (int t = 0; t < db->table_count; t++) {
-        EnlngTable* tbl = &db->tables[t];
-        for (size_t r = 0; r < tbl->row_count; r++) {
-            for (int c = 0; c < tbl->rows[r].cell_count; c++) {
-                enlng_free_val(&tbl->rows[r].cells[c]);
-            }
-            free(tbl->rows[r].cells);
-        }
-        free(tbl->rows);
+    if (db->txn) {
+        enlngdb_free(db->txn);
+        db->txn = NULL;
     }
+    enlngdb_clear(db);
     free(db);
+}
+
+/* A whole copy of the database, rows included: what 'begin' keeps so 'rollback' can go back to it */
+static EnlngDatabase* copy_database(const EnlngDatabase* db) {
+    EnlngDatabase* c = (EnlngDatabase*)calloc(1, sizeof(EnlngDatabase));
+    if (!c) return NULL;
+    memcpy(c, db, sizeof(EnlngDatabase));
+    c->txn = NULL;
+    for (int t = 0; t < db->table_count; t++) {
+        const EnlngTable* src = &db->tables[t];
+        EnlngTable* dst = &c->tables[t];
+        dst->rows = NULL;
+        dst->row_count = 0;
+        dst->row_capacity = 0;
+        for (size_t r = 0; r < src->row_count; r++) {
+            enlngdb_append_row(dst, src->rows[r].cells, src->rows[r].cell_count);
+        }
+    }
+    return c;
+}
+
+bool enlngdb_begin(EnlngDatabase* db) {
+    if (!db || db->txn) return false;
+    db->txn = copy_database(db);
+    return db->txn != NULL;
+}
+
+bool enlngdb_commit(EnlngDatabase* db) {
+    if (!db || !db->txn) return false;
+    enlngdb_free(db->txn);
+    db->txn = NULL;
+    return true;
+}
+
+bool enlngdb_rollback(EnlngDatabase* db) {
+    if (!db || !db->txn) return false;
+    EnlngDatabase* saved = db->txn;
+    db->txn = NULL;
+    enlngdb_clear(db);
+    memcpy(db->tables, saved->tables, sizeof(saved->tables));
+    db->table_count = saved->table_count;
+    saved->table_count = 0;   /* its rows now belong to db */
+    free(saved);
+    return true;
 }
 
 EnlngTable* enlngdb_create_table(EnlngDatabase* db, const char* name, const EnlngColumn* cols, int col_count) {
@@ -189,8 +247,49 @@ bool enlngdb_delete_column(EnlngTable* table, const char* col_name) {
     }
     for (int c = idx; c < table->col_count - 1; c++) {
         table->columns[c] = table->columns[c + 1];
+        table->auto_next[c] = table->auto_next[c + 1];
     }
     table->col_count--;
+    for (int i = 0; i < table->index_count; i++) {
+        for (int k = 0; k < table->indexes[i].col_count; k++) {
+            if (strcmp(table->indexes[i].cols[k], col_name) == 0) {
+                for (int j = i; j < table->index_count - 1; j++) table->indexes[j] = table->indexes[j + 1];
+                table->index_count--;
+                i--;
+                break;
+            }
+        }
+    }
+    table->version++;
+    return true;
+}
+
+bool enlngdb_rename_table(EnlngDatabase* db, const char* from, const char* to) {
+    EnlngTable* t = enlngdb_get_table(db, from);
+    if (!t || enlngdb_get_table(db, to) || strlen(to) >= ENLNGDB_MAX_NAME) return false;
+    strcpy(t->name, to);
+    for (int i = 0; i < db->table_count; i++) {
+        for (int c = 0; c < db->tables[i].col_count; c++) {
+            if (strcmp(db->tables[i].columns[c].ref_table, from) == 0) strcpy(db->tables[i].columns[c].ref_table, to);
+        }
+    }
+    t->version++;
+    return true;
+}
+
+bool enlngdb_rename_column(EnlngTable* table, const char* from, const char* to) {
+    int idx = -1;
+    for (int c = 0; c < table->col_count; c++) {
+        if (strcmp(table->columns[c].name, to) == 0) return false;
+        if (strcmp(table->columns[c].name, from) == 0) idx = c;
+    }
+    if (idx < 0 || strlen(to) >= ENLNGDB_MAX_NAME) return false;
+    strcpy(table->columns[idx].name, to);
+    for (int i = 0; i < table->index_count; i++) {
+        for (int k = 0; k < table->indexes[i].col_count; k++) {
+            if (strcmp(table->indexes[i].cols[k], from) == 0) strcpy(table->indexes[i].cols[k], to);
+        }
+    }
     table->version++;
     return true;
 }
@@ -303,66 +402,9 @@ int enlng_compare_vals(const EnlngVal* a, const EnlngVal* b) {
 /* After an insert: "" when a new row was added, else which key it replaced ("id 1") */
 char enlngdb_last_insert_replaced[96];
 
-static void val_to_text(const EnlngVal* v, char* buf, size_t n) {
-    if (v->type == ENLNG_VAL_INT) snprintf(buf, n, "%lld", (long long)v->int_val);
-    else if (v->type == ENLNG_VAL_DOUBLE) snprintf(buf, n, "%.2f", v->double_val);
-    else if (v->type == ENLNG_VAL_STRING) snprintf(buf, n, "\"%s\"", v->str_val ? v->str_val : "");
-    else if (v->type == ENLNG_VAL_BOOL) snprintf(buf, n, "%s", v->bool_val ? "true" : "false");
-    else snprintf(buf, n, "null");
-}
-
-bool enlngdb_insert_row(EnlngTable* table, const EnlngVal* cells, int cell_count) {
-    enlngdb_last_insert_replaced[0] = '\0';
+/* Adds a row at the end. Which rows count as the same, and what a column allows, is decided by the caller. */
+bool enlngdb_append_row(EnlngTable* table, const EnlngVal* cells, int cell_count) {
     if (!table || !cells) return false;
-
-    // Check if table has a primary key or unique identifier column for idempotent re-runs
-    int id_col_idx = -1;
-    for (int c = 0; c < table->col_count; c++) {
-        if (table->columns[c].is_primary_key ||
-            str_ci_cmp(table->columns[c].name, "id") == 0 ||
-            str_ci_cmp(table->columns[c].name, "code") == 0 ||
-            str_ci_cmp(table->columns[c].name, "key") == 0) {
-            id_col_idx = c;
-            break;
-        }
-    }
-    if (id_col_idx < 0) {
-        for (int c = 0; c < table->col_count; c++) {
-            size_t nlen = strlen(table->columns[c].name);
-            if (nlen > 3 && str_ci_cmp(table->columns[c].name + nlen - 3, "_id") == 0) {
-                id_col_idx = c;
-                break;
-            }
-        }
-    }
-
-    if (id_col_idx >= 0 && id_col_idx < cell_count && cells[id_col_idx].type != ENLNG_VAL_NULL) {
-        for (size_t r = 0; r < table->row_count; r++) {
-            if (id_col_idx < table->rows[r].cell_count) {
-                if (compare_vals(&table->rows[r].cells[id_col_idx], &cells[id_col_idx]) == 0) {
-                    // Update existing row in place (upsert idempotency)
-                    EnlngRow* row = &table->rows[r];
-                    if (row->cell_count < cell_count) {
-                        row->cells = (EnlngVal*)realloc(row->cells, cell_count * sizeof(EnlngVal));
-                        for (int c = row->cell_count; c < cell_count; c++) row->cells[c] = enlng_null();
-                        row->cell_count = cell_count;
-                    }
-                    for (int c = 0; c < cell_count; c++) {
-                        enlng_free_val(&row->cells[c]);
-                        row->cells[c] = enlng_copy_val(&cells[c]);
-                    }
-                    char key[64];
-                    val_to_text(&cells[id_col_idx], key, sizeof(key));
-                    snprintf(enlngdb_last_insert_replaced, sizeof(enlngdb_last_insert_replaced), "%s %s",
-                             table->columns[id_col_idx].name, key);
-                    table->rows[r].version++;
-                    table->version++;
-                    return true;
-                }
-            }
-        }
-    }
-
     if (table->row_count >= table->row_capacity) {
         size_t new_cap = table->row_capacity == 0 ? 16 : table->row_capacity * 2;
         EnlngRow* new_rows = (EnlngRow*)realloc(table->rows, new_cap * sizeof(EnlngRow));
@@ -370,19 +412,21 @@ bool enlngdb_insert_row(EnlngTable* table, const EnlngVal* cells, int cell_count
         table->rows = new_rows;
         table->row_capacity = new_cap;
     }
-
     EnlngRow* target_row = &table->rows[table->row_count];
     target_row->cell_count = cell_count;
     target_row->version = 1;
-    target_row->cells = (EnlngVal*)malloc(cell_count * sizeof(EnlngVal));
-
+    target_row->cells = (EnlngVal*)malloc((cell_count ? cell_count : 1) * sizeof(EnlngVal));
     for (int i = 0; i < cell_count; i++) {
         target_row->cells[i] = enlng_copy_val(&cells[i]);
     }
-
     table->row_count++;
     table->version++;
     return true;
+}
+
+bool enlngdb_insert_row(EnlngTable* table, const EnlngVal* cells, int cell_count) {
+    enlngdb_last_insert_replaced[0] = '\0';
+    return enlngdb_append_row(table, cells, cell_count);
 }
 
 #define compare_vals enlng_compare_vals
@@ -705,44 +749,124 @@ void enlngdb_print_tables(const EnlngDatabase* db) {
     printf("%d table(s) in set (0.01 ms)\n\n", db->table_count);
 }
 
-/* Binary persistence: fast zero-copy disk serialization */
+/* Binary persistence. Version 2 writes every field by itself (no struct padding in the file);
+ * version 1 files, from before column types, are still read. */
+typedef struct {
+    char name[ENLNGDB_MAX_NAME];
+    EnlngValType type;
+    bool is_primary_key;
+    bool is_unique;
+} ColumnV1;
+
+static void put_text(FILE* f, const char* s) {
+    uint32_t len = (uint32_t)strlen(s);
+    fwrite(&len, sizeof(uint32_t), 1, f);
+    if (len > 0) fwrite(s, 1, len, f);
+}
+
+static bool get_text(FILE* f, char* out, size_t cap) {
+    uint32_t len = 0;
+    if (fread(&len, sizeof(uint32_t), 1, f) != 1) return false;
+    size_t keep = len < cap - 1 ? len : cap - 1;
+    if (len > 0) {
+        char* tmp = (char*)malloc(len);
+        if (!tmp || fread(tmp, 1, len, f) != len) { free(tmp); return false; }
+        memcpy(out, tmp, keep);
+        free(tmp);
+    }
+    out[keep] = '\0';
+    return true;
+}
+
+static void put_val(FILE* f, const EnlngVal* v) {
+    uint8_t type_byte = (uint8_t)v->type;
+    fwrite(&type_byte, 1, 1, f);
+    if (v->type == ENLNG_VAL_INT) {
+        fwrite(&v->int_val, sizeof(int64_t), 1, f);
+    } else if (v->type == ENLNG_VAL_DOUBLE) {
+        fwrite(&v->double_val, sizeof(double), 1, f);
+    } else if (v->type == ENLNG_VAL_BOOL) {
+        uint8_t b = v->bool_val ? 1 : 0;
+        fwrite(&b, 1, 1, f);
+    } else if (v->type == ENLNG_VAL_STRING) {
+        uint32_t len = v->str_val ? (uint32_t)strlen(v->str_val) : 0;
+        fwrite(&len, sizeof(uint32_t), 1, f);
+        if (len > 0) fwrite(v->str_val, 1, len, f);
+    }
+}
+
+static bool get_val(FILE* f, EnlngVal* v) {
+    uint8_t type_byte = 0;
+    if (fread(&type_byte, 1, 1, f) != 1) return false;
+    v->type = (EnlngValType)type_byte;
+    if (v->type == ENLNG_VAL_INT) {
+        return fread(&v->int_val, sizeof(int64_t), 1, f) == 1;
+    } else if (v->type == ENLNG_VAL_DOUBLE) {
+        return fread(&v->double_val, sizeof(double), 1, f) == 1;
+    } else if (v->type == ENLNG_VAL_BOOL) {
+        uint8_t b = 0;
+        if (fread(&b, 1, 1, f) != 1) return false;
+        v->bool_val = (b != 0);
+        return true;
+    } else if (v->type == ENLNG_VAL_STRING) {
+        uint32_t len = 0;
+        if (fread(&len, sizeof(uint32_t), 1, f) != 1) return false;
+        char* s = (char*)malloc((size_t)len + 1);
+        if (len > 0 && fread(s, 1, len, f) != len) { free(s); v->type = ENLNG_VAL_NULL; return false; }
+        s[len] = '\0';
+        v->str_val = s;
+        return true;
+    }
+    v->type = ENLNG_VAL_NULL;
+    v->int_val = 0;
+    return true;
+}
+
 bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
     if (!db || !filepath) return false;
     FILE* f = fopen(filepath, "wb");
     if (!f) return false;
 
-    // Header
-    fwrite(ENLNGDB_MAGIC, 1, 16, f);
+    int saved_tables = 0;
+    for (int t = 0; t < db->table_count; t++) if (!db->tables[t].is_temp) saved_tables++;
+
+    char magic[16] = {0};
+    memcpy(magic, ENLNGDB_MAGIC, 14);
+    fwrite(magic, 1, 16, f);
     fwrite(db->name, 1, ENLNGDB_MAX_NAME, f);
-    fwrite(&db->table_count, sizeof(int), 1, f);
+    fwrite(&saved_tables, sizeof(int), 1, f);
 
     for (int t = 0; t < db->table_count; t++) {
         const EnlngTable* tbl = &db->tables[t];
+        if (tbl->is_temp) continue;
         fwrite(tbl->name, 1, ENLNGDB_MAX_NAME, f);
+        put_text(f, tbl->view_sql);
         fwrite(&tbl->col_count, sizeof(int), 1, f);
-        fwrite(tbl->columns, sizeof(EnlngColumn), tbl->col_count, f);
+        for (int c = 0; c < tbl->col_count; c++) {
+            const EnlngColumn* col = &tbl->columns[c];
+            fwrite(col->name, 1, ENLNGDB_MAX_NAME, f);
+            uint8_t flags[5] = { col->kind, col->is_primary_key, col->is_unique, col->not_null, col->is_auto };
+            fwrite(flags, 1, 5, f);
+            put_text(f, col->default_text);
+            put_text(f, col->check_text);
+            put_text(f, col->ref_table);
+            put_text(f, col->ref_col);
+            fwrite(&tbl->auto_next[c], sizeof(int64_t), 1, f);
+        }
+        fwrite(&tbl->index_count, sizeof(int), 1, f);
+        for (int i = 0; i < tbl->index_count; i++) {
+            const EnlngIndex* ix = &tbl->indexes[i];
+            put_text(f, ix->name);
+            uint8_t u = ix->is_unique;
+            fwrite(&u, 1, 1, f);
+            fwrite(&ix->col_count, sizeof(int), 1, f);
+            for (int k = 0; k < ix->col_count; k++) put_text(f, ix->cols[k]);
+        }
         fwrite(&tbl->row_count, sizeof(size_t), 1, f);
-
         for (size_t r = 0; r < tbl->row_count; r++) {
             const EnlngRow* row = &tbl->rows[r];
             fwrite(&row->cell_count, sizeof(int), 1, f);
-            for (int c = 0; c < row->cell_count; c++) {
-                const EnlngVal* v = &row->cells[c];
-                uint8_t type_byte = (uint8_t)v->type;
-                fwrite(&type_byte, 1, 1, f);
-                if (v->type == ENLNG_VAL_INT) {
-                    fwrite(&v->int_val, sizeof(int64_t), 1, f);
-                } else if (v->type == ENLNG_VAL_DOUBLE) {
-                    fwrite(&v->double_val, sizeof(double), 1, f);
-                } else if (v->type == ENLNG_VAL_BOOL) {
-                    uint8_t b = v->bool_val ? 1 : 0;
-                    fwrite(&b, 1, 1, f);
-                } else if (v->type == ENLNG_VAL_STRING) {
-                    uint32_t len = v->str_val ? (uint32_t)strlen(v->str_val) : 0;
-                    fwrite(&len, sizeof(uint32_t), 1, f);
-                    if (len > 0) fwrite(v->str_val, 1, len, f);
-                }
-            }
+            for (int c = 0; c < row->cell_count; c++) put_val(f, &row->cells[c]);
         }
     }
     fclose(f);
@@ -755,62 +879,100 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
     if (!f) return false;
 
     char magic[16];
-    if (fread(magic, 1, 16, f) != 16 || memcmp(magic, ENLNGDB_MAGIC, 14) != 0) {
+    if (fread(magic, 1, 16, f) != 16) { fclose(f); return false; }
+    bool v2 = memcmp(magic, ENLNGDB_MAGIC, 14) == 0;
+    if (!v2 && memcmp(magic, ENLNGDB_MAGIC_V1, 14) != 0) {
         fclose(f);
         return false;
     }
 
-    fread(db->name, 1, ENLNGDB_MAX_NAME, f);
+    if (fread(db->name, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME) { fclose(f); return false; }
     int table_cnt = 0;
-    fread(&table_cnt, sizeof(int), 1, f);
+    if (fread(&table_cnt, sizeof(int), 1, f) != 1) { fclose(f); return false; }
 
     for (int t = 0; t < table_cnt; t++) {
         char tbl_name[ENLNGDB_MAX_NAME];
+        char view_sql[1024] = {0};
         int col_cnt = 0;
-        fread(tbl_name, 1, ENLNGDB_MAX_NAME, f);
-        fread(&col_cnt, sizeof(int), 1, f);
+        if (fread(tbl_name, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME) break;
+        if (v2 && !get_text(f, view_sql, sizeof(view_sql))) break;
+        if (fread(&col_cnt, sizeof(int), 1, f) != 1 || col_cnt < 0 || col_cnt > ENLNGDB_MAX_COLS) break;
 
         EnlngColumn cols[ENLNGDB_MAX_COLS];
-        fread(cols, sizeof(EnlngColumn), col_cnt, f);
-
-        EnlngTable* tbl = enlngdb_create_table(db, tbl_name, cols, col_cnt);
-        size_t row_cnt = 0;
-        fread(&row_cnt, sizeof(size_t), 1, f);
-
-        for (size_t r = 0; r < row_cnt; r++) {
-            int cell_cnt = 0;
-            fread(&cell_cnt, sizeof(int), 1, f);
-            EnlngVal cells[ENLNGDB_MAX_COLS];
-
-            for (int c = 0; c < cell_cnt; c++) {
-                uint8_t type_byte = 0;
-                fread(&type_byte, 1, 1, f);
-                cells[c].type = (EnlngValType)type_byte;
-
-                if (cells[c].type == ENLNG_VAL_INT) {
-                    fread(&cells[c].int_val, sizeof(int64_t), 1, f);
-                } else if (cells[c].type == ENLNG_VAL_DOUBLE) {
-                    fread(&cells[c].double_val, sizeof(double), 1, f);
-                } else if (cells[c].type == ENLNG_VAL_BOOL) {
-                    uint8_t b = 0;
-                    fread(&b, 1, 1, f);
-                    cells[c].bool_val = (b != 0);
-                } else if (cells[c].type == ENLNG_VAL_STRING) {
-                    uint32_t len = 0;
-                    fread(&len, sizeof(uint32_t), 1, f);
-                    char* s = (char*)malloc(len + 1);
-                    if (len > 0) fread(s, 1, len, f);
-                    s[len] = '\0';
-                    cells[c].str_val = s;
-                } else {
-                    cells[c].int_val = 0;
-                }
+        int64_t autos[ENLNGDB_MAX_COLS] = {0};
+        memset(cols, 0, sizeof(cols));
+        bool bad = false;
+        if (v2) {
+            for (int c = 0; c < col_cnt && !bad; c++) {
+                uint8_t flags[5];
+                bad = fread(cols[c].name, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME || fread(flags, 1, 5, f) != 5;
+                if (bad) break;
+                cols[c].type = ENLNG_VAL_STRING;
+                cols[c].kind = flags[0];
+                cols[c].is_primary_key = flags[1];
+                cols[c].is_unique = flags[2];
+                cols[c].not_null = flags[3];
+                cols[c].is_auto = flags[4];
+                bad = !get_text(f, cols[c].default_text, sizeof(cols[c].default_text)) ||
+                      !get_text(f, cols[c].check_text, sizeof(cols[c].check_text)) ||
+                      !get_text(f, cols[c].ref_table, sizeof(cols[c].ref_table)) ||
+                      !get_text(f, cols[c].ref_col, sizeof(cols[c].ref_col)) ||
+                      fread(&autos[c], sizeof(int64_t), 1, f) != 1;
             }
-            enlngdb_insert_row(tbl, cells, cell_cnt);
-            for (int c = 0; c < cell_cnt; c++) {
-                enlng_free_val(&cells[c]);
+        } else {
+            ColumnV1 old[ENLNGDB_MAX_COLS];
+            bad = fread(old, sizeof(ColumnV1), col_cnt, f) != (size_t)col_cnt;
+            bool key_seen = false;
+            for (int c = 0; c < col_cnt && !bad; c++) {
+                memcpy(cols[c].name, old[c].name, ENLNGDB_MAX_NAME);
+                cols[c].type = ENLNG_VAL_STRING;
+                /* version 1 used only the first key-like column to tell rows apart */
+                cols[c].is_primary_key = old[c].is_primary_key && !key_seen;
+                key_seen = key_seen || old[c].is_primary_key;
+                cols[c].is_unique = old[c].is_unique;
             }
         }
+        if (bad) break;
+
+        EnlngTable* tbl = enlngdb_create_table(db, tbl_name, cols, col_cnt);
+        if (!tbl) break;
+        snprintf(tbl->view_sql, sizeof(tbl->view_sql), "%s", view_sql);
+        for (int c = 0; c < col_cnt; c++) tbl->auto_next[c] = autos[c];
+
+        if (v2) {
+            int ix_cnt = 0;
+            if (fread(&ix_cnt, sizeof(int), 1, f) != 1) break;
+            for (int i = 0; i < ix_cnt; i++) {
+                EnlngIndex ix;
+                memset(&ix, 0, sizeof(ix));
+                uint8_t u = 0;
+                if (!get_text(f, ix.name, sizeof(ix.name)) || fread(&u, 1, 1, f) != 1 ||
+                    fread(&ix.col_count, sizeof(int), 1, f) != 1 || ix.col_count < 0 || ix.col_count > 4) { bad = true; break; }
+                ix.is_unique = u;
+                for (int k = 0; k < ix.col_count; k++) {
+                    if (!get_text(f, ix.cols[k], sizeof(ix.cols[k]))) { bad = true; break; }
+                }
+                if (bad) break;
+                if (tbl->index_count < ENLNGDB_MAX_INDEXES) tbl->indexes[tbl->index_count++] = ix;
+            }
+            if (bad) break;
+        }
+
+        size_t row_cnt = 0;
+        if (fread(&row_cnt, sizeof(size_t), 1, f) != 1) break;
+        for (size_t r = 0; r < row_cnt; r++) {
+            int cell_cnt = 0;
+            if (fread(&cell_cnt, sizeof(int), 1, f) != 1 || cell_cnt < 0 || cell_cnt > ENLNGDB_MAX_COLS) { bad = true; break; }
+            EnlngVal cells[ENLNGDB_MAX_COLS];
+            int got = 0;
+            for (; got < cell_cnt; got++) {
+                if (!get_val(f, &cells[got])) { bad = true; break; }
+            }
+            if (!bad) enlngdb_append_row(tbl, cells, cell_cnt);
+            for (int c = 0; c < got; c++) enlng_free_val(&cells[c]);
+            if (bad) break;
+        }
+        if (bad) break;
     }
     fclose(f);
     return true;

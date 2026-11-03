@@ -18,7 +18,7 @@ Push-Location $root
 try {
     & emcc.bat -I. -Isrc enlng.c -o website\enlng_engine.js "-sEXPORT_NAME=EnlngEngine" "-sSTACK_SIZE=33554432" @common
     & emcc.bat -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c `
-        -o website\enlngdb_engine.js "-sEXPORT_NAME=EnlngdbEngine" @common
+        -o website\enlngdb_engine.js "-sEXPORT_NAME=EnlngdbEngine" "-sSTACK_SIZE=5242880" @common
     # the standard library files the playground offers to `use`
     $lib = [ordered]@{}
     foreach ($n in "lib_math","lib_strings","lib_ds","lib_file","lib_fs","lib_ml","lib_net","lib_db","lib_concurrency","lib_std","lib_enlngdb") {

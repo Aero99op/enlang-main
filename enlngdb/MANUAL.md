@@ -48,7 +48,7 @@
    - 8.3 Column Removal
 9. [Persistence, Storage Internals & Concurrency](#9-persistence-storage-internals--concurrency)
    - 9.1 Disk Persistence Commands (`save database to`, `open database to`)
-   - 9.2 Binary File Specification (`ENLNG_C_EDB_V1`)
+   - 9.2 Binary File Specification (`ENLNG_C_EDB_V2`)
    - 9.3 In-Memory Indexing & Automatic Re-indexing
    - 9.4 Concurrency Control: Multi-Reader Single-Writer Locking (`DatabaseLock`)
    - 9.5 MVCC & Row Versioning (`_version`)
@@ -58,6 +58,10 @@
     - 10.3 CLI Tooling & Script Execution (`enlngdb.exe`)
     - 10.4 SQL-to-EnlngDB Cross-Reference Translation Table
     - 10.5 Compiler Diagnostic & Error Recovery Guide
+11. [Expressions, Subqueries, Constraints, Views & Transactions (C engine)](#11-expressions-subqueries-constraints-views--transactions-c-engine)
+    - 11.1 Conditions, 11.2 Subqueries, 11.3 Groups & `having`, 11.4 Expressions & functions, 11.5 Aliases & self joins
+    - 11.6 `union`, `intersect`, `except`, `with`, 11.7 Window functions, 11.8 Inserting, 11.9 Updating & deleting
+    - 11.10 Types & constraints, 11.11 Altering tables, 11.12 Views, indexes, `describe`, `explain`, 11.13 Transactions & databases, 11.14 What it does not have
 
 ---
 
@@ -81,14 +85,14 @@ EnlngDB exists in two parallel, fully compatible execution environments:
 | **Primary Goal** | High-performance, embedded, microsecond latency | Toolchain integration, scripting, rapid pipeline evaluation |
 | **Source Location** | `enlngdb/c/` (`enlngdb.c`, `enlngdb_parser.c`, `enlngdb.h`) | `enlngdb/` (`lexer.py`, `parser.py`, `storage.py`, `engine.py`) |
 | **Memory Model** | Fixed contiguous cell arrays with dynamic realloc | Dynamic dictionary rows with automatic hash indexing |
-| **Storage Format** | Native binary `.edb` (`ENLNG_C_EDB_V1`) | Native `.edb` / atomic JSON format (`ENLNGDB_SOVEREIGN_V1`) |
+| **Storage Format** | Native binary `.edb` (`ENLNG_C_EDB_V2`) | Native `.edb` / atomic JSON format (`ENLNGDB_SOVEREIGN_V1`) |
 | **Concurrency** | Single-threaded atomic script executor | Readers-Writer lock (`DatabaseLock` via `threading.RLock`) |
 | **Binary Footprint**| ~100 KB stand-alone executable | Pure Python modules (wheel package) |
 
 ---
 
 ### 1.3 Storage Formats: `.edb` Binary vs Native Memory Snapshots
-* **`.edb` (Enlng Database Binary):** A high-performance, compact file format beginning with the 14-byte magic signature `ENLNG_C_EDB_V1`. It contains table definitions, column types, primary key flags, and packed row values.
+* **`.edb` (Enlng Database Binary):** A high-performance, compact file format beginning with the 14-byte magic signature `ENLNG_C_EDB_V2` (files written by older versions, `ENLNG_C_EDB_V1`, are still read). It contains table definitions, column types and constraints, views, indexes, and packed row values.
 * **Atomic Memory Snapshots:** Both engines maintain active state entirely in memory. When saving, data is written atomically to temporary files before being swapped in place to prevent file corruption during power failures or crashes.
 
 ---
@@ -620,41 +624,45 @@ open database to "production_vault.edb"
 
 ---
 
-### 9.2 Binary File Specification (`ENLNG_C_EDB_V1`)
-The pure C native engine persists tables directly using a compact binary layout:
+### 9.2 Binary File Specification (`ENLNG_C_EDB_V2`)
+The pure C native engine persists tables directly using a compact binary layout. Every field is written by itself, so the file does not depend on the compiler or the machine:
 
 ```text
 +-------------------------------------------------------------------------+
-| BYTE 0 - 13   : MAGIC IDENTIFIER "ENLNG_C_EDB_V1"                       |
-| BYTE 14 - 77  : Database Name (64 bytes null-terminated ASCII)          |
-| BYTE 78 - 81  : Table Count uint32_t (N)                                |
+| 16 bytes   : MAGIC "ENLNG_C_EDB_V2" (14 characters, padded)             |
+| 64 bytes   : database name                                              |
+| int32      : number of tables saved (temporary tables are not saved)    |
 +-------------------------------------------------------------------------+
-| FOR EACH TABLE (0 to N-1):                                              |
-|   - Table Name (64 bytes)                                               |
-|   - Column Count uint32_t (C)                                           |
+| FOR EACH TABLE:                                                         |
+|   - table name (64 bytes)                                               |
+|   - view query (uint32 length + text; length 0 for a table)             |
+|   - column count int32 (C)                                              |
 |   - FOR EACH COLUMN:                                                    |
-|       * Name (64 bytes)                                                 |
-|       * Type uint32_t (0=NULL, 1=INT, 2=DOUBLE, 3=STRING, 4=BOOL)       |
-|       * is_primary_key uint8_t, is_unique uint8_t                       |
-|   - Row Count uint64_t (R)                                              |
-|   - FOR EACH ROW:                                                       |
-|       * Row Version uint32_t                                            |
-|       * FOR EACH CELL:                                                  |
-|           - Type uint8_t                                                |
-|           - Value Payload (int64 / double / length-prefixed string)    |
+|       * name (64 bytes)                                                 |
+|       * 5 flag bytes: kind (0 any, 1 integer, 2 real, 3 text,           |
+|         4 boolean, 5 date), primary key, unique, not null, auto         |
+|       * default, check, references table, references column            |
+|         (each: uint32 length + text)                                    |
+|       * next auto number int64                                          |
+|   - index count int32; for each: name, unique byte, column count,       |
+|     column names (length + text)                                        |
+|   - row count uint64 (R)                                                |
+|   - FOR EACH ROW: cell count int32, then for each cell                  |
+|       a type byte (0 null, 1 int, 2 double, 3 string, 4 bool) and       |
+|       the value (int64 / double / uint32 length + text / 1 byte)        |
 +-------------------------------------------------------------------------+
 ```
 
----
-
-### 9.3 In-Memory Indexing & Automatic Re-indexing
-* **Primary Key Index:** A direct hash map mapping primary key values to internal row offsets ($O(1)$ lookup time).
-* **Unique Index:** Prevents duplicate keys by maintaining an inverted index.
-* **Auto-Rebuild:** Whenever an `update`, `delete`, or `alter table` mutation occurs, table indexes are rebuilt automatically in memory.
+Version 1 files (before column types) have the same header but write the columns as raw structs and have no view, index or constraint data. They are read, and written back as version 2 the next time the database is saved.
 
 ---
 
-### 9.4 Concurrency Control: Multi-Reader Single-Writer Locking
+### 9.3 Indexes
+The C engine keeps every table in memory and reads it in full for each query (`explain` shows this). Keys and `unique` columns are checked by looking through the rows. A plain `create index` is recorded and shown by `show indexes`, but does not change how fast queries run; a `unique` index is enforced.
+
+---
+
+### 9.4 Concurrency Control: Multi-Reader Single-Writer Locking (Python engine only; the C engine runs one script at a time)
 The engine utilizes a dedicated `DatabaseLock` architecture:
 * **Shared Read Locks:** Unlimited concurrent reader threads may query tables simultaneously.
 * **Exclusive Write Locks:** Data modifications (`insert`, `update`, `delete`, `alter`) acquire an exclusive lock, safely blocking conflicting readers and writers.
@@ -763,3 +771,158 @@ Run EnlngDB scripts directly from your shell:
 
 ---
 *EnlngDB Documentation Manual — Built for sovereign, zero-dependency, ultra-fast natural database computing.*
+
+---
+
+# 11. Expressions, Subqueries, Constraints, Views & Transactions (C engine)
+
+Everything in this section is implemented by the native C engine (`enlngdb.exe`, the playground and Studio) and is checked by `tests/test_enlngdb_sql.py`. It is written the way the rest of EnlngDB is: words first, and the engine says so instead of guessing.
+
+### 11.1 Conditions
+```enlngdb
+find name from student where marks between 70 and 85          # not between
+find name from student where city in ("Pune", "Goa")          # not in
+find name from student where not city is "Pune"
+find name from student where name like "A_h%"                 # % any text, _ one letter
+find name from student where city is null                     # is not null
+find name from student where (marks > 85 or marks < 75) and city is not null
+```
+A comparison with a missing value (`null`) is never true, and neither is its opposite: `city is not "Pune"` does not return a student with no city. Use `is null` to ask for the missing ones.
+
+### 11.2 Subqueries
+```enlngdb
+find name from student where id in (find student_id from fees)
+find name from student where marks > (find avg(marks) from student)
+find name from student where exists (find fee_id from fees where student_id is student.id)
+find t.name from (find name, marks from student where marks > 85) as t
+```
+A subquery that does not look at the row outside it runs once; one that does (like `student.id` above) runs for each row. A subquery used as a value must give one column and at most one row.
+
+### 11.3 Totals, groups, `having`, sorting
+```enlngdb
+find city, count(*), avg(marks) from student group by city having count(*) > 1
+find city, marks, count(*) from student group by city, marks
+find count(distinct city), sum(marks * 2), group_concat(name) from student
+find city as c, count(*) as n from student group by c order by n desc, c
+find name, marks from student order by 2 desc limit 2        # 2 = the second thing shown
+```
+`group by` and `order by` take several expressions; a number or a name from the select list means that item. A total (`sum`, `count` ...) is not allowed in `where` (use `having`). In a grouped query a column that is not grouped shows its value from the first row of the group.
+
+### 11.4 Expressions and functions
+```enlngdb
+find name, marks + 5, marks * 2 - 1, marks / 4, marks % 7 from student
+find upper(name), lower(name), length(name), substr(name, 1, 2), name + "-" + city from student
+find concat(name, "-", city), coalesce(city, "none"), replace(name, "a", "A"), trim(name) from student
+find abs(marks - 90), round(avg(marks), 1), floor(marks / 7), ceil(marks / 7), sqrt(marks), power(2, 3), mod(7, 3) from student
+find case when marks >= 90 then "A" when marks >= 80 then "B" else "C" end from student
+find cast(marks as text), year("2024-03-15"), datediff("2024-03-15", "2024-03-10"), now() from student
+select 1 + 1                                                  # no table needed
+```
+`+` adds numbers and joins texts (two texts are always joined: `"80" + "1"` is `"801"`). Dividing by zero is an error, not a silent null. Functions: `upper lower length trim ltrim rtrim substr substring left right replace concat instr reverse coalesce ifnull nullif if least greatest abs sign round floor ceil ceiling sqrt power pow mod cast year month day date datediff now today current_date current_time`. Aggregates: `count sum total avg average min max group_concat`.
+
+Write a minus with spaces (`marks - 5`); `marks-5` is read as one word. Inside the `on` of a join, `-` and `*` are the join marks, so put arithmetic there in brackets.
+
+### 11.5 Aliases, self joins, `using`
+```enlngdb
+find name as n, marks as m from student
+find s.name, f.amount from student as s left join fees as f on s.id is f.student_id
+find a.name from student a join student b on a.marks < b.marks where b.name is "Karan"
+find f.fee_id, g.fee_id from fees f join fees g using (student_id) where f.fee_id < g.fee_id   # the column has the same name in both
+find student.*, fees.amount from student join fees                 # every column of one table
+```
+`natural join` is not supported; write the `on` or use the key-name matching of section 7.3.
+
+### 11.6 Combining queries: `union`, `intersect`, `except`, `with`
+```enlngdb
+find name from student where marks > 75 union find name from student where marks < 85      # repeats dropped
+find name from student where marks > 75 union all find name from student where marks < 85
+find name from student where marks > 75 intersect find name from student where marks < 85
+find name from student where marks > 75 except find name from student where marks < 85
+find name from a union find name from b order by name limit 3     # order by / limit once, at the end
+with big as (find name, marks from student where marks > 75) find name from big order by name
+```
+The queries of a union must show the same number of columns. `with` can name several queries; each sees the ones before it.
+
+### 11.7 Window functions
+```enlngdb
+find name, rank() over (order by marks desc) from student
+find name, row_number() over (partition by city order by marks) from student
+find name, sum(marks) over (partition by city) from student        # the total of the group, on every row
+find name, sum(marks) over (order by id) from student              # a running total
+find name, lag(marks) over (order by id), lead(marks, 1, 0) over (order by id) from student
+```
+`rank`, `dense_rank`, `row_number`, `lag`, `lead`, and `count sum avg min max` with `over (...)`. They can be used in the select list and `order by`, not in `where`.
+
+### 11.8 Inserting
+```enlngdb
+insert into student with id 5, name "Eve"                          # the original way: columns by name
+insert into student values (5, "Eve", 50, "Goa"), (6, "Fay", 60, "Goa")
+insert into student (id, name) values (7, "Gus")
+insert into copy (id, name) find id, name from student where marks > 75
+create table top as find name, marks from student where marks > 75
+```
+Several rows go in together or not at all. A row whose key is already there replaces that row, and the engine says so (`1 row replaced: ... already had a row with id 2`). The key is the column(s) marked `primary key`; a table with no declared key uses a column called `id`. A column called `customer_id` or `code` is just a column.
+
+### 11.9 Updating and deleting
+```enlngdb
+update student set marks = marks + 5, city = upper(name) where id is 1 and city is "Pune"
+update student set marks = 0 where marks > 85 limit 1
+in student change city to New Delhi where id is 4
+delete from student where id is 1 or marks between 80 and 90
+delete all from student confirmed
+truncate table student confirmed
+```
+Every `where` is the full condition language above. The new values of an update are worked out from the old rows, and all rows are checked before any is written. A column that does not exist is an error that lists the columns.
+
+### 11.10 Column types and constraints
+```enlngdb
+create table person (
+    id integer primary key auto_increment,
+    email text unique not null,
+    age integer default 18 check (age >= 0),
+    role text default "user",
+    born date,
+    owner integer references student(id)
+)
+```
+The same list can be written in brackets and over several lines when a line ends with `(` or `,`. Types: `integer` (`int`), `real` (`float`, `decimal`, `number`), `text` (`varchar`), `boolean`, `date` (`2024-03-15`, optionally with a time). A value is turned into the column's type when that is safe (`"30"` into `30`) and refused when it is not, with the reason. Columns without a type keep whatever is written, as before.
+
+* `primary key` (also `primary key (a, b)`) : the row's identity; writing it again replaces the row.
+* `unique` (also `unique (a, b)`), `not null` (or `required`), `default <value>`, `check (<condition>)`, `auto_increment`.
+* `references table(column)` : a value must exist there; a row that other rows refer to cannot be deleted, its key cannot change, and its table cannot be dropped. There is no `on delete cascade`; delete the rows that refer first.
+
+### 11.11 Altering tables
+```enlngdb
+alter table student add column age integer default 18
+alter table student rename column name to full_name
+alter table student modify column marks as text       # all values are converted, or nothing changes
+alter table student drop column marks confirmed
+alter table student rename to pupils                  # also: rename table student to pupils
+```
+
+### 11.12 Views, indexes, describing
+```enlngdb
+create view top as find name, marks from student where marks > 75     # create or replace view ...
+find name from top order by name
+show views
+drop view top
+create unique index u_name on student (name)          # create index on student (name, city)
+show indexes from student
+drop index u_name
+describe student                                      # or: show columns from student
+explain find name from student s join fees f order by name limit 2
+```
+A view is a stored query: it shows the rows as they are now, and cannot be inserted into. A `unique` index is enforced. A plain index is recorded and shown, but EnlngDB keeps tables in memory and reads them in full for every query, so it does not change speed (`explain` says so).
+
+### 11.13 Transactions and databases
+```enlngdb
+begin
+delete from student where id is 1
+rollback                                              # undoes everything since begin; 'commit' keeps it
+create database shop                                  # makes it and switches to it
+drop database shop confirmed
+```
+A transaction covers the whole database (tables, rows, views). One that is still open when a script ends is rolled back, and the engine says so. There are no savepoints and no second writer: one script runs at a time.
+
+### 11.14 What EnlngDB does not have
+Users and permissions (`grant`, `revoke`), triggers, stored procedures, `natural join`, recursive `with`, `on delete cascade`, savepoints, and indexes that speed up queries. `show databases` shows only the open database. A table has at most 32 columns and a database at most 64 tables; one statement can be at most 8191 characters.

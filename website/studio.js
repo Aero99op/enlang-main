@@ -2063,7 +2063,38 @@ find student.name, result.subject, result.marks from student - result where resu
 -- every student, with the average if there is one (the arrow points at the table whose rows all stay)
 find name, avg(marks) from student <- result group by name order by avg(marks) desc
 select distinct city from student
-find top 2 records from result order by marks highest first`
+find top 2 records from result order by marks highest first`,
+    enlngdb_sql: `type enlngdb
+
+-- Tables with types and rules: the engine checks every row for you
+create table student with id integer primary key, name text not null, marks integer check (marks >= 0 and marks <= 100), city text
+insert into student values (1, "Asha", 80, "Pune"), (2, "Ravi", 90, "Goa"), (3, "Meera", 70, "Pune"), (4, "Karan", 95, "Delhi")
+create table fee with fee_id integer primary key, student_id integer references student(id), amount integer
+insert into fee values (10, 1, 500), (11, 1, 300), (12, 2, 900)
+
+-- Subqueries, between, in
+find name from student where id in (find student_id from fee)
+find name from student where marks between 75 and 92 and city in ("Pune", "Goa")
+
+-- Calculations, case when, functions
+find name, marks + 5 as with_bonus, case when marks >= 90 then "A" when marks >= 80 then "B" else "C" end as grade from student
+find upper(name), length(name), round(avg(marks), 1) from student
+
+-- Groups with having, and rankings
+find city, count(*) as students, avg(marks) from student group by city having count(*) > 1
+find name, rank() over (order by marks desc) as place from student
+
+-- A view, and a transaction you can take back
+create or replace view toppers as find name, marks from student where marks >= 90
+find * from toppers order by marks desc
+begin
+delete from fee where fee_id is 12
+find count(*) from fee
+rollback
+find count(*) from fee
+
+-- The engine refuses bad data. Remove the two dashes in front of the next line and run it (marks over 100):
+-- insert into student values (5, "Zed", 140, "Goa")`
   };
 
   // Extracts current query at cursor position or highlighted text
@@ -9847,6 +9878,18 @@ window.addEventListener('message', function(e) {
     { text: 'right join', type: 'db', doc: 'EnlangDB: every row of the second table (or: <table> -> <table>)' },
     { text: 'full join', type: 'db', doc: 'EnlangDB: every row of both tables (or: <table> <-> <table>)' },
     { text: 'cross join', type: 'db', doc: 'EnlangDB: every row with every row (or: <table> * <table>)' },
+    { text: 'between', type: 'db', doc: 'EnlangDB: where <col> between <low> and <high>' },
+    { text: 'having', type: 'db', doc: 'EnlangDB: keep the groups that meet a condition, like having count(*) > 1' },
+    { text: 'union', type: 'db', doc: 'EnlangDB: <query> union [all] | intersect | except <query>' },
+    { text: 'with', type: 'db', doc: 'EnlangDB: with <name> as (<query>) <query>' },
+    { text: 'case when', type: 'db', doc: 'EnlangDB: case when <condition> then <value> ... else <value> end' },
+    { text: 'over (', type: 'db', doc: 'EnlangDB: rank() over (order by <col>) | row_number | sum(x) over (partition by ...)' },
+    { text: 'create view', type: 'db', doc: 'EnlangDB: create [or replace] view <name> as <query>' },
+    { text: 'create index', type: 'db', doc: 'EnlangDB: create [unique] index <name> on <table> (<col>)' },
+    { text: 'describe', type: 'db', doc: 'EnlangDB: describe <table> (columns, types, keys)' },
+    { text: 'truncate table', type: 'db', doc: 'EnlangDB: truncate table <table> confirmed' },
+    { text: 'begin', type: 'db', doc: 'EnlangDB: begin ... commit | rollback' },
+    { text: 'explain', type: 'db', doc: 'EnlangDB: explain <query> (the steps it takes)' },
     { text: 'add column', type: 'db', doc: 'EnlangDB DDL: add column <col> to <table> [default <val>]' },
     { text: 'alter table', type: 'db', doc: 'EnlangDB DDL: alter table <table> add column <col>' },
     { text: 'insert into', type: 'db', doc: 'EnlangDB DML: insert into <table> with col1 val1, col2 val2' },
