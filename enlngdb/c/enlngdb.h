@@ -91,6 +91,7 @@ void enlngdb_free(EnlngDatabase* db);
 EnlngTable* enlngdb_create_table(EnlngDatabase* db, const char* name, const EnlngColumn* cols, int col_count);
 EnlngTable* enlngdb_get_table(EnlngDatabase* db, const char* name);
 bool enlngdb_drop_table(EnlngDatabase* db, const char* name, bool confirmed);
+bool enlngdb_delete_column(EnlngTable* table, const char* col_name);
 
 bool enlngdb_insert_row(EnlngTable* table, const EnlngVal* cells, int cell_count);
 EnlngQueryResult* enlngdb_find(EnlngTable* table, const char* filter_col, EnlngOp op, const EnlngVal* target_val, int limit, int offset);

@@ -82,6 +82,24 @@ def main():
 
         out, err = run(exe, tmp, SETUP + "delete from student where roll_no is 1;\nfind all records from student;\n")
         check("filtered delete needs no confirmation", "1 row(s) deleted" in out and "REFUSED" not in out, out)
+
+        out, err = run(exe, tmp, SETUP + "delete table student;\nshow tables;\n")
+        check("unconfirmed delete table says REFUSED", "REFUSED" in out and "| student" in out, out)
+
+        out, err = run(exe, tmp, SETUP + "delete table student confirmed;\nshow tables;\n")
+        check("delete table confirmed drops it", "dropped successfully" in out and "0 table(s)" in out, out)
+
+        out, err = run(exe, tmp, SETUP + "delete column marks from student;\nfind all records from student;\n")
+        check("delete column removes it", "column 'marks' deleted" in out and "| marks" not in out and "| B" in out, out)
+
+        out, err = run(exe, tmp, SETUP + "delete name from student;\nremove column marks in student;\nfind all records from student;\n")
+        check("delete <col> and remove column work", "| name" not in out and "| marks" not in out and "| roll_no" in out, out)
+
+        out, err = run(exe, tmp, SETUP + "delete column age from student;\n")
+        check("unknown column is an error that lists the columns", "no column called 'age'" in out and "roll_no name marks" in out, out)
+
+        out, err = run(exe, tmp, SETUP + "delete records from student where marks is 80;\nfind all records from student;\n")
+        check("delete records ... where still deletes rows", "1 row(s) deleted" in out and "| marks" in out, out)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print(f"\n{passed} passed, {failed} failed")

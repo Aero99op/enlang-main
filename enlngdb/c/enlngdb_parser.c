@@ -744,6 +744,47 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         }
     }
 
+    // delete table <name> confirmed: another way to say drop table
+    if (str_starts_with_ci(stmt, "delete table ") || str_starts_with_ci(stmt, "remove table ")) {
+        char drop_stmt[1024];
+        snprintf(drop_stmt, sizeof(drop_stmt), "drop table %s", stmt + 13);
+        return enlngdb_execute_statement(db, drop_stmt, print_output);
+    }
+
+    // delete column <col> from <table>, or just: delete <col> from <table>
+    if (str_starts_with_ci(stmt, "delete ") || str_starts_with_ci(stmt, "remove ") || str_starts_with_ci(stmt, "drop column ")) {
+        const char* p = stmt + (str_starts_with_ci(stmt, "drop column ") ? 5 : 7);
+        while (isspace((unsigned char)*p)) p++;
+        bool said_column = str_starts_with_ci(p, "column ");
+        if (said_column) p += 7;
+        char col_name[64] = {0}, link[16] = {0}, tbl_name[64] = {0}, extra[16] = {0};
+        int n = sscanf(p, "%63s %15s %63s %15s", col_name, link, tbl_name, extra);
+        bool is_link = str_ci_cmp(link, "from") == 0 || str_ci_cmp(link, "in") == 0;
+        bool is_row_word = str_ci_cmp(col_name, "records") == 0 || str_ci_cmp(col_name, "all") == 0 ||
+                           str_ci_cmp(col_name, "from") == 0;
+        bool ends_right = n == 3 || (n == 4 && str_ci_cmp(extra, "confirmed") == 0);
+        if (ends_right && is_link && (said_column || !is_row_word)) {
+            EnlngTable* tbl = enlngdb_get_table(db, tbl_name);
+            if (!tbl) {
+                if (print_output) print_missing_table(db, tbl_name);
+                return false;
+            }
+            if (!enlngdb_delete_column(tbl, col_name)) {
+                if (print_output) {
+                    printf("ERROR: Table '%s' has no column called '%s'.\n", tbl_name, col_name);
+                    printf("       Its columns are:");
+                    for (int c = 0; c < tbl->col_count; c++) printf(" %s", tbl->columns[c].name);
+                    printf("\n\n");
+                }
+                return false;
+            }
+            if (print_output) {
+                printf("Query OK, column '%s' deleted from table '%s'. (0.02 ms)\n\n", col_name, tbl_name);
+            }
+            return true;
+        }
+    }
+
     // 8. delete / remove records from <table> [where ...]
     if (str_starts_with_ci(stmt, "delete records from ") || str_starts_with_ci(stmt, "delete from ") || str_starts_with_ci(stmt, "delete all from ") || str_starts_with_ci(stmt, "delete all records from ") ||
         str_starts_with_ci(stmt, "remove records from ") || str_starts_with_ci(stmt, "remove from ") || str_starts_with_ci(stmt, "remove all from ") || str_starts_with_ci(stmt, "remove all records from ")) {
@@ -1035,7 +1076,7 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
             fprintf(stderr, "What: Unrecognized or malformed database statement: '%s'\n", stmt);
             fprintf(stderr, "Why:  Statement does not match any valid conversational EnlngDB grammar.\n\n");
             fprintf(stderr, "Suggestions:\n");
-            fprintf(stderr, "  * Supported commands: use database, show tables, create table, insert into, find records from, update, change, delete, drop table\n");
+            fprintf(stderr, "  * Supported commands: use database, show tables, create table, insert into, find records from, update, change, delete, delete column, drop table\n");
             fprintf(stderr, "  * Comments start with '#' or '--' at the beginning of a line.\n");
             fprintf(stderr, "  * Run 'enlngdb --help' to view command reference.\n");
         }

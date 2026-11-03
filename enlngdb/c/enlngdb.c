@@ -166,6 +166,35 @@ bool enlngdb_drop_table(EnlngDatabase* db, const char* name, bool confirmed) {
     return false;
 }
 
+bool enlngdb_delete_column(EnlngTable* table, const char* col_name) {
+    if (!table || !col_name) return false;
+    int idx = -1;
+    for (int c = 0; c < table->col_count; c++) {
+        if (strcmp(table->columns[c].name, col_name) == 0) {
+            idx = c;
+            break;
+        }
+    }
+    if (idx < 0) return false;
+
+    for (size_t r = 0; r < table->row_count; r++) {
+        EnlngRow* row = &table->rows[r];
+        if (idx >= row->cell_count) continue;
+        enlng_free_val(&row->cells[idx]);
+        for (int c = idx; c < row->cell_count - 1; c++) {
+            row->cells[c] = row->cells[c + 1];
+        }
+        row->cell_count--;
+        row->version++;
+    }
+    for (int c = idx; c < table->col_count - 1; c++) {
+        table->columns[c] = table->columns[c + 1];
+    }
+    table->col_count--;
+    table->version++;
+    return true;
+}
+
 static int str_ci_cmp(const char* s1, const char* s2) {
     if (!s1 && !s2) return 0;
     if (!s1) return -1;
