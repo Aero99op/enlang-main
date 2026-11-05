@@ -1,0 +1,64 @@
+# Adding rows
+## One row, written as a sentence
+`insert into <table> with <column> <value>, <column> <value>, ...` adds one row. The columns you leave out get `null`, or their default if the column has one.
+::: db
+create table student with id, name, marks, city
+insert into student with id 1, name "Asha", marks 80, city "Pune"
+insert into student with id 2, name "Ravi", marks 90, city "Goa"
+find * from student
+:::
+`insert record into` and `insert into` are the same.
+## Five ways to join a column and its value
+Between a column and its value you may put nothing, a colon, an equals sign, the word `is`, or the word `to`. They all store the same thing.
+::: db
+insert into student with id 3, name "Meera", marks 70
+insert into student with id: 4, name: "Karan", marks: 95
+insert into student with id = 5, name = "Dev", marks = 60
+insert into student with id is 6, name is "Isha", marks is 85
+insert into student with id to 7, name to "Omar", marks to 75
+find * from student where id is at least 3
+:::
+## Many rows at once
+`values` takes one bracket for each row. The brackets must fit the columns of the table in the order they were made, or you can name the columns first.
+::: db
+create table fees with fee_id, student_id, amount
+insert into fees values (10, 1, 500), (11, 1, 300), (12, 2, 900)
+insert into fees (fee_id, student_id) values (13, 9)
+find * from fees
+:::
+Several rows go in together or not at all: if one of them is refused, none is added.
+## Rows from a query
+After the column list you can write a query instead of `values`. Its rows are added.
+::: db
+create table honours with id, name
+insert into honours (id, name) find id, name from student where marks >= 90
+find * from honours
+:::
+## A column you did not create
+If you name a column that the table does not have, the table gets that column, and the rows already there get `null` in it.
+::: db
+create table events with id, event_name
+insert into events with id 1, event_name "Boot"
+insert into events with id 2, event_name "Disk warning", severity "high"
+find * from events
+:::
+This is handy in a quick script and risky in a long one, because a spelling mistake in a column name makes a new column instead of an error. Give a table its columns with `create table` when you want mistakes to be caught.
+## The key of a table
+A row is identified by its key. The key is the column you declared as `primary key` (chapter 12), and when you declared none, a column called `id`. If you insert a row whose key is already in the table, the old row is replaced and the engine says so.
+::: db
+insert into student with id 1, name "Asha", marks 82, city "Pune"
+find name, marks from student where id is 1
+:::
+A column called `student_id` or `code` is only a column. Only the declared key, or a column named `id`, can replace a row.
+## Values and what they look like
+- Text goes between quotes. A number written without quotes is a number.
+- A text that looks like a number, such as `"80"`, is stored as the number 80 in a column whose type is `integer` or `real`. In a column without a type, it stays text.
+- `null` is the value that means nothing is known.
+## An insert the engine refuses
+When a table has a type or a rule and a value breaks it, the engine says why and adds nothing. Types and rules are in chapter 12.
+::: db
+create table price_list with item text, price real not null
+:::
+::: err
+insert into price_list with item "pen"
+:::

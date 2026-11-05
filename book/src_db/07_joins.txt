@@ -1,0 +1,77 @@
+# Joins
+A join puts the rows of two tables side by side. The tables for this chapter are students, their fees, and their books.
+::: db
+create table student with id, name, marks
+insert into student values (1, "Asha", 80), (2, "Ravi", 90), (3, "Meera", 70)
+create table fees with fee_id, student_id, amount
+insert into fees values (10, 1, 500), (11, 1, 300), (12, 2, 900), (13, 9, 100)
+create table book with book_id, student_id, title
+insert into book values (1, 1, "Maths"), (2, 3, "Physics")
+:::
+Asha has two fees, Ravi has one and Meera none. The fee 13 belongs to student 9, who does not exist.
+## The kinds of join
+You write the kind of join with words or with a mark. The mark is a picture: an arrow points at the table whose rows all stay.
+| Join | Words | Mark | What you get |
+| :--- | :--- | :---: | :--- |
+| inner | `join`, `inner join` | `-` | only the rows that have a match in both tables |
+| left | `left join`, `left outer join` | `<-` | every row of the first table, with `null` where the second has no match |
+| right | `right join`, `right outer join` | `->` | every row of the second table, with `null` where the first has no match |
+| full | `full join`, `full outer join` | `<->` | every row of both tables |
+| cross | `cross join` | `*` | every row paired with every row |
+## Inner join
+::: db
+find name, amount from student join fees on student.id is fees.student_id
+:::
+Meera has no fee and fee 13 has no student, so neither is in the answer.
+## Left, right and full
+::: db
+find name, amount from student left join fees on student.id is fees.student_id
+find name, amount from student right join fees on student.id is fees.student_id
+find name, amount from student full join fees on student.id is fees.student_id
+:::
+The left join keeps Meera and shows `null` for her amount. The right join keeps fee 13 and shows `null` for the name. The full join keeps both.
+## The same joins with marks
+::: db
+find name, amount from student - fees
+find name, amount from student <- fees
+find name, amount from student -> fees
+find name, amount from student <-> fees
+:::
+Without `on` the engine matches the columns by their names. Here it finds that `student.id` and `fees.student_id` belong together, because the table `student` and the column `student_id` share a name. If it cannot find exactly one pair it stops and tells you which pairs it found and what to write after `on`.
+## Cross join
+Every row with every row. This is rarely what you want, but it is how you make all combinations.
+::: db
+find name, title from student * book
+:::
+## Who has nothing?
+A left join and `is null` find the rows that have no partner.
+::: db
+find name from student <- fees where amount is null
+:::
+## Three tables, and then the usual clauses
+::: db
+find name, amount, title from student join fees on student.id is fees.student_id join book on student.id is book.student_id
+find name, sum(amount) from student left join fees on student.id is fees.student_id group by name order by sum(amount) desc
+:::
+## Naming a table for a short form
+`as` gives a table a short name. This is needed to join a table with itself.
+::: db
+find s.name, f.amount from student as s left join fees as f on s.id is f.student_id where f.amount > 400
+find a.name from student a join student b on a.marks < b.marks where b.name is "Ravi"
+:::
+The second query finds the students who have fewer marks than Ravi.
+## Same column name in both tables
+`using` names a column that has the same name in both tables.
+Here it fails, because `student` has no `student_id` column, and the engine says so:
+::: err
+find name, amount from student join fees using (student_id)
+:::
+Use `using` for tables like `fees` and `book`, which both have `student_id`:
+::: db
+find amount, title from fees join book using (student_id)
+:::
+## Every column of one table
+::: db
+find student.*, fees.amount from student join fees on student.id is fees.student_id
+:::
+A join with `natural` in front is not supported. Write the `on`, or use the marks and let the engine match the names.

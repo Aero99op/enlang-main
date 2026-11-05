@@ -1,0 +1,59 @@
+# Totals and groups
+The tables for this chapter:
+::: db
+create table student with id, name, marks, city
+insert into student values (1, "Asha", 80, "Pune"), (2, "Ravi", 90, "Goa"), (3, "Meera", 70, "Pune"), (4, "Karan", 95, null)
+:::
+## Totals over all the rows
+A total takes a column from every row that passed `where` and gives one value.
+| Total | What it gives |
+| :--- | :--- |
+| `count(*)` | the number of rows |
+| `count(column)` | the number of rows where the column is not null |
+| `count(distinct column)` | the number of different values |
+| `sum(column)` | the sum |
+| `avg(column)`, `average(column)` | the average |
+| `min(column)`, `max(column)` | the smallest and the largest |
+| `total(column)` | the same as `sum` |
+| `group_concat(column)` | the values joined into one text |
+::: db
+find count(*), count(city), count(distinct city) from student
+find sum(marks), avg(marks), min(marks), max(marks) from student
+find group_concat(name) from student
+:::
+`count(city)` is 3 because Karan has no city. `count(*)` counts rows, whatever they hold.
+## One answer for each group
+`group by` makes one row for each different value, and the totals are worked out for each group.
+::: db
+find city, count(*), avg(marks) from student group by city
+:::
+Karan, with no city, forms a group of his own, shown as `null`.
+## Keeping some of the groups: `having`
+`where` chooses rows before they are grouped. `having` chooses groups after the totals are worked out, so it is the place to use a total as a condition.
+::: db
+find city, count(*) from student group by city having count(*) > 1
+:::
+A total is not allowed in `where`. The engine says so instead of guessing:
+::: err
+find city from student where count(*) > 1 group by city
+:::
+## Grouping by several things
+::: db
+find city, marks, count(*) from student group by city, marks
+:::
+## Naming a result and sorting by it
+`as` gives a result a name. The name can then be used in `group by` and `order by`.
+::: db
+find city as c, count(*) as n, max(marks) as best from student group by c order by n desc, c
+:::
+A number in `order by` means the item of that position in the list after `find`:
+::: db
+find name, marks from student order by 2 desc limit 2
+:::
+## A column that is not grouped
+In a grouped query every column should be grouped or be inside a total. When it is not, the engine shows the value from the first row of the group. That is allowed, but the value is one of several and may not be the one you meant.
+## Totals and a calculation
+A total can be used inside a calculation, and a calculation inside a total.
+::: db
+find sum(marks * 2), max(marks) - min(marks) from student
+:::

@@ -1,0 +1,60 @@
+# Subqueries and combining queries
+A query can be used inside another query, and the answers of two queries can be put together.
+::: db
+create table student with id, name, marks, city
+insert into student values (1, "Asha", 80, "Pune"), (2, "Ravi", 90, "Goa"), (3, "Meera", 70, "Pune"), (4, "Karan", 95, null)
+create table fees with fee_id, student_id, amount
+insert into fees values (10, 1, 500), (11, 1, 300), (12, 2, 900), (13, 9, 100)
+:::
+## A query inside brackets
+A query written in brackets is a subquery. It can give a list of values, one value, or a yes or no.
+### A list: `in`
+::: db
+find name from student where id in (find student_id from fees)
+find name from student where id not in (find student_id from fees)
+:::
+### One value
+A subquery that is used as a single value must give one column and at most one row. When it gives more, the engine stops and says so.
+::: db
+find name, marks from student where marks > (find avg(marks) from student)
+:::
+::: err
+find name from student where marks > (find marks from student)
+:::
+### Yes or no: `exists`
+`exists` is true when the subquery gives at least one row. The subquery may look at the row outside it, here `student.id`, and is then worked out again for each row.
+::: db
+find name from student where exists (find fee_id from fees where student_id is student.id)
+find name from student where not exists (find fee_id from fees where student_id is student.id)
+:::
+A subquery that does not look at the outside is worked out once.
+## A query in place of a table
+A subquery after `from` makes a table for the time of the query. It needs a name.
+::: db
+find t.name from (find name, marks from student where marks > 85) as t order by t.name
+:::
+## Putting two answers together
+| Word | Result |
+| :--- | :--- |
+| `union` | the rows of both, each different row once |
+| `union all` | the rows of both, every row |
+| `intersect` | the rows that both have |
+| `except` | the rows of the first that the second does not have |
+Both queries must show the same number of columns.
+::: db
+find name from student where marks > 75 union find name from student where marks < 85
+find name from student where marks > 75 union all find name from student where marks < 85
+find name from student where marks > 75 intersect find name from student where marks < 85
+find name from student where marks > 75 except find name from student where marks < 85
+:::
+`order by` and `limit` are written once, at the end, and apply to the whole answer.
+::: db
+find name from student where marks > 85 union find name from student where marks < 75 order by name limit 2
+:::
+## Naming a query: `with`
+`with` gives a name to a query that you want to use more than once, or to make a long query easier to read. Several names can be given, and each can use the ones before it.
+::: db
+with big as (find name, marks from student where marks > 75) find name from big order by name
+with big as (find name, marks from student where marks > 75), top as (find name from big where marks > 85) find name from top
+:::
+The older form `insert into table with column value` also starts with the word `with`. The engine tells the two apart by what follows: a name and `as` is a query, a column name and a value is a row.

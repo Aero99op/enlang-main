@@ -1,0 +1,37 @@
+# Window functions
+A total, with `group by`, turns many rows into one. A window function keeps every row and adds a column worked out from other rows near it. The rows around a row are called its window, and `over (...)` describes the window.
+::: db
+create table student with id, name, marks, city
+insert into student values (1, "Asha", 80, "Pune"), (2, "Ravi", 90, "Goa"), (3, "Meera", 70, "Pune"), (4, "Karan", 95, "Goa")
+:::
+## Ranking
+::: db
+find name, marks, rank() over (order by marks desc) as place from student
+:::
+`rank`, `dense_rank` and `row_number` all number the rows in the order given. They differ when two rows are equal: `rank` gives both the same number and skips the next, `dense_rank` gives both the same number and skips nothing, and `row_number` always counts 1, 2, 3 and so on.
+::: db
+insert into student values (5, "Tara", 90, "Pune")
+find name, marks, rank() over (order by marks desc) as r, dense_rank() over (order by marks desc) as d, row_number() over (order by marks desc) as n from student
+:::
+## Inside groups: `partition by`
+`partition by` splits the rows into groups, and the window is worked out inside each group.
+::: db
+find name, city, row_number() over (partition by city order by marks desc) as in_city from student
+:::
+## Totals as windows
+A total with `over` gives its answer on every row.
+::: db
+find name, city, sum(marks) over (partition by city) as city_total from student
+find name, marks, sum(marks) over (order by id) as running_total from student
+:::
+Without `order by` the window is the whole group. With `order by`, each row's window runs from the first row up to this one, which is why the second query gives a running total. `count`, `sum`, `avg`, `min` and `max` can all be used this way.
+## The row before and after: `lag` and `lead`
+`lag(column)` gives the value from the row before, and `lead(column)` from the row after. A second number says how many rows away, and a third is what to show when there is no such row.
+::: db
+find name, marks, lag(marks) over (order by id) as before, lead(marks, 1, 0) over (order by id) as after from student
+:::
+## Where a window function can be used
+A window function can stand in the list after `find` and in `order by`. It cannot be used in `where`, because `where` runs before the windows are worked out. To filter on a rank, put the query in brackets:
+::: db
+find t.name, t.place from (find name, rank() over (order by marks desc) as place from student) as t where t.place <= 2
+:::

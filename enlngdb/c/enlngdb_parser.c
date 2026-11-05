@@ -3509,10 +3509,16 @@ static bool q_insert_with(EnlngDatabase* db, const char* stmt, bool print_output
         } else {
             char col_k[64];
             int klen = (int)(sep - pair);
+            if (klen >= (int)sizeof(col_k)) { snprintf(err, sizeof(err), "a column name can have at most %d characters", (int)sizeof(col_k) - 1); ok = false; }
             if (klen >= (int)sizeof(col_k)) klen = (int)sizeof(col_k) - 1;
             strncpy(col_k, pair, klen);
             col_k[klen] = '\0';
             while (*sep == ' ' || *sep == ':' || *sep == '=') sep++;
+            /* "name is "Eve"" and "name to "Eve"": the word is the assignment, not part of the value */
+            if ((str_starts_with_ci(sep, "is ") || str_starts_with_ci(sep, "to ")) && *(sep + 3 + strspn(sep + 3, " ")) != '\0') {
+                sep += 3;
+                while (*sep == ' ') sep++;
+            }
             int ci = q_col_index(tbl, col_k);
             if (ci < 0) {
                 if (tbl->col_count >= ENLNGDB_MAX_COLS) { snprintf(err, sizeof(err), "table '%s' already has %d columns, the most a table can have", tbl->name, ENLNGDB_MAX_COLS); ok = false; }
@@ -4140,6 +4146,7 @@ static bool q_create_table(EnlngDatabase* db, const char* stmt, bool print_outpu
     QTok* nt = q_peek(L, 0);
     if (nt->kind != QT_WORD) { snprintf(err, sizeof(err), "expected a table name: create table users with id, name"); goto done; }
     char tname[64];
+    if (strlen(nt->text) >= sizeof(tname)) { snprintf(err, sizeof(err), "a table name can have at most %d characters", (int)sizeof(tname) - 1); goto done; }
     snprintf(tname, sizeof(tname), "%s", nt->text);
     if (!q_name_ok(tname, err, sizeof(err))) goto done;
     L->pos++;
@@ -4233,7 +4240,9 @@ static bool q_create_table(EnlngDatabase* db, const char* stmt, bool print_outpu
                 EnlngColumn* col = &cols[ncols];
                 memset(col, 0, sizeof(*col));
                 EnlngVal nv = parse_val_token(first->text);
-                snprintf(col->name, sizeof(col->name), "%s", nv.type == ENLNG_VAL_STRING && nv.str_val ? nv.str_val : first->text);
+                const char* want_name = nv.type == ENLNG_VAL_STRING && nv.str_val ? nv.str_val : first->text;
+                if (strlen(want_name) >= sizeof(col->name)) { enlng_free_val(&nv); snprintf(err, sizeof(err), "a column name can have at most %d characters", (int)sizeof(col->name) - 1); goto done; }
+                snprintf(col->name, sizeof(col->name), "%s", want_name);
                 enlng_free_val(&nv);
                 col->type = ENLNG_VAL_STRING;
                 if (!q_name_ok(col->name, err, sizeof(err))) goto done;
@@ -4333,14 +4342,17 @@ static bool q_alter(EnlngDatabase* db, const char* stmt, bool print_output, bool
         }
         if (action == 3) {
             if (q_peek(L, 0)->kind != QT_WORD) { snprintf(err, sizeof(err), "expected the new name of the table"); goto done; }
+            if (strlen(q_peek(L, 0)->text) >= sizeof(newname)) { snprintf(err, sizeof(err), "a name can have at most %d characters", (int)sizeof(newname) - 1); goto done; }
             snprintf(newname, sizeof(newname), "%s", q_peek(L, 0)->text);
             L->pos++;
         } else {
             if (q_peek(L, 0)->kind != QT_WORD) { snprintf(err, sizeof(err), "expected a column name"); goto done; }
+            if (strlen(q_peek(L, 0)->text) >= sizeof(cname)) { snprintf(err, sizeof(err), "a name can have at most %d characters", (int)sizeof(cname) - 1); goto done; }
             snprintf(cname, sizeof(cname), "%s", q_peek(L, 0)->text);
             L->pos++;
             if (action == 4) {
                 if (!q_take(L, "to") || q_peek(L, 0)->kind != QT_WORD) { snprintf(err, sizeof(err), "write it like: alter table %s rename column %s to new_name", tname, cname); goto done; }
+                if (strlen(q_peek(L, 0)->text) >= sizeof(newname)) { snprintf(err, sizeof(err), "a name can have at most %d characters", (int)sizeof(newname) - 1); goto done; }
                 snprintf(newname, sizeof(newname), "%s", q_peek(L, 0)->text);
                 L->pos++;
             }
@@ -4350,6 +4362,7 @@ static bool q_alter(EnlngDatabase* db, const char* stmt, bool print_output, bool
         q_take(L, "add");
         q_take(L, "column");
         if (q_peek(L, 0)->kind != QT_WORD) { snprintf(err, sizeof(err), "expected a column name: add column age to student"); goto done; }
+        if (strlen(q_peek(L, 0)->text) >= sizeof(cname)) { snprintf(err, sizeof(err), "a name can have at most %d characters", (int)sizeof(cname) - 1); goto done; }
         snprintf(cname, sizeof(cname), "%s", q_peek(L, 0)->text);
         L->pos++;
         if (!(q_take(L, "to") || q_take(L, "in")) || q_peek(L, 0)->kind != QT_WORD) { snprintf(err, sizeof(err), "write it like: add column age to student"); goto done; }
@@ -4729,6 +4742,21 @@ static bool q_db_file_exists(const char* name, char* path, size_t n) {
     return f != NULL;
 }
 
+/* Leave the open database for another one: its tables are saved to its own file first (nothing is
+   written for an empty database that has no file), then the memory is cleared for the next one. */
+static bool q_leave_database(EnlngDatabase* db, const char* next, bool print_output) {
+    if (strcmp(db->name, next) == 0) return true;
+    if (db->txn) { q_print_error(print_output, "a transaction is open; 'commit' or 'rollback' it before changing database", ""); return false; }
+    if (!db->dropped && db->table_count > 0) {
+        char path[256];
+        if (!q_db_file_exists(db->name, path, sizeof(path))) snprintf(path, sizeof(path), "%s.edb", db->name);
+        enlngdb_save(db, path);
+    }
+    enlngdb_clear(db);
+    db->dropped = false;
+    return true;
+}
+
 #define Q_MAX_STATEMENT 8192
 
 bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool print_output) {
@@ -4869,7 +4897,8 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
             char* sc = strchr(dbname, ';');
             if (sc) *sc = '\0';
             trim(dbname);
-            strncpy(db->name, dbname, sizeof(db->name) - 1);
+            if (!q_leave_database(db, dbname, print_output)) return false;
+            snprintf(db->name, sizeof(db->name), "%s", dbname);
             char edb_file[256];
             snprintf(edb_file, sizeof(edb_file), "%s.edb", dbname);
             FILE* testf = fopen(edb_file, "rb");
@@ -4892,7 +4921,8 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
             char* sc = strchr(dbname, ';');
             if (sc) *sc = '\0';
             trim(dbname);
-            strncpy(db->name, dbname, sizeof(db->name) - 1);
+            if (!q_leave_database(db, dbname, print_output)) return false;
+            snprintf(db->name, sizeof(db->name), "%s", dbname);
             char edb_file[256];
             snprintf(edb_file, sizeof(edb_file), "%s.edb", dbname);
             FILE* testf = fopen(edb_file, "rb");
@@ -4926,9 +4956,8 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
             q_print_error(print_output, "a database with this name already exists", "Open it with: use database <name>");
             return false;
         }
-        enlngdb_clear(db);
+        if (!q_leave_database(db, name, print_output)) return false;
         snprintf(db->name, sizeof(db->name), "%s", name);
-        db->dropped = false;
         if (print_output) printf("Query OK, database '%s' created and now in use. (0.01 ms)\n\n", name);
         return true;
     }

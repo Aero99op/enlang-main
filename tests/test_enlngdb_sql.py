@@ -414,6 +414,21 @@ def main():
         check("a column with no value is an error", "has no value" in out, out)
         out = run("create table x with a,\n")
         check("a comma with no column after it is an error", "missing after the last comma" in out, out)
+        for word in ("is", "to", ":", "="):
+            out = run('insert into student with id 9, name %s "Eve"\nfind name from student where id is 9\n' % word)
+            check("insert: 'name %s value' stores the value alone" % word, col(out)[-1:] == ["Eve"], out)
+        out = run('use database swap_a\ncreate table t1 with id\ncreate database swap_b\nshow tables\ncreate table t2 with id\n'
+                  'use database swap_a\nshow tables\nuse database swap_b\nshow tables\n', setup="")
+        shown = [c for c in out.splitlines() if c.startswith("| t")]
+        check("changing database keeps each database's own tables", [c.split()[1] for c in shown] == ["t1", "t2"], out)
+        check("saving leaves the database file and no .tmp file", os.path.exists(os.path.join(TMP, "swap_a.edb")) and not [f for f in os.listdir(TMP) if f.endswith(".tmp")], str(os.listdir(TMP)))
+        long_name = "n" * 70
+        for stmt in ("create table %s with id" % long_name, "create table tl with id, %s" % long_name,
+                     "insert into student with id 8, %s 1" % long_name, "alter table student add column %s" % long_name):
+            out = run(stmt + "\n")
+            check("a name of 70 characters is refused, not cut: " + stmt[:24], "at most 63 characters" in out, out)
+        out = run('begin\nuse database swap_c\n', setup="")
+        check("a database cannot be changed inside a transaction", "before changing database" in out, out)
         out = run("create table y with:\n    id integer\ndescribe y\n")
         check("'with:' is refused, not made into a column called with:", "is not a column name" in out and "with:" not in out.split("is not a column name")[1], out)
     finally:

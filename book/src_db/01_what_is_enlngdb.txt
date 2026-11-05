@@ -1,0 +1,25 @@
+# What EnlngDB is
+EnlngDB is a small database engine that you talk to in plain words. You make a table, put rows in it, and ask for rows back with sentences like `find name from student where marks is more than 80`. The engine is one program, `enlngdb.exe`, written in C with no libraries beyond the C standard library.
+## What it is good for
+- Learning how tables, queries and joins work, because the words say what they do.
+- Small programs and scripts that need to keep a few tables in a file.
+- Trying an idea quickly in the playground on the Enlangg site, which runs the same engine in your browser.
+## What it is not
+EnlngDB keeps a whole database in memory while a script runs, reads tables in full for every query, and runs one script at a time. It has no server, no users and permissions, no triggers and no stored procedures. Chapter 18 lists everything it does not have, so that you do not have to find out by trying.
+## One script, one engine
+A script is a text file that ends in `.enlngdb`. Each line is a statement. You run it like this:
+::: sh
+enlngdb shop.enlngdb
+:::
+The first complete script of this book creates a table, puts three rows in it and asks for them back.
+::: db
+create table student with id, name, marks
+insert into student with id 1, name "Asha", marks 80
+insert into student with id 2, name "Ravi", marks 90
+insert into student with id 3, name "Meera", marks 70
+find name, marks from student where marks is more than 75
+:::
+Every script in this book was run with the real engine, and the box under each script is what the engine printed. The only things left out are the time in brackets that the engine adds to most lines, such as `(0.04 ms)`, because it changes from run to run, and the line that says which database was opened. A script that is meant to fail is marked `SCRIPT WITH A MISTAKE`, and the engine's own message is shown under it.
+Scripts in one chapter share one database, so a table made in an early script is still there in the later ones. Each chapter starts with an empty database.
+## How the book is organised
+Chapters 2 to 7 teach the everyday words: scripts, tables, rows, finding, totals and joins. Chapters 8 to 10 add calculations, subqueries and window functions. Chapters 11 to 14 cover changing data, rules for columns, views and transactions. Chapters 15 to 18 describe the file on disk, the C interface, what the engine refuses, and what is missing.

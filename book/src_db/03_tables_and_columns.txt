@@ -1,0 +1,70 @@
+# Tables and columns
+A table has a name and a list of columns. Each row of the table has one value for each column.
+## Creating a table
+The shortest form is the name and the columns, separated by commas.
+::: db
+create table student with id, name, marks, city
+show tables
+:::
+A column with no type keeps whatever you put into it, a number or text. If you want the engine to check the kind of value, give the column a type. The columns of a table can be described afterwards with `describe`.
+::: db
+create table fees with fee_id integer, student_id integer, amount integer
+describe fees
+:::
+`show columns from fees` shows the same table. The `Key` column tells you which column is the table's key. Rows are replaced when they have the same key, and the next chapter explains what that means.
+## Types
+| Type | What it holds | Also written |
+| :--- | :--- | :--- |
+| `integer` | whole numbers | `int` |
+| `real` | numbers with a point | `float`, `decimal`, `number` |
+| `text` | text | `varchar` |
+| `boolean` | `true` or `false` | |
+| `date` | a date such as `2024-03-15`, with an optional time | |
+Chapter 12 explains how a value is turned into the column's type, and what the engine does when it cannot be.
+## Creating a table only if it is new
+The words `if not exists` stop the statement from failing when the table is already there.
+::: db
+create table if not exists student with id, name
+describe student
+:::
+The table `student` already existed, so nothing changed and its four columns are still there.
+## Creating a table that already exists
+Without those words the result is the same: the engine leaves the table as it is, says that it already exists, and does not change its columns. It never replaces a table that has rows in it.
+::: db
+create table student with id, name, email
+:::
+## Looking at what you have
+::: db
+show tables
+describe student
+:::
+## Copying a table
+`create table ... as` makes a table from the result of a query. The columns are the ones the query shows.
+::: db
+insert into student with id 1, name "Asha", marks 80, city "Pune"
+insert into student with id 2, name "Ravi", marks 90, city "Goa"
+create table toppers as find name, marks from student where marks > 85
+find * from toppers
+:::
+## A table for one script
+`create temporary table` (or `create temp table`) makes a table that lives only until the script ends. It is not saved, so the next script does not see it.
+::: db
+create temporary table scratch with id
+insert into scratch values (1)
+find * from scratch
+:::
+::: db
+show tables
+:::
+## Removing a table
+Dropping a table removes its rows too, so the engine asks you to add the word `confirmed`. Without it nothing happens.
+::: err
+drop table toppers
+:::
+::: db
+drop table toppers confirmed
+show tables
+:::
+The same safety word appears wherever data could be lost for good: dropping a column, deleting every row, truncating a table, dropping a database. Chapter 11 lists them all.
+## Changing the columns later
+You can add, remove and rename columns after a table exists, and change a column's type. Chapter 13 covers that.

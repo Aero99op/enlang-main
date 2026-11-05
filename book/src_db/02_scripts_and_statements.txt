@@ -1,0 +1,54 @@
+# Scripts and statements
+## Running a script
+A script is a plain text file. By habit it ends in `.enlngdb`. You give it to the engine:
+::: sh
+enlngdb shop.enlngdb
+enlngdb -e "show tables"
+:::
+The first form runs every statement in the file. The second runs one statement that you type on the command line. `enlngdb --version` prints the version, and `enlngdb` alone prints a short help text.
+## The header and the database name
+A script may begin with the line `type enlngdb`. It says that what follows is a database script. In this book that line, and a line that chooses the database, are put in front of every script for you, so the scripts below show only the statements.
+The line that chooses the database looks like this:
+::: sh
+use database shop
+:::
+A database is a set of tables. When a script ends, the engine saves the database to a file called `<name>.edb` in the folder where you ran it, and the next script that says `use database shop` finds it again. A script without `use database` works in a database called `default`. If a statement in the script fails, the engine says so at the end and does not save anything from that run, so a half-finished script never leaves a half-finished file.
+## One statement per line
+A statement ends at the end of the line. Two statements on one line are separated by a semicolon.
+::: db
+create table items with id, title; insert into items with id 10, title "Keyboard"; find items
+:::
+A statement can continue on the next line when you are inside brackets: the line must end with an opening bracket or a comma, or the next line must start with a closing bracket. Chapter 12 shows this with `create table`.
+## Comments
+A comment starts with `#` or with `--` and runs to the end of the line. It can stand on its own line or follow a statement.
+::: db
+-- how many items are there?
+count records in items # the answer is a table with one cell
+:::
+## Words the engine ignores
+EnlngDB reads sentences, so a few small words may be left in or out without changing what a statement means. They are: `the`, `a`, `an`, `please`, `kindly`, `record`, `records`, `row`, `rows`, `entry`, `entries`, `data`, `item`, `items`.
+These three statements mean the same thing:
+::: db
+find all records from items
+find the records from items
+please find items
+:::
+A word is ignored only where a name or a keyword is not expected, and never inside quotes. A table that is really called `items` is still found by name in `from items`. If you are in doubt, leave the small words out.
+## Names, text, numbers
+- A name is letters, digits and `_`. Table names and column names are written bare; a name with a space in it is not supported.
+- `users.id` means the column `id` of the table `users`. You need this form only when two tables have a column of the same name.
+- Text is written between double quotes or single quotes: `"Asha"` or `'Asha'`.
+- A number is written plainly: `42`, `-100`, `3.14`.
+- The words `true` and `false` are yes and no. The word `null` means that there is no value.
+## Showing a message
+`display` prints text. It is useful in a script to mark where the output of one part begins.
+::: db
+display "the second part starts here"
+:::
+## Naming things in a sentence
+Most statements start with a verb: `create`, `insert`, `find`, `update`, `delete`, `alter`, `drop`, `show`, `describe`, `begin`. A few can also begin with a different word that means the same thing. For finding rows, `find`, `fetch`, `select` and `get` are the same word, and so are `show all records from` and `find all records from`.
+::: db
+fetch title from items
+select title from items
+get from items
+:::

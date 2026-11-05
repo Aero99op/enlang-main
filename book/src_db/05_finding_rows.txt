@@ -1,0 +1,76 @@
+# Finding rows
+The tables of this chapter are made once, here, and used in the chapters that follow.
+::: db
+create table student with id, name, marks, city
+insert into student values (1, "Asha", 80, "Pune"), (2, "Ravi", 90, "Goa"), (3, "Meera", 70, "Pune"), (4, "Karan", 95, null)
+:::
+## All the rows, or some of the columns
+::: db
+find * from student
+find name, marks from student
+:::
+`find all records from student` and `find the records from student` give the same table as `find * from student`.
+## Choosing rows with `where`
+`where` keeps the rows for which a condition is true. The condition can be written in words or in marks.
+| Meaning | In words | As a mark |
+| :--- | :--- | :---: |
+| equal | `is`, `is equal to`, `equals` | `=`, `==` |
+| not equal | `is not`, `is not equal to` | `!=` |
+| greater | `is greater than`, `more than`, `is above` | `>` |
+| greater or equal | `is at least`, `is greater than or equal to` | `>=` |
+| less | `is less than`, `is under`, `below` | `<` |
+| less or equal | `is at most`, `is less than or equal to` | `<=` |
+::: db
+find name from student where marks is more than 85
+find name from student where marks is at most 80
+find name from student where city is not "Pune"
+:::
+Look at the last one. Karan has no city, and he is not in the answer. A comparison with `null` is never true, and neither is its opposite. To ask for the rows with no value, write `is null`:
+::: db
+find name from student where city is null
+find name from student where city is not null
+:::
+## `and`, `or`, `not` and brackets
+::: db
+find name from student where city is "Pune" and marks is at least 75
+find name from student where city is "Goa" or marks is more than 90
+find name from student where not city is "Pune"
+find name from student where (marks > 85 or marks < 75) and city is not null
+:::
+`and` is worked out before `or`. Use brackets when you mean something else.
+## `between`, `in` and `like`
+::: db
+find name from student where marks between 70 and 85
+find name from student where city in ("Pune", "Goa")
+find name from student where name like "A%"
+find name from student where name like "_a%"
+:::
+`between` includes both ends. In `like`, `%` stands for any text and `_` for one letter. `not between`, `not in` and `not like` ask the opposite question.
+## Sorting
+`order by` puts the rows in order. The words `asc` or `ascending` and `desc` or `descending` choose the direction, and `highest first` and `lowest first` mean the same.
+::: db
+find name, marks from student order by marks desc
+find name, marks from student order by city desc, marks
+find name, marks from student sorted by marks lowest first
+:::
+In `order by city desc, marks` the rows are sorted by city from the last to the first, and the rows of one city by marks. A row with `null` sorts before every value when the order is ascending.
+## Only some of the rows: `top`, `first`, `limit`, `offset`
+::: db
+find top 2 records from student order by marks highest first
+find name from student order by marks desc limit 2 offset 1
+:::
+`limit 2 offset 1` skips one row and then takes two. `top` and `first` take the first rows in the order you asked for. Always say how the rows are ordered when you cut them: without `order by` the rows come in the order they were added.
+## Each value once
+::: db
+find distinct city from student
+:::
+## Counting
+::: db
+count records in student
+count records in student where marks is at least 80
+:::
+## Showing a calculated or fixed value
+A query needs no table when it only calculates.
+::: db
+select 6 * 7
+:::

@@ -1,0 +1,60 @@
+# The file on disk and the C interface
+## What is saved, and when
+When a script ends without a failed statement, the engine writes the open database to `<name>.edb`. The file is written whole each time, to `<name>.edb.tmp` first and then moved over the old file, so a crash while the data is being written leaves the old file as it was. A script that has a failed statement saves nothing, and says so. A database dropped with `drop database ... confirmed` is not written again.
+Temporary tables, made inside a script for its own use, are not saved. Views, indexes, column types, rules and automatic-number counters are saved with the tables.
+## The layout of the file
+Each number is written byte by byte, so the file reads the same on every machine and every compiler.
+| Part | Size | Content |
+| :--- | :--- | :--- |
+| magic | 16 bytes | the text `ENLNG_C_EDB_V2` and two zero bytes |
+| database name | 64 bytes | text, padded with zero bytes |
+| table count | 4 bytes | a whole number |
+| each table | | the parts listed below |
+Each table has:
+- its name (64 bytes) and the text of its view (4 bytes for the length, then the text; length 0 for a table).
+- the number of columns (4 bytes) and for each column its name (64 bytes), five flag bytes (the type: 0 any, 1 integer, 2 real, 3 text, 4 boolean, 5 date; then primary key, unique, not null and automatic number), the default, the check and the referenced table and column (each a length of 4 bytes and then the text), and the next automatic number (8 bytes).
+- the number of indexes (4 bytes) and for each its name, whether it is unique, and its columns.
+- the number of rows (8 bytes) and every row: the number of cells (4 bytes), then for each cell a type byte (0 empty, 1 whole number, 2 decimal number, 3 text, 4 yes or no) and its value.
+Files written by earlier versions of EnlngDB begin with `ENLNG_C_EDB_V1`. They have no types, views or rules. They are read, and the next time the database is saved the file is written as version 2.
+## Using the engine from C
+The engine is three files, `enlngdb.c`, `enlngdb_parser.c` and `enlngdb.h`, and the C standard library. This program makes a database, runs three statements and saves it. It prints what a script would print, because the last argument of `enlngdb_execute_statement` says whether to print.
+::: src
+#include "enlngdb.h"
+
+int main(void) {
+    EnlngDatabase* db = enlngdb_create("finance_db");
+    enlngdb_execute_statement(db, "create table users with id, name, balance", true);
+    enlngdb_execute_statement(db, "insert into users with id 1, name \"Asha\", balance 50000", true);
+    enlngdb_execute_statement(db, "find name from users where balance is at least 40000", true);
+    enlngdb_save(db, "finance_db.edb");
+    enlngdb_free(db);
+    return 0;
+}
+:::
+It is built together with the two engine files:
+::: sh
+gcc demo.c enlngdb.c enlngdb_parser.c -lm -o demo
+:::
+and prints this when run (the times left out):
+::: out
+Query OK, 0 rows affected. Table 'users' created with 3 columns.
+
+Query OK, 1 row affected
+
++------+
+| name |
++------+
+| Asha |
++------+
+1 row(s) in set
+:::
+`enlngdb_execute_statement` returns true when the statement worked and false when it did not. `enlngdb_load(db, "finance_db.edb")` reads a file back into a database. A database holds at most 64 tables, a table at most 32 columns and 8 indexes, and a name at most 63 characters.
+## Limits
+| Thing | The most |
+| :--- | :---: |
+| tables in a database | 64 |
+| columns in a table | 32 |
+| indexes on a table | 8 |
+| characters in a name | 63 |
+| characters in one statement | 8191 |
+| characters in the query of a view | 1023 |

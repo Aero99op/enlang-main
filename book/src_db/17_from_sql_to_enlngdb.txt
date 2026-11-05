@@ -1,0 +1,60 @@
+# From SQL to EnlngDB
+If you know SQL, this chapter is the dictionary. The scripts after each table run most of its EnlngDB statements on the tables below, and none of them gave an error. The statements that remove everything are shown, and run, in chapter 11.
+::: db
+create table users with id integer primary key, name text, balance integer, active boolean, dept text
+insert into users values (1, "Asha", 500, true, "ops"), (2, "Ravi", 300, false, "dev"), (3, "Meera", 900, true, "dev")
+create table orders with id integer, user_id integer, total integer
+insert into orders values (1, 1, 100), (2, 1, 250), (3, 3, 80)
+:::
+## Reading
+| SQL | EnlngDB |
+| :--- | :--- |
+| `SELECT * FROM users` | `find * from users` |
+| `SELECT id, name FROM users WHERE id = 1` | `find id, name from users where id is 1` |
+| `... WHERE balance >= 400 ORDER BY balance DESC LIMIT 2` | `find name from users where balance is at least 400 order by balance desc limit 2` |
+| `SELECT DISTINCT dept FROM users` | `find distinct dept from users` |
+| `SELECT COUNT(*) FROM users` | `count records in users` |
+| `SELECT dept, COUNT(*) FROM users GROUP BY dept HAVING COUNT(*) > 1` | `find dept, count(*) from users group by dept having count(*) > 1` |
+| `WHERE x BETWEEN 1 AND 5`, `IN (...)`, `LIKE 'A%'`, `IS NULL` | the same words: `between 1 and 5`, `in (...)`, `like "A%"`, `is null` |
+| `SELECT u.name, o.total FROM users u JOIN orders o ON u.id = o.user_id` | `find u.name, o.total from users u join orders o on u.id is o.user_id` |
+| `... LEFT JOIN ...` | `... left join ...` or `users <- orders` |
+| `UNION`, `INTERSECT`, `EXCEPT` | the same words |
+| `WITH t AS (...) SELECT ...` | `with t as (...) find ...` |
+| `CASE WHEN ... THEN ... END` | `case when ... then ... end` |
+| `RANK() OVER (ORDER BY x)` | `rank() over (order by x)` |
+::: db
+find id, name from users where id is 1
+find name from users where balance is at least 400 order by balance desc limit 2
+count records in users
+find dept, count(*) from users group by dept having count(*) > 1
+find u.name, o.total from users u join orders o on u.id is o.user_id
+find name, total from users <- orders
+with t as (find name, balance from users where balance > 400) find name from t
+:::
+## Changing
+| SQL | EnlngDB |
+| :--- | :--- |
+| `INSERT INTO users (id, name) VALUES (4, 'Dev')` | `insert into users with id 4, name "Dev"` or `insert into users (id, name) values (4, "Dev")` |
+| `UPDATE users SET balance = 5000 WHERE id = 1` | `update users set balance = 5000 where id is 1` |
+| `DELETE FROM users WHERE active = false` | `delete from users where active is false` |
+| `DELETE FROM users` | `delete all from users confirmed` |
+| `TRUNCATE TABLE users` | `truncate table users confirmed` |
+| `ALTER TABLE users ADD COLUMN age INT` | `alter table users add column age integer` |
+| `DROP TABLE users` | `drop table users confirmed` |
+::: db
+insert into users with id 4, name "Dev"
+insert into users (id, name) values (5, "Eli")
+update users set balance = 5000 where id is 1
+delete from users where active is false
+alter table users add column age integer
+find id, name, balance, age from users
+:::
+## Things that differ
+- **Text and conditions:** text is written in quotes, and conditions are written with words: `is`, `is not`, `is at least`. The marks `=`, `!=`, `>=` also work.
+- **`NULL`:** `is null` and `is not null`, as in SQL. A comparison with `null` is never true, as in SQL.
+- **Strings:** `+` joins two texts. SQL's `||` is not used.
+- **A key:** a table's key is the column marked `primary key`, or a column called `id`. Inserting a row with a key that exists replaces that row, where SQL would refuse. The engine says that it replaced a row.
+- **Destructive statements:** `drop`, `truncate` and `delete` without `where` need the word `confirmed`.
+- **Types:** `integer`, `real`, `text`, `boolean`, `date`. A column with no type holds anything.
+- **Missing:** `natural join`, recursive `with`, `on delete cascade` and savepoints do not exist (chapter 18).
+- **Quotes around names:** a table or column name with a space in it is not supported.

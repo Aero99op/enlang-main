@@ -824,7 +824,10 @@ static bool get_val(FILE* f, EnlngVal* v) {
 
 bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
     if (!db || !filepath) return false;
-    FILE* f = fopen(filepath, "wb");
+    /* write beside the file and move it into place, so a crash while saving leaves the old file whole */
+    char tmp_path[1100];
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", filepath);
+    FILE* f = fopen(tmp_path, "wb");
     if (!f) return false;
 
     int saved_tables = 0;
@@ -869,7 +872,11 @@ bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
             for (int c = 0; c < row->cell_count; c++) put_val(f, &row->cells[c]);
         }
     }
-    fclose(f);
+    bool wrote = fflush(f) == 0 && ferror(f) == 0;
+    if (fclose(f) != 0) wrote = false;
+    if (!wrote) { remove(tmp_path); return false; }
+    remove(filepath);
+    if (rename(tmp_path, filepath) != 0) { remove(tmp_path); return false; }
     return true;
 }
 

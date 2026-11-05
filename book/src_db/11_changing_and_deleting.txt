@@ -1,0 +1,54 @@
+# Changing and deleting rows
+::: db
+create table student with id, name, marks, city
+insert into student values (1, "Asha", 80, "Pune"), (2, "Ravi", 90, "Goa"), (3, "Meera", 70, "Pune"), (4, "Karan", 95, "Delhi")
+:::
+## Update
+`update <table> set <column> = <value>` changes rows. Without `where`, every row is changed. With `where`, only the rows that match.
+::: db
+update student set marks = 85 where id is 1
+update student set marks = marks + 5, city = upper(city) where city is "Pune"
+find * from student
+:::
+The new values are worked out from the old rows, and all rows are checked before any is written. If one row would break a rule, none is changed.
+`update records in student set ...` and `update records ...` are the same. The word `limit` stops after some rows:
+::: db
+update student set marks = 0 where marks >= 90 limit 1
+find name, marks from student
+:::
+## The conversational form
+The same change can be written as a sentence: `in <table> change <column> to <value> where ...`. After `to` the value may be written without quotes.
+::: db
+in student change city to New Delhi where id is 4
+find name, city from student where id is 4
+:::
+## A column that does not exist
+::: err
+update student set marx = 1 where id is 1
+:::
+## Delete
+`delete from <table> where ...` removes the rows that match.
+::: db
+delete from student where id is 1 or marks between 70 and 76
+find * from student
+:::
+`delete records from student where ...` is the same.
+## The safety word `confirmed`
+A statement that would remove everything needs the word `confirmed`. Without it the engine refuses and shows what to write.
+::: err
+delete all from student
+:::
+::: db
+delete all from student confirmed
+count records in student
+:::
+| Statement | Needs `confirmed` |
+| :--- | :---: |
+| `delete from t` with no `where` (also `delete all from t`) | yes |
+| `truncate table t` | yes |
+| `drop table t` | yes |
+| `drop column c from t`, `alter table t drop column c` | yes |
+| `drop database d` | yes |
+| `delete from t where ...` | no |
+| `drop view v`, `drop index i` | no |
+`truncate table t confirmed` removes every row and keeps the table. For a table with an automatic number, it also starts counting from 1 again.

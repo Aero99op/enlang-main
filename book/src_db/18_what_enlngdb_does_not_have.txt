@@ -1,0 +1,25 @@
+# What EnlngDB does not have
+A list of what is missing is part of a reference. Each of these is something a statement or a program could be written for, and none of them exists. EnlngDB gives an error or a message when you try.
+## Not there at all
+- **Users and permissions.** There is no `grant` or `revoke`. Anyone who can read the file can read the data.
+- **Triggers and stored procedures.** Statements run only when a script runs them.
+- **`natural join`.** Write the `on`, or use a join mark and let the engine match the names.
+- **Recursive `with`.** A `with` name can use the names before it, but cannot use itself.
+- **`on delete cascade`.** A row that other rows refer to cannot be deleted. Delete the rows that refer to it first.
+- **Savepoints.** A transaction can be committed or rolled back as a whole, not in pieces.
+- **Types beyond the five.** There is no `json`, `blob` or `timestamp` type.
+- **Names with spaces.** A table or column name is letters, digits and underscores.
+## There, but different from what you may expect
+- **Indexes.** A `unique` index is a rule that is enforced. A plain index is recorded and shown, and it does not make a query faster, because every query reads its tables in full from memory.
+- **One script at a time.** There is no server, no connection and no second writer. Two scripts that run at the same moment on the same database file are not coordinated.
+- **`show databases`** lists only the database that is open. The others are the `.edb` files in the folder.
+- **Size.** A database lives in memory while a script runs. It is meant for tables of thousands of rows, not millions.
+- **Counting and dates.** `datediff` counts days. There is no time zone.
+## Limits
+Sixty-four tables in a database, thirty-two columns in a table, eight indexes on a table, sixty-three characters in a name, eight thousand one hundred and ninety-one characters in a statement.
+## Two engines, one language
+EnlngDB also exists as a Python package for scripting. This book describes the C engine, `enlngdb.exe`, which is the one in the Enlangg toolchain, the playground and Studio on the Enlangg site. Features of the two engines are not the same, and a script that runs in one may not run in the other.
+## Where to go next
+- Run the scripts of this book yourself: copy a script into a file, run `enlngdb file.enlngdb`.
+- Open the playground on the Enlangg site, pick the preset "Rules, Subqueries & Views", and change it.
+- Read the tests in the repository, `tests/test_enlngdb_sql.py` and `tests/test_enlngdb_queries.py`: each one is a small script with the answer it must give.

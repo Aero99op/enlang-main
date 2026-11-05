@@ -1,0 +1,92 @@
+# Types and rules for columns
+A column can carry rules, and the engine checks them for every row that goes in or is changed. A row that breaks a rule is refused with the reason, and nothing is written.
+## Writing a table with rules
+The columns of `create table` can each have a type and rules after the name.
+::: db
+create table person with id integer primary key auto_increment, email text unique not null, age integer default 18 check (age >= 0), role text default "user", born date
+describe person
+:::
+The same list can be written in brackets and over several lines, when each line ends with an opening bracket or a comma.
+::: db
+create table pet (
+  id integer primary key,
+  name text not null,
+  weight real
+)
+describe pet
+:::
+## The rules
+| Rule | What it does |
+| :--- | :--- |
+| `primary key` | the identity of the row; a second row with the same key replaces the first (chapter 4) |
+| `primary key (a, b)` | the identity is the pair of columns |
+| `auto_increment` | a number is given when none is written: 1, then 2, and so on |
+| `unique` | no two rows may have the same value; `unique (a, b)` for a pair |
+| `not null` | a value must be given; `required` means the same |
+| `default value` | the value used when none is written |
+| `check (condition)` | the condition must be true for the row |
+| `references table(column)` | the value must exist in that column of that table |
+## Defaults and automatic numbers
+::: db
+insert into person with email "a@x.org"
+insert into person with email "b@x.org", age 30, role "admin"
+find * from person
+:::
+## A rule that is broken
+::: err
+insert into person with email "a@x.org"
+:::
+::: err
+insert into person with email "c@x.org", age -5
+:::
+::: err
+insert into person with age 20
+:::
+Each message names the column and the rule. The first one is refused because `a@x.org` is already there, the second because `age >= 0` is false, and the third because `email` is `not null`.
+## Values are turned into the column's type
+A value that fits the column's type, though it is written differently, is turned into that type. `"30"` in an `integer` column becomes the number 30. A value that cannot be turned is refused, with the reason.
+::: db
+insert into person with email "d@x.org", age "41", born "2024-03-15"
+find email, age, born from person where email is "d@x.org"
+:::
+::: err
+insert into person with email "e@x.org", age "forty"
+:::
+::: err
+insert into person with email "f@x.org", born "2024-02-31"
+:::
+A date is checked in full, with the lengths of the months and leap years: February 31 does not exist.
+A column without a type keeps whatever is written. Types are checked only where they are given.
+## References between tables
+`references table(column)` links a column to a column of another table. The engine then keeps the link true.
+::: db
+create table owner with id integer primary key, name text
+create table cat with id integer primary key, name text, owner_id integer references owner(id)
+insert into owner values (1, "Asha"), (2, "Ravi")
+insert into cat values (1, "Mitu", 1), (2, "Kaalu", 1)
+:::
+A cat cannot be given an owner who does not exist:
+::: err
+insert into cat values (3, "Ghost", 9)
+:::
+An owner whom a cat refers to cannot be deleted, and the table of owners cannot be dropped while cats refer to it:
+::: err
+delete from owner where id is 1
+:::
+::: err
+drop table owner confirmed
+:::
+An owner whom no cat refers to can be deleted:
+::: db
+delete from owner where id is 2
+find * from owner
+:::
+There is no `on delete cascade`. If the cats are to go with the owner, delete the cats first.
+## Two columns as one key
+::: db
+create table seat (row_no integer, seat_no integer, who text, primary key (row_no, seat_no))
+insert into seat values (1, 1, "Asha"), (1, 2, "Ravi")
+insert into seat values (1, 2, "Meera")
+find * from seat
+:::
+A row with the same pair replaced the old one, and the engine said so.

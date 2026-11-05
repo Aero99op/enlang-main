@@ -1,0 +1,92 @@
+# Calculations and functions
+Wherever a column can be written, a calculation can be written.
+::: db
+create table student with id, name, marks, city
+insert into student values (1, "Asha", 80, "Pune"), (2, "Ravi", 90, "Goa"), (3, "Meera", 70, "Pune"), (4, "Karan", 95, null)
+:::
+## Arithmetic
+`+`, `-`, `*`, `/` and `%` (the remainder). Brackets work as in school. Write a minus with spaces, `marks - 5`: the word `marks-5` is read as one name.
+::: db
+find name, marks + 5, marks * 2 - 1, marks / 4, marks % 7 from student
+select 7 / 2, 7 % 2, 2 + 3 * 4, (2 + 3) * 4
+:::
+Dividing by zero is an error, not a silent `null`:
+::: err
+select 1 / 0
+:::
+## Text
+`+` adds numbers, and joins two texts. A text that is only digits is still text when it is written in quotes, so `"80" + "1"` is `801`.
+::: db
+find name + "-" + city from student
+select "80" + "1"
+:::
+Karan has no city, so his joined text is `null`: a calculation with a missing value gives a missing value.
+## Text functions
+| Function | Result |
+| :--- | :--- |
+| `upper(x)`, `lower(x)` | capital or small letters |
+| `length(x)` | the number of characters |
+| `trim(x)`, `ltrim(x)`, `rtrim(x)` | without spaces at the ends |
+| `substr(x, start, count)`, `substring` | a piece; the first character is number 1 |
+| `left(x, n)`, `right(x, n)` | the first or last n characters |
+| `replace(x, old, new)` | with every `old` changed to `new` |
+| `concat(a, b, ...)` | the texts joined; a missing value counts as empty |
+| `instr(x, y)` | the place of `y` in `x`, or 0 |
+| `reverse(x)` | the characters in the opposite order |
+::: db
+find upper(name) as up, lower(name) as lo, length(name) as len, substr(name, 1, 2) as sub from student
+find left(name, 3) as l3, replace(name, "a", "A") as rep, instr(name, "a") as pos from student
+find concat(name, "-", city) as joined, reverse(name) as back from student
+:::
+## Number functions
+| Function | Result |
+| :--- | :--- |
+| `abs(x)`, `sign(x)` | the size, and -1, 0 or 1 |
+| `round(x)`, `round(x, places)` | rounded |
+| `floor(x)`, `ceil(x)`, `ceiling(x)` | rounded down or up |
+| `sqrt(x)`, `power(x, y)`, `pow(x, y)`, `mod(x, y)` | square root, power, remainder |
+| `least(a, b, ...)`, `greatest(a, b, ...)` | the smallest and the largest of the values |
+::: db
+select abs(-4) as a, round(3.14159, 2) as r, floor(2.7) as f, ceil(2.1) as c, sqrt(81) as s, power(2, 10) as p
+find name, least(marks, 85) as lo, greatest(marks, 85) as hi from student
+find round(avg(marks), 1) from student
+:::
+## Missing values
+| Function | Result |
+| :--- | :--- |
+| `coalesce(a, b, ...)` | the first value that is not null |
+| `ifnull(a, b)` | `b` when `a` is null |
+| `nullif(a, b)` | null when `a` equals `b`, else `a` |
+| `if(condition, yes, no)` | `yes` or `no` |
+::: db
+find name, coalesce(city, "unknown") as c, nullif(marks, 70) as n, if(marks >= 90, "top", "ok") as t from student
+:::
+## Choosing a value: `case when`
+::: db
+find name, case when marks >= 90 then "A" when marks >= 80 then "B" else "C" end as grade from student
+:::
+Without `else`, a row that matches no `when` gets `null`.
+## Dates and the clock
+| Function | Result |
+| :--- | :--- |
+| `year(d)`, `month(d)`, `day(d)` | a part of a date |
+| `date(d)` | the date part of a date with a time |
+| `datediff(a, b)` | the number of days from `b` to `a` |
+| `now()`, `today()`, `current_date()`, `current_time()` | the clock of the machine |
+::: db
+select year("2024-03-15") as y, month("2024-03-15") as m, day("2024-03-15") as d, datediff("2024-03-15", "2024-03-10") as days
+:::
+## Changing the type of a value
+`cast(x as type)` turns a value into `integer`, `real` or `text`. When that is not possible the engine says so.
+::: db
+select cast("42" as integer) + 1 as a, cast(7 as text) + "!" as b, cast(3 as real) as c
+:::
+::: err
+select cast("forty" as integer)
+:::
+## Calculations in conditions and sorting
+::: db
+find name from student where marks % 2 is 0 and length(name) > 4
+find name, marks from student order by abs(marks - 85)
+:::
+The last one puts the student closest to 85 first.

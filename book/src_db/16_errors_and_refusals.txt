@@ -1,0 +1,61 @@
+# Errors and refusals
+EnlngDB does not guess. When a statement is unclear or would do something you may not have meant, it says what is wrong, and changes nothing. There are three kinds of answer.
+- `ERROR:` the statement could not be done. The message says why, and usually what to write instead.
+- `REFUSED:` the statement is clear, but it would remove data and the safety word `confirmed` is missing. Add the word to go ahead.
+- a syntax error box, when the line is not any statement the engine knows. It lists the commands that exist.
+A script that has a failed statement is still run to the end, so that you see every mistake at once, and then nothing is saved.
+## A word that is not a column
+::: db
+create table student with id, name, marks
+insert into student values (1, "Asha", 80), (2, "Ravi", 90)
+:::
+::: err
+find nme from student
+:::
+The engine lists the columns the table really has. A mistyped column is never taken for a text.
+## A table that does not exist
+::: err
+find name from students
+:::
+## A statement that is not complete
+::: err
+find name from
+:::
+::: err
+update student set marks where id is 1
+:::
+## A line that is not a statement
+::: err
+tell me about student
+:::
+## Several rows, one of them wrong
+A `values` list is all or nothing. The row with the mistake is named.
+::: db
+create table price with item text, cost real not null
+:::
+::: err
+insert into price values ("pen", 2.5), ("book", null)
+:::
+::: db
+count records in price
+:::
+## An ambiguous name
+When two tables both have a column of the same name, a bare name could mean either, so the engine asks you to say which.
+::: db
+create table a with id, v
+create table b with id, w
+insert into a values (1, "x")
+insert into b values (1, "y")
+:::
+::: err
+find id from a join b on a.id is b.id
+:::
+::: db
+find a.id, v, w from a join b on a.id is b.id
+:::
+## What stays true
+- A comparison with `null` is never true. Use `is null` and `is not null`.
+- Dividing by zero is an error.
+- A type that cannot be satisfied is an error. A text is never turned into a number without a reason.
+- A key that exists replaces the row, and the engine tells you. It never makes a second row with the same key.
+- Nothing is deleted for good without `confirmed`.

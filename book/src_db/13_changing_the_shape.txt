@@ -1,0 +1,70 @@
+# Changing the shape: alter, views, indexes
+::: db
+create table student with id, name, marks, city
+insert into student values (1, "Asha", 80, "Pune"), (2, "Ravi", 90, "Goa"), (3, "Meera", 70, "Pune")
+create table fees with fee_id, student_id, amount
+insert into fees values (10, 1, 500), (11, 2, 900)
+:::
+## Altering a table
+::: db
+alter table student add column age integer default 18
+alter table student rename column name to full_name
+find * from student
+:::
+Rows that were there before get the default of the new column, or `null` if there is none.
+### Renaming a table
+::: db
+alter table student rename to pupils
+show tables
+:::
+`rename table student to pupils` is the same. The name is changed everywhere it was used, including in references from other tables.
+### Changing a column's type
+::: db
+alter table pupils rename to student
+alter table student modify column age as text
+find age from student
+:::
+Every value is converted. If one value cannot be, nothing is changed, and the engine says which one.
+::: err
+alter table student modify column full_name as integer
+:::
+### Removing a column
+::: db
+alter table student drop column age confirmed
+describe student
+:::
+## Views
+A view is a query with a name. It is kept as text, and run again each time it is used, so it always shows the rows as they are now.
+::: db
+create view toppers as find full_name, marks from student where marks >= 80
+find * from toppers order by full_name
+update student set marks = 99 where id is 3
+find * from toppers order by full_name
+show views
+:::
+After the update Meera belongs in the view without anyone changing the view. Rows cannot be inserted into a view.
+::: err
+insert into toppers values ("Zed", 100)
+:::
+`create or replace view` changes a view, and `drop view toppers` removes it, without `confirmed` because no rows are lost.
+::: db
+create or replace view toppers as find full_name from student where marks = 99
+find * from toppers
+drop view toppers
+:::
+## Indexes
+::: db
+create unique index u_name on student (full_name)
+create index by_city on student (city)
+show indexes from student
+:::
+A `unique` index is a rule: two rows may not have the same value in it. A plain index is written down and shown by `show indexes`, but it does not make queries faster. EnlngDB keeps every table in memory and reads it in full for each query. `explain` says this about any query.
+::: db
+drop index by_city
+explain find full_name from student join fees on student.id is fees.student_id order by full_name limit 2
+:::
+## Looking at a table
+`describe student` and `show columns from student` list the columns, their types, whether they may be empty, which are keys, and their defaults and rules.
+::: db
+describe student
+:::
