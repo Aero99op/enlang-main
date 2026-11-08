@@ -56,5 +56,6 @@ find id, name, balance, age from users
 - **A key:** a table's key is the column marked `primary key`, or a column called `id`. Inserting a row with a key that exists replaces that row, where SQL would refuse. The engine says that it replaced a row.
 - **Destructive statements:** `drop`, `truncate` and `delete` without `where` need the word `confirmed`.
 - **Types:** `integer`, `real`, `text`, `boolean`, `date`. A column with no type holds anything.
-- **Missing:** `natural join`, recursive `with`, `on delete cascade` and savepoints do not exist (chapter 18).
+- **Missing:** users and permissions, triggers, stored procedures and `on update cascade` do not exist (chapter 19).
+- **More than SQL:** `preview`, `undo`, CSV files and `confirmed` (chapter 15).
 - **Quotes around names:** a table or column name with a space in it is not supported.

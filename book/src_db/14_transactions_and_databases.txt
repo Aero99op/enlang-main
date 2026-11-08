@@ -29,7 +29,21 @@ delete from account where id is 1
 ::: db
 find * from account
 :::
-Asha is still there. There are no savepoints, and there is no second writer: one script runs at a time.
+Asha is still there.
+## Savepoints
+A savepoint is a name for a point inside a transaction. `rollback to` goes back to it and keeps the transaction open; `release` forgets it.
+::: db
+begin
+update account set balance = 100 where id is 1
+savepoint before_ravi
+update account set balance = 0 where id is 2
+rollback to before_ravi
+commit
+find * from account
+:::
+The change to Asha is kept; the change to Ravi was taken back. A transaction can have 16 savepoints.
+## One program at a time
+While a script has a database open, the operating system holds a lock on the file `<name>.edb.lock`. A second program that opens the same database waits up to 5 seconds and then stops with an error that says the database is in use. The lock goes away when the first program ends, also when it crashes.
 ## Databases
 A database is a set of tables, saved as one file called `<name>.edb`. `create database` makes a new one and switches to it, and `use database` switches to one that exists.
 ::: db

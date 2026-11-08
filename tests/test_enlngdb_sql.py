@@ -389,7 +389,7 @@ def main():
 
         # ---- every example in section 11 of the manual runs as written
         manual = open(os.path.join(ROOT, "enlngdb", "MANUAL.md"), encoding="utf-8").read()
-        section = manual.split("# 11. Expressions, Subqueries", 1)[1]
+        section = manual.split("# 11. Expressions, Subqueries", 1)[1].split("\n# 12. ", 1)[0]
         blocks = []
         for part in section.split("```enlngdb\n")[1:]:
             blocks.append(part.split("```", 1)[0])

@@ -138,6 +138,7 @@
         <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_filter">⚡ Filter & Sort</button>
         <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_reports">📊 Totals & Joins</button>
         <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_sql">🧮 Rules, Subqueries & Views</button>
+        <button type="button" class="chip-btn preset-btn chip-btn-db" data-preset="enlngdb_beyond">🛟 Preview, Undo & CSV</button>
       </div>
     </div>
 
@@ -267,7 +268,7 @@ Ready for execution.
         <div>
           <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 4px;">EnlngDB Queries & Filtering</div>
           <code style="color: var(--text-primary); font-weight: 600;">find all records from student;</code>
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Where clause: <code>where marks is greater than 80 or city is "Goa" order by marks desc;</code><br>Totals: <code>find city, avg(marks) from student group by city;</code><br>Joins: <code>from student - fees</code> (matches), <code>&lt;-</code> every student, <code>-&gt;</code> every fee, <code>&lt;-&gt;</code> both, <code>*</code> every pair. Words work too: <code>left join</code>.<br>More: <code>between</code>, <code>in (...)</code>, subqueries, <code>having</code>, <code>union</code>, <code>case when</code>, <code>rank() over (...)</code>, <code>create view</code>, <code>begin</code> / <code>rollback</code> (see the Rules preset).</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Where clause: <code>where marks is greater than 80 or city is "Goa" order by marks desc;</code><br>Totals: <code>find city, avg(marks) from student group by city;</code><br>Joins: <code>from student - fees</code> (matches), <code>&lt;-</code> every student, <code>-&gt;</code> every fee, <code>&lt;-&gt;</code> both, <code>*</code> every pair. Words work too: <code>left join</code>.<br>More: <code>between</code>, <code>in (...)</code>, subqueries, <code>having</code>, <code>union</code>, <code>case when</code>, <code>rank() over (...)</code>, <code>create view</code>, <code>begin</code> / <code>rollback</code> (see the Rules preset).<br>Beyond SQL: <code>preview delete from student where marks &lt; 50;</code> shows what would go, <code>undo</code> takes back the last change, <code>savepoint</code>, <code>natural join</code>, <code>on delete cascade</code>, <code>with recursive</code>.</div>
         </div>
         <div>
           <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 4px;">EnlngDB Deletions & Guards</div>

@@ -2094,7 +2094,47 @@ rollback
 find count(*) from fee
 
 -- The engine refuses bad data. Remove the two dashes in front of the next line and run it (marks over 100):
--- insert into student values (5, "Zed", 140, "Goa")`
+-- insert into student values (5, "Zed", 140, "Goa")`,
+    enlngdb_beyond: `type enlngdb
+
+-- Look before you leap: preview shows what a change would do, and keeps nothing
+create table pupil with name text, roll_no integer primary key, class integer, stream text
+insert into pupil values ("Asha", 1, 11, "Science"), ("Ravi", 2, 12, "Commerce"), ("Sita", 3, 11, "Arts"), ("Karan", 4, 12, "Science")
+preview delete from pupil where stream is "Arts"
+count records in pupil
+
+-- Made a mistake? undo takes back the last change
+delete from pupil where class is 12
+undo
+find name from pupil
+
+-- Savepoints inside a transaction
+begin
+update pupil set class = 12 where roll_no is 1
+savepoint before_delete
+delete from pupil where roll_no is 3
+rollback to before_delete
+commit
+find name, class from pupil
+
+-- natural join matches the columns with the same name
+create table mark with roll_no integer, subject text, score integer
+insert into mark values (1, "Maths", 91), (2, "Maths", 78), (4, "Maths", 85)
+find name, subject, score from pupil natural join mark
+
+-- Delete a pupil, and the club rows that refer to them go too
+create table club with id integer primary key, roll_no integer references pupil(roll_no) on delete cascade
+insert into club values (1, 3), (2, 4)
+delete from pupil where roll_no is 3
+find * from club
+
+-- A query that uses itself: the numbers 1 to 5
+with recursive n as (select 1 as x union all find x + 1 from n where x < 5) find x from n
+
+-- CSV files: export a table, and import it back
+export pupil to "pupils.csv"
+import "pupils.csv" into pupil_copy
+find * from pupil_copy`
   };
 
   // Extracts current query at cursor position or highlighted text
@@ -9890,6 +9930,14 @@ window.addEventListener('message', function(e) {
     { text: 'truncate table', type: 'db', doc: 'EnlangDB: truncate table <table> confirmed' },
     { text: 'begin', type: 'db', doc: 'EnlangDB: begin ... commit | rollback' },
     { text: 'explain', type: 'db', doc: 'EnlangDB: explain <query> (the steps it takes)' },
+    { text: 'preview', type: 'db', doc: 'EnlangDB: preview <change> (shows what it would delete, change or add; keeps nothing)' },
+    { text: 'undo', type: 'db', doc: 'EnlangDB: undo (takes back the last update, delete, truncate, alter, drop or import)' },
+    { text: 'savepoint', type: 'db', doc: 'EnlangDB: savepoint <name> ... rollback to <name> | release <name> (inside begin ... commit)' },
+    { text: 'natural join', type: 'db', doc: 'EnlangDB: from a natural join b (matches every column with the same name)' },
+    { text: 'on delete cascade', type: 'db', doc: 'EnlangDB: <col> integer references <table>(<col>) on delete cascade | on delete set null' },
+    { text: 'with recursive', type: 'db', doc: 'EnlangDB: with recursive t as (<start> union [all] <query that uses t>) find ...' },
+    { text: 'import', type: 'db', doc: 'EnlangDB: import "file.csv" into <table> (first line names the columns)' },
+    { text: 'export', type: 'db', doc: 'EnlangDB: export <table> to "file.csv" | export find ... to "file.csv"' },
     { text: 'add column', type: 'db', doc: 'EnlangDB DDL: add column <col> to <table> [default <val>]' },
     { text: 'alter table', type: 'db', doc: 'EnlangDB DDL: alter table <table> add column <col>' },
     { text: 'insert into', type: 'db', doc: 'EnlangDB DML: insert into <table> with col1 val1, col2 val2' },

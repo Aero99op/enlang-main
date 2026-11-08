@@ -62,6 +62,9 @@
     - 11.1 Conditions, 11.2 Subqueries, 11.3 Groups & `having`, 11.4 Expressions & functions, 11.5 Aliases & self joins
     - 11.6 `union`, `intersect`, `except`, `with`, 11.7 Window functions, 11.8 Inserting, 11.9 Updating & deleting
     - 11.10 Types & constraints, 11.11 Altering tables, 11.12 Views, indexes, `describe`, `explain`, 11.13 Transactions & databases, 11.14 What it does not have
+12. [Beyond SQL: files, safety, speed (C engine)](#12-beyond-sql-files-safety-speed-c-engine)
+    - 12.1 CSV files, 12.2 `preview` and `undo`, 12.3 Savepoints, 12.4 `natural join`, 12.5 `on delete cascade` / `set null`
+    - 12.6 Recursive `with`, 12.7 One program at a time, 12.8 Speed, 12.9 Limits
 
 ---
 
@@ -187,6 +190,8 @@ create table customers with id, email # Inline comments are supported
 # 3. Data Types, Schema Constraints & Directives
 
 ### 3.1 Primitive & Structured Data Types
+> **C engine (`enlngdb.exe`, the playground, Studio):** a column is `integer`, `real`, `text`, `boolean` or `date`, or has no type (§11.10). `TIMESTAMP`, `JSON` and `BLOB` in the table below are not column types of the C engine, and a script that uses them gets an error.
+
 EnlngDB supports the following foundational storage types:
 
 | Data Type | Memory Representation (C) | Python Representation | Description |
@@ -221,6 +226,8 @@ Constraints are declared directly within column definitions to guarantee data in
 ---
 
 ### 3.3 Engine Directives & Performance Hints (`hint`)
+> **C engine (`enlngdb.exe`, the playground, Studio):** `hint` is not read; a statement with `hint` in it gets an error. What makes the C engine fast is described in §12.8.
+
 Hints allow developers to advise the underlying storage engine on caching, index structures, and memory locality without polluting query semantics.
 
 ```enlngdb
@@ -261,6 +268,8 @@ show tables from enterprise_vault
 ### 4.2 Table Creation: Two Distinct Dialects
 
 #### Mode 1: Indented Block Syntax (Recommended for Production)
+> **C engine (`enlngdb.exe`, the playground, Studio):** the indented `with:` form is not supported. Write the columns on one line after `with`, or in brackets over several lines (§11.10).
+
 Provides clean, structured schema declarations with explicit data types and constraints:
 
 ```enlngdb
@@ -336,6 +345,8 @@ drop database test_db confirmed
 # 5. Data Ingestion & Insertion (DML)
 
 ### 5.1 Insertion Verbs
+> **C engine (`enlngdb.exe`, the playground, Studio):** `insert into` and `insert record into` work; `put into` and `save into` do not.
+
 All of the following ingestion keywords are recognized interchangeably:
 * `insert into`
 * `insert record into`
@@ -357,6 +368,8 @@ EnlngDB supports five natural assignment styles for key-value pairs:
 ### 5.3 Insertion Modes
 
 #### Mode 1: Indented Key-Value Block
+> **C engine (`enlngdb.exe`, the playground, Studio):** the indented `with:` form is not supported; use Mode 2 or `values` (§11.8).
+
 Highly readable for complex, multi-attribute records:
 
 ```enlngdb
@@ -670,6 +683,8 @@ The engine utilizes a dedicated `DatabaseLock` architecture:
 ---
 
 ### 9.5 MVCC & Row Versioning (`_version`)
+> **C engine (`enlngdb.exe`, the playground, Studio):** there is no `_version` column to read.
+
 Every row in EnlngDB automatically tracks an internal `_version` counter (beginning at `1`). Every update operation increments this counter, enabling multi-version optimistic concurrency control and audit tracking.
 
 ---
@@ -733,12 +748,17 @@ print(results)
 Run EnlngDB scripts directly from your shell:
 
 ```bash
-# Execute script using native Pure C engine binary
-./enlngdb.exe run script.enlngdb
+# Run a script
+enlngdb script.enlngdb
 
-# Launch interactive conversational REPL
-./enlngdb.exe
+# Run one statement
+enlngdb -e "show tables"
+
+# The version, and a short help text
+enlngdb --version
+enlngdb
 ```
+There is no interactive prompt in the C engine; the playground on the Enlangg site runs scripts in the browser.
 
 ---
 
@@ -887,7 +907,7 @@ create table person (
 ```
 The same list can be written in brackets and over several lines when a line ends with `(` or `,`. Types: `integer` (`int`), `real` (`float`, `decimal`, `number`), `text` (`varchar`), `boolean`, `date` (`2024-03-15`, optionally with a time). A value is turned into the column's type when that is safe (`"30"` into `30`) and refused when it is not, with the reason. Columns without a type keep whatever is written, as before.
 
-* `primary key` (also `primary key (a, b)`) : the row's identity; writing it again replaces the row.
+* `primary key` (also `primary key (a, b)`) : the row's identity; writing it again replaces the row. A key cannot be empty (an `auto_increment` key is filled in).
 * `unique` (also `unique (a, b)`), `not null` (or `required`), `default <value>`, `check (<condition>)`, `auto_increment`.
 * `references table(column)` : a value must exist there; a row that other rows refer to cannot be deleted, its key cannot change, and its table cannot be dropped. There is no `on delete cascade`; delete the rows that refer first.
 
@@ -925,4 +945,104 @@ drop database shop confirmed
 A transaction covers the whole database (tables, rows, views). One that is still open when a script ends is rolled back, and the engine says so. There are no savepoints and no second writer: one script runs at a time.
 
 ### 11.14 What EnlngDB does not have
-Users and permissions (`grant`, `revoke`), triggers, stored procedures, `natural join`, recursive `with`, `on delete cascade`, savepoints, and indexes that speed up queries. `show databases` shows only the open database. A table has at most 32 columns and a database at most 64 tables; one statement can be at most 8191 characters.
+Users and permissions (`grant`, `revoke`), triggers, stored procedures, `on update cascade`, and a server that several programs use at the same time (one program has a database open at a time, §12.7). `show databases` shows only the open database. `natural join`, recursive `with`, `on delete cascade`, savepoints, CSV files, `preview` and `undo` are in section 12.
+
+---
+
+# 12. Beyond SQL: files, safety, speed (C engine)
+
+Everything here is checked by `tests/test_enlngdb_more.py`.
+
+### 12.1 CSV files
+```enlngdb
+create table pupil with name text, roll_no integer primary key, class integer, stream text
+insert into pupil values ("Asha", 1, 11, "Science"), ("Ravi, Jr", 2, 12, "Commerce"), ("Sita", 3, null, "Arts")
+export pupil to "pupils.csv"
+export find name, class from pupil where stream is not "Arts" to "science.csv"
+create table copy_of_pupil with name text, roll_no integer primary key, class integer, stream text
+import "pupils.csv" into copy_of_pupil
+import "pupils.csv" into new_pupil              # a table that does not exist is made from the first line
+```
+The first line of the file names the columns. A value in quotes is text; without quotes, a number, `true`, `false`, or (when empty) `null`. A typed column turns `"30"` into 30 as usual. All rows go in or none: a line with the wrong number of values, or a row that breaks a rule, is reported with its line number and nothing is imported. `export` writes to a temporary file and moves it into place, and quotes a text that would otherwise read back as something else (`"1"`, `"a, b"`, `""`).
+
+### 12.2 `preview` and `undo`
+```enlngdb
+preview delete from pupil where class is null       # shows the rows that would go, and changes nothing
+preview update pupil set class = 12 where roll_no is 1
+delete from pupil where class is null
+undo                                                # the deleted row is back
+```
+`preview` runs the statement on a copy and shows each table it would change: the rows that would be deleted, changed (before and after) or added, tables made or dropped. `undo` takes back the last `update`, `delete`, `truncate`, `alter`, `drop` or `import`, once, and only while nothing else has changed after it (an `insert` after a `delete` means the `delete` can no longer be undone). It lives as long as the script runs.
+
+### 12.3 Savepoints
+```enlngdb
+begin
+update pupil set class = 11 where roll_no is 2
+savepoint before_delete
+delete from pupil where roll_no is 2
+rollback to before_delete                            # the row is back; the update is kept
+release before_delete
+commit
+```
+`rollback to` goes back to the savepoint and keeps it; `release` forgets it (and the ones after it). A transaction can have 16 savepoints.
+
+### 12.4 `natural join`
+```enlngdb
+create table mark with roll_no integer, subject text, score integer
+insert into mark values (1, "Maths", 91), (2, "Maths", 78)
+find name, subject, score from pupil natural join mark
+find name, score from pupil natural left join mark
+```
+Every column name the two sides share must match. When there is none, or when two tables before the join share the name, the engine says so instead of guessing.
+
+### 12.5 `on delete cascade` and `on delete set null`
+```enlngdb
+create table owner with id integer primary key, name text
+create table cat with id integer primary key, owner_id integer references owner(id) on delete cascade
+create table vet with id integer primary key, owner_id integer references owner(id) on delete set null
+insert into owner values (1, "Asha"), (2, "Ravi")
+insert into cat values (1, 1), (2, 2)
+insert into vet values (1, 1)
+delete from owner where id is 1                      # cat 1 goes too; vet 1 keeps its row with owner_id null
+```
+Without `on delete ...` (or with `on delete restrict`) a row that others refer to cannot be deleted, as before; the error now says how to cascade. A cascade can go through several tables. `set null` on a `not null` column refuses the delete. `on update` is not supported: a key that other rows refer to cannot be changed. The setting is saved in the file in a way that older versions of `enlngdb` still read.
+
+### 12.6 Recursive `with`
+```enlngdb
+with recursive n as (select 1 as x union all find x + 1 from n where x < 5) find x from n
+create table emp with id, name, boss
+insert into emp values (1, "Asha", null), (2, "Ravi", 1), (3, "Meera", 2)
+with recursive team as (find id, name from emp where id is 1 union find e.id, e.name from emp e join team t on e.boss is t.id) find name from team
+```
+The first query gives the starting rows; the second runs again on the rows found in the round before, until a round finds nothing new (`union` also drops rows already found). A recursive query that never ends is stopped after 10,000 rounds or 1,000,000 rows, with an error.
+
+### 12.7 One program at a time
+While a script has a database open, the operating system holds a lock on `<name>.edb.lock`. A second program that opens the same database waits up to 5 seconds and then stops with: `database 'shop' is in use by another program`. The lock goes away when the first program ends, also when it crashes. A database file is written to `<name>.edb.tmp` first and then moved over the old one, so a crash while saving leaves the old file whole.
+
+### 12.8 Speed
+The engine looks rows up by value with a hash, built for the statement that needs it: the key, `unique` columns and `references` when rows are inserted, a join on `a.x = b.y`, `in (subquery)`, `union`, `distinct`, `intersect`, `except`, and recursive `with`. The answers are the same as when every row is compared (`1`, `1.0` and `"1"` are equal, text is compared without case, a number with a fraction is compared one by one). Measured with 20,000 rows on one machine:
+
+| Work | Before | Now |
+| :--- | ---: | ---: |
+| join 20,000 x 20,000 on a key | 234 s | 0.6 s |
+| insert 20,000 rows into a table with `unique` and `auto_increment` | 15.1 s | 0.25 s |
+| insert 20,000 rows that `reference` another table | 5.9 s | 0.5 s |
+| `in (subquery)` over 20,000 rows | 4.4 s | 0.4 s |
+| insert 20,000 rows in one statement (key) | 3.4 s | 0.4 s |
+| 5,000 inserts, one statement each | 1.9 s | 0.3 s |
+| 2,000 queries `where id is X` on 20,000 rows | 19.3 s | 7.6 s |
+
+A query on one table with `where` still reads every row (without copying the ones that do not match); a plain `create index` is still only recorded. The whole database is in memory while a script runs.
+
+### 12.9 Limits
+| Thing | The most |
+| :--- | ---: |
+| tables in a database | 256 |
+| columns in a table | 64 |
+| columns in a result (a join) | 128 |
+| indexes on a table | 8 |
+| characters in a name | 63 |
+| length of a statement, of a text value | no limit but memory |
+| characters of a `default` / a `check` / the query of a view | 63 / 95 / 1023 |
+
+A name, a `default` or a `check` that is too long is an error; nothing is cut short.

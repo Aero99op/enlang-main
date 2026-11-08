@@ -11,6 +11,11 @@
 #include <windows.h>
 #else
 #include <sys/time.h>
+#include <fcntl.h>
+#include <unistd.h>
+#ifndef __EMSCRIPTEN__
+#include <sys/file.h>
+#endif
 #endif
 
 static double get_time_ms(void) {
@@ -111,8 +116,19 @@ void enlngdb_clear(EnlngDatabase* db) {
     db->table_count = 0;
 }
 
+static void free_saves(EnlngDatabase* db, int from) {
+    for (int i = from; i < db->nsaves; i++) {
+        enlngdb_free(db->saves[i]);
+        db->saves[i] = NULL;
+    }
+    if (from < db->nsaves) db->nsaves = from;
+}
+
 void enlngdb_free(EnlngDatabase* db) {
     if (!db) return;
+    enlngdb_unlock(db);
+    free_saves(db, 0);
+    if (db->undo) { enlngdb_free_tables(db->undo, db->undo_count); db->undo = NULL; db->undo_count = 0; }
     if (db->txn) {
         enlngdb_free(db->txn);
         db->txn = NULL;
@@ -121,12 +137,94 @@ void enlngdb_free(EnlngDatabase* db) {
     free(db);
 }
 
+/* ---- One program at a time ----
+ * <name>.edb.lock is locked by the operating system while a program has the database open. The lock goes
+ * away by itself when the program ends, also when it crashes, so a lock is never left behind. */
+static bool lock_try(const char* path, intptr_t* handle) {
+#if defined(__EMSCRIPTEN__)
+    (void)path;
+    *handle = 0;
+    return true;            /* the browser runs one script at a time in one page */
+#elif defined(_WIN32)
+    HANDLE h = CreateFileA(path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                           NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h == INVALID_HANDLE_VALUE) return false;
+    OVERLAPPED ov;
+    memset(&ov, 0, sizeof(ov));
+    if (!LockFileEx(h, LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY, 0, 1, 0, &ov)) {
+        CloseHandle(h);
+        return false;
+    }
+    *handle = (intptr_t)h;
+    return true;
+#else
+    int fd = open(path, O_RDWR | O_CREAT, 0644);
+    if (fd < 0) return false;
+    if (flock(fd, LOCK_EX | LOCK_NB) != 0) {
+        close(fd);
+        return false;
+    }
+    *handle = (intptr_t)fd;
+    return true;
+#endif
+}
+
+static void lock_wait(void) {
+#if defined(_WIN32)
+    Sleep(100);
+#elif !defined(__EMSCRIPTEN__)
+    usleep(100000);
+#endif
+}
+
+bool enlngdb_lock(EnlngDatabase* db, const char* name, char* err, size_t err_size) {
+    if (!db || !name) return false;
+    char path[300];
+    snprintf(path, sizeof(path), "%s.edb.lock", name);
+    if (db->lock_path[0] && strcmp(db->lock_path, path) == 0) return true;
+    intptr_t handle = 0;
+    bool got = false;
+    for (int tries = 0; tries < 50 && !(got = lock_try(path, &handle)); tries++) lock_wait();
+    if (!got) {
+        if (err) snprintf(err, err_size, "database '%s' is in use by another program (it holds %s); waited 5 seconds. Run the scripts one after the other", name, path);
+        return false;
+    }
+    enlngdb_unlock(db);
+    snprintf(db->lock_path, sizeof(db->lock_path), "%s", path);
+    db->lock_handle = handle;
+    return true;
+}
+
+void enlngdb_unlock(EnlngDatabase* db) {
+    if (!db || !db->lock_path[0]) return;
+#if defined(_WIN32)
+    HANDLE h = (HANDLE)db->lock_handle;
+    OVERLAPPED ov;
+    memset(&ov, 0, sizeof(ov));
+    UnlockFileEx(h, 0, 1, 0, &ov);
+    CloseHandle(h);
+    DeleteFileA(db->lock_path);     /* a program waiting on it opens a new one */
+#elif !defined(__EMSCRIPTEN__)
+    flock((int)db->lock_handle, LOCK_UN);
+    close((int)db->lock_handle);    /* the file stays: removing it could let two programs lock two files */
+#endif
+    db->lock_path[0] = '\0';
+    db->lock_handle = 0;
+}
+
 /* A whole copy of the database, rows included: what 'begin' keeps so 'rollback' can go back to it */
 static EnlngDatabase* copy_database(const EnlngDatabase* db) {
     EnlngDatabase* c = (EnlngDatabase*)calloc(1, sizeof(EnlngDatabase));
     if (!c) return NULL;
     memcpy(c, db, sizeof(EnlngDatabase));
     c->txn = NULL;
+    c->lock_path[0] = '\0';
+    c->lock_handle = 0;
+    c->nsaves = 0;
+    memset(c->saves, 0, sizeof(c->saves));
+    c->undo = NULL;
+    c->undo_count = 0;
+    c->undo_what[0] = '\0';
     for (int t = 0; t < db->table_count; t++) {
         const EnlngTable* src = &db->tables[t];
         EnlngTable* dst = &c->tables[t];
@@ -148,20 +246,99 @@ bool enlngdb_begin(EnlngDatabase* db) {
 
 bool enlngdb_commit(EnlngDatabase* db) {
     if (!db || !db->txn) return false;
+    free_saves(db, 0);
     enlngdb_free(db->txn);
     db->txn = NULL;
     return true;
+}
+
+/* the tables of saved become the tables of db; saved is used up */
+static void take_tables(EnlngDatabase* db, EnlngDatabase* saved) {
+    enlngdb_clear(db);
+    memcpy(db->tables, saved->tables, sizeof(saved->tables));
+    db->table_count = saved->table_count;
+    saved->table_count = 0;   /* its rows now belong to db */
+    free(saved);
 }
 
 bool enlngdb_rollback(EnlngDatabase* db) {
     if (!db || !db->txn) return false;
     EnlngDatabase* saved = db->txn;
     db->txn = NULL;
+    free_saves(db, 0);
+    take_tables(db, saved);
+    return true;
+}
+
+EnlngDatabase* enlngdb_copy(const EnlngDatabase* db) {
+    return db ? copy_database(db) : NULL;
+}
+
+void enlngdb_restore(EnlngDatabase* db, EnlngDatabase* copy) {
+    if (!db || !copy) return;
+    take_tables(db, copy);
+}
+
+EnlngTable* enlngdb_copy_tables(const EnlngDatabase* db, int* count) {
+    *count = 0;
+    if (!db) return NULL;
+    EnlngTable* t = (EnlngTable*)malloc(sizeof(EnlngTable) * (size_t)(db->table_count ? db->table_count : 1));
+    if (!t) return NULL;
+    for (int i = 0; i < db->table_count; i++) {
+        memcpy(&t[i], &db->tables[i], sizeof(EnlngTable));
+        t[i].rows = NULL;
+        t[i].row_count = 0;
+        t[i].row_capacity = 0;
+        for (size_t r = 0; r < db->tables[i].row_count; r++) enlngdb_append_row(&t[i], db->tables[i].rows[r].cells, db->tables[i].rows[r].cell_count);
+    }
+    *count = db->table_count;
+    return t;
+}
+
+void enlngdb_free_tables(EnlngTable* tables, int count) {
+    if (!tables) return;
+    for (int i = 0; i < count; i++) enlngdb_free_rows(&tables[i]);
+    free(tables);
+}
+
+void enlngdb_restore_tables(EnlngDatabase* db, EnlngTable* tables, int count) {
+    if (!db || !tables) return;
     enlngdb_clear(db);
-    memcpy(db->tables, saved->tables, sizeof(saved->tables));
-    db->table_count = saved->table_count;
-    saved->table_count = 0;   /* its rows now belong to db */
-    free(saved);
+    memcpy(db->tables, tables, sizeof(EnlngTable) * (size_t)count);   /* the rows now belong to db */
+    db->table_count = count;
+    free(tables);
+}
+
+static int find_save(const EnlngDatabase* db, const char* name) {
+    for (int i = db->nsaves - 1; i >= 0; i--) if (strcmp(db->save_names[i], name) == 0) return i;
+    return -1;
+}
+
+bool enlngdb_savepoint(EnlngDatabase* db, const char* name) {
+    if (!db || !db->txn || !name || db->nsaves >= 16) return false;
+    EnlngDatabase* c = copy_database(db);
+    if (!c) return false;
+    db->saves[db->nsaves] = c;
+    snprintf(db->save_names[db->nsaves], sizeof(db->save_names[0]), "%s", name);
+    db->nsaves++;
+    return true;
+}
+
+/* back to the savepoint: what came after it is undone, and the savepoint stays */
+bool enlngdb_rollback_to(EnlngDatabase* db, const char* name) {
+    int i = db ? find_save(db, name) : -1;
+    if (i < 0) return false;
+    EnlngDatabase* c = copy_database(db->saves[i]);
+    if (!c) return false;
+    free_saves(db, i + 1);
+    take_tables(db, c);
+    return true;
+}
+
+bool enlngdb_release(EnlngDatabase* db, const char* name) {
+    int i = db ? find_save(db, name) : -1;
+    if (i < 0) return false;
+    free_saves(db, i);
     return true;
 }
 
@@ -448,15 +625,14 @@ bool enlng_eval_condition(const EnlngVal* val, EnlngOp op, const EnlngVal* targe
                 if (strchr(pat, '%') != NULL || strchr(pat, '_') != NULL) {
                     return sql_like_match(pat, txt);
                 }
-                char low_pat[256], low_txt[512];
+                /* no % or _: the text contains the pattern, ignoring case, at any length */
                 size_t plen = strlen(pat);
-                size_t tlen = strlen(txt);
-                if (plen < sizeof(low_pat) && tlen < sizeof(low_txt)) {
-                    for (size_t i = 0; i <= plen; i++) low_pat[i] = (char)tolower((unsigned char)pat[i]);
-                    for (size_t i = 0; i <= tlen; i++) low_txt[i] = (char)tolower((unsigned char)txt[i]);
-                    return strstr(low_txt, low_pat) != NULL;
+                for (const char* t = txt; ; t++) {
+                    size_t i = 0;
+                    while (i < plen && t[i] && tolower((unsigned char)t[i]) == tolower((unsigned char)pat[i])) i++;
+                    if (i == plen) return true;
+                    if (!*t) return false;
                 }
-                return sql_like_match(pat, txt);
             }
             return false;
         }
@@ -663,7 +839,7 @@ void enlngdb_print_result(const EnlngQueryResult* res) {
         return;
     }
 
-    int col_widths[ENLNGDB_MAX_COLS];
+    int col_widths[ENLNGDB_MAX_RESULT_COLS];
     for (int c = 0; c < res->col_count; c++) {
         col_widths[c] = (int)strlen(res->columns[c].name);
     }
@@ -848,7 +1024,7 @@ bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
         for (int c = 0; c < tbl->col_count; c++) {
             const EnlngColumn* col = &tbl->columns[c];
             fwrite(col->name, 1, ENLNGDB_MAX_NAME, f);
-            uint8_t flags[5] = { col->kind, col->is_primary_key, col->is_unique, col->not_null, col->is_auto };
+            uint8_t flags[5] = { (uint8_t)((col->kind & 0x0F) | ((col->on_delete & 3) << 4)), col->is_primary_key, col->is_unique, col->not_null, col->is_auto };
             fwrite(flags, 1, 5, f);
             put_text(f, col->default_text);
             put_text(f, col->check_text);
@@ -915,7 +1091,8 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
                 bad = fread(cols[c].name, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME || fread(flags, 1, 5, f) != 5;
                 if (bad) break;
                 cols[c].type = ENLNG_VAL_STRING;
-                cols[c].kind = flags[0];
+                cols[c].kind = flags[0] & 0x0F;
+                cols[c].on_delete = (flags[0] >> 4) & 3;
                 cols[c].is_primary_key = flags[1];
                 cols[c].is_unique = flags[2];
                 cols[c].not_null = flags[3];

@@ -74,4 +74,14 @@ find amount, title from fees join book using (student_id)
 ::: db
 find student.*, fees.amount from student join fees on student.id is fees.student_id
 :::
-A join with `natural` in front is not supported. Write the `on`, or use the marks and let the engine match the names.
+## Natural join
+`natural join` matches every column that has the same name in both tables. Here `fees` and `book` share only `student_id`.
+::: db
+find fee_id, title from fees natural join book
+find fee_id, title from fees natural left join book
+:::
+When the tables share no column name, or when two tables before the join both have it, the engine says so instead of guessing.
+::: err
+find name from student natural join fees
+:::
+`student` has `id` and `name`, `fees` has `fee_id`, `student_id` and `amount`: no name in common.

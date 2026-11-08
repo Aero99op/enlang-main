@@ -1,0 +1,62 @@
+# More than SQL: files, preview, undo, speed
+This chapter is about things a SQL database usually leaves to other tools, or does not have at all.
+::: db
+create table pupil with name text, roll_no integer primary key, class integer, stream text
+insert into pupil values ("Asha", 1, 11, "Science"), ("Ravi, Jr", 2, 12, "Commerce"), ("Sita", 3, null, "Arts"), ("Karan", 4, 12, "Science")
+:::
+## Writing a table to a CSV file
+`export` writes a table, or the result of a query, to a CSV file that a spreadsheet can open. The first line names the columns.
+::: db
+export pupil to "pupils.csv"
+export find name, class from pupil where stream is not "Arts" to "science.csv"
+:::
+Text that has a comma or a quote in it is put in quotes, and so is text that would otherwise read back as a number, `true`, `false` or nothing, such as `"12"`. An empty value is `null`. The file is written to a temporary file first and then moved into place.
+## Reading a CSV file
+`import` reads a CSV file into a table. A table that does not exist is made from the first line.
+::: db
+import "pupils.csv" into pupil_copy
+find * from pupil_copy
+:::
+A value in quotes is text; without quotes it is a number, `true`, `false`, or, when it is empty, `null`. When the table has types and rules, they are checked for every row, as for `insert`. All rows go in, or none: the engine names the line that is wrong.
+::: db
+create table strict_pupil with name text not null, roll_no integer primary key, class integer, stream text
+:::
+::: err
+import "science.csv" into strict_pupil
+:::
+The file `science.csv` has only the columns `name` and `class`. `roll_no` is the primary key of `strict_pupil`, and a key cannot be empty, so the first row is refused and nothing is imported. A line of the wrong length is reported with its line number, and so is a column the table does not have.
+## Seeing a change before making it
+`preview` in front of a statement runs it on a copy of the database, shows what it would delete, change or add, and keeps nothing.
+::: db
+preview delete from pupil where class is null
+preview update pupil set class = 11 where roll_no is 4
+count records in pupil
+:::
+The count after the previews is still 4.
+## Taking a change back
+`undo` takes back the last `update`, `delete`, `truncate`, `alter`, `drop` or `import`, once.
+::: db
+delete from pupil where stream is "Science"
+find name from pupil
+undo
+find name from pupil
+:::
+`undo` works only while nothing else has changed after that statement; an `insert` after a `delete` means the `delete` can no longer be undone, because going back would lose the insert. It lives for as long as the script runs.
+::: err
+undo
+:::
+## Natural join, savepoints, cascades, recursion
+These are described with the rest of their kind: `natural join` in chapter 7, `on delete cascade` and `on delete set null` in chapter 12, savepoints in chapter 14. A recursive `with` is in chapter 9.
+## How the engine stays fast
+The whole database is in memory while a script runs. Where a statement looks rows up by value, the engine builds a hash for that statement: for the key, `unique` columns and references when rows are inserted, for a join on `a.x = b.y`, for `in (subquery)`, `union`, `distinct`, `intersect`, `except` and a recursive `with`. The answer is the same as when every row is compared: `1`, `1.0` and `"1"` are equal, text is compared without case, and a number with a fraction is compared one by one.
+These times were measured on one machine with `tests/bench_enlngdb.py` and 20,000 rows, before and after the hashes were added:
+| Work | Before | After |
+| :--- | ---: | ---: |
+| join 20,000 x 20,000 rows on a key | 234 s | 0.6 s |
+| insert 20,000 rows with `unique` and `auto_increment` | 15.1 s | 0.25 s |
+| insert 20,000 rows that refer to another table | 5.9 s | 0.5 s |
+| `in (subquery)` over 20,000 rows | 4.4 s | 0.4 s |
+| insert 20,000 rows in one statement | 3.4 s | 0.4 s |
+| 5,000 inserts, one statement each | 1.9 s | 0.3 s |
+| 2,000 queries `where id is X` on 20,000 rows | 19.3 s | 7.6 s |
+The last line is the slowest: a query on one table with `where` still reads every row, only without copying the ones that do not match. A plain `create index` is recorded and shown, and does not change this.

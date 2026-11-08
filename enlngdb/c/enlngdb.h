@@ -12,12 +12,13 @@
 #include <stdbool.h>
 #include "../../src/enlangg_version.h"
 
-#define ENLNGDB_MAX_COLS 32
-#define ENLNGDB_MAX_TABLES 64
+#define ENLNGDB_MAX_COLS 64
+#define ENLNGDB_MAX_TABLES 256
 #define ENLNGDB_MAX_NAME 64
 #define ENLNGDB_MAGIC "ENLNG_C_EDB_V2"
 #define ENLNGDB_MAGIC_V1 "ENLNG_C_EDB_V1"
 #define ENLNGDB_MAX_INDEXES 8
+#define ENLNGDB_MAX_RESULT_COLS 128     /* the columns of a query result: two whole tables joined */
 
 typedef enum {
     ENLNG_VAL_NULL = 0,
@@ -70,6 +71,7 @@ typedef struct {
     char check_text[96];        /* "" for none: a condition every row must meet */
     char ref_table[ENLNGDB_MAX_NAME];   /* "" for none: values must exist in ref_table.ref_col */
     char ref_col[ENLNGDB_MAX_NAME];
+    uint8_t on_delete;          /* when the referred row is deleted: 0 refuse, 1 delete this row too (cascade), 2 set null */
 } EnlngColumn;
 
 typedef struct {
@@ -107,10 +109,18 @@ typedef struct EnlngDatabase {
     char db_filepath[256];
     struct EnlngDatabase* txn;  /* the copy to go back to on 'rollback', while a transaction is open */
     bool dropped;               /* 'drop database' on the open one: nothing is saved at the end */
+    struct EnlngDatabase* saves[16];    /* savepoints inside the open transaction, oldest first */
+    char save_names[16][64];
+    int nsaves;
+    EnlngTable* undo;           /* the tables before the last update, delete, truncate, alter or drop (undo_count of them) */
+    int undo_count;
+    char undo_what[160];        /* that statement, as written */
+    char lock_path[300];        /* "" for none: the lock file this program holds for the open database */
+    intptr_t lock_handle;       /* the open lock file (a HANDLE on Windows, a file descriptor elsewhere) */
 } EnlngDatabase;
 
 typedef struct {
-    EnlngColumn columns[ENLNGDB_MAX_COLS];
+    EnlngColumn columns[ENLNGDB_MAX_RESULT_COLS];
     int col_count;
     EnlngRow* rows;
     size_t row_count;
@@ -130,9 +140,24 @@ bool enlngdb_append_row(EnlngTable* table, const EnlngVal* cells, int cell_count
 bool enlngdb_rename_table(EnlngDatabase* db, const char* from, const char* to);
 bool enlngdb_rename_column(EnlngTable* table, const char* from, const char* to);
 void enlngdb_clear(EnlngDatabase* db);
+/* One program at a time per database: the lock is held from opening a database until leaving it.
+ * Returns false, with the reason in err, when another program still holds it after a few seconds. */
+bool enlngdb_lock(EnlngDatabase* db, const char* name, char* err, size_t err_size);
+void enlngdb_unlock(EnlngDatabase* db);
 bool enlngdb_begin(EnlngDatabase* db);
 bool enlngdb_commit(EnlngDatabase* db);
 bool enlngdb_rollback(EnlngDatabase* db);
+/* inside a transaction: remember the database as it is now under a name, go back to it, or forget it */
+bool enlngdb_savepoint(EnlngDatabase* db, const char* name);
+bool enlngdb_rollback_to(EnlngDatabase* db, const char* name);
+bool enlngdb_release(EnlngDatabase* db, const char* name);
+/* a whole copy of the tables (rows included), and putting such a copy back (the copy is used up) */
+EnlngDatabase* enlngdb_copy(const EnlngDatabase* db);
+void enlngdb_restore(EnlngDatabase* db, EnlngDatabase* copy);
+/* the same for just the tables that exist (much smaller than a whole database): for undo */
+EnlngTable* enlngdb_copy_tables(const EnlngDatabase* db, int* count);
+void enlngdb_restore_tables(EnlngDatabase* db, EnlngTable* tables, int count);
+void enlngdb_free_tables(EnlngTable* tables, int count);
 bool enlngdb_add_column(EnlngTable* table, const char* col_name, const EnlngVal* default_val);
 extern char enlngdb_last_insert_replaced[96];
 

@@ -48,13 +48,15 @@ Query OK, 1 row affected
 +------+
 1 row(s) in set
 :::
-`enlngdb_execute_statement` returns true when the statement worked and false when it did not. `enlngdb_load(db, "finance_db.edb")` reads a file back into a database. A database holds at most 64 tables, a table at most 32 columns and 8 indexes, and a name at most 63 characters.
+`enlngdb_execute_statement` returns true when the statement worked and false when it did not. `enlngdb_load(db, "finance_db.edb")` reads a file back into a database. The limits are in the table below.
 ## Limits
 | Thing | The most |
 | :--- | :---: |
-| tables in a database | 64 |
-| columns in a table | 32 |
+| tables in a database | 256 |
+| columns in a table | 64 |
+| columns in the result of a query (a join) | 128 |
 | indexes on a table | 8 |
 | characters in a name | 63 |
-| characters in one statement | 8191 |
-| characters in the query of a view | 1023 |
+| characters in a statement, or in a text value | no limit but memory |
+| characters of a `default`, a `check`, the query of a view | 63, 95, 1023 |
+A name, a default or a check that is too long is an error; nothing is cut short.
