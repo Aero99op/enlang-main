@@ -223,7 +223,21 @@ def main():
         check("restrict refuses and says how to cascade", "on delete cascade'" in out or "Table 'owner' does not exist" in out, out[-300:])
         out = run("create table owner with id integer primary key\ncreate table s2 with id, o integer not null references owner(id) on delete set null\ninsert into owner values (1)\n"
                   "insert into s2 values (1, 1)\ndelete from owner where id is 1\ncount records in owner\ncreate table z with a integer references owner(id) on update cascade\n")
-        check("set null on a not null column refuses; on update is not supported", "cannot be set to null" in out and col(out)[-1:] == ["1"] and "'on update' is not supported" in out, out[-400:])
+        check("set null on a not null column refuses; on update cascade is accepted", "cannot be set to null" in out and col(out)[-1:] == ["1"] and "'on update' is not supported" not in out and "Table 'z' created" in out, out[-400:])
+        # ---- on update cascade / set null / restrict
+        out = run("create table cls with id integer primary key, title text\ninsert into cls values (1, \"Maths\"), (2, \"Art\")\n"
+                  "create table stu with sid integer primary key, cid integer references cls(id) on update cascade, name text\n"
+                  "create table sn with sid integer primary key, cid integer references cls(id) on update set null\n"
+                  "create table rs with sid integer primary key, cid integer references cls(id)\n"
+                  "insert into stu values (1, 1, \"A\"), (2, 1, \"B\"), (3, 2, \"C\")\ninsert into sn values (1, 2)\n"
+                  "update cls set id = 10 where id is 1\nfind cid from stu\nfind id from cls\n"
+                  "update cls set id = 20 where id is 2\nfind cid from sn\nfind cid from stu\n"
+                  "insert into rs values (1, 10)\nupdate cls set id = 99 where id is 10\nfind id from cls\ndescribe stu\n")
+        t = tables(out)
+        check("on update cascade makes the referring rows follow the new key", [r[0] for r in t[0][1:]] == ["10", "10", "2"] and [r[0] for r in t[1][1:]] == ["10", "2"], out[-900:])
+        check("on update set null empties it; the default refuses and says how to cascade; describe shows it",
+              [r[0] for r in t[2][1:]] == ["null"] and [r[0] for r in t[3][1:]] == ["10", "10", "20"] and "on update cascade'" in out
+              and [r[0] for r in t[4][1:]] == ["10", "20"] and "(on update cascade)" in out, out[-900:])
 
         # ---- with recursive
         out = run("with recursive n as (select 1 as x union all find x + 1 from n where x < 5) find x from n\n")
@@ -246,6 +260,88 @@ def main():
         out = run("create table pk with id integer primary key, name text\ninsert into pk with name \"x\"\n"
                   "create table pk2 with id integer primary key auto_increment, name text\ninsert into pk2 with name \"y\"\nfind id from pk2\n")
         check("a primary key cannot be empty; an auto_increment key is filled in", "is the primary key of 'pk', so it cannot be empty" in out and firsts(out)[-1:] == ["1"], out[-400:])
+
+        # ---- lookup indexes made on demand give the same rows as reading every row, also after changes
+        N = 600
+        mk = ", ".join('(%d, "Name%d", %s, %d)' % (i, i % 50, ("%d.5" % (i % 7)) if i % 11 == 0 else str(i % 7), i % 10) for i in range(1, N + 1))
+        base = "create table t with id integer primary key, name text, score real, grp integer\ninsert into t values %s\n" % mk
+        ids = lambda out: [r[0] for r in rows(out)[1:]]
+        exp = lambda f: [str(i) for i in range(1, N + 1) if f(i)]
+        out = run(base + 'find id from t where grp is 3 and id > 500\nfind id from t where name is "NAME7"\nfind id from t where score is 2.5\n'
+                  'find id from t where score is 3\nfind id from t where id is "77"\nfind id from t where id is 99999\n')
+        got = [[r[0] for r in tb[1:]] for tb in tables(out)]
+        check("an index lookup (number, text without case, a fraction, an id in quotes, no match) gives the rows a full read gives",
+              got == [exp(lambda i: i % 10 == 3 and i > 500), exp(lambda i: i % 50 == 7), exp(lambda i: i % 11 == 0 and i % 7 == 2),
+                      exp(lambda i: i % 11 != 0 and i % 7 == 3), ["77"], []], str(got)[:300])
+        out = run(base + "find id from t where grp is 4 and id < 60\nupdate t set grp = 4 where id is 1\nfind id from t where grp is 4 and id < 60\n"
+                  "delete from t where id is 4\nfind id from t where grp is 4 and id < 60\ninsert into t values (0, \"Z\", 1, 4)\nfind id from t where grp is 4 and id < 60\n"
+                  "begin\nupdate t set grp = 4 where id is 2\nfind id from t where grp is 4 and id < 12\nrollback\nfind id from t where grp is 4 and id < 12\n"
+                  "update t set id = 7000 where id is 9\nfind id from t where id is 7000\nfind id from t where id is 9\n")
+        got = [[r[0] for r in tb[1:]] for tb in tables(out)]
+        want = [exp(lambda i: i % 10 == 4 and i < 60)]
+        s1 = sorted(set(want[0]) | {"1"}, key=int)
+        s2 = [x for x in s1 if x != "4"]
+        s3 = s2 + ["0"]                                  # the new row is last in the table
+        s4 = [x for x in ["1", "2"] if True] + ["0"]       # inside the transaction: ids 1, 2 and the new row
+        s5 = ["1", "0"]                                  # after the rollback: id 2 is back to its old group
+        check("lookups see an update, a delete, an insert, a rolled back change and a changed key", got == [want[0], s1, s2, s3, s4, s5, ["7000"], []], str(got)[:400])
+
+        # ---- triggers and procedures
+        setup = ("create table student with roll_no integer primary key, name text, marks integer\n"
+                 "create table audit with id integer primary key auto_increment, what text, who integer, at_marks integer\n"
+                 "create trigger log_new after insert on student do insert into audit (what, who, at_marks) values (\"added\", new.roll_no, new.marks)\n"
+                 "create trigger log_marks after update on student when new.marks is not old.marks do insert into audit (what, who, at_marks) values (\"marks\", new.roll_no, new.marks)\n"
+                 "create trigger log_gone after delete on student do insert into audit (what, who, at_marks) values (\"deleted\", old.roll_no, old.marks)\n"
+                 "create trigger no_negative after insert on student when new.marks < 0 do raise \"marks cannot be negative\"\n")
+        out = run(setup + "insert into student values (1, \"Asha\", 80), (2, \"Ravi\", 70)\nupdate student set marks = 90 where roll_no is 1\n"
+                  "update student set name = \"Ravi K\" where roll_no is 2\ndelete from student where roll_no is 2\n"
+                  "insert into student values (3, \"Bad\", -5)\nfind roll_no from student\nfind what, who, at_marks from audit\n")
+        t = tables(out)
+        check("triggers log an insert, a changed value (not an unchanged one) and a delete; a raise takes the statement back",
+              "the trigger 'no_negative' stopped this statement: marks cannot be negative" in out and [r[0] for r in t[0][1:]] == ["1"]
+              and [r[:3] for r in t[1][1:]] == [["added", "1", "80"], ["added", "2", "70"], ["marks", "1", "90"], ["deleted", "2", "70"]], out[-900:])
+        out = run("create table a with id integer primary key, n integer\ncreate table b with id integer primary key auto_increment, n integer\ncreate table c with id integer primary key auto_increment, n integer\n"
+                  "create trigger ab after insert on a do insert into b (n) values (new.n * 10)\ncreate trigger bc after insert on b do insert into c (n) values (new.n + 1)\n"
+                  "insert into a values (1, 5), (2, 6)\nfind n from b\nfind n from c\n")
+        t = tables(out)
+        check("a trigger's statement sets off the triggers of the table it changes, each row once",
+              [r[0] for r in t[0][1:]] == ["50", "60"] and [r[0] for r in t[1][1:]] == ["51", "61"], out[-600:])
+        out = run("create table loop with id integer primary key auto_increment, n integer\ncreate trigger again after insert on loop do insert into loop (n) values (new.n + 1)\n"
+                  "insert into loop (n) values (1)\ncount records in loop\n")
+        check("triggers that keep setting each other off stop at a depth, and the statement is taken back",
+              "levels deep" in out and col(out)[-1:] == ["0"], out[-600:])
+        out = run("create table s with id integer primary key, v integer\ncreate table lg with msg text\n"
+                  "create trigger t1 after update on s do insert into lg values (\"id \" + old.id + \" to \" + new.id)\n"
+                  "insert into s values (1, 1)\nupdate s set id = 7 where id is 1\nfind msg from lg\ncreate table k with a integer, b integer\ncreate table lk with msg text\n"
+                  "create trigger t2 after update on k do insert into lk values (new.a + new.b)\ninsert into k values (1, 2), (3, 4)\nupdate k set b = b + 10\nfind msg from lk\n")
+        t = tables(out)
+        check("an update that changes the key, and an update of a table without a key, fire the update trigger",
+              [r[0] for r in t[0][1:]] == ["id 1 to 7"] and [r[0] for r in t[1][1:]] == ["13", "17"], out[-600:])
+        out = run("create table t with id integer primary key, v integer\ncreate table lg with msg text\ncreate trigger tr after insert on t do insert into lg values (\"new \" + new.id)\n"
+                  "create procedure p (a) as insert into t values (:a, 0)\n", name="trig_keep")
+        out = run("show triggers\nshow procedures\ncall p(5)\nfind msg from lg\ncount records in t\n", name="trig_keep")
+        t = tables(out)
+        check("triggers and procedures are saved in the file, a call runs a procedure, and its row fires the trigger once",
+              t[0][1][0] == "tr" and t[1][1][0] == "p" and [r[0] for r in t[2][1:]] == ["new 5"] and col(out)[-1:] == ["1"], out[-700:])
+        out = run("create table acct with id integer primary key, bal integer\ninsert into acct values (1, 100), (2, 50)\n"
+                  "create procedure pay (src, dst, amount) as update acct set bal = bal - :amount where id is :src; update acct set bal = bal + :amount where id is :dst; "
+                  "update acct set bal = bal where id is 999 and :amount > 1000\ncall pay(1, 2, 30)\nfind bal from acct\ncall pay(1)\ncall nothing(1)\n")
+        t = tables(out)
+        check("a procedure with several statements and parameters runs them in order; wrong values give clear errors",
+              [r[0] for r in t[0][1:]] == ["70", "80"] and "needs 3 value(s)" in out and "there is no procedure with this name" in out, out[-600:])
+        out = run("create table acct with id integer primary key, bal integer not null\ninsert into acct values (1, 100)\n"
+                  "create procedure bad (n) as update acct set bal = bal + :n where id is 1; insert into acct values (1, null)\ncall bad(5)\nfind bal from acct\n")
+        check("a procedure that fails in the middle is taken back as a whole", col(out)[-1:] == ["100"] and "everything it did was taken back" in out, out[-500:])
+        out = run("create table t with id integer\ncreate trigger x after insert on t do insert into t values (1)\ndrop table t confirmed\nshow triggers\n")
+        check("dropping a table drops its triggers", "No triggers." in out, out[-300:])
+        out = run("create table t with id integer\ncreate trigger a before insert on t do find 1\ncreate trigger a2 after insert on nope do find 1\n"
+                  "create trigger a3 after insert on t find 1\ncreate trigger a4 after truncate on t do find 1\ndrop trigger zzz\nfnd name from t\n")
+        check("trigger mistakes are explained, and a mistyped command is guessed",
+              "only 'after' triggers exist" in out and "there is no table called 'nope'" in out and "write 'do'" in out
+              and "write insert, update or delete" in out and "there is no trigger with this name" in out and "Did you mean 'find'" in out, out[-900:])
+        out = run("create table cls with id integer primary key, title text\ninsert into cls values (1, \"Maths\")\ncreate table stu with sid integer primary key, name text\n"
+                  "find nme from stu where sid is 1\nupdate stu set nam = 1\nfind titel from cls\n")
+        check("an unknown column suggests the nearest one", out.count("Did you mean") == 3 and "Did you mean 'name'" in out and "Did you mean 'title'" in out, out[-700:])
 
         # ---- the examples of section 12 of the manual, run as written, one after the other
         manual = open(os.path.join(ROOT, "enlngdb", "MANUAL.md"), encoding="utf-8").read()

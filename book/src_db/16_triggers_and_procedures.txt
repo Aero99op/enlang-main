@@ -1,0 +1,64 @@
+# Triggers, procedures and helpful errors
+A trigger is a rule that runs by itself when rows change. A procedure is a few statements saved under a name. This chapter has both, and ends with how the engine helps when a word is mistyped.
+::: db
+create table account with id integer primary key, owner text, balance integer
+create table ledger with id integer primary key auto_increment, what text, account_id integer, amount integer
+insert into account values (1, "Asha", 100), (2, "Ravi", 50)
+:::
+## A trigger that keeps a record
+`create trigger` says when it runs (`after insert`, `after update` or `after delete`), on which table, and what it does after `do`. Inside it, `new.balance` is the value after the change and `old.balance` the value before.
+::: db
+create trigger log_change after update on account when new.balance is not old.balance do insert into ledger (what, account_id, amount) values ("balance changed", new.id, new.balance - old.balance)
+update account set balance = balance - 30 where id is 1
+update account set owner = "Ravi K" where id is 2
+find what, account_id, amount from ledger
+:::
+The first update changed a balance, so the trigger ran once, for that row. The second changed a name only, so `when new.balance is not old.balance` was not true and nothing was written. The trigger runs once for each row that changed, also for rows changed by `import` or by a cascade.
+## A trigger that refuses
+`raise "message"` stops a statement. When a trigger raises an error, or one of its statements fails, the whole statement is taken back, with everything the other triggers did.
+::: db
+create trigger no_overdraft after update on account when new.balance < 0 do raise "the balance cannot go below zero"
+:::
+::: err
+update account set balance = balance - 500 where id is 2
+:::
+::: db
+find owner, balance from account
+count records in ledger
+:::
+Ravi's balance is still 50 and the ledger has no extra row. There is only `after`: to stop something, raise an error.
+## Seeing and removing triggers
+::: db
+show triggers
+drop trigger no_overdraft
+:::
+A trigger can change another table, and that change can set off the triggers of that table, up to 6 levels deep. A trigger that keeps setting itself off stops at that depth with an error, and the statement is taken back. Statements inside a trigger run silently. Triggers are saved in the database file, and a table that is dropped takes its triggers with it.
+## A procedure
+`create procedure` saves statements under a name, with parameters. `:src` stands for the value that was written in the call. A line that ends with `as` or `;` goes on to the next line.
+::: db
+create procedure transfer (src, dst, amount) as
+  update account set balance = balance - :amount where id is :src;
+  update account set balance = balance + :amount where id is :dst
+call transfer(1, 2, 20)
+find owner, balance from account
+show procedures
+:::
+If a statement of the procedure fails, everything the call did is taken back. A call with the wrong number of values says how many it needs.
+::: err
+call transfer(1)
+:::
+::: db
+drop procedure transfer
+:::
+## Did you mean
+A table, a column or a command that is not there, but looks like one that is, gets a suggestion. Nothing is guessed: the statement still fails.
+::: err
+find ownr from account
+:::
+::: err
+fnd owner from account
+:::
+::: err
+find owner from acount
+:::
+A word that differs by one letter (two letters for a word of five or more), or by two letters swapped, is suggested.

@@ -97,6 +97,33 @@ static int edit_distance(const char* a, const char* b) {
     return prev[lb];
 }
 
+/* the last error a statement gave, kept even when nothing was printed (a trigger runs its statements silently) */
+static char q_last_error[400];
+
+/* the one of the names that looks most like 'word' (a letter more, less, different or two swapped), or NULL.
+   A short word may differ by one letter, a longer one by two. */
+static const char* q_near(const char* word, const char* const* names, int n) {
+    size_t wl = strlen(word);
+    if (wl < 2) return NULL;
+    int limit = wl <= 4 ? 1 : 2;
+    const char* best = NULL;
+    int best_d = limit + 1;
+    for (int i = 0; i < n; i++) {
+        if (!names[i] || str_ci_cmp(names[i], word) == 0) continue;
+        int d = edit_distance(names[i], word);
+        /* two letters swapped (studnet) is one slip, not two */
+        size_t nl = strlen(names[i]);
+        if (nl == wl && d == 2) {
+            size_t k = 0;
+            while (k < wl && tolower((unsigned char)names[i][k]) == tolower((unsigned char)word[k])) k++;
+            if (k + 1 < wl && tolower((unsigned char)names[i][k]) == tolower((unsigned char)word[k + 1]) &&
+                tolower((unsigned char)names[i][k + 1]) == tolower((unsigned char)word[k]) && str_ci_cmp(names[i] + k + 2, word + k + 2) == 0) d = 1;
+        }
+        if (d < best_d) { best_d = d; best = names[i]; }
+    }
+    return best;
+}
+
 static void print_missing_table(const EnlngDatabase* db, const char* name) {
     printf("ERROR: Table '%s' does not exist in database '%s'.\n", name, db->name);
     if (db->table_count == 0) {
@@ -1569,7 +1596,12 @@ static void q_col_error(const QSet* S, const char* name, int place, char* err, s
     bool one_table = true;
     size_t plen = S->ncols ? (size_t)(q_short(S->names[0]) - S->names[0]) : 0;
     for (int c = 1; c < S->ncols; c++) one_table = one_table && strncmp(S->names[c], S->names[0], plen) == 0;
-    size_t k = (size_t)snprintf(err, n, "there is no column '%s'. The columns are:", name);
+    const char* shorts[Q_MAX_COLS];
+    for (int c = 0; c < S->ncols; c++) shorts[c] = q_short(S->names[c]);
+    const char* guess = q_near(strchr(name, '.') ? strchr(name, '.') + 1 : name, shorts, S->ncols);
+    size_t k = (size_t)snprintf(err, n, "there is no column '%s'.", name);
+    if (guess && k < n) k += (size_t)snprintf(err + k, n - k, " Did you mean '%s'?", guess);
+    if (k < n) k += (size_t)snprintf(err + k, n - k, " The columns are:");
     for (int c = 0; c < S->ncols && k < n; c++) k += (size_t)snprintf(err + k, n - k, " %s", one_table ? q_short(S->names[c]) : S->names[c]);
 }
 
@@ -2329,6 +2361,7 @@ static bool q_missing(QRun* R, const char* name) {
     if (R->print) print_missing_table(R->db, name);
     R->err_printed = true;
     snprintf(R->err, sizeof(R->err), "Table '%s' does not exist", name);
+    snprintf(q_last_error, sizeof(q_last_error), "%s", R->err);
     return false;
 }
 
@@ -2779,6 +2812,154 @@ static QExpr* q_resolve_item(QExpr* e, QItem* items, int nitems, const QSet* S, 
     return e;
 }
 
+/* ---- Lookup indexes made on demand ----
+ * 'where col is value' on a table of some size asks for a hash of that column. It is made once (one pass),
+ * kept while nothing in any table changes (enlngdb_mutations), and then each lookup reads only the rows
+ * with that value. Rows whose value cannot be hashed (a fraction, null) are always tested too, and the whole
+ * 'where' is still run on every candidate, so the answer is the same as reading every row. */
+typedef struct {
+    const EnlngTable* t;
+    size_t rows;
+    int col;
+    unsigned long long mut;
+    QHash* H;
+    size_t* spill;
+    size_t nspill;
+} QIdx;
+#define Q_UNDO_MAX_ROWS 10000
+#define Q_IDX_KEEP 8
+#define Q_IDX_MIN_ROWS 48
+static QIdx q_idx_cache[Q_IDX_KEEP];
+static int q_idx_next = 0;
+
+static void q_idx_drop(QIdx* x) {
+    qh_free(x->H);
+    free(x->spill);
+    memset(x, 0, sizeof(*x));
+}
+
+static bool q_idx_kept = false;      /* set by an update or insert that has already told the indexes what it did */
+
+/* a row was appended to t (the counter went up by one for it): an index that was good just before it takes the new row in */
+static void q_idx_append_note(const EnlngTable* t) {
+    size_t r = t->row_count - 1;
+    for (int i = 0; i < Q_IDX_KEEP; i++) {
+        QIdx* c = &q_idx_cache[i];
+        if (!c->H || c->t != t || c->rows != r || c->mut + 1 != enlngdb_mutations) continue;
+        uint64_t hv;
+        const EnlngVal* v = (size_t)c->col < t->rows[r].cell_count ? &t->rows[r].cells[c->col] : NULL;
+        if (v && q_val_hash(v, &hv)) {
+            qh_add(c->H, (int64_t)r, hv);
+        } else {
+            /* the spill list is kept from the last row up, and this is the last row */
+            size_t* grown = (size_t*)realloc(c->spill, (c->nspill + 1) * sizeof(size_t));
+            if (!grown) { q_idx_drop(c); continue; }
+            c->spill = grown;
+            memmove(c->spill + 1, c->spill, c->nspill * sizeof(size_t));
+            c->spill[0] = r;
+            c->nspill++;
+        }
+        c->rows = t->row_count;
+        c->mut = enlngdb_mutations;
+        q_idx_kept = true;
+    }
+}
+
+/* the largest whole number in column col of t, kept between statements while nothing else changes the table */
+typedef struct { const EnlngTable* t; int col; size_t rows; unsigned long long mut; int64_t max; bool seen; } QMaxCache;
+static QMaxCache q_max_cache[8];
+static int q_max_next = 0;
+
+static QMaxCache* q_max_find(const EnlngTable* t, int col, bool valid_only) {
+    for (int i = 0; i < 8; i++) {
+        QMaxCache* m = &q_max_cache[i];
+        if (m->t == t && m->col == col && (!valid_only || (m->rows == t->row_count && m->mut == enlngdb_mutations))) return m;
+    }
+    return NULL;
+}
+
+static void q_max_put(const EnlngTable* t, int col, int64_t max, bool seen) {
+    QMaxCache* m = q_max_find(t, col, false);
+    if (!m) { m = &q_max_cache[q_max_next]; q_max_next = (q_max_next + 1) % 8; }
+    m->t = t; m->col = col; m->rows = t->row_count; m->mut = enlngdb_mutations; m->max = max; m->seen = seen;
+    q_idx_kept = true;
+}
+
+/* an update wrote rows without moving them: an index made just before it (when the counter was 'before') stays
+   good for each column the update did not change */
+static void q_idx_keep(const EnlngTable* t, unsigned long long before, unsigned long long changed) {
+    bool any = false;
+    for (int i = 0; i < Q_IDX_KEEP; i++) {
+        QIdx* c = &q_idx_cache[i];
+        if (!c->H) continue;
+        if (c->t == t && c->rows == t->row_count && c->mut == before && c->col < 64 && !((changed >> c->col) & 1ULL)) {
+            c->mut = enlngdb_mutations;          /* the statement ends without another bump, see enlngdb_execute_statement */
+            any = true;
+        }
+    }
+    if (any) q_idx_kept = true;
+}
+
+/* a conjunct 'column = literal' of the where: the column place in S and the literal; false if none */
+static bool q_where_key(const QExpr* w, const QSet* S, int* col, const EnlngVal** key) {
+    if (!w) return false;
+    if (w->kind == EK_AND) return q_where_key(w->a, S, col, key) || q_where_key(w->b, S, col, key);
+    if (w->kind != EK_CMP || w->op != OP_EQ || !w->a || !w->b) return false;
+    const QExpr* n = w->a;
+    const QExpr* l = w->b;
+    if (n->kind != EK_NAME) { n = w->b; l = w->a; }
+    if (n->kind != EK_NAME || l->kind != EK_LIT) return false;
+    int c = q_find_col(S, n->text);
+    if (c < 0) return false;
+    uint64_t h;
+    if (!q_val_hash(&l->val, &h)) return false;
+    *col = c;
+    *key = &l->val;
+    return true;
+}
+
+static int q_size_cmp(const void* a, const void* b) {
+    size_t x = *(const size_t*)a, y = *(const size_t*)b;
+    return x < y ? -1 : x > y ? 1 : 0;
+}
+
+/* the rows of t that can have this value in column col, in row order; NULL if no index could be used */
+static size_t* q_idx_lookup(const EnlngTable* t, int col, const EnlngVal* key, size_t* n_out) {
+    if (t->row_count < Q_IDX_MIN_ROWS) return NULL;
+    uint64_t h;
+    if (!q_val_hash(key, &h)) return NULL;
+    QIdx* x = NULL;
+    for (int i = 0; i < Q_IDX_KEEP; i++) {
+        QIdx* c = &q_idx_cache[i];
+        if (c->H && c->t == t && c->col == col && c->rows == t->row_count && c->mut == enlngdb_mutations) { x = c; break; }
+    }
+    if (!x) {
+        for (int i = 0; i < Q_IDX_KEEP; i++) {
+            QIdx* c = &q_idx_cache[i];
+            if (c->H && c->t == t && c->col == col) { x = c; break; }     /* the same one, now out of date */
+        }
+        if (!x) { x = &q_idx_cache[q_idx_next]; q_idx_next = (q_idx_next + 1) % Q_IDX_KEEP; }
+        q_idx_drop(x);
+        x->t = t; x->rows = t->row_count; x->col = col; x->mut = enlngdb_mutations;
+        x->H = qh_new(t->row_count);
+        x->spill = (size_t*)malloc((t->row_count + 1) * sizeof(size_t));
+        for (size_t r = t->row_count; r-- > 0;) {
+            uint64_t hv;
+            const EnlngVal* v = (size_t)col < t->rows[r].cell_count ? &t->rows[r].cells[col] : NULL;
+            if (v && q_val_hash(v, &hv)) qh_add(x->H, (int64_t)r, hv);
+            else x->spill[x->nspill++] = r;                               /* filled from the last row up */
+        }
+    }
+    size_t* out = (size_t*)malloc((t->row_count + 1) * sizeof(size_t));
+    size_t n = 0;
+    for (int64_t e = qh_first(x->H, h); e >= 0; e = qh_next(x->H, e, h)) out[n++] = (size_t)x->H->item[e];
+    for (size_t i = 0; i < x->nspill; i++) out[n++] = x->spill[i];
+    /* rows added after the index was made were put in front of the others, so they are sorted into row order here */
+    if (n > 1) qsort(out, n, sizeof(size_t), q_size_cmp);
+    *n_out = n;
+    return out;
+}
+
 static bool q_exec_one(QRun* R, QQuery* q, const QEnv* outer, QSet* O) {
     bool ok = false;
     QSet* S = qs_new();
@@ -2788,6 +2969,7 @@ static bool q_exec_one(QRun* R, QQuery* q, const QEnv* outer, QSet* O) {
     size_t nunits = 0;
     EnlngVal* nullrow = NULL;
     EnlngVal* keys = NULL;
+    size_t* cands = NULL;
     char reals[Q_MAX_SRC][64], aliases[Q_MAX_SRC][64];
     QExpr* owned_on[Q_MAX_SRC] = {0};
     char err[300] = "";
@@ -2808,7 +2990,13 @@ static bool q_exec_one(QRun* R, QQuery* q, const QEnv* outer, QSet* O) {
         for (int c = 0; c < only->col_count; c++) snprintf(S->names[c], sizeof(S->names[0]), "%s.%s", q->src[0].alias, only->columns[c].name);
         S->ncols = only->col_count;
         if (!q_check(R, q->where, S, outer, false, false, err, sizeof(err))) { snprintf(R->err, sizeof(R->err), "%s", err); goto done; }
-        for (size_t r = 0; r < only->row_count; r++) {
+        int kcol = -1;
+        const EnlngVal* kval = NULL;
+        size_t ncand = 0;
+        if (q_where_key(q->where, S, &kcol, &kval)) cands = q_idx_lookup(only, kcol, kval, &ncand);
+        size_t scan = cands ? ncand : only->row_count;
+        for (size_t i = 0; i < scan; i++) {
+            size_t r = cands ? cands[i] : i;
             QEnv E = {S, only->rows[r].cells, NULL, 0, false, 0, outer, R};
             EnlngVal t = q_eval(&E, q->where);
             bool hit = q_truth(&t);
@@ -3247,6 +3435,7 @@ static bool q_exec_one(QRun* R, QQuery* q, const QEnv* outer, QSet* O) {
     ok = true;
 
 done:
+    free(cands);
     if (!ok) {
         if (!R->err[0] && err[0]) snprintf(R->err, sizeof(R->err), "%s", err);
         if (O->nrows) q_set_clear(O);
@@ -3535,7 +3724,7 @@ static void q_print_plan(EnlngDatabase* db, QQuery* q) {
         if (c->limit >= 0 || c->offset || c->climit >= 0 || c->coffset) printf("  %d. keep only the rows asked for with top / limit / offset\n", step++);
         if (c->next) printf("  then: %s\n", c->setop == SO_UNION ? "union (repeated rows dropped)" : c->setop == SO_UNION_ALL ? "union all" : c->setop == SO_INTERSECT ? "intersect" : "except");
     }
-    printf("(EnlngDB reads tables from memory; indexes are recorded but every query reads its tables in full.)\n\n");
+    printf("(EnlngDB reads tables from memory. 'where column is value' on a table of %d rows or more uses a lookup index it makes by itself.)\n\n", Q_IDX_MIN_ROWS);
 }
 
 /* find ... / select ... / with ... / count ... : parse, run and show */
@@ -3800,6 +3989,22 @@ static void q_sidx_note(EnlngTable* t, size_t r) {
    -2 if there is no index to ask (then the caller looks at every row) */
 static long q_sidx_find(EnlngTable* t, const int* cols, int n, const EnlngVal* cells, long skip) {
     QHash* H = q_sidx_get(t, cols, n);
+    if (!H && n == 1 && cells[cols[0]].type != ENLNG_VAL_NULL) {
+        /* no index for this statement: the lasting one for one column, if the table is big enough to have one */
+        size_t nc = 0;
+        size_t* cand = q_idx_lookup(t, cols[0], &cells[cols[0]], &nc);
+        if (cand) {
+            long best = -1;
+            for (size_t i = 0; i < nc && best < 0; i++) {
+                size_t r = cand[i];
+                if ((long)r == skip) continue;
+                const EnlngVal* v = (size_t)cols[0] < t->rows[r].cell_count ? &t->rows[r].cells[cols[0]] : NULL;
+                if (v && v->type != ENLNG_VAL_NULL && enlng_compare_vals(v, &cells[cols[0]]) == 0) best = (long)r;
+            }
+            free(cand);
+            return best;
+        }
+    }
     if (!H) return -2;
     uint64_t h;
     if (!q_vals_hash(cells, cols, n, &h)) return -2;
@@ -3835,6 +4040,11 @@ static bool q_parent_has(EnlngDatabase* db, const EnlngColumn* col, const EnlngV
 }
 
 /* what every row of the table must meet: not null, unique, key, check, references. skip is the row being replaced. */
+/* an update that changes only some columns: bit c is set for each changed column (0 = every column counts).
+   A column that kept its value cannot start to clash with another row or lose its parent. */
+static unsigned long long q_changed_mask = 0;
+#define Q_KEPT(c) (q_changed_mask && !((q_changed_mask >> (c)) & 1ULL))
+
 static bool q_check_row(QRun* R, EnlngTable* t, EnlngVal* cells, int skip, char* err, size_t en) {
     for (int c = 0; c < t->col_count; c++) {
         const EnlngColumn* col = &t->columns[c];
@@ -3843,8 +4053,8 @@ static bool q_check_row(QRun* R, EnlngTable* t, EnlngVal* cells, int skip, char*
             if (col->is_primary_key) { snprintf(err, en, "column '%s' is the primary key of '%s', so it cannot be empty", col->name, t->name); return false; }
             continue;
         }
-        bool single_unique = col->is_unique;
-        for (int i = 0; i < t->index_count; i++) {
+        bool single_unique = col->is_unique && !Q_KEPT(c);
+        for (int i = 0; i < t->index_count && !Q_KEPT(c); i++) {
             if (t->indexes[i].is_unique && t->indexes[i].col_count == 1 && str_ci_cmp(t->indexes[i].cols[0], col->name) == 0) single_unique = true;
         }
         long seen = single_unique ? q_sidx_find(t, &c, 1, cells, skip) : -1;
@@ -3869,7 +4079,7 @@ static bool q_check_row(QRun* R, EnlngTable* t, EnlngVal* cells, int skip, char*
             if (!err[0] || strstr(err, "cannot be read") == NULL) snprintf(err, en, "column '%s' does not allow this value: the check '%s' is not met", col->name, col->check_text);
             return false;
         }
-        if (col->ref_table[0] && !q_parent_has(R->db, col, &cells[c])) {
+        if (col->ref_table[0] && !Q_KEPT(c) && !q_parent_has(R->db, col, &cells[c])) {
             char shown[200];
             q_quote_val(&cells[c], shown, sizeof(shown));
             snprintf(err, en, "%s is not in %s.%s, which column '%s' refers to", shown, col->ref_table, col->ref_col, col->name);
@@ -3890,9 +4100,12 @@ static bool q_check_row(QRun* R, EnlngTable* t, EnlngVal* cells, int skip, char*
         ng++;
     }
     for (int g = 0; g < ng; g++) {
-        bool any_null = false;
-        for (int k = 0; k < groups[g].n; k++) any_null = any_null || cells[groups[g].cols[k]].type == ENLNG_VAL_NULL;
-        if (any_null) continue;
+        bool any_null = false, any_changed = false;
+        for (int k = 0; k < groups[g].n; k++) {
+            any_null = any_null || cells[groups[g].cols[k]].type == ENLNG_VAL_NULL;
+            any_changed = any_changed || !Q_KEPT(groups[g].cols[k]);
+        }
+        if (any_null || !any_changed) continue;
         long seen = q_sidx_find(t, groups[g].cols, groups[g].n, cells, skip);
         if (seen >= 0) {
             snprintf(err, en, "a row with the same values in the %s columns already exists in '%s'", groups[g].what, t->name);
@@ -3912,14 +4125,14 @@ static bool q_check_row(QRun* R, EnlngTable* t, EnlngVal* cells, int skip, char*
         }
     }
     /* a single-column key: the same value twice */
-    long key_seen = nk == 1 && cells[keys[0]].type != ENLNG_VAL_NULL ? q_sidx_find(t, keys, 1, cells, skip) : -1;
+    long key_seen = nk == 1 && !Q_KEPT(keys[0]) && cells[keys[0]].type != ENLNG_VAL_NULL ? q_sidx_find(t, keys, 1, cells, skip) : -1;
     if (key_seen >= 0) {
         char shown[200];
         q_quote_val(&cells[keys[0]], shown, sizeof(shown));
         snprintf(err, en, "%s is already the %s of another row of '%s'", shown, t->columns[keys[0]].name, t->name);
         return false;
     }
-    if (nk == 1 && cells[keys[0]].type != ENLNG_VAL_NULL && key_seen == -2) {
+    if (nk == 1 && !Q_KEPT(keys[0]) && cells[keys[0]].type != ENLNG_VAL_NULL && key_seen == -2) {
         for (size_t r = 0; r < t->row_count; r++) {
             if ((int)r == skip || keys[0] >= t->rows[r].cell_count) continue;
             if (enlng_compare_vals(&t->rows[r].cells[keys[0]], &cells[keys[0]]) == 0 && t->rows[r].cells[keys[0]].type != ENLNG_VAL_NULL) {
@@ -3949,6 +4162,49 @@ static QSnap q_snap(const EnlngTable* t) {
         for (int c = 0; c < t->rows[r].cell_count; c++) s.rows[r].cells[c] = enlng_copy_val(&t->rows[r].cells[c]);
     }
     return s;
+}
+
+/* the same for a statement that changes only some rows: the old cells of those rows (rows[i] is the place of old[i]) */
+typedef struct {
+    EnlngRow* old;
+    const size_t* at;
+    size_t n;
+} QSparse;
+
+static QSparse q_sparse_snap(const EnlngTable* t, const size_t* at, size_t n) {
+    QSparse s;
+    s.n = n;
+    s.at = at;
+    s.old = (EnlngRow*)calloc(n + 1, sizeof(EnlngRow));
+    for (size_t i = 0; i < n; i++) {
+        const EnlngRow* row = &t->rows[at[i]];
+        s.old[i].cell_count = row->cell_count;
+        s.old[i].cells = (EnlngVal*)malloc((size_t)(row->cell_count ? row->cell_count : 1) * sizeof(EnlngVal));
+        for (int c = 0; c < row->cell_count; c++) s.old[i].cells[c] = enlng_copy_val(&row->cells[c]);
+    }
+    return s;
+}
+
+static void q_sparse_drop(QSparse* s) {
+    for (size_t i = 0; i < s->n; i++) {
+        for (int c = 0; c < s->old[i].cell_count; c++) enlng_free_val(&s->old[i].cells[c]);
+        free(s->old[i].cells);
+    }
+    free(s->old);
+    s->old = NULL;
+    s->n = 0;
+}
+
+static void q_sparse_restore(EnlngTable* t, QSparse* s) {
+    enlngdb_mutations++;
+    for (size_t i = 0; i < s->n; i++) {
+        EnlngRow* row = &t->rows[s->at[i]];
+        for (int c = 0; c < row->cell_count; c++) enlng_free_val(&row->cells[c]);
+        free(row->cells);
+        *row = s->old[i];
+        memset(&s->old[i], 0, sizeof(EnlngRow));
+    }
+    s->n = 0;
 }
 
 static void q_snap_drop(QSnap* s) {
@@ -3995,7 +4251,76 @@ static bool q_referenced(EnlngDatabase* db, EnlngTable* parent, const EnlngVal* 
     return true;
 }
 
+/* rows of other tables that follow a changed key ('on update cascade' / 'set null'), found while checking and done at the end */
+typedef struct {
+    int table, col;             /* the referring column */
+    EnlngVal from, to;          /* the key before and after */
+    bool set_null;
+} QFollow;
+
+/* a key of the parent changed from old_cells[pcol] to newv: refuse if a referring column says so, else note who follows */
+static bool q_follow_key(EnlngDatabase* db, EnlngTable* parent, const EnlngVal* old_cells, int pcol, const EnlngVal* newv,
+                         QFollow** list, size_t* n, size_t* cap, char* err, size_t en) {
+    for (int i = 0; i < db->table_count; i++) {
+        EnlngTable* child = &db->tables[i];
+        for (int c = 0; c < child->col_count; c++) {
+            const EnlngColumn* col = &child->columns[c];
+            if (strcmp(col->ref_table, parent->name) != 0) continue;
+            int pc = q_col_index(parent, col->ref_col);
+            if (pc != pcol || old_cells[pc].type == ENLNG_VAL_NULL) continue;
+            size_t k = 0;
+            for (size_t r = 0; r < child->row_count; r++) {
+                if (c < child->rows[r].cell_count && child->rows[r].cells[c].type != ENLNG_VAL_NULL && enlng_compare_vals(&child->rows[r].cells[c], &old_cells[pc]) == 0) k++;
+            }
+            if (k == 0) continue;
+            if (col->on_update == 0) {
+                char shown[200];
+                q_quote_val(&old_cells[pc], shown, sizeof(shown));
+                snprintf(err, en, "%lu row(s) of '%s' still refer to %s in %s.%s (%s.%s); nothing was changed. To let them follow the new value, define the column with 'references %s(%s) on update cascade'",
+                         (unsigned long)k, child->name, shown, parent->name, col->ref_col, child->name, col->name, parent->name, col->ref_col);
+                return false;
+            }
+            if (col->on_update == 2 && col->not_null) {
+                snprintf(err, en, "column '%s' of '%s' is marked not null, so it cannot be set to null when the key it refers to changes", col->name, child->name);
+                return false;
+            }
+            if (*n >= *cap) { *cap = *cap ? *cap * 2 : 8; *list = (QFollow*)realloc(*list, *cap * sizeof(QFollow)); }
+            QFollow* f = &(*list)[(*n)++];
+            f->table = i;
+            f->col = c;
+            f->from = enlng_copy_val(&old_cells[pc]);
+            f->to = enlng_copy_val(newv);
+            f->set_null = col->on_update == 2;
+        }
+    }
+    return true;
+}
+
+/* the rows that follow: returns how many cells were changed */
+static size_t q_follow_apply(EnlngDatabase* db, QFollow* list, size_t n) {
+    size_t changed = 0;
+    for (size_t k = 0; k < n; k++) {
+        EnlngTable* child = &db->tables[list[k].table];
+        for (size_t r = 0; r < child->row_count; r++) {
+            EnlngVal* cell = list[k].col < child->rows[r].cell_count ? &child->rows[r].cells[list[k].col] : NULL;
+            if (!cell || cell->type == ENLNG_VAL_NULL || enlng_compare_vals(cell, &list[k].from) != 0) continue;
+            enlng_free_val(cell);
+            *cell = list[k].set_null ? enlng_null() : enlng_copy_val(&list[k].to);
+            changed++;
+        }
+        child->version++;
+    }
+    if (changed) enlngdb_mutations++;
+    return changed;
+}
+
+static void q_follow_free(QFollow* list, size_t n) {
+    for (size_t k = 0; k < n; k++) { enlng_free_val(&list[k].from); enlng_free_val(&list[k].to); }
+    free(list);
+}
+
 static void q_print_error(bool print_output, const char* msg, const char* after) {
+    snprintf(q_last_error, sizeof(q_last_error), "%s", msg ? msg : "");
     if (print_output) {
         printf("ERROR: %s.\n", msg);
         if (after && *after) printf("       %s\n", after);
@@ -4040,6 +4365,8 @@ static bool q_insert_rows(QRun* R, EnlngTable* t, QInRow* rows, int nrows, int* 
         auto_seen[c] = false;
         auto_max[c] = 0;
         if (!t->columns[c].is_auto) continue;
+        QMaxCache* mc = q_max_find(t, c, true);
+        if (mc) { auto_max[c] = mc->max; auto_seen[c] = mc->seen; continue; }
         for (size_t r = 0; r < t->row_count; r++) {
             const EnlngVal* v = &t->rows[r].cells[c];
             if (v->type == ENLNG_VAL_INT && (!auto_seen[c] || v->int_val > auto_max[c])) { auto_max[c] = v->int_val; auto_seen[c] = true; }
@@ -4081,6 +4408,7 @@ static bool q_insert_rows(QRun* R, EnlngTable* t, QInRow* rows, int nrows, int* 
         if (!q_check_row(R, t, cells, target, err, en)) goto fail;
         if (target >= 0) {
             EnlngRow* row = &t->rows[target];
+            enlngdb_mutations++;                    /* a row is written over: indexes made before are out of date */
             if ((size_t)target < base) {
                 if (nundo >= undo_cap) {
                     undo_cap = undo_cap ? undo_cap * 2 : 8;
@@ -4116,6 +4444,7 @@ static bool q_insert_rows(QRun* R, EnlngTable* t, QInRow* rows, int nrows, int* 
             goto fail;
         } else {
             q_sidx_note(t, t->row_count - 1);
+            q_idx_append_note(t);
         }
         for (int c = 0; c < t->col_count; c++) {
             if (t->columns[c].is_auto && cells[c].type == ENLNG_VAL_INT && (!auto_seen[c] || cells[c].int_val > auto_max[c])) {
@@ -4125,6 +4454,9 @@ static bool q_insert_rows(QRun* R, EnlngTable* t, QInRow* rows, int nrows, int* 
         }
     }
     if (own_sidx) q_sidx_end();
+    if (nundo == 0 && *replaced == 0) {
+        for (int c = 0; c < t->col_count; c++) if (t->columns[c].is_auto) q_max_put(t, c, auto_max[c], auto_seen[c]);
+    }
     for (size_t u = 0; u < nundo; u++) {
         for (int c = 0; c < undo[u].cc; c++) enlng_free_val(&undo[u].cells[c]);
         free(undo[u].cells);
@@ -4140,6 +4472,7 @@ fail:
         free(t->rows[r].cells);
     }
     t->row_count = base;
+    enlngdb_mutations++;
     for (size_t u = nundo; u-- > 0;) {
         EnlngRow* row = &t->rows[undo[u].r];
         for (int c = 0; c < row->cell_count; c++) enlng_free_val(&row->cells[c]);
@@ -4375,7 +4708,14 @@ static bool q_matching_rows(QRun* R, EnlngTable* t, QExpr* where, size_t** out, 
     *n = 0;
     bool ok = true;
     if (where && !q_check(R, where, S, NULL, false, false, err, en)) ok = false;
-    for (size_t r = 0; ok && r < t->row_count; r++) {
+    int kcol = -1;
+    const EnlngVal* kval = NULL;
+    size_t ncand = 0;
+    size_t* cands = NULL;
+    if (ok && where && t->row_count >= Q_IDX_MIN_ROWS && q_where_key(where, S, &kcol, &kval)) cands = q_idx_lookup(t, kcol, kval, &ncand);
+    size_t scan = cands ? ncand : t->row_count;
+    for (size_t i = 0; ok && i < scan; i++) {
+        size_t r = cands ? cands[i] : i;
         bool hit = true;
         if (where) {
             QEnv E = {S, t->rows[r].cells, NULL, 0, false, 0, NULL, R};
@@ -4386,6 +4726,7 @@ static bool q_matching_rows(QRun* R, EnlngTable* t, QExpr* where, size_t** out, 
         }
         if (hit) (*out)[(*n)++] = r;
     }
+    free(cands);
     q_set_free(S);
     return ok;
 }
@@ -4413,7 +4754,10 @@ static bool q_update(EnlngDatabase* db, const char* stmt, bool print_output) {
     size_t* rows = NULL;
     size_t nrows = 0;
     EnlngTable* t = NULL;
-    QSnap snap = {NULL, 0};
+    QSparse snap = {NULL, NULL, 0};
+    unsigned long long before_mut = 0;
+    QFollow* follow = NULL;
+    size_t nfollow = 0, capfollow = 0, followed = 0;
     bool have_snap = false;
 
     bool in_form = q_take(L, "in");
@@ -4443,7 +4787,12 @@ static bool q_update(EnlngDatabase* db, const char* stmt, bool print_output) {
         if (ci < 0) {
             char cols[400] = "";
             for (int k = 0; k < t->col_count; k++) { size_t l = strlen(cols); snprintf(cols + l, sizeof(cols) - l, " %s", t->columns[k].name); }
-            snprintf(err, sizeof(err), "table '%s' has no column '%s'. Its columns are:%s", t->name, c->text, cols);
+            const char* cn[ENLNGDB_MAX_COLS];
+            for (int k = 0; k < t->col_count; k++) cn[k] = t->columns[k].name;
+            const char* guess = q_near(c->text, cn, t->col_count);
+            char dym[100] = "";
+            if (guess) snprintf(dym, sizeof(dym), " Did you mean '%s'?", guess);
+            snprintf(err, sizeof(err), "table '%s' has no column '%s'.%s Its columns are:%s", t->name, c->text, dym, cols);
             goto done;
         }
         L->pos++;
@@ -4510,8 +4859,10 @@ static bool q_update(EnlngDatabase* db, const char* stmt, bool print_output) {
         }
         q_set_free(S);
         if (good) {
-            snap = q_snap(t);
+            snap = q_sparse_snap(t, rows, nrows);
             have_snap = true;
+            before_mut = enlngdb_mutations;
+            enlngdb_mutations++;
             for (size_t r = 0; r < nrows; r++) {
                 EnlngRow* row = &t->rows[rows[r]];
                 for (int i = 0; i < nas; i++) {
@@ -4519,20 +4870,24 @@ static bool q_update(EnlngDatabase* db, const char* stmt, bool print_output) {
                     row->cells[as[i].col] = enlng_copy_val(&fresh[r * nas + i]);
                 }
             }
+            q_changed_mask = 0;
+            for (int i = 0; i < nas; i++) q_changed_mask |= 1ULL << as[i].col;
             for (size_t r = 0; r < nrows && good; r++) {
                 EnlngRow* row = &t->rows[rows[r]];
                 for (int c = 0; c < t->col_count && good; c++) good = q_coerce(&t->columns[c], &row->cells[c], err, sizeof(err));
                 if (good) good = q_check_row(&R, t, row->cells, (int)rows[r], err, sizeof(err));
                 /* a key that other tables point to cannot change */
                 for (int i = 0; i < nas && good; i++) {
-                    EnlngRow* old = &snap.rows[rows[r]];
+                    EnlngRow* old = &snap.old[r];
                     if (enlng_compare_vals(&old->cells[as[i].col], &row->cells[as[i].col]) != 0) {
-                        good = q_referenced(db, t, old->cells, as[i].col, err, sizeof(err));
+                        good = q_follow_key(db, t, old->cells, as[i].col, &row->cells[as[i].col], &follow, &nfollow, &capfollow, err, sizeof(err));
                     }
                 }
             }
+            q_changed_mask = 0;
+            if (good && nfollow) followed = q_follow_apply(db, follow, nfollow);
             if (!good) {
-                q_snap_restore(t, &snap);
+                q_sparse_restore(t, &snap);
                 have_snap = false;
             }
         }
@@ -4541,11 +4896,21 @@ static bool q_update(EnlngDatabase* db, const char* stmt, bool print_output) {
         if (!good) goto done;
     }
     t->version++;
-    if (print_output) printf("Query OK, %lu row(s) updated. (0.03 ms)\n\n", (unsigned long)nrows);
+    {
+        unsigned long long mask = 0;
+        for (int i = 0; i < nas; i++) mask |= 1ULL << as[i].col;
+        q_idx_keep(t, before_mut, mask);
+    }
+    if (print_output) {
+        printf("Query OK, %lu row(s) updated", (unsigned long)nrows);
+        if (followed) printf("; %lu reference(s) in other tables followed the new key (on update)", (unsigned long)followed);
+        printf(". (0.03 ms)\n\n");
+    }
     ok = true;
 done:
     if (!ok && !R.err_printed) q_print_error(print_output, err[0] ? err : (R.err[0] ? R.err : L->err), "Nothing was changed.");
-    if (have_snap) q_snap_drop(&snap);
+    if (have_snap) q_sparse_drop(&snap);
+    q_follow_free(follow, nfollow);
     for (int i = 0; i < nas; i++) q_free_expr(as[i].e);
     q_free_expr(where);
     free(rows);
@@ -4734,6 +5099,7 @@ static bool q_delete(EnlngDatabase* db, const char* stmt, bool print_output) {
             enlng_free_val(v);
             *v = enlng_null();
             db->tables[nulls[i].t].version++;
+            enlngdb_mutations++;
             set_null++;
         }
         size_t base = 0;
@@ -4751,6 +5117,7 @@ static bool q_delete(EnlngDatabase* db, const char* stmt, bool print_output) {
                 }
             }
             tk->row_count = w;
+            enlngdb_mutations++;
             if (w != n_before) tk->version++;
             if (k != ti) others += n_before - w;
             base += n_before;
@@ -4910,10 +5277,15 @@ static bool q_parse_attrs(QLex* L, int from, int to, EnlngColumn* col, char* err
             }
             while (i < to && str_ci_cmp(L->t[i].text, "on") == 0) {
                 if (i + 1 < to && str_ci_cmp(L->t[i + 1].text, "update") == 0) {
-                    snprintf(err, en, "'on update' is not supported: the key of a row that other rows refer to cannot be changed");
-                    return false;
+                    i += 2;
+                    if (i < to && str_ci_cmp(L->t[i].text, "cascade") == 0) { col->on_update = 1; i++; }
+                    else if (i + 1 < to && str_ci_cmp(L->t[i].text, "set") == 0 && str_ci_cmp(L->t[i + 1].text, "null") == 0) { col->on_update = 2; i += 2; }
+                    else if (i < to && str_ci_cmp(L->t[i].text, "restrict") == 0) { col->on_update = 0; i++; }
+                    else if (i + 1 < to && str_ci_cmp(L->t[i].text, "no") == 0 && str_ci_cmp(L->t[i + 1].text, "action") == 0) { col->on_update = 0; i += 2; }
+                    else { snprintf(err, en, "after 'on update' write cascade, set null or restrict"); return false; }
+                    continue;
                 }
-                if (!(i + 1 < to && str_ci_cmp(L->t[i + 1].text, "delete") == 0)) { snprintf(err, en, "after 'on' write 'delete': on delete cascade, on delete set null"); return false; }
+                if (!(i + 1 < to && str_ci_cmp(L->t[i + 1].text, "delete") == 0)) { snprintf(err, en, "after 'on' write 'delete' or 'update': on delete cascade, on update cascade, on delete set null"); return false; }
                 i += 2;
                 if (i < to && str_ci_cmp(L->t[i].text, "cascade") == 0) { col->on_delete = 1; i++; }
                 else if (i + 1 < to && str_ci_cmp(L->t[i].text, "set") == 0 && str_ci_cmp(L->t[i + 1].text, "null") == 0) { col->on_delete = 2; i += 2; }
@@ -5409,7 +5781,7 @@ static bool q_create_index(EnlngDatabase* db, const char* stmt, bool print_outpu
         printf("Query OK, %sindex '%s' made on %s (", ix.is_unique ? "unique " : "", ix.name, t->name);
         for (int k = 0; k < ix.col_count; k++) printf("%s%s", k ? ", " : "", ix.cols[k]);
         printf("). (0.02 ms)\n");
-        if (!ix.is_unique) printf("       Note: EnlngDB reads tables from memory, so a plain index is recorded but does not change how fast queries run.\n");
+        if (!ix.is_unique) printf("       Note: EnlngDB makes a lookup index by itself when a query needs one, so this index is only a record.\n");
         printf("\n");
     }
     ok = true;
@@ -5523,8 +5895,9 @@ static bool q_describe(EnlngDatabase* db, const char* name, bool print_output) {
             cells[n][5][0] = '\0';
             size_t k = 0;
             if (col->is_auto) k += (size_t)snprintf(cells[n][5] + k, 130 - k, "auto_increment ");
-            if (col->ref_table[0]) k += (size_t)snprintf(cells[n][5] + k, 130 - k, "refers to %s.%s%s ", col->ref_table, col->ref_col,
-                                                         col->on_delete == 1 ? " (on delete cascade)" : col->on_delete == 2 ? " (on delete set null)" : "");
+            if (col->ref_table[0]) k += (size_t)snprintf(cells[n][5] + k, 130 - k, "refers to %s.%s%s%s ", col->ref_table, col->ref_col,
+                                                         col->on_delete == 1 ? " (on delete cascade)" : col->on_delete == 2 ? " (on delete set null)" : "",
+                                                         col->on_update == 1 ? " (on update cascade)" : col->on_update == 2 ? " (on update set null)" : "");
             if (col->check_text[0]) k += (size_t)snprintf(cells[n][5] + k, 130 - k, "check (%s)", col->check_text);
         }
     }
@@ -5992,6 +6365,698 @@ static bool q_leave_database(EnlngDatabase* db, const char* next, bool print_out
 
 static bool q_execute_line(EnlngDatabase* db, char* line, bool print_output);
 
+/* ---- Triggers and procedures ----
+ * A trigger is statements that run by themselves after a row was added, changed or deleted in a table:
+ *   create trigger log_delete after delete on student do insert into audit values (old.roll_no, "deleted")
+ * It sees the row as new.column (insert, update) and old.column (update, delete). 'when <condition>' limits the rows.
+ * A trigger that fails, or runs 'raise "message"', takes the whole statement back. EnlngDB finds the rows by comparing
+ * the table before and after the statement, so it works the same for insert, update, delete, import and cascades.
+ * A procedure is statements saved under a name:  create procedure pay (who, amount) as update ...  and  call pay(1, 50). */
+
+static const char* q_ws(const char* s) {
+    while (isspace((unsigned char)*s)) s++;
+    return s;
+}
+
+/* the word at s (after spaces), copied into out; the place after it */
+static const char* q_wordat(const char* s, char* out, size_t n) {
+    size_t k = 0;
+    s = q_ws(s);
+    while (*s && (isalnum((unsigned char)*s) || *s == '_')) {
+        if (k + 1 < n) out[k++] = *s;
+        s++;
+    }
+    out[k] = '\0';
+    return s;
+}
+
+static bool q_word_char(char c) { return isalnum((unsigned char)c) || c == '_'; }
+
+/* the place of the word w in s, outside quotes, or NULL */
+static const char* q_find_word(const char* s, const char* w) {
+    size_t wl = strlen(w);
+    char q = 0;
+    for (const char* p = s; *p; p++) {
+        if (q) { if (*p == q) q = 0; continue; }
+        if (*p == '"' || *p == '\'') { q = *p; continue; }
+        if (p != s && (q_word_char(p[-1]) || p[-1] == '.')) continue;
+        size_t k = 0;
+        while (k < wl && tolower((unsigned char)p[k]) == tolower((unsigned char)w[k])) k++;
+        if (k == wl && !q_word_char(p[wl])) return p;
+    }
+    return NULL;
+}
+
+static char* q_xdup(const char* s, size_t n) {
+    char* r = (char*)malloc(n + 1);
+    if (!r) return NULL;
+    memcpy(r, s, n);
+    r[n] = '\0';
+    return r;
+}
+
+static char* q_trim_dup(const char* a, const char* b) {
+    while (a < b && isspace((unsigned char)*a)) a++;
+    while (b > a && isspace((unsigned char)b[-1])) b--;
+    return q_xdup(a, (size_t)(b - a));
+}
+
+/* a value as text that a statement can contain */
+static char* q_literal(const EnlngVal* v) {
+    char buf[64];
+    switch (v->type) {
+        case ENLNG_VAL_NULL: return q_xdup("null", 4);
+        case ENLNG_VAL_BOOL: return v->bool_val ? q_xdup("true", 4) : q_xdup("false", 5);
+        case ENLNG_VAL_INT: snprintf(buf, sizeof(buf), "%lld", (long long)v->int_val); return q_xdup(buf, strlen(buf));
+        case ENLNG_VAL_DOUBLE: snprintf(buf, sizeof(buf), "%.15g", v->double_val); return q_xdup(buf, strlen(buf));
+        default: break;
+    }
+    const char* t = v->str_val ? v->str_val : "";
+    size_t n = strlen(t);
+    char* r = (char*)malloc(n + 3);
+    if (!r) return NULL;
+    bool has_d = strchr(t, '"') != NULL, has_s = strchr(t, '\'') != NULL;
+    char q = has_d && !has_s ? '\'' : '"';
+    r[0] = q;
+    for (size_t i = 0; i < n; i++) r[i + 1] = (t[i] == q) ? (q == '"' ? '\'' : '"') : t[i];   /* both kinds inside: one is swapped */
+    r[n + 1] = q;
+    r[n + 2] = '\0';
+    return r;
+}
+
+typedef struct {
+    char key[140];              /* new.col, old.col or :param */
+    char* val;                  /* what it stands for, as text */
+} QSub;
+
+/* text with each key outside quotes replaced by its value */
+static char* q_substitute(const char* text, const QSub* subs, int ns) {
+    size_t cap = strlen(text) + 64, len = 0;
+    char* out = (char*)malloc(cap);
+    if (!out) return NULL;
+    char q = 0;
+    for (const char* p = text; *p;) {
+        if (q) {
+            if (*p == q) q = 0;
+        } else if (*p == '"' || *p == '\'') {
+            q = *p;
+        } else {
+            int hit = -1;
+            size_t hl = 0;
+            bool boundary = p == text || !(q_word_char(p[-1]) || p[-1] == '.');
+            for (int i = 0; i < ns && hit < 0; i++) {
+                size_t kl = strlen(subs[i].key);
+                if (subs[i].key[0] != ':' && !boundary) continue;
+                size_t k = 0;
+                while (k < kl && tolower((unsigned char)p[k]) == tolower((unsigned char)subs[i].key[k])) k++;
+                if (k == kl && !q_word_char(p[kl])) { hit = i; hl = kl; }
+            }
+            if (hit >= 0) {
+                size_t vl = strlen(subs[hit].val);
+                if (len + vl + 2 > cap) { cap = (len + vl + 2) * 2; out = (char*)realloc(out, cap); }
+                memcpy(out + len, subs[hit].val, vl);
+                len += vl;
+                p += hl;
+                continue;
+            }
+        }
+        if (len + 2 > cap) { cap *= 2; out = (char*)realloc(out, cap); }
+        out[len++] = *p++;
+    }
+    out[len] = '\0';
+    return out;
+}
+
+/* statements separated by ; outside quotes */
+static int q_split_stmts(const char* body, char*** out) {
+    int n = 0;
+    char** list = NULL;
+    const char* start = body;
+    char q = 0;
+    for (const char* p = body;; p++) {
+        if (*p && q) { if (*p == q) q = 0; continue; }
+        if (*p == '"' || *p == '\'') { q = *p; continue; }
+        if (*p == ';' || *p == '\0') {
+            char* one = q_trim_dup(start, p);
+            if (one && one[0]) {
+                list = (char**)realloc(list, sizeof(char*) * (size_t)(n + 1));
+                list[n++] = one;
+            } else {
+                free(one);
+            }
+            start = p + 1;
+            if (*p == '\0') break;
+        }
+    }
+    *out = list;
+    return n;
+}
+
+static void q_free_stmts(char** list, int n) {
+    for (int i = 0; i < n; i++) free(list[i]);
+    free(list);
+}
+
+static void q_free_subs(QSub* subs, int n) {
+    for (int i = 0; i < n; i++) free(subs[i].val);
+    free(subs);
+}
+
+/* run the statements of a body; false at the first that fails */
+static bool q_run_text(EnlngDatabase* db, const char* body, const QSub* subs, int ns, bool print_output) {
+    char* text = q_substitute(body, subs, ns);
+    if (!text) return false;
+    char** st = NULL;
+    int n = q_split_stmts(text, &st);
+    bool ok = true;
+    for (int i = 0; i < n && ok; i++) ok = enlngdb_execute_statement(db, st[i], print_output);
+    q_free_stmts(st, n);
+    free(text);
+    return ok;
+}
+
+/* does the condition hold? *good is false if it could not be worked out */
+static bool q_when_holds(EnlngDatabase* db, const char* cond, bool* good) {
+    char* sql = (char*)malloc(strlen(cond) + 32);
+    if (!sql) { *good = false; return false; }
+    snprintf(sql, strlen(cond) + 32, "select 1 where %s", cond);
+    QRun R;
+    memset(&R, 0, sizeof(R));
+    R.db = db;
+    QSet* out = qs_new();
+    bool ok = q_exec_text(&R, sql, NULL, out);
+    bool holds = ok && out->nrows > 0;
+    if (!ok) snprintf(q_last_error, sizeof(q_last_error), "the condition '%s' could not be worked out: %s", cond, R.err[0] ? R.err : "unknown error");
+    q_set_free(out);
+    free(sql);
+    *good = ok;
+    return holds;
+}
+
+/* ---- the rows a statement changed: the table before it and after it ---- */
+typedef struct {
+    size_t* ins; size_t nins;
+    size_t* del; size_t ndel;
+    size_t (*upd)[2]; size_t nupd;       /* before, after */
+} QDiff;
+
+static bool q_cells_same(const EnlngRow* a, const EnlngRow* b, int cc) {
+    for (int c = 0; c < cc; c++) {
+        const EnlngVal* x = c < a->cell_count ? &a->cells[c] : NULL;
+        const EnlngVal* y = c < b->cell_count ? &b->cells[c] : NULL;
+        bool xn = !x || x->type == ENLNG_VAL_NULL, yn = !y || y->type == ENLNG_VAL_NULL;
+        if (xn || yn) { if (xn != yn) return false; continue; }
+        if (x->type != y->type || enlng_compare_vals(x, y) != 0) return false;
+    }
+    return true;
+}
+
+/* a hash of some columns of a row; a value that cannot be hashed (null, a fraction) counts as one fixed value, and the
+   rows are compared by their values afterwards */
+static uint64_t q_trig_row_hash(const EnlngVal* cells, const int* cols, int n) {
+    uint64_t h = 0x84222325cbf29ce4ULL;
+    for (int k = 0; k < n; k++) {
+        uint64_t one;
+        if (!q_val_hash(&cells[cols[k]], &one)) one = 0x1234567ULL;
+        h = (h ^ one) * 0x100000001b3ULL;
+        h ^= h >> 31;
+    }
+    return h;
+}
+
+static void q_diff_free(QDiff* d) {
+    free(d->ins); free(d->del); free(d->upd);
+    memset(d, 0, sizeof(*d));
+}
+
+static void q_diff_tables(const EnlngTable* bt, const EnlngTable* at, bool is_update, QDiff* d) {
+    memset(d, 0, sizeof(*d));
+    int cc = at->col_count;
+    d->ins = (size_t*)malloc((at->row_count + 1) * sizeof(size_t));
+    d->del = (size_t*)malloc((bt->row_count + 1) * sizeof(size_t));
+    d->upd = (size_t(*)[2])malloc((at->row_count + 1) * sizeof(size_t[2]));
+    bool* bm = (bool*)calloc(bt->row_count + 1, sizeof(bool));
+    bool* am = (bool*)calloc(at->row_count + 1, sizeof(bool));
+    int keys[4];
+    int nk = q_key_cols(at, keys);
+    bool by_key = nk > 0 && bt->col_count == at->col_count;
+    if (!by_key && bt->row_count == at->row_count) {
+        /* no key and no row added or removed: the rows that differ at the same place were updated */
+        for (size_t r = 0; r < at->row_count; r++) {
+            if (!q_cells_same(&bt->rows[r], &at->rows[r], cc)) { d->upd[d->nupd][0] = r; d->upd[d->nupd][1] = r; d->nupd++; }
+        }
+        free(bm); free(am);
+        return;
+    }
+    /* the rows of the table before, by key (or by the whole row) */
+    int cols[ENLNGDB_MAX_COLS];
+    int nc = 0;
+    if (by_key) { for (int k = 0; k < nk; k++) cols[nc++] = keys[k]; }
+    else { for (int c = 0; c < cc; c++) cols[nc++] = c; }
+    QHash* H = qh_new(bt->row_count);
+    for (size_t r = bt->row_count; r-- > 0;) {
+        if (bt->rows[r].cell_count >= cc) qh_add(H, (int64_t)r, q_trig_row_hash(bt->rows[r].cells, cols, nc));
+    }
+    for (size_t r = 0; r < at->row_count; r++) {
+        long found = -1;
+        if (at->rows[r].cell_count >= cc) {
+            uint64_t h = q_trig_row_hash(at->rows[r].cells, cols, nc);
+            for (int64_t e = qh_first(H, h); e >= 0 && found < 0; e = qh_next(H, e, h)) {
+                size_t b = (size_t)H->item[e];
+                if (bm[b]) continue;
+                bool same = true;
+                if (by_key) {
+                    for (int k = 0; k < nc && same; k++) {
+                        const EnlngVal* x = &bt->rows[b].cells[cols[k]];
+                        const EnlngVal* y = &at->rows[r].cells[cols[k]];
+                        same = x->type != ENLNG_VAL_NULL && y->type != ENLNG_VAL_NULL && enlng_compare_vals(x, y) == 0;
+                    }
+                } else {
+                    same = q_cells_same(&bt->rows[b], &at->rows[r], cc);
+                }
+                if (same) found = (long)b;
+            }
+        }
+        if (found >= 0) {
+            bm[found] = true;
+            am[r] = true;
+            if (by_key && !q_cells_same(&bt->rows[found], &at->rows[r], cc)) { d->upd[d->nupd][0] = (size_t)found; d->upd[d->nupd][1] = r; d->nupd++; }
+        }
+    }
+    qh_free(H);
+    /* what is left: rows only after (inserted) and rows only before (deleted); in an update, a changed key pairs them in order */
+    size_t ua = 0, ub = 0;
+    for (size_t r = 0; r < at->row_count; r++) if (!am[r]) ua++;
+    for (size_t r = 0; r < bt->row_count; r++) if (!bm[r]) ub++;
+    if (is_update && by_key && ua == ub && ua > 0) {
+        size_t b = 0;
+        for (size_t r = 0; r < at->row_count; r++) {
+            if (am[r]) continue;
+            while (bm[b]) b++;
+            bm[b] = true;
+            d->upd[d->nupd][0] = b; d->upd[d->nupd][1] = r; d->nupd++;
+        }
+    } else {
+        for (size_t r = 0; r < at->row_count; r++) if (!am[r]) d->ins[d->nins++] = r;
+        for (size_t r = 0; r < bt->row_count; r++) if (!bm[r]) d->del[d->ndel++] = r;
+    }
+    free(bm); free(am);
+}
+
+static int q_trig_depth = 0;
+#define Q_TRIG_MAX_DEPTH 6
+
+static QSub* q_row_subs(const EnlngTable* t, const EnlngRow* oldr, const EnlngRow* newr, int* n) {
+    QSub* subs = (QSub*)calloc((size_t)t->col_count * 2 + 1, sizeof(QSub));
+    int k = 0;
+    for (int c = 0; c < t->col_count; c++) {
+        for (int w = 0; w < 2; w++) {
+            const EnlngRow* row = w == 0 ? newr : oldr;
+            if (!row) continue;
+            EnlngVal nul = enlng_null();
+            const EnlngVal* v = c < row->cell_count ? &row->cells[c] : &nul;
+            snprintf(subs[k].key, sizeof(subs[k].key), "%s.%s", w == 0 ? "new" : "old", t->columns[c].name);
+            subs[k].val = q_literal(v);
+            k++;
+        }
+    }
+    *n = k;
+    return subs;
+}
+
+typedef struct {
+    int trig;                   /* index into the copies of the triggers */
+    QSub* subs;
+    int ns;
+} QEvent;
+
+typedef struct {
+    char name[ENLNGDB_MAX_NAME];
+    int event;
+    char* when;
+    char* body;
+} QTrigCopy;
+
+/* after a statement: run the triggers of every table that changed; false (and the reason in q_last_error) if one fails.
+ * All the changed rows are found first, from the statement alone; then the triggers run. What a trigger does is a
+ * statement of its own, with its own triggers, so nothing is counted twice. */
+static bool q_fire_triggers(EnlngDatabase* db, EnlngTable* before, int nbefore, bool is_update, char* failed, size_t fn) {
+    if (q_trig_depth >= Q_TRIG_MAX_DEPTH) {
+        snprintf(q_last_error, sizeof(q_last_error), "triggers set each other off more than %d levels deep", Q_TRIG_MAX_DEPTH);
+        snprintf(failed, fn, "%s", db->trigger_count ? db->triggers[0].name : "");
+        return false;
+    }
+    int nt = db->trigger_count;
+    QTrigCopy* tc = (QTrigCopy*)calloc((size_t)nt + 1, sizeof(QTrigCopy));
+    QEvent* ev = NULL;
+    size_t nev = 0, capev = 0;
+    for (int ti = 0; ti < nt; ti++) {
+        const EnlngTrigger* tg = &db->triggers[ti];
+        snprintf(tc[ti].name, sizeof(tc[ti].name), "%s", tg->name);
+        tc[ti].event = tg->event;
+        tc[ti].when = tg->when ? strdup(tg->when) : NULL;
+        tc[ti].body = strdup(tg->body);
+        const EnlngTable* at = enlngdb_get_table(db, tg->table);
+        const EnlngTable* bt = NULL;
+        for (int i = 0; i < nbefore; i++) if (strcmp(before[i].name, tg->table) == 0) bt = &before[i];
+        if (!at || !bt) continue;
+        QDiff d;
+        q_diff_tables(bt, at, is_update, &d);
+        size_t total = tg->event == 1 ? d.nins : tg->event == 3 ? d.ndel : d.nupd;
+        for (size_t i = 0; i < total; i++) {
+            const EnlngRow* oldr = NULL;
+            const EnlngRow* newr = NULL;
+            if (tg->event == 1) newr = &at->rows[d.ins[i]];
+            else if (tg->event == 3) oldr = &bt->rows[d.del[i]];
+            else { oldr = &bt->rows[d.upd[i][0]]; newr = &at->rows[d.upd[i][1]]; }
+            if (nev >= capev) { capev = capev ? capev * 2 : 16; ev = (QEvent*)realloc(ev, capev * sizeof(QEvent)); }
+            ev[nev].trig = ti;
+            ev[nev].subs = q_row_subs(at, oldr, newr, &ev[nev].ns);
+            nev++;
+        }
+        q_diff_free(&d);
+    }
+    q_trig_depth++;
+    bool ok = true;
+    for (size_t e = 0; e < nev && ok; e++) {
+        QTrigCopy* t = &tc[ev[e].trig];
+        if (t->when) {
+            char* cond = q_substitute(t->when, ev[e].subs, ev[e].ns);
+            bool good = true;
+            bool holds = cond && q_when_holds(db, cond, &good);
+            free(cond);
+            if (!good) { ok = false; snprintf(failed, fn, "%s", t->name); break; }
+            if (!holds) continue;
+        }
+        ok = q_run_text(db, t->body, ev[e].subs, ev[e].ns, false);
+        if (!ok) snprintf(failed, fn, "%s", t->name);
+    }
+    q_trig_depth--;
+    for (size_t e = 0; e < nev; e++) q_free_subs(ev[e].subs, ev[e].ns);
+    free(ev);
+    for (int i = 0; i < nt; i++) { free(tc[i].when); free(tc[i].body); }
+    free(tc);
+    return ok;
+}
+
+static bool q_valid_name(const char* s) {
+    if (!*s || !(isalpha((unsigned char)*s) || *s == '_')) return false;
+    for (; *s; s++) if (!q_word_char(*s)) return false;
+    return true;
+}
+
+/* create trigger NAME after insert|update|delete on TABLE [for each row] [when CONDITION] do STATEMENT [; STATEMENT ...] */
+static bool q_create_trigger(EnlngDatabase* db, const char* stmt, bool print_output) {
+    char err[400] = "";
+    char w[64], name[ENLNGDB_MAX_NAME], table[ENLNGDB_MAX_NAME];
+    char* when = NULL;
+    char* body = NULL;
+    const char* p = stmt;
+    p = q_wordat(p, w, sizeof(w));
+    p = q_wordat(p, w, sizeof(w));
+    p = q_wordat(p, name, sizeof(name));
+    if (!name[0]) { snprintf(err, sizeof(err), "give the trigger a name: create trigger log_delete after delete on student do insert into audit values (old.roll_no)"); goto fail; }
+    p = q_wordat(p, w, sizeof(w));
+    if (str_ci_cmp(w, "before") == 0) {
+        snprintf(err, sizeof(err), "only 'after' triggers exist: the statement runs, then the trigger; a trigger that runs 'raise \"message\"' takes the whole statement back");
+        goto fail;
+    }
+    if (str_ci_cmp(w, "after") != 0) { snprintf(err, sizeof(err), "after the name write 'after insert', 'after update' or 'after delete'"); goto fail; }
+    p = q_wordat(p, w, sizeof(w));
+    int event = str_ci_cmp(w, "insert") == 0 ? 1 : str_ci_cmp(w, "update") == 0 ? 2 : str_ci_cmp(w, "delete") == 0 ? 3 : 0;
+    if (!event) { snprintf(err, sizeof(err), "write insert, update or delete after 'after'"); goto fail; }
+    p = q_wordat(p, w, sizeof(w));
+    if (str_ci_cmp(w, "on") != 0) { snprintf(err, sizeof(err), "write 'on <table>' after 'after %s'", event == 1 ? "insert" : event == 2 ? "update" : "delete"); goto fail; }
+    p = q_wordat(p, table, sizeof(table));
+    EnlngTable* t = enlngdb_get_table(db, table);
+    if (!t) { snprintf(err, sizeof(err), "there is no table called '%s'", table); goto fail; }
+    if (t->view_sql[0]) { snprintf(err, sizeof(err), "'%s' is a view, and a trigger cannot be put on a view", table); goto fail; }
+    for (int i = 0; i < db->trigger_count; i++) {
+        if (str_ci_cmp(db->triggers[i].name, name) == 0) { snprintf(err, sizeof(err), "a trigger called '%s' already exists (drop trigger %s first)", name, name); goto fail; }
+    }
+    {
+        const char* save = p;
+        char w2[64];
+        const char* p2 = q_wordat(p, w2, sizeof(w2));
+        if (str_ci_cmp(w2, "for") == 0) {
+            p2 = q_wordat(p2, w2, sizeof(w2));
+            p2 = q_wordat(p2, w2, sizeof(w2));
+            p = p2;
+        } else {
+            p = save;
+        }
+    }
+    const char* dopos = q_find_word(p, "do");
+    if (!dopos) { snprintf(err, sizeof(err), "after the table write 'do' and the statement to run: ... do insert into audit values (new.id, \"added\")"); goto fail; }
+    {
+        char w3[64];
+        const char* p3 = q_wordat(p, w3, sizeof(w3));
+        if (str_ci_cmp(w3, "when") == 0) {
+            when = q_trim_dup(p3, dopos);
+            if (!when || !when[0]) { snprintf(err, sizeof(err), "'when' needs a condition, like: when new.marks < 0"); goto fail; }
+        } else if (q_ws(p) != dopos) {
+            snprintf(err, sizeof(err), "I don't understand '%s' before 'do'. Write 'when <condition>' or go straight to 'do'", w3);
+            goto fail;
+        }
+    }
+    body = q_trim_dup(dopos + 2, dopos + 2 + strlen(dopos + 2));
+    if (!body || !body[0]) { snprintf(err, sizeof(err), "after 'do' write the statement(s) to run, separated by ;"); goto fail; }
+    db->triggers = (EnlngTrigger*)realloc(db->triggers, sizeof(EnlngTrigger) * (size_t)(db->trigger_count + 1));
+    {
+        EnlngTrigger* tg = &db->triggers[db->trigger_count++];
+        memset(tg, 0, sizeof(*tg));
+        snprintf(tg->name, sizeof(tg->name), "%s", name);
+        snprintf(tg->table, sizeof(tg->table), "%s", t->name);
+        tg->event = event;
+        tg->when = when;
+        tg->body = body;
+    }
+    if (print_output) {
+        printf("Query OK, trigger '%s' made: after %s on %s", name, event == 1 ? "insert" : event == 2 ? "update" : "delete", t->name);
+        printf(". In it, new.column and old.column are the row's values.\n\n");
+    }
+    return true;
+fail:
+    free(when);
+    free(body);
+    q_print_error(print_output, err, "");
+    return false;
+}
+
+static bool q_drop_trigger(EnlngDatabase* db, const char* stmt, bool print_output) {
+    char w[64], name[ENLNGDB_MAX_NAME];
+    const char* p = q_wordat(stmt, w, sizeof(w));
+    p = q_wordat(p, w, sizeof(w));
+    q_wordat(p, name, sizeof(name));
+    for (int i = 0; i < db->trigger_count; i++) {
+        if (str_ci_cmp(db->triggers[i].name, name) != 0) continue;
+        free(db->triggers[i].when);
+        free(db->triggers[i].body);
+        for (int j = i; j < db->trigger_count - 1; j++) db->triggers[j] = db->triggers[j + 1];
+        db->trigger_count--;
+        if (print_output) printf("Query OK, trigger '%s' dropped.\n\n", name);
+        return true;
+    }
+    q_print_error(print_output, "there is no trigger with this name", "See them with: show triggers");
+    return false;
+}
+
+static bool q_show_triggers(EnlngDatabase* db, bool print_output) {
+    if (!print_output) return true;
+    static char cells[256][6][130];
+    int n = 0;
+    for (int i = 0; i < db->trigger_count && n < 256; i++) {
+        const EnlngTrigger* tg = &db->triggers[i];
+        snprintf(cells[n][0], 130, "%s", tg->name);
+        snprintf(cells[n][1], 130, "%s", tg->table);
+        snprintf(cells[n][2], 130, "after %s", tg->event == 1 ? "insert" : tg->event == 2 ? "update" : "delete");
+        snprintf(cells[n][3], 130, "%.120s", tg->when ? tg->when : "");
+        snprintf(cells[n][4], 130, "%.120s", tg->body);
+        n++;
+    }
+    if (n == 0) { printf("No triggers.\n\n"); return true; }
+    const char* heads[] = {"Trigger", "Table", "When it runs", "Only if", "Does"};
+    q_show_text_table(heads, 5, cells, n);
+    return true;
+}
+
+/* create procedure NAME [(a, b)] as STATEMENT [; STATEMENT ...] */
+static bool q_create_procedure(EnlngDatabase* db, const char* stmt, bool print_output) {
+    char err[400] = "";
+    char w[64], name[ENLNGDB_MAX_NAME];
+    char* params = NULL;
+    char* body = NULL;
+    const char* p = stmt;
+    p = q_wordat(p, w, sizeof(w));
+    p = q_wordat(p, w, sizeof(w));
+    p = q_wordat(p, name, sizeof(name));
+    if (!name[0]) { snprintf(err, sizeof(err), "give the procedure a name: create procedure pay (who, amount) as update ..."); goto fail; }
+    for (int i = 0; i < db->proc_count; i++) {
+        if (str_ci_cmp(db->procs[i].name, name) == 0) { snprintf(err, sizeof(err), "a procedure called '%s' already exists (drop procedure %s first)", name, name); goto fail; }
+    }
+    p = q_ws(p);
+    if (*p == '(') {
+        const char* close = strchr(p, ')');
+        if (!close) { snprintf(err, sizeof(err), "the parameters need a closing bracket: create procedure %s (a, b) as ...", name); goto fail; }
+        params = q_trim_dup(p + 1, close);
+        p = close + 1;
+        /* each parameter is one plain name */
+        char* copy = strdup(params);
+        for (char* tok = strtok(copy, ","); tok; tok = strtok(NULL, ",")) {
+            char* a = tok;
+            while (isspace((unsigned char)*a)) a++;
+            char* b = a + strlen(a);
+            while (b > a && isspace((unsigned char)b[-1])) b--;
+            *b = '\0';
+            if (!q_valid_name(a)) { snprintf(err, sizeof(err), "'%s' is not a parameter name (letters, digits and _)", a); free(copy); goto fail; }
+        }
+        free(copy);
+    } else {
+        params = strdup("");
+    }
+    p = q_wordat(p, w, sizeof(w));
+    if (str_ci_cmp(w, "as") != 0 && str_ci_cmp(w, "do") != 0) { snprintf(err, sizeof(err), "after the name (and parameters) write 'as' and the statement(s) to run, separated by ;"); goto fail; }
+    body = q_trim_dup(p, p + strlen(p));
+    if (!body || !body[0]) { snprintf(err, sizeof(err), "after 'as' write the statement(s) to run"); goto fail; }
+    db->procs = (EnlngProc*)realloc(db->procs, sizeof(EnlngProc) * (size_t)(db->proc_count + 1));
+    {
+        EnlngProc* pr = &db->procs[db->proc_count++];
+        memset(pr, 0, sizeof(*pr));
+        snprintf(pr->name, sizeof(pr->name), "%s", name);
+        pr->params = params;
+        pr->body = body;
+    }
+    if (print_output) printf("Query OK, procedure '%s' made. Run it with: call %s(%s)\n\n", name, name, params[0] ? "..." : "");
+    return true;
+fail:
+    free(params);
+    free(body);
+    q_print_error(print_output, err, "");
+    return false;
+}
+
+static bool q_drop_procedure(EnlngDatabase* db, const char* stmt, bool print_output) {
+    char w[64], name[ENLNGDB_MAX_NAME];
+    const char* p = q_wordat(stmt, w, sizeof(w));
+    p = q_wordat(p, w, sizeof(w));
+    q_wordat(p, name, sizeof(name));
+    for (int i = 0; i < db->proc_count; i++) {
+        if (str_ci_cmp(db->procs[i].name, name) != 0) continue;
+        free(db->procs[i].params);
+        free(db->procs[i].body);
+        for (int j = i; j < db->proc_count - 1; j++) db->procs[j] = db->procs[j + 1];
+        db->proc_count--;
+        if (print_output) printf("Query OK, procedure '%s' dropped.\n\n", name);
+        return true;
+    }
+    q_print_error(print_output, "there is no procedure with this name", "See them with: show procedures");
+    return false;
+}
+
+static bool q_show_procedures(EnlngDatabase* db, bool print_output) {
+    if (!print_output) return true;
+    static char cells[256][6][130];
+    int n = 0;
+    for (int i = 0; i < db->proc_count && n < 256; i++) {
+        snprintf(cells[n][0], 130, "%s", db->procs[i].name);
+        snprintf(cells[n][1], 130, "%s", db->procs[i].params);
+        snprintf(cells[n][2], 130, "%.120s", db->procs[i].body);
+        n++;
+    }
+    if (n == 0) { printf("No procedures.\n\n"); return true; }
+    const char* heads[] = {"Procedure", "Parameters", "Does"};
+    q_show_text_table(heads, 3, cells, n);
+    return true;
+}
+
+/* call NAME(value, value): the statements run with each :parameter replaced by its value as written; if one fails, all are taken back */
+static bool q_call(EnlngDatabase* db, const char* stmt, bool print_output) {
+    char err[400] = "";
+    char w[64], name[ENLNGDB_MAX_NAME];
+    const char* p = q_wordat(stmt, w, sizeof(w));
+    p = q_wordat(p, name, sizeof(name));
+    EnlngProc* pr = NULL;
+    for (int i = 0; i < db->proc_count; i++) if (str_ci_cmp(db->procs[i].name, name) == 0) pr = &db->procs[i];
+    if (!pr) { q_print_error(print_output, "there is no procedure with this name", "See them with: show procedures"); return false; }
+    p = q_ws(p);
+    char** args = NULL;
+    int nargs = 0;
+    if (*p == '(') {
+        int depth = 0;
+        char q = 0;
+        const char* start = p + 1;
+        const char* close = NULL;
+        for (const char* c = p; *c && !close; c++) {
+            if (q) { if (*c == q) q = 0; continue; }
+            if (*c == '"' || *c == '\'') { q = *c; continue; }
+            if (*c == '(') depth++;
+            else if (*c == ')') { depth--; if (depth == 0) close = c; }
+            else if (*c == ',' && depth == 1) {
+                args = (char**)realloc(args, sizeof(char*) * (size_t)(nargs + 1));
+                args[nargs++] = q_trim_dup(start, c);
+                start = c + 1;
+            }
+        }
+        if (!close) { snprintf(err, sizeof(err), "the values need a closing bracket: call %s(...)", name); goto fail; }
+        char* last = q_trim_dup(start, close);
+        if (last && (last[0] || nargs > 0)) { args = (char**)realloc(args, sizeof(char*) * (size_t)(nargs + 1)); args[nargs++] = last; }
+        else free(last);
+    }
+    /* the parameter names */
+    char* pcopy = strdup(pr->params);
+    char* pnames[64];
+    int np = 0;
+    for (char* tok = strtok(pcopy, ","); tok && np < 64; tok = strtok(NULL, ",")) {
+        while (isspace((unsigned char)*tok)) tok++;
+        char* e = tok + strlen(tok);
+        while (e > tok && isspace((unsigned char)e[-1])) e--;
+        *e = '\0';
+        pnames[np++] = tok;
+    }
+    if (np != nargs) {
+        snprintf(err, sizeof(err), "procedure '%s' needs %d value(s) (%s) and got %d", name, np, pr->params[0] ? pr->params : "none", nargs);
+        free(pcopy);
+        goto fail;
+    }
+    QSub* subs = (QSub*)calloc((size_t)np + 1, sizeof(QSub));
+    for (int i = 0; i < np; i++) {
+        snprintf(subs[i].key, sizeof(subs[i].key), ":%s", pnames[i]);
+        subs[i].val = strdup(args[i]);
+    }
+    free(pcopy);
+    int tn = 0;
+    EnlngTable* snap = enlngdb_copy_tables(db, &tn);
+    char* body = strdup(pr->body);                  /* the procedure could be dropped by its own statements */
+    bool ok = q_run_text(db, body, subs, np, print_output);
+    free(body);
+    if (!ok && snap) {
+        enlngdb_restore_tables(db, snap, tn);
+        snap = NULL;
+        q_print_error(print_output, "the procedure stopped at an error, so everything it did was taken back", "");
+    }
+    if (snap) enlngdb_free_tables(snap, tn);
+    q_free_subs(subs, np);
+    for (int i = 0; i < nargs; i++) free(args[i]);
+    free(args);
+    return ok;
+fail:
+    for (int i = 0; i < nargs; i++) free(args[i]);
+    free(args);
+    q_print_error(print_output, err, "");
+    return false;
+}
+
+/* raise "message": stops the statement (inside a trigger or procedure, takes it back) */
+static bool q_raise(const char* stmt, bool print_output) {
+    const char* p = q_ws(stmt + 5);
+    size_t n = strlen(p);
+    char msg[400];
+    if (n >= 2 && (p[0] == '"' || p[0] == '\'') && p[n - 1] == p[0]) snprintf(msg, sizeof(msg), "%.*s", (int)(n - 2 < sizeof(msg) - 1 ? n - 2 : sizeof(msg) - 1), p + 1);
+    else snprintf(msg, sizeof(msg), "%.390s", *p ? p : "raised");
+    q_print_error(print_output, msg, "");
+    return false;
+}
+
 /* What a statement does to the database, by its first words:
  * 0 reads only; 1 changes rows or tables and can be taken back with 'undo'; 2 any other change. */
 static int q_stmt_kind(const char* st) {
@@ -6009,6 +7074,17 @@ static int q_stmt_kind(const char* st) {
     return 2;
 }
 
+
+
+/* only statements that add, change or delete rows set triggers off (a call does so through its own statements) */
+static bool q_fires_triggers(const char* st) {
+    st = q_ws(st);
+    while (str_starts_with_ci(st, "please ") || str_starts_with_ci(st, "kindly ")) st = q_ws(st + 7);
+    static const char* verbs[] = {"insert ", "update ", "change ", "modify ", "delete ", "remove ", "in ", "import ", NULL};
+    for (int i = 0; verbs[i]; i++) if (str_starts_with_ci(st, verbs[i])) return true;
+    return false;
+}
+
 /* one statement, of any length: it is copied, because reading it changes the text */
 bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool print_output) {
     if (!db || !statement) return false;
@@ -6016,8 +7092,42 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
     if (!line) { q_print_error(print_output, "out of memory while reading the statement", ""); return false; }
     int kind = q_stmt_kind(statement);
     int before_count = 0;
-    EnlngTable* before = kind == 1 ? enlngdb_copy_tables(db, &before_count) : NULL;
+    /* 'undo' keeps a copy of the tables, so it is kept only while they are small enough to copy quickly */
+    size_t total_rows = 0;
+    bool too_big = false;
+    if (kind == 1) {
+        for (int i = 0; i < db->table_count; i++) total_rows += db->tables[i].row_count;
+        too_big = total_rows > Q_UNDO_MAX_ROWS;
+    }
+    EnlngTable* before = kind == 1 && !too_big ? enlngdb_copy_tables(db, &before_count) : NULL;
+    q_idx_kept = false;
+    /* with triggers, the tables are kept as they were, to find the rows the statement changed (and to take it back) */
+    EnlngTable* tsnap = NULL;
+    int tn = 0;
+    bool is_upd = false;
+    if (db->trigger_count > 0 && kind != 0 && q_fires_triggers(statement)) {
+        const char* sw = q_ws(statement);
+        is_upd = str_starts_with_ci(sw, "update ") || str_starts_with_ci(sw, "change ") || str_starts_with_ci(sw, "modify ") || str_starts_with_ci(sw, "in ");
+        tsnap = enlngdb_copy_tables(db, &tn);
+    }
     bool ok = q_execute_line(db, line, print_output);
+    if (tsnap) {
+        if (ok) {
+            char failed[ENLNGDB_MAX_NAME] = "";
+            q_last_error[0] = '\0';
+            if (!q_fire_triggers(db, tsnap, tn, is_upd, failed, sizeof(failed))) {
+                ok = false;
+                char why[400];
+                snprintf(why, sizeof(why), "%s", q_last_error[0] ? q_last_error : "a statement of the trigger failed");
+                enlngdb_restore_tables(db, tsnap, tn);          /* the statement and what the triggers did are taken back */
+                tsnap = NULL;
+                if (print_output) printf("ERROR: the trigger '%s' stopped this statement: %s.\n       Nothing was changed (the line above that says the rows were changed is taken back).\n\n", failed, why);
+            }
+        }
+        if (tsnap) enlngdb_free_tables(tsnap, tn);
+    }
+    if (kind != 0) enlngdb_mutations++;         /* lookup indexes made earlier are now out of date */
+    if (q_idx_kept) { q_idx_kept = false; enlngdb_mutations--; }   /* ... except those an update has vouched for */
     free(line);
     if (kind == 1 && ok && before) {
         /* the last change that 'undo' takes back */
@@ -6027,6 +7137,9 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         const char* st = statement;
         while (isspace((unsigned char)*st)) st++;
         snprintf(db->undo_what, sizeof(db->undo_what), "%.150s%s", st, strlen(st) > 150 ? "..." : "");
+    } else if (kind == 1 && ok && too_big) {
+        if (db->undo) { enlngdb_free_tables(db->undo, db->undo_count); db->undo = NULL; db->undo_count = 0; }
+        snprintf(db->undo_what, sizeof(db->undo_what), "!%lu", (unsigned long)total_rows);
     } else {
         if (before) enlngdb_free_tables(before, before_count);
         if (kind == 2 && ok && db->undo) {
@@ -6134,7 +7247,8 @@ static bool q_preview(EnlngDatabase* db, const char* stmt, bool print_output) {
     const char* inner = stmt + 8;
     while (isspace((unsigned char)*inner)) inner++;
     static const char* not_these[] = {"use ", "create database ", "drop database ", "begin", "start transaction", "commit", "end transaction",
-                                      "rollback", "savepoint ", "release ", "undo", "preview ", "export ", NULL};
+                                      "rollback", "savepoint ", "release ", "undo", "preview ", "export ", "create trigger ", "create procedure ",
+                                      "drop trigger ", "drop procedure ", NULL};
     for (int i = 0; not_these[i]; i++) {
         if (str_starts_with_ci(inner, not_these[i])) {
             q_print_error(print_output, "preview works for statements that change rows or tables: insert, update, delete, truncate, alter, drop table, import", "");
@@ -6166,6 +7280,12 @@ static bool q_preview(EnlngDatabase* db, const char* stmt, bool print_output) {
 }
 
 static bool q_undo(EnlngDatabase* db, bool print_output) {
+    if (!db->undo && db->undo_what[0] == '!') {
+        char msg[300];
+        snprintf(msg, sizeof(msg), "the last change cannot be undone: 'undo' is kept only while the database has %d rows or fewer, and this one has %s", Q_UNDO_MAX_ROWS, db->undo_what + 1);
+        q_print_error(print_output, msg, "For big changes use 'begin' ... 'rollback', or 'preview' first");
+        return false;
+    }
     if (!db->undo) {
         q_print_error(print_output, "there is nothing to undo. 'undo' takes back the last update, delete, truncate, alter, drop or import, as long as nothing else changed after it", "");
         return false;
@@ -6193,6 +7313,14 @@ static bool q_execute_line(EnlngDatabase* db, char* line, bool print_output) {
     if (strlen(stmt) == 0) return true;
 
     if (str_ci_cmp(stmt, "undo") == 0) return q_undo(db, print_output);
+    if (str_starts_with_ci(stmt, "create trigger ")) return q_create_trigger(db, stmt, print_output);
+    if (str_starts_with_ci(stmt, "create procedure ")) return q_create_procedure(db, stmt, print_output);
+    if (str_starts_with_ci(stmt, "drop trigger ")) return q_drop_trigger(db, stmt, print_output);
+    if (str_starts_with_ci(stmt, "drop procedure ")) return q_drop_procedure(db, stmt, print_output);
+    if (str_ci_cmp(stmt, "show triggers") == 0) return q_show_triggers(db, print_output);
+    if (str_ci_cmp(stmt, "show procedures") == 0) return q_show_procedures(db, print_output);
+    if (str_starts_with_ci(stmt, "call ")) return q_call(db, stmt, print_output);
+    if (str_starts_with_ci(stmt, "raise ") || str_ci_cmp(stmt, "raise") == 0) return q_raise(stmt, print_output);
     if (str_starts_with_ci(stmt, "preview ")) return q_preview(db, stmt, print_output);
     if (str_starts_with_ci(stmt, "import ")) return q_import_csv(db, stmt, print_output);
     if (str_starts_with_ci(stmt, "export ")) return q_export_csv(db, stmt, print_output);
@@ -6689,6 +7817,17 @@ static bool q_execute_line(EnlngDatabase* db, char* line, bool print_output) {
             fprintf(stderr, "What: Unrecognized or malformed database statement: '%s'\n", stmt);
             fprintf(stderr, "Why:  Statement does not match any valid conversational EnlngDB grammar.\n\n");
             fprintf(stderr, "Suggestions:\n");
+            {
+                static const char* verbs[] = {"find", "select", "insert", "update", "change", "delete", "remove", "truncate", "create", "drop",
+                                              "alter", "describe", "show", "begin", "commit", "rollback", "explain", "preview", "undo",
+                                              "import", "export", "savepoint", "release", "count", "with", "use", "rename", "call", "raise"};
+                char first[64];
+                size_t fl = 0;
+                while (stmt[fl] && !isspace((unsigned char)stmt[fl]) && fl < sizeof(first) - 1) { first[fl] = stmt[fl]; fl++; }
+                first[fl] = '\0';
+                const char* guess = q_near(first, verbs, (int)(sizeof(verbs) / sizeof(verbs[0])));
+                if (guess) fprintf(stderr, "  * Did you mean '%s'? (the statement starts with '%s')\n", guess, first);
+            }
             fprintf(stderr, "  * Supported commands: use database, show tables, create table, create view, create index, insert into, find, with, update, change, delete, truncate, alter table, drop table, describe, begin, commit, rollback, explain\n");
             fprintf(stderr, "  * Comments start with '#' or '--' at the beginning of a line.\n");
             fprintf(stderr, "  * Run 'enlngdb --help' to view command reference.\n");
@@ -6719,6 +7858,8 @@ int enlngdb_execute_script(EnlngDatabase* db, const char* script_content, bool p
         bool in_q = false;
         char q_char = 0;
         int depth = 0;      /* a statement can go on past the end of a line inside brackets */
+        /* a trigger or procedure holds several statements separated by ; and may go on over several lines */
+        bool body_stmt = str_starts_with_ci(stmt_start, "create trigger ") || str_starts_with_ci(stmt_start, "create procedure ");
 
         while (*ptr) {
             if (!in_q && (*ptr == '"' || *ptr == '\'')) {
@@ -6734,11 +7875,26 @@ int enlngdb_execute_script(EnlngDatabase* db, const char* script_content, bool p
                 depth++;
             } else if (!in_q && *ptr == ')' && depth > 0) {
                 depth--;
-            } else if (!in_q && *ptr == ';') {
+            } else if (!in_q && *ptr == ';' && !body_stmt) {
                 break;
             } else if (!in_q && (*ptr == '\n' || *ptr == '\r')) {
                 /* inside brackets the statement goes on when the line ends with '(' or ',' or the next one starts with ')' */
                 bool goes_on = false;
+                if (body_stmt) {
+                    /* it goes on after a line that ends with ; or with the word as / do / begin */
+                    const char* back = ptr;
+                    while (back > stmt_start && isspace((unsigned char)back[-1])) back--;
+                    if (back > stmt_start && back[-1] == ';') goes_on = true;
+                    static const char* enders[] = {"as", "do", "begin", NULL};
+                    for (int e = 0; enders[e] && !goes_on; e++) {
+                        long el = (long)strlen(enders[e]);
+                        if ((back - stmt_start) > el && !(isalnum((unsigned char)back[-el - 1]) || back[-el - 1] == '_')) {
+                            long k = 0;
+                            while (k < el && tolower((unsigned char)back[-el + k]) == enders[e][k]) k++;
+                            if (k == el) goes_on = true;
+                        }
+                    }
+                }
                 if (depth > 0) {
                     const char* back = ptr;
                     while (back > stmt_start && isspace((unsigned char)back[-1])) back--;

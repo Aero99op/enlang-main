@@ -58,5 +58,8 @@ These times were measured on one machine with `tests/bench_enlngdb.py` and 20,00
 | `in (subquery)` over 20,000 rows | 4.4 s | 0.4 s |
 | insert 20,000 rows in one statement | 3.4 s | 0.4 s |
 | 5,000 inserts, one statement each | 1.9 s | 0.3 s |
-| 2,000 queries `where id is X` on 20,000 rows | 19.3 s | 7.6 s |
-The last line is the slowest: a query on one table with `where` still reads every row, only without copying the ones that do not match. A plain `create index` is recorded and shown, and does not change this.
+| 2,000 queries `where id is X` on 20,000 rows | 19.3 s | 0.34 s |
+| 2,000 updates `where id is X` on 20,000 rows | 24.0 s | 0.15 s |
+| 500 inserts, one statement each, into 100,000 rows | 0.80 s | 0.25 s |
+A condition `column is value` on a table of 48 rows or more is answered from an index that the engine makes by itself the first time it is needed. It is kept while other columns are updated and while rows are inserted, and made again after a delete, an alter, or a change of that column. The whole `where` is still tested on the rows found, so the answer is what reading every row would give. This is why a plain `create index` is only recorded: nothing needs it for speed. Other conditions (`>`, `like`, `or`) still read every row.
+How big can a database be? It is in memory while a script runs. On one machine a table of an `id`, a text and a number with 1,000,000 rows is a 40 MB file, takes about 190 MB of memory, and opens and answers a query in about 1.1 s. Building it with inserts of 25,000 rows took about 30 s. A database larger than memory is not supported. `undo` keeps a copy of the tables, so it works only while the database has 10,000 rows or fewer; above that it says so, and `begin` with `rollback` is the way back.

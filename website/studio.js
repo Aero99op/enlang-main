@@ -2134,7 +2134,28 @@ with recursive n as (select 1 as x union all find x + 1 from n where x < 5) find
 -- CSV files: export a table, and import it back
 export pupil to "pupils.csv"
 import "pupils.csv" into pupil_copy
-find * from pupil_copy`
+find * from pupil_copy`,
+enlngdb_triggers: `type enlngdb
+
+-- A trigger runs by itself after rows change. Here: keep a ledger of every balance change
+create table account with id integer primary key, owner text, balance integer
+create table ledger with id integer primary key auto_increment, what text, account_id integer, amount integer
+insert into account values (1, "Asha", 100), (2, "Ravi", 50)
+create trigger log_change after update on account when new.balance is not old.balance do insert into ledger (what, account_id, amount) values ("balance changed", new.id, new.balance - old.balance)
+update account set balance = balance - 30 where id is 1
+find what, account_id, amount from ledger
+
+-- A trigger can refuse: raise stops the statement and takes everything back
+create trigger no_overdraft after update on account when new.balance < 0 do raise "the balance cannot go below zero"
+show triggers
+
+-- A procedure is statements saved under a name
+create procedure transfer (src, dst, amount) as update account set balance = balance - :amount where id is :src; update account set balance = balance + :amount where id is :dst
+call transfer(1, 2, 20)
+find owner, balance from account
+
+-- Mistyped a word? The engine suggests the right one (remove the dashes to try)
+-- find ownr from account`
   };
 
   // Extracts current query at cursor position or highlighted text

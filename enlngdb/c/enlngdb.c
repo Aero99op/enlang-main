@@ -86,6 +86,8 @@ EnlngVal enlng_copy_val(const EnlngVal* src) {
     return dest;
 }
 
+unsigned long long enlngdb_mutations = 1;
+
 EnlngDatabase* enlngdb_create(const char* name) {
     EnlngDatabase* db = (EnlngDatabase*)calloc(1, sizeof(EnlngDatabase));
     if (name) {
@@ -98,6 +100,7 @@ EnlngDatabase* enlngdb_create(const char* name) {
 }
 
 void enlngdb_free_rows(EnlngTable* tbl) {
+    enlngdb_mutations++;
     for (size_t r = 0; r < tbl->row_count; r++) {
         for (int c = 0; c < tbl->rows[r].cell_count; c++) {
             enlng_free_val(&tbl->rows[r].cells[c]);
@@ -111,6 +114,7 @@ void enlngdb_free_rows(EnlngTable* tbl) {
 }
 
 void enlngdb_clear(EnlngDatabase* db) {
+    enlngdb_mutations++;
     if (!db) return;
     for (int t = 0; t < db->table_count; t++) enlngdb_free_rows(&db->tables[t]);
     db->table_count = 0;
@@ -125,6 +129,7 @@ static void free_saves(EnlngDatabase* db, int from) {
 }
 
 void enlngdb_free(EnlngDatabase* db) {
+    enlngdb_mutations++;
     if (!db) return;
     enlngdb_unlock(db);
     free_saves(db, 0);
@@ -134,6 +139,7 @@ void enlngdb_free(EnlngDatabase* db) {
         db->txn = NULL;
     }
     enlngdb_clear(db);
+    enlngdb_free_extras(db);
     free(db);
 }
 
@@ -225,6 +231,10 @@ static EnlngDatabase* copy_database(const EnlngDatabase* db) {
     c->undo = NULL;
     c->undo_count = 0;
     c->undo_what[0] = '\0';
+    c->triggers = NULL;                 /* a copy is only of the tables; the lists stay with the open database */
+    c->trigger_count = 0;
+    c->procs = NULL;
+    c->proc_count = 0;
     for (int t = 0; t < db->table_count; t++) {
         const EnlngTable* src = &db->tables[t];
         EnlngTable* dst = &c->tables[t];
@@ -239,12 +249,14 @@ static EnlngDatabase* copy_database(const EnlngDatabase* db) {
 }
 
 bool enlngdb_begin(EnlngDatabase* db) {
+    enlngdb_mutations++;
     if (!db || db->txn) return false;
     db->txn = copy_database(db);
     return db->txn != NULL;
 }
 
 bool enlngdb_commit(EnlngDatabase* db) {
+    enlngdb_mutations++;
     if (!db || !db->txn) return false;
     free_saves(db, 0);
     enlngdb_free(db->txn);
@@ -262,6 +274,7 @@ static void take_tables(EnlngDatabase* db, EnlngDatabase* saved) {
 }
 
 bool enlngdb_rollback(EnlngDatabase* db) {
+    enlngdb_mutations++;
     if (!db || !db->txn) return false;
     EnlngDatabase* saved = db->txn;
     db->txn = NULL;
@@ -275,6 +288,7 @@ EnlngDatabase* enlngdb_copy(const EnlngDatabase* db) {
 }
 
 void enlngdb_restore(EnlngDatabase* db, EnlngDatabase* copy) {
+    enlngdb_mutations++;
     if (!db || !copy) return;
     take_tables(db, copy);
 }
@@ -302,6 +316,7 @@ void enlngdb_free_tables(EnlngTable* tables, int count) {
 }
 
 void enlngdb_restore_tables(EnlngDatabase* db, EnlngTable* tables, int count) {
+    enlngdb_mutations++;
     if (!db || !tables) return;
     enlngdb_clear(db);
     memcpy(db->tables, tables, sizeof(EnlngTable) * (size_t)count);   /* the rows now belong to db */
@@ -326,6 +341,7 @@ bool enlngdb_savepoint(EnlngDatabase* db, const char* name) {
 
 /* back to the savepoint: what came after it is undone, and the savepoint stays */
 bool enlngdb_rollback_to(EnlngDatabase* db, const char* name) {
+    enlngdb_mutations++;
     int i = db ? find_save(db, name) : -1;
     if (i < 0) return false;
     EnlngDatabase* c = copy_database(db->saves[i]);
@@ -343,6 +359,7 @@ bool enlngdb_release(EnlngDatabase* db, const char* name) {
 }
 
 EnlngTable* enlngdb_create_table(EnlngDatabase* db, const char* name, const EnlngColumn* cols, int col_count) {
+    enlngdb_mutations++;
     if (!db || !name) return NULL;
     for (int i = 0; i < db->table_count; i++) {
         if (strcmp(db->tables[i].name, name) == 0) {
@@ -375,6 +392,7 @@ EnlngTable* enlngdb_get_table(EnlngDatabase* db, const char* name) {
 }
 
 bool enlngdb_drop_table(EnlngDatabase* db, const char* name, bool confirmed) {
+    enlngdb_mutations++;
     if (!db || !name) return false;
     if (!confirmed) {
         fprintf(stderr, "[SECURITY ALERT] Dropping table '%s' requires 'confirmed' parameter.\n", name);
@@ -395,6 +413,7 @@ bool enlngdb_drop_table(EnlngDatabase* db, const char* name, bool confirmed) {
                 db->tables[j] = db->tables[j + 1];
             }
             db->table_count--;
+            enlngdb_forget_triggers_of(db, name);
             return true;
         }
     }
@@ -402,6 +421,7 @@ bool enlngdb_drop_table(EnlngDatabase* db, const char* name, bool confirmed) {
 }
 
 bool enlngdb_delete_column(EnlngTable* table, const char* col_name) {
+    enlngdb_mutations++;
     if (!table || !col_name) return false;
     int idx = -1;
     for (int c = 0; c < table->col_count; c++) {
@@ -442,9 +462,11 @@ bool enlngdb_delete_column(EnlngTable* table, const char* col_name) {
 }
 
 bool enlngdb_rename_table(EnlngDatabase* db, const char* from, const char* to) {
+    enlngdb_mutations++;
     EnlngTable* t = enlngdb_get_table(db, from);
     if (!t || enlngdb_get_table(db, to) || strlen(to) >= ENLNGDB_MAX_NAME) return false;
     strcpy(t->name, to);
+    enlngdb_rename_triggers_of(db, from, to);
     for (int i = 0; i < db->table_count; i++) {
         for (int c = 0; c < db->tables[i].col_count; c++) {
             if (strcmp(db->tables[i].columns[c].ref_table, from) == 0) strcpy(db->tables[i].columns[c].ref_table, to);
@@ -455,6 +477,7 @@ bool enlngdb_rename_table(EnlngDatabase* db, const char* from, const char* to) {
 }
 
 bool enlngdb_rename_column(EnlngTable* table, const char* from, const char* to) {
+    enlngdb_mutations++;
     int idx = -1;
     for (int c = 0; c < table->col_count; c++) {
         if (strcmp(table->columns[c].name, to) == 0) return false;
@@ -472,6 +495,7 @@ bool enlngdb_rename_column(EnlngTable* table, const char* from, const char* to) 
 }
 
 bool enlngdb_add_column(EnlngTable* table, const char* col_name, const EnlngVal* default_val) {
+    enlngdb_mutations++;
     if (!table || !col_name || table->col_count >= ENLNGDB_MAX_COLS) return false;
     for (int c = 0; c < table->col_count; c++) {
         if (strcmp(table->columns[c].name, col_name) == 0) return false;
@@ -581,6 +605,7 @@ char enlngdb_last_insert_replaced[96];
 
 /* Adds a row at the end. Which rows count as the same, and what a column allows, is decided by the caller. */
 bool enlngdb_append_row(EnlngTable* table, const EnlngVal* cells, int cell_count) {
+    enlngdb_mutations++;
     if (!table || !cells) return false;
     if (table->row_count >= table->row_capacity) {
         size_t new_cap = table->row_capacity == 0 ? 16 : table->row_capacity * 2;
@@ -602,6 +627,7 @@ bool enlngdb_append_row(EnlngTable* table, const EnlngVal* cells, int cell_count
 }
 
 bool enlngdb_insert_row(EnlngTable* table, const EnlngVal* cells, int cell_count) {
+    enlngdb_mutations++;
     enlngdb_last_insert_replaced[0] = '\0';
     return enlngdb_append_row(table, cells, cell_count);
 }
@@ -727,6 +753,7 @@ int enlngdb_count(EnlngTable* table, const char* filter_col, EnlngOp op, const E
 }
 
 int enlngdb_update(EnlngTable* table, const char* filter_col, EnlngOp op, const EnlngVal* target_val, const char* set_col, const EnlngVal* set_val) {
+    enlngdb_mutations++;
     if (!table || !set_col || !set_val) return 0;
 
     int set_col_idx = -1;
@@ -775,6 +802,7 @@ int enlngdb_update(EnlngTable* table, const char* filter_col, EnlngOp op, const 
 }
 
 int enlngdb_delete(EnlngTable* table, const char* filter_col, EnlngOp op, const EnlngVal* target_val, bool confirmed) {
+    enlngdb_mutations++;
     if (!table) return 0;
     if (!filter_col && !confirmed) {
         fprintf(stderr, "[SECURITY ALERT] Unconstrained delete requires 'confirmed'.\n");
@@ -934,6 +962,54 @@ typedef struct {
     bool is_unique;
 } ColumnV1;
 
+void enlngdb_free_extras(EnlngDatabase* db) {
+    if (!db) return;
+    for (int i = 0; i < db->trigger_count; i++) { free(db->triggers[i].when); free(db->triggers[i].body); }
+    free(db->triggers);
+    db->triggers = NULL;
+    db->trigger_count = 0;
+    for (int i = 0; i < db->proc_count; i++) { free(db->procs[i].params); free(db->procs[i].body); }
+    free(db->procs);
+    db->procs = NULL;
+    db->proc_count = 0;
+}
+
+void enlngdb_forget_triggers_of(EnlngDatabase* db, const char* table) {
+    if (!db) return;
+    int w = 0;
+    for (int i = 0; i < db->trigger_count; i++) {
+        if (strcmp(db->triggers[i].table, table) == 0) { free(db->triggers[i].when); free(db->triggers[i].body); continue; }
+        if (w != i) db->triggers[w] = db->triggers[i];
+        w++;
+    }
+    db->trigger_count = w;
+}
+
+void enlngdb_rename_triggers_of(EnlngDatabase* db, const char* from, const char* to) {
+    if (!db) return;
+    for (int i = 0; i < db->trigger_count; i++) {
+        if (strcmp(db->triggers[i].table, from) == 0) snprintf(db->triggers[i].table, sizeof(db->triggers[i].table), "%s", to);
+    }
+}
+
+static const char ENLNGDB_EXT_MAGIC[16] = "ENLNGDB-EXT1";
+
+static void put_heap(FILE* f, const char* s) {
+    uint32_t len = s ? (uint32_t)strlen(s) : 0;
+    fwrite(&len, sizeof(uint32_t), 1, f);
+    if (len > 0) fwrite(s, 1, len, f);
+}
+
+static char* get_heap(FILE* f) {
+    uint32_t len = 0;
+    if (fread(&len, sizeof(uint32_t), 1, f) != 1 || len > 16u * 1024u * 1024u) return NULL;
+    char* s = (char*)malloc((size_t)len + 1);
+    if (!s) return NULL;
+    if (len > 0 && fread(s, 1, len, f) != len) { free(s); return NULL; }
+    s[len] = '\0';
+    return s;
+}
+
 static void put_text(FILE* f, const char* s) {
     uint32_t len = (uint32_t)strlen(s);
     fwrite(&len, sizeof(uint32_t), 1, f);
@@ -1024,7 +1100,7 @@ bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
         for (int c = 0; c < tbl->col_count; c++) {
             const EnlngColumn* col = &tbl->columns[c];
             fwrite(col->name, 1, ENLNGDB_MAX_NAME, f);
-            uint8_t flags[5] = { (uint8_t)((col->kind & 0x0F) | ((col->on_delete & 3) << 4)), col->is_primary_key, col->is_unique, col->not_null, col->is_auto };
+            uint8_t flags[5] = { (uint8_t)((col->kind & 0x0F) | ((col->on_delete & 3) << 4) | ((col->on_update & 3) << 6)), col->is_primary_key, col->is_unique, col->not_null, col->is_auto };
             fwrite(flags, 1, 5, f);
             put_text(f, col->default_text);
             put_text(f, col->check_text);
@@ -1048,6 +1124,25 @@ bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
             for (int c = 0; c < row->cell_count; c++) put_val(f, &row->cells[c]);
         }
     }
+    if (db->trigger_count > 0 || db->proc_count > 0) {
+        fwrite(ENLNGDB_EXT_MAGIC, 1, 16, f);
+        fwrite(&db->trigger_count, sizeof(int), 1, f);
+        for (int i = 0; i < db->trigger_count; i++) {
+            const EnlngTrigger* tg = &db->triggers[i];
+            fwrite(tg->name, 1, ENLNGDB_MAX_NAME, f);
+            fwrite(tg->table, 1, ENLNGDB_MAX_NAME, f);
+            fwrite(&tg->event, sizeof(int), 1, f);
+            put_heap(f, tg->when);
+            put_heap(f, tg->body);
+        }
+        fwrite(&db->proc_count, sizeof(int), 1, f);
+        for (int i = 0; i < db->proc_count; i++) {
+            const EnlngProc* pr = &db->procs[i];
+            fwrite(pr->name, 1, ENLNGDB_MAX_NAME, f);
+            put_heap(f, pr->params);
+            put_heap(f, pr->body);
+        }
+    }
     bool wrote = fflush(f) == 0 && ferror(f) == 0;
     if (fclose(f) != 0) wrote = false;
     if (!wrote) { remove(tmp_path); return false; }
@@ -1057,6 +1152,7 @@ bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
 }
 
 bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
+    enlngdb_mutations++;
     if (!db || !filepath) return false;
     FILE* f = fopen(filepath, "rb");
     if (!f) return false;
@@ -1093,6 +1189,7 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
                 cols[c].type = ENLNG_VAL_STRING;
                 cols[c].kind = flags[0] & 0x0F;
                 cols[c].on_delete = (flags[0] >> 4) & 3;
+                cols[c].on_update = (flags[0] >> 6) & 3;
                 cols[c].is_primary_key = flags[1];
                 cols[c].is_unique = flags[2];
                 cols[c].not_null = flags[3];
@@ -1157,6 +1254,39 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
             if (bad) break;
         }
         if (bad) break;
+    }
+    /* triggers and procedures, when the file has them (older programs stop before this and ignore it) */
+    {
+        char ext[16];
+        int n = 0;
+        if (fread(ext, 1, 16, f) == 16 && memcmp(ext, ENLNGDB_EXT_MAGIC, 16) == 0 && fread(&n, sizeof(int), 1, f) == 1 && n >= 0 && n < 100000) {
+            enlngdb_free_extras(db);
+            for (int i = 0; i < n; i++) {
+                EnlngTrigger tg;
+                memset(&tg, 0, sizeof(tg));
+                if (fread(tg.name, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME || fread(tg.table, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME ||
+                    fread(&tg.event, sizeof(int), 1, f) != 1) break;
+                tg.when = get_heap(f);
+                tg.body = get_heap(f);
+                if (!tg.body) { free(tg.when); break; }
+                if (tg.when && !tg.when[0]) { free(tg.when); tg.when = NULL; }
+                db->triggers = (EnlngTrigger*)realloc(db->triggers, sizeof(EnlngTrigger) * (size_t)(db->trigger_count + 1));
+                db->triggers[db->trigger_count++] = tg;
+            }
+            int np = 0;
+            if (fread(&np, sizeof(int), 1, f) == 1 && np >= 0 && np < 100000) {
+                for (int i = 0; i < np; i++) {
+                    EnlngProc pr;
+                    memset(&pr, 0, sizeof(pr));
+                    if (fread(pr.name, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME) break;
+                    pr.params = get_heap(f);
+                    pr.body = get_heap(f);
+                    if (!pr.params || !pr.body) { free(pr.params); free(pr.body); break; }
+                    db->procs = (EnlngProc*)realloc(db->procs, sizeof(EnlngProc) * (size_t)(db->proc_count + 1));
+                    db->procs[db->proc_count++] = pr;
+                }
+            }
+        }
     }
     fclose(f);
     return true;

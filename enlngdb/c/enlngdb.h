@@ -71,6 +71,7 @@ typedef struct {
     char check_text[96];        /* "" for none: a condition every row must meet */
     char ref_table[ENLNGDB_MAX_NAME];   /* "" for none: values must exist in ref_table.ref_col */
     char ref_col[ENLNGDB_MAX_NAME];
+    uint8_t on_update;          /* when the referred key is changed: 0 refuse, 1 follow it (cascade), 2 set null */
     uint8_t on_delete;          /* when the referred row is deleted: 0 refuse, 1 delete this row too (cascade), 2 set null */
 } EnlngColumn;
 
@@ -102,6 +103,22 @@ typedef struct {
     int64_t auto_next[ENLNGDB_MAX_COLS];    /* the next number of an auto column */
 } EnlngTable;
 
+/* a trigger: statements run after each row that an insert, update or delete changed in a table */
+typedef struct {
+    char name[ENLNGDB_MAX_NAME];
+    char table[ENLNGDB_MAX_NAME];
+    int event;                  /* 1 insert, 2 update, 3 delete */
+    char* when;                 /* NULL for none: a condition that can use new.x and old.x */
+    char* body;                 /* the statements, separated by ; (new.x and old.x stand for the row's values) */
+} EnlngTrigger;
+
+/* a procedure: statements saved under a name, run with call name(values); :parameter stands for a value */
+typedef struct {
+    char name[ENLNGDB_MAX_NAME];
+    char* params;               /* "a, b" */
+    char* body;
+} EnlngProc;
+
 typedef struct EnlngDatabase {
     char name[ENLNGDB_MAX_NAME];
     EnlngTable tables[ENLNGDB_MAX_TABLES];
@@ -117,6 +134,10 @@ typedef struct EnlngDatabase {
     char undo_what[160];        /* that statement, as written */
     char lock_path[300];        /* "" for none: the lock file this program holds for the open database */
     intptr_t lock_handle;       /* the open lock file (a HANDLE on Windows, a file descriptor elsewhere) */
+    EnlngTrigger* triggers;
+    int trigger_count;
+    EnlngProc* procs;
+    int proc_count;
 } EnlngDatabase;
 
 typedef struct {
@@ -158,6 +179,14 @@ void enlngdb_restore(EnlngDatabase* db, EnlngDatabase* copy);
 EnlngTable* enlngdb_copy_tables(const EnlngDatabase* db, int* count);
 void enlngdb_restore_tables(EnlngDatabase* db, EnlngTable* tables, int count);
 void enlngdb_free_tables(EnlngTable* tables, int count);
+/* triggers and procedures: the lists are kept in the file after the tables */
+void enlngdb_free_extras(EnlngDatabase* db);
+void enlngdb_forget_triggers_of(EnlngDatabase* db, const char* table);
+void enlngdb_rename_triggers_of(EnlngDatabase* db, const char* from, const char* to);
+
+/* counts every change made to any table (rows, columns, tables, restores): a lookup index made earlier is
+   good only while this number is the same as when it was made */
+extern unsigned long long enlngdb_mutations;
 bool enlngdb_add_column(EnlngTable* table, const char* col_name, const EnlngVal* default_val);
 extern char enlngdb_last_insert_replaced[96];
 

@@ -63,8 +63,8 @@
     - 11.6 `union`, `intersect`, `except`, `with`, 11.7 Window functions, 11.8 Inserting, 11.9 Updating & deleting
     - 11.10 Types & constraints, 11.11 Altering tables, 11.12 Views, indexes, `describe`, `explain`, 11.13 Transactions & databases, 11.14 What it does not have
 12. [Beyond SQL: files, safety, speed (C engine)](#12-beyond-sql-files-safety-speed-c-engine)
-    - 12.1 CSV files, 12.2 `preview` and `undo`, 12.3 Savepoints, 12.4 `natural join`, 12.5 `on delete cascade` / `set null`
-    - 12.6 Recursive `with`, 12.7 One program at a time, 12.8 Speed, 12.9 Limits
+    - 12.1 CSV files, 12.2 `preview` and `undo`, 12.3 Savepoints, 12.4 `natural join`, 12.5 `on delete` / `on update`
+    - 12.6 Recursive `with`, 12.7 One program at a time, 12.8 Speed, 12.9 Limits, 12.10 Triggers and procedures, 12.11 Did you mean
 
 ---
 
@@ -945,7 +945,7 @@ drop database shop confirmed
 A transaction covers the whole database (tables, rows, views). One that is still open when a script ends is rolled back, and the engine says so. There are no savepoints and no second writer: one script runs at a time.
 
 ### 11.14 What EnlngDB does not have
-Users and permissions (`grant`, `revoke`), triggers, stored procedures, `on update cascade`, and a server that several programs use at the same time (one program has a database open at a time, §12.7). `show databases` shows only the open database. `natural join`, recursive `with`, `on delete cascade`, savepoints, CSV files, `preview` and `undo` are in section 12.
+Users and permissions (`grant`, `revoke`), a server that several programs use at the same time (one program has a database open at a time, §12.7), and a database larger than the memory of the computer (§12.8 says how much a million rows take). `show databases` shows only the open database. `natural join`, recursive `with`, `on delete` / `on update`, savepoints, CSV files, `preview`, `undo`, triggers and procedures are in section 12.
 
 ---
 
@@ -972,7 +972,7 @@ preview update pupil set class = 12 where roll_no is 1
 delete from pupil where class is null
 undo                                                # the deleted row is back
 ```
-`preview` runs the statement on a copy and shows each table it would change: the rows that would be deleted, changed (before and after) or added, tables made or dropped. `undo` takes back the last `update`, `delete`, `truncate`, `alter`, `drop` or `import`, once, and only while nothing else has changed after it (an `insert` after a `delete` means the `delete` can no longer be undone). It lives as long as the script runs.
+`preview` runs the statement on a copy and shows each table it would change: the rows that would be deleted, changed (before and after) or added, tables made or dropped. `undo` takes back the last `update`, `delete`, `truncate`, `alter`, `drop` or `import`, once, and only while nothing else has changed after it (an `insert` after a `delete` means the `delete` can no longer be undone). It lives as long as the script runs. `undo` keeps a copy of the tables, so it is kept only while the database has 10,000 rows or fewer; above that the change is made without a copy and `undo` says so (use `begin` ... `rollback`, or `preview` first).
 
 ### 12.3 Savepoints
 ```enlngdb
@@ -995,7 +995,7 @@ find name, score from pupil natural left join mark
 ```
 Every column name the two sides share must match. When there is none, or when two tables before the join share the name, the engine says so instead of guessing.
 
-### 12.5 `on delete cascade` and `on delete set null`
+### 12.5 `on delete` and `on update`
 ```enlngdb
 create table owner with id integer primary key, name text
 create table cat with id integer primary key, owner_id integer references owner(id) on delete cascade
@@ -1004,8 +1004,13 @@ insert into owner values (1, "Asha"), (2, "Ravi")
 insert into cat values (1, 1), (2, 2)
 insert into vet values (1, 1)
 delete from owner where id is 1                      # cat 1 goes too; vet 1 keeps its row with owner_id null
+create table cls with id integer primary key, title text
+create table stu with sid integer primary key, cid integer references cls(id) on update cascade
+insert into cls values (1, "Maths")
+insert into stu values (1, 1)
+update cls set id = 10 where id is 1                 # stu 1 now has cid 10
 ```
-Without `on delete ...` (or with `on delete restrict`) a row that others refer to cannot be deleted, as before; the error now says how to cascade. A cascade can go through several tables. `set null` on a `not null` column refuses the delete. `on update` is not supported: a key that other rows refer to cannot be changed. The setting is saved in the file in a way that older versions of `enlngdb` still read.
+Without `on delete ...` (or with `on delete restrict`) a row that others refer to cannot be deleted, as before; the error now says how to cascade. A cascade can go through several tables. `set null` on a `not null` column refuses the delete. `on update cascade` makes the rows that refer to a key follow it when the key changes; `on update set null` empties them; without it (or with `on update restrict`) a key that other rows refer to cannot be changed, and the error says how to cascade. Both settings are saved in the file in a way that older versions of `enlngdb` still read.
 
 ### 12.6 Recursive `with`
 ```enlngdb
@@ -1030,9 +1035,14 @@ The engine looks rows up by value with a hash, built for the statement that need
 | `in (subquery)` over 20,000 rows | 4.4 s | 0.4 s |
 | insert 20,000 rows in one statement (key) | 3.4 s | 0.4 s |
 | 5,000 inserts, one statement each | 1.9 s | 0.3 s |
-| 2,000 queries `where id is X` on 20,000 rows | 19.3 s | 7.6 s |
+| 2,000 queries `where id is X` on 20,000 rows | 19.3 s | 0.34 s |
+| 2,000 updates `where id is X` on 20,000 rows | 24.0 s | 0.15 s |
+| 3,000 updates and deletes by key in one script (20,000 rows) | 38.7 s | 1.6 s |
+| 500 inserts, one statement each, into a table of 100,000 rows (with opening and saving it) | 0.80 s | 0.25 s |
 
-A query on one table with `where` still reads every row (without copying the ones that do not match); a plain `create index` is still only recorded. The whole database is in memory while a script runs.
+A condition `column is value` (alone, or joined to others with `and`) on a table of 48 rows or more looks the rows up in an index that the engine makes by itself the first time it is needed and keeps while nothing else changes the table: it is kept through updates of other columns and through inserts, and made again after a delete, an alter or a change of that column. The whole `where` is still tested on the rows found, so the answer is the same as when every row is read. So there is no need to write `create index` for speed: a plain `create index` is only recorded, a `unique` one is checked. Other conditions (`>`, `like`, `or`) still read every row.
+
+The whole database is in memory while a script runs. One machine, a table of `id`, a text and a number: 1,000,000 rows are a 40 MB file, use about 190 MB of memory, and open and answer a query in about 1.1 s; building them with inserts of 25,000 rows takes about 30 s. A database larger than the memory of the computer is not supported.
 
 ### 12.9 Limits
 | Thing | The most |
@@ -1044,5 +1054,51 @@ A query on one table with `where` still reads every row (without copying the one
 | characters in a name | 63 |
 | length of a statement, of a text value | no limit but memory |
 | characters of a `default` / a `check` / the query of a view | 63 / 95 / 1023 |
+| rows in the database for `undo` to work | 10,000 |
+| triggers setting each other off | 6 levels |
 
 A name, a `default` or a `check` that is too long is an error; nothing is cut short.
+
+### 12.10 Triggers and procedures
+```enlngdb
+create table account with id integer primary key, owner text, balance integer
+create table ledger with id integer primary key auto_increment, what text, account_id integer, amount integer
+insert into account values (1, "Asha", 100), (2, "Ravi", 50)
+create trigger log_change after update on account when new.balance is not old.balance do insert into ledger (what, account_id, amount) values ("balance changed", new.id, new.balance - old.balance)
+create trigger no_overdraft after update on account when new.balance < 0 do raise "the balance cannot go below zero"
+update account set balance = balance - 30 where id is 1
+find owner, balance from account
+find what, account_id, amount from ledger
+create procedure transfer (src, dst, amount) as
+  update account set balance = balance - :amount where id is :src;
+  update account set balance = balance + :amount where id is :dst
+call transfer(1, 2, 20)
+find owner, balance from account
+show triggers
+show procedures
+drop trigger no_overdraft
+```
+A **trigger** is statements that run by themselves after a statement added, changed or deleted rows in a table: `create trigger NAME after insert|update|delete on TABLE [when CONDITION] do STATEMENT [; STATEMENT ...]`. Inside it `new.column` is the value in the row after the change (insert, update) and `old.column` the value before (update, delete); `when` limits it to the rows where the condition holds. EnlngDB finds the rows by comparing the table before and after the statement, so a trigger also runs for rows that `import`, a cascade or a procedure changed, once for each row. A trigger that fails, or that runs `raise "message"`, takes the whole statement back, with everything the other triggers did:
+
+```text
+update account set balance = balance - 500 where id is 2
+ERROR: the trigger 'no_overdraft' stopped this statement: the balance cannot go below zero.
+       Nothing was changed (the line above that says the rows were changed is taken back).
+```
+
+What a trigger's statements do is a statement of its own, so it can set off the triggers of the table it changes (up to 6 levels deep; a loop stops with an error and the statement is taken back). The output of statements inside a trigger is not shown. There is only `after`: to refuse something, raise an error. A table that is dropped takes its triggers with it; `show triggers` lists them; `drop trigger NAME` removes one. A table without a key (and no column called `id`) is compared row by row: an update is found when no row was added or removed; a key that was changed in an update is paired with the row it replaced.
+
+A **procedure** is statements saved under a name: `create procedure NAME (a, b) as STATEMENT [; STATEMENT ...]` and `call NAME(1, "x")`. `:a` in the statements stands for the value as it was written in the call. The statements may go over several lines: a line that ends with `as`, `do`, `begin` or `;` goes on. If one statement fails, everything the call did is taken back. Triggers and procedures are saved in the database file after the tables; older versions of `enlngdb` open such a file and ignore them. `preview` does not apply to `create trigger`/`create procedure`.
+
+With triggers in the database, each statement that changes rows keeps a copy of the tables to find what changed, so such statements take longer on big tables.
+
+### 12.11 Did you mean
+A table, a column or a command word that is not there but looks like one that is gets a suggestion:
+
+```text
+find nme from student
+ERROR: there is no column 'nme'. Did you mean 'name'? The columns are: name roll_no stream.
+fnd name from student
+  * Did you mean 'find'? (the statement starts with 'fnd')
+```
+A word that differs by one letter (two for a word of five or more letters), or by two letters swapped, is suggested. Nothing is changed or guessed: the statement still fails.

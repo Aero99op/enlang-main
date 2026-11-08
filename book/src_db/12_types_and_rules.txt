@@ -93,7 +93,7 @@ delete from owner where id is 3
 find count(*) from house
 find * from vet
 :::
-A cascade can go on through several tables: what refers to the deleted rows goes, and what refers to those, and so on. Everything is worked out before anything changes, so if one table refuses, nothing is deleted. `set null` on a column marked `not null` refuses the delete. `on update` is not supported: the key of a row that others refer to cannot be changed.
+A cascade can go on through several tables: what refers to the deleted rows goes, and what refers to those, and so on. Everything is worked out before anything changes, so if one table refuses, nothing is deleted. `set null` on a column marked `not null` refuses the delete. `on update cascade` makes the rows that refer to a key follow it when the key is changed, `on update set null` empties them, and without either a key that others refer to cannot be changed (the error says how to cascade): `references owner(id) on update cascade`.
 ## Two columns as one key
 ::: db
 create table seat (row_no integer, seat_no integer, who text, primary key (row_no, seat_no))

@@ -564,7 +564,28 @@ with recursive n as (select 1 as x union all find x + 1 from n where x < 5) find
 -- CSV files: export a table, and import it back
 export pupil to "pupils.csv"
 import "pupils.csv" into pupil_copy
-find * from pupil_copy`
+find * from pupil_copy`,
+enlngdb_triggers: `type enlngdb
+
+-- A trigger runs by itself after rows change. Here: keep a ledger of every balance change
+create table account with id integer primary key, owner text, balance integer
+create table ledger with id integer primary key auto_increment, what text, account_id integer, amount integer
+insert into account values (1, "Asha", 100), (2, "Ravi", 50)
+create trigger log_change after update on account when new.balance is not old.balance do insert into ledger (what, account_id, amount) values ("balance changed", new.id, new.balance - old.balance)
+update account set balance = balance - 30 where id is 1
+find what, account_id, amount from ledger
+
+-- A trigger can refuse: raise stops the statement and takes everything back
+create trigger no_overdraft after update on account when new.balance < 0 do raise "the balance cannot go below zero"
+show triggers
+
+-- A procedure is statements saved under a name
+create procedure transfer (src, dst, amount) as update account set balance = balance - :amount where id is :src; update account set balance = balance + :amount where id is :dst
+call transfer(1, 2, 20)
+find owner, balance from account
+
+-- Mistyped a word? The engine suggests the right one (remove the dashes to try)
+-- find ownr from account`
 };
 // --- 2. Live In-Browser Enlng & EnlngDB Sandbox Engines ---
 
@@ -3098,11 +3119,11 @@ const BOOK_VOLUMES = {
     spinePages: '10 SECTIONS',
     backBadge: 'STORAGE SPECIFICATION',
     backTitle: 'ENLNGDB ZERO-SQL ENGINE',
-    backBlurb: 'The complete canonical manual for EnlngDB pure C embedded storage engine. Covers zero-SQL syntax, sub-microsecond seeks, binary WAL layout, C API and the command line.',
+    backBlurb: 'The complete canonical manual for EnlngDB pure C embedded storage engine. Covers the plain-word syntax, SQL-level queries, triggers and procedures, undo, the file format, the C API and the command line.',
     backFeatures: [
-      '• Zero SQL Parsing Overhead',
+      '• Plain-word statements, SQL-level power',
       '• Pure C99 Embedded Binary',
-      '• ACID WAL Crash Resilience',
+      '• Triggers, procedures, undo, savepoints',
       '• C API for embedding'
     ],
     backIsbn: 'SPEC-ENLNGDB-2026',
@@ -3111,7 +3132,7 @@ const BOOK_VOLUMES = {
     insideSpec: 'SPEC-DB-2026-PURE-C',
     infoKicker: 'EnlngDB Canonical Volume · 2nd Edition',
     infoHeading: 'EnlngDB Architecture & Reference Manual',
-    infoDesc: 'The definitive 10-section manual for the EnlngDB pure C embedded storage engine. Complete coverage of natural language DDL, DML, query operators, crash resilience, C API and the developer CLI.',
+    infoDesc: 'The EnlngDB reference book: 20 chapters, 98 pages, every script run with the real engine. Download the PDF for the full text.',
     primaryDlHref: 'enlngdb_manual.pdf',
     primaryDlDownload: 'enlngdb_manual.pdf',
     primaryDlText: 'Download EnlngDB Manual (PDF)',
@@ -3126,7 +3147,7 @@ const BOOK_VOLUMES = {
         pages: 'Section 1 / 10',
         badge: 'Pure C Storage Engine',
         title: 'Sovereign Zero-SQL Architecture',
-        excerpt: 'Embedded pure C99 engine with zero external drivers, zero background daemons, and sub-microsecond in-memory index seek.',
+        excerpt: 'Embedded pure C99 engine with zero external drivers, zero background daemons, and lookups by value answered from an index the engine builds by itself.',
         snippet: '<span class="code-kw">type</span> <span class="code-val">enlngdb</span>;\n<span class="code-kw">use</span> <span class="code-id">production</span>;\n<span class="code-kw">show tables</span>;\n<span class="code-kw">count records from</span> <span class="code-id">scholars</span>;',
         seal: 'Pure C99 Embedded Engine'
       },
@@ -3173,16 +3194,16 @@ const BOOK_VOLUMES = {
         title: 'Safe Record Updates & Rewrites',
         excerpt: 'Conversational row updates with in-place slot modifications and atomic multi-field mutations.',
         snippet: '<span class="code-kw">in</span> <span class="code-id">scholars</span> <span class="code-kw">change</span> <span class="code-id">cgpa</span> <span class="code-kw">to</span> <span class="code-num">9.9</span> <span class="code-kw">where</span> <span class="code-id">name</span> <span class="code-op">is</span> <span class="code-val">"aryan"</span>;\n<span class="code-kw">in</span> <span class="code-id">scholars</span> <span class="code-kw">update</span> <span class="code-id">status</span> <span class="code-kw">to</span> <span class="code-val">"dean_list"</span> <span class="code-kw">where</span> <span class="code-id">cgpa</span> <span class="code-op">is at least</span> <span class="code-num">9.5</span>;\n<span class="code-kw">in</span> <span class="code-id">scholars</span> <span class="code-kw">set</span> <span class="code-id">cgpa</span> <span class="code-kw">to</span> <span class="code-num">9.95</span>, <span class="code-id">status</span> <span class="code-kw">to</span> <span class="code-val">"gold_medalist"</span> <span class="code-kw">where</span> <span class="code-id">name</span> <span class="code-op">is</span> <span class="code-val">"aryan"</span>;',
-        seal: 'ACID Mutation Integrity'
+        seal: 'Failed statements change nothing'
       },
       {
         chapter: 'SECTION 7',
         pages: 'Section 7 / 10',
-        badge: 'Crash Resilience',
-        title: 'Binary Disk Format & WAL',
-        excerpt: 'Proprietary binary storage format with magic header 0x454E4442 (ENDB), transactional write-ahead logging, and sub-10ms crash recovery.',
-        snippet: '<span class="code-kw"># Binary layout:</span> <span class="code-val">"university_db.edb"</span>\n<span class="code-kw"># Magic header:</span> <span class="code-num">0x454E4442</span> (<span class="code-val">\'E\' \'N\' \'D\' \'B\'</span>)\n<span class="code-kw"># WAL Journal:</span> <span class="code-val">"university_db.wal"</span>\n<span class="code-kw">find all records from</span> <span class="code-id">scholars</span>;',
-        seal: 'Zero-Corruption Binary Layout'
+        badge: 'File Format',
+        title: 'The File on Disk',
+        excerpt: 'One binary file per database. A script that fails saves nothing, so a half-finished run never leaves a half-finished file. There is no write-ahead log.',
+        snippet: '<span class="code-kw"># Binary layout:</span> <span class="code-val">"university_db.edb"</span>\n<span class="code-kw"># Saved when the script ends without an error</span>\n<span class="code-kw">find all records from</span> <span class="code-id">scholars</span>;',
+        seal: 'Nothing saved on error'
       },
       {
         chapter: 'SECTION 8',
