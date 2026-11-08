@@ -287,6 +287,11 @@ static void q_lex(QLex* L, const char* s) {
             /* a lone '-' is a join mark or a minus; -5 stays a number */
             t->kind = QT_SYM;
             t->text[k++] = *s++;
+        } else if (s[0] == '|' && s[1] == '|') {
+            t->kind = QT_SYM;
+            memcpy(t->text, "||", 2);
+            k = 2;
+            s += 2;
         } else if (s[0] == '<' && s[1] == '>') {
             t->kind = QT_SYM;
             memcpy(t->text, "<>", 2);
@@ -298,7 +303,7 @@ static void q_lex(QLex* L, const char* s) {
             if (*s == '=') t->text[k++] = *s++;
         } else {
             t->kind = QT_WORD;
-            while (*s && !isspace((unsigned char)*s) && !strchr("(),\"'=<>!;+*/%", *s)) {
+            while (*s && !isspace((unsigned char)*s) && !strchr("(),\"'=<>!;+*/%", *s) && !(s[0] == '|' && s[1] == '|')) {
                 if (k < sizeof(t->text) - 1) t->text[k++] = *s;
                 s++;
             }
@@ -807,11 +812,12 @@ static QExpr* qp_add(QP* P) {
     QExpr* left = qp_mul(P);
     while (left) {
         QTok* t = q_peek(L, 0);
-        if (q_is(L, 0, "+")) {
+        if (q_is(L, 0, "+") || q_is(L, 0, "||")) {
+            int op = q_is(L, 0, "||") ? '|' : '+';
             L->pos++;
             QExpr* right = qp_mul(P);
             if (!right) { q_free_expr(left); return NULL; }
-            left = qp_bin(EK_BIN, '+', left, right);
+            left = qp_bin(EK_BIN, op, left, right);
         } else if (q_is(L, 0, "-") && !P->no_minus_star) {
             L->pos++;
             QExpr* right = qp_mul(P);
@@ -1726,8 +1732,9 @@ static EnlngVal q_arith(QRun* R, int op, const EnlngVal* a, const EnlngVal* b) {
     bool na = q_num(a, &da, &ia, &la), nb = q_num(b, &db, &ib, &lb);
     /* two texts are joined, even when both look like numbers: "80" + "1" is "801" */
     if (op == '+' && a->type == ENLNG_VAL_STRING && b->type == ENLNG_VAL_STRING) na = false;
+    if (op == '|') na = false;              /* a || b always joins, as in SQL */
     if (!(na && nb)) {
-        if (op == '+') {
+        if (op == '+' || op == '|') {
             /* text + text (or a word and a number) joins them */
             /* any length: a text is taken as it is, a number is written out */
             char xn[64], yn[64];
@@ -2856,7 +2863,6 @@ typedef struct {
     size_t* spill;
     size_t nspill;
 } QIdx;
-#define Q_UNDO_MAX_ROWS 10000
 #define Q_IDX_KEEP 8
 #define Q_IDX_MIN_ROWS 48
 static QIdx q_idx_cache[Q_IDX_KEEP];
@@ -2990,6 +2996,274 @@ static size_t* q_idx_lookup(const EnlngTable* t, int col, const EnlngVal* key, s
     return out;
 }
 
+
+/* ---- A range index: 'where col > 5', '<', '>=', '<=', 'between a and b' ----
+ * Numbers and texts do not sort together ("10" and "9" compare as text with each other, as numbers with a
+ * number), so a range index keeps the numbers of a column in one sorted list and its texts in another. A
+ * bound that is a number looks only at the numbers in its range and at every text (a text can still pass,
+ * like "90" > 5); a bound that is a text looks at the texts in its range and at every number. Other values
+ * (true/false) are always looked at, nulls never pass. The whole 'where' is still tested on each candidate,
+ * so the answer is the same as reading every row. Kept like the lookup index above. */
+typedef struct {
+    const EnlngTable* t;
+    size_t rows;
+    int col;
+    unsigned long long mut;
+    double* nv;                 /* the numbers, ascending */
+    size_t* nr;                 /* ... and their rows */
+    size_t nn;
+    size_t* sr;                 /* rows with a text, in the order of the texts */
+    size_t ns;
+    size_t* other;              /* rows with any other kind of value */
+    size_t no;
+} QRIdx;
+
+#define Q_RIDX_KEEP 4
+static QRIdx q_ridx_cache[Q_RIDX_KEEP];
+static int q_ridx_next = 0;
+
+static void q_ridx_drop(QRIdx* x) {
+    free(x->nv); free(x->nr); free(x->sr); free(x->other);
+    memset(x, 0, sizeof(*x));
+}
+
+typedef struct { double v; size_t r; } QNumRow;
+static int q_numrow_cmp(const void* a, const void* b) {
+    const QNumRow* x = (const QNumRow*)a;
+    const QNumRow* y = (const QNumRow*)b;
+    if (x->v < y->v) return -1;
+    if (x->v > y->v) return 1;
+    return x->r < y->r ? -1 : x->r > y->r ? 1 : 0;
+}
+static const EnlngTable* q_rs_t = NULL;
+static int q_rs_col = 0;
+static const char* q_rs_text(size_t r) {
+    const EnlngVal* v = &q_rs_t->rows[r].cells[q_rs_col];
+    return v->str_val ? v->str_val : "";
+}
+static int q_textrow_cmp(const void* a, const void* b) {
+    size_t x = *(const size_t*)a, y = *(const size_t*)b;
+    int c = str_ci_cmp(q_rs_text(x), q_rs_text(y));
+    if (c) return c;
+    return x < y ? -1 : x > y ? 1 : 0;
+}
+
+/* where a value goes in a range index: 1 number, 2 text, 3 other, 0 null (left out) */
+static int q_range_class(const EnlngVal* v, double* d) {
+    if (!v || v->type == ENLNG_VAL_NULL) return 0;
+    if (v->type == ENLNG_VAL_INT) { *d = (double)v->int_val; return 1; }
+    if (v->type == ENLNG_VAL_DOUBLE) { *d = v->double_val; return 1; }
+    if (v->type == ENLNG_VAL_STRING) return 2;
+    return 3;
+}
+
+static QRIdx* q_ridx_get(const EnlngTable* t, int col) {
+    for (int i = 0; i < Q_RIDX_KEEP; i++) {
+        QRIdx* c = &q_ridx_cache[i];
+        if (c->t == t && c->col == col && c->rows == t->row_count && c->mut == enlngdb_mutations && c->nv) return c;
+    }
+    QRIdx* x = NULL;
+    for (int i = 0; i < Q_RIDX_KEEP && !x; i++) if (q_ridx_cache[i].t == t && q_ridx_cache[i].col == col) x = &q_ridx_cache[i];
+    if (!x) { x = &q_ridx_cache[q_ridx_next]; q_ridx_next = (q_ridx_next + 1) % Q_RIDX_KEEP; }
+    q_ridx_drop(x);
+    size_t n = t->row_count;
+    QNumRow* nums = (QNumRow*)malloc((n + 1) * sizeof(QNumRow));
+    x->sr = (size_t*)malloc((n + 1) * sizeof(size_t));
+    x->other = (size_t*)malloc((n + 1) * sizeof(size_t));
+    if (!nums || !x->sr || !x->other) { free(nums); q_ridx_drop(x); return NULL; }
+    for (size_t r = 0; r < n; r++) {
+        const EnlngVal* v = (size_t)col < (size_t)t->rows[r].cell_count ? &t->rows[r].cells[col] : NULL;
+        double d = 0;
+        int k = q_range_class(v, &d);
+        if (k == 1) { nums[x->nn].v = d; nums[x->nn].r = r; x->nn++; }
+        else if (k == 2) x->sr[x->ns++] = r;
+        else if (k == 3) x->other[x->no++] = r;
+    }
+    qsort(nums, x->nn, sizeof(QNumRow), q_numrow_cmp);
+    q_rs_t = t;
+    q_rs_col = col;
+    qsort(x->sr, x->ns, sizeof(size_t), q_textrow_cmp);
+    x->nv = (double*)malloc((x->nn + 1) * sizeof(double));
+    x->nr = (size_t*)malloc((x->nn + 1) * sizeof(size_t));
+    if (!x->nv || !x->nr) { free(nums); q_ridx_drop(x); return NULL; }
+    for (size_t i = 0; i < x->nn; i++) { x->nv[i] = nums[i].v; x->nr[i] = nums[i].r; }
+    free(nums);
+    x->t = t;
+    x->col = col;
+    x->rows = n;
+    x->mut = enlngdb_mutations;
+    return x;
+}
+
+/* a bound of a range: lo/hi may be NULL (open); returns the candidate rows in row order, or NULL to read every row */
+static size_t* q_ridx_lookup(const EnlngTable* t, int col, const EnlngVal* lo, const EnlngVal* hi, size_t* n_out) {
+    if (t->row_count < Q_IDX_MIN_ROWS || (!lo && !hi)) return NULL;
+    double dlo = 0, dhi = 0;
+    int klo = lo ? q_range_class(lo, &dlo) : 0, khi = hi ? q_range_class(hi, &dhi) : 0;
+    if ((lo && (klo == 0 || klo == 3)) || (hi && (khi == 0 || khi == 3))) return NULL;
+    if (lo && hi && klo != khi) hi = NULL;          /* a number and a text: one bound is enough */
+    int kind = lo ? klo : khi;
+    QRIdx* x = q_ridx_get(t, col);
+    if (!x) return NULL;
+    size_t from = 0, to = 0, nmore = 0;
+    if (kind == 1) {
+        const double eps = 1e-9;
+        size_t a = 0, b = x->nn;
+        if (lo) { size_t l = 0, h = x->nn; while (l < h) { size_t m = l + (h - l) / 2; if (x->nv[m] < dlo - eps) l = m + 1; else h = m; } a = l; }
+        if (hi) { size_t l = a, h = x->nn; while (l < h) { size_t m = l + (h - l) / 2; if (x->nv[m] <= dhi + eps) l = m + 1; else h = m; } b = l; }
+        from = a; to = b < a ? a : b;
+        nmore = x->ns + x->no;
+    } else {
+        q_rs_t = t;
+        q_rs_col = col;
+        const char* slo = lo ? (lo->str_val ? lo->str_val : "") : NULL;
+        const char* shi = hi ? (hi->str_val ? hi->str_val : "") : NULL;
+        size_t a = 0, b = x->ns;
+        if (slo) { size_t l = 0, h = x->ns; while (l < h) { size_t m = l + (h - l) / 2; if (str_ci_cmp(q_rs_text(x->sr[m]), slo) < 0) l = m + 1; else h = m; } a = l; }
+        if (shi) { size_t l = a, h = x->ns; while (l < h) { size_t m = l + (h - l) / 2; if (str_ci_cmp(q_rs_text(x->sr[m]), shi) <= 0) l = m + 1; else h = m; } b = l; }
+        from = a; to = b < a ? a : b;
+        nmore = x->nn + x->no;
+    }
+    size_t n = (to - from) + nmore;
+    if (n * 2 > t->row_count) return NULL;        /* most rows: reading them in order is quicker */
+    size_t* out = (size_t*)malloc((n + 1) * sizeof(size_t));
+    if (!out) return NULL;
+    size_t k = 0;
+    if (kind == 1) {
+        for (size_t i = from; i < to; i++) out[k++] = x->nr[i];
+        for (size_t i = 0; i < x->ns; i++) out[k++] = x->sr[i];
+    } else {
+        for (size_t i = from; i < to; i++) out[k++] = x->sr[i];
+        for (size_t i = 0; i < x->nn; i++) out[k++] = x->nr[i];
+    }
+    for (size_t i = 0; i < x->no; i++) out[k++] = x->other[i];
+    if (k > 1) qsort(out, k, sizeof(size_t), q_size_cmp);
+    *n_out = k;
+    return out;
+}
+
+/* a conjunct 'col > literal' (or <, >=, <=, between): the column and its bounds; false if none */
+static void q_where_range_walk(const QExpr* w, const QSet* S, int* col, const EnlngVal** lo, const EnlngVal** hi) {
+    if (!w) return;
+    if (w->kind == EK_AND) { q_where_range_walk(w->a, S, col, lo, hi); q_where_range_walk(w->b, S, col, lo, hi); return; }
+    if (w->kind == EK_BETWEEN && !w->neg && w->a && w->b && w->c && w->a->kind == EK_NAME && w->b->kind == EK_LIT && w->c->kind == EK_LIT &&
+        !(w->a->mode == NM_SOFT_LIT && !strchr(w->a->text, '.'))) {
+        int c = q_find_col(S, w->a->text);
+        if (c < 0 || (*col >= 0 && c != *col)) return;
+        *col = c;
+        if (!*lo) *lo = &w->b->val;
+        if (!*hi) *hi = &w->c->val;
+        return;
+    }
+    if (w->kind != EK_CMP || !w->a || !w->b) return;
+    int op = w->op;
+    if (op != OP_GT && op != OP_GTE && op != OP_LT && op != OP_LTE) return;
+    const QExpr* n = w->a;
+    const QExpr* l = w->b;
+    if (n->kind != EK_NAME) {
+        n = w->b; l = w->a;
+        op = op == OP_GT ? OP_LT : op == OP_GTE ? OP_LTE : op == OP_LT ? OP_GT : OP_GTE;    /* 5 < col is col > 5 */
+    }
+    if (n->kind != EK_NAME || l->kind != EK_LIT) return;
+    if (n->mode == NM_SOFT_LIT && !strchr(n->text, '.')) return;      /* a bare word there is a text, not a column */
+    int c = q_find_col(S, n->text);
+    if (c < 0 || (*col >= 0 && c != *col)) return;
+    *col = c;
+    if ((op == OP_GT || op == OP_GTE) && !*lo) *lo = &l->val;
+    if ((op == OP_LT || op == OP_LTE) && !*hi) *hi = &l->val;
+}
+
+static bool q_where_range(const QExpr* w, const QSet* S, int* col, const EnlngVal** lo, const EnlngVal** hi) {
+    *col = -1;
+    *lo = *hi = NULL;
+    q_where_range_walk(w, S, col, lo, hi);
+    return *col >= 0 && (*lo || *hi);
+}
+
+/* rows at[0..n) (ascending) went away: the range index learns the new places of the others */
+static size_t q_shift_list(size_t* list, size_t cnt, const size_t* at, size_t n, double* vals) {
+    size_t w = 0;
+    for (size_t i = 0; i < cnt; i++) {
+        size_t r = list[i];
+        size_t lo = 0, hi = n;
+        while (lo < hi) { size_t m = lo + (hi - lo) / 2; if (at[m] < r) lo = m + 1; else hi = m; }
+        if (lo < n && at[lo] == r) continue;
+        if (vals) vals[w] = vals[i];
+        list[w++] = r - lo;
+    }
+    return w;
+}
+
+static void q_ridx_remap(QRIdx* c, const size_t* at, size_t n) {
+    c->nn = q_shift_list(c->nr, c->nn, at, n, c->nv);
+    c->ns = q_shift_list(c->sr, c->ns, at, n, NULL);
+    c->no = q_shift_list(c->other, c->no, at, n, NULL);
+    c->rows -= n;
+}
+
+/* a row was appended to t (the counter went up by one for it): a range index good just before takes it in */
+static void q_ridx_append_note(const EnlngTable* t) {
+    size_t r = t->row_count - 1;
+    for (int i = 0; i < Q_RIDX_KEEP; i++) {
+        QRIdx* c = &q_ridx_cache[i];
+        if (!c->t || c->t != t || c->rows != r || c->mut + 1 != enlngdb_mutations) continue;
+        const EnlngVal* v = (size_t)c->col < (size_t)t->rows[r].cell_count ? &t->rows[r].cells[c->col] : NULL;
+        double d = 0;
+        int k = q_range_class(v, &d);
+        bool good = true;
+        if (k == 1) {
+            double* nv = (double*)realloc(c->nv, (c->nn + 1) * sizeof(double));
+            if (nv) c->nv = nv;
+            size_t* nr = nv ? (size_t*)realloc(c->nr, (c->nn + 1) * sizeof(size_t)) : NULL;
+            if (nr) c->nr = nr;
+            if (!nv || !nr) good = false;
+            else {
+                size_t l = 0, h = c->nn;
+                while (l < h) { size_t m = l + (h - l) / 2; if (c->nv[m] <= d) l = m + 1; else h = m; }
+                memmove(c->nv + l + 1, c->nv + l, (c->nn - l) * sizeof(double));
+                memmove(c->nr + l + 1, c->nr + l, (c->nn - l) * sizeof(size_t));
+                c->nv[l] = d;
+                c->nr[l] = r;
+                c->nn++;
+            }
+        } else if (k == 2) {
+            size_t* sr = (size_t*)realloc(c->sr, (c->ns + 1) * sizeof(size_t));
+            if (!sr) good = false;
+            else {
+                c->sr = sr;
+                q_rs_t = t;
+                q_rs_col = c->col;
+                const char* s = q_rs_text(r);
+                size_t l = 0, h = c->ns;
+                while (l < h) { size_t m = l + (h - l) / 2; if (str_ci_cmp(q_rs_text(c->sr[m]), s) <= 0) l = m + 1; else h = m; }
+                memmove(c->sr + l + 1, c->sr + l, (c->ns - l) * sizeof(size_t));
+                c->sr[l] = r;
+                c->ns++;
+            }
+        } else if (k == 3) {
+            size_t* o = (size_t*)realloc(c->other, (c->no + 1) * sizeof(size_t));
+            if (!o) good = false;
+            else { c->other = o; c->other[c->no++] = r; }
+        }
+        if (!good) { q_ridx_drop(c); continue; }
+        c->rows = t->row_count;
+        c->mut = enlngdb_mutations;
+        q_idx_kept = true;
+    }
+}
+
+/* an update that changed only some columns: range indexes of the others stay good */
+static void q_ridx_keep(const EnlngTable* t, unsigned long long before, unsigned long long changed) {
+    for (int i = 0; i < Q_RIDX_KEEP; i++) {
+        QRIdx* c = &q_ridx_cache[i];
+        if (!c->nv) continue;
+        if (c->t == t && c->rows == t->row_count && c->mut == before && c->col < 64 && !((changed >> c->col) & 1ULL)) {
+            c->mut = enlngdb_mutations;
+            q_idx_kept = true;
+        }
+    }
+}
+
 static bool q_exec_one(QRun* R, QQuery* q, const QEnv* outer, QSet* O) {
     bool ok = false;
     QSet* S = qs_new();
@@ -3024,6 +3298,8 @@ static bool q_exec_one(QRun* R, QQuery* q, const QEnv* outer, QSet* O) {
         const EnlngVal* kval = NULL;
         size_t ncand = 0;
         if (q_where_key(q->where, S, &kcol, &kval)) cands = q_idx_lookup(only, kcol, kval, &ncand);
+        const EnlngVal *rlo = NULL, *rhi = NULL;
+        if (!cands && q_where_range(q->where, S, &kcol, &rlo, &rhi)) cands = q_ridx_lookup(only, kcol, rlo, rhi, &ncand);
         size_t scan = cands ? ncand : only->row_count;
         for (size_t i = 0; i < scan; i++) {
             size_t r = cands ? cands[i] : i;
@@ -4176,6 +4452,599 @@ static bool q_check_row(QRun* R, EnlngTable* t, EnlngVal* cells, int skip, char*
     return true;
 }
 
+/* ---- undo: what one statement changed, so that 'undo' (or an import that fails) can take it back ----
+   Each record puts a table back the way it was just before one change. Taken back from the last record to the
+   first, they give the database as it was before the statement. A record keeps only what changed: an update
+   keeps the old cells of the rows it changed, a delete keeps the rows it took away (they are moved, not copied),
+   rows added at the end need only their number. A change of a table's columns keeps a copy of that table. So
+   'undo' works for a database of any size, and costs about as much as the change itself. */
+typedef enum { QJ_ROWS = 1, QJ_CELL, QJ_REMOVE, QJ_APPEND, QJ_TABLE, QJ_META, QJ_HEADS, QJ_DROP, QJ_CREATE } QJKind;
+
+typedef struct {
+    QJKind kind;
+    int ti;                     /* the place of the table in the database (QJ_HEADS: the table that was renamed, or -1) */
+    size_t n;                   /* QJ_ROWS / QJ_REMOVE: how many rows; QJ_APPEND: how many rows there were before */
+    size_t* at;                 /* QJ_ROWS: the places of the rows; QJ_REMOVE: the places they had, ascending */
+    EnlngRow* rows;             /* QJ_ROWS: the old rows; QJ_REMOVE: the rows taken away */
+    size_t nbefore;             /* QJ_REMOVE: the rows of the table before the delete */
+    size_t r;                   /* QJ_CELL: the row and column of the cell, and its old value */
+    int c;
+    EnlngVal old;
+    EnlngTable* tab;            /* QJ_TABLE / QJ_DROP: the table with its rows; QJ_META: without rows; QJ_HEADS: all tables, without rows */
+    int ntab;
+    EnlngTrigger* trig;         /* QJ_DROP: the triggers that went with the table */
+    int ntrig;
+    unsigned long long mask;    /* QJ_ROWS / QJ_CELL: the columns whose values changed */
+} QJRec;
+
+typedef struct {
+    EnlngDatabase* db;
+    QJRec* rec;
+    size_t n, cap;
+    bool broken;                /* something changed that these records cannot take back */
+    unsigned char flag[ENLNGDB_MAX_TABLES];   /* per table: 1 rows added at the end are covered, 2 its columns are kept, 4 all of it is kept */
+} QJournal;
+
+static QJournal* q_jr = NULL;   /* the records of the statement that is running, when they are kept */
+static int q_depth = 0;         /* statements inside statements (triggers, procedures, preview) */
+
+static void q_row_free(EnlngRow* row) {
+    for (int c = 0; c < row->cell_count; c++) enlng_free_val(&row->cells[c]);
+    free(row->cells);
+    row->cells = NULL;
+    row->cell_count = 0;
+}
+
+static EnlngRow q_row_dup(const EnlngRow* src) {
+    EnlngRow d;
+    d.cell_count = src->cell_count;
+    d.version = src->version;
+    d.cells = (EnlngVal*)malloc((size_t)(src->cell_count ? src->cell_count : 1) * sizeof(EnlngVal));
+    if (!d.cells) { d.cell_count = 0; return d; }
+    for (int c = 0; c < src->cell_count; c++) d.cells[c] = enlng_copy_val(&src->cells[c]);
+    return d;
+}
+
+/* a copy of a table: its name, columns and indexes, and its rows when with_rows */
+static EnlngTable* q_table_dup(const EnlngTable* t, bool with_rows) {
+    EnlngTable* c = (EnlngTable*)malloc(sizeof(EnlngTable));
+    if (!c) return NULL;
+    memcpy(c, t, sizeof(EnlngTable));
+    c->rows = NULL;
+    c->row_count = 0;
+    c->row_capacity = 0;
+    if (with_rows && t->row_count) {
+        c->rows = (EnlngRow*)malloc(t->row_count * sizeof(EnlngRow));
+        if (!c->rows) { free(c); return NULL; }
+        for (size_t r = 0; r < t->row_count; r++) c->rows[r] = q_row_dup(&t->rows[r]);
+        c->row_count = c->row_capacity = t->row_count;
+    }
+    return c;
+}
+
+static void q_table_free(EnlngTable* t) {
+    if (!t) return;
+    for (size_t r = 0; r < t->row_count; r++) q_row_free(&t->rows[r]);
+    free(t->rows);
+    free(t);
+}
+
+static void q_jr_rec_free(QJRec* x) {
+    switch (x->kind) {
+    case QJ_ROWS:
+    case QJ_REMOVE:
+        for (size_t i = 0; x->rows && i < x->n; i++) q_row_free(&x->rows[i]);
+        free(x->rows);
+        free(x->at);
+        break;
+    case QJ_CELL:
+        enlng_free_val(&x->old);
+        break;
+    case QJ_TABLE:
+    case QJ_META:
+    case QJ_DROP:
+        q_table_free(x->tab);
+        for (int i = 0; i < x->ntrig; i++) { free(x->trig[i].when); free(x->trig[i].body); }
+        free(x->trig);
+        break;
+    case QJ_HEADS:
+        free(x->tab);               /* the copies have no rows */
+        break;
+    default:
+        break;
+    }
+    memset(x, 0, sizeof(*x));
+}
+
+static void q_jr_free(void* p) {
+    QJournal* j = (QJournal*)p;
+    if (!j) return;
+    for (size_t i = 0; i < j->n; i++) q_jr_rec_free(&j->rec[i]);
+    free(j->rec);
+    free(j);
+}
+
+/* the place of t in the database whose changes are kept; -1 when they are not kept or t is not one of its tables */
+static int q_jr_place(const EnlngTable* t) {
+    if (!q_jr || q_jr->broken || !t) return -1;
+    const EnlngDatabase* db = q_jr->db;
+    if (t < db->tables || t >= db->tables + db->table_count) return -1;
+    return (int)(t - db->tables);
+}
+
+static QJRec* q_jr_push(QJKind kind, int ti) {
+    if (q_jr->n >= q_jr->cap) {
+        size_t cap = q_jr->cap ? q_jr->cap * 2 : 16;
+        QJRec* grown = (QJRec*)realloc(q_jr->rec, cap * sizeof(QJRec));
+        if (!grown) { q_jr->broken = true; return NULL; }
+        q_jr->rec = grown;
+        q_jr->cap = cap;
+    }
+    QJRec* x = &q_jr->rec[q_jr->n++];
+    memset(x, 0, sizeof(*x));
+    x->kind = kind;
+    x->ti = ti;
+    return x;
+}
+
+/* the old rows of an update (rows[i] was at place at[i]): true when they are taken over, else the caller frees them */
+static bool q_jr_rows(const EnlngTable* t, const size_t* at, EnlngRow* rows, size_t n) {
+    int ti = q_jr_place(t);
+    if (ti < 0 || n == 0 || (q_jr->flag[ti] & 4)) return false;
+    size_t* places = (size_t*)malloc(n * sizeof(size_t));
+    if (!places) { q_jr->broken = true; return false; }
+    QJRec* x = q_jr_push(QJ_ROWS, ti);
+    if (!x) { free(places); return false; }
+    memcpy(places, at, n * sizeof(size_t));
+    x->at = places;
+    x->rows = rows;
+    x->n = n;
+    /* the columns that changed: the indexes of the others stay good */
+    for (size_t i = 0; i < n; i++) {
+        const EnlngRow* now = &t->rows[at[i]];
+        for (int c = 0; c < t->col_count && c < 64; c++) {
+            EnlngVal nv = enlng_null();
+            const EnlngVal* a = c < rows[i].cell_count ? &rows[i].cells[c] : &nv;
+            const EnlngVal* b = c < now->cell_count ? &now->cells[c] : &nv;
+            if (a->type != b->type || enlng_compare_vals(a, b) != 0) x->mask |= 1ULL << c;
+        }
+    }
+    return true;
+}
+
+/* one cell is about to change */
+static void q_jr_cell(const EnlngTable* t, size_t r, int c, const EnlngVal* old) {
+    int ti = q_jr_place(t);
+    if (ti < 0 || (q_jr->flag[ti] & 4)) return;
+    QJRec* x = q_jr_push(QJ_CELL, ti);
+    if (!x) return;
+    x->r = r;
+    x->c = c;
+    x->old = enlng_copy_val(old);
+    x->mask = c < 64 ? 1ULL << c : ~0ULL;
+}
+
+/* rows a delete took away (at[], ascending, were their places among nbefore rows): true when taken over */
+static bool q_jr_remove(const EnlngTable* t, size_t nbefore, size_t* at, EnlngRow* rows, size_t n) {
+    int ti = q_jr_place(t);
+    if (ti < 0 || n == 0 || (q_jr->flag[ti] & 4)) return false;
+    QJRec* x = q_jr_push(QJ_REMOVE, ti);
+    if (!x) return false;
+    x->nbefore = nbefore;
+    x->at = at;
+    x->rows = rows;
+    x->n = n;
+    return true;
+}
+
+/* the name, columns, indexes and automatic numbers of t (not its rows), once per statement */
+static void q_jr_meta(const EnlngTable* t) {
+    int ti = q_jr_place(t);
+    if (ti < 0 || (q_jr->flag[ti] & 6)) return;
+    EnlngTable* c = q_table_dup(t, false);
+    if (!c) { q_jr->broken = true; return; }
+    QJRec* x = q_jr_push(QJ_META, ti);
+    if (!x) { free(c); return; }
+    x->tab = c;
+    q_jr->flag[ti] |= 2;
+}
+
+/* all of t, rows included: before a change of its columns */
+static void q_jr_whole(const EnlngTable* t) {
+    int ti = q_jr_place(t);
+    if (ti < 0 || (q_jr->flag[ti] & 4)) return;
+    EnlngTable* c = q_table_dup(t, true);
+    if (!c) { q_jr->broken = true; return; }
+    QJRec* x = q_jr_push(QJ_TABLE, ti);
+    if (!x) { q_table_free(c); return; }
+    x->tab = c;
+    q_jr->flag[ti] |= 6;
+}
+
+/* the names and columns of every table (renaming a table or a column changes the tables that refer to it) */
+static void q_jr_heads(int renamed) {
+    if (!q_jr || q_jr->broken) return;
+    const EnlngDatabase* db = q_jr->db;
+    EnlngTable* h = (EnlngTable*)malloc(sizeof(EnlngTable) * (size_t)(db->table_count ? db->table_count : 1));
+    if (!h) { q_jr->broken = true; return; }
+    for (int i = 0; i < db->table_count; i++) {
+        memcpy(&h[i], &db->tables[i], sizeof(EnlngTable));
+        h[i].rows = NULL;
+        h[i].row_count = h[i].row_capacity = 0;
+    }
+    QJRec* x = q_jr_push(QJ_HEADS, renamed);
+    if (!x) { free(h); return; }
+    x->tab = h;
+    x->ntab = db->table_count;
+}
+
+/* the rows of t are taken for record x (t is left with none) */
+static void q_jr_take_rows(EnlngTable* t, EnlngTable* into) {
+    into->rows = t->rows;
+    into->row_count = t->row_count;
+    into->row_capacity = t->row_capacity;
+    t->rows = NULL;
+    t->row_count = 0;
+    t->row_capacity = 0;
+}
+
+/* the engine says a table is about to change */
+static void q_jr_hook(EnlngTable* t, int what) {
+    if (!q_jr || q_jr->broken) return;
+    if (what == ENLNGDB_CH_RESET) {
+        if (t == q_jr->db->tables) q_jr->broken = true;
+        return;
+    }
+    int ti = q_jr_place(t);
+    if (ti < 0) return;
+    switch (what) {
+    case ENLNGDB_CH_APPEND:
+        if (!(q_jr->flag[ti] & 5)) {
+            QJRec* x = q_jr_push(QJ_APPEND, ti);
+            if (x) { x->n = t->row_count; q_jr->flag[ti] |= 1; }
+        }
+        break;
+    case ENLNGDB_CH_FREE_ROWS:
+        if (!(q_jr->flag[ti] & 4)) {
+            /* the rows are taken, not copied: the table is left empty, as it was about to be */
+            EnlngTable* c = q_table_dup(t, false);
+            if (!c) { q_jr->broken = true; break; }
+            QJRec* x = q_jr_push(QJ_TABLE, ti);
+            if (!x) { free(c); break; }
+            q_jr_take_rows(t, c);
+            x->tab = c;
+            q_jr->flag[ti] |= 6;
+        }
+        break;
+    case ENLNGDB_CH_WHOLE:
+        q_jr_whole(t);
+        break;
+    case ENLNGDB_CH_META:
+        q_jr_meta(t);
+        break;
+    case ENLNGDB_CH_RENAME:
+        q_jr_heads(ti);
+        break;
+    case ENLNGDB_CH_DROP: {
+        EnlngTable* c = q_table_dup(t, false);
+        if (!c) { q_jr->broken = true; break; }
+        QJRec* x = q_jr_push(QJ_DROP, ti);
+        if (!x) { free(c); break; }
+        q_jr_take_rows(t, c);
+        x->tab = c;
+        /* the triggers of the table go with it, and come back with it */
+        EnlngDatabase* db = q_jr->db;
+        int k = 0;
+        for (int i = 0; i < db->trigger_count; i++) if (strcmp(db->triggers[i].table, t->name) == 0) k++;
+        if (k) x->trig = (EnlngTrigger*)calloc((size_t)k, sizeof(EnlngTrigger));
+        for (int i = 0; x->trig && i < db->trigger_count; i++) {
+            if (strcmp(db->triggers[i].table, t->name) != 0) continue;
+            EnlngTrigger* d = &x->trig[x->ntrig++];
+            *d = db->triggers[i];
+            d->when = db->triggers[i].when ? strdup(db->triggers[i].when) : NULL;
+            d->body = db->triggers[i].body ? strdup(db->triggers[i].body) : NULL;
+        }
+        memset(q_jr->flag, 0, sizeof(q_jr->flag));     /* the tables after it move up one place */
+        break;
+    }
+    case ENLNGDB_CH_CREATED:
+        q_jr_push(QJ_CREATE, ti);
+        break;
+    default:
+        break;
+    }
+}
+
+static char* q_dup_or_null(const char* s) { return s ? strdup(s) : NULL; }
+
+/* puts back what record x changed in D. With consume the record's rows are moved back (it is used up), else copied.
+   real: D is the open database (its triggers follow), not a copy. False when the record does not fit D. */
+static bool q_jr_back(EnlngDatabase* D, QJRec* x, bool consume, bool real) {
+    if (x->kind != QJ_HEADS && (x->ti < 0 || x->ti > D->table_count)) return false;
+    EnlngTable* t = x->kind != QJ_HEADS && x->ti < D->table_count ? &D->tables[x->ti] : NULL;
+    switch (x->kind) {
+    case QJ_ROWS:
+        if (!t) return false;
+        for (size_t i = x->n; i-- > 0;) {
+            if (x->at[i] >= t->row_count) return false;
+            EnlngRow* row = &t->rows[x->at[i]];
+            q_row_free(row);
+            if (consume) { *row = x->rows[i]; memset(&x->rows[i], 0, sizeof(EnlngRow)); }
+            else *row = q_row_dup(&x->rows[i]);
+        }
+        return true;
+    case QJ_CELL: {
+        if (!t || x->r >= t->row_count) return false;
+        EnlngRow* row = &t->rows[x->r];
+        if (x->c >= row->cell_count) return false;
+        enlng_free_val(&row->cells[x->c]);
+        if (consume) { row->cells[x->c] = x->old; x->old = enlng_null(); }
+        else row->cells[x->c] = enlng_copy_val(&x->old);
+        return true;
+    }
+    case QJ_REMOVE: {
+        if (!t || t->row_count + x->n != x->nbefore) return false;
+        EnlngRow* rows = (EnlngRow*)malloc((x->nbefore ? x->nbefore : 1) * sizeof(EnlngRow));
+        if (!rows) return false;
+        size_t k = 0, from = 0;
+        for (size_t r = 0; r < x->nbefore; r++) {
+            if (k < x->n && x->at[k] == r) {
+                if (consume) { rows[r] = x->rows[k]; memset(&x->rows[k], 0, sizeof(EnlngRow)); }
+                else rows[r] = q_row_dup(&x->rows[k]);
+                k++;
+            } else {
+                rows[r] = t->rows[from++];
+            }
+        }
+        free(t->rows);
+        t->rows = rows;
+        t->row_count = t->row_capacity = x->nbefore;
+        return true;
+    }
+    case QJ_APPEND:
+        if (!t || t->row_count < x->n) return false;
+        for (size_t r = x->n; r < t->row_count; r++) q_row_free(&t->rows[r]);
+        t->row_count = x->n;
+        return true;
+    case QJ_TABLE: {
+        if (!t) return false;
+        EnlngTable* src = x->tab;
+        EnlngTable* c = consume ? NULL : q_table_dup(src, true);
+        if (!consume && !c) return false;
+        for (size_t r = 0; r < t->row_count; r++) q_row_free(&t->rows[r]);
+        free(t->rows);
+        if (consume) {
+            memcpy(t, src, sizeof(EnlngTable));
+            src->rows = NULL;
+            src->row_count = src->row_capacity = 0;
+        } else {
+            memcpy(t, c, sizeof(EnlngTable));
+            free(c);
+        }
+        return true;
+    }
+    case QJ_META: {
+        if (!t) return false;
+        EnlngRow* rows = t->rows;
+        size_t rc = t->row_count, cap = t->row_capacity;
+        memcpy(t, x->tab, sizeof(EnlngTable));
+        t->rows = rows;
+        t->row_count = rc;
+        t->row_capacity = cap;
+        return true;
+    }
+    case QJ_HEADS: {
+        if (x->ntab != D->table_count) return false;
+        char now[ENLNGDB_MAX_NAME] = "";
+        if (x->ti >= 0 && x->ti < D->table_count) snprintf(now, sizeof(now), "%s", D->tables[x->ti].name);
+        for (int i = 0; i < x->ntab; i++) {
+            EnlngTable* d = &D->tables[i];
+            EnlngRow* rows = d->rows;
+            size_t rc = d->row_count, cap = d->row_capacity;
+            memcpy(d, &x->tab[i], sizeof(EnlngTable));
+            d->rows = rows;
+            d->row_count = rc;
+            d->row_capacity = cap;
+        }
+        if (real && now[0] && strcmp(now, D->tables[x->ti].name) != 0) enlngdb_rename_triggers_of(D, now, D->tables[x->ti].name);
+        return true;
+    }
+    case QJ_DROP: {
+        if (D->table_count >= ENLNGDB_MAX_TABLES) return false;
+        EnlngTable* c = consume ? NULL : q_table_dup(x->tab, true);
+        if (!consume && !c) return false;
+        for (int j = D->table_count; j > x->ti; j--) D->tables[j] = D->tables[j - 1];
+        if (consume) {
+            memcpy(&D->tables[x->ti], x->tab, sizeof(EnlngTable));
+            x->tab->rows = NULL;
+            x->tab->row_count = x->tab->row_capacity = 0;
+        } else {
+            memcpy(&D->tables[x->ti], c, sizeof(EnlngTable));
+            free(c);
+        }
+        D->table_count++;
+        if (real && x->ntrig) {
+            EnlngTrigger* grown = (EnlngTrigger*)realloc(D->triggers, (size_t)(D->trigger_count + x->ntrig) * sizeof(EnlngTrigger));
+            if (grown) {
+                D->triggers = grown;
+                for (int i = 0; i < x->ntrig; i++) {
+                    EnlngTrigger* d = &D->triggers[D->trigger_count++];
+                    *d = x->trig[i];
+                    if (consume) { x->trig[i].when = NULL; x->trig[i].body = NULL; }
+                    else { d->when = q_dup_or_null(x->trig[i].when); d->body = q_dup_or_null(x->trig[i].body); }
+                }
+            }
+        }
+        return true;
+    }
+    case QJ_CREATE: {
+        if (x->ti != D->table_count - 1) return false;
+        EnlngTable* c = &D->tables[x->ti];
+        for (size_t r = 0; r < c->row_count; r++) q_row_free(&c->rows[r]);
+        free(c->rows);
+        memset(c, 0, sizeof(EnlngTable));
+        D->table_count--;
+        return true;
+    }
+    }
+    return false;
+}
+
+/* takes back the records of j from the last one down to number mark; false when one did not fit */
+static bool q_jr_unwind(QJournal* j, EnlngDatabase* D, size_t mark, bool consume, bool real) {
+    bool fit = true;
+    for (size_t i = j->n; i-- > mark;) {
+        if (fit && !q_jr_back(D, &j->rec[i], consume, real)) fit = false;
+        if (consume) q_jr_rec_free(&j->rec[i]);
+    }
+    if (consume) {
+        j->n = mark;
+        memset(j->flag, 0, sizeof(j->flag));
+    }
+    enlngdb_mutations++;            /* lookup indexes made before are out of date */
+    return fit;
+}
+
+/* two lists of tables hold the same names, columns and values (for the self-check of undo) */
+static bool q_tables_same(const EnlngTable* a, int na, const EnlngTable* b, int nb, char* why, size_t wn) {
+    if (na != nb) { snprintf(why, wn, "%d tables, not %d", na, nb); return false; }
+    for (int i = 0; i < na; i++) {
+        const EnlngTable* x = &a[i];
+        const EnlngTable* y = &b[i];
+        if (strcmp(x->name, y->name) != 0 || x->col_count != y->col_count || x->row_count != y->row_count || x->index_count != y->index_count ||
+            strcmp(x->view_sql, y->view_sql) != 0 || x->is_temp != y->is_temp) {
+            snprintf(why, wn, "table %d: %s/%s rows %lu/%lu columns %d/%d", i, x->name, y->name, (unsigned long)x->row_count, (unsigned long)y->row_count, x->col_count, y->col_count);
+            return false;
+        }
+        for (int c = 0; c < x->col_count; c++) {
+            const EnlngColumn* p = &x->columns[c];
+            const EnlngColumn* q = &y->columns[c];
+            if (strcmp(p->name, q->name) != 0 || p->kind != q->kind || p->is_primary_key != q->is_primary_key || p->is_unique != q->is_unique ||
+                p->not_null != q->not_null || p->is_auto != q->is_auto || strcmp(p->default_text, q->default_text) != 0 ||
+                strcmp(p->check_text, q->check_text) != 0 || strcmp(p->ref_table, q->ref_table) != 0 || strcmp(p->ref_col, q->ref_col) != 0 ||
+                p->on_update != q->on_update || p->on_delete != q->on_delete || x->auto_next[c] != y->auto_next[c]) {
+                snprintf(why, wn, "table %s: column %d", x->name, c);
+                return false;
+            }
+        }
+        for (int k = 0; k < x->index_count; k++) {
+            if (strcmp(x->indexes[k].name, y->indexes[k].name) != 0) { snprintf(why, wn, "table %s: index %d", x->name, k); return false; }
+        }
+        for (size_t r = 0; r < x->row_count; r++) {
+            for (int c = 0; c < x->col_count; c++) {
+                EnlngVal nv = enlng_null();
+                const EnlngVal* u = c < x->rows[r].cell_count ? &x->rows[r].cells[c] : &nv;
+                const EnlngVal* v = c < y->rows[r].cell_count ? &y->rows[r].cells[c] : &nv;
+                if (u->type != v->type || enlng_compare_vals(u, v) != 0) {
+                    snprintf(why, wn, "table %s: row %lu column %d", x->name, (unsigned long)r, c);
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+/* What the records of a statement say about each table, for the lookup indexes: a table without records did not
+   change, a table whose records only changed cells keeps the indexes of the other columns, and rows taken away
+   only move the others up. */
+typedef struct {
+    bool any;                               /* false: nothing can be kept (tables were made, dropped, or replaced) */
+    unsigned long long mask[ENLNGDB_MAX_TABLES];
+    unsigned char bad[ENLNGDB_MAX_TABLES];  /* rows added, all of the table replaced, or (undoing) rows put back */
+    unsigned char touched[ENLNGDB_MAX_TABLES];
+} QJClass;
+
+static void q_jr_classify(const QJournal* j, bool undoing, QJClass* k) {
+    memset(k, 0, sizeof(*k));
+    if (!j || j->broken) return;
+    k->any = true;
+    for (size_t i = 0; i < j->n; i++) {
+        const QJRec* x = &j->rec[i];
+        if (x->kind == QJ_DROP || x->kind == QJ_CREATE) { k->any = false; return; }
+        if (x->ti < 0 || x->ti >= ENLNGDB_MAX_TABLES) continue;
+        k->touched[x->ti] = 1;
+        switch (x->kind) {
+        case QJ_ROWS:
+        case QJ_CELL: k->mask[x->ti] |= x->mask; break;
+        case QJ_REMOVE: if (undoing) k->bad[x->ti] = 1; break;
+        case QJ_APPEND:
+        case QJ_TABLE: k->bad[x->ti] = 1; break;
+        default: break;             /* names and columns: the rows stay where they are */
+        }
+    }
+}
+
+/* rows at[0..n) (ascending) of the table went away: the index learns the new places of the others, without hashing again */
+static void q_idx_remap(QIdx* c, const size_t* at, size_t n) {
+    QHash* H = c->H;
+    size_t w = 0;
+    for (size_t e = 0; e < H->n; e++) {
+        size_t r = (size_t)H->item[e];
+        size_t lo = 0, hi = n;
+        while (lo < hi) { size_t m = lo + (hi - lo) / 2; if (at[m] < r) lo = m + 1; else hi = m; }
+        if (lo < n && at[lo] == r) continue;
+        H->item[w] = (int64_t)(r - lo);
+        H->hv[w] = H->hv[e];
+        w++;
+    }
+    H->n = w;
+    qh_rehash(H, H->nb);
+    size_t ws = 0;
+    for (size_t i = 0; i < c->nspill; i++) {
+        size_t r = c->spill[i];
+        size_t lo = 0, hi = n;
+        while (lo < hi) { size_t m = lo + (hi - lo) / 2; if (at[m] < r) lo = m + 1; else hi = m; }
+        if (lo < n && at[lo] == r) continue;
+        c->spill[ws++] = r - lo;
+    }
+    c->nspill = ws;
+    c->rows -= n;
+}
+
+/* the indexes (and largest automatic numbers) that were good at valid_at and that the records leave good are
+   made good now. j: the records, when going forward (rows taken away are followed); NULL when undoing. */
+static void q_idx_keep_by(const QJClass* k, const QJournal* j, const EnlngDatabase* db, unsigned long long valid_at) {
+    if (!k->any || !db) return;
+    for (int i = 0; i < Q_IDX_KEEP; i++) {
+        QIdx* c = &q_idx_cache[i];
+        if (!c->H || c->mut != valid_at || c->col < 0 || c->col >= 64) continue;
+        if (c->t < db->tables || c->t >= db->tables + db->table_count) continue;
+        int ti = (int)(c->t - db->tables);
+        if (k->bad[ti] || ((k->mask[ti] >> c->col) & 1ULL)) continue;
+        bool good = true;
+        for (size_t r = 0; j && good && r < j->n; r++) {
+            const QJRec* x = &j->rec[r];
+            if (x->kind != QJ_REMOVE || x->ti != ti) continue;
+            if (c->rows != x->nbefore) good = false;
+            else q_idx_remap(c, x->at, x->n);
+        }
+        if (good && c->rows == c->t->row_count) c->mut = enlngdb_mutations;
+    }
+    for (int i = 0; i < Q_RIDX_KEEP; i++) {
+        QRIdx* c = &q_ridx_cache[i];
+        if (!c->nv || c->mut != valid_at || c->col < 0 || c->col >= 64) continue;
+        if (c->t < db->tables || c->t >= db->tables + db->table_count) continue;
+        int ti = (int)(c->t - db->tables);
+        if (k->bad[ti] || ((k->mask[ti] >> c->col) & 1ULL)) continue;
+        bool good = true;
+        for (size_t r = 0; j && good && r < j->n; r++) {
+            const QJRec* x = &j->rec[r];
+            if (x->kind != QJ_REMOVE || x->ti != ti) continue;
+            if (c->rows != x->nbefore) good = false;
+            else q_ridx_remap(c, x->at, x->n);
+        }
+        if (good && c->rows == c->t->row_count) c->mut = enlngdb_mutations;
+    }
+    for (int i = 0; i < 8; i++) {
+        QMaxCache* m = &q_max_cache[i];
+        if (!m->t || m->mut != valid_at) continue;
+        if (m->t < db->tables || m->t >= db->tables + db->table_count) continue;
+        int ti = (int)(m->t - db->tables);
+        if (!k->touched[ti] && m->rows == m->t->row_count) m->mut = enlngdb_mutations;
+    }
+}
+
 /* a copy of a table's rows, so a statement that fails half way can put them back */
 typedef struct {
     EnlngRow* rows;
@@ -4334,6 +5203,7 @@ static size_t q_follow_apply(EnlngDatabase* db, QFollow* list, size_t n) {
         for (size_t r = 0; r < child->row_count; r++) {
             EnlngVal* cell = list[k].col < child->rows[r].cell_count ? &child->rows[r].cells[list[k].col] : NULL;
             if (!cell || cell->type == ENLNG_VAL_NULL || enlng_compare_vals(cell, &list[k].from) != 0) continue;
+            q_jr_cell(child, r, list[k].col, cell);
             enlng_free_val(cell);
             *cell = list[k].set_null ? enlng_null() : enlng_copy_val(&list[k].to);
             changed++;
@@ -4386,6 +5256,7 @@ static bool q_insert_rows(QRun* R, EnlngTable* t, QInRow* rows, int nrows, int* 
     *replaced = 0;
     note[0] = '\0';
     q_normalize_rows(t);
+    q_jr_meta(t);                   /* undo puts the automatic numbers back too */
     bool own_sidx = !q_sidx.on && nrows >= 8;
     if (own_sidx) q_sidx_start();
     /* the largest whole number in each automatic column, found once and kept up to date */
@@ -4475,6 +5346,7 @@ static bool q_insert_rows(QRun* R, EnlngTable* t, QInRow* rows, int nrows, int* 
         } else {
             q_sidx_note(t, t->row_count - 1);
             q_idx_append_note(t);
+            q_ridx_append_note(t);
         }
         for (int c = 0; c < t->col_count; c++) {
             if (t->columns[c].is_auto && cells[c].type == ENLNG_VAL_INT && (!auto_seen[c] || cells[c].int_val > auto_max[c])) {
@@ -4488,8 +5360,14 @@ static bool q_insert_rows(QRun* R, EnlngTable* t, QInRow* rows, int nrows, int* 
         for (int c = 0; c < t->col_count; c++) if (t->columns[c].is_auto) q_max_put(t, c, auto_max[c], auto_seen[c]);
     }
     for (size_t u = 0; u < nundo; u++) {
-        for (int c = 0; c < undo[u].cc; c++) enlng_free_val(&undo[u].cells[c]);
-        free(undo[u].cells);
+        /* a replaced row: undo keeps its old cells */
+        EnlngRow* old = (EnlngRow*)malloc(sizeof(EnlngRow));
+        if (old) { old->cells = undo[u].cells; old->cell_count = undo[u].cc; old->version = 0; }
+        if (!old || !q_jr_rows(t, &undo[u].r, old, 1)) {
+            for (int c = 0; c < undo[u].cc; c++) enlng_free_val(&undo[u].cells[c]);
+            free(undo[u].cells);
+            free(old);
+        }
     }
     free(undo);
     return true;
@@ -4743,6 +5621,8 @@ static bool q_matching_rows(QRun* R, EnlngTable* t, QExpr* where, size_t** out, 
     size_t ncand = 0;
     size_t* cands = NULL;
     if (ok && where && t->row_count >= Q_IDX_MIN_ROWS && q_where_key(where, S, &kcol, &kval)) cands = q_idx_lookup(t, kcol, kval, &ncand);
+    const EnlngVal *rlo = NULL, *rhi = NULL;
+    if (ok && where && !cands && t->row_count >= Q_IDX_MIN_ROWS && q_where_range(where, S, &kcol, &rlo, &rhi)) cands = q_ridx_lookup(t, kcol, rlo, rhi, &ncand);
     size_t scan = cands ? ncand : t->row_count;
     for (size_t i = 0; ok && i < scan; i++) {
         size_t r = cands ? cands[i] : i;
@@ -4915,10 +5795,12 @@ static bool q_update(EnlngDatabase* db, const char* stmt, bool print_output) {
                 }
             }
             q_changed_mask = 0;
-            if (good && nfollow) followed = q_follow_apply(db, follow, nfollow);
-            if (!good) {
-                q_sparse_restore(t, &snap);
-                have_snap = false;
+            if (good) {
+                /* undo keeps the old rows: they are handed over, not copied */
+                if (q_jr_rows(t, rows, snap.old, snap.n)) { snap.old = NULL; snap.n = 0; have_snap = false; }
+                if (nfollow) followed = q_follow_apply(db, follow, nfollow);
+            } else {
+                q_sparse_restore(t, &snap);         /* the old rows are back in the table; the list itself is freed at the end */
             }
         }
         for (size_t i = 0; i < nrows * (size_t)nas; i++) enlng_free_val(&fresh[i]);
@@ -4930,6 +5812,7 @@ static bool q_update(EnlngDatabase* db, const char* stmt, bool print_output) {
         unsigned long long mask = 0;
         for (int i = 0; i < nas; i++) mask |= 1ULL << as[i].col;
         q_idx_keep(t, before_mut, mask);
+        q_ridx_keep(t, before_mut, mask);
     }
     if (print_output) {
         printf("Query OK, %lu row(s) updated", (unsigned long)nrows);
@@ -5126,6 +6009,7 @@ static bool q_delete(EnlngDatabase* db, const char* stmt, bool print_output) {
             if (D.gone[b + nulls[i].r]) continue;
             EnlngVal* v = &db->tables[nulls[i].t].rows[nulls[i].r].cells[nulls[i].c];
             if (v->type == ENLNG_VAL_NULL) continue;
+            q_jr_cell(&db->tables[nulls[i].t], nulls[i].r, nulls[i].c, v);
             enlng_free_val(v);
             *v = enlng_null();
             db->tables[nulls[i].t].version++;
@@ -5137,16 +6021,28 @@ static bool q_delete(EnlngDatabase* db, const char* stmt, bool print_output) {
         for (int k = 0; k < db->table_count; k++) {
             EnlngTable* tk = &db->tables[k];
             size_t n_before = tk->row_count, w = 0;
+            /* the rows that go are kept for undo, when it is kept (they are moved, not copied) */
+            size_t ng = 0;
+            if (q_jr_place(tk) >= 0) for (size_t r = 0; r < n_before; r++) ng += D.gone[base + r] ? 1 : 0;
+            size_t* gone_at = ng ? (size_t*)malloc(ng * sizeof(size_t)) : NULL;
+            EnlngRow* gone_rows = ng ? (EnlngRow*)malloc(ng * sizeof(EnlngRow)) : NULL;
+            if (ng && (!gone_at || !gone_rows)) { free(gone_at); free(gone_rows); gone_at = NULL; gone_rows = NULL; q_jr->broken = true; }
+            size_t g = 0;
             for (size_t r = 0; r < n_before; r++) {
                 if (D.gone[base + r]) {
-                    for (int c = 0; c < tk->rows[r].cell_count; c++) enlng_free_val(&tk->rows[r].cells[c]);
-                    free(tk->rows[r].cells);
+                    if (gone_rows) { gone_at[g] = r; gone_rows[g] = tk->rows[r]; g++; }
+                    else q_row_free(&tk->rows[r]);
                 } else {
                     if (w != r) tk->rows[w] = tk->rows[r];
                     w++;
                 }
             }
             tk->row_count = w;
+            if (gone_rows && !q_jr_remove(tk, n_before, gone_at, gone_rows, g)) {
+                for (size_t i = 0; i < g; i++) q_row_free(&gone_rows[i]);
+                free(gone_at);
+                free(gone_rows);
+            }
             enlngdb_mutations++;
             if (w != n_before) tk->version++;
             if (k != ti) others += n_before - w;
@@ -5661,6 +6557,7 @@ static bool q_alter(EnlngDatabase* db, const char* stmt, bool print_output, bool
         if (q_col_index(t, cname) < 0) { snprintf(err, sizeof(err), "table '%s' has no column '%s'", tname, cname); goto done; }
         if (!q_name_ok(newname, err, sizeof(err))) goto done;
         if (q_col_index(t, newname) >= 0) { snprintf(err, sizeof(err), "table '%s' already has a column called '%s'", tname, newname); goto done; }
+        q_jr_heads(-1);
         for (int i = 0; i < db->table_count; i++) {
             for (int c = 0; c < db->tables[i].col_count; c++) {
                 if (strcmp(db->tables[i].columns[c].ref_table, t->name) == 0 && str_ci_cmp(db->tables[i].columns[c].ref_col, cname) == 0) {
@@ -5720,6 +6617,7 @@ static bool q_alter(EnlngDatabase* db, const char* stmt, bool print_output, bool
         int ci = q_col_index(t, cname);
         if (ci < 0) { snprintf(err, sizeof(err), "table '%s' has no column '%s'", tname, cname); goto done; }
         EnlngColumn old = t->columns[ci];
+        q_jr_whole(t);
         QSnap snap = q_snap(t);
         t->columns[ci] = col;
         snprintf(t->columns[ci].name, sizeof(t->columns[ci].name), "%s", old.name);
@@ -5805,6 +6703,7 @@ static bool q_create_index(EnlngDatabase* db, const char* stmt, bool print_outpu
             }
         }
     }
+    q_jr_meta(t);
     t->indexes[t->index_count++] = ix;
     t->version++;
     if (print_output) {
@@ -6164,10 +7063,17 @@ static bool q_import_csv(EnlngDatabase* db, const char* stmt, bool print_output)
 
     /* all rows or none: the database is kept as it was, and put back if a row is refused */
     bool own_txn = false;
+    bool by_journal = false;
+    size_t journal_mark = 0;
     if (ok && !db->txn) {
-        if (!enlngdb_begin(db)) { snprintf(err, sizeof(err), "out of memory"); ok = false; }
-        else own_txn = true;
-        if (ok) tbl = enlngdb_get_table(db, tname);
+        if (q_jr && !q_jr->broken && q_jr->db == db) {
+            by_journal = true;
+            journal_mark = q_jr->n;
+        } else {
+            if (!enlngdb_begin(db)) { snprintf(err, sizeof(err), "out of memory"); ok = false; }
+            else own_txn = true;
+            if (ok) tbl = enlngdb_get_table(db, tname);
+        }
     }
     long total = 0;
     int replaced_total = 0;
@@ -6228,6 +7134,9 @@ static bool q_import_csv(EnlngDatabase* db, const char* stmt, bool print_output)
     if (own_txn) {
         if (ok) enlngdb_commit(db);
         else enlngdb_rollback(db);
+    } else if (!ok && by_journal) {
+        q_jr_unwind(q_jr, db, journal_mark, true, true);
+        if (made) enlngdb_drop_table(db, tname, true);
     } else if (!ok && made) {
         /* inside the user's own transaction: only this import's new table is taken away; 'rollback' undoes the rest */
         enlngdb_drop_table(db, tname, true);
@@ -6727,6 +7636,143 @@ typedef struct {
     char* body;
 } QTrigCopy;
 
+/* 'set new.col = value' in a before trigger: the column and where the value starts; false if the statement is not one */
+static bool q_set_new(const char* st, char* col, size_t cn, const char** expr) {
+    st = q_ws(st);
+    if (!str_starts_with_ci(st, "set ")) return false;
+    st = q_ws(st + 4);
+    if (!str_starts_with_ci(st, "new.")) return false;
+    st += 4;
+    size_t k = 0;
+    while (q_word_char(*st) && k + 1 < cn) col[k++] = *st++;
+    col[k] = '\0';
+    if (!k) return false;
+    st = q_ws(st);
+    if (*st == '=') st++;
+    else if (str_starts_with_ci(st, "to ")) st += 3;
+    else return false;
+    *expr = q_ws(st);
+    return **expr != '\0';
+}
+
+/* the value of an expression with no table, like 'select 5 * 2' */
+static bool q_eval_text(EnlngDatabase* db, const char* expr, EnlngVal* out, char* err, size_t en) {
+    char* sql = (char*)malloc(strlen(expr) + 16);
+    if (!sql) { snprintf(err, en, "out of memory"); return false; }
+    snprintf(sql, strlen(expr) + 16, "select %s", expr);
+    QRun R;
+    memset(&R, 0, sizeof(R));
+    R.db = db;
+    QSet* res = qs_new();
+    bool ok = q_exec_text(&R, sql, NULL, res);
+    if (ok && res->nrows > 0 && res->ncols > 0) *out = enlng_copy_val(&res->rows[0][0]);
+    else { ok = false; snprintf(err, en, "the value '%s' could not be worked out: %s", expr, R.err[0] ? R.err : "no value"); }
+    q_set_free(res);
+    free(sql);
+    return ok;
+}
+
+/* before triggers: for each row the statement added, changed or deleted, 'set new.col = value' changes the row before
+   it counts, and 'raise' stops the statement. The rows they change must still keep every rule of the table. */
+static bool q_fire_before(EnlngDatabase* db, EnlngTable* before, int nbefore, bool is_update, char* failed, size_t fn) {
+    bool ok = true;
+    for (int ti = 0; ti < db->trigger_count && ok; ti++) {
+        if (db->triggers[ti].event < 10) continue;
+        char tname[ENLNGDB_MAX_NAME], table[ENLNGDB_MAX_NAME];
+        snprintf(tname, sizeof(tname), "%s", db->triggers[ti].name);
+        snprintf(table, sizeof(table), "%s", db->triggers[ti].table);
+        int event = db->triggers[ti].event - 10;
+        char* when = db->triggers[ti].when ? strdup(db->triggers[ti].when) : NULL;
+        char* body = strdup(db->triggers[ti].body);
+        EnlngTable* at = enlngdb_get_table(db, table);
+        const EnlngTable* bt = NULL;
+        for (int i = 0; i < nbefore; i++) if (strcmp(before[i].name, table) == 0) bt = &before[i];
+        if (!at || !bt || !body) { free(when); free(body); continue; }
+        QDiff d;
+        q_diff_tables(bt, at, is_update, &d);
+        size_t total = event == 1 ? d.nins : event == 3 ? d.ndel : d.nupd;
+        char** st = NULL;
+        int nst = q_split_stmts(body, &st);
+        size_t* changed = (size_t*)malloc((total + 1) * sizeof(size_t));
+        size_t nchanged = 0;
+        for (size_t i = 0; i < total && ok; i++) {
+            const EnlngRow* oldr = event == 1 ? NULL : &bt->rows[event == 3 ? d.del[i] : d.upd[i][0]];
+            long pos = event == 1 ? (long)d.ins[i] : event == 2 ? (long)d.upd[i][1] : -1;
+            int ns = 0;
+            QSub* subs = q_row_subs(at, oldr, pos >= 0 ? &at->rows[pos] : NULL, &ns);
+            if (when) {
+                char* cond = q_substitute(when, subs, ns);
+                bool good = true;
+                bool holds = cond && q_when_holds(db, cond, &good);
+                free(cond);
+                if (!good) { ok = false; snprintf(failed, fn, "%s", tname); q_free_subs(subs, ns); break; }
+                if (!holds) { q_free_subs(subs, ns); continue; }
+            }
+            bool row_changed = false;
+            for (int k = 0; k < nst && ok; k++) {
+                char col[ENLNGDB_MAX_NAME];
+                const char* expr = NULL;
+                if (pos >= 0 && q_set_new(st[k], col, sizeof(col), &expr)) {
+                    int c = q_col_index(at, col);
+                    char err[400] = "";
+                    char* text = q_substitute(expr, subs, ns);
+                    EnlngVal v = enlng_null();
+                    if (c < 0) snprintf(err, sizeof(err), "table '%s' has no column '%s'", at->name, col);
+                    for (int i2 = 0; c >= 0 && !err[0] && i2 < db->table_count; i2++) {
+                        for (int c2 = 0; c2 < db->tables[i2].col_count; c2++) {
+                            if (strcmp(db->tables[i2].columns[c2].ref_table, at->name) == 0 && str_ci_cmp(db->tables[i2].columns[c2].ref_col, at->columns[c].name) == 0) {
+                                snprintf(err, sizeof(err), "a before trigger cannot change %s.%s: %s.%s refers to it", at->name, at->columns[c].name, db->tables[i2].name, db->tables[i2].columns[c2].name);
+                                break;
+                            }
+                        }
+                    }
+                    if (!err[0]) {
+                        if (!text || !q_eval_text(db, text, &v, err, sizeof(err))) { if (!err[0]) snprintf(err, sizeof(err), "out of memory"); }
+                        else q_coerce(&at->columns[c], &v, err, sizeof(err));
+                    }
+                    free(text);
+                    if (err[0]) { enlng_free_val(&v); snprintf(q_last_error, sizeof(q_last_error), "%s", err); ok = false; snprintf(failed, fn, "%s", tname); break; }
+                    EnlngRow* row = &at->rows[pos];
+                    q_jr_cell(at, (size_t)pos, c, &row->cells[c]);
+                    enlng_free_val(&row->cells[c]);
+                    row->cells[c] = v;
+                    enlngdb_mutations++;
+                    row_changed = true;
+                    q_free_subs(subs, ns);
+                    subs = q_row_subs(at, oldr, row, &ns);       /* the next statement sees the new value */
+                } else {
+                    char* text = q_substitute(st[k], subs, ns);
+                    ok = text && enlngdb_execute_statement(db, text, false);      /* raise */
+                    free(text);
+                    if (!ok) snprintf(failed, fn, "%s", tname);
+                }
+            }
+            if (row_changed) changed[nchanged++] = (size_t)pos;
+            q_free_subs(subs, ns);
+        }
+        /* the rows a before trigger changed keep the rules of the table */
+        if (ok && nchanged) {
+            QRun R;
+            memset(&R, 0, sizeof(R));
+            R.db = db;
+            char err[300] = "";
+            for (size_t i = 0; i < nchanged && ok; i++) {
+                if (!q_check_row(&R, at, at->rows[changed[i]].cells, (int)changed[i], err, sizeof(err))) {
+                    snprintf(q_last_error, sizeof(q_last_error), "it made a row that breaks a rule of '%s': %s", at->name, err);
+                    snprintf(failed, fn, "%s", tname);
+                    ok = false;
+                }
+            }
+        }
+        free(changed);
+        q_free_stmts(st, nst);
+        q_diff_free(&d);
+        free(when);
+        free(body);
+    }
+    return ok;
+}
+
 /* after a statement: run the triggers of every table that changed; false (and the reason in q_last_error) if one fails.
  * All the changed rows are found first, from the statement alone; then the triggers run. What a trigger does is a
  * statement of its own, with its own triggers, so nothing is counted twice. */
@@ -6736,12 +7782,14 @@ static bool q_fire_triggers(EnlngDatabase* db, EnlngTable* before, int nbefore, 
         snprintf(failed, fn, "%s", db->trigger_count ? db->triggers[0].name : "");
         return false;
     }
+    if (!q_fire_before(db, before, nbefore, is_update, failed, fn)) return false;
     int nt = db->trigger_count;
     QTrigCopy* tc = (QTrigCopy*)calloc((size_t)nt + 1, sizeof(QTrigCopy));
     QEvent* ev = NULL;
     size_t nev = 0, capev = 0;
     for (int ti = 0; ti < nt; ti++) {
         const EnlngTrigger* tg = &db->triggers[ti];
+        if (tg->event >= 10) continue;                  /* before triggers ran already */
         snprintf(tc[ti].name, sizeof(tc[ti].name), "%s", tg->name);
         tc[ti].event = tg->event;
         tc[ti].when = tg->when ? strdup(tg->when) : NULL;
@@ -6770,6 +7818,7 @@ static bool q_fire_triggers(EnlngDatabase* db, EnlngTable* before, int nbefore, 
     bool ok = true;
     for (size_t e = 0; e < nev && ok; e++) {
         QTrigCopy* t = &tc[ev[e].trig];
+        if (!t->body) continue;
         if (t->when) {
             char* cond = q_substitute(t->when, ev[e].subs, ev[e].ns);
             bool good = true;
@@ -6807,16 +7856,13 @@ static bool q_create_trigger(EnlngDatabase* db, const char* stmt, bool print_out
     p = q_wordat(p, name, sizeof(name));
     if (!name[0]) { snprintf(err, sizeof(err), "give the trigger a name: create trigger log_delete after delete on student do insert into audit values (old.roll_no)"); goto fail; }
     p = q_wordat(p, w, sizeof(w));
-    if (str_ci_cmp(w, "before") == 0) {
-        snprintf(err, sizeof(err), "only 'after' triggers exist: the statement runs, then the trigger; a trigger that runs 'raise \"message\"' takes the whole statement back");
-        goto fail;
-    }
-    if (str_ci_cmp(w, "after") != 0) { snprintf(err, sizeof(err), "after the name write 'after insert', 'after update' or 'after delete'"); goto fail; }
+    bool is_before = str_ci_cmp(w, "before") == 0;
+    if (!is_before && str_ci_cmp(w, "after") != 0) { snprintf(err, sizeof(err), "after the name write 'before' or 'after', then insert, update or delete"); goto fail; }
     p = q_wordat(p, w, sizeof(w));
     int event = str_ci_cmp(w, "insert") == 0 ? 1 : str_ci_cmp(w, "update") == 0 ? 2 : str_ci_cmp(w, "delete") == 0 ? 3 : 0;
-    if (!event) { snprintf(err, sizeof(err), "write insert, update or delete after 'after'"); goto fail; }
+    if (!event) { snprintf(err, sizeof(err), "write insert, update or delete after '%s'", is_before ? "before" : "after"); goto fail; }
     p = q_wordat(p, w, sizeof(w));
-    if (str_ci_cmp(w, "on") != 0) { snprintf(err, sizeof(err), "write 'on <table>' after 'after %s'", event == 1 ? "insert" : event == 2 ? "update" : "delete"); goto fail; }
+    if (str_ci_cmp(w, "on") != 0) { snprintf(err, sizeof(err), "write 'on <table>' after '%s %s'", is_before ? "before" : "after", event == 1 ? "insert" : event == 2 ? "update" : "delete"); goto fail; }
     p = q_wordat(p, table, sizeof(table));
     EnlngTable* t = enlngdb_get_table(db, table);
     if (!t) { snprintf(err, sizeof(err), "there is no table called '%s'", table); goto fail; }
@@ -6851,18 +7897,35 @@ static bool q_create_trigger(EnlngDatabase* db, const char* stmt, bool print_out
     }
     body = q_trim_dup(dopos + 2, dopos + 2 + strlen(dopos + 2));
     if (!body || !body[0]) { snprintf(err, sizeof(err), "after 'do' write the statement(s) to run, separated by ;"); goto fail; }
+    if (is_before) {
+        /* a before trigger changes the new row or stops the statement; anything else belongs in an after trigger */
+        char** st = NULL;
+        int nst = q_split_stmts(body, &st);
+        for (int k = 0; k < nst && !err[0]; k++) {
+            char col[ENLNGDB_MAX_NAME];
+            const char* expr = NULL;
+            if (q_set_new(st[k], col, sizeof(col), &expr)) {
+                if (event == 3) snprintf(err, sizeof(err), "a 'before delete' trigger has no new row to set; it can only 'raise \"message\"'");
+                else if (q_col_index(t, col) < 0) snprintf(err, sizeof(err), "table '%s' has no column '%s' for 'set new.%s'", t->name, col, col);
+            } else if (!str_starts_with_ci(q_ws(st[k]), "raise")) {
+                snprintf(err, sizeof(err), "a before trigger can only 'set new.column = value' and 'raise \"message\"'; '%.60s' belongs in an after trigger", st[k]);
+            }
+        }
+        q_free_stmts(st, nst);
+        if (err[0]) goto fail;
+    }
     db->triggers = (EnlngTrigger*)realloc(db->triggers, sizeof(EnlngTrigger) * (size_t)(db->trigger_count + 1));
     {
         EnlngTrigger* tg = &db->triggers[db->trigger_count++];
         memset(tg, 0, sizeof(*tg));
         snprintf(tg->name, sizeof(tg->name), "%s", name);
         snprintf(tg->table, sizeof(tg->table), "%s", t->name);
-        tg->event = event;
+        tg->event = is_before ? event + 10 : event;
         tg->when = when;
         tg->body = body;
     }
     if (print_output) {
-        printf("Query OK, trigger '%s' made: after %s on %s", name, event == 1 ? "insert" : event == 2 ? "update" : "delete", t->name);
+        printf("Query OK, trigger '%s' made: %s %s on %s", name, is_before ? "before" : "after", event == 1 ? "insert" : event == 2 ? "update" : "delete", t->name);
         printf(". In it, new.column and old.column are the row's values.\n\n");
     }
     return true;
@@ -6899,7 +7962,7 @@ static bool q_show_triggers(EnlngDatabase* db, bool print_output) {
         const EnlngTrigger* tg = &db->triggers[i];
         snprintf(cells[n][0], 130, "%s", tg->name);
         snprintf(cells[n][1], 130, "%s", tg->table);
-        snprintf(cells[n][2], 130, "after %s", tg->event == 1 ? "insert" : tg->event == 2 ? "update" : "delete");
+        snprintf(cells[n][2], 130, "%s %s", tg->event >= 10 ? "before" : "after", tg->event % 10 == 1 ? "insert" : tg->event % 10 == 2 ? "update" : "delete");
         snprintf(cells[n][3], 130, "%.120s", tg->when ? tg->when : "");
         snprintf(cells[n][4], 130, "%.120s", tg->body);
         n++;
@@ -7115,21 +8178,35 @@ static bool q_fires_triggers(const char* st) {
     return false;
 }
 
+/* the self-check of undo writes what it found to stderr, and to the file ENLNGDB_UNDO_LOG names */
+static void q_undo_log(const char* what, const char* why, const char* statement) {
+    if (strcmp(what, "OK") != 0) fprintf(stderr, "UNDO-CHECK %s (%s): %s\n", what, why, statement);
+    const char* path = getenv("ENLNGDB_UNDO_LOG");
+    FILE* f = path && *path ? fopen(path, "a") : NULL;
+    if (f) { fprintf(f, "UNDO-CHECK %s (%s): %.200s\n", what, why, statement); fclose(f); }
+}
+
 /* one statement, of any length: it is copied, because reading it changes the text */
 bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool print_output) {
     if (!db || !statement) return false;
     char* line = strdup(statement);
     if (!line) { q_print_error(print_output, "out of memory while reading the statement", ""); return false; }
     int kind = q_stmt_kind(statement);
-    int before_count = 0;
-    /* 'undo' keeps a copy of the tables, so it is kept only while they are small enough to copy quickly */
-    size_t total_rows = 0;
-    bool too_big = false;
-    if (kind == 1) {
-        for (int i = 0; i < db->table_count; i++) total_rows += db->tables[i].row_count;
-        too_big = total_rows > Q_UNDO_MAX_ROWS;
+    enlngdb_change_hook = q_jr_hook;
+    enlngdb_journal_free = q_jr_free;
+    /* a statement that can be undone keeps records of what it changes (statements inside it add to them) */
+    bool top = q_depth == 0;
+    QJournal* jr = NULL;
+    unsigned long long mut_at_start = enlngdb_mutations;
+    if (top && kind != 0) {
+        jr = (QJournal*)calloc(1, sizeof(QJournal));
+        if (jr) { jr->db = db; q_jr = jr; }
     }
-    EnlngTable* before = kind == 1 && !too_big ? enlngdb_copy_tables(db, &before_count) : NULL;
+    static int undo_check = -1;
+    if (undo_check < 0) { const char* e = getenv("ENLNGDB_UNDO_CHECK"); undo_check = e && e[0] == '1'; }
+    int check_n = 0;
+    EnlngTable* check_before = jr && undo_check ? enlngdb_copy_tables(db, &check_n) : NULL;
+    q_depth++;
     q_idx_kept = false;
     /* with triggers, the tables are kept as they were, to find the rows the statement changed (and to take it back) */
     EnlngTable* tsnap = NULL;
@@ -7167,26 +8244,63 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
     if (kind != 0) enlngdb_mutations++;         /* lookup indexes made earlier are now out of date */
     if (q_idx_kept) { q_idx_kept = false; enlngdb_mutations--; }   /* ... except those an update has vouched for */
     free(line);
-    if (kind == 1 && ok && before) {
-        /* the last change that 'undo' takes back */
-        if (db->undo) enlngdb_free_tables(db->undo, db->undo_count);
-        db->undo = before;
-        db->undo_count = before_count;
-        const char* st = statement;
-        while (isspace((unsigned char)*st)) st++;
-        snprintf(db->undo_what, sizeof(db->undo_what), "%.150s%s", st, strlen(st) > 150 ? "..." : "");
-    } else if (kind == 1 && ok && too_big) {
-        if (db->undo) { enlngdb_free_tables(db->undo, db->undo_count); db->undo = NULL; db->undo_count = 0; }
-        snprintf(db->undo_what, sizeof(db->undo_what), "!%lu", (unsigned long)total_rows);
-    } else {
-        if (before) enlngdb_free_tables(before, before_count);
-        if (kind == 2 && ok && db->undo) {
+    q_depth--;
+    if (top) q_jr = NULL;
+    if (jr && !jr->broken && ok) {
+        /* lookup indexes of what the statement did not change stay good */
+        QJClass* cls = (QJClass*)malloc(sizeof(QJClass));
+        if (cls) { q_jr_classify(jr, false, cls); q_idx_keep_by(cls, jr, db, mut_at_start); free(cls); }
+    }
+    if (jr && kind == 2) {
+        if (check_before && !jr->broken) {
+            EnlngDatabase* copy = enlngdb_copy(db);
+            char why[200] = "";
+            bool fit = copy && q_jr_unwind(jr, copy, 0, false, false);
+            if (!fit) snprintf(why, sizeof(why), "a record did not fit");
+            else if (!q_tables_same(copy->tables, copy->table_count, check_before, check_n, why, sizeof(why))) fit = false;
+            q_undo_log(fit ? "OK" : "FAILED", why, statement);
+            enlngdb_free(copy);
+        } else if (check_before && ok) {
+            q_undo_log("OK", "not followed: indexes are made again", statement);
+        }
+        q_jr_free(jr);
+        jr = NULL;
+        if (ok && db->journal) {
             /* a later change: going back past it would lose it */
-            enlngdb_free_tables(db->undo, db->undo_count);
-            db->undo = NULL;
-            db->undo_count = 0;
+            q_jr_free(db->journal);
+            db->journal = NULL;
         }
     }
+    if (jr) {
+        if (ok && !jr->broken) {
+            if (check_before) {
+                /* self-check (ENLNGDB_UNDO_CHECK=1): the records, taken back on a copy, give the tables as they were */
+                EnlngDatabase* copy = enlngdb_copy(db);
+                char why[200] = "";
+                bool fit = copy && q_jr_unwind(jr, copy, 0, false, false);
+                if (!fit) snprintf(why, sizeof(why), "a record did not fit");
+                else if (!q_tables_same(copy->tables, copy->table_count, check_before, check_n, why, sizeof(why))) fit = false;
+                q_undo_log(fit ? "OK" : "FAILED", why, statement);
+                enlngdb_free(copy);
+            }
+            /* the last change that 'undo' takes back */
+            if (db->journal) q_jr_free(db->journal);
+            db->journal = jr;
+            const char* st = statement;
+            while (isspace((unsigned char)*st)) st++;
+            snprintf(db->undo_what, sizeof(db->undo_what), "%.150s%s", st, strlen(st) > 150 ? "..." : "");
+        } else {
+            if (ok) {
+                /* made in a way the records cannot follow: there is nothing to go back to */
+                if (check_before) q_undo_log("BROKEN", "", statement);
+                if (db->journal) q_jr_free(db->journal);
+                db->journal = NULL;
+                snprintf(db->undo_what, sizeof(db->undo_what), "!");
+            }
+            q_jr_free(jr);
+        }
+    }
+    if (check_before) enlngdb_free_tables(check_before, check_n);
     return ok;
 }
 
@@ -7299,40 +8413,47 @@ static bool q_preview(EnlngDatabase* db, const char* stmt, bool print_output) {
     }
     EnlngDatabase* before = enlngdb_copy(db);
     if (!before) { q_print_error(print_output, "out of memory", ""); return false; }
-    EnlngTable* kept_undo = db->undo;
-    int kept_count = db->undo_count;
+    void* kept_undo = db->journal;
     char kept_what[160];
     snprintf(kept_what, sizeof(kept_what), "%s", db->undo_what);
-    db->undo = NULL;
-    db->undo_count = 0;
+    db->journal = NULL;
     if (print_output) printf("PREVIEW of: %s\n\n", inner);
     bool ok = enlngdb_execute_statement(db, inner, print_output);
     if (ok && print_output) q_preview_diff(before, db);
     enlngdb_restore(db, before);
-    if (db->undo) enlngdb_free_tables(db->undo, db->undo_count);
-    db->undo = kept_undo;
-    db->undo_count = kept_count;
+    if (db->journal) q_jr_free(db->journal);
+    db->journal = kept_undo;
     snprintf(db->undo_what, sizeof(db->undo_what), "%s", kept_what);
     if (print_output) printf("PREVIEW only: nothing was changed. Run it without 'preview' to do it.\n\n");
     return ok;
 }
 
 static bool q_undo(EnlngDatabase* db, bool print_output) {
-    if (!db->undo && db->undo_what[0] == '!') {
-        char msg[300];
-        snprintf(msg, sizeof(msg), "the last change cannot be undone: 'undo' is kept only while the database has %d rows or fewer, and this one has %s", Q_UNDO_MAX_ROWS, db->undo_what + 1);
-        q_print_error(print_output, msg, "For big changes use 'begin' ... 'rollback', or 'preview' first");
+    if (q_depth > 1) {
+        q_print_error(print_output, "'undo' cannot be used inside a trigger or a procedure", "");
         return false;
     }
-    if (!db->undo) {
+    if (!db->journal && db->undo_what[0] == '!') {
+        q_print_error(print_output, "the last change cannot be undone: it was made in a way that 'undo' cannot follow", "Use 'begin' ... 'rollback' for it, or 'preview' first");
+        return false;
+    }
+    if (!db->journal) {
         q_print_error(print_output, "there is nothing to undo. 'undo' takes back the last update, delete, truncate, alter, drop or import, as long as nothing else changed after it", "");
         return false;
     }
-    EnlngTable* back = db->undo;
-    int n = db->undo_count;
-    db->undo = NULL;
-    db->undo_count = 0;
-    enlngdb_restore_tables(db, back, n);
+    QJournal* j = (QJournal*)db->journal;
+    db->journal = NULL;
+    QJClass* cls = (QJClass*)malloc(sizeof(QJClass));
+    if (cls) q_jr_classify(j, true, cls);
+    unsigned long long valid_at = enlngdb_mutations;
+    bool fit = q_jr_unwind(j, db, 0, true, true);
+    if (cls && fit) q_idx_keep_by(cls, NULL, db, valid_at);
+    free(cls);
+    q_jr_free(j);
+    if (!fit) {
+        q_print_error(print_output, "undo could not put every change back; the database may be partly undone", "");
+        return false;
+    }
     if (print_output) printf("Query OK, undone: %s\n\n", db->undo_what);
     db->undo_what[0] = '\0';
     return true;
@@ -7729,6 +8850,7 @@ static bool q_execute_line(EnlngDatabase* db, char* line, bool print_output) {
             EnlngTable* t = &db->tables[i];
             for (int k = 0; k < t->index_count; k++) {
                 if (str_ci_cmp(t->indexes[k].name, name) != 0) continue;
+                q_jr_meta(t);
                 for (int j = k; j < t->index_count - 1; j++) t->indexes[j] = t->indexes[j + 1];
                 t->index_count--;
                 t->version++;

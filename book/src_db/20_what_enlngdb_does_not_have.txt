@@ -2,17 +2,17 @@
 A list of what is missing is part of a reference. Each of these is something a statement or a program could be written for, and none of them exists. EnlngDB gives an error or a message when you try.
 ## Not there at all
 - **Users and permissions.** There is no `grant` or `revoke`. Anyone who can read the file can read the data.
-- **Triggers that run before a change.** Triggers run after it (chapter 16); to refuse a change, a trigger raises an error and the statement is taken back.
+- **Statement-level triggers.** A trigger runs once for each row; there is no trigger that runs once for a whole statement. A before trigger can only set the new row or raise (chapter 16).
 - **Types beyond the five.** There is no `json`, `blob` or `timestamp` type.
 - **Names with spaces.** A table or column name is letters, digits and underscores.
 ## There, but different from what you may expect
-- **Indexes.** A `unique` index is a rule that is enforced. A plain `create index` is recorded and shown, and does not change anything else. The engine finds rows by `column is value` on its own where it pays (chapter 15), and other conditions read every row.
+- **Indexes.** A `unique` index is a rule that is enforced. A plain `create index` is recorded and shown, and does not change anything else. The engine finds rows by `column is value`, `>`, `<` and `between` on its own where it pays (chapter 15); conditions with `like` or `or` read every row.
 - **One program at a time.** There is no server and no second writer. A second program that opens a database in use waits up to 5 seconds and then stops with an error (chapter 14).
 - **`show databases`** lists only the database that is open. The others are the `.edb` files in the folder.
 - **Size.** A database lives in memory while a script runs: a million small rows take about 190 MB (chapter 15). A database larger than memory does not work.
 - **Counting and dates.** `datediff` counts days. There is no time zone.
 ## Limits
-256 tables in a database, 64 columns in a table, 128 columns in a result, 8 indexes on a table, 63 characters in a name. A statement and a text value can be as long as memory allows (chapter 17). `undo` works up to 10,000 rows in the database, and triggers set each other off up to 6 levels deep.
+256 tables in a database, 64 columns in a table, 128 columns in a result, 8 indexes on a table, 63 characters in a name. A statement and a text value can be as long as memory allows (chapter 17). Triggers set each other off up to 6 levels deep.
 ## Two engines, one language
 EnlngDB also exists as a Python package for scripting. This book describes the C engine, `enlngdb.exe`, which is the one in the Enlangg toolchain, the playground and Studio on the Enlangg site. Features of the two engines are not the same, and a script that runs in one may not run in the other.
 ## Where to go next

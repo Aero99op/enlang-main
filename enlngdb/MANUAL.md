@@ -838,7 +838,7 @@ find case when marks >= 90 then "A" when marks >= 80 then "B" else "C" end from 
 find cast(marks as text), year("2024-03-15"), datediff("2024-03-15", "2024-03-10"), now() from student
 select 1 + 1                                                  # no table needed
 ```
-`+` adds numbers and joins texts (two texts are always joined: `"80" + "1"` is `"801"`). Dividing by zero is an error, not a silent null. Functions: `upper lower length trim ltrim rtrim substr substring left right replace concat instr reverse coalesce ifnull nullif if least greatest abs sign round floor ceil ceiling sqrt power pow mod cast year month day date datediff now today current_date current_time`. Aggregates: `count sum total avg average min max group_concat`.
+`+` adds numbers and joins texts (two texts are always joined: `"80" + "1"` is `"801"`). `||` always joins, as in SQL: `1 || 2` is `"12"`, and `null || "x"` is null. Dividing by zero is an error, not a silent null. Functions: `upper lower length trim ltrim rtrim substr substring left right replace concat instr reverse coalesce ifnull nullif if least greatest abs sign round floor ceil ceiling sqrt power pow mod cast year month day date datediff now today current_date current_time`. Aggregates: `count sum total avg average min max group_concat`.
 
 Write a minus with spaces (`marks - 5`); `marks-5` is read as one word. Inside the `on` of a join, `-` and `*` are the join marks, so put arithmetic there in brackets.
 
@@ -972,7 +972,7 @@ preview update pupil set class = 12 where roll_no is 1
 delete from pupil where class is null
 undo                                                # the deleted row is back
 ```
-`preview` runs the statement on a copy and shows each table it would change: the rows that would be deleted, changed (before and after) or added, tables made or dropped. `undo` takes back the last `update`, `delete`, `truncate`, `alter`, `drop` or `import`, once, and only while nothing else has changed after it (an `insert` after a `delete` means the `delete` can no longer be undone). It lives as long as the script runs. `undo` keeps a copy of the tables, so it is kept only while the database has 10,000 rows or fewer; above that the change is made without a copy and `undo` says so (use `begin` ... `rollback`, or `preview` first).
+`preview` runs the statement on a copy and shows each table it would change: the rows that would be deleted, changed (before and after) or added, tables made or dropped. `undo` takes back the last `update`, `delete`, `truncate`, `alter`, `drop` or `import`, once, and only while nothing else has changed after it (an `insert` after a `delete` means the `delete` can no longer be undone). It lives as long as the script runs. `undo` keeps only what the statement changed: the old values of the rows an update changed, the rows a delete took away (moved, not copied), the rows a truncate or a drop took away, the number of rows an import added, a copy of a table whose columns an alter changed. So it works on a database of any size, and costs about what the change itself costs. Undoing a `drop table` brings its triggers back too.
 
 ### 12.3 Savepoints
 ```enlngdb
@@ -1039,8 +1039,15 @@ The engine looks rows up by value with a hash, built for the statement that need
 | 2,000 updates `where id is X` on 20,000 rows | 24.0 s | 0.15 s |
 | 3,000 updates and deletes by key in one script (20,000 rows) | 38.7 s | 1.6 s |
 | 500 inserts, one statement each, into a table of 100,000 rows (with opening and saving it) | 0.80 s | 0.25 s |
+| 100 deletes `where id is X` on 200,000 rows | 4.74 s | 0.46 s |
+| 300 inserts into one table, each followed by `where id is X` on another of 200,000 rows | 12.4 s | 0.54 s |
+| 200 queries `where id between a and b` on 200,000 rows | 26.8 s | 0.58 s |
+| 200 queries `where id > a and id < b` on 200,000 rows | 41.5 s | 0.63 s |
+| 200 updates on 200,000 rows, each taken back with `undo` | refused | 0.46 s |
 
-A condition `column is value` (alone, or joined to others with `and`) on a table of 48 rows or more looks the rows up in an index that the engine makes by itself the first time it is needed and keeps while nothing else changes the table: it is kept through updates of other columns and through inserts, and made again after a delete, an alter or a change of that column. The whole `where` is still tested on the rows found, so the answer is the same as when every row is read. So there is no need to write `create index` for speed: a plain `create index` is only recorded, a `unique` one is checked. Other conditions (`>`, `like`, `or`) still read every row.
+The last five lines include opening the 200,000 rows (about 0.4 s); "refused" means `undo` said the database was too big for it.
+
+The engine makes two kinds of index by itself, the first time a query needs one, on a table of 48 rows or more. A condition `column is value` (alone, or joined to others with `and`) uses a hash of the column. A condition `column > value`, `<`, `>=`, `<=` or `column between a and b` uses a sorted list of the column: numbers and texts are kept in two lists, because they do not sort together (`"10"` and `"9"` compare as texts with each other and as numbers with a number), so a bound that is a number reads its range of numbers and every text, and the other way round. An index is kept while the table does not change, through updates of other columns, through inserts, through deletes (the other rows only move up) and through `undo`, and while other tables change; it is made again after an alter or a change of its column. The whole `where` is still tested on the rows found, so the answer is the same as when every row is read; when a range would take most of the rows, the rows are read in order instead. So there is no need to write `create index` for speed: a plain `create index` is only recorded, a `unique` one is checked. Conditions with `like` or `or` still read every row.
 
 The whole database is in memory while a script runs. One machine, a table of `id`, a text and a number: 1,000,000 rows are a 40 MB file, use about 190 MB of memory, and open and answer a query in about 1.1 s; building them with inserts of 25,000 rows takes about 30 s. A database larger than the memory of the computer is not supported.
 
@@ -1054,7 +1061,6 @@ The whole database is in memory while a script runs. One machine, a table of `id
 | characters in a name | 63 |
 | length of a statement, of a text value | no limit but memory |
 | characters of a `default` / a `check` / the query of a view | 63 / 95 / 1023 |
-| rows in the database for `undo` to work | 10,000 |
 | triggers setting each other off | 6 levels |
 
 A name, a `default` or a `check` that is too long is an error; nothing is cut short.
@@ -1077,6 +1083,9 @@ find owner, balance from account
 show triggers
 show procedures
 drop trigger no_overdraft
+create trigger tidy before insert on account do set new.owner = upper(new.owner)
+create trigger floor_zero before update on account when new.balance < 0 do raise "no overdraft"
+insert into account values (3, "meera", 0)            # kept as MEERA
 ```
 A **trigger** is statements that run by themselves after a statement added, changed or deleted rows in a table: `create trigger NAME after insert|update|delete on TABLE [when CONDITION] do STATEMENT [; STATEMENT ...]`. Inside it `new.column` is the value in the row after the change (insert, update) and `old.column` the value before (update, delete); `when` limits it to the rows where the condition holds. EnlngDB finds the rows by comparing the table before and after the statement, so a trigger also runs for rows that `import`, a cascade or a procedure changed, once for each row. A trigger that fails, or that runs `raise "message"`, takes the whole statement back, with everything the other triggers did:
 
@@ -1086,7 +1095,9 @@ ERROR: the trigger 'no_overdraft' stopped this statement: the balance cannot go 
        Nothing was changed.
 ```
 
-What a trigger's statements do is a statement of its own, so it can set off the triggers of the table it changes (up to 6 levels deep; a loop stops with an error and the statement is taken back). The output of statements inside a trigger is not shown. There is only `after`: to refuse something, raise an error. A table that is dropped takes its triggers with it; `show triggers` lists them; `drop trigger NAME` removes one. A table without a key (and no column called `id`) is compared row by row: an update is found when no row was added or removed; a key that was changed in an update is paired with the row it replaced.
+What a trigger's statements do is a statement of its own, so it can set off the triggers of the table it changes (up to 6 levels deep; a loop stops with an error and the statement is taken back). The output of statements inside a trigger is not shown.
+
+A **before trigger** (`create trigger NAME before insert|update|delete on TABLE [when CONDITION] do ...`) runs for each row before the change counts. It can do two things: `set new.column = value` changes the row that is being added or changed (each `set` sees the values the ones before it gave), and `raise "message"` stops the statement. The rows a before trigger changed must still keep every rule of the table (`unique`, `check`, references), or the statement is taken back; it cannot change a column that another table refers to, and a `before delete` trigger can only raise. Anything else (changing other tables) belongs in an after trigger. Before triggers run before the after triggers. A file with before triggers needs this version of `enlngdb`: an older one reads them as after triggers. A table that is dropped takes its triggers with it; `show triggers` lists them; `drop trigger NAME` removes one. A table without a key (and no column called `id`) is compared row by row: an update is found when no row was added or removed; a key that was changed in an update is paired with the row it replaced.
 
 A **procedure** is statements saved under a name: `create procedure NAME (a, b) as STATEMENT [; STATEMENT ...]` and `call NAME(1, "x")`. `:a` in the statements stands for the value as it was written in the call. The statements may go over several lines: a line that ends with `as`, `do`, `begin` or `;` goes on. If one statement fails, everything the call did is taken back. Triggers and procedures are saved in the database file after the tables; older versions of `enlngdb` open such a file and ignore them. `preview` does not apply to `create trigger`/`create procedure`.
 

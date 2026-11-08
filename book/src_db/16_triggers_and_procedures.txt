@@ -26,7 +26,18 @@ update account set balance = balance - 500 where id is 2
 find owner, balance from account
 count records in ledger
 :::
-Ravi's balance is still 50 and the ledger has no extra row. There is only `after`: to stop something, raise an error.
+Ravi's balance is still 50 and the ledger has no extra row.
+## Before triggers
+A trigger made with `before` runs for each row before the change counts. It can do two things: `set new.column = value` changes the row that is being added or changed, and `raise "message"` stops the statement. Each `set` sees the values that the ones before it gave.
+::: db
+create trigger tidy before insert on account do set new.owner = upper(new.owner)
+insert into account values (3, "meera", 0)
+find id, owner from account where id is 3
+:::
+The row a before trigger changed must still keep every rule of the table, or the statement is taken back. A before trigger cannot change a column that another table refers to, and a `before delete` trigger can only raise. Changing other tables is the work of an after trigger, so a before trigger that tries it is refused when it is made.
+::: err
+create trigger stamp before insert on account do insert into ledger (what) values ("added")
+:::
 ## Seeing and removing triggers
 ::: db
 show triggers

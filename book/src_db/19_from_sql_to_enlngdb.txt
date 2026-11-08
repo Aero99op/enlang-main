@@ -52,7 +52,7 @@ find id, name, balance, age from users
 ## Things that differ
 - **Text and conditions:** text is written in quotes, and conditions are written with words: `is`, `is not`, `is at least`. The marks `=`, `!=`, `>=` also work.
 - **`NULL`:** `is null` and `is not null`, as in SQL. A comparison with `null` is never true, as in SQL.
-- **Strings:** `+` joins two texts. SQL's `||` is not used.
+- **Strings:** `+` joins two texts, and so does SQL's `||`.
 - **A key:** a table's key is the column marked `primary key`, or a column called `id`. Inserting a row with a key that exists replaces that row, where SQL would refuse. The engine says that it replaced a row.
 - **Destructive statements:** `drop`, `truncate` and `delete` without `where` need the word `confirmed`.
 - **Types:** `integer`, `real`, `text`, `boolean`, `date`. A column with no type holds anything.

@@ -99,8 +99,13 @@ EnlngDatabase* enlngdb_create(const char* name) {
     return db;
 }
 
+void (*enlngdb_change_hook)(EnlngTable* t, int what) = NULL;
+void (*enlngdb_journal_free)(void* journal) = NULL;
+#define CHANGE(t, what) do { if (enlngdb_change_hook) enlngdb_change_hook((t), (what)); } while (0)
+
 void enlngdb_free_rows(EnlngTable* tbl) {
     enlngdb_mutations++;
+    CHANGE(tbl, ENLNGDB_CH_FREE_ROWS);
     for (size_t r = 0; r < tbl->row_count; r++) {
         for (int c = 0; c < tbl->rows[r].cell_count; c++) {
             enlng_free_val(&tbl->rows[r].cells[c]);
@@ -116,6 +121,7 @@ void enlngdb_free_rows(EnlngTable* tbl) {
 void enlngdb_clear(EnlngDatabase* db) {
     enlngdb_mutations++;
     if (!db) return;
+    CHANGE(db->tables, ENLNGDB_CH_RESET);
     for (int t = 0; t < db->table_count; t++) enlngdb_free_rows(&db->tables[t]);
     db->table_count = 0;
 }
@@ -134,6 +140,8 @@ void enlngdb_free(EnlngDatabase* db) {
     enlngdb_unlock(db);
     free_saves(db, 0);
     if (db->undo) { enlngdb_free_tables(db->undo, db->undo_count); db->undo = NULL; db->undo_count = 0; }
+    if (db->journal && enlngdb_journal_free) enlngdb_journal_free(db->journal);
+    db->journal = NULL;
     if (db->txn) {
         enlngdb_free(db->txn);
         db->txn = NULL;
@@ -231,6 +239,7 @@ static EnlngDatabase* copy_database(const EnlngDatabase* db) {
     c->undo = NULL;
     c->undo_count = 0;
     c->undo_what[0] = '\0';
+    c->journal = NULL;
     c->triggers = NULL;                 /* a copy is only of the tables; the lists stay with the open database */
     c->trigger_count = 0;
     c->procs = NULL;
@@ -378,6 +387,7 @@ EnlngTable* enlngdb_create_table(EnlngDatabase* db, const char* name, const Enln
         }
     }
     tbl->version = 1;
+    CHANGE(tbl, ENLNGDB_CH_CREATED);
     return tbl;
 }
 
@@ -401,6 +411,7 @@ bool enlngdb_drop_table(EnlngDatabase* db, const char* name, bool confirmed) {
     for (int i = 0; i < db->table_count; i++) {
         if (strcmp(db->tables[i].name, name) == 0) {
             EnlngTable* tbl = &db->tables[i];
+            CHANGE(tbl, ENLNGDB_CH_DROP);
             for (size_t r = 0; r < tbl->row_count; r++) {
                 for (int c = 0; c < tbl->rows[r].cell_count; c++) {
                     enlng_free_val(&tbl->rows[r].cells[c]);
@@ -431,6 +442,7 @@ bool enlngdb_delete_column(EnlngTable* table, const char* col_name) {
         }
     }
     if (idx < 0) return false;
+    CHANGE(table, ENLNGDB_CH_WHOLE);
 
     for (size_t r = 0; r < table->row_count; r++) {
         EnlngRow* row = &table->rows[r];
@@ -465,6 +477,7 @@ bool enlngdb_rename_table(EnlngDatabase* db, const char* from, const char* to) {
     enlngdb_mutations++;
     EnlngTable* t = enlngdb_get_table(db, from);
     if (!t || enlngdb_get_table(db, to) || strlen(to) >= ENLNGDB_MAX_NAME) return false;
+    CHANGE(t, ENLNGDB_CH_RENAME);
     strcpy(t->name, to);
     enlngdb_rename_triggers_of(db, from, to);
     for (int i = 0; i < db->table_count; i++) {
@@ -484,6 +497,7 @@ bool enlngdb_rename_column(EnlngTable* table, const char* from, const char* to) 
         if (strcmp(table->columns[c].name, from) == 0) idx = c;
     }
     if (idx < 0 || strlen(to) >= ENLNGDB_MAX_NAME) return false;
+    CHANGE(table, ENLNGDB_CH_META);
     strcpy(table->columns[idx].name, to);
     for (int i = 0; i < table->index_count; i++) {
         for (int k = 0; k < table->indexes[i].col_count; k++) {
@@ -500,6 +514,7 @@ bool enlngdb_add_column(EnlngTable* table, const char* col_name, const EnlngVal*
     for (int c = 0; c < table->col_count; c++) {
         if (strcmp(table->columns[c].name, col_name) == 0) return false;
     }
+    CHANGE(table, ENLNGDB_CH_WHOLE);
     int idx = table->col_count++;
     memset(&table->columns[idx], 0, sizeof(EnlngColumn));
     strncpy(table->columns[idx].name, col_name, ENLNGDB_MAX_NAME - 1);
@@ -607,6 +622,7 @@ char enlngdb_last_insert_replaced[96];
 bool enlngdb_append_row(EnlngTable* table, const EnlngVal* cells, int cell_count) {
     enlngdb_mutations++;
     if (!table || !cells) return false;
+    CHANGE(table, ENLNGDB_CH_APPEND);
     if (table->row_count >= table->row_capacity) {
         size_t new_cap = table->row_capacity == 0 ? 16 : table->row_capacity * 2;
         EnlngRow* new_rows = (EnlngRow*)realloc(table->rows, new_cap * sizeof(EnlngRow));

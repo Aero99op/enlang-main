@@ -138,6 +138,7 @@ typedef struct EnlngDatabase {
     int trigger_count;
     EnlngProc* procs;
     int proc_count;
+    void* journal;              /* what the last undoable statement changed, kept by the parser for 'undo' (NULL: nothing) */
 } EnlngDatabase;
 
 typedef struct {
@@ -187,6 +188,21 @@ void enlngdb_rename_triggers_of(EnlngDatabase* db, const char* from, const char*
 /* counts every change made to any table (rows, columns, tables, restores): a lookup index made earlier is
    good only while this number is the same as when it was made */
 extern unsigned long long enlngdb_mutations;
+/* Told just before a table of a database changes (or just after one is made), so that the parser can keep what
+   'undo' needs to take the change back. NULL when nobody listens. The listener may take the rows of the table
+   for itself on ENLNGDB_CH_FREE_ROWS and ENLNGDB_CH_DROP (it then leaves the table with no rows). */
+enum {
+    ENLNGDB_CH_APPEND = 1,      /* a row is about to be added at the end */
+    ENLNGDB_CH_FREE_ROWS,       /* every row is about to go */
+    ENLNGDB_CH_WHOLE,           /* the columns and the rows are about to change */
+    ENLNGDB_CH_META,            /* the name, the columns or the indexes (not the rows) are about to change */
+    ENLNGDB_CH_RENAME,          /* the table is about to get a new name (other tables that refer to it change too) */
+    ENLNGDB_CH_DROP,            /* the table is about to go */
+    ENLNGDB_CH_CREATED,         /* the table was just made */
+    ENLNGDB_CH_RESET            /* every table of the database (t is its first table) is about to be replaced */
+};
+extern void (*enlngdb_change_hook)(EnlngTable* t, int what);
+extern void (*enlngdb_journal_free)(void* journal);
 bool enlngdb_add_column(EnlngTable* table, const char* col_name, const EnlngVal* default_val);
 extern char enlngdb_last_insert_replaced[96];
 

@@ -340,7 +340,7 @@ def main():
         out = run("create table t with id integer\ncreate trigger a before insert on t do find 1\ncreate trigger a2 after insert on nope do find 1\n"
                   "create trigger a3 after insert on t find 1\ncreate trigger a4 after truncate on t do find 1\ndrop trigger zzz\nfnd name from t\n")
         check("trigger mistakes are explained, and a mistyped command is guessed",
-              "only 'after' triggers exist" in out and "there is no table called 'nope'" in out and "write 'do'" in out
+              "a before trigger can only 'set new.column = value'" in out and "there is no table called 'nope'" in out and "write 'do'" in out
               and "write insert, update or delete" in out and "there is no trigger with this name" in out and "Did you mean 'find'" in out, out[-900:])
         out = run("create table cls with id integer primary key, title text\ninsert into cls values (1, \"Maths\")\ncreate table stu with sid integer primary key, name text\n"
                   "find nme from stu where sid is 1\nupdate stu set nam = 1\nfind titel from cls\n")

@@ -577,6 +577,10 @@ find what, account_id, amount from ledger
 
 -- A trigger can refuse: raise stops the statement and takes everything back
 create trigger no_overdraft after update on account when new.balance < 0 do raise "the balance cannot go below zero"
+
+-- A before trigger fixes the new row before it is written
+create trigger tidy before insert on account do set new.owner = upper(new.owner)
+insert into account values (3, "meera", 0)
 show triggers
 
 -- A procedure is statements saved under a name
@@ -1854,6 +1858,10 @@ function initPlayground() {
         editor.value = CODE_PRESETS[presetName];
         updateLineNumbers();
         syncDomainVisuals();
+        // a database example starts from an empty database, so tables of the one before do not get in its way
+        if (btn.classList.contains('chip-btn-db') && window.EnlangWasm && typeof window.EnlangWasm.resetDatabase === 'function') {
+          window.EnlangWasm.resetDatabase().catch(() => { /* the run itself reports a problem */ });
+        }
       }
     });
   });
