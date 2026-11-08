@@ -2,6 +2,36 @@
 #include <ctype.h>
 #include <time.h>
 #include <math.h>
+#include <stdarg.h>
+
+/* Output of a statement can be held back until it is known to stand: a statement whose triggers fail
+   is taken back, and then the "rows changed" line it printed must not be shown. */
+static char* q_hold = NULL;
+static size_t q_hold_len = 0, q_hold_cap = 0;
+static int q_holding = 0;
+
+static int q_printf(const char* fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int n;
+    if (!q_holding) {
+        n = vprintf(fmt, ap);
+    } else {
+        va_list ap2;
+        va_copy(ap2, ap);
+        n = vsnprintf(NULL, 0, fmt, ap2);
+        va_end(ap2);
+        if (n > 0 && q_hold_len + (size_t)n + 1 > q_hold_cap) {
+            size_t cap = (q_hold_len + (size_t)n + 1) * 2;
+            char* g = (char*)realloc(q_hold, cap);
+            if (g) { q_hold = g; q_hold_cap = cap; }
+        }
+        if (n > 0 && q_hold_len + (size_t)n + 1 <= q_hold_cap) { vsnprintf(q_hold + q_hold_len, q_hold_cap - q_hold_len, fmt, ap); q_hold_len += (size_t)n; }
+    }
+    va_end(ap);
+    return n;
+}
+#define printf q_printf
 
 static char* trim(char* s) {
     while (isspace((unsigned char)*s) || *s == ';') s++;
@@ -7110,7 +7140,13 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
         is_upd = str_starts_with_ci(sw, "update ") || str_starts_with_ci(sw, "change ") || str_starts_with_ci(sw, "modify ") || str_starts_with_ci(sw, "in ");
         tsnap = enlngdb_copy_tables(db, &tn);
     }
+    int was_holding = q_holding;
+    size_t hold_from = q_hold_len;
+    if (tsnap && print_output && !q_holding) q_holding = 1;   /* the statement's own output waits for its triggers */
     bool ok = q_execute_line(db, line, print_output);
+    bool held = tsnap && print_output && !was_holding;
+    if (held) q_holding = 0;
+    if (held && !ok) { fwrite(q_hold + hold_from, 1, q_hold_len - hold_from, stdout); q_hold_len = hold_from; held = false; }
     if (tsnap) {
         if (ok) {
             char failed[ENLNGDB_MAX_NAME] = "";
@@ -7121,11 +7157,13 @@ bool enlngdb_execute_statement(EnlngDatabase* db, const char* statement, bool pr
                 snprintf(why, sizeof(why), "%s", q_last_error[0] ? q_last_error : "a statement of the trigger failed");
                 enlngdb_restore_tables(db, tsnap, tn);          /* the statement and what the triggers did are taken back */
                 tsnap = NULL;
-                if (print_output) printf("ERROR: the trigger '%s' stopped this statement: %s.\n       Nothing was changed (the line above that says the rows were changed is taken back).\n\n", failed, why);
+                if (held) { q_hold_len = hold_from; held = false; }      /* its "rows changed" line is not shown */
+                if (print_output) printf("ERROR: the trigger '%s' stopped this statement: %s.\n       Nothing was changed.\n\n", failed, why);
             }
         }
         if (tsnap) enlngdb_free_tables(tsnap, tn);
     }
+    if (held) { fwrite(q_hold + hold_from, 1, q_hold_len - hold_from, stdout); q_hold_len = hold_from; }
     if (kind != 0) enlngdb_mutations++;         /* lookup indexes made earlier are now out of date */
     if (q_idx_kept) { q_idx_kept = false; enlngdb_mutations--; }   /* ... except those an update has vouched for */
     free(line);

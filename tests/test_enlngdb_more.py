@@ -300,6 +300,9 @@ def main():
         check("triggers log an insert, a changed value (not an unchanged one) and a delete; a raise takes the statement back",
               "the trigger 'no_negative' stopped this statement: marks cannot be negative" in out and [r[0] for r in t[0][1:]] == ["1"]
               and [r[:3] for r in t[1][1:]] == [["added", "1", "80"], ["added", "2", "70"], ["marks", "1", "90"], ["deleted", "2", "70"]], out[-900:])
+        out = run("create table z with id integer primary key, n integer\ncreate trigger zt after insert on z when new.n < 0 do raise \"no\"\ninsert into z values (1, -1)\n")
+        pre = out[:out.index("ERROR: the trigger")].strip().split("\n")[-1]
+        check("a statement stopped by a trigger does not print its 'rows affected' line first", "made" in pre and "affected" not in pre, pre)
         out = run("create table a with id integer primary key, n integer\ncreate table b with id integer primary key auto_increment, n integer\ncreate table c with id integer primary key auto_increment, n integer\n"
                   "create trigger ab after insert on a do insert into b (n) values (new.n * 10)\ncreate trigger bc after insert on b do insert into c (n) values (new.n + 1)\n"
                   "insert into a values (1, 5), (2, 6)\nfind n from b\nfind n from c\n")

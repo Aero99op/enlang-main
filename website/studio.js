@@ -1696,6 +1696,24 @@ screen WalletHome:
       return;
     }
 
+    // The real EnlngDB engine, compiled to WebAssembly, runs the script in the browser
+    if (window.EnlangWasm && typeof window.EnlangWasm.execute === 'function') {
+      const wasmName = (activeFile && /\.enlngdb$/i.test(activeFile)) ? activeFile : 'script.enlngdb';
+      window.EnlangWasm.execute(wasmName, sqlCode, 'enlngdb').then(result => {
+        if (!result) return;
+        if (result.success) {
+          if (result.output) appendTerminal(`\n${escapeHtml(result.output)}`);
+          appendTerminal(`\n<span class="term-green">✔ [${escapeHtml(result.executor)}] Succeeded in ${result.timeMs}ms (Exit 0)</span>`);
+        } else {
+          appendTerminal(`\n<span class="term-err">${escapeHtml(result.output || result.error || 'The script failed.')}</span>`);
+          appendTerminal(`\n<span class="term-warn">⚠ [${escapeHtml(result.executor)}] Exited with code ${result.exitCode} (${result.timeMs}ms)</span>`);
+        }
+        const tables = parseAsciiTables(result.output || '');
+        renderParsedWorkbenchTable(tables.length > 0 ? tables[tables.length - 1] : null, 'All Statements', result.timeMs, result.output || '');
+      });
+      return;
+    }
+
     const dbState = (typeof sovereignDB !== 'undefined') ? sovereignDB : (window.sovereignDB || null);
     if (!dbState) {
       appendTerminal(`<span class="term-err">[EnlangDB] SovereignDB engine state not initialized. Check app.js.</span>`);

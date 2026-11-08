@@ -1083,7 +1083,7 @@ A **trigger** is statements that run by themselves after a statement added, chan
 ```text
 update account set balance = balance - 500 where id is 2
 ERROR: the trigger 'no_overdraft' stopped this statement: the balance cannot go below zero.
-       Nothing was changed (the line above that says the rows were changed is taken back).
+       Nothing was changed.
 ```
 
 What a trigger's statements do is a statement of its own, so it can set off the triggers of the table it changes (up to 6 levels deep; a loop stops with an error and the statement is taken back). The output of statements inside a trigger is not shown. There is only `after`: to refuse something, raise an error. A table that is dropped takes its triggers with it; `show triggers` lists them; `drop trigger NAME` removes one. A table without a key (and no column called `id`) is compared row by row: an update is found when no row was added or removed; a key that was changed in an update is paired with the row it replaced.
