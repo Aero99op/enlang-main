@@ -9,10 +9,26 @@ set OUT=installer\enlangg-setup.exe
 if exist %STAGE% rmdir /s /q %STAGE%
 mkdir %STAGE%\bin %STAGE%\lib %STAGE%\include || goto :fail
 
+rem enlngdb.exe and enlangg.exe (which runs databases itself) are built for 64 bits when clang is found
+rem (ENLANGG_CC64 names it, or clang on PATH, D:\llvm, Program Files\LLVM): a 32-bit program has only 2 GB of
+rem addresses, so a database there cannot grow past about that, whatever the memory and the disk.
+set CC64=
+if defined ENLANGG_CC64 set "CC64=%ENLANGG_CC64%"
+if not defined CC64 where clang >nul 2>nul && set "CC64=clang"
+if not defined CC64 if exist "D:\llvm\bin\clang.exe" set "CC64=D:\llvm\bin\clang.exe"
+if not defined CC64 if exist "%ProgramFiles%\LLVM\bin\clang.exe" set "CC64=%ProgramFiles%\LLVM\bin\clang.exe"
+
 echo [1/4] Building the 7 toolchain binaries...
-gcc -O2 -s -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o %STAGE%\bin\enlangg.exe || goto :fail
+if defined CC64 (
+  echo       enlangg.exe and enlngdb.exe: 64-bit, with %CC64%
+  "%CC64%" -O2 -D_CRT_SECURE_NO_WARNINGS -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -o %STAGE%\bin\enlangg.exe || goto :fail
+  "%CC64%" -O2 -D_CRT_SECURE_NO_WARNINGS -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -o %STAGE%\bin\enlngdb.exe || goto :fail
+) else (
+  echo       WARNING: no clang found: enlangg.exe and enlngdb.exe are 32-bit, and a database is limited to about 2 GB
+  gcc -O2 -s -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o %STAGE%\bin\enlangg.exe || goto :fail
+  gcc -O2 -s -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o %STAGE%\bin\enlngdb.exe || goto :fail
+)
 gcc -O2 -s -I. -Isrc enlng.c -lm -o %STAGE%\bin\enlng.exe || goto :fail
-gcc -O2 -s -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o %STAGE%\bin\enlngdb.exe || goto :fail
 gcc -O2 -s -I. -Isrc -Ienlngf/c enlngf.c -lm -lws2_32 -lgdi32 -luser32 -lshell32 -lcomdlg32 -ladvapi32 -o %STAGE%\bin\enlngf.exe || goto :fail
 gcc -O2 -s -I. -Isrc -Ienlngd/c enlngd.c -lm -lws2_32 -lgdi32 -luser32 -lshell32 -lcomdlg32 -ladvapi32 -o %STAGE%\bin\enlngd.exe || goto :fail
 gcc -O2 -s -I. -Isrc -Ienlngs/c enlngs.c -lm -lws2_32 -lgdi32 -luser32 -lshell32 -lcomdlg32 -ladvapi32 -o %STAGE%\bin\enlngs.exe || goto :fail

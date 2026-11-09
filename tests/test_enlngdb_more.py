@@ -30,10 +30,14 @@ def check(name, cond, detail=""):
         print("FAIL ", name, str(detail)[:600])
 
 
+# ENLNGDB_TEST_CC names another compiler (clang for a 64-bit build); the C library of Visual C++ has no libm
+CC = os.environ.get("ENLNGDB_TEST_CC", "gcc")
+LM = [] if os.name == "nt" and "clang" in CC else ["-lm"]
+
 def build(tmp):
     exe = os.path.join(tmp, EXE)
     src = ["enlngdb/c/main.c", "enlngdb/c/enlngdb.c", "enlngdb/c/enlngdb_parser.c"]
-    subprocess.run(["gcc", "-O2", "-I.", "-Isrc", "-Ienlngdb/c"] + src + ["-lm", "-o", exe], cwd=ROOT, check=True)
+    subprocess.run([CC, "-O2", "-I.", "-Isrc", "-Ienlngdb/c"] + src + LM + ["-o", exe], cwd=ROOT, check=True)
     return exe
 
 
@@ -337,10 +341,10 @@ def main():
         check("a procedure that fails in the middle is taken back as a whole", col(out)[-1:] == ["100"] and "everything it did was taken back" in out, out[-500:])
         out = run("create table t with id integer\ncreate trigger x after insert on t do insert into t values (1)\ndrop table t confirmed\nshow triggers\n")
         check("dropping a table drops its triggers", "No triggers." in out, out[-300:])
-        out = run("create table t with id integer\ncreate trigger a before insert on t do find 1\ncreate trigger a2 after insert on nope do find 1\n"
+        out = run("create table t with id integer\ncreate trigger a before delete on t do set new.id = 1\ncreate trigger a2 after insert on nope do find 1\n"
                   "create trigger a3 after insert on t find 1\ncreate trigger a4 after truncate on t do find 1\ndrop trigger zzz\nfnd name from t\n")
         check("trigger mistakes are explained, and a mistyped command is guessed",
-              "a before trigger can only 'set new.column = value'" in out and "there is no table called 'nope'" in out and "write 'do'" in out
+              "a 'before delete' trigger has no new row to set" in out and "there is no table called 'nope'" in out and "write 'do'" in out
               and "write insert, update or delete" in out and "there is no trigger with this name" in out and "Did you mean 'find'" in out, out[-900:])
         out = run("create table cls with id integer primary key, title text\ninsert into cls values (1, \"Maths\")\ncreate table stu with sid integer primary key, name text\n"
                   "find nme from stu where sid is 1\nupdate stu set nam = 1\nfind titel from cls\n")

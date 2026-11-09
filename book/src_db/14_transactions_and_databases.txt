@@ -19,7 +19,7 @@ update account set balance = balance + 200 where id is 2
 commit
 find * from account
 :::
-A transaction covers the whole database: its tables, their rows, and its views. Anything inside it can be undone, including `create table` and `drop table`.
+A transaction covers the whole database: its tables, their rows, and its views. Anything inside it can be undone, including `create table` and `drop table`. `begin` copies nothing: the transaction keeps records of what each statement in it changed, so it costs what the changes cost, also on a big database.
 ## A transaction that is never closed
 If a script ends while a transaction is open, the engine rolls it back and says so, so that a forgotten `commit` never keeps half of a change.
 ::: db
@@ -43,7 +43,28 @@ find * from account
 :::
 The change to Asha is kept; the change to Ravi was taken back. A transaction can have 16 savepoints.
 ## One program at a time
-While a script has a database open, the operating system holds a lock on the file `<name>.edb.lock`. A second program that opens the same database waits up to 5 seconds and then stops with an error that says the database is in use. The lock goes away when the first program ends, also when it crashes.
+While a script has a database open, the operating system holds a lock on the file `<name>.edb.lock`. A second program that opens the same database waits up to 5 seconds and then stops with an error that says the database is in use. The lock goes away when the first program ends, also when it crashes. For several programs at once there is the server, below.
+## Users and rights
+A user has a name and a password of 8 characters or more; only a salted hash of the password is kept in the file. An admin may do everything. Other users may do what they were granted: `select`, `insert`, `update` and `delete` on a table (or on `*`, every table), and `execute` on a procedure.
+::: db
+create user boss password "boss-pass-1" admin
+create user asha password "asha-pass-1"
+grant select, update on account to asha
+show users
+show grants for asha
+revoke update on account from asha
+show grants for asha
+:::
+Rights are checked by the server. A program that opens the file itself, like every script in this book, is its owner, and nothing is checked: whoever can read the file can read the data.
+## The server
+`enlngdb --serve` keeps databases open and lets many clients sign in at the same time, from this computer or another one. A client says which database it signs in to after a slash.
+::: sh
+enlngdb --serve bank shop --port 7171
+enlngdb --connect 7171/bank --user asha report.enlngdb
+:::
+The client asks for the password without showing it (or reads it from `ENLNGDB_PASSWORD`), signs in, runs the script and prints what the server answered. Without a script it runs each line typed. For a user who is not an admin, the server refuses a statement that reads a table the user may not `select`, counting every table named in the statement, in a join, a subquery or `with`, and also a name in quotes. It refuses an insert, update or delete without that right on the table it changes, and anything that makes, changes or drops tables, users or rights. `import` and `export` are for an admin, because they use files on the server's computer. Views, triggers and procedures run with the rights of the admin who made them.
+One request runs at a time. While a client has a transaction open, the others wait for it, up to 10 seconds. A client that goes away with a transaction open has it rolled back. The database is saved after each change that no transaction holds back, and when the server stops: Ctrl+C, or an admin running `shutdown server`. `undo` takes back only the same client's change.
+The connection is encrypted. The server prints the fingerprint of its key when it starts; the first time a client connects, it shows the fingerprint it got and asks whether it is the same (or takes it from `--trust`), and from then on it refuses a server at that address with a different key. Every message is sealed with ChaCha20-Poly1305, with keys agreed by X25519 for that connection, so it cannot be read or changed on the way. By default the server listens only on the computer it runs on; `--host 0.0.0.0` lets other computers in.
 ## Databases
 A database is a set of tables, saved as one file called `<name>.edb`. `create database` makes a new one and switches to it, and `use database` switches to one that exists.
 ::: db

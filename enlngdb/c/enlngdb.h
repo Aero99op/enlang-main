@@ -119,6 +119,28 @@ typedef struct {
     char* body;
 } EnlngProc;
 
+/* a user who can sign in to the server: only a salted hash of the password is kept (PBKDF2 with SHA-256) */
+typedef struct {
+    char name[ENLNGDB_MAX_NAME];
+    unsigned char salt[16];
+    unsigned char hash[32];
+    int rounds;
+    bool admin;                 /* may do everything, also make users and tables */
+} EnlngUser;
+
+/* what a user may do with a table (object "*": every table) or a procedure */
+#define ENLNGDB_RIGHT_SELECT  1u
+#define ENLNGDB_RIGHT_INSERT  2u
+#define ENLNGDB_RIGHT_UPDATE  4u
+#define ENLNGDB_RIGHT_DELETE  8u
+#define ENLNGDB_RIGHT_EXECUTE 16u
+typedef struct {
+    char user[ENLNGDB_MAX_NAME];
+    char object[ENLNGDB_MAX_NAME];
+    int is_proc;
+    unsigned int rights;
+} EnlngGrant;
+
 typedef struct EnlngDatabase {
     char name[ENLNGDB_MAX_NAME];
     EnlngTable tables[ENLNGDB_MAX_TABLES];
@@ -139,6 +161,11 @@ typedef struct EnlngDatabase {
     EnlngProc* procs;
     int proc_count;
     void* journal;              /* what the last undoable statement changed, kept by the parser for 'undo' (NULL: nothing) */
+    EnlngUser* users;
+    int user_count;
+    EnlngGrant* grants;
+    int grant_count;
+    void* txn_journal;          /* while a transaction is open: the records of what it changed, kept by the parser */
 } EnlngDatabase;
 
 typedef struct {
@@ -166,6 +193,17 @@ void enlngdb_clear(EnlngDatabase* db);
  * Returns false, with the reason in err, when another program still holds it after a few seconds. */
 bool enlngdb_lock(EnlngDatabase* db, const char* name, char* err, size_t err_size);
 void enlngdb_unlock(EnlngDatabase* db);
+/* The parser keeps a transaction as records of what changed (no copy of the tables); without it, 'begin' copies them. */
+typedef struct {
+    bool (*begin)(EnlngDatabase* db);
+    bool (*commit)(EnlngDatabase* db);
+    bool (*rollback)(EnlngDatabase* db);
+    bool (*savepoint)(EnlngDatabase* db, const char* name);
+    bool (*rollback_to)(EnlngDatabase* db, const char* name);
+    bool (*release)(EnlngDatabase* db, const char* name);
+    void (*drop)(void* txn_journal);
+} EnlngTxnHooks;
+extern const EnlngTxnHooks* enlngdb_txn_hooks;
 bool enlngdb_begin(EnlngDatabase* db);
 bool enlngdb_commit(EnlngDatabase* db);
 bool enlngdb_rollback(EnlngDatabase* db);
@@ -184,6 +222,25 @@ void enlngdb_free_tables(EnlngTable* tables, int count);
 void enlngdb_free_extras(EnlngDatabase* db);
 void enlngdb_forget_triggers_of(EnlngDatabase* db, const char* table);
 void enlngdb_rename_triggers_of(EnlngDatabase* db, const char* from, const char* to);
+/* random bytes from the operating system (for the salt of a password); false if there are none */
+bool enlngdb_random_bytes(unsigned char* out, size_t n);
+
+/* --- users and the server ---
+ * A database with users can be served to other programs (enlngdb --serve). There a user signs in, and each
+ * statement is checked against what the user was granted. A program that opens the file itself is its owner
+ * and is not checked: whoever can read the file can read the data. */
+/* what the engine prints goes through this, so that a server can keep it for the client */
+int enlngdb_printf(const char* fmt, ...);
+/* SHA-256, HMAC-SHA-256 and PBKDF2-HMAC-SHA-256 (32 bytes), for passwords and for the server's encryption */
+void enlngdb_sha256(const void* data, size_t n, unsigned char out[32]);
+void enlngdb_hmac_sha256(const unsigned char* key, size_t kn, const unsigned char* msg, size_t mn, unsigned char out[32]);
+void enlngdb_pbkdf2_sha256(const char* password, const unsigned char* salt, size_t sn, int rounds, unsigned char out[32]);
+bool enlngdb_has_users(const EnlngDatabase* db);
+/* true when the name and password are right; *admin tells whether the user may do everything */
+bool enlngdb_login(const EnlngDatabase* db, const char* user, const char* password, bool* admin);
+/* runs a script as a signed-in user (NULL: the owner), keeping what it prints; *failed counts the statements that
+   failed. session tells the clients of a server apart (undo takes back only the same client's change). */
+char* enlngdb_run_as(EnlngDatabase* db, const char* user, int session, const char* script, int* failed);
 
 /* counts every change made to any table (rows, columns, tables, restores): a lookup index made earlier is
    good only while this number is the same as when it was made */
@@ -237,3 +294,26 @@ int enlng_compare_vals(const EnlngVal* a, const EnlngVal* b);
 bool enlng_eval_condition(const EnlngVal* val, EnlngOp op, const EnlngVal* target);
 
 #endif /* ENLNGDB_H */
+
+/* Memory. Up to a budget (ENLNGDB_MEMORY, half of the computer's memory when it is not set) the engine takes
+ * memory as usual; past it, new memory comes from a file (in ENLNGDB_SPILL_DIR, or the folder for temporary
+ * files) that the system keeps in memory only where it is used, so a database can be larger than the memory.
+ * A file of the engine includes this header a second time, after every system header, with ENLNGDB_WRAP_ALLOC. */
+#ifndef ENLNGDB_ALLOC_DECLARED
+#define ENLNGDB_ALLOC_DECLARED
+void* enlngdb_malloc(size_t n);
+void* enlngdb_calloc(size_t n, size_t size);
+void* enlngdb_realloc(void* p, size_t n);
+void enlngdb_mfree(void* p);
+char* enlngdb_strdup(const char* s);
+/* bytes taken as usual memory now and at most, and bytes of the file in use now and at most */
+void enlngdb_memory_stats(size_t* heap, size_t* heap_peak, size_t* spill, size_t* spill_peak);
+#endif
+#if defined(ENLNGDB_WRAP_ALLOC) && !defined(ENLNGDB_ALLOC_WRAPPED)
+#define ENLNGDB_ALLOC_WRAPPED
+#define malloc(n) enlngdb_malloc(n)
+#define calloc(n, size) enlngdb_calloc(n, size)
+#define realloc(p, n) enlngdb_realloc(p, n)
+#define free(p) enlngdb_mfree(p)
+#define strdup(s) enlngdb_strdup(s)
+#endif

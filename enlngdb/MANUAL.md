@@ -64,7 +64,7 @@
     - 11.10 Types & constraints, 11.11 Altering tables, 11.12 Views, indexes, `describe`, `explain`, 11.13 Transactions & databases, 11.14 What it does not have
 12. [Beyond SQL: files, safety, speed (C engine)](#12-beyond-sql-files-safety-speed-c-engine)
     - 12.1 CSV files, 12.2 `preview` and `undo`, 12.3 Savepoints, 12.4 `natural join`, 12.5 `on delete` / `on update`
-    - 12.6 Recursive `with`, 12.7 One program at a time, 12.8 Speed, 12.9 Limits, 12.10 Triggers and procedures, 12.11 Did you mean
+    - 12.6 Recursive `with`, 12.7 One program at a time, 12.8 Speed, 12.9 Limits, 12.10 Triggers and procedures, 12.11 Did you mean, 12.12 Users and the server
 
 ---
 
@@ -659,7 +659,7 @@ The pure C native engine persists tables directly using a compact binary layout.
 |       * next auto number int64                                          |
 |   - index count int32; for each: name, unique byte, column count,       |
 |     column names (length + text)                                        |
-|   - row count uint64 (R)                                                |
+|   - row count uint32 (R); past 4,294,967,294 rows: 0xFFFFFFFF, uint64   |
 |   - FOR EACH ROW: cell count int32, then for each cell                  |
 |       a type byte (0 null, 1 int, 2 double, 3 string, 4 bool) and       |
 |       the value (int64 / double / uint32 length + text / 1 byte)        |
@@ -667,6 +667,8 @@ The pure C native engine persists tables directly using a compact binary layout.
 ```
 
 Version 1 files (before column types) have the same header but write the columns as raw structs and have no view, index or constraint data. They are read, and written back as version 2 the next time the database is saved.
+
+The row count was written in 4 bytes by the 32-bit programs (those of the installer, before) and in 8 bytes by a program built for 64 bits. Both kinds of file are read (after a count of 4 bytes, the next 4 bytes are 0 only in a file of 8: there they are the high half, and in a file of 4 they would be the number of cells of a row, the name of a table or the part after the tables, none of which starts with 0), and the count is written in 4 bytes again.
 
 ---
 
@@ -945,7 +947,7 @@ drop database shop confirmed
 A transaction covers the whole database (tables, rows, views). One that is still open when a script ends is rolled back, and the engine says so. There are no savepoints and no second writer: one script runs at a time.
 
 ### 11.14 What EnlngDB does not have
-Users and permissions (`grant`, `revoke`), a server that several programs use at the same time (one program has a database open at a time, §12.7), and a database larger than the memory of the computer (§12.8 says how much a million rows take). `show databases` shows only the open database. `natural join`, recursive `with`, `on delete` / `on update`, savepoints, CSV files, `preview`, `undo`, triggers and procedures are in section 12.
+Reading only part of a database file: a database is read whole when a script opens it and written whole when a script that changed it ends (§12.8). Certificates for the server (it is trusted the first time, as ssh does, §12.12). `show databases` shows only the open database. `natural join`, recursive `with`, `on delete` / `on update`, savepoints, CSV files, `preview`, `undo`, triggers, procedures, users, rights and the server are in section 12.
 
 ---
 
@@ -984,7 +986,7 @@ rollback to before_delete                            # the row is back; the upda
 release before_delete
 commit
 ```
-`rollback to` goes back to the savepoint and keeps it; `release` forgets it (and the ones after it). A transaction can have 16 savepoints.
+`rollback to` goes back to the savepoint and keeps it; `release` forgets it (and the ones after it). A transaction can have 16 savepoints. `begin` copies nothing: a transaction keeps records of what each statement in it changed (as `undo` does), so it costs what its changes cost, on a database of any size; `undo` inside a transaction takes back its last statement. Users, rights, triggers and procedures are not part of a transaction.
 
 ### 12.4 `natural join`
 ```enlngdb
@@ -1022,7 +1024,7 @@ with recursive team as (find id, name from emp where id is 1 union find e.id, e.
 The first query gives the starting rows; the second runs again on the rows found in the round before, until a round finds nothing new (`union` also drops rows already found). A recursive query that never ends is stopped after 10,000 rounds or 1,000,000 rows, with an error.
 
 ### 12.7 One program at a time
-While a script has a database open, the operating system holds a lock on `<name>.edb.lock`. A second program that opens the same database waits up to 5 seconds and then stops with: `database 'shop' is in use by another program`. The lock goes away when the first program ends, also when it crashes. A database file is written to `<name>.edb.tmp` first and then moved over the old one, so a crash while saving leaves the old file whole.
+While a script has a database open, the operating system holds a lock on `<name>.edb.lock`. A second program that opens the same database waits up to 5 seconds and then stops with: `database 'shop' is in use by another program`. The lock goes away when the first program ends, also when it crashes. A database file is written to `<name>.edb.tmp` first, made sure to be on the disk, and then put in the place of the old one in one step, so a crash or a power cut while saving leaves the old file or the new one, whole. (The tests kill the program 30 times while it changes and saves a database; the program before this one lost the file in such a test, because it removed the old file before it moved the new one in.) A script that only reads (it has only `find`, `select`, `show`, `count`, `describe`, `explain`, `export` and `preview`) does not write the file again.
 
 ### 12.8 Speed
 The engine looks rows up by value with a hash, built for the statement that needs it: the key, `unique` columns and `references` when rows are inserted, a join on `a.x = b.y`, `in (subquery)`, `union`, `distinct`, `intersect`, `except`, and recursive `with`. The answers are the same as when every row is compared (`1`, `1.0` and `"1"` are equal, text is compared without case, a number with a fraction is compared one by one). Measured with 20,000 rows on one machine:
@@ -1044,12 +1046,22 @@ The engine looks rows up by value with a hash, built for the statement that need
 | 200 queries `where id between a and b` on 200,000 rows | 26.8 s | 0.58 s |
 | 200 queries `where id > a and id < b` on 200,000 rows | 41.5 s | 0.63 s |
 | 200 updates on 200,000 rows, each taken back with `undo` | refused | 0.46 s |
+| 300 queries `where name is n7` (a bare word) on 200,000 rows | 53.6 s | 0.58 s |
+| 300 queries `where id is a or id is b` on 200,000 rows | 55.4 s | 0.52 s |
+| 300 queries `where name like "n1999%"` on 200,000 rows | 82.4 s | 1.6 s |
+| 300 queries `where name like "%377%"` on 200,000 rows | 91.4 s | 1.05 s |
 
-The last five lines include opening the 200,000 rows (about 0.4 s); "refused" means `undo` said the database was too big for it.
+The lines with 200,000 rows include opening them (about 0.4 s); "refused" means `undo` said the database was too big for it.
 
-The engine makes two kinds of index by itself, the first time a query needs one, on a table of 48 rows or more. A condition `column is value` (alone, or joined to others with `and`) uses a hash of the column. A condition `column > value`, `<`, `>=`, `<=` or `column between a and b` uses a sorted list of the column: numbers and texts are kept in two lists, because they do not sort together (`"10"` and `"9"` compare as texts with each other and as numbers with a number), so a bound that is a number reads its range of numbers and every text, and the other way round. An index is kept while the table does not change, through updates of other columns, through inserts, through deletes (the other rows only move up) and through `undo`, and while other tables change; it is made again after an alter or a change of its column. The whole `where` is still tested on the rows found, so the answer is the same as when every row is read; when a range would take most of the rows, the rows are read in order instead. So there is no need to write `create index` for speed: a plain `create index` is only recorded, a `unique` one is checked. Conditions with `like` or `or` still read every row.
+The engine makes two kinds of index by itself, the first time a query needs one, on a table of 48 rows or more. A condition `column is value` (alone, or joined to others with `and`) uses a hash of the column. A condition `column > value`, `<`, `>=`, `<=` or `column between a and b` uses a sorted list of the column: numbers and texts are kept in two lists, because they do not sort together (`"10"` and `"9"` compare as texts with each other and as numbers with a number), so a bound that is a number reads its range of numbers and every text, and the other way round. An index is kept while the table does not change, through updates of other columns, through inserts, through deletes (the other rows only move up) and through `undo`, and while other tables change; it is made again after an alter or a change of its column. The whole `where` is still tested on the rows found, so the answer is the same as when every row is read; when a range would take most of the rows, the rows are read in order instead. So there is no need to write `create index` for speed: a plain `create index` is only recorded, a `unique` one is checked. A value can be a bare word, as in `where name is Ravi`. `a or b` uses the indexes when both sides can, and joins the rows they give. `column like "abc%"` (a fixed start, then `%` or `_`) reads the texts that start that way, and every number. Any other `like` (`"%dra%"`, `"%sha"`, or `"dra"`, which looks anywhere) uses a third index, made of every three letters of every text: it reads the rows that have every three letters of the pattern's longest part between `%` and `_`, and every number; a pattern whose longest part is shorter than three letters reads every row. So do `not` (most rows pass it anyway) and a condition on a calculation, like `id + 0 = 5`.
 
-The whole database is in memory while a script runs. One machine, a table of `id`, a text and a number: 1,000,000 rows are a 40 MB file, use about 190 MB of memory, and open and answer a query in about 1.1 s; building them with inserts of 25,000 rows takes about 30 s. A database larger than the memory of the computer is not supported.
+A database is read whole when a script opens it, and written whole when a script that changed it ends. One machine, a table of `id`, a text and a number: 1,000,000 rows are a 38 MB file and take about 180 MB of memory; a script opens them and answers a query in about 0.4 s, or changes a row and saves them in 0.7 s; `import` of a CSV file of them takes 1.5 s (79 s before: each batch of 1,024 rows made the lookup of the whole table again).
+
+**Larger than memory.** Up to a budget the engine takes memory as usual. Past it, new memory comes from a file that the system keeps in memory only where it is used, and writes to the disk where it is not, so a database can be larger than the memory a program may take: the disk is the limit. The budget is half of the computer's memory, or what `ENLNGDB_MEMORY` says (`500M`, `2G`; `off` keeps everything in memory). The file is in the folder for temporary files, or in `ENLNGDB_SPILL_DIR`, and goes away when the program ends; when it cannot be made, the engine goes on with memory alone. `ENLNGDB_MEMSTAT=1` prints at the end how much was in memory and how much in the file at most. The answers are the same either way (the tests run every kind of statement with a budget of 4 MB, and compare); past the budget, the work goes at the speed of the disk. Measured on one machine, with the memory the program may take limited to 300 MB: 3,000,000 rows of four columns (a 214 MB file, about 1 GB in memory) did not fit with everything in memory; with `ENLNGDB_MEMORY=100M` they were imported in 37 s, and opened, changed and saved in 25 s, using at most 150 MB. The 1,000,000 rows above, with `ENLNGDB_MEMORY=30M`, took 40 MB, in the same time as with all of them in memory.
+
+`enlngdb.exe` and `enlangg.exe` from the installer are 64-bit programs. A 32-bit build (gcc of MinGW.org) has 2 GB of addresses in all, so there a database cannot grow much past 1 GB in memory and 1 GB in the file.
+
+What it does not do: a database is read whole when it is opened, also for a query that needs one row, and an index is made in memory from every row the first time a query needs it; there is no file of pages that reads only what a query needs.
 
 ### 12.9 Limits
 | Thing | The most |
@@ -1097,7 +1109,7 @@ ERROR: the trigger 'no_overdraft' stopped this statement: the balance cannot go 
 
 What a trigger's statements do is a statement of its own, so it can set off the triggers of the table it changes (up to 6 levels deep; a loop stops with an error and the statement is taken back). The output of statements inside a trigger is not shown.
 
-A **before trigger** (`create trigger NAME before insert|update|delete on TABLE [when CONDITION] do ...`) runs for each row before the change counts. It can do two things: `set new.column = value` changes the row that is being added or changed (each `set` sees the values the ones before it gave), and `raise "message"` stops the statement. The rows a before trigger changed must still keep every rule of the table (`unique`, `check`, references), or the statement is taken back; it cannot change a column that another table refers to, and a `before delete` trigger can only raise. Anything else (changing other tables) belongs in an after trigger. Before triggers run before the after triggers. A file with before triggers needs this version of `enlngdb`: an older one reads them as after triggers. A table that is dropped takes its triggers with it; `show triggers` lists them; `drop trigger NAME` removes one. A table without a key (and no column called `id`) is compared row by row: an update is found when no row was added or removed; a key that was changed in an update is paired with the row it replaced.
+A **before trigger** (`create trigger NAME before insert|update|delete on TABLE [when CONDITION] do ...`) runs for each row before the change counts. `set new.column = value` changes the row that is being added or changed (each `set` sees the values the ones before it gave), and `raise "message"` stops the statement. The rows a before trigger changed must still keep every rule of the table (`unique`, `check`, references), or the statement is taken back; it cannot change a column that another table refers to, and a `before delete` trigger has no new row to set. Its other statements (changing other tables, say) run once the statement's own rows are settled, before the after triggers, with the values `new.x` and `old.x` had at that point of the trigger; they are statements of their own and set off their own triggers, and if one fails the whole statement is taken back. Before triggers are kept in the file after the procedures, in a part that an older `enlngdb` does not read: it opens the file without them (and loses them if it saves it). A table that is dropped takes its triggers with it; `show triggers` lists them; `drop trigger NAME` removes one. A table without a key (and no column called `id`) is compared row by row: an update is found when no row was added or removed; a key that was changed in an update is paired with the row it replaced.
 
 A **procedure** is statements saved under a name: `create procedure NAME (a, b) as STATEMENT [; STATEMENT ...]` and `call NAME(1, "x")`. `:a` in the statements stands for the value as it was written in the call. The statements may go over several lines: a line that ends with `as`, `do`, `begin` or `;` goes on. If one statement fails, everything the call did is taken back. Triggers and procedures are saved in the database file after the tables; older versions of `enlngdb` open such a file and ignore them. `preview` does not apply to `create trigger`/`create procedure`.
 
@@ -1113,3 +1125,32 @@ fnd name from student
   * Did you mean 'find'? (the statement starts with 'fnd')
 ```
 A word that differs by one letter (two for a word of five or more letters), or by two letters swapped, is suggested. Nothing is changed or guessed: the statement still fails.
+
+### 12.12 Users and the server
+```enlngdb
+create user boss password "boss-pass-1" admin
+create user asha password "asha-pass-1"
+grant select, update on account to asha
+grant execute on procedure transfer to asha
+show users
+show grants for asha
+revoke update on account from asha
+```
+Databases can be served to other programs: `enlngdb --serve NAME [NAME...] [--port 7171] [--host 127.0.0.1] [--key FILE]` opens `NAME.edb` (and the others) and keeps them open, and many clients sign in and run statements at the same time. Each database needs at least one user, made in a script that uses it:
+
+```text
+enlngdb --serve shop bank --port 7171
+enlngdb --connect 7171/shop --user asha shop_report.enlngdb   (runs a script; the password is asked for)
+enlngdb --connect 10.0.0.5:7171/bank --user asha               (each line typed is run; 'exit' leaves)
+```
+`/NAME` says which database to sign in to (it can be left out when the server serves one); a connection stays in that database, and each database has its own users and rights. The password is asked for without showing it, or read from `ENLNGDB_PASSWORD`. Lines piped into the client go as one script. The client's exit code is 1 when a statement failed or was refused.
+
+**Encryption.** The connection is encrypted. The server has a key of its own (made the first time in `enlngdb_server.key`, which must be kept private) and prints its fingerprint when it starts. The first time a client connects to a server, it shows that fingerprint and asks whether it is the one the server printed, or takes it from `--trust FINGERPRINT`; it then remembers the key (in `~/.enlngdb_known_servers`, or the file `ENLNGDB_KNOWN_SERVERS` names) and refuses, from then on, a server at that address whose key is different, because someone may be in between. Each connection agrees on fresh keys (X25519 on both sides, with the server's own key, then HKDF with SHA-256), and every message is sealed with ChaCha20-Poly1305 (RFC 8439): it cannot be read, and a message changed, sent again or put out of order ends the connection. The code is the engine's own (no libraries); `enlngdb --selftest` checks it against known answers, and the tests compare it with Python's `cryptography` on random keys and messages. `--plain` (on both sides) turns encryption off, and only for `127.0.0.1`.
+
+**Users.** `create user NAME password "..." [admin]` (8 characters or more), `alter user NAME password "..."` (a user may change their own), `drop user NAME`, `show users`. Only a salted hash of a password is kept in the file (PBKDF2 with SHA-256, 60,000 rounds, a random salt per user); a wrong password and an unknown name take the same time, and three wrong passwords end the connection.
+
+**Rights.** `grant select, insert, update, delete (or all) on TABLE (or *) to USER`, `grant execute on procedure NAME to USER`, and `revoke ... from USER`; `show grants [for USER]`. An admin may do everything. A user who is not one may read the tables they may `select` (every table named in a statement counts, also in a join, a subquery, `with`, `union`, `describe` and `explain`, and also a name in quotes), change rows of the table a statement changes when they have that right, `call` a procedure they may `execute`, use `begin`, `commit`, `rollback`, savepoints and `undo`, and change their own password. Making, changing or dropping tables, views, indexes, triggers, procedures, users and rights is for an admin, and so are `import` and `export` (they read and write files on the server's computer) and `show users`, `show triggers`, `show procedures`. `insert ... with` cannot make a table or a column for a user who is not an admin. A view, a trigger and a procedure run with the rights of the admin who made them: granting `select` on a view lets a user read what the view shows. Rights on a table go when it is dropped and follow it when it is renamed.
+
+**The server.** One request runs at a time, so clients never see half a change. While one client has a transaction open, the requests of the others wait for it; after 10 seconds they are answered `busy` and nothing of them runs. A client that goes away with a transaction open has it rolled back. After a change, the database is saved as soon as no transaction is open, and again when the server stops (Ctrl+C, or an admin running `shutdown server`). `undo` takes back only a change the same client made. `use database` is refused for any database but the one served.
+
+What it does not do: there are no certificates, so the first connection to a server is only as safe as the check of its fingerprint (as with ssh). By default the server listens only on this computer (`127.0.0.1`); `--host 0.0.0.0` lets other computers in. Rights are checked by the server only: a program that opens `NAME.edb` itself (with `enlngdb script.enlngdb`) is its owner, and nothing is checked, because whoever can read the file can read the data. Users, rights, triggers and procedures are not part of a transaction or of `undo`. An older `enlngdb` opens a file with users and ignores them (and loses them if it saves it). The browser playground has no server.

@@ -5,7 +5,7 @@ EnlngDB is a small database engine that you talk to in plain words. You make a t
 - Small programs and scripts that need to keep a few tables in a file.
 - Trying an idea quickly in the playground on the Enlangg site, which runs the same engine in your browser.
 ## What it is not
-EnlngDB keeps a whole database in memory while a script runs, and runs one script at a time. It has no server and no users and permissions. Chapter 20 lists everything it does not have, so that you do not have to find out by trying.
+EnlngDB reads a whole database when a script opens it, and keeps it in memory; past a budget, in a file that the system brings into memory where it is used, so a database can be larger than memory (chapter 15). A script opens a database by itself; for many programs at once, `enlngdb --serve` keeps it open and lets users sign in, each with the rights they were granted (chapter 14). Chapter 20 lists everything it does not have, so that you do not have to find out by trying.
 ## One script, one engine
 A script is a text file that ends in `.enlngdb`. Each line is a statement. You run it like this:
 ::: sh

@@ -29,10 +29,14 @@ def check(name, cond, detail=""):
         print("FAIL ", name, str(detail)[:600])
 
 
+# ENLNGDB_TEST_CC names another compiler (clang for a 64-bit build); the C library of Visual C++ has no libm
+CC = os.environ.get("ENLNGDB_TEST_CC", "gcc")
+LM = [] if os.name == "nt" and "clang" in CC else ["-lm"]
+
 def build(tmp):
     exe = os.path.join(tmp, EXE)
     src = ["enlngdb/c/main.c", "enlngdb/c/enlngdb.c", "enlngdb/c/enlngdb_parser.c"]
-    subprocess.run(["gcc", "-O2", "-I.", "-Isrc", "-Ienlngdb/c"] + src + ["-lm", "-o", exe], cwd=ROOT, check=True)
+    subprocess.run([CC, "-O2", "-I.", "-Isrc", "-Ienlngdb/c"] + src + LM + ["-o", exe], cwd=ROOT, check=True)
     return exe
 
 
@@ -113,6 +117,18 @@ def main():
         check("undo takes back the last change only, once; the self-check finds nothing wrong",
               [r[0] for r in tables(out)[0][1:]] == ["1", "9", "9"] and "there is nothing to undo" in out and "UNDO-CHECK" not in out, out[-500:])
 
+        # ---- transactions keep records of the changes, not copies of the tables
+        out = run("create table big with id integer primary key, name text, v integer\n" + ins + "\n"
+                  "begin\nupdate big set v = -1 where id is 5\nsavepoint a\ndelete from big where v < 50\ncount records in big\n"
+                  "rollback to a\ncount records in big\nupdate big set v = -2 where id is 6\nundo\nfind v from big where id is 6\n"
+                  "insert into big values (999999, \"new\", 1)\nrollback\ncount records in big\nfind v from big where id is 5\n"
+                  "begin\nupdate big set v = 7 where id is 7\ncommit\nfind v from big where id is 7\n", env={"ENLNGDB_UNDO_CHECK": "1"})
+        f = firsts(out)
+        kept = n - sum(1 for i in range(1, n + 1) if i % 97 < 50)      # id 5 is -1 by then, so it goes too
+        check("a transaction on 30,000 rows: savepoint, rollback to, undo inside it, rollback and commit",
+              f[0] == str(kept) and f[1] == str(n) and f[2] == str(6 % 97) and f[3] == str(n) and f[4] == str(5 % 97) and f[5] == "7"
+              and "UNDO-CHECK" not in out, (f, out[-500:]))
+
         # ---- ranges: the same rows as reading every row
         r = random.Random(7)
         vals = []
@@ -159,9 +175,49 @@ def main():
                   "create trigger same before insert on u do set new.mail = \"a\"\ninsert into u values (2, \"b\")\ncount records in u\n"
                   "create trigger x1 before insert on u do insert into u values (9, \"z\")\ncreate trigger x2 before delete on u do set new.mail = \"q\"\n"
                   "create table c with id integer primary key, uid integer references u(id)\ncreate trigger x3 before update on u do set new.id = 7\nupdate u set mail = \"m\" where id is 1\n")
-        check("a before trigger keeps the rules of the table, and only sets the new row or raises",
-              "breaks a rule of 'u'" in out and firsts(out)[0] == "1" and "belongs in an after trigger" in out and "has no new row to set" in out
+        check("a before trigger keeps the rules of the table; it cannot set a delete's row or a key others refer to",
+              "breaks a rule of 'u'" in out and firsts(out)[0] == "1" and "has no new row to set" in out
               and "a before trigger cannot change u.id: c.uid refers to it" in out, out[-800:])
+
+        # ---- or, like "abc%" and bare words: the same rows as reading every row
+        r2 = random.Random(11)
+        body = "create table w with id integer primary key, k, name text\ninsert into w values " + ", ".join(
+            '(%d, %s, "%s")' % (i, r2.choice([str(r2.randint(0, 40)), '"%d"' % r2.randint(0, 40), '"w%d"' % r2.randint(0, 40), "null"]),
+                                r2.choice(["Asha", "asha k", "Ravi", "ravindra", "Meera", "12ab", "a_b"]) + str(r2.randint(0, 9)))
+            for i in range(1, 400)) + "\n"
+        conds = ["id is 5 or id is 300", "k is 3 or name like \"ra%\"", "name like \"asha%\"", "name like \"RAV%\"", "name like \"a_b%\"",
+                 "name like \"%a\"", "name is Ravi3", "(id < 20 or id > 390) and k is not null", "k between 1 and 4 or name like \"me%\"",
+                 "name like \"1%\" or id is 7", "not (id is 5) and id < 9", "k is w7 or k is 7", "name like \"%avi%\"", "name like \"sha\"", "name like \"%ee_a%\"", "name like \"%dra%\" and id > 50", "k like \"%w1%\" or name like \"%ha k%\""]
+        for c in conds:
+            body += "find id from w where %s\nfind id from w where (%s) or 1 = 0\n" % (c, c)
+        body += "delete from w where id < 100\nupdate w set name = \"Ravi3\" where id is 250\n"
+        for c in conds:
+            body += "find id from w where %s\nfind id from w where (%s) or 1 = 0\n" % (c, c)
+        out = run(body)
+        ts = tables(out)
+        pairs = list(zip(ts[0::2], ts[1::2]))
+        check("or, like (at the start or anywhere), and bare words give the rows that reading every row gives",
+              len(pairs) == 2 * len(conds) and all(a == b for a, b in pairs) and sum(1 for a, b in pairs if len(a) > 1) >= 12,
+              [conds[i % len(conds)] for i, (a, b) in enumerate(pairs) if a != b][:4])
+
+        # ---- before triggers that change other tables
+        out = run("create table acct with id integer primary key, owner text\ncreate table log with id integer primary key auto_increment, what text\n"
+                  "create table cnt with name text primary key, n integer\ninsert into cnt values (\"logged\", 0), (\"tried\", 0)\n"
+                  "create trigger bi before insert on acct do set new.owner = upper(new.owner); insert into log (what) values (\"before \" || new.owner)\n"
+                  "create trigger ai after insert on acct do insert into log (what) values (\"after \" || new.owner)\n"
+                  "create trigger cl after insert on log do update cnt set n = n + 1 where name is logged\n"
+                  "create trigger bd before delete on acct do update cnt set n = n + 1 where name is tried; raise \"no deletes\"\n"
+                  "insert into acct values (1, \"asha\"), (2, \"ravi\")\nfind what from log order by id\nfind n from cnt order by name\n"
+                  "delete from acct where id is 1\nfind n from cnt order by name\ncount records in acct\n")
+        t = tables(out)
+        check("a before trigger can change other tables; that runs before the after triggers, and a raise takes it back",
+              [x[0] for x in t[0][1:]] == ["before ASHA", "before RAVI", "after ASHA", "after RAVI"] and [x[0] for x in t[1][1:]] == ["4", "0"]
+              and "no deletes" in out and [x[0] for x in t[2][1:]] == ["4", "0"] and firsts(out)[-1] == "2", out[-900:])
+        out = run("create table a with id integer primary key, n text\ncreate trigger up before insert on a do set new.n = upper(new.n)\n"
+                  "create trigger lo after insert on a do update a set n = n where id is new.id\ncreate procedure p (x) as insert into a values (:x, \"q\")\n", name="keepboth")
+        out = run("show triggers\nshow procedures\ncall p(3)\nfind n from a\n", name="keepboth")
+        check("before and after triggers and procedures are saved and read back", "before insert" in out and "after insert" in out
+              and "| p " in out and firsts(out)[-1] == "Q", out[-600:])
 
         # ---- ||
         out = run("create table p with a text, b integer\ninsert into p values (\"x\", 1), (null, 2)\nfind a || \"-\" || b as t from p\nselect 1 || 2 as j\n")

@@ -26,10 +26,14 @@ def check(name, cond, detail=""):
         print("FAIL ", name, detail)
 
 
+# ENLNGDB_TEST_CC names another compiler (clang for a 64-bit build); the C library of Visual C++ has no libm
+CC = os.environ.get("ENLNGDB_TEST_CC", "gcc")
+LM = [] if os.name == "nt" and "clang" in CC else ["-lm"]
+
 def build(tmp):
     exe = os.path.join(tmp, EXE)
     src = ["enlngdb/c/main.c", "enlngdb/c/enlngdb.c", "enlngdb/c/enlngdb_parser.c"]
-    cmd = ["gcc", "-O2", "-I.", "-Isrc", "-Ienlngdb/c"] + src + ["-lm", "-o", exe]
+    cmd = [CC, "-O2", "-I.", "-Isrc", "-Ienlngdb/c"] + src + LM + ["-o", exe]
     subprocess.run(cmd, cwd=ROOT, check=True)
     return exe
 

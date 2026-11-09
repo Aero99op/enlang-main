@@ -9,6 +9,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <io.h>
 #else
 #include <sys/time.h>
 #include <fcntl.h>
@@ -17,6 +18,12 @@
 #include <sys/file.h>
 #endif
 #endif
+
+#define ENLNGDB_WRAP_ALLOC
+#include "enlngdb.h"
+
+/* printed text goes where the parser says (the screen, or a server's answer) */
+#define printf enlngdb_printf
 
 static double get_time_ms(void) {
 #ifdef _WIN32
@@ -142,6 +149,8 @@ void enlngdb_free(EnlngDatabase* db) {
     if (db->undo) { enlngdb_free_tables(db->undo, db->undo_count); db->undo = NULL; db->undo_count = 0; }
     if (db->journal && enlngdb_journal_free) enlngdb_journal_free(db->journal);
     db->journal = NULL;
+    if (db->txn_journal && enlngdb_txn_hooks) enlngdb_txn_hooks->drop(db->txn_journal);
+    db->txn_journal = NULL;
     if (db->txn) {
         enlngdb_free(db->txn);
         db->txn = NULL;
@@ -240,10 +249,15 @@ static EnlngDatabase* copy_database(const EnlngDatabase* db) {
     c->undo_count = 0;
     c->undo_what[0] = '\0';
     c->journal = NULL;
+    c->txn_journal = NULL;
     c->triggers = NULL;                 /* a copy is only of the tables; the lists stay with the open database */
     c->trigger_count = 0;
     c->procs = NULL;
     c->proc_count = 0;
+    c->users = NULL;
+    c->user_count = 0;
+    c->grants = NULL;
+    c->grant_count = 0;
     for (int t = 0; t < db->table_count; t++) {
         const EnlngTable* src = &db->tables[t];
         EnlngTable* dst = &c->tables[t];
@@ -257,9 +271,12 @@ static EnlngDatabase* copy_database(const EnlngDatabase* db) {
     return c;
 }
 
+const EnlngTxnHooks* enlngdb_txn_hooks = NULL;
+
 bool enlngdb_begin(EnlngDatabase* db) {
     enlngdb_mutations++;
     if (!db || db->txn) return false;
+    if (enlngdb_txn_hooks) return enlngdb_txn_hooks->begin(db);
     db->txn = copy_database(db);
     return db->txn != NULL;
 }
@@ -267,6 +284,7 @@ bool enlngdb_begin(EnlngDatabase* db) {
 bool enlngdb_commit(EnlngDatabase* db) {
     enlngdb_mutations++;
     if (!db || !db->txn) return false;
+    if (db->txn_journal && enlngdb_txn_hooks) return enlngdb_txn_hooks->commit(db);
     free_saves(db, 0);
     enlngdb_free(db->txn);
     db->txn = NULL;
@@ -285,6 +303,7 @@ static void take_tables(EnlngDatabase* db, EnlngDatabase* saved) {
 bool enlngdb_rollback(EnlngDatabase* db) {
     enlngdb_mutations++;
     if (!db || !db->txn) return false;
+    if (db->txn_journal && enlngdb_txn_hooks) return enlngdb_txn_hooks->rollback(db);
     EnlngDatabase* saved = db->txn;
     db->txn = NULL;
     free_saves(db, 0);
@@ -340,6 +359,7 @@ static int find_save(const EnlngDatabase* db, const char* name) {
 
 bool enlngdb_savepoint(EnlngDatabase* db, const char* name) {
     if (!db || !db->txn || !name || db->nsaves >= 16) return false;
+    if (db->txn_journal && enlngdb_txn_hooks) return enlngdb_txn_hooks->savepoint(db, name);
     EnlngDatabase* c = copy_database(db);
     if (!c) return false;
     db->saves[db->nsaves] = c;
@@ -351,6 +371,7 @@ bool enlngdb_savepoint(EnlngDatabase* db, const char* name) {
 /* back to the savepoint: what came after it is undone, and the savepoint stays */
 bool enlngdb_rollback_to(EnlngDatabase* db, const char* name) {
     enlngdb_mutations++;
+    if (db && db->txn_journal && enlngdb_txn_hooks) return enlngdb_txn_hooks->rollback_to(db, name);
     int i = db ? find_save(db, name) : -1;
     if (i < 0) return false;
     EnlngDatabase* c = copy_database(db->saves[i]);
@@ -361,6 +382,7 @@ bool enlngdb_rollback_to(EnlngDatabase* db, const char* name) {
 }
 
 bool enlngdb_release(EnlngDatabase* db, const char* name) {
+    if (db && db->txn_journal && enlngdb_txn_hooks) return enlngdb_txn_hooks->release(db, name);
     int i = db ? find_save(db, name) : -1;
     if (i < 0) return false;
     free_saves(db, i);
@@ -988,10 +1010,22 @@ void enlngdb_free_extras(EnlngDatabase* db) {
     free(db->procs);
     db->procs = NULL;
     db->proc_count = 0;
+    free(db->users);
+    db->users = NULL;
+    db->user_count = 0;
+    free(db->grants);
+    db->grants = NULL;
+    db->grant_count = 0;
 }
 
 void enlngdb_forget_triggers_of(EnlngDatabase* db, const char* table) {
     if (!db) return;
+    int g = 0;
+    for (int i = 0; i < db->grant_count; i++) {
+        if (!db->grants[i].is_proc && strcmp(db->grants[i].object, table) == 0) continue;     /* rights on a table go with it */
+        db->grants[g++] = db->grants[i];
+    }
+    db->grant_count = g;
     int w = 0;
     for (int i = 0; i < db->trigger_count; i++) {
         if (strcmp(db->triggers[i].table, table) == 0) { free(db->triggers[i].when); free(db->triggers[i].body); continue; }
@@ -1003,12 +1037,35 @@ void enlngdb_forget_triggers_of(EnlngDatabase* db, const char* table) {
 
 void enlngdb_rename_triggers_of(EnlngDatabase* db, const char* from, const char* to) {
     if (!db) return;
+    for (int i = 0; i < db->grant_count; i++) {
+        if (!db->grants[i].is_proc && strcmp(db->grants[i].object, from) == 0) snprintf(db->grants[i].object, sizeof(db->grants[i].object), "%s", to);
+    }
     for (int i = 0; i < db->trigger_count; i++) {
         if (strcmp(db->triggers[i].table, from) == 0) snprintf(db->triggers[i].table, sizeof(db->triggers[i].table), "%s", to);
     }
 }
 
 static const char ENLNGDB_EXT_MAGIC[16] = "ENLNGDB-EXT1";
+static const char ENLNGDB_EXT2_MAGIC[16] = "ENLNGDB-EXT2";
+static const char ENLNGDB_EXT3_MAGIC[16] = "ENLNGDB-EXT3";
+
+bool enlngdb_random_bytes(unsigned char* out, size_t n) {
+#ifdef _WIN32
+    typedef BOOLEAN (WINAPI *GenRandom)(PVOID, ULONG);
+    static GenRandom gen = NULL;
+    if (!gen) {
+        HMODULE lib = LoadLibraryA("advapi32.dll");
+        if (lib) gen = (GenRandom)(void*)GetProcAddress(lib, "SystemFunction036");     /* RtlGenRandom */
+    }
+    return gen && gen(out, (ULONG)n);
+#else
+    FILE* f = fopen("/dev/urandom", "rb");
+    if (!f) return false;
+    bool ok = fread(out, 1, n, f) == n;
+    fclose(f);
+    return ok;
+#endif
+}
 
 static void put_heap(FILE* f, const char* s) {
     uint32_t len = s ? (uint32_t)strlen(s) : 0;
@@ -1097,6 +1154,7 @@ bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
     snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", filepath);
     FILE* f = fopen(tmp_path, "wb");
     if (!f) return false;
+    setvbuf(f, NULL, _IOFBF, 1 << 20);
 
     int saved_tables = 0;
     for (int t = 0; t < db->table_count; t++) if (!db->tables[t].is_temp) saved_tables++;
@@ -1133,18 +1191,32 @@ bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
             fwrite(&ix->col_count, sizeof(int), 1, f);
             for (int k = 0; k < ix->col_count; k++) put_text(f, ix->cols[k]);
         }
-        fwrite(&tbl->row_count, sizeof(size_t), 1, f);
+        /* 4 bytes, as the 32-bit programs before wrote it; past 4,294,967,294 rows, 0xFFFFFFFF and then 8 bytes */
+        if (tbl->row_count < 0xFFFFFFFFu) {
+            uint32_t rc = (uint32_t)tbl->row_count;
+            fwrite(&rc, sizeof(rc), 1, f);
+        } else {
+            uint32_t mark = 0xFFFFFFFFu;
+            uint64_t rc = (uint64_t)tbl->row_count;
+            fwrite(&mark, sizeof(mark), 1, f);
+            fwrite(&rc, sizeof(rc), 1, f);
+        }
         for (size_t r = 0; r < tbl->row_count; r++) {
             const EnlngRow* row = &tbl->rows[r];
             fwrite(&row->cell_count, sizeof(int), 1, f);
             for (int c = 0; c < row->cell_count; c++) put_val(f, &row->cells[c]);
         }
     }
-    if (db->trigger_count > 0 || db->proc_count > 0) {
+    if (db->trigger_count > 0 || db->proc_count > 0 || db->user_count > 0) {
+        /* after triggers here; before triggers in a part of their own at the end, which a program that does not
+           know them (and would read them as after triggers) never reaches */
+        int n_after = 0, n_before = 0;
+        for (int i = 0; i < db->trigger_count; i++) { if (db->triggers[i].event >= 10) n_before++; else n_after++; }
         fwrite(ENLNGDB_EXT_MAGIC, 1, 16, f);
-        fwrite(&db->trigger_count, sizeof(int), 1, f);
+        fwrite(&n_after, sizeof(int), 1, f);
         for (int i = 0; i < db->trigger_count; i++) {
             const EnlngTrigger* tg = &db->triggers[i];
+            if (tg->event >= 10) continue;
             fwrite(tg->name, 1, ENLNGDB_MAX_NAME, f);
             fwrite(tg->table, 1, ENLNGDB_MAX_NAME, f);
             fwrite(&tg->event, sizeof(int), 1, f);
@@ -1158,12 +1230,103 @@ bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
             put_heap(f, pr->params);
             put_heap(f, pr->body);
         }
+        if (n_before > 0) {
+            fwrite(ENLNGDB_EXT2_MAGIC, 1, 16, f);
+            fwrite(&n_before, sizeof(int), 1, f);
+            for (int i = 0; i < db->trigger_count; i++) {
+                const EnlngTrigger* tg = &db->triggers[i];
+                if (tg->event < 10) continue;
+                fwrite(tg->name, 1, ENLNGDB_MAX_NAME, f);
+                fwrite(tg->table, 1, ENLNGDB_MAX_NAME, f);
+                fwrite(&tg->event, sizeof(int), 1, f);
+                put_heap(f, tg->when);
+                put_heap(f, tg->body);
+            }
+        }
+        if (db->user_count > 0) {
+            /* the users and what they may do; an older program stops before this part */
+            fwrite(ENLNGDB_EXT3_MAGIC, 1, 16, f);
+            fwrite(&db->user_count, sizeof(int), 1, f);
+            for (int i = 0; i < db->user_count; i++) {
+                const EnlngUser* u = &db->users[i];
+                int admin = u->admin ? 1 : 0;
+                fwrite(u->name, 1, ENLNGDB_MAX_NAME, f);
+                fwrite(u->salt, 1, 16, f);
+                fwrite(u->hash, 1, 32, f);
+                fwrite(&u->rounds, sizeof(int), 1, f);
+                fwrite(&admin, sizeof(int), 1, f);
+            }
+            fwrite(&db->grant_count, sizeof(int), 1, f);
+            for (int i = 0; i < db->grant_count; i++) {
+                const EnlngGrant* g = &db->grants[i];
+                fwrite(g->user, 1, ENLNGDB_MAX_NAME, f);
+                fwrite(g->object, 1, ENLNGDB_MAX_NAME, f);
+                fwrite(&g->is_proc, sizeof(int), 1, f);
+                fwrite(&g->rights, sizeof(unsigned int), 1, f);
+            }
+        }
     }
     bool wrote = fflush(f) == 0 && ferror(f) == 0;
+    /* the new file is on the disk before it takes the old one's place: after a crash or a power cut the file is
+       either the old one or the new one, whole */
+#ifdef _WIN32
+    if (wrote && _commit(_fileno(f)) != 0) wrote = false;
+#elif !defined(__EMSCRIPTEN__)
+    if (wrote && fsync(fileno(f)) != 0) wrote = false;
+#endif
     if (fclose(f) != 0) wrote = false;
     if (!wrote) { remove(tmp_path); return false; }
-    remove(filepath);
+#ifdef _WIN32
+    /* One step, never a moment without the file. Another program (a virus scanner, the search index) may hold
+       the file for a moment just after it was written: then it is tried again, for up to about 2 seconds. */
+    {
+        bool moved = false;
+        for (int attempt = 0; attempt < 40 && !moved; attempt++) {
+            moved = MoveFileExA(tmp_path, filepath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
+            if (moved) break;
+            DWORD e = GetLastError();
+            if (e != ERROR_ACCESS_DENIED && e != ERROR_SHARING_VIOLATION && e != ERROR_LOCK_VIOLATION) break;
+            Sleep(attempt < 10 ? 10 : 50);
+        }
+        if (!moved) { remove(tmp_path); return false; }
+    }
+#else
     if (rename(tmp_path, filepath) != 0) { remove(tmp_path); return false; }
+#ifndef __EMSCRIPTEN__
+    {
+        /* and the folder remembers the new name */
+        char dir[1100];
+        snprintf(dir, sizeof(dir), "%s", filepath);
+        char* slash = strrchr(dir, '/');
+        if (slash) *slash = '\0'; else snprintf(dir, sizeof(dir), ".");
+        int dfd = open(dir, O_RDONLY);
+        if (dfd >= 0) { fsync(dfd); close(dfd); }
+    }
+#endif
+#endif
+    return true;
+}
+
+/* adds a row at the end that owns these cells (they are not copied), as enlngdb_append_row does otherwise */
+static bool take_row(EnlngTable* table, EnlngVal* cells, int cell_count) {
+    enlngdb_mutations++;
+    CHANGE(table, ENLNGDB_CH_APPEND);
+    if (table->row_count >= table->row_capacity) {
+        size_t new_cap = table->row_capacity == 0 ? 16 : table->row_capacity * 2;
+        EnlngRow* new_rows = (EnlngRow*)realloc(table->rows, new_cap * sizeof(EnlngRow));
+        if (!new_rows) return false;
+        table->rows = new_rows;
+        table->row_capacity = new_cap;
+    }
+    EnlngVal* own = (EnlngVal*)malloc((cell_count ? cell_count : 1) * sizeof(EnlngVal));
+    if (!own) return false;
+    memcpy(own, cells, (size_t)cell_count * sizeof(EnlngVal));
+    EnlngRow* row = &table->rows[table->row_count];
+    row->cells = own;
+    row->cell_count = cell_count;
+    row->version = 1;
+    table->row_count++;
+    table->version++;
     return true;
 }
 
@@ -1172,6 +1335,7 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
     if (!db || !filepath) return false;
     FILE* f = fopen(filepath, "rb");
     if (!f) return false;
+    setvbuf(f, NULL, _IOFBF, 1 << 20);
 
     char magic[16];
     if (fread(magic, 1, 16, f) != 16) { fclose(f); return false; }
@@ -1256,7 +1420,32 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
         }
 
         size_t row_cnt = 0;
-        if (fread(&row_cnt, sizeof(size_t), 1, f) != 1) break;
+        uint32_t rc32 = 0;
+        if (fread(&rc32, sizeof(rc32), 1, f) != 1) break;
+        row_cnt = rc32;
+        {
+            /* A 64-bit program before wrote the count in 8 bytes. Then the next 4 bytes are 0 (the high half), where
+               in a file of 4 bytes they are the number of cells of the first row (never 0), the name of the next
+               table or the part after the tables (neither starts with 0), or the end of the file. */
+            uint32_t high = 1;
+            fpos_t at;                      /* fgetpos: also past 2 GB */
+            bool marked = fgetpos(f, &at) == 0;
+            if (rc32 != 0xFFFFFFFFu && fread(&high, sizeof(high), 1, f) == 1 && high == 0) {
+                /* the 8-byte count, taken whole */
+            } else if (marked) {
+                fsetpos(f, &at);
+            }
+        }
+        if (rc32 == 0xFFFFFFFFu) {
+            uint64_t rc64 = 0;
+            if (fread(&rc64, sizeof(rc64), 1, f) != 1 || rc64 > (uint64_t)SIZE_MAX / sizeof(EnlngRow)) break;
+            row_cnt = (size_t)rc64;
+        }
+        if (row_cnt > tbl->row_capacity) {
+            /* the row list is made once at its size (it is not grown row by row) */
+            EnlngRow* nr = (EnlngRow*)realloc(tbl->rows, row_cnt * sizeof(EnlngRow));
+            if (nr) { tbl->rows = nr; tbl->row_capacity = row_cnt; }
+        }
         for (size_t r = 0; r < row_cnt; r++) {
             int cell_cnt = 0;
             if (fread(&cell_cnt, sizeof(int), 1, f) != 1 || cell_cnt < 0 || cell_cnt > ENLNGDB_MAX_COLS) { bad = true; break; }
@@ -1265,7 +1454,7 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
             for (; got < cell_cnt; got++) {
                 if (!get_val(f, &cells[got])) { bad = true; break; }
             }
-            if (!bad) enlngdb_append_row(tbl, cells, cell_cnt);
+            if (!bad && take_row(tbl, cells, cell_cnt)) continue;
             for (int c = 0; c < got; c++) enlng_free_val(&cells[c]);
             if (bad) break;
         }
@@ -1302,8 +1491,481 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
                     db->procs[db->proc_count++] = pr;
                 }
             }
+            /* before triggers, then users: each part is there only when it has something */
+            char ext2[16];
+            int nb = 0;
+            bool have_part = fread(ext2, 1, 16, f) == 16;
+            if (have_part && memcmp(ext2, ENLNGDB_EXT2_MAGIC, 16) == 0 && fread(&nb, sizeof(int), 1, f) == 1 && nb >= 0 && nb < 100000) {
+                for (int i = 0; i < nb; i++) {
+                    EnlngTrigger tg;
+                    memset(&tg, 0, sizeof(tg));
+                    if (fread(tg.name, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME || fread(tg.table, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME ||
+                        fread(&tg.event, sizeof(int), 1, f) != 1) break;
+                    tg.when = get_heap(f);
+                    tg.body = get_heap(f);
+                    if (!tg.body || tg.event < 11 || tg.event > 13) { free(tg.when); free(tg.body); break; }
+                    if (tg.when && !tg.when[0]) { free(tg.when); tg.when = NULL; }
+                    db->triggers = (EnlngTrigger*)realloc(db->triggers, sizeof(EnlngTrigger) * (size_t)(db->trigger_count + 1));
+                    db->triggers[db->trigger_count++] = tg;
+                }
+                have_part = fread(ext2, 1, 16, f) == 16;
+            }
+            int nu = 0;
+            if (have_part && memcmp(ext2, ENLNGDB_EXT3_MAGIC, 16) == 0 && fread(&nu, sizeof(int), 1, f) == 1 && nu >= 0 && nu < 100000) {
+                for (int i = 0; i < nu; i++) {
+                    EnlngUser u;
+                    int admin = 0;
+                    memset(&u, 0, sizeof(u));
+                    if (fread(u.name, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME || fread(u.salt, 1, 16, f) != 16 || fread(u.hash, 1, 32, f) != 32 ||
+                        fread(&u.rounds, sizeof(int), 1, f) != 1 || fread(&admin, sizeof(int), 1, f) != 1) break;
+                    u.name[ENLNGDB_MAX_NAME - 1] = '\0';
+                    u.admin = admin != 0;
+                    db->users = (EnlngUser*)realloc(db->users, sizeof(EnlngUser) * (size_t)(db->user_count + 1));
+                    db->users[db->user_count++] = u;
+                }
+                int ng = 0;
+                if (fread(&ng, sizeof(int), 1, f) == 1 && ng >= 0 && ng < 1000000) {
+                    for (int i = 0; i < ng; i++) {
+                        EnlngGrant g;
+                        memset(&g, 0, sizeof(g));
+                        if (fread(g.user, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME || fread(g.object, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME ||
+                            fread(&g.is_proc, sizeof(int), 1, f) != 1 || fread(&g.rights, sizeof(unsigned int), 1, f) != 1) break;
+                        g.user[ENLNGDB_MAX_NAME - 1] = g.object[ENLNGDB_MAX_NAME - 1] = '\0';
+                        db->grants = (EnlngGrant*)realloc(db->grants, sizeof(EnlngGrant) * (size_t)(db->grant_count + 1));
+                        db->grants[db->grant_count++] = g;
+                    }
+                }
+            }
         }
     }
     fclose(f);
     return true;
 }
+
+/* ---- memory -------------------------------------------------------------------------------------------------
+ * Up to a budget the engine takes memory from the C library. Past it, new memory comes from a file mapped into
+ * the program: the system keeps in memory only the pages of it that are used and writes the others to the file,
+ * so the rows of a database can be larger than the memory of the computer (only the disk limits them). Memory
+ * from the file does not count against the memory the system promises to programs, as it has a file behind it.
+ *
+ * The file is cut into chunks of 64 MB. A small block (up to 32 KB) comes from a list per size; a middle one (up
+ * to 16 MB) is a power of two; a larger one gets chunks of its own, given back to the system when it is freed.
+ * Every block of the file starts with 16 bytes that say its size. A block of the C library is told apart by its
+ * address (the chunks are kept sorted), so memory of either kind can be freed or grown with the same calls. */
+#undef malloc
+#undef calloc
+#undef realloc
+#undef free
+#undef strdup
+
+#if defined(__EMSCRIPTEN__)
+void* enlngdb_malloc(size_t n) { return malloc(n); }
+void* enlngdb_calloc(size_t n, size_t size) { return calloc(n, size); }
+void* enlngdb_realloc(void* p, size_t n) { return realloc(p, n); }
+void enlngdb_mfree(void* p) { free(p); }
+char* enlngdb_strdup(const char* s) { return strdup(s); }
+void enlngdb_memory_stats(size_t* heap, size_t* heap_peak, size_t* spill, size_t* spill_peak) {
+    if (heap) *heap = 0;
+    if (heap_peak) *heap_peak = 0;
+    if (spill) *spill = 0;
+    if (spill_peak) *spill_peak = 0;
+}
+#else
+
+#ifdef _WIN32
+#include <malloc.h>
+#include <winioctl.h>
+#define A_LIBC_SIZE(p) _msize(p)
+#elif defined(__APPLE__)
+#include <malloc/malloc.h>
+#include <sys/mman.h>
+#define A_LIBC_SIZE(p) malloc_size(p)
+#else
+#include <malloc.h>
+#include <sys/mman.h>
+#define A_LIBC_SIZE(p) malloc_usable_size(p)
+#endif
+
+#define A_CHUNK ((size_t)64 << 20)
+#define A_SMALL_MAX ((size_t)32768)
+#define A_MID_MAX ((size_t)16 << 20)
+#define A_MAGIC 0xED8A110Cu
+#define A_HUGE 0xFFFFu
+
+typedef struct { uint32_t magic; uint32_t cls; uint64_t size; } AHdr;        /* size: the whole block */
+typedef struct { char* base; size_t size; uint64_t off; int huge; } AChunk;
+
+static int a_state;                 /* 0 not started, 1 the C library only, 2 the file may be used */
+static size_t a_budget;
+static size_t a_heap, a_heap_peak, a_spill, a_spill_peak;
+static AChunk* a_chunks;
+static int a_nchunks, a_capchunks;
+static char* a_lo;
+static char* a_hi;
+static char* a_cur;
+static char* a_end;
+static uint64_t a_file_end;
+static void* a_free_small[80];
+static void* a_free_mid[16];
+static uint32_t a_cls_size[80];
+static int a_ncls;
+static uint8_t a_cls_of[A_SMALL_MAX / 16 + 1];
+static int a_file_ready;            /* 0 not yet, 1 open, -1 could not be made */
+#ifdef _WIN32
+static HANDLE a_file = INVALID_HANDLE_VALUE;
+#else
+static int a_fd = -1;
+#endif
+
+static size_t a_parse_size(const char* s) {
+    char* end = NULL;
+    double v = strtod(s, &end);
+    if (end == s || v < 0) return 0;
+    while (*end == ' ') end++;
+    char u = (char)toupper((unsigned char)*end);
+    if (u == 'K') v *= 1024.0;
+    else if (u == 'M') v *= 1024.0 * 1024.0;
+    else if (u == 'G') v *= 1024.0 * 1024.0 * 1024.0;
+    else if (u == 'T') v *= 1024.0 * 1024.0 * 1024.0 * 1024.0;
+    return (size_t)v;
+}
+
+static size_t a_physical_memory(void) {
+#ifdef _WIN32
+    MEMORYSTATUSEX ms;
+    ms.dwLength = sizeof(ms);
+    if (GlobalMemoryStatusEx(&ms)) return (size_t)ms.ullTotalPhys;
+    return (size_t)4 << 30;
+#else
+    long pages = sysconf(_SC_PHYS_PAGES), psz = sysconf(_SC_PAGESIZE);
+    if (pages > 0 && psz > 0) return (size_t)pages * (size_t)psz;
+    return (size_t)4 << 30;
+#endif
+}
+
+static void a_report(void) {
+    fprintf(stderr, "enlngdb memory: %.1f MB in memory at most, %.1f MB in the file at most\n",
+            a_heap_peak / 1048576.0, a_spill_peak / 1048576.0);
+}
+
+static void a_start(void) {
+    a_state = 1;
+    const char* m = getenv("ENLNGDB_MEMORY");
+    if (m && *m) {
+        if (strcmp(m, "all") == 0 || strcmp(m, "off") == 0) return;
+        a_budget = a_parse_size(m);
+        if (a_budget < ((size_t)4 << 20)) a_budget = (size_t)4 << 20;
+    } else {
+        a_budget = a_physical_memory() / 2;
+        /* a 32-bit program has 2 GB of addresses in all: past 1 GB the rest is left for the file */
+        if (sizeof(void*) < 8 && a_budget > ((size_t)1 << 30)) a_budget = (size_t)1 << 30;
+    }
+    /* the sizes of small blocks: 16 to 256 by 16, then four sizes for each doubling */
+    uint32_t s = 16;
+    while (s <= 256) { a_cls_size[a_ncls++] = s; s += 16; }
+    for (uint32_t p = 256; p < A_SMALL_MAX; p *= 2)
+        for (int k = 1; k <= 4; k++) a_cls_size[a_ncls++] = p + p / 4 * (uint32_t)k;
+    int c = 0;
+    for (size_t i = 0; i <= A_SMALL_MAX / 16; i++) {
+        while (a_cls_size[c] < i * 16) c++;
+        a_cls_of[i] = (uint8_t)c;
+    }
+    const char* st = getenv("ENLNGDB_MEMSTAT");
+    if (st && *st && *st != '0') atexit(a_report);
+    a_state = 2;
+}
+
+static bool a_open_file(void) {
+    if (a_file_ready) return a_file_ready > 0;
+    a_file_ready = -1;
+    char dir[600];
+    const char* d = getenv("ENLNGDB_SPILL_DIR");
+#ifdef _WIN32
+    if (d && *d) snprintf(dir, sizeof(dir), "%s", d);
+    else if (!GetTempPathA(sizeof(dir), dir)) snprintf(dir, sizeof(dir), ".");
+    size_t dl = strlen(dir);
+    while (dl > 0 && (dir[dl - 1] == '\\' || dir[dl - 1] == '/')) dir[--dl] = '\0';
+    char path[700];
+    unsigned char r[8] = {0};
+    enlngdb_random_bytes(r, sizeof(r));
+    snprintf(path, sizeof(path), "%s\\enlngdb-memory-%lu-%02x%02x%02x%02x.tmp", dir, (unsigned long)GetCurrentProcessId(),
+             r[0], r[1], r[2], r[3]);
+    a_file = CreateFileA(path, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW,
+                         FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, NULL);
+    if (a_file == INVALID_HANDLE_VALUE) return false;
+    DWORD got = 0;
+    DeviceIoControl(a_file, FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &got, NULL);   /* parts never used take no disk */
+#else
+    if (d && *d) snprintf(dir, sizeof(dir), "%s", d);
+    else {
+        const char* t = getenv("TMPDIR");
+        snprintf(dir, sizeof(dir), "%s", t && *t ? t : "/tmp");
+    }
+    char path[700];
+    snprintf(path, sizeof(path), "%s/enlngdb-memory-XXXXXX", dir);
+    a_fd = mkstemp(path);
+    if (a_fd < 0) return false;
+    unlink(path);           /* gone when the program ends */
+#endif
+    a_file_ready = 1;
+    return true;
+}
+
+/* maps 'size' more bytes of the file (a multiple of 1 MB); NULL when the file cannot grow */
+static char* a_map(size_t size, uint64_t* off_out) {
+    if (!a_open_file()) return NULL;
+    uint64_t off = a_file_end, end = a_file_end + size;
+    char* base = NULL;
+#ifdef _WIN32
+    HANDLE map = CreateFileMappingA(a_file, NULL, PAGE_READWRITE, (DWORD)(end >> 32), (DWORD)(end & 0xFFFFFFFFu), NULL);
+    if (!map) return NULL;
+    base = (char*)MapViewOfFile(map, FILE_MAP_ALL_ACCESS, (DWORD)(off >> 32), (DWORD)(off & 0xFFFFFFFFu), size);
+    CloseHandle(map);
+    if (!base) return NULL;
+#else
+    if (ftruncate(a_fd, (off_t)end) != 0) return NULL;
+    void* m = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, a_fd, (off_t)off);
+    if (m == MAP_FAILED) return NULL;
+    base = (char*)m;
+#endif
+    a_file_end = end;
+    *off_out = off;
+    return base;
+}
+
+static void a_unmap(char* base, size_t size, uint64_t off) {
+#ifdef _WIN32
+    UnmapViewOfFile(base);
+    struct { LARGE_INTEGER from, to; } z;      /* FILE_ZERO_DATA_INFORMATION */
+    z.from.QuadPart = (LONGLONG)off;
+    z.to.QuadPart = (LONGLONG)(off + size);
+    DWORD got = 0;
+    DeviceIoControl(a_file, 0x000980C8u /* FSCTL_SET_ZERO_DATA */, &z, sizeof(z), NULL, 0, &got, NULL);   /* the disk is given back */
+#else
+    munmap(base, size);
+#if defined(__linux__) && defined(FALLOC_FL_PUNCH_HOLE)
+    fallocate(a_fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, (off_t)off, (off_t)size);
+#else
+    (void)off;
+#endif
+#endif
+}
+
+static bool a_add_chunk(char* base, size_t size, uint64_t off, int huge) {
+    if (a_nchunks == a_capchunks) {
+        int cap = a_capchunks ? a_capchunks * 2 : 64;
+        AChunk* n = (AChunk*)realloc(a_chunks, sizeof(AChunk) * (size_t)cap);
+        if (!n) return false;
+        a_chunks = n;
+        a_capchunks = cap;
+    }
+    int i = a_nchunks;
+    while (i > 0 && a_chunks[i - 1].base > base) { a_chunks[i] = a_chunks[i - 1]; i--; }
+    a_chunks[i].base = base;
+    a_chunks[i].size = size;
+    a_chunks[i].off = off;
+    a_chunks[i].huge = huge;
+    a_nchunks++;
+    if (!a_lo || base < a_lo) a_lo = base;
+    if (base + size > a_hi) a_hi = base + size;
+    return true;
+}
+
+/* the chunk that holds p, or -1 (memory of the C library) */
+static int a_chunk_of(const void* p) {
+    const char* c = (const char*)p;
+    if (!a_nchunks || c < a_lo || c >= a_hi) return -1;
+    int lo = 0, hi = a_nchunks - 1;
+    while (lo <= hi) {
+        int mid = (lo + hi) / 2;
+        if (c < a_chunks[mid].base) hi = mid - 1;
+        else if (c >= a_chunks[mid].base + a_chunks[mid].size) lo = mid + 1;
+        else return mid;
+    }
+    return -1;
+}
+
+static void a_note_spill(size_t n, int sign) {
+    if (sign > 0) { a_spill += n; if (a_spill > a_spill_peak) a_spill_peak = a_spill; }
+    else a_spill -= n;
+}
+
+/* a block of 'total' bytes (header included) cut from the current chunk */
+static void* a_carve(size_t total) {
+    if (!a_cur || (size_t)(a_end - a_cur) < total) {
+        uint64_t off;
+        char* base = a_map(A_CHUNK, &off);
+        if (!base || !a_add_chunk(base, A_CHUNK, off, 0)) return NULL;
+        a_cur = base;
+        a_end = base + A_CHUNK;
+    }
+    void* b = a_cur;
+    a_cur += total;
+    return b;
+}
+
+static void* a_file_alloc(size_t n) {
+    if (n > SIZE_MAX - 64) return NULL;
+    size_t total = n + sizeof(AHdr);
+    AHdr* h;
+    if (total <= A_SMALL_MAX) {
+        int c = a_cls_of[(total + 15) / 16];
+        if (a_free_small[c]) { h = (AHdr*)a_free_small[c]; a_free_small[c] = *(void**)(h + 1); }
+        else if (!(h = (AHdr*)a_carve(a_cls_size[c]))) return NULL;
+        h->cls = (uint32_t)c;
+        h->size = a_cls_size[c];
+    } else if (total <= A_MID_MAX) {
+        int k = 16;
+        while (((size_t)1 << k) < total) k++;
+        if (a_free_mid[k - 16]) { h = (AHdr*)a_free_mid[k - 16]; a_free_mid[k - 16] = *(void**)(h + 1); }
+        else if (!(h = (AHdr*)a_carve((size_t)1 << k))) return NULL;
+        h->cls = 0x100u + (uint32_t)k;
+        h->size = (size_t)1 << k;
+    } else {
+        size_t size = (total + ((size_t)1 << 20) - 1) & ~(((size_t)1 << 20) - 1);
+        uint64_t off;
+        char* base = a_map(size, &off);
+        if (!base) return NULL;
+        if (!a_add_chunk(base, size, off, 1)) { a_unmap(base, size, off); return NULL; }
+        h = (AHdr*)base;
+        h->cls = A_HUGE;
+        h->size = size;
+    }
+    h->magic = A_MAGIC;
+    a_note_spill(h->size, 1);
+    return h + 1;
+}
+
+static void a_file_free(void* p, int chunk) {
+    AHdr* h = (AHdr*)p - 1;
+    a_note_spill(h->size, -1);
+    if (h->cls == A_HUGE) {
+        AChunk ch = a_chunks[chunk];
+        for (int i = chunk; i + 1 < a_nchunks; i++) a_chunks[i] = a_chunks[i + 1];
+        a_nchunks--;
+        a_unmap(ch.base, ch.size, ch.off);
+        return;
+    }
+    if (h->cls >= 0x100u) {
+        int k = (int)(h->cls - 0x100u);
+        *(void**)(h + 1) = a_free_mid[k - 16];
+        a_free_mid[k - 16] = h;
+#if !defined(_WIN32) && defined(MADV_DONTNEED)
+        /* a large free block need not be written to the file (its pages after the first are dropped) */
+        size_t pg = 4096;
+        char* from = (char*)h + pg;
+        if (h->size > 2 * pg) madvise(from, h->size - pg, MADV_DONTNEED);
+#endif
+        return;
+    }
+    *(void**)(h + 1) = a_free_small[h->cls];
+    a_free_small[h->cls] = h;
+}
+
+static size_t a_capacity(void* p) {
+    AHdr* h = (AHdr*)p - 1;
+    return (size_t)h->size - sizeof(AHdr);
+}
+
+/* no memory and no room in the file: say so and stop (the database file is left as it was) */
+static void a_out_of_memory(size_t n) {
+    fflush(stdout);
+    fprintf(stderr, "\nERROR: out of memory: %.1f MB more were needed%s. The database file was not changed by this run.\n",
+            n / 1048576.0, a_state == 2 ? ", and the file for memory could not grow (is the disk full? ENLNGDB_SPILL_DIR can name another folder)" : "");
+    exit(3);
+}
+
+void* enlngdb_malloc(size_t n) {
+    if (!a_state) a_start();
+    if (n == 0) n = 1;
+    if (a_state == 2 && a_heap + n > a_budget && a_file_ready >= 0) {
+        void* p = a_file_alloc(n);
+        if (p) return p;
+    }
+    void* p = malloc(n);
+    if (!p && a_state == 2 && a_file_ready >= 0) p = a_file_alloc(n);     /* the system is out of memory first */
+    if (!p) a_out_of_memory(n);
+    else if (a_chunk_of(p) >= 0) return p;
+    if (a_state == 2) {
+        a_heap += A_LIBC_SIZE(p);
+        if (a_heap > a_heap_peak) a_heap_peak = a_heap;
+    }
+    return p;
+}
+
+void* enlngdb_calloc(size_t n, size_t size) {
+    if (size && n > SIZE_MAX / size) return NULL;
+    size_t t = n * size;
+    void* p = enlngdb_malloc(t);
+    if (p) memset(p, 0, t ? t : 1);
+    return p;
+}
+
+void enlngdb_mfree(void* p) {
+    if (!p) return;
+    int c = a_state == 2 ? a_chunk_of(p) : -1;
+    if (c >= 0) { a_file_free(p, c); return; }
+    if (a_state == 2) {
+        size_t s = A_LIBC_SIZE(p);
+        a_heap = a_heap >= s ? a_heap - s : 0;
+    }
+    free(p);
+}
+
+void* enlngdb_realloc(void* p, size_t n) {
+    if (!p) return enlngdb_malloc(n);
+    if (n == 0) n = 1;
+    if (!a_state) a_start();
+    int c = a_state == 2 ? a_chunk_of(p) : -1;
+    if (c >= 0) {
+        size_t cap = a_capacity(p);
+        if (n <= cap) return p;
+        void* q = enlngdb_malloc(n);
+        if (!q) return NULL;
+        memcpy(q, p, cap);
+        a_file_free(p, a_chunk_of(p));
+        return q;
+    }
+    if (a_state != 2) {
+        void* q = realloc(p, n);
+        if (!q) a_out_of_memory(n);
+        return q;
+    }
+    size_t old = A_LIBC_SIZE(p);
+    if (a_heap - old + n > a_budget && a_file_ready >= 0 && n > old) {
+        void* q = a_file_alloc(n);
+        if (q) {
+            memcpy(q, p, old < n ? old : n);
+            a_heap = a_heap >= old ? a_heap - old : 0;
+            free(p);
+            return q;
+        }
+    }
+    void* q = realloc(p, n);
+    if (!q) {
+        q = a_file_ready >= 0 ? a_file_alloc(n) : NULL;
+        if (!q) a_out_of_memory(n);
+        memcpy(q, p, old < n ? old : n);
+        a_heap = a_heap >= old ? a_heap - old : 0;
+        free(p);
+        return q;
+    }
+    a_heap = a_heap - old + A_LIBC_SIZE(q);
+    if (a_heap > a_heap_peak) a_heap_peak = a_heap;
+    return q;
+}
+
+char* enlngdb_strdup(const char* s) {
+    size_t n = strlen(s) + 1;
+    char* d = (char*)enlngdb_malloc(n);
+    if (d) memcpy(d, s, n);
+    return d;
+}
+
+void enlngdb_memory_stats(size_t* heap, size_t* heap_peak, size_t* spill, size_t* spill_peak) {
+    if (heap) *heap = a_heap;
+    if (heap_peak) *heap_peak = a_heap_peak;
+    if (spill) *spill = a_spill;
+    if (spill_peak) *spill_peak = a_spill_peak;
+}
+#endif
