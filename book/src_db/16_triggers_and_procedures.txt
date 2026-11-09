@@ -42,6 +42,17 @@ insert into account values (4, "kiran", 25)
 find what, account_id, amount from ledger where what is "opened"
 drop trigger note_new
 :::
+## A trigger for a whole statement
+With `for each statement`, a trigger runs once after a statement that changed rows of its table, however many. `count.rows` is how many.
+::: db
+create table stock with id integer primary key, qty integer
+create table stock_log with what text, rows_changed integer
+insert into stock values (1, 5), (2, 0), (3, 7)
+create trigger restock after update on stock for each statement do insert into stock_log values ("update", count.rows)
+update stock set qty = qty + 10 where qty < 6
+select what, rows_changed from stock_log
+:::
+A statement that changes no row does not set it off. It runs after the rows, so it is always `after`.
 ## Seeing and removing triggers
 ::: db
 show triggers

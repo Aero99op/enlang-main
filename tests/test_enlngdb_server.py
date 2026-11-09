@@ -432,6 +432,49 @@ def main():
         server = None
         p = subprocess.run([EXE_PATH, "--serve", "bank", "--host", "0.0.0.0", "--plain", "--port", str(free_port())], cwd=TMP, capture_output=True, text=True, timeout=30)
         check("--plain is refused for anything but this computer", p.returncode == 1 and "only for this computer" in p.stderr, p.stdout + p.stderr)
+
+        # ---- readers: requests that only read run in other processes, at the same time
+        rows = ", ".join("(%d, %d)" % (i, i % 97) for i in range(1, 4001))
+        run_local("create table n with id integer primary key, v integer\ninsert into n values %s\ncreate table secret with id, note\n"
+                  "create user boss password \"boss-pass-1\" admin\ncreate user ravi password \"ravi-pass-1\"\ngrant select on n to ravi\n" % rows, "par")
+        slow = "find count(*) from n a join n b on a.v + 0 = b.v + 0"        # row by row: some seconds
+        for readers in (2, 0):
+            port = free_port()
+            server, line = start_server("par", port, "--readers", str(readers))
+            a = Conn(port)
+            a.login("boss", "boss-pass-1")
+            b = Conn(port)
+            b.login("ravi", "ravi-pass-1")
+            time.sleep(1.0)                                     # the readers connect and say hello
+            t0 = time.time()
+            a.s.sendall(b"run %d\n%s" % (len(slow), slow.encode()))     # sent, its answer not waited for
+            time.sleep(0.3)
+            word, text = b.run("find v from n where id is 777")
+            quick = time.time() - t0
+            word_a, text_a = a.answer()
+            slow_took = time.time() - t0
+            if readers:
+                check("with readers, a quick read is answered while another client's slow read runs (%.1f s and %.1f s)" % (quick, slow_took),
+                      word == "ok" and "| 1 " in text, (word, text[-200:]))
+                check("... the quick one came first", quick < slow_took - 0.5 and "count(*)" in text_a, (quick, slow_took, text_a[-200:]))
+                word, text = b.run("find v from n where id is 777\ninsert into n values (5000, 1)")
+                check("... a script that also changes is run by the server, with the rights of its user", word == "failed" and "may not insert" in text, text[-300:])
+                word, text = a.run("insert into n values (5001, 42)")
+                word2, text2 = b.run("find v from n where id is 5001")
+                check("... a read right after a change sees it (the file is saved before a reader answers)", word == "ok" and "42" in text2, (text, text2))
+                word, text = b.run("find note from secret")
+                check("... a reader checks rights too", word == "failed" and ("may not" in text or "no table" in text), text[-200:])
+            else:
+                check("with --readers 0, the quick read waits for the slow one (%.1f s and %.1f s)" % (quick, slow_took),
+                      quick >= slow_took - 0.5, (quick, slow_took))
+            a.run("shutdown server")
+            server.communicate(timeout=60)
+            server = None
+        time.sleep(1.0)
+        if os.name == "nt":
+            left = subprocess.run(["tasklist", "/fi", "imagename eq enlngdb.exe", "/fo", "csv", "/nh"], capture_output=True, text=True).stdout
+            mine = [l for l in left.splitlines() if "enlngdb.exe" in l]
+            check("the readers end with the server", len(mine) == 0, mine)
     finally:
         if server:
             server.kill()

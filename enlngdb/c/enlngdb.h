@@ -12,13 +12,15 @@
 #include <stdbool.h>
 #include "../../src/enlangg_version.h"
 
-#define ENLNGDB_MAX_COLS 64
-#define ENLNGDB_MAX_TABLES 256
+#define ENLNGDB_MAX_COLS 256
+#define ENLNGDB_MAX_TABLES 4096         /* the list of tables grows as tables are made */
 #define ENLNGDB_MAX_NAME 64
 #define ENLNGDB_MAGIC "ENLNG_C_EDB_V2"
+#define ENLNGDB_MAGIC_V3 "ENLNG_C_EDB_V3"     /* rows with their places, and lookup indexes, so a file opens without reading its rows */
+#define ENLNGDB_STORED_MAX 8                  /* lookup indexes kept in the file for a table */
 #define ENLNGDB_MAGIC_V1 "ENLNG_C_EDB_V1"
-#define ENLNGDB_MAX_INDEXES 8
-#define ENLNGDB_MAX_RESULT_COLS 128     /* the columns of a query result: two whole tables joined */
+#define ENLNGDB_MAX_INDEXES 32
+#define ENLNGDB_MAX_RESULT_COLS 512     /* the columns of a query result: two whole tables joined */
 
 typedef enum {
     ENLNG_VAL_NULL = 0,
@@ -56,7 +58,10 @@ typedef enum {
     EK_REAL,
     EK_TEXT,
     EK_BOOLEAN,
-    EK_DATE
+    EK_DATE,
+    EK_TIMESTAMP,               /* a moment, kept as "YYYY-MM-DD HH:MM:SSZ" (UTC) */
+    EK_JSON,                    /* text that is JSON */
+    EK_BLOB                     /* bytes, kept as 0x and two hex digits a byte */
 } EnlngKind;
 
 typedef struct {
@@ -92,7 +97,8 @@ typedef struct {
     char name[ENLNGDB_MAX_NAME];
     EnlngColumn columns[ENLNGDB_MAX_COLS];
     int col_count;
-    EnlngRow* rows;
+    EnlngRow* rowv;             /* the rows: read them with enlngdb_row(t, i), since a row of a file opened lazily
+                                   is read from the file the first time it is needed */
     size_t row_count;
     size_t row_capacity;
     int version;
@@ -101,6 +107,11 @@ typedef struct {
     EnlngIndex indexes[ENLNGDB_MAX_INDEXES];
     int index_count;
     int64_t auto_next[ENLNGDB_MAX_COLS];    /* the next number of an auto column */
+    /* A table of a file opened lazily: its rows are in the file (mapped into memory) from 'lazy' on. A row not read
+       yet has cell_count -1, and its 'cells' holds its place from 'lazy'; enlngdb_row reads it the first time. */
+    const unsigned char* lazy;
+    int nstored;                /* lookup indexes kept in the file: for a column, (hash, row) sorted by hash */
+    struct { int col; uint32_t n, nspill; const unsigned char* at; const unsigned char* spill; } stored[ENLNGDB_STORED_MAX];
 } EnlngTable;
 
 /* a trigger: statements run after each row that an insert, update or delete changed in a table */
@@ -143,8 +154,9 @@ typedef struct {
 
 typedef struct EnlngDatabase {
     char name[ENLNGDB_MAX_NAME];
-    EnlngTable tables[ENLNGDB_MAX_TABLES];
+    EnlngTable* tables;         /* table_cap of them made, table_count used; the list moves when it grows */
     int table_count;
+    int table_cap;
     char db_filepath[256];
     struct EnlngDatabase* txn;  /* the copy to go back to on 'rollback', while a transaction is open */
     bool dropped;               /* 'drop database' on the open one: nothing is saved at the end */
@@ -166,6 +178,13 @@ typedef struct EnlngDatabase {
     EnlngGrant* grants;
     int grant_count;
     void* txn_journal;          /* while a transaction is open: the records of what it changed, kept by the parser */
+    bool encrypted;             /* the file is written sealed with file_key (ChaCha20-Poly1305) */
+    bool locked;                /* the file is encrypted and was not opened (no password, or a wrong one): nothing
+                                   can be run, and the file is never written */
+    unsigned char file_salt[16];
+    unsigned char file_key[32]; /* PBKDF2-SHA-256 of the password with file_salt, file_rounds times */
+    uint32_t file_rounds;
+    void* sources;              /* the files (mapped) and buffers that rows not read yet come from; freed with the database */
 } EnlngDatabase;
 
 typedef struct {
@@ -182,6 +201,8 @@ void enlngdb_free(EnlngDatabase* db);
 
 EnlngTable* enlngdb_create_table(EnlngDatabase* db, const char* name, const EnlngColumn* cols, int col_count);
 EnlngTable* enlngdb_get_table(EnlngDatabase* db, const char* name);
+/* makes the list of tables hold at least n (it may move); false when there is no memory or n is past the most */
+bool enlngdb_tables_room(EnlngDatabase* db, int n);
 bool enlngdb_drop_table(EnlngDatabase* db, const char* name, bool confirmed);
 bool enlngdb_delete_column(EnlngTable* table, const char* col_name);
 void enlngdb_free_rows(EnlngTable* table);
@@ -224,6 +245,9 @@ void enlngdb_forget_triggers_of(EnlngDatabase* db, const char* table);
 void enlngdb_rename_triggers_of(EnlngDatabase* db, const char* from, const char* to);
 /* random bytes from the operating system (for the salt of a password); false if there are none */
 bool enlngdb_random_bytes(unsigned char* out, size_t n);
+/* the files of a folder that end in ext (".edb"): their names without it, and their sizes; returns how many
+   (at most max), sorted by name */
+int enlngdb_list_files(const char* dir, const char* ext, char (*names)[ENLNGDB_MAX_NAME], long long* sizes, int max);
 
 /* --- users and the server ---
  * A database with users can be served to other programs (enlngdb --serve). There a user signs in, and each
@@ -236,11 +260,19 @@ void enlngdb_sha256(const void* data, size_t n, unsigned char out[32]);
 void enlngdb_hmac_sha256(const unsigned char* key, size_t kn, const unsigned char* msg, size_t mn, unsigned char out[32]);
 void enlngdb_pbkdf2_sha256(const char* password, const unsigned char* salt, size_t sn, int rounds, unsigned char out[32]);
 bool enlngdb_has_users(const EnlngDatabase* db);
+/* AEAD ChaCha20-Poly1305 (RFC 8439, no extra data): seal writes the 16-byte tag after the n bytes (room needed);
+   open checks the tag after the n bytes and opens them in place, false (nothing opened) if anything was changed */
+void enlngdb_aead_seal(const uint8_t key[32], const uint8_t nonce[12], uint8_t* data, size_t n);
+bool enlngdb_aead_open(const uint8_t key[32], const uint8_t nonce[12], uint8_t* data, size_t n);
 /* true when the name and password are right; *admin tells whether the user may do everything */
 bool enlngdb_login(const EnlngDatabase* db, const char* user, const char* password, bool* admin);
 /* runs a script as a signed-in user (NULL: the owner), keeping what it prints; *failed counts the statements that
    failed. session tells the clients of a server apart (undo takes back only the same client's change). */
 char* enlngdb_run_as(EnlngDatabase* db, const char* user, int session, const char* script, int* failed);
+/* true when every statement of a script only reads (a server may run it in a reader process); when in doubt, false */
+bool enlngdb_script_reads_only(const char* script);
+/* true while 'set time zone' has not changed the zone (UTC) */
+bool enlngdb_zone_default(void);
 
 /* counts every change made to any table (rows, columns, tables, restores): a lookup index made earlier is
    good only while this number is the same as when it was made */
@@ -273,7 +305,34 @@ void enlngdb_free_result(EnlngQueryResult* res);
 void enlngdb_print_result(const EnlngQueryResult* res);
 void enlngdb_print_tables(const EnlngDatabase* db);
 
+/* A name in backticks may have spaces: `order details`. Inside the engine each space of such a name is this byte,
+   so the name stays one word; what the engine prints shows it as a space again. */
+#define ENLNGDB_NAME_SPACE '\x1f'
+/* puts a file written beside path (tmp) in its place in one step; false if it could not */
+bool enlngdb_replace_file(const char* tmp, const char* path);
+
+/* --- Rows read on first use --- */
+void enlngdb_load_row(const EnlngTable* t, size_t i);
+static inline EnlngRow* enlngdb_row(const EnlngTable* t, size_t i) {
+    EnlngRow* r = &((EnlngTable*)t)->rowv[i];
+    if (r->cell_count < 0) enlngdb_load_row(t, i);
+    return r;
+}
+/* reads every row not read yet (a server keeps its databases whole), and lets go of the files they came from */
+void enlngdb_materialize(EnlngDatabase* db);
+/* the hash the lookup indexes use (set by the parser): false for a value that is not looked up by hash */
+extern bool (*enlngdb_value_hash)(const EnlngVal* v, uint64_t* h);
+/* enlngdb_mutations just after the last file was opened: the indexes kept in a file are good while it is the same */
+extern unsigned long long enlngdb_loaded_at;
+
 /* --- Binary Disk Persistence --- */
+/* The password enlngdb_load uses when the file is encrypted (NULL: none); set it before, and clear it after. When
+   the load fails, enlngdb_load_error says why: 1 the file is encrypted and no password was given, 2 the password is
+   wrong (or the file was changed), 0 anything else. */
+extern const char* enlngdb_open_password;
+extern int enlngdb_load_error;
+/* turn the encryption of the file on with this password (a new salt each time), or off (password NULL) */
+bool enlngdb_set_password(EnlngDatabase* db, const char* password);
 bool enlngdb_save(const EnlngDatabase* db, const char* filepath);
 bool enlngdb_load(EnlngDatabase* db, const char* filepath);
 

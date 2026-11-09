@@ -63,7 +63,7 @@ enlngdb --serve bank shop --port 7171
 enlngdb --connect 7171/bank --user asha report.enlngdb
 :::
 The client asks for the password without showing it (or reads it from `ENLNGDB_PASSWORD`), signs in, runs the script and prints what the server answered. Without a script it runs each line typed. For a user who is not an admin, the server refuses a statement that reads a table the user may not `select`, counting every table named in the statement, in a join, a subquery or `with`, and also a name in quotes. It refuses an insert, update or delete without that right on the table it changes, and anything that makes, changes or drops tables, users or rights. `import` and `export` are for an admin, because they use files on the server's computer. Views, triggers and procedures run with the rights of the admin who made them.
-One request runs at a time. While a client has a transaction open, the others wait for it, up to 10 seconds. A client that goes away with a transaction open has it rolled back. The database is saved after each change that no transaction holds back, and when the server stops: Ctrl+C, or an admin running `shutdown server`. `undo` takes back only the same client's change.
+Requests that change something run one at a time. Requests that only read (`find`, `select`, `show`, `count` ...) go to reader processes, which answer at the same time: a slow query of one client does not hold up the lookups of the others. A reader opens the saved file, and gets a request only when every change before it is saved and no transaction is open. `--readers N` says how many readers there are (`--readers 0`: none). While a client has a transaction open, the others wait for it, up to 10 seconds. A client that goes away with a transaction open has it rolled back. The database is saved after each change that no transaction holds back, and when the server stops: Ctrl+C, or an admin running `shutdown server`. `undo` takes back only the same client's change.
 The connection is encrypted. The server prints the fingerprint of its key when it starts; the first time a client connects, it shows the fingerprint it got and asks whether it is the same (or takes it from `--trust`), and from then on it refuses a server at that address with a different key. Every message is sealed with ChaCha20-Poly1305, with keys agreed by X25519 for that connection, so it cannot be read or changed on the way. By default the server listens only on the computer it runs on; `--host 0.0.0.0` lets other computers in.
 ## Databases
 A database is a set of tables, saved as one file called `<name>.edb`. `create database` makes a new one and switches to it, and `use database` switches to one that exists.
@@ -88,3 +88,11 @@ drop database shop
 ::: db
 drop database shop confirmed
 :::
+## An encrypted database
+`encrypt database with password "..."` makes the engine write the file encrypted from then on (ChaCha20-Poly1305, with a key made from the password by PBKDF2). Without the password the file cannot be read.
+::: sh
+enlngdb shop_setup.enlngdb                  (it says: encrypt database with password "a long passphrase")
+set ENLNGDB_DB_PASSWORD=a long passphrase
+enlngdb shop_report.enlngdb
+:::
+A script can also say `use database shop with password "a long passphrase"`, and `enlngdb --serve` asks for the password or takes it from `ENLNGDB_DB_PASSWORD`. Without it, or with a wrong one, nothing runs on the database and the file is left as it is; a file that was changed is refused. `decrypt database` writes it plain again. A lost password cannot be found again.

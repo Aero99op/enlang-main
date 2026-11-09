@@ -20,7 +20,18 @@ describe fees
 | `text` | text | `varchar` |
 | `boolean` | `true` or `false` | |
 | `date` | a date such as `2024-03-15`, with an optional time | |
-Chapter 12 explains how a value is turned into the column's type, and what the engine does when it cannot be.
+| `timestamp` | a moment, kept in UTC: `2024-03-15 05:00:00Z` | `datetime` |
+| `json` | text that is JSON, checked when it is written | |
+| `blob` | bytes, written `0x0AFF` | `bytes` |
+Chapter 12 explains how a value is turned into the column's type, and what the engine does when it cannot be; chapter 8 has the functions for moments, JSON and bytes.
+## Names with spaces
+A name in backticks may have spaces, and may be a word of the language.
+::: db
+create table `order details` with id integer primary key, `unit price` real, `product name` text, `order` integer
+insert into `order details` values (1, 9.5, "Chai", 3), (2, 4, "Biscuits", 10)
+find `product name`, `unit price` * `order` as `line total` from `order details`
+:::
+Inside the backticks a name has letters, digits, `_` and spaces. The engine prints it with its spaces, and so does the first line of a CSV file.
 ## Creating a table only if it is new
 The words `if not exists` stop the statement from failing when the table is already there.
 ::: db

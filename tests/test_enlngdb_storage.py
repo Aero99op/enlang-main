@@ -137,22 +137,26 @@ def run_limited(limit_mb, script_name, env):
     return p.returncode, out, err, q.PeakProcessMemoryUsed >> 20
 
 
-# ---- the file: rewrite each table's row count in 8 bytes, as a 64-bit program did before -------------------
-def widen_row_counts(data):
+# ---- the file: a version 3 file written again as version 2, with the row counts in 4 or 8 bytes ----------
+def as_version2(data, count_bytes):
     b = bytearray()
     i = 0
 
-    def take(n):
+    def take(n, keep=True):
         nonlocal i
-        b.extend(data[i:i + n])
+        part = data[i:i + n]
+        if keep:
+            b.extend(part)
         i += n
-        return data[i - n:i]
+        return part
 
     def text():
         n = struct.unpack("<I", take(4))[0]
         take(n)
 
-    take(16)
+    assert data[:14] == b"ENLNG_C_EDB_V3"
+    i = 16
+    b.extend(b"ENLNG_C_EDB_V2\0\0")
     take(64)
     ntab = struct.unpack("<i", take(4))[0]
     for _ in range(ntab):
@@ -172,19 +176,17 @@ def widen_row_counts(data):
             nk = struct.unpack("<i", take(4))[0]
             for _ in range(nk):
                 text()
-        rows = struct.unpack("<I", data[i:i + 4])[0]
-        i += 4
-        b.extend(struct.pack("<Q", rows))
-        for _ in range(rows):
-            nc = struct.unpack("<i", take(4))[0]
-            for _ in range(nc):
-                t = take(1)[0]
-                if t in (1, 2):
-                    take(8)
-                elif t == 4:
-                    take(1)
-                elif t == 3:
-                    text()
+        rows = struct.unpack("<Q", take(8, False))[0]
+        total = struct.unpack("<Q", take(8, False))[0]
+        width = take(1, False)[0]
+        take(7, False)
+        b.extend(struct.pack("<I", rows) if count_bytes == 4 else struct.pack("<Q", rows))
+        take(total)                                  # the rows are the same in both versions
+        take(rows * width, False)                    # the places of the rows
+        nstored = struct.unpack("<I", take(4, False))[0]
+        for _ in range(nstored):
+            col, n, ns = struct.unpack("<III", take(12, False))
+            take(n * 12 + ns * 4, False)
     b.extend(data[i:])
     return bytes(b)
 
@@ -318,17 +320,51 @@ def main():
         _, four, _ = run("frd.enlngdb")
         fpath = os.path.join(TMP, "f.edb")
         data = open(fpath, "rb").read()
-        wide = widen_row_counts(data)
-        open(fpath, "wb").write(wide)
+        check("the file is version 3: rows with their places, and the lookup index of the key", data[:14] == b"ENLNG_C_EDB_V3")
+        open(fpath, "wb").write(as_version2(data, 4))
+        _, older, _ = run("frd.enlngdb")
+        check("a version 2 file (the row counts in 4 bytes, as the 32-bit programs wrote it) reads the same",
+              no_times(four) == no_times(older) and "three" in older, older[-400:])
+        open(fpath, "wb").write(as_version2(data, 8))
         _, eight, _ = run("frd.enlngdb")
-        check("row counts in 8 bytes (a 64-bit program before): the same tables, triggers and rows",
-              len(wide) == len(data) + 16 and no_times(four) == no_times(eight) and "three" in eight, (len(data), len(wide)))
+        check("a version 2 file with the row counts in 8 bytes (a 64-bit program before) reads the same",
+              no_times(four) == no_times(eight) and "three" in eight, eight[-400:])
         write("fadd.enlngdb", 'type enlngdb\nuse database f\ninsert into a values (4, "four")\n')
         run("fadd.enlngdb")
         _, again, _ = run("frd.enlngdb")
-        # the new rows: (4, "four") in a, and ("t", 4) in b from the trigger: 22 and 20 bytes
-        check("... saved again, the counts are written in 4 bytes, as every program reads them",
-              len(open(fpath, "rb").read()) == len(data) + 42 and "four" in again, len(open(fpath, "rb").read()) - len(data))
+        check("... saved again, it is written as version 3", open(fpath, "rb").read()[:14] == b"ENLNG_C_EDB_V3" and "four" in again, again[-300:])
+
+        # ---- 7. a file opens without reading its rows; a lookup by the key uses the index kept in the file ----
+        n = 200000
+        with open(os.path.join(TMP, "lz.csv"), "w") as f:
+            f.write("id,name,v\n")
+            for i in range(1, n + 1):
+                f.write("%d,name %d with some words,%d\n" % (i, i, i % 1000))
+        write("lz_make.enlngdb", 'type enlngdb\nuse database lz\nimport "lz.csv" into t\n')
+        run("lz_make.enlngdb")
+        write("lz_one.enlngdb", "type enlngdb\nuse database lz\nfind name, v from t where id is 199999\nfind name from t where id is 7 or id is 8\ncount records in t\n")
+        code, out, err = run("lz_one.enlngdb", env_with(ENLNGDB_MEMSTAT="1"))
+        m = re.search(r"([0-9.]+) MB in memory at most", err)
+        check("200,000 rows: opened, and three found by the key, with the rows left in the file (%s MB)" % (m.group(1) if m else "?"),
+              code == 0 and cells(out) == ["name 199999 with some words", "999", "name 7 with some words", "name 8 with some words", "200000"]
+              and m and float(m.group(1)) < 12, (code, cells(out), err[-200:]))
+        write("lz_all.enlngdb", "type enlngdb\nuse database lz\nfind count(*) from t where v < 10\n")
+        code, out, err = run("lz_all.enlngdb", env_with(ENLNGDB_MEMSTAT="1"))
+        m2 = re.search(r"([0-9.]+) MB in memory at most", err)
+        check("... a query that needs every row reads them all, and gives the same answer (%s MB)" % (m2.group(1) if m2 else "?"),
+              cells(out) == ["2000"] and m2 and float(m2.group(1)) > float(m.group(1)) * 2, (cells(out), err[-200:]))
+        write("lz_change.enlngdb", "type enlngdb\nuse database lz\nupdate t set id = 999999 where id is 5\nfind name from t where id is 999999\n"
+              "find count(*) from t where id is 5\ndelete from t where id is 6\nfind count(*) from t where id is 6\nfind name from t where id is 7\n")
+        code, out, err = run("lz_change.enlngdb")
+        check("... after a change in the same script, the index of the file is not used: the new key is found, the old one is gone",
+              cells(out) == ["name 5 with some words", "0", "0", "name 7 with some words"], out[-500:])
+        code, out, err = run("lz_one.enlngdb")
+        write("lz_two.enlngdb", "type enlngdb\nuse database lz\nfind name from t where id is 999999\nfind count(*) from t where id is 6\nfind name from t where id is 200000\n")
+        code, out, err = run("lz_two.enlngdb")
+        check("... saved (the rows never read copied as their bytes) and opened again: the change is there, with a new index",
+              cells(out) == ["name 5 with some words", "0", "name 200000 with some words"], out[-500:])
+        data = open(os.path.join(TMP, "lz.edb"), "rb").read()
+        check("... the file is version 3", data[:14] == b"ENLNG_C_EDB_V3")
     finally:
         shutil.rmtree(TMP, ignore_errors=True)
     print("%d passed, %d failed" % (passed, failed))

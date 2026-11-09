@@ -119,19 +119,19 @@ def main():
         check("a default that is too long is an error, not cut", "at most 63 characters" in out, out[-300:])
 
         # ---- more tables and columns
-        cols = ", ".join("c%d" % i for i in range(64))
-        vals = ", ".join(str(i) for i in range(64))
-        out = run("create table w with %s\ninsert into w values (%s)\nfind c63 from w\nfind count(*) from w a join w b on a.c0 is b.c0\n"
-                  "create table w2 with %s, c64\n" % (cols, vals, cols))
-        check("a table of 64 columns, joined with itself", col(out)[:1] == ["63"] and "1" in col(out) and "at most 64 columns" in out, out[-300:])
-        out = run("".join("create table t%d with id\n" % i for i in range(257)) + "show tables\n")
-        check("256 tables, and the 257th is refused", "most tables it can hold (256)" in out and len(rows(out)) == 257, out[-200:])
+        cols = ", ".join("c%d" % i for i in range(256))
+        vals = ", ".join(str(i) for i in range(256))
+        out = run("create table w with %s\ninsert into w values (%s)\nfind c255 from w\nfind count(*) from w a join w b on a.c0 is b.c0\n"
+                  "create table w2 with %s, c256\n" % (cols, vals, cols))
+        check("a table of 256 columns, joined with itself", col(out)[:1] == ["255"] and "1" in col(out) and "at most 256 columns" in out, out[-300:])
+        out = run("".join("create table t%d with id\n" % i for i in range(4097)) + "show tables\n")
+        check("4,096 tables, and the 4,097th is refused", "most tables it can hold (4096)" in out and len(rows(out)) == 4097, out[-200:])
 
         # ---- one program at a time
         lockdir = tempfile.mkdtemp(dir=TMP)
         # the first program holds the database while it works out a slow join (row by row: the 'on' is a calculation)
         slow = ("type enlngdb\nuse database shared\ncreate table n with id\ninsert into n values %s\nfind count(*) from n a join n b on a.id + 0 = b.id + 0\n"
-                % ", ".join("(%d)" % i for i in range(1, 7001)))
+                % ", ".join("(%d)" % i for i in range(1, 10001)))     # about 10 s on a fast 64-bit build: longer than the 5 s the second waits
         open(os.path.join(lockdir, "a.enlngdb"), "w").write(slow)
         open(os.path.join(lockdir, "b.enlngdb"), "w").write("type enlngdb\nuse database shared\ncount records in n\n")
         first = subprocess.Popen([EXE_PATH, "a.enlngdb"], cwd=lockdir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -143,7 +143,7 @@ def main():
         first.wait()
         check("a second program waits, then says the database is in use", "is in use by another program" in second.stdout, second.stdout[-300:])
         third = subprocess.run([EXE_PATH, "b.enlngdb"], cwd=lockdir, capture_output=True, text=True)
-        check("after the first one ends, the database opens with all its rows", "7000" in third.stdout, third.stdout[-300:])
+        check("after the first one ends, the database opens with all its rows", "10000" in third.stdout, third.stdout[-300:])
         check("no lock file is left behind", not os.path.exists(os.path.join(lockdir, "shared.edb.lock")) or os.name != "nt", os.listdir(lockdir))
 
         # ---- CSV

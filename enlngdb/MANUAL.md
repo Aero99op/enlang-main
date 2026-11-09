@@ -48,7 +48,7 @@
    - 8.3 Column Removal
 9. [Persistence, Storage Internals & Concurrency](#9-persistence-storage-internals--concurrency)
    - 9.1 Disk Persistence Commands (`save database to`, `open database to`)
-   - 9.2 Binary File Specification (`ENLNG_C_EDB_V2`)
+   - 9.2 Binary File Specification (`ENLNG_C_EDB_V3`)
    - 9.3 In-Memory Indexing & Automatic Re-indexing
    - 9.4 Concurrency Control: Multi-Reader Single-Writer Locking (`DatabaseLock`)
    - 9.5 MVCC & Row Versioning (`_version`)
@@ -65,6 +65,7 @@
 12. [Beyond SQL: files, safety, speed (C engine)](#12-beyond-sql-files-safety-speed-c-engine)
     - 12.1 CSV files, 12.2 `preview` and `undo`, 12.3 Savepoints, 12.4 `natural join`, 12.5 `on delete` / `on update`
     - 12.6 Recursive `with`, 12.7 One program at a time, 12.8 Speed, 12.9 Limits, 12.10 Triggers and procedures, 12.11 Did you mean, 12.12 Users and the server
+    - 12.13 Timestamps, JSON and bytes, 12.14 Names with spaces, 12.15 Encrypted files
 
 ---
 
@@ -88,14 +89,14 @@ EnlngDB exists in two parallel, fully compatible execution environments:
 | **Primary Goal** | High-performance, embedded, microsecond latency | Toolchain integration, scripting, rapid pipeline evaluation |
 | **Source Location** | `enlngdb/c/` (`enlngdb.c`, `enlngdb_parser.c`, `enlngdb.h`) | `enlngdb/` (`lexer.py`, `parser.py`, `storage.py`, `engine.py`) |
 | **Memory Model** | Fixed contiguous cell arrays with dynamic realloc | Dynamic dictionary rows with automatic hash indexing |
-| **Storage Format** | Native binary `.edb` (`ENLNG_C_EDB_V2`) | Native `.edb` / atomic JSON format (`ENLNGDB_SOVEREIGN_V1`) |
+| **Storage Format** | Native binary `.edb` (`ENLNG_C_EDB_V3`) | Native `.edb` / atomic JSON format (`ENLNGDB_SOVEREIGN_V1`) |
 | **Concurrency** | Single-threaded atomic script executor | Readers-Writer lock (`DatabaseLock` via `threading.RLock`) |
 | **Binary Footprint**| ~100 KB stand-alone executable | Pure Python modules (wheel package) |
 
 ---
 
 ### 1.3 Storage Formats: `.edb` Binary vs Native Memory Snapshots
-* **`.edb` (Enlng Database Binary):** A high-performance, compact file format beginning with the 14-byte magic signature `ENLNG_C_EDB_V2` (files written by older versions, `ENLNG_C_EDB_V1`, are still read). It contains table definitions, column types and constraints, views, indexes, and packed row values.
+* **`.edb` (Enlng Database Binary):** A high-performance, compact file format beginning with the 14-byte magic signature `ENLNG_C_EDB_V3` (files written by older versions, `ENLNG_C_EDB_V2` and `ENLNG_C_EDB_V1`, are still read). It contains table definitions, column types and constraints, views, indexes, and packed row values.
 * **Atomic Memory Snapshots:** Both engines maintain active state entirely in memory. When saving, data is written atomically to temporary files before being swapped in place to prevent file corruption during power failures or crashes.
 
 ---
@@ -190,7 +191,7 @@ create table customers with id, email # Inline comments are supported
 # 3. Data Types, Schema Constraints & Directives
 
 ### 3.1 Primitive & Structured Data Types
-> **C engine (`enlngdb.exe`, the playground, Studio):** a column is `integer`, `real`, `text`, `boolean` or `date`, or has no type (§11.10). `TIMESTAMP`, `JSON` and `BLOB` in the table below are not column types of the C engine, and a script that uses them gets an error.
+> **C engine (`enlngdb.exe`, the playground, Studio):** a column is `integer`, `real`, `text`, `boolean`, `date`, `timestamp`, `json` or `blob`, or has no type (§11.10, §12.13). A timestamp is kept as text in UTC (`2024-03-15 05:00:00Z`), JSON as checked text, and bytes as `0x` and hex digits.
 
 EnlngDB supports the following foundational storage types:
 
@@ -249,7 +250,7 @@ find all records from accounts where balance is at least 10000 hint index: btree
 EnlngDB supports multi-database switching and inspection:
 
 ```enlngdb
-# List all active databases
+# List the databases: every .edb file of this folder (and of tests/), and which one is open
 show databases
 
 # Switch active database container (auto-loads <dbname>.edb if present)
@@ -637,12 +638,12 @@ open database to "production_vault.edb"
 
 ---
 
-### 9.2 Binary File Specification (`ENLNG_C_EDB_V2`)
+### 9.2 Binary File Specification (`ENLNG_C_EDB_V3`)
 The pure C native engine persists tables directly using a compact binary layout. Every field is written by itself, so the file does not depend on the compiler or the machine:
 
 ```text
 +-------------------------------------------------------------------------+
-| 16 bytes   : MAGIC "ENLNG_C_EDB_V2" (14 characters, padded)             |
+| 16 bytes   : MAGIC "ENLNG_C_EDB_V3" (14 characters, padded)             |
 | 64 bytes   : database name                                              |
 | int32      : number of tables saved (temporary tables are not saved)    |
 +-------------------------------------------------------------------------+
@@ -659,12 +660,19 @@ The pure C native engine persists tables directly using a compact binary layout.
 |       * next auto number int64                                          |
 |   - index count int32; for each: name, unique byte, column count,       |
 |     column names (length + text)                                        |
-|   - row count uint32 (R); past 4,294,967,294 rows: 0xFFFFFFFF, uint64   |
-|   - FOR EACH ROW: cell count int32, then for each cell                  |
-|       a type byte (0 null, 1 int, 2 double, 3 string, 4 bool) and       |
+|   - row count uint64 (R), bytes of the rows uint64 (D),                 |
+|     width of a place uint8 (4 or 8), 7 zero bytes                       |
+|   - the rows (D bytes): FOR EACH ROW: cell count int32, then for each   |
+|       cell a type byte (0 null, 1 int, 2 double, 3 string, 4 bool) and  |
 |       the value (int64 / double / uint32 length + text / 1 byte)        |
+|   - the place of each row from the first (R places of 4 or 8 bytes)     |
+|   - lookup indexes: count uint32; for each: column, entries E and       |
+|     rows without a hash N (uint32 each), E x (hash uint64, row uint32)  |
+|     sorted by hash, then N rows (uint32 each)                           |
 +-------------------------------------------------------------------------+
 ```
+
+With the places of the rows, a file opens without reading its rows: it is mapped into memory, and a row is read the first time a statement needs it. The lookup indexes are kept for the key of a table (or its `id` column), its `unique` columns and the columns of a one-column `create index`; a lookup `column is value` (also inside `or`) uses them while nothing has changed since the file was opened. A version 2 file has the same tables with only the row count (4 bytes; 8 in a file from a 64-bit program before) before the rows, and nothing after them; it is read whole. Programs before this version cannot read a version 3 file.
 
 Version 1 files (before column types) have the same header but write the columns as raw structs and have no view, index or constraint data. They are read, and written back as version 2 the next time the database is saved.
 
@@ -907,7 +915,7 @@ create table person (
     owner integer references student(id)
 )
 ```
-The same list can be written in brackets and over several lines when a line ends with `(` or `,`. Types: `integer` (`int`), `real` (`float`, `decimal`, `number`), `text` (`varchar`), `boolean`, `date` (`2024-03-15`, optionally with a time). A value is turned into the column's type when that is safe (`"30"` into `30`) and refused when it is not, with the reason. Columns without a type keep whatever is written, as before.
+The same list can be written in brackets and over several lines when a line ends with `(` or `,`. Types: `integer` (`int`), `real` (`float`, `decimal`, `number`), `text` (`varchar`), `boolean`, `date` (`2024-03-15`, optionally with a time), `timestamp` (`datetime`), `json`, `blob` (`bytes`), §12.13. A value is turned into the column's type when that is safe (`"30"` into `30`) and refused when it is not, with the reason. Columns without a type keep whatever is written, as before.
 
 * `primary key` (also `primary key (a, b)`) : the row's identity; writing it again replaces the row. A key cannot be empty (an `auto_increment` key is filled in).
 * `unique` (also `unique (a, b)`), `not null` (or `required`), `default <value>`, `check (<condition>)`, `auto_increment`.
@@ -947,7 +955,7 @@ drop database shop confirmed
 A transaction covers the whole database (tables, rows, views). One that is still open when a script ends is rolled back, and the engine says so. There are no savepoints and no second writer: one script runs at a time.
 
 ### 11.14 What EnlngDB does not have
-Reading only part of a database file: a database is read whole when a script opens it and written whole when a script that changed it ends (§12.8). Certificates for the server (it is trusted the first time, as ssh does, §12.12). `show databases` shows only the open database. `natural join`, recursive `with`, `on delete` / `on update`, savepoints, CSV files, `preview`, `undo`, triggers, procedures, users, rights and the server are in section 12.
+Writing only part of a database file: a script that changed a database writes the whole file again (rows it never read are copied as their bytes, §12.8). Certificates for the server (it is trusted the first time, as ssh does, §12.12). `natural join`, recursive `with`, `on delete` / `on update`, savepoints, CSV files, `preview`, `undo`, triggers, procedures, users, rights and the server are in section 12.
 
 ---
 
@@ -1055,22 +1063,22 @@ The lines with 200,000 rows include opening them (about 0.4 s); "refused" means 
 
 The engine makes two kinds of index by itself, the first time a query needs one, on a table of 48 rows or more. A condition `column is value` (alone, or joined to others with `and`) uses a hash of the column. A condition `column > value`, `<`, `>=`, `<=` or `column between a and b` uses a sorted list of the column: numbers and texts are kept in two lists, because they do not sort together (`"10"` and `"9"` compare as texts with each other and as numbers with a number), so a bound that is a number reads its range of numbers and every text, and the other way round. An index is kept while the table does not change, through updates of other columns, through inserts, through deletes (the other rows only move up) and through `undo`, and while other tables change; it is made again after an alter or a change of its column. The whole `where` is still tested on the rows found, so the answer is the same as when every row is read; when a range would take most of the rows, the rows are read in order instead. So there is no need to write `create index` for speed: a plain `create index` is only recorded, a `unique` one is checked. A value can be a bare word, as in `where name is Ravi`. `a or b` uses the indexes when both sides can, and joins the rows they give. `column like "abc%"` (a fixed start, then `%` or `_`) reads the texts that start that way, and every number. Any other `like` (`"%dra%"`, `"%sha"`, or `"dra"`, which looks anywhere) uses a third index, made of every three letters of every text: it reads the rows that have every three letters of the pattern's longest part between `%` and `_`, and every number; a pattern whose longest part is shorter than three letters reads every row. So do `not` (most rows pass it anyway) and a condition on a calculation, like `id + 0 = 5`.
 
-A database is read whole when a script opens it, and written whole when a script that changed it ends. One machine, a table of `id`, a text and a number: 1,000,000 rows are a 38 MB file and take about 180 MB of memory; a script opens them and answers a query in about 0.4 s, or changes a row and saves them in 0.7 s; `import` of a CSV file of them takes 1.5 s (79 s before: each batch of 1,024 rows made the lookup of the whole table again).
+**Opening without reading.** A file (version 3, §9.2) is mapped into memory when a script opens it, and a row is read only when a statement needs it; a lookup by the key, a `unique` column or an indexed column uses the index kept in the file, so it reads only the rows it finds. A query that needs every row (`where v < 10` on a column without a kept index, a join, `order by` over the table) reads them all, as before. Each row not read takes 16 bytes of memory (its place). When a script that changed the database ends, the whole file is written again, but rows never read are copied as their bytes, not read and written. Measured on one machine, 3,000,000 rows of four columns (a 262 MB file): opening it and finding a row by its key took 0.2 s and 49 MB (5.2 s and 1.1 GB when every row was read); changing one row and saving took 6.3 s and 107 MB (most of it writing the file); `count records` 0.1 s; a query that reads every row 2.5 s. One machine, a table of `id`, a text and a number: 1,000,000 rows are a 38 MB file and take about 180 MB of memory when all of them are read; a script opens them and answers a query in about 0.4 s, or changes a row and saves them in 0.7 s; `import` of a CSV file of them takes 1.5 s (79 s before: each batch of 1,024 rows made the lookup of the whole table again).
 
 **Larger than memory.** Up to a budget the engine takes memory as usual. Past it, new memory comes from a file that the system keeps in memory only where it is used, and writes to the disk where it is not, so a database can be larger than the memory a program may take: the disk is the limit. The budget is half of the computer's memory, or what `ENLNGDB_MEMORY` says (`500M`, `2G`; `off` keeps everything in memory). The file is in the folder for temporary files, or in `ENLNGDB_SPILL_DIR`, and goes away when the program ends; when it cannot be made, the engine goes on with memory alone. `ENLNGDB_MEMSTAT=1` prints at the end how much was in memory and how much in the file at most. The answers are the same either way (the tests run every kind of statement with a budget of 4 MB, and compare); past the budget, the work goes at the speed of the disk. Measured on one machine, with the memory the program may take limited to 300 MB: 3,000,000 rows of four columns (a 214 MB file, about 1 GB in memory) did not fit with everything in memory; with `ENLNGDB_MEMORY=100M` they were imported in 37 s, and opened, changed and saved in 25 s, using at most 150 MB. The 1,000,000 rows above, with `ENLNGDB_MEMORY=30M`, took 40 MB, in the same time as with all of them in memory.
 
 `enlngdb.exe` and `enlangg.exe` from the installer are 64-bit programs. A 32-bit build (gcc of MinGW.org) has 2 GB of addresses in all, so there a database cannot grow much past 1 GB in memory and 1 GB in the file.
 
-What it does not do: a database is read whole when it is opened, also for a query that needs one row, and an index is made in memory from every row the first time a query needs it; there is no file of pages that reads only what a query needs.
+What it does not do: a save writes the whole file again (there is no log of changes that writes only them); an index kept in the file is used only until something changes in the script (then an index is made in memory, which reads every row); ranges (`>`, `between`) and `like` have no index in the file; and a server reads every row of its databases when it starts.
 
 ### 12.9 Limits
 | Thing | The most |
 | :--- | ---: |
-| tables in a database | 256 |
-| columns in a table | 64 |
-| columns in a result (a join) | 128 |
-| indexes on a table | 8 |
-| characters in a name | 63 |
+| tables in a database | 4,096 |
+| columns in a table | 256 |
+| columns in a result (a join) | 512 |
+| indexes on a table | 32 |
+| characters in a name | 63 (as in PostgreSQL) |
 | length of a statement, of a text value | no limit but memory |
 | characters of a `default` / a `check` / the query of a view | 63 / 95 / 1023 |
 | triggers setting each other off | 6 levels |
@@ -1115,6 +1123,8 @@ A **procedure** is statements saved under a name: `create procedure NAME (a, b) 
 
 With triggers in the database, each statement that changes rows keeps a copy of the tables to find what changed, so such statements take longer on big tables.
 
+**For each statement.** `create trigger NAME after insert|update|delete on TABLE for each statement [when ...] do ...` runs once after a statement that inserted, updated or deleted at least one row of the table, not once per row; there is no `new` or `old` row, and `count.rows` is how many rows the statement changed. A statement that changed no row does not set it off. Such a trigger is always `after`. It is kept in a part of the file of its own (`ENLNGDB-EXT4`), which a program from before this one does not read, so it never runs there as something else.
+
 ### 12.11 Did you mean
 A table, a column or a command word that is not there but looks like one that is gets a suggestion:
 
@@ -1151,6 +1161,39 @@ enlngdb --connect 10.0.0.5:7171/bank --user asha               (each line typed 
 
 **Rights.** `grant select, insert, update, delete (or all) on TABLE (or *) to USER`, `grant execute on procedure NAME to USER`, and `revoke ... from USER`; `show grants [for USER]`. An admin may do everything. A user who is not one may read the tables they may `select` (every table named in a statement counts, also in a join, a subquery, `with`, `union`, `describe` and `explain`, and also a name in quotes), change rows of the table a statement changes when they have that right, `call` a procedure they may `execute`, use `begin`, `commit`, `rollback`, savepoints and `undo`, and change their own password. Making, changing or dropping tables, views, indexes, triggers, procedures, users and rights is for an admin, and so are `import` and `export` (they read and write files on the server's computer) and `show users`, `show triggers`, `show procedures`. `insert ... with` cannot make a table or a column for a user who is not an admin. A view, a trigger and a procedure run with the rights of the admin who made them: granting `select` on a view lets a user read what the view shows. Rights on a table go when it is dropped and follow it when it is renamed.
 
-**The server.** One request runs at a time, so clients never see half a change. While one client has a transaction open, the requests of the others wait for it; after 10 seconds they are answered `busy` and nothing of them runs. A client that goes away with a transaction open has it rolled back. After a change, the database is saved as soon as no transaction is open, and again when the server stops (Ctrl+C, or an admin running `shutdown server`). `undo` takes back only a change the same client made. `use database` is refused for any database but the one served.
+**Readers.** Requests that only read (every statement is `find`, `select`, `show`, `count`, `describe`, `explain` or `display`) are answered by reader processes at the same time, while the server goes on with other requests: `enlngdb --serve` starts as many as the computer has processors less one (at most 4; `--readers N` says how many, `--readers 0` none, up to 16). A reader opens the database file without reading its rows, checks the rights of the user as the server does, and opens the file again when the server has saved it since. A read goes to a reader only when the database has no change waiting to be saved and no transaction is open, so it sees every change made before it; otherwise, and for an encrypted database or after `set time zone`, the server answers it itself. The requests of one client are answered in the order they came. Measured: a client's slow query (3 s) and another client's lookup: with readers the lookup was answered after 0.3 s, with `--readers 0` after 3 s.
+
+**The server.** Requests that change something run one at a time in the server, so clients never see half a change. While one client has a transaction open, the requests of the others wait for it; after 10 seconds they are answered `busy` and nothing of them runs. A client that goes away with a transaction open has it rolled back. After a change, the database is saved as soon as no transaction is open, and again when the server stops (Ctrl+C, or an admin running `shutdown server`). `undo` takes back only a change the same client made. `use database` is refused for any database but the one served.
 
 What it does not do: there are no certificates, so the first connection to a server is only as safe as the check of its fingerprint (as with ssh). By default the server listens only on this computer (`127.0.0.1`); `--host 0.0.0.0` lets other computers in. Rights are checked by the server only: a program that opens `NAME.edb` itself (with `enlngdb script.enlngdb`) is its owner, and nothing is checked, because whoever can read the file can read the data. Users, rights, triggers and procedures are not part of a transaction or of `undo`. An older `enlngdb` opens a file with users and ignores them (and loses them if it saves it). The browser playground has no server.
+
+### 12.13 Timestamps, JSON and bytes
+```enlngdb
+create table event with id integer primary key, at timestamp, info json, photo blob
+insert into event values (1, "2024-03-15 10:30", '{"by": "Asha", "tags": ["a", "b"]}', "hi")
+insert into event values (2, "2024-03-15T10:30:00+05:30", '[1, 2, {"x": true}]', from_base64("AAEC"))
+find at, json_get(info, "by"), json_get(info, "tags[1]"), octet_length(photo), to_base64(photo) from event
+set time zone "+05:30"
+find in_zone(at, "+05:30"), hour(at), date_add(at, 1, "month"), seconds_between(at, "2024-03-15 00:00:00Z") from event
+```
+**timestamp** (also `datetime`) keeps a moment in UTC, written `2024-03-15 05:00:00Z`. A moment can be written with a zone after it (`Z`, `UTC`, `+05:30`, `-0800`, with a space or not) and is turned to UTC; one written without a zone is read in the zone of `set time zone` (UTC until it is set; `set time zone local` is the computer's zone, with its summer time; `show time zone` says which). Zones are offsets: names like `Asia/Kolkata` are not known, as there is no list of them on every computer. A date alone is midnight. Functions: `in_zone(t, "+05:30")` shows a moment in a zone, `hour(t)`, `minute(t)`, `second(t)`, `date_add(t, n, "second|minute|hour|day|week|month|year")` (January 31 and a month is the end of February), `seconds_between(a, b)`, `utc_now()`; `now()` is still the computer's clock, without a zone. A column made as `timestamp` before this version is a `date` column, and stays one.
+
+**json** keeps text that is JSON: it is checked when it is written (`'{a: 1}'` and `'[1,]'` are refused), and kept as written. `json_get(j, "a.b[2]")` gives the value at a path (`$.a` works too; a key with a dot is written in double quotes inside the path): a number, a text, true or false, `null`, or JSON text for an object or a list; a path that is not there gives `null`. `json_type(j [, path])` says `object`, `array`, `string`, `number`, `boolean` or `null`; `json_length(j [, path])` counts the members; `json_valid(text)`.
+
+**blob** (also `bytes`) keeps bytes, written `0x` and two hex digits a byte (`0x0AFF`). Text written into it is taken as its bytes (`"hi"` is `0x6869`). `from_base64(text)`, `to_base64(b)`, `hex(x)`, `unhex(b)` (the bytes as text), `octet_length(b)`. The bytes are kept as hex text, so they take twice the room.
+
+### 12.14 Names with spaces
+```enlngdb
+create table `order details` with id integer primary key, `unit price` real, `product name` text, `order` integer
+insert into `order details` values (1, 9.5, "Chai", 3)
+find `product name`, `unit price` * `order` as `line total` from `order details`
+```
+A table, column, view or alias written in backticks may have spaces, and may be a word the language uses (`order`). Inside the backticks: letters, digits, `_` and spaces. What the engine prints, and the first line of a CSV file, shows the names with their spaces; a CSV file whose first line has a name with a space makes a column of that name. Inside quotes, a backtick is only a character.
+
+### 12.15 Encrypted files
+```enlngdb
+encrypt database with password "a long passphrase"
+```
+From then on the file of the database is written encrypted: the key is made from the password with PBKDF2-SHA-256 (200,000 rounds, a new salt for each `encrypt`), and the whole file is sealed with ChaCha20-Poly1305 and a new nonce at each save. It begins with `ENLNG_C_EDB_ENC1`, then the salt (16 bytes), the rounds (4), the nonce (12), the sealed file and its tag (16). The password is never kept, in the file or anywhere else.
+
+To open it: `use database shop with password "a long passphrase"`, or set `ENLNGDB_DB_PASSWORD`; `enlngdb --serve` takes it from `ENLNGDB_DB_PASSWORD` or asks for it. Without the password, or with a wrong one, nothing can be run on the database and its file is not written, so an encrypted file is never replaced by an empty database. A file in which one byte was changed is refused, not read wrong. `decrypt database` writes it plain again; `encrypt database with password "..."` again changes the password. A lost password cannot be found again. A password needs at least 8 characters. Only an admin may run these through the server.

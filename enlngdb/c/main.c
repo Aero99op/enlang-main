@@ -48,6 +48,7 @@ static int (WSAAPI* p_connect)(SOCKET, const struct sockaddr*, int);
 static int (WSAAPI* p_setsockopt)(SOCKET, int, int, const char*, int);
 static int (WSAAPI* p_getaddrinfo)(const char*, const char*, const struct addrinfo*, struct addrinfo**);
 static void (WSAAPI* p_freeaddrinfo)(struct addrinfo*);
+static int (WSAAPI* p_getsockname)(SOCKET, struct sockaddr*, int*);
 
 static bool net_start(void) {
     static int done = 0;
@@ -57,7 +58,7 @@ static bool net_start(void) {
     if (!w) return false;
 #define FIND(name) if (!(*(void**)&p_##name = (void*)GetProcAddress(w, #name))) return false
     FIND(WSAStartup); FIND(socket); FIND(bind); FIND(listen); FIND(accept); FIND(recv); FIND(send);
-    FIND(closesocket); FIND(select); FIND(connect); FIND(setsockopt); FIND(getaddrinfo); FIND(freeaddrinfo);
+    FIND(closesocket); FIND(select); FIND(connect); FIND(setsockopt); FIND(getaddrinfo); FIND(freeaddrinfo); FIND(getsockname);
 #undef FIND
     WSADATA wd;
     if (p_WSAStartup(MAKEWORD(2, 2), &wd) != 0) return false;
@@ -110,6 +111,7 @@ typedef int qsock;
 #define p_setsockopt setsockopt
 #define p_getaddrinfo getaddrinfo
 #define p_freeaddrinfo freeaddrinfo
+#define p_getsockname getsockname
 static bool net_start(void) { signal(SIGPIPE, SIG_IGN); return true; }
 static bool in_set(qsock s, fd_set* set) { return FD_ISSET(s, set) != 0; }
 static void set_add(qsock s, fd_set* set) { FD_SET(s, set); }
@@ -219,157 +221,9 @@ static void x25519_public(uint8_t pub[32], const uint8_t priv[32]) {
 /* ---- ChaCha20 and Poly1305 (RFC 8439) ---- */
 static uint32_t le32(const uint8_t* p) { return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24); }
 static void put32(uint8_t* p, uint32_t v) { p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8); p[2] = (uint8_t)(v >> 16); p[3] = (uint8_t)(v >> 24); }
-#define ROTL(v, n) (((v) << (n)) | ((v) >> (32 - (n))))
-#define QR(a, b, c, d) a += b; d ^= a; d = ROTL(d, 16); c += d; b ^= c; b = ROTL(b, 12); a += b; d ^= a; d = ROTL(d, 8); c += d; b ^= c; b = ROTL(b, 7)
-
-static void chacha_block(const uint8_t key[32], uint32_t counter, const uint8_t nonce[12], uint8_t out[64]) {
-    uint32_t s[16], x[16];
-    s[0] = 0x61707865; s[1] = 0x3320646e; s[2] = 0x79622d32; s[3] = 0x6b206574;
-    for (int i = 0; i < 8; i++) s[4 + i] = le32(key + 4 * i);
-    s[12] = counter;
-    for (int i = 0; i < 3; i++) s[13 + i] = le32(nonce + 4 * i);
-    memcpy(x, s, sizeof(s));
-    for (int i = 0; i < 10; i++) {
-        QR(x[0], x[4], x[8], x[12]); QR(x[1], x[5], x[9], x[13]); QR(x[2], x[6], x[10], x[14]); QR(x[3], x[7], x[11], x[15]);
-        QR(x[0], x[5], x[10], x[15]); QR(x[1], x[6], x[11], x[12]); QR(x[2], x[7], x[8], x[13]); QR(x[3], x[4], x[9], x[14]);
-    }
-    for (int i = 0; i < 16; i++) put32(out + 4 * i, x[i] + s[i]);
-}
-
-static void chacha_xor(const uint8_t key[32], uint32_t counter, const uint8_t nonce[12], uint8_t* data, size_t n) {
-    uint8_t ks[64];
-    for (size_t off = 0; off < n; off += 64, counter++) {
-        chacha_block(key, counter, nonce, ks);
-        size_t k = n - off < 64 ? n - off : 64;
-        for (size_t i = 0; i < k; i++) data[off + i] ^= ks[i];
-    }
-}
-
-typedef struct { uint32_t r[5], h[5], pad[4]; size_t left; uint8_t buf[16]; int final; } Poly;
-
-static void poly_init(Poly* st, const uint8_t key[32]) {
-    st->r[0] = (le32(key + 0)) & 0x3ffffff;
-    st->r[1] = (le32(key + 3) >> 2) & 0x3ffff03;
-    st->r[2] = (le32(key + 6) >> 4) & 0x3ffc0ff;
-    st->r[3] = (le32(key + 9) >> 6) & 0x3f03fff;
-    st->r[4] = (le32(key + 12) >> 8) & 0x00fffff;
-    for (int i = 0; i < 5; i++) st->h[i] = 0;
-    for (int i = 0; i < 4; i++) st->pad[i] = le32(key + 16 + 4 * i);
-    st->left = 0;
-    st->final = 0;
-}
-
-static void poly_blocks(Poly* st, const uint8_t* m, size_t n) {
-    const uint32_t hibit = st->final ? 0 : (1u << 24);
-    uint32_t r0 = st->r[0], r1 = st->r[1], r2 = st->r[2], r3 = st->r[3], r4 = st->r[4];
-    uint32_t s1 = r1 * 5, s2 = r2 * 5, s3 = r3 * 5, s4 = r4 * 5;
-    uint32_t h0 = st->h[0], h1 = st->h[1], h2 = st->h[2], h3 = st->h[3], h4 = st->h[4];
-    while (n >= 16) {
-        h0 += (le32(m + 0)) & 0x3ffffff;
-        h1 += (le32(m + 3) >> 2) & 0x3ffffff;
-        h2 += (le32(m + 6) >> 4) & 0x3ffffff;
-        h3 += (le32(m + 9) >> 6) & 0x3ffffff;
-        h4 += (le32(m + 12) >> 8) | hibit;
-        uint64_t d0 = (uint64_t)h0 * r0 + (uint64_t)h1 * s4 + (uint64_t)h2 * s3 + (uint64_t)h3 * s2 + (uint64_t)h4 * s1;
-        uint64_t d1 = (uint64_t)h0 * r1 + (uint64_t)h1 * r0 + (uint64_t)h2 * s4 + (uint64_t)h3 * s3 + (uint64_t)h4 * s2;
-        uint64_t d2 = (uint64_t)h0 * r2 + (uint64_t)h1 * r1 + (uint64_t)h2 * r0 + (uint64_t)h3 * s4 + (uint64_t)h4 * s3;
-        uint64_t d3 = (uint64_t)h0 * r3 + (uint64_t)h1 * r2 + (uint64_t)h2 * r1 + (uint64_t)h3 * r0 + (uint64_t)h4 * s4;
-        uint64_t d4 = (uint64_t)h0 * r4 + (uint64_t)h1 * r3 + (uint64_t)h2 * r2 + (uint64_t)h3 * r1 + (uint64_t)h4 * r0;
-        uint32_t c = (uint32_t)(d0 >> 26); h0 = (uint32_t)d0 & 0x3ffffff;
-        d1 += c; c = (uint32_t)(d1 >> 26); h1 = (uint32_t)d1 & 0x3ffffff;
-        d2 += c; c = (uint32_t)(d2 >> 26); h2 = (uint32_t)d2 & 0x3ffffff;
-        d3 += c; c = (uint32_t)(d3 >> 26); h3 = (uint32_t)d3 & 0x3ffffff;
-        d4 += c; c = (uint32_t)(d4 >> 26); h4 = (uint32_t)d4 & 0x3ffffff;
-        h0 += c * 5; c = h0 >> 26; h0 &= 0x3ffffff;
-        h1 += c;
-        m += 16;
-        n -= 16;
-    }
-    st->h[0] = h0; st->h[1] = h1; st->h[2] = h2; st->h[3] = h3; st->h[4] = h4;
-}
-
-static void poly_update(Poly* st, const uint8_t* m, size_t n) {
-    if (st->left) {
-        size_t want = 16 - st->left;
-        if (want > n) want = n;
-        memcpy(st->buf + st->left, m, want);
-        st->left += want; m += want; n -= want;
-        if (st->left < 16) return;
-        poly_blocks(st, st->buf, 16);
-        st->left = 0;
-    }
-    if (n >= 16) { size_t full = n & ~(size_t)15; poly_blocks(st, m, full); m += full; n -= full; }
-    if (n) { memcpy(st->buf, m, n); st->left = n; }
-}
-
-static void poly_finish(Poly* st, uint8_t mac[16]) {
-    if (st->left) {
-        size_t i = st->left;
-        st->buf[i++] = 1;
-        for (; i < 16; i++) st->buf[i] = 0;
-        st->final = 1;
-        poly_blocks(st, st->buf, 16);
-    }
-    uint32_t h0 = st->h[0], h1 = st->h[1], h2 = st->h[2], h3 = st->h[3], h4 = st->h[4];
-    uint32_t c = h1 >> 26; h1 &= 0x3ffffff;
-    h2 += c; c = h2 >> 26; h2 &= 0x3ffffff;
-    h3 += c; c = h3 >> 26; h3 &= 0x3ffffff;
-    h4 += c; c = h4 >> 26; h4 &= 0x3ffffff;
-    h0 += c * 5; c = h0 >> 26; h0 &= 0x3ffffff;
-    h1 += c;
-    uint32_t g0 = h0 + 5; c = g0 >> 26; g0 &= 0x3ffffff;
-    uint32_t g1 = h1 + c; c = g1 >> 26; g1 &= 0x3ffffff;
-    uint32_t g2 = h2 + c; c = g2 >> 26; g2 &= 0x3ffffff;
-    uint32_t g3 = h3 + c; c = g3 >> 26; g3 &= 0x3ffffff;
-    uint32_t g4 = h4 + c - (1u << 26);
-    uint32_t mask = (g4 >> 31) - 1;
-    g0 &= mask; g1 &= mask; g2 &= mask; g3 &= mask; g4 &= mask;
-    mask = ~mask;
-    h0 = (h0 & mask) | g0; h1 = (h1 & mask) | g1; h2 = (h2 & mask) | g2; h3 = (h3 & mask) | g3; h4 = (h4 & mask) | g4;
-    h0 = (h0 | (h1 << 26));
-    h1 = ((h1 >> 6) | (h2 << 20));
-    h2 = ((h2 >> 12) | (h3 << 14));
-    h3 = ((h3 >> 18) | (h4 << 8));
-    uint64_t f = (uint64_t)h0 + st->pad[0]; h0 = (uint32_t)f;
-    f = (uint64_t)h1 + st->pad[1] + (f >> 32); h1 = (uint32_t)f;
-    f = (uint64_t)h2 + st->pad[2] + (f >> 32); h2 = (uint32_t)f;
-    f = (uint64_t)h3 + st->pad[3] + (f >> 32); h3 = (uint32_t)f;
-    put32(mac, h0); put32(mac + 4, h1); put32(mac + 8, h2); put32(mac + 12, h3);
-}
-
-/* the tag of AEAD ChaCha20-Poly1305 over a ciphertext (no extra data) */
-static void aead_tag(const uint8_t key[32], const uint8_t nonce[12], const uint8_t* ct, size_t n, uint8_t tag[16]) {
-    uint8_t block[64];
-    chacha_block(key, 0, nonce, block);
-    Poly st;
-    poly_init(&st, block);
-    static const uint8_t zeros[16] = {0};
-    poly_update(&st, ct, n);
-    if (n % 16) poly_update(&st, zeros, 16 - n % 16);
-    uint8_t lens[16] = {0};
-    uint64_t ln = n;
-    for (int i = 0; i < 8; i++) lens[8 + i] = (uint8_t)(ln >> (8 * i));
-    poly_update(&st, lens, 16);
-    poly_finish(&st, tag);
-    memset(block, 0, sizeof(block));
-}
-
-/* seals data in place and writes the tag after it (data must have room for 16 more bytes) */
-static void aead_seal(const uint8_t key[32], const uint8_t nonce[12], uint8_t* data, size_t n) {
-    chacha_xor(key, 1, nonce, data, n);
-    aead_tag(key, nonce, data, n, data + n);
-}
-
-/* opens n bytes of ciphertext followed by the tag; false if anything was changed */
-static bool aead_open(const uint8_t key[32], const uint8_t nonce[12], uint8_t* data, size_t n) {
-    uint8_t tag[16];
-    aead_tag(key, nonce, data, n, tag);
-    uint8_t diff = 0;
-    for (int i = 0; i < 16; i++) diff |= (uint8_t)(tag[i] ^ data[n + i]);
-    if (diff) return false;
-    chacha_xor(key, 1, nonce, data, n);
-    return true;
-}
+/* ChaCha20-Poly1305 is in the engine (enlngdb.c), which also seals encrypted database files */
+#define aead_seal enlngdb_aead_seal
+#define aead_open enlngdb_aead_open
 
 static void make_nonce(uint8_t nonce[12], uint64_t counter) {
     memset(nonce, 0, 12);
@@ -648,6 +502,8 @@ typedef struct {
     char file[300];
     int txn_owner;              /* the client whose transaction is open in it */
     bool dirty;
+    bool stale;                 /* the last save failed: the file is behind, so readers do not answer for it */
+    unsigned long gen;          /* counts the saves: a reader opens the file again when it changed */
 } Served;
 
 typedef struct {
@@ -661,6 +517,7 @@ typedef struct {
     int dbi;                    /* the database it signed in to */
     int fails;
     time_t waiting_since;       /* a request waits for another client's transaction (0: none) */
+    int at_reader;              /* the reader running its request (-1: none); its next requests wait for the answer */
 } Client;
 
 static void drop_client(Client* c) {
@@ -714,7 +571,177 @@ static void end_txn_of(Served* sv, Client* c) {
     if (c->signed_in && sv[c->dbi].txn_owner == c->id && sv[c->dbi].db->txn) { enlngdb_rollback(sv[c->dbi].db); sv[c->dbi].txn_owner = 0; }
 }
 
-static int serve(const char** names, int nnames, const char* host, const char* port, const char* key_path, bool plain) {
+/* ---- readers: requests that only read, run in other processes at the same time ----
+ * The server starts a few reader processes ('enlngdb --reader PORT TOKEN', the same program) that connect back to
+ * it on 127.0.0.1. A request whose statements only read (find, select, show, count ...) goes to a reader that is
+ * free, when the database has no changes waiting to be saved and no transaction is open: the reader opens the
+ * database file (lazily: only the rows it needs are read) and answers from it, while the server goes on with other
+ * requests. The file is the database as it is (the server saves each change before a read can go out), and a
+ * reader opens it again when the server has saved it since. Changes, transactions and everything else stay with
+ * the server, one at a time; the requests of one client are answered in the order they came. */
+#define MAX_READERS 16
+
+typedef struct {
+    Link link;
+    Buf in;
+    bool ready;                 /* it said hello with the token */
+    int client;                 /* the client (its place) whose request it is running; -1 none */
+    int client_id;
+    bool alive;
+} Reader;
+
+static void make_token(char out[33]) {
+    unsigned char r[16] = {0};
+    enlngdb_random_bytes(r, sizeof(r));
+    for (int i = 0; i < 16; i++) snprintf(out + i * 2, 3, "%02x", r[i]);
+}
+
+/* the port a listening socket got */
+static int socket_port(qsock s) {
+    struct sockaddr_in a;
+#ifdef _WIN32
+    int n = (int)sizeof(a);
+#else
+    socklen_t n = sizeof(a);
+#endif
+    memset(&a, 0, sizeof(a));
+    if (p_getsockname(s, (struct sockaddr*)&a, &n) != 0) return -1;
+    const unsigned char* b = (const unsigned char*)&a.sin_port;       /* network order (ntohs would need ws2_32 linked) */
+    return (b[0] << 8) | b[1];
+}
+
+static bool spawn_reader(int port, const char* token) {
+#ifdef _WIN32
+    char exe[1024];
+    DWORD n = GetModuleFileNameA(NULL, exe, sizeof(exe));
+    if (n == 0 || n >= sizeof(exe)) return false;
+    char cmd[1200];
+    snprintf(cmd, sizeof(cmd), "\"%s\" --reader %d %s", exe, port, token);
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    memset(&si, 0, sizeof(si));
+    si.cb = sizeof(si);
+    memset(&pi, 0, sizeof(pi));
+    if (!CreateProcessA(exe, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) return false;
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return true;
+#else
+    char exe[1024];
+    ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+    if (n <= 0) return false;
+    exe[n] = '\0';
+    pid_t pid = fork();
+    if (pid < 0) return false;
+    if (pid == 0) {
+        char ps[16];
+        snprintf(ps, sizeof(ps), "%d", port);
+        execl(exe, exe, "--reader", ps, token, (char*)NULL);
+        _exit(1);
+    }
+    signal(SIGCHLD, SIG_IGN);       /* nobody waits for it */
+    return true;
+#endif
+}
+
+/* the reader process: one connection to the server, a request at a time */
+static int reader_main(const char* port, const char* token) {
+    char err[300];
+    qsock s = open_socket("127.0.0.1", port, false, err, sizeof(err));
+    if (s == QBAD) return 1;
+    Link L;
+    memset(&L, 0, sizeof(L));
+    L.sock = s;
+    if (!send_msg(&L, "hello", token, strlen(token))) return 1;
+    typedef struct { char name[ENLNGDB_MAX_NAME]; unsigned long gen; EnlngDatabase* db; } Open;
+    Open open[MAX_DATABASES];
+    int nopen = 0;
+    Buf in;
+    memset(&in, 0, sizeof(in));
+    for (;;) {
+        char chunk[65536];
+        int k = q_recv(s, chunk, sizeof(chunk));
+        if (k <= 0) break;
+        if (!buf_add(&in, chunk, (size_t)k)) break;
+        for (;;) {
+            char word[32];
+            const char* body = NULL;
+            size_t bn = 0;
+            long used = take_msg(in.p, in.len, word, sizeof(word), &body, &bn);
+            if (used < 0) goto done;
+            if (used == 0) break;
+            /* "job": the database, the generation of its file, the user, the client, then the script */
+            char* text = (char*)malloc(bn + 1);
+            if (!text) goto done;
+            memcpy(text, body, bn);
+            text[bn] = '\0';
+            buf_drop(&in, (size_t)used);
+            char* parts[4];
+            char* p = text;
+            bool good = strcmp(word, "job") == 0;
+            for (int i = 0; i < 4 && good; i++) {
+                parts[i] = p;
+                char* nl = strchr(p, '\n');
+                if (!nl) { good = false; break; }
+                *nl = '\0';
+                p = nl + 1;
+            }
+            if (!good) { free(text); goto done; }
+            const char* name = parts[0];
+            unsigned long gen = strtoul(parts[1], NULL, 10);
+            const char* user = parts[2];
+            int session = atoi(parts[3]);
+            int at = -1;
+            for (int i = 0; i < nopen; i++) if (strcmp(open[i].name, name) == 0) at = i;
+            if (at < 0 && nopen < MAX_DATABASES) { at = nopen++; memset(&open[at], 0, sizeof(open[at])); snprintf(open[at].name, sizeof(open[at].name), "%s", name); }
+            char* out = NULL;
+            int failed = 0;
+            if (at >= 0 && (!open[at].db || open[at].gen != gen)) {
+                /* the file changed since: opened again (lazily) */
+                if (open[at].db) enlngdb_free(open[at].db);
+                open[at].db = enlngdb_create(name);
+                char file[300];
+                snprintf(file, sizeof(file), "%s.edb", name);
+                enlngdb_load(open[at].db, file);
+                open[at].gen = gen;
+            }
+            if (at >= 0) out = enlngdb_run_as(open[at].db, user[0] ? user : NULL, session, p, &failed);
+            size_t ol = out ? strlen(out) : 0;
+            char* reply_text = (char*)malloc(ol + 16);
+            if (!reply_text) { free(out); free(text); goto done; }
+            int h = snprintf(reply_text, 16, "%d\n", failed);
+            if (ol) memcpy(reply_text + h, out, ol);
+            bool sent = send_msg(&L, "done", reply_text, (size_t)h + ol);
+            free(reply_text);
+            free(out);
+            free(text);
+            if (!sent) goto done;
+        }
+    }
+done:
+    for (int i = 0; i < nopen; i++) if (open[i].db) enlngdb_free(open[i].db);
+    free(in.p);
+    q_close(s);
+    return 0;
+}
+
+static int free_reader(Reader* rd) {
+    for (int i = 0; i < MAX_READERS; i++) if (rd[i].link.sock != QBAD && rd[i].ready && rd[i].client < 0) return i;
+    return -1;
+}
+
+static int cpu_count(void) {
+#ifdef _WIN32
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    return (int)si.dwNumberOfProcessors;
+#else
+    long n = sysconf(_SC_NPROCESSORS_ONLN);
+    return n > 0 ? (int)n : 1;
+#endif
+}
+
+static int serve(const char** names, int nnames, const char* host, const char* port, const char* key_path, bool plain, int nreaders) {
     if (plain && strcmp(host, "127.0.0.1") != 0) { fprintf(stderr, "ERROR: --plain (no encryption) is only for this computer: leave out --host, or leave out --plain.\n"); return 1; }
     Served sv[MAX_DATABASES];
     int nsv = 0;
@@ -727,7 +754,32 @@ static int serve(const char** names, int nnames, const char* host, const char* p
         s->db = enlngdb_create(names[i]);
         if (!enlngdb_lock(s->db, names[i], err, sizeof(err))) { fprintf(stderr, "ERROR: %s.\n", err); enlngdb_free(s->db); status = 1; break; }
         snprintf(s->file, sizeof(s->file), "%s.edb", names[i]);
-        enlngdb_load(s->db, s->file);
+        {
+            /* an encrypted database: the password from ENLNGDB_DB_PASSWORD, or asked for here (three tries) */
+            const char* env = getenv("ENLNGDB_DB_PASSWORD");
+            enlngdb_open_password = env && *env ? env : NULL;
+            bool opened = enlngdb_load(s->db, s->file);
+            enlngdb_open_password = NULL;
+            for (int tries = 0; !opened && enlngdb_load_error && tries < 3 && is_terminal(); tries++) {
+                char pw[256] = "";
+                printf("%s for database '%s': ", enlngdb_load_error == 1 ? "Password" : "Wrong password; again", names[i]);
+                fflush(stdout);
+                read_secret(pw, sizeof(pw));
+                enlngdb_open_password = pw;
+                opened = enlngdb_load(s->db, s->file);
+                enlngdb_open_password = NULL;
+                memset(pw, 0, sizeof(pw));
+            }
+            if (!opened && enlngdb_load_error) {
+                fprintf(stderr, "ERROR: the database '%s' is encrypted, and %s. Set ENLNGDB_DB_PASSWORD, or start the server in a terminal to type it.\n",
+                        names[i], enlngdb_load_error == 1 ? "no password was given" : "the password is wrong");
+                enlngdb_free(s->db);
+                status = 1;
+                break;
+            }
+        }
+        enlngdb_materialize(s->db);
+        s->gen = 1;
         nsv++;
         if (!enlngdb_has_users(s->db)) {
             fprintf(stderr, "ERROR: the database '%s' has no users, so nobody could sign in.\n"
@@ -761,8 +813,28 @@ static int serve(const char** names, int nnames, const char* host, const char* p
         if (made) printf("A new key was made in %s: keep this file private; it is what proves this server is this server.\n", key_path);
     }
     fflush(stdout);
+    /* the readers: a private socket on this computer, and a token they must say */
+    static Reader rd_[MAX_READERS];
+    for (int i = 0; i < MAX_READERS; i++) { memset(&rd_[i], 0, sizeof(rd_[i])); rd_[i].link.sock = QBAD; rd_[i].client = -1; }
+    qsock rls = QBAD;
+    char token[33] = "";
+    int rport = -1;
+    if (nreaders > MAX_READERS) nreaders = MAX_READERS;
+    for (int i = 0; i < nsv; i++) if (sv[i].db->encrypted) nreaders = 0;     /* an encrypted file: the server alone */
+    if (nreaders > 0) {
+        char rerr[300];
+        rls = open_socket("127.0.0.1", "0", true, rerr, sizeof(rerr));
+        rport = rls == QBAD ? -1 : socket_port(rls);
+        if (rport <= 0) { if (rls != QBAD) q_close(rls); rls = QBAD; nreaders = 0; }
+        make_token(token);
+        int started = 0;
+        for (int i = 0; i < nreaders; i++) started += spawn_reader(rport, token) ? 1 : 0;
+        nreaders = started;
+        if (nreaders > 0) printf("%d reader processes answer the requests that only read, at the same time (--readers 0: none).\n", nreaders);
+        fflush(stdout);
+    }
     static Client cl[MAX_CLIENTS];
-    for (int i = 0; i < MAX_CLIENTS; i++) { memset(&cl[i], 0, sizeof(cl[i])); cl[i].link.sock = QBAD; }
+    for (int i = 0; i < MAX_CLIENTS; i++) { memset(&cl[i], 0, sizeof(cl[i])); cl[i].link.sock = QBAD; cl[i].at_reader = -1; }
     int next_id = 1;
     bool quit = false;
     while (!quit && !stopping()) {
@@ -771,6 +843,8 @@ static int serve(const char** names, int nnames, const char* host, const char* p
         set_add(ls, &rd);
         int top = (int)ls;
         for (int i = 0; i < MAX_CLIENTS; i++) if (cl[i].link.sock != QBAD) { set_add(cl[i].link.sock, &rd); if ((int)cl[i].link.sock > top) top = (int)cl[i].link.sock; }
+        if (rls != QBAD) { set_add(rls, &rd); if ((int)rls > top) top = (int)rls; }
+        for (int i = 0; i < MAX_READERS; i++) if (rd_[i].link.sock != QBAD) { set_add(rd_[i].link.sock, &rd); if ((int)rd_[i].link.sock > top) top = (int)rd_[i].link.sock; }
         struct timeval tv = {0, 200000};
         int r = p_select(top + 1, &rd, NULL, NULL, &tv);
         if (r < 0) continue;
@@ -780,7 +854,62 @@ static int serve(const char** names, int nnames, const char* host, const char* p
                 int k = -1;
                 for (int i = 0; i < MAX_CLIENTS && k < 0; i++) if (cl[i].link.sock == QBAD) k = i;
                 if (k < 0) q_close(s);
-                else { cl[k].link.sock = s; cl[k].id = next_id++; cl[k].hello_done = plain; }
+                else { cl[k].link.sock = s; cl[k].id = next_id++; cl[k].hello_done = plain; cl[k].at_reader = -1; }
+            }
+        }
+        if (rls != QBAD && in_set(rls, &rd)) {
+            qsock s = p_accept(rls, NULL, NULL);
+            if (s != QBAD) {
+                int k = -1;
+                for (int i = 0; i < MAX_READERS && k < 0; i++) if (rd_[i].link.sock == QBAD) k = i;
+                if (k < 0) q_close(s);
+                else { memset(&rd_[k], 0, sizeof(rd_[k])); rd_[k].link.sock = s; rd_[k].client = -1; rd_[k].alive = true; }
+            }
+        }
+        /* what the readers send: hello (with the token), and the answers */
+        for (int i = 0; i < MAX_READERS; i++) {
+            Reader* R = &rd_[i];
+            if (R->link.sock == QBAD || !in_set(R->link.sock, &rd)) continue;
+            char chunk[65536];
+            int k = q_recv(R->link.sock, chunk, sizeof(chunk));
+            bool good = k > 0 && buf_add(&R->in, chunk, (size_t)k);
+            while (good) {
+                char word[32];
+                const char* body = NULL;
+                size_t bn = 0;
+                long used = take_msg(R->in.p, R->in.len, word, sizeof(word), &body, &bn);
+                if (used < 0) { good = false; break; }
+                if (used == 0) break;
+                if (strcmp(word, "hello") == 0) {
+                    good = bn == strlen(token) && memcmp(body, token, bn) == 0;
+                    R->ready = good;
+                } else if (strcmp(word, "done") == 0 && R->ready && R->client >= 0) {
+                    Client* c = &cl[R->client];
+                    const char* nl = (const char*)memchr(body, '\n', bn);
+                    int failed = atoi(body);
+                    const char* out = nl ? nl + 1 : body + bn;
+                    if (c->link.sock != QBAD && c->id == R->client_id) {
+                        send_msg(&c->link, failed ? "failed" : "ok", out, (size_t)(body + bn - out));
+                        c->at_reader = -1;
+                    }
+                    R->client = -1;
+                } else {
+                    good = false;
+                }
+                buf_drop(&R->in, (size_t)used);
+            }
+            if (!good) {
+                /* the reader is gone: a request it had is answered with the reason, and another reader is started */
+                if (R->client >= 0) {
+                    Client* c = &cl[R->client];
+                    if (c->link.sock != QBAD && c->id == R->client_id) { reply(c, "failed", "ERROR: the process that read the database stopped; nothing was changed, try again.\n"); c->at_reader = -1; }
+                }
+                q_close(R->link.sock);
+                free(R->in.p);
+                memset(R, 0, sizeof(*R));
+                R->link.sock = QBAD;
+                R->client = -1;
+                spawn_reader(rport, token);
             }
         }
         for (int i = 0; i < MAX_CLIENTS; i++) {
@@ -802,7 +931,7 @@ static int serve(const char** names, int nnames, const char* host, const char* p
         /* the requests that are all there, one client after another */
         for (int i = 0; i < MAX_CLIENTS && !quit; i++) {
             Client* c = &cl[i];
-            while (c->link.sock != QBAD && c->in.len > 0 && !quit) {
+            while (c->link.sock != QBAD && c->in.len > 0 && !quit && c->at_reader < 0) {
                 char word[32];
                 const char* body = NULL;
                 size_t bn = 0;
@@ -872,6 +1001,24 @@ static int serve(const char** names, int nnames, const char* host, const char* p
                     } else if (c->admin && strcmp(text, "shutdown server") == 0) {
                         reply(c, "ok", "The server stops.\n");
                         quit = true;
+                    } else if (rls != QBAD && !s->dirty && !s->stale && !s->db->txn && enlngdb_zone_default() && enlngdb_script_reads_only(text) &&
+                               (c->at_reader = free_reader(rd_)) >= 0) {
+                        /* only reads, and the file is the database as it is: a reader answers, and the server goes on */
+                        Reader* R = &rd_[c->at_reader];
+                        size_t tl = strlen(text);
+                        char* job = (char*)malloc(tl + 200);
+                        int h = job ? snprintf(job, 200, "%s\n%lu\n%s\n%d\n", s->name, s->gen, c->user, c->id) : 0;
+                        bool sent = job != NULL;
+                        if (sent) { memcpy(job + h, text, tl); sent = send_msg(&R->link, "job", job, (size_t)h + tl); }
+                        free(job);
+                        if (sent) { R->client = i; R->client_id = c->id; c->waiting_since = 0; }
+                        else {
+                            c->at_reader = -1;
+                            int failed = 0;
+                            char* out = enlngdb_run_as(s->db, c->user, c->id, text, &failed);
+                            send_msg(&c->link, failed ? "failed" : "ok", out ? out : "", out ? strlen(out) : 0);
+                            free(out);
+                        }
                     } else {
                         c->waiting_since = 0;
                         unsigned long long before = enlngdb_mutations;
@@ -897,12 +1044,17 @@ static int serve(const char** names, int nnames, const char* host, const char* p
         }
         for (int i = 0; i < nsv; i++) {
             if (sv[i].dirty && !sv[i].db->txn) {
-                if (!enlngdb_save(sv[i].db, sv[i].file)) fprintf(stderr, "ERROR: the database could not be saved to %s.\n", sv[i].file);
+                bool saved = enlngdb_save(sv[i].db, sv[i].file);
+                if (!saved) fprintf(stderr, "ERROR: the database could not be saved to %s.\n", sv[i].file);
                 sv[i].dirty = false;
+                sv[i].stale = !saved;
+                if (saved) sv[i].gen++;
             }
         }
     }
     for (int i = 0; i < MAX_CLIENTS; i++) if (cl[i].link.sock != QBAD) drop_client(&cl[i]);
+    for (int i = 0; i < MAX_READERS; i++) if (rd_[i].link.sock != QBAD) { q_close(rd_[i].link.sock); free(rd_[i].in.p); }     /* they end */
+    if (rls != QBAD) q_close(rls);
     for (int i = 0; i < nsv; i++) {
         if (sv[i].db->txn) enlngdb_rollback(sv[i].db);
         if (sv[i].dirty) enlngdb_save(sv[i].db, sv[i].file);
@@ -1168,6 +1320,7 @@ int main(int argc, char* argv[]) {
 #ifndef __EMSCRIPTEN__
     if (strcmp(argv[1], "--selftest") == 0) return self_test();
     if (strcmp(argv[1], "--x25519") == 0 || strcmp(argv[1], "--seal") == 0) return crypto_tool(argc, argv);
+    if (strcmp(argv[1], "--reader") == 0 && argc >= 4) return reader_main(argv[2], argv[3]);
     if (strcmp(argv[1], "--serve") == 0) {
         const char* names[MAX_DATABASES];
         int nnames = 0;
@@ -1175,8 +1328,12 @@ int main(int argc, char* argv[]) {
         const char* port = "7171";
         const char* key = "enlngdb_server.key";
         bool plain = false;
+        int nreaders = cpu_count() - 1;
+        if (nreaders > 4) nreaders = 4;
+        if (nreaders < 0) nreaders = 0;
         for (int i = 2; i < argc; i++) {
-            if (strcmp(argv[i], "--port") == 0 && i + 1 < argc) port = argv[++i];
+            if (strcmp(argv[i], "--readers") == 0 && i + 1 < argc) { nreaders = atoi(argv[++i]); if (nreaders < 0) nreaders = 0; }
+            else if (strcmp(argv[i], "--port") == 0 && i + 1 < argc) port = argv[++i];
             else if (strcmp(argv[i], "--host") == 0 && i + 1 < argc) host = argv[++i];
             else if (strcmp(argv[i], "--key") == 0 && i + 1 < argc) key = argv[++i];
             else if (strcmp(argv[i], "--plain") == 0) plain = true;
@@ -1184,7 +1341,7 @@ int main(int argc, char* argv[]) {
             else if (nnames < MAX_DATABASES) names[nnames++] = argv[i];
         }
         if (nnames == 0) { fprintf(stderr, "ERROR: which database? enlngdb --serve NAME [NAME...] [--port 7171] [--host 127.0.0.1]\n"); return 1; }
-        return serve(names, nnames, host, port, key, plain);
+        return serve(names, nnames, host, port, key, plain, nreaders);
     }
     if (strcmp(argv[1], "--connect") == 0) {
         if (argc < 3) { fprintf(stderr, "ERROR: where? enlngdb --connect [HOST:]PORT[/NAME] --user NAME [script.enlngdb]\n"); return 1; }

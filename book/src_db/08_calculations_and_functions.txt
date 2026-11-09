@@ -73,9 +73,29 @@ Without `else`, a row that matches no `when` gets `null`.
 | `date(d)` | the date part of a date with a time |
 | `datediff(a, b)` | the number of days from `b` to `a` |
 | `now()`, `today()`, `current_date()`, `current_time()` | the clock of the machine |
+| `utc_now()` | the moment now, in UTC |
+| `hour(t)`, `minute(t)`, `second(t)` | a part of a time |
+| `date_add(t, n, unit)` | `n` seconds, minutes, hours, days, weeks, months or years later (or earlier, for a negative `n`) |
+| `seconds_between(a, b)` | the seconds from `b` to `a`, with their zones |
+| `in_zone(t, zone)` | the moment `t` as the clock shows it in a zone: `"+05:30"`, `"UTC"`, `"local"` |
 ::: db
 select year("2024-03-15") as y, month("2024-03-15") as m, day("2024-03-15") as d, datediff("2024-03-15", "2024-03-10") as days
 :::
+A moment can be written with its zone after it: `2024-03-15T10:30:00+05:30`. A `timestamp` column keeps it in UTC.
+::: db
+create table meeting with id integer primary key, at timestamp
+insert into meeting values (1, "2024-03-15T10:30:00+05:30"), (2, "2024-01-31 09:00")
+select at, in_zone(at, "+05:30") as india, date_add(at, 1, "month") as later, hour(at) as h from meeting
+:::
+`set time zone "+05:30"` makes a moment written without a zone be read in that zone (until then it is UTC; `local` is the computer's zone). Zones are offsets from UTC; names such as `Asia/Kolkata` are not known.
+## JSON and bytes
+A `json` column keeps JSON text, and refuses text that is not JSON. `json_get` finds a value by a path of keys and positions.
+::: db
+create table profile with id integer primary key, data json, picture blob
+insert into profile values (1, '{"name": "Asha", "langs": ["hi", "en"], "age": 31}', from_base64("iVBORw=="))
+select json_get(data, "name") as name, json_get(data, "langs[1]") as second, json_get(data, "age") + 1 as next_year, json_length(data, "langs") as langs, octet_length(picture) as bytes, picture from profile
+:::
+`json_type` says what a value is, `json_valid` whether a text is JSON. A `blob` keeps bytes as `0x` and hex digits; `from_base64`, `to_base64`, `hex`, `unhex` and `octet_length` work on them.
 ## Changing the type of a value
 `cast(x as type)` turns a value into `integer`, `real` or `text`. When that is not possible the engine says so.
 ::: db

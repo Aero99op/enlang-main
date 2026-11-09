@@ -6,7 +6,7 @@ Temporary tables, made inside a script for its own use, are not saved. Views, in
 Each number is written byte by byte, so the file reads the same on every machine and every compiler.
 | Part | Size | Content |
 | :--- | :--- | :--- |
-| magic | 16 bytes | the text `ENLNG_C_EDB_V2` and two zero bytes |
+| magic | 16 bytes | the text `ENLNG_C_EDB_V3` and two zero bytes |
 | database name | 64 bytes | text, padded with zero bytes |
 | table count | 4 bytes | a whole number |
 | each table | | the parts listed below |
@@ -14,8 +14,10 @@ Each table has:
 - its name (64 bytes) and the text of its view (4 bytes for the length, then the text; length 0 for a table).
 - the number of columns (4 bytes) and for each column its name (64 bytes), five flag bytes (the type: 0 any, 1 integer, 2 real, 3 text, 4 boolean, 5 date; then primary key, unique, not null and automatic number), the default, the check and the referenced table and column (each a length of 4 bytes and then the text), and the next automatic number (8 bytes).
 - the number of indexes (4 bytes) and for each its name, whether it is unique, and its columns.
-- the number of rows (4 bytes; past 4,294,967,294 rows the bytes FF FF FF FF and then 8 bytes; a file with 8 bytes here, from a 64-bit program before, is read too) and every row: the number of cells (4 bytes), then for each cell a type byte (0 empty, 1 whole number, 2 decimal number, 3 text, 4 yes or no) and its value.
+- the number of rows (8 bytes), how many bytes the rows take (8), the width of a place (1 byte: 4 or 8, then 7 zero bytes), then every row: the number of cells (4 bytes), then for each cell a type byte (0 empty, 1 whole number, 2 decimal number, 3 text, 4 yes or no) and its value.
 When the database has triggers or procedures, they follow the tables: the 16 bytes `ENLNGDB-EXT1` and zero bytes, the number of triggers (4 bytes) and for each its name and table (64 bytes each), its event (4 bytes: 1 insert, 2 update, 3 delete), its `when` condition and its statements (each a length of 4 bytes and then the text); then the number of procedures and for each its name, parameters and statements. Before triggers come last, after the 16 bytes `ENLNGDB-EXT2` and their number, in the same form, so that an older program that knows only after triggers never reads them. A file without them has nothing after the tables, and an older program that reads a file with them stops after the tables and ignores the rest.
+After the rows: the place of each row from the first (4 or 8 bytes each), so that a row can be read without reading the others; then the lookup indexes kept for the table (their count, 4 bytes; for each, its column, how many entries and how many rows without a hash, then the entries, each 8 bytes of hash and 4 of row, sorted by hash, then those rows). A file of version 2 (`ENLNG_C_EDB_V2`) has only the number of rows before them (4 bytes, or 8 from a 64-bit program before) and nothing after; it is read whole, and written as version 3 at the next save. Programs before this version do not read version 3.
+Triggers for each statement come after that, in a part that begins with `ENLNGDB-EXT4` (their events are 21, 22 and 23). An encrypted file begins with `ENLNG_C_EDB_ENC1`, then the salt (16 bytes), the PBKDF2 rounds (4), the nonce (12), and the whole file as above, sealed with ChaCha20-Poly1305, with its tag (16) at the end.
 Files written by earlier versions of EnlngDB begin with `ENLNG_C_EDB_V1`. They have no types, views or rules. They are read, and the next time the database is saved the file is written as version 2.
 ## Using the engine from C
 The engine is three files, `enlngdb.c`, `enlngdb_parser.c` and `enlngdb.h`, and the C standard library. This program makes a database, runs three statements and saves it. It prints what a script would print, because the last argument of `enlngdb_execute_statement` says whether to print.
@@ -53,10 +55,10 @@ Query OK, 1 row affected
 ## Limits
 | Thing | The most |
 | :--- | :---: |
-| tables in a database | 256 |
-| columns in a table | 64 |
-| columns in the result of a query (a join) | 128 |
-| indexes on a table | 8 |
+| tables in a database | 4,096 |
+| columns in a table | 256 |
+| columns in the result of a query (a join) | 512 |
+| indexes on a table | 32 |
 | characters in a name | 63 |
 | characters in a statement, or in a text value | no limit but memory |
 | characters of a `default`, a `check`, the query of a view | 63, 95, 1023 |
