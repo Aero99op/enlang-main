@@ -459,6 +459,49 @@ def main():
         write("rg_same.enlngdb", "type enlngdb\nuse database rg\nfind count(*) from t where v < 2000\n" + queries)      # every row is read first
         code, out, err = run("rg_same.enlngdb")
         check("... and the same answers when every row was read before", cells(out)[1:] == with_index and len(with_index) == 6, (cells(out), with_index))
+
+        # ---- 10. a file is never lost: copies, files that are not databases, cut and damaged files ----
+        write("sf_make.enlngdb", 'type enlngdb\nuse database sf\ncreate table pets with id integer primary key, name text unique\n'
+              'insert into pets values (1, "Tom"), (2, "Kit"), (3, "Jo"), (4, "a much longer name here")\ncreate user boss password "boss-pass-1" admin\n')
+        run("sf_make.enlngdb")
+        sf = os.path.join(TMP, "sf.edb")
+        good = open(sf, "rb").read()
+        shutil.copyfile(sf, os.path.join(TMP, "sfcopy.edb"))
+        write("sf_copy.enlngdb", 'type enlngdb\nuse database sfcopy\ninsert into pets values (50, "only in the copy")\nfind count(*) from pets\n')
+        code, out, err = run("sf_copy.enlngdb")
+        write("sf_copy2.enlngdb", "type enlngdb\nuse database sfcopy\nfind count(*) from pets\n")
+        check("a copy of a file under another name is another database: its changes go to the copy, not to the first file",
+              "Database changed to 'sfcopy'" in out and open(sf, "rb").read() == good and cells(run("sf_copy2.enlngdb")[1]) == ["5"], out[-300:])
+        junk = os.path.join(TMP, "sfjunk.edb")
+        open(junk, "wb").write(b"these are my notes, not a database\n")
+        write("sf_junk.enlngdb", "type enlngdb\nuse database sfjunk\ncreate table a with id\ninsert into a values (1)\n")
+        code, out, err = run("sf_junk.enlngdb")
+        check("a file that is not a database is refused, and left as it is",
+              "not a database this program can read" in out and open(junk, "rb").read() == b"these are my notes, not a database\n", out[-300:])
+        bad_cuts = []
+        for k in sorted(set(list(range(1, len(good), max(1, len(good) // 60))) + [len(good) - 16, len(good) - 1])):
+            cut = os.path.join(TMP, "sfcut.edb")
+            open(cut, "wb").write(good[:k])
+            write("sf_cut.enlngdb", "type enlngdb\nuse database sfcut\ncreate table z with id\ninsert into pets values (9, \"new\")\n")
+            code, out, err = run("sf_cut.enlngdb")
+            if "not a database this program can read" not in out or open(cut, "rb").read() != good[:k]:
+                bad_cuts.append(k)
+        check("a file cut anywhere (%d bytes, tried at many places) is refused, and never written" % len(good), not bad_cuts, bad_cuts[:10])
+        flip = bytearray(good)
+        at = good.find(b"Tom")
+        flip[at - 3] ^= 0x40                       # the length of a text becomes far too long
+        fpath2 = os.path.join(TMP, "sfflip.edb")
+        open(fpath2, "wb").write(bytes(flip))
+        write("sf_flip.enlngdb", 'type enlngdb\nuse database sfflip\nupdate pets set name = "x" where id is 2\nfind * from pets\n')
+        code, out, err = run("sf_flip.enlngdb")
+        check("a row that cannot be read stops the program with an error (no crash), and the file is not written",
+              code == 3 and "is damaged" in err and open(fpath2, "rb").read() == bytes(flip), (code, (out + err)[-300:]))
+        empty = os.path.join(TMP, "sfempty.edb")
+        open(empty, "wb").close()
+        write("sf_empty.enlngdb", "type enlngdb\nuse database sfempty\ncreate table a with id\ninsert into a values (1)\nfind count(*) from a\n")
+        code, out, err = run("sf_empty.enlngdb")
+        check("an empty file is an empty database", cells(out) == ["1"] and open(empty, "rb").read()[:14] == b"ENLNG_C_EDB_V4", out[-200:])
+        check("a version 4 file ends with its end mark", good[-16:] == b"ENLNG_EDB_END_V4", good[-16:])
     finally:
         shutil.rmtree(TMP, ignore_errors=True)
     print("%d passed, %d failed" % (passed, failed))

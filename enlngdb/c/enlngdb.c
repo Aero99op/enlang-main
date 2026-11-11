@@ -1492,10 +1492,55 @@ static size_t mem_row_len(const unsigned char* p) {
     return (size_t)(p - s);
 }
 
+/* A row of the file is read only when it is whole: its count of cells is one a table can have, each cell is of a
+   known kind, and it ends inside the rows of its table. The bytes it takes, or 0. A file changed by a failing disk
+   (or by hand) must give an error, never a crash or a read outside the file. */
+static size_t row_check(const unsigned char* p, const unsigned char* end) {
+    const unsigned char* s = p;
+    if (end < p || (size_t)(end - p) < 4) return 0;
+    int n;
+    memcpy(&n, p, 4);
+    p += 4;
+    if (n < 0 || n > ENLNGDB_MAX_COLS) return 0;
+    for (int c = 0; c < n; c++) {
+        if (p >= end) return 0;
+        uint8_t type = *p++;
+        size_t need = 0;
+        if (type == ENLNG_VAL_INT || type == ENLNG_VAL_DOUBLE) need = 8;
+        else if (type == ENLNG_VAL_BOOL) need = 1;
+        else if (type == ENLNG_VAL_STRING) {
+            if ((size_t)(end - p) < 4) return 0;
+            uint32_t l;
+            memcpy(&l, p, 4);
+            p += 4;
+            need = l;
+        } else if (type != ENLNG_VAL_NULL) return 0;
+        if ((size_t)(end - p) < need) return 0;
+        p += need;
+    }
+    return (size_t)(p - s);
+}
+
+static void file_damaged(const EnlngTable* t) {
+    fflush(stdout);
+    fprintf(stderr, "\nERROR: the file of this database is damaged: a row of table '%s' cannot be read.\n"
+                    "       The program stops here, and nothing was written. Put back a copy of the file from before.\n", t->name);
+    exit(3);
+}
+
+/* where a row not read yet is in the file, checked; *len its bytes */
+static const unsigned char* lazy_row(const EnlngTable* t, const EnlngRow* row, size_t* len) {
+    size_t off = (size_t)(uintptr_t)row->cells;
+    size_t n = off < t->lazy_bytes ? row_check(t->lazy + off, t->lazy + t->lazy_bytes) : 0;
+    if (!n) file_damaged(t);
+    if (len) *len = n;
+    return t->lazy + off;
+}
+
 void enlngdb_load_row(const EnlngTable* tc, size_t i) {
     EnlngTable* t = (EnlngTable*)tc;
     EnlngRow* r = &t->rowv[i];
-    const unsigned char* p = t->lazy + (uintptr_t)r->cells;
+    const unsigned char* p = lazy_row(t, r, NULL);
     int n;
     memcpy(&n, p, 4);
     p += 4;
@@ -1552,7 +1597,7 @@ static bool cell_of(const EnlngTable* t, size_t r, int c, EnlngVal* v) {
         else v->type = ENLNG_VAL_NULL;
         return false;
     }
-    const unsigned char* p = t->lazy + (uintptr_t)row->cells;
+    const unsigned char* p = lazy_row(t, row, NULL);
     int n;
     memcpy(&n, p, 4);
     p += 4;
@@ -1586,7 +1631,7 @@ static int cell_peek(const EnlngTable* t, size_t r, int c, double* d, const char
         if (v->type == ENLNG_VAL_STRING) { *s = v->str_val ? v->str_val : ""; *len = (uint32_t)strlen(*s); return 2; }
         return v->type == ENLNG_VAL_NULL ? 0 : 3;
     }
-    const unsigned char* p = t->lazy + (uintptr_t)row->cells;
+    const unsigned char* p = lazy_row(t, row, NULL);
     int n;
     memcpy(&n, p, 4);
     p += 4;
@@ -1604,6 +1649,7 @@ const char* enlngdb_base_text(const EnlngTable* t, size_t b, int col, size_t* le
     uint64_t off;
     if (t->base_width == 4) { uint32_t o; memcpy(&o, t->base_offs + b * 4, 4); off = o; }
     else memcpy(&off, t->base_offs + b * 8, 8);
+    if (off >= t->base_bytes || !row_check(t->base_data + off, t->base_data + t->base_bytes)) return NULL;
     const unsigned char* p = t->base_data + off;
     int n;
     memcpy(&n, p, 4);
@@ -1679,7 +1725,9 @@ static bool save_rows_v3(const EnlngTable* t, EnlngIO* f, uint64_t* data_at, uin
     for (size_t r = 0; r < t->row_count; r++) {
         const EnlngRow* row = &t->rowv[r];
         offs[r] = total;
-        total += row->cell_count < 0 ? mem_row_len(t->lazy + (uintptr_t)row->cells) : row_bytes(row);
+        size_t in_file = 0;
+        if (row->cell_count < 0) lazy_row(t, row, &in_file);
+        total += row->cell_count < 0 ? in_file : row_bytes(row);
     }
     uint8_t width = total <= 0xFFFFFFFFu ? 4 : 8;
     uint8_t pad[7] = {0};
@@ -1692,8 +1740,9 @@ static bool save_rows_v3(const EnlngTable* t, EnlngIO* f, uint64_t* data_at, uin
     for (size_t r = 0; r < t->row_count; r++) {
         const EnlngRow* row = &t->rowv[r];
         if (row->cell_count < 0) {
-            const unsigned char* p = t->lazy + (uintptr_t)row->cells;
-            eio_write(p, 1, mem_row_len(p), f);
+            size_t in_file = 0;
+            const unsigned char* p = lazy_row(t, row, &in_file);
+            eio_write(p, 1, in_file, f);
         } else {
             eio_write(&row->cell_count, sizeof(int), 1, f);
             for (int c = 0; c < row->cell_count; c++) put_val(f, &row->cells[c]);
@@ -1878,6 +1927,7 @@ static bool save_full(EnlngDatabase* db, const char* filepath, const uint8_t id[
         if (!save_rows_v3(tbl, f, &places[t].data_at, &places[t].offs_at, &places[t].width)) out.bad = true;
     }
     write_extras(db, f);
+    eio_write(ENLNGDB_END_MARK, 1, 16, f);
     if (db->encrypted) {
         /* "ENLNG_C_EDB_ENC1", the salt, the rounds, a new nonce, then the sealed file and its tag */
         unsigned char head[48];
@@ -1988,6 +2038,7 @@ static void rebase_after_save(EnlngDatabase* db, const char* path, const uint8_t
         tb->base_rows = (long long)tb->row_count;
         tb->base_pos = k++;
         tb->base_data = base + places[t].data_at;
+        tb->base_bytes = (size_t)(places[t].offs_at - places[t].data_at);
         tb->base_offs = base + places[t].offs_at;
         tb->base_width = places[t].width;
         table_sig(tb, tb->base_sig);
@@ -2058,7 +2109,8 @@ static int save_wal(EnlngDatabase* db, const char* walpath) {
                     m.len = 0;
                     encode_row(row, &m);
                     const unsigned char* bp = tb->base_data + base_off(tb, (size_t)row->origin);
-                    size_t bl = mem_row_len(bp);
+                    size_t bl = row_check(bp, tb->base_data + tb->base_bytes);
+                    if (!bl) file_damaged(tb);
                     if (bl != m.len || memcmp(bp, m.buf, bl) != 0) if (!u32_push(&sets, (uint32_t)r)) result = -1;
                 }
             } else {
@@ -2330,6 +2382,8 @@ static bool load_rows_v3(EnlngTable* t, EnlngIO* f) {
         t->row_count = (size_t)rc;
         t->base_rows = (long long)rc;
         t->base_data = t->lazy;
+        t->lazy_bytes = (size_t)total;
+        t->base_bytes = (size_t)total;
         t->base_offs = o;
         t->base_width = width;
         f->pos += (size_t)(rc * width);
@@ -2388,7 +2442,28 @@ static bool load_rows_v3(EnlngTable* t, EnlngIO* f) {
     return true;
 }
 
+static bool load_file(EnlngDatabase* db, const char* filepath);
+
+/* Opens a database file. The database keeps the name it was opened by: a copy of a file under another name is
+   another database, saved to its own file. False with enlngdb_load_error 4 when the file is there, has bytes, and
+   is not a database this program can read (cut, damaged, or something else): the caller must not write over it. */
 bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
+    char name[ENLNGDB_MAX_NAME];
+    if (db) memcpy(name, db->name, sizeof(name));
+    bool ok = load_file(db, filepath);
+    if (db && name[0]) memcpy(db->name, name, sizeof(name));
+    if (!ok && db && filepath && enlngdb_load_error == 0) {
+        FILE* f = fopen(filepath, "rb");
+        if (f) {
+            bool has_bytes = fgetc(f) != EOF;
+            fclose(f);
+            if (has_bytes) enlngdb_load_error = 4;
+        }
+    }
+    return ok;
+}
+
+static bool load_file(EnlngDatabase* db, const char* filepath) {
     enlngdb_mutations++;
     enlngdb_load_error = 0;
     if (!db || !filepath) return false;
@@ -2479,10 +2554,13 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
     if (eio_read(db->name, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME) { eio_close(f); return false; }
     uint8_t file_id[16] = {0};
     if (v4 && eio_read(file_id, 1, 16, f) != 16) { eio_close(f); return false; }
+    /* a version 4 file ends with its end mark: one that was cut anywhere, also between its parts, is not opened */
+    if (v4 && !f->f && (f->len < 16 || memcmp(f->buf + f->len - 16, ENLNGDB_END_MARK, 16) != 0)) { eio_close(f); return false; }
     int table_cnt = 0;
     if (eio_read(&table_cnt, sizeof(int), 1, f) != 1) { eio_close(f); return false; }
 
-    for (int t = 0; t < table_cnt; t++) {
+    int tables_read = 0;
+    for (int t = 0; t < table_cnt; t++, tables_read++) {
         char tbl_name[ENLNGDB_MAX_NAME];
         char view_sql[1024] = {0};
         int col_cnt = 0;
@@ -2599,6 +2677,12 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
             if (bad) break;
         }
         if (bad) break;
+    }
+    if (tables_read < table_cnt) {
+        /* the file ends, or stops making sense, inside a table: it is cut or damaged. Opening it as the tables that
+           could be read would let the next save write over the rest. */
+        eio_close(f);
+        return false;
     }
     /* triggers and procedures, when the file has them (older programs stop before this and ignore it) */
     {

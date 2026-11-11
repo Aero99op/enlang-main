@@ -112,6 +112,8 @@ typedef struct {
     /* A table of a file opened lazily: its rows are in the file (mapped into memory) from 'lazy' on. A row not read
        yet has cell_count -1, and its 'cells' holds its place from 'lazy'; enlngdb_row reads it the first time. */
     const unsigned char* lazy;
+    size_t lazy_bytes;          /* how many bytes of rows are there: a row read from the file must end inside them */
+    size_t base_bytes;          /* ... and of the rows at base_data */
     int nstored;                /* lookup indexes kept in the file: for a column, (hash, row) sorted by hash */
     struct {
         int col; uint32_t n, nspill; const unsigned char* at; const unsigned char* spill;
@@ -354,6 +356,7 @@ extern bool (*enlngdb_value_hash)(const EnlngVal* v, uint64_t* h);
 extern unsigned long long enlngdb_loaded_at;
 /* the text in column col of row b of the file the table was opened from (not ended by a zero byte); NULL if it is not a text */
 const char* enlngdb_base_text(const EnlngTable* t, size_t b, int col, size_t* len);
+#define ENLNGDB_END_MARK "ENLNG_EDB_END_V4"   /* the last 16 bytes of a version 4 file: a file without them was cut */
 #define ENLNGDB_STORED_RANGE 0x80000000u    /* in the count of kept indexes: each is followed by its column in order */
 
 /* --- Binary Disk Persistence --- */
@@ -361,7 +364,7 @@ const char* enlngdb_base_text(const EnlngTable* t, size_t b, int col, size_t* le
    the load fails, enlngdb_load_error says why: 1 the file is encrypted and no password was given, 2 the password is
    wrong (or the file was changed), 0 anything else. */
 extern const char* enlngdb_open_password;
-extern int enlngdb_load_error;          /* also 3: the log of changes (.edb-wal) was damaged */
+extern int enlngdb_load_error;          /* also 3: the log of changes (.edb-wal) was damaged; 4: the file is not a database this program can read */
 /* turn the encryption of the file on with this password (a new salt each time), or off (password NULL) */
 bool enlngdb_set_password(EnlngDatabase* db, const char* password);
 bool enlngdb_save(const EnlngDatabase* db, const char* filepath);

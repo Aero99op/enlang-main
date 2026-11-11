@@ -3570,6 +3570,12 @@ static int q_size_cmp(const void* a, const void* b) {
 static size_t q_stored_extra(const EnlngTable* t) {
     return t->wal_applied ? t->nwal_set + (t->row_count - t->wal_app_from) : 0;
 }
+/* an index of a damaged file can name rows the file does not have: then it is not used, and every row is read */
+static bool q_stored_valid(const EnlngTable* t, const size_t* out, size_t c) {
+    size_t rows = t->wal_applied && t->base_rows >= 0 ? (size_t)t->base_rows : t->row_count;
+    for (size_t i = 0; i < c; i++) if (out[i] >= rows) return false;
+    return true;
+}
 static size_t q_stored_fix(const EnlngTable* t, size_t* out, size_t c) {
     if (!t->wal_applied) return c;
     size_t w = 0;
@@ -3619,6 +3625,7 @@ static size_t* q_stored_lookup(const EnlngTable* t, int col, uint64_t h, size_t*
         size_t c = 0;
         for (size_t i = lo; i < e; i++) { uint32_t r; memcpy(&r, at + i * 12 + 8, 4); out[c++] = r; }
         for (uint32_t i = 0; i < ns; i++) { uint32_t r; memcpy(&r, t->stored[k].spill + (size_t)i * 4, 4); out[c++] = r; }
+        if (!q_stored_valid(t, out, c)) { free(out); return NULL; }
         c = q_stored_fix(t, out, c);
         if (c > 1) qsort(out, c, sizeof(size_t), q_size_cmp);
         *n_out = c;
@@ -3843,6 +3850,7 @@ static size_t* q_stored_range(const EnlngTable* t, int col, int kind, bool has_l
             for (size_t i = 0; i < nn; i++) { memcpy(&r, nums + i * 12 + 8, 4); out[c++] = r; }
         }
         for (size_t i = 0; i < no; i++) { memcpy(&r, others + i * 4, 4); out[c++] = r; }
+        if (!q_stored_valid(t, out, c)) { free(out); *decided = false; return NULL; }
         c = q_stored_fix(t, out, c);
         if (c > 1) qsort(out, c, sizeof(size_t), q_size_cmp);
         *n_out = c;
@@ -8629,7 +8637,10 @@ static bool q_open_file(EnlngDatabase* db, const char* path, bool there, const c
         q_lock_reason = enlngdb_load_error;
         char e2[300];
         char hint[300];
-        if (enlngdb_load_error == 3) {
+        if (enlngdb_load_error == 4) {
+            snprintf(e2, sizeof(e2), "the file %s is not a database this program can read (it is cut, damaged, or something else), so database '%s' was not opened", path, db->name);
+            snprintf(hint, sizeof(hint), "The file is left as it is: nothing runs on this database, and nothing is written. Put back a copy from before, or move the file away to start an empty database of this name.");
+        } else if (enlngdb_load_error == 3) {
             snprintf(e2, sizeof(e2), "the log of changes of database '%s' (%s-wal) is damaged, so the database was not opened", db->name, path);
             snprintf(hint, sizeof(hint), "The file and the log are left as they are. Without the log (move it away) the database is as it was at its last full save, and the changes in the log are lost.");
         } else {
@@ -10208,7 +10219,10 @@ static bool q_execute_statement(EnlngDatabase* db, const char* statement, bool p
         const char* st = q_ws(statement);
         if (!str_starts_with_ci(st, "use ") && !str_starts_with_ci(st, "type ") && !str_starts_with_ci(st, "show databases")) {
             char e2[300], hint[300];
-            if (q_lock_reason == 3) {
+            if (q_lock_reason == 4) {
+                snprintf(e2, sizeof(e2), "the database '%s' was not opened: its file is not a database this program can read", db->name);
+                snprintf(hint, sizeof(hint), "Nothing runs on it, and nothing is written. Put back a copy of the file from before, or move the file away.");
+            } else if (q_lock_reason == 3) {
                 snprintf(e2, sizeof(e2), "the database '%s' was not opened: the log of its changes (.edb-wal) is damaged", db->name);
                 snprintf(hint, sizeof(hint), "Nothing runs on it, and nothing is written. Without the log (move it away) it opens as it was at its last full save.");
             } else {

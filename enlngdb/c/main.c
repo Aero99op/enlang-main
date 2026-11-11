@@ -764,6 +764,13 @@ static int serve(const char** names, int nnames, const char* host, const char* p
             enlngdb_open_password = env && *env ? env : NULL;
             bool opened = enlngdb_load(s->db, s->file);
             enlngdb_open_password = NULL;
+            if (!opened && enlngdb_load_error >= 3) {
+                fprintf(stderr, "ERROR: the database '%s' was not opened: %s. Nothing was written.\n", names[i],
+                        enlngdb_load_error == 3 ? "the log of its changes (.edb-wal) is damaged" : "its file is not a database this program can read (cut, damaged, or something else)");
+                enlngdb_free(s->db);
+                status = 1;
+                break;
+            }
             for (int tries = 0; !opened && enlngdb_load_error && tries < 3 && is_terminal(); tries++) {
                 char pw[256] = "";
                 printf("%s for database '%s': ", enlngdb_load_error == 1 ? "Password" : "Wrong password; again", names[i]);
