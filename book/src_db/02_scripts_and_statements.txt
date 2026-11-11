@@ -5,7 +5,16 @@ A script is a plain text file. By habit it ends in `.enlngdb`. You give it to th
 enlngdb shop.enlngdb
 enlngdb -e "show tables"
 :::
-The first form runs every statement in the file. The second runs one statement that you type on the command line. `enlngdb --version` prints the version, and `enlngdb` alone prints a short help text.
+The first form runs every statement in the file. The second runs the statements that you type on the command line, with `;` between them. What `-e` changes is saved to the database it names: `enlngdb -e "use database shop; insert into pets values (3, 'Kit')"`. Without `use database` it has no database of its own, so a change is not kept, and it says so.
+A script can be written in any editor. One saved by Notepad (with its mark at the start of the file, or as "Unicode", which is UTF-16) is read the same as a plain UTF-8 file.
+A statement is one line. It can go on over several lines when each next line starts with a word that cannot start a statement: `from`, `where`, `and`, `or`, `order`, `group`, `having`, `limit`, `join` (and `left`, `inner` ...), `on`, `values`, `union`. An empty line always ends it:
+::: sh
+find name
+  from pets
+  where id is 1
+     or id is 3
+  order by name
+::: `enlngdb --version` prints the version, and `enlngdb` alone prints a short help text.
 ## The header and the database name
 A script may begin with the line `type enlngdb`. It says that what follows is a database script. In this book that line, and a line that chooses the database, are put in front of every script for you, so the scripts below show only the statements.
 The line that chooses the database looks like this:

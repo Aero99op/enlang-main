@@ -356,7 +356,7 @@ def main():
         blocks = [part.split("```", 1)[0] for part in section.split("```enlngdb\n")[1:]]
         check("section 12 has examples to run", len(blocks) >= 6, len(blocks))
         out = run("".join(blocks))
-        bad = [l for l in out.splitlines() if l.startswith(("ERROR", "REFUSED", "-- EnlangDB SyntaxError", "NOTE:"))]
+        bad = [l for l in out.splitlines() if l.startswith(("ERROR", "REFUSED", "-- EnlngDB: statement not understood", "NOTE:"))]
         check("every example of section 12 runs as written", not bad, "\n".join(bad[:5]))
         check("section 12: undo brought the deleted row back, and the cascade ran", "undone: delete from pupil" in out and "1 row(s) that referred to them were deleted too" in out, out[-800:])
     finally:

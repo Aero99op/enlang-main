@@ -8692,6 +8692,8 @@ bool enlngdb_script_reads_only(const char* script) {
 /* the zone of 'set time zone' is UTC (what a new program has) */
 bool enlngdb_zone_default(void) { return q_zone_min == 0 && !q_zone_local; }
 
+static bool q_stop_script = false;   /* 'use database' could not take the database: the rest of the script is not run */
+
 static bool q_leave_database(EnlngDatabase* db, const char* next, bool print_output) {
     if (strcmp(db->name, next) == 0) return true;
     if (db->txn) { q_print_error(print_output, "a transaction is open; 'commit' or 'rollback' it before changing database", ""); return false; }
@@ -8707,6 +8709,7 @@ static bool q_leave_database(EnlngDatabase* db, const char* next, bool print_out
             snprintf(db->lock_path, sizeof(db->lock_path), "%s", old_lock);
             db->lock_handle = old_handle;
             q_print_error(print_output, lerr, "Nothing was changed.");
+            q_stop_script = true;       /* the script stays on the database before: its other statements must not run there */
             return false;
         }
     }
@@ -11167,30 +11170,31 @@ static bool q_execute_line(EnlngDatabase* db, char* line, bool print_output) {
     }
 
     if (print_output) {
-        fprintf(stderr, "\n-- EnlangDB SyntaxError ------------------------------------------------\n");
-        fprintf(stderr, "Location: <statement>:1:1\n\n");
-        fprintf(stderr, "    1 | %s\n", stmt);
-        fprintf(stderr, "      | ^\n\n");
+        /* to the screen of a local program (its error stream), or into the answer a server sends its client */
+#define QSE(...) do { if (q_holding) printf(__VA_ARGS__); else fprintf(stderr, __VA_ARGS__); } while (0)
+        QSE("\n-- EnlngDB: statement not understood ----------------------------------\n");
+                QSE("    1 | %s\n", stmt);
+        QSE("      | ^\n\n");
         if (str_starts_with_ci(stmt, "create table")) {
-            fprintf(stderr, "What: Incomplete 'create table' statement.\n");
-            fprintf(stderr, "Why:  EnlngDB tables require column definitions after the 'with' keyword.\n\n");
-            fprintf(stderr, "Suggestions:\n");
-            fprintf(stderr, "  * Specify table columns, e.g.: create table users with id, name, email\n");
+            QSE("What: Incomplete 'create table' statement.\n");
+            QSE("Why:  EnlngDB tables require column definitions after the 'with' keyword.\n\n");
+            QSE("Suggestions:\n");
+            QSE("  * Specify table columns, e.g.: create table users with id, name, email\n");
         } else if (str_starts_with_ci(stmt, "find") || str_starts_with_ci(stmt, "select")) {
-            fprintf(stderr, "What: Malformed query statement.\n");
-            fprintf(stderr, "Why:  EnlngDB queries require a target table specified via 'from <table>' or 'in <table>'.\n\n");
-            fprintf(stderr, "Suggestions:\n");
-            fprintf(stderr, "  * Add the source table, e.g.: find records from users\n");
-            fprintf(stderr, "  * Or project columns: find user_id of users from users\n");
+            QSE("What: Malformed query statement.\n");
+            QSE("Why:  EnlngDB queries require a target table specified via 'from <table>' or 'in <table>'.\n\n");
+            QSE("Suggestions:\n");
+            QSE("  * Add the source table, e.g.: find records from users\n");
+            QSE("  * Or project columns: find user_id of users from users\n");
         } else if (str_starts_with_ci(stmt, "insert")) {
-            fprintf(stderr, "What: Malformed 'insert' statement.\n");
-            fprintf(stderr, "Why:  Records require target table and values specified via 'with' or 'values'.\n\n");
-            fprintf(stderr, "Suggestions:\n");
-            fprintf(stderr, "  * Insert key-value pairs: insert into users with id 1, name \"Aero\"\n");
+            QSE("What: Malformed 'insert' statement.\n");
+            QSE("Why:  Records require target table and values specified via 'with' or 'values'.\n\n");
+            QSE("Suggestions:\n");
+            QSE("  * Insert key-value pairs: insert into users with id 1, name \"Aero\"\n");
         } else {
-            fprintf(stderr, "What: Unrecognized or malformed database statement: '%s'\n", stmt);
-            fprintf(stderr, "Why:  Statement does not match any valid conversational EnlngDB grammar.\n\n");
-            fprintf(stderr, "Suggestions:\n");
+            QSE("What: Unrecognized or malformed database statement: '%s'\n", stmt);
+            QSE("Why:  Statement does not match any valid conversational EnlngDB grammar.\n\n");
+            QSE("Suggestions:\n");
             {
                 static const char* verbs[] = {"find", "select", "insert", "update", "change", "delete", "remove", "truncate", "create", "drop",
                                               "alter", "describe", "show", "begin", "commit", "rollback", "explain", "preview", "undo",
@@ -11200,14 +11204,15 @@ static bool q_execute_line(EnlngDatabase* db, char* line, bool print_output) {
                 while (stmt[fl] && !isspace((unsigned char)stmt[fl]) && fl < sizeof(first) - 1) { first[fl] = stmt[fl]; fl++; }
                 first[fl] = '\0';
                 const char* guess = q_near(first, verbs, (int)(sizeof(verbs) / sizeof(verbs[0])));
-                if (guess) fprintf(stderr, "  * Did you mean '%s'? (the statement starts with '%s')\n", guess, first);
+                if (guess) QSE("  * Did you mean '%s'? (the statement starts with '%s')\n", guess, first);
             }
-            fprintf(stderr, "  * Supported commands: use database, show tables, create table, create view, create index, insert into, find, with, update, change, delete, truncate, alter table, drop table, describe, begin, commit, rollback, explain\n");
-            fprintf(stderr, "  * Comments start with '#' or '--' at the beginning of a line.\n");
-            fprintf(stderr, "  * Run 'enlngdb --help' to view command reference.\n");
+            QSE("  * A statement begins with one of: use database, show, describe, create, alter, drop, insert into, find, count, with, update, change, delete, truncate, preview, undo, import, export, begin, commit, rollback, explain, call\n");
+            QSE("  * Comments start with '#' or '--' at the beginning of a line.\n");
+            QSE("  * Every statement, with examples, is in the manual: enlngdb_manual.pdf (also at enlangg.site, Docs).\n");
         }
-        fprintf(stderr, "------------------------------------------------------------------------\n\n");
+        QSE("------------------------------------------------------------------------\n\n");
     }
+#undef QSE
     return false;
 }
 
@@ -11276,6 +11281,26 @@ int enlngdb_execute_script(EnlngDatabase* db, const char* script_content, bool p
                     while (*ahead && isspace((unsigned char)*ahead)) ahead++;
                     goes_on = (back > stmt_start && (back[-1] == '(' || back[-1] == ',')) || *ahead == ')';
                 }
+                if (!goes_on && !body_stmt && depth == 0) {
+                    /* A statement written over several lines: it goes on when the next line starts with a word that
+                       cannot start a statement (from, where, and, order by ...), as in
+                           find name
+                             from pets
+                             where id is 1
+                       An empty line always ends it. */
+                    static const char* more[] = {"from", "where", "and", "or", "order", "group", "having", "limit", "offset", "join", "inner", "left",
+                                                 "right", "full", "cross", "natural", "on", "values", "union", "intersect", "except", NULL};
+                    const char* ahead = ptr;
+                    if (*ahead == '\r') ahead++;
+                    if (*ahead == '\n') ahead++;
+                    while (*ahead == ' ' || *ahead == '\t') ahead++;
+                    for (int m = 0; more[m] && !goes_on; m++) {
+                        size_t ml = strlen(more[m]);
+                        size_t k = 0;
+                        while (k < ml && tolower((unsigned char)ahead[k]) == more[m][k]) k++;
+                        if (k == ml && (ahead[ml] == ' ' || ahead[ml] == '\t' || ahead[ml] == '(' || ahead[ml] == '\r' || ahead[ml] == '\n')) goes_on = true;
+                    }
+                }
                 if (!goes_on) break;
             }
             ptr++;
@@ -11295,11 +11320,56 @@ int enlngdb_execute_script(EnlngDatabase* db, const char* script_content, bool p
                 executed++;
             } else {
                 failed++;
+                if (q_stop_script) {
+                    q_stop_script = false;
+                    /* the database could not be opened: the statements after it were written for that database, and
+                       must not run on the one that is open now */
+                    if (print_output) printf("NOTE: the rest of the script was not run, because its database could not be opened.\n\n");
+                    break;
+                }
             }
         }
     }
     free(copy);
     return failed > 0 ? -failed : executed;
+}
+
+char* enlngdb_script_utf8(char* buf, size_t n) {
+    unsigned char* u = (unsigned char*)buf;
+    if (n >= 3 && u[0] == 0xEF && u[1] == 0xBB && u[2] == 0xBF) {
+        memmove(buf, buf + 3, n - 3 + 1);
+        return buf;
+    }
+    bool le = n >= 2 && u[0] == 0xFF && u[1] == 0xFE, be = n >= 2 && u[0] == 0xFE && u[1] == 0xFF;
+    if (!le && !be) return buf;
+    char* out = (char*)malloc(n * 2 + 8);
+    if (!out) return buf;
+    size_t w = 0;
+    for (size_t i = 2; i + 1 < n; i += 2) {
+        uint32_t c = le ? (uint32_t)(u[i] | (u[i + 1] << 8)) : (uint32_t)((u[i] << 8) | u[i + 1]);
+        if (c >= 0xD800 && c < 0xDC00 && i + 3 < n) {               /* two halves of one letter */
+            uint32_t d = le ? (uint32_t)(u[i + 2] | (u[i + 3] << 8)) : (uint32_t)((u[i + 2] << 8) | u[i + 3]);
+            if (d >= 0xDC00 && d < 0xE000) { c = 0x10000 + ((c - 0xD800) << 10) + (d - 0xDC00); i += 2; }
+        }
+        if (c == 0) continue;
+        if (c < 0x80) out[w++] = (char)c;
+        else if (c < 0x800) { out[w++] = (char)(0xC0 | (c >> 6)); out[w++] = (char)(0x80 | (c & 0x3F)); }
+        else if (c < 0x10000) { out[w++] = (char)(0xE0 | (c >> 12)); out[w++] = (char)(0x80 | ((c >> 6) & 0x3F)); out[w++] = (char)(0x80 | (c & 0x3F)); }
+        else { out[w++] = (char)(0xF0 | (c >> 18)); out[w++] = (char)(0x80 | ((c >> 12) & 0x3F)); out[w++] = (char)(0x80 | ((c >> 6) & 0x3F)); out[w++] = (char)(0x80 | (c & 0x3F)); }
+    }
+    out[w] = 0;
+    free(buf);
+    return out;
+}
+
+static int q_run_script_text(char* buffer, const char* dbname, bool inline_run);
+
+int enlngdb_run_inline(const char* text) {
+    size_t n = strlen(text);
+    char* copy = (char*)malloc(n + 1);
+    if (!copy) return 1;
+    memcpy(copy, text, n + 1);
+    return q_run_script_text(copy, "default", true);
 }
 
 int enlngdb_run_file(const char* filepath) {
@@ -11322,6 +11392,7 @@ int enlngdb_run_file(const char* filepath) {
     size_t actual = fread(buffer, 1, sz, f);
     buffer[actual] = '\0';
     fclose(f);
+    buffer = enlngdb_script_utf8(buffer, actual);
 
     // Derive database name from filename
     char dbname[64];
@@ -11333,9 +11404,15 @@ int enlngdb_run_file(const char* filepath) {
     char* dot = strrchr(dbname, '.');
     if (dot) *dot = '\0';
 
+    return q_run_script_text(buffer, dbname, false);
+}
+
+/* runs a script (buffer is freed here). inline_run: the statements of -e, which have no file of their own: a
+   database is opened only by 'use database', and what was changed without one is said, not kept quiet. */
+static int q_run_script_text(char* buffer, const char* dbname, bool inline_run) {
     EnlngDatabase* db = enlngdb_create(dbname);
     char lock_err[400];
-    if (!enlngdb_lock(db, dbname, lock_err, sizeof(lock_err))) {
+    if (!inline_run && !enlngdb_lock(db, dbname, lock_err, sizeof(lock_err))) {
         printf("ERROR: %s.\n", lock_err);
         free(buffer);
         enlngdb_free(db);
@@ -11348,7 +11425,7 @@ int enlngdb_run_file(const char* filepath) {
     {
         const char* env = getenv("ENLNGDB_DB_PASSWORD");
         enlngdb_open_password = env && *env ? env : NULL;
-        if (!enlngdb_load(db, edb_file) && enlngdb_load_error) { db->locked = true; q_lock_reason = enlngdb_load_error; }   /* said by its first statement */
+        if (!inline_run && !enlngdb_load(db, edb_file) && enlngdb_load_error) { db->locked = true; q_lock_reason = enlngdb_load_error; }   /* said by its first statement */
         enlngdb_open_password = NULL;
     }
     q_changed = false;
@@ -11365,6 +11442,11 @@ int enlngdb_run_file(const char* filepath) {
     // the same order 'use database' loads it in). Nothing is saved if any statement failed.
     if (db->dropped) {
         /* 'drop database' on the open database: its file is gone and stays gone */
+    } else if (count >= 0 && inline_run && strcmp(db->name, "default") == 0) {
+        if (q_changed) {
+            printf("NOTE: this was not saved: -e has no database of its own. To keep a change, name the database first:\n");
+            printf("      enlngdb -e \"use database shop; ...\"\n");
+        }
     } else if (count >= 0) {
         char save_file[256];
         snprintf(save_file, sizeof(save_file), "%s.edb", db->name);
@@ -11383,7 +11465,7 @@ int enlngdb_run_file(const char* filepath) {
             }
         }
         /* a script that only read the database leaves its file as it was */
-        if (q_changed || !q_file_there(save_file)) enlngdb_save(db, save_file);
+        if (q_changed) enlngdb_save(db, save_file);
     } else {
         printf("NOTE: %d statement(s) failed, so nothing from this run was saved to disk.\n", -count);
         printf("      Fix the errors above and run the script again.\n");

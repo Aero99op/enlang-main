@@ -402,7 +402,7 @@ def main():
         check("section 11 has examples to run", len(blocks) >= 12, str(len(blocks)))
         for i, block in enumerate(blocks):
             out = run(block, setup=SETUP + extra)
-            bad = [l for l in out.splitlines() if l.startswith(("ERROR", "REFUSED", "-- EnlangDB SyntaxError", "NOTE:"))]
+            bad = [l for l in out.splitlines() if l.startswith(("ERROR", "REFUSED", "-- EnlngDB: statement not understood", "NOTE:"))]
             check("manual example %d runs as written" % (i + 1), not bad, "\n".join(bad[:3]) + "\n" + block[:300])
 
         # ---- more

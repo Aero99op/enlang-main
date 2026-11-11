@@ -230,7 +230,7 @@ bool enlngdb_lock(EnlngDatabase* db, const char* name, char* err, size_t err_siz
     bool got = false;
     for (int tries = 0; tries < 50 && !(got = lock_try(path, &handle)); tries++) lock_wait();
     if (!got) {
-        if (err) snprintf(err, err_size, "database '%s' is in use by another program (it holds %s); waited 5 seconds. Run the scripts one after the other", name, path);
+        if (err) snprintf(err, err_size, "database '%s' is in use by another program (it holds %s); waited 5 seconds. Run the scripts one after the other (or, if enlngdb --serve is serving it, use enlngdb --connect)", name, path);
         return false;
     }
     enlngdb_unlock(db);
@@ -929,6 +929,37 @@ void enlngdb_free_result(EnlngQueryResult* res) {
     free(res);
 }
 
+
+/* How many places a text takes on the screen: one for a letter, none for a mark that sits on the letter before it,
+   two for the wide letters of Chinese, Japanese and Korean and for emoji. Counting bytes pushed the borders of a
+   table apart for every name not in English. */
+static int text_width(const char* s) {
+    const unsigned char* p = (const unsigned char*)s;
+    int w = 0;
+    while (*p) {
+        uint32_t c = *p;
+        int more = 0;
+        if (c >= 0xF0) { c &= 0x07; more = 3; }
+        else if (c >= 0xE0) { c &= 0x0F; more = 2; }
+        else if (c >= 0xC0) { c &= 0x1F; more = 1; }
+        p++;
+        while (more-- > 0 && (*p & 0xC0) == 0x80) c = (c << 6) | (*p++ & 0x3F);
+        if ((c >= 0x0300 && c <= 0x036F) || (c >= 0x200B && c <= 0x200F) || c == 0xFE0F || c == 0xFEFF ||
+            (c >= 0x0900 && c <= 0x0902) || c == 0x093A || c == 0x093C || (c >= 0x0941 && c <= 0x0948) || c == 0x094D ||
+            (c >= 0x0951 && c <= 0x0957) || c == 0x0962 || c == 0x0963) continue;
+        if ((c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) || (c >= 0xAC00 && c <= 0xD7A3) || (c >= 0xF900 && c <= 0xFAFF) ||
+            (c >= 0xFE30 && c <= 0xFE4F) || (c >= 0xFF00 && c <= 0xFF60) || (c >= 0xFFE0 && c <= 0xFFE6) || (c >= 0x1F300 && c <= 0x1FAFF)) w += 2;
+        else w += 1;
+    }
+    return w;
+}
+
+/* a cell of a table: the text, then spaces up to the width of its column */
+static void print_cell(const char* text, int width) {
+    int pad = width - text_width(text);
+    printf(" %s%*s |", text, pad > 0 ? pad : 0, "");     /* all through printf: a server gathers what it prints */
+}
+
 void enlngdb_print_result(const EnlngQueryResult* res) {
     if (!res) return;
     if (res->col_count == 0) {
@@ -938,7 +969,7 @@ void enlngdb_print_result(const EnlngQueryResult* res) {
 
     int col_widths[ENLNGDB_MAX_RESULT_COLS];
     for (int c = 0; c < res->col_count; c++) {
-        col_widths[c] = (int)strlen(res->columns[c].name);
+        col_widths[c] = text_width(res->columns[c].name);
     }
 
     char buf[128];
@@ -952,7 +983,7 @@ void enlngdb_print_result(const EnlngQueryResult* res) {
                 else if (v->type == ENLNG_VAL_STRING) snprintf(buf, sizeof(buf), "%s", v->str_val ? v->str_val : "");
                 else if (v->type == ENLNG_VAL_BOOL) snprintf(buf, sizeof(buf), "%s", v->bool_val ? "true" : "false");
                 else strcpy(buf, "null");
-                len = (int)strlen(buf);
+                len = text_width(buf);
                 if (len > col_widths[c]) col_widths[c] = len;
             }
         }
@@ -969,7 +1000,7 @@ void enlngdb_print_result(const EnlngQueryResult* res) {
     // Header line
     printf("|");
     for (int c = 0; c < res->col_count; c++) {
-        printf(" %-*s |", col_widths[c], res->columns[c].name);
+        print_cell(res->columns[c].name, col_widths[c]);
     }
     printf("\n");
 
@@ -994,7 +1025,7 @@ void enlngdb_print_result(const EnlngQueryResult* res) {
                 else if (v->type == ENLNG_VAL_BOOL) snprintf(buf, sizeof(buf), "%s", v->bool_val ? "true" : "false");
                 else strcpy(buf, "null");
             }
-            printf(" %-*s |", col_widths[c], buf);
+            print_cell(buf, col_widths[c]);
         }
         printf("\n");
     }

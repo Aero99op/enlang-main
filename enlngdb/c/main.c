@@ -534,6 +534,17 @@ static void drop_client(Client* c) {
 
 static bool reply(Client* c, const char* word, const char* text) { return send_msg(&c->link, word, text, strlen(text)); }
 
+/* 'shutdown server' as a client sends it: alone, or after a 'type enlngdb' line, with spaces, a ';' or an end of
+   line around it (a script file ends with one) */
+static bool is_shutdown(const char* t) {
+    while (*t == ' ' || *t == '\t' || *t == '\r' || *t == '\n') t++;
+    if (strncmp(t, "type ", 5) == 0) { while (*t && *t != '\n') t++; while (*t == ' ' || *t == '\t' || *t == '\r' || *t == '\n') t++; }
+    const char* w = "shutdown server";
+    for (; *w; w++, t++) if (tolower((unsigned char)*t) != *w) return false;
+    while (*t == ' ' || *t == '\t' || *t == '\r' || *t == '\n' || *t == ';') t++;
+    return *t == 0;
+}
+
 /* the first message of a sealed connection: the client's fresh public key; the server answers with its own key,
    a fresh one, and a sealed "ready" that only the holder of the server's key can make */
 static bool server_hello(Client* c, const uint8_t priv[32], const uint8_t pub[32]) {
@@ -760,6 +771,16 @@ static int serve(const char** names, int nnames, const char* host, const char* p
         snprintf(s->file, sizeof(s->file), "%s.edb", names[i]);
         {
             /* an encrypted database: the password from ENLNGDB_DB_PASSWORD, or asked for here (three tries) */
+            FILE* there = fopen(s->file, "rb");
+            if (!there) {
+                fprintf(stderr, "ERROR: there is no database '%s' here (no file %s in this folder).\n"
+                                "       Make it first, with a script that says 'use database %s', then make a user in it:\n"
+                                "       create user admin password \"...\" admin\n", names[i], s->file, names[i]);
+                enlngdb_free(s->db);
+                status = 1;
+                break;
+            }
+            fclose(there);
             const char* env = getenv("ENLNGDB_DB_PASSWORD");
             enlngdb_open_password = env && *env ? env : NULL;
             bool opened = enlngdb_load(s->db, s->file);
@@ -1011,7 +1032,7 @@ static int serve(const char** names, int nnames, const char* host, const char* p
                         } else {
                             consumed = false;
                         }
-                    } else if (c->admin && strcmp(text, "shutdown server") == 0) {
+                    } else if (c->admin && is_shutdown(text)) {
                         reply(c, "ok", "The server stops.\n");
                         quit = true;
                     } else if (rls != QBAD && !s->dirty && !s->stale && !s->db->txn && enlngdb_zone_default() && enlngdb_script_reads_only(text) &&
@@ -1281,6 +1302,8 @@ static int connect_to(const char* where_arg, const char* user, const char* scrip
         if (script) script[script_len] = '\0';
         fclose(f);
         if (!script) return 1;
+        script = enlngdb_script_utf8(script, script_len);
+        script_len = strlen(script);
     }
     char err[400];
     Conn C;
@@ -1339,17 +1362,24 @@ static int connect_to(const char* where_arg, const char* user, const char* scrip
 
 int main(int argc, char* argv[]) {
     if (argc < 2 || strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
-        printf("EnlngDB Pure C Native Database Engine v%s\n", ENLNGDB_VERSION);
+        printf("EnlngDB v%s: a database you talk to in plain words.\n\n", ENLNGDB_VERSION);
         printf("Usage:\n");
-        printf("  enlngdb <script.enlngdb>       Execute natural English database script\n");
-        printf("  enlngdb -e \"<query>\"           Execute inline statement\n");
-        printf("  enlngdb --serve NAME [NAME...] [--port 7171] [--host 127.0.0.1] [--key FILE]\n");
+        printf("  enlngdb shop.enlngdb           Run the statements of a script (a text file)\n");
+        printf("  enlngdb -e \"use database shop; show tables\"\n");
+        printf("                                 Run statements given here (kept only with 'use database')\n");
+        printf("  enlngdb --serve NAME [NAME...] [--port 7171] [--host 127.0.0.1] [--key FILE] [--readers N]\n");
         printf("                                 Serve databases to signed-in users, encrypted\n");
         printf("  enlngdb --connect [HOST:]PORT[/NAME] --user USER [--trust FINGERPRINT] [script.enlngdb]\n");
         printf("                                 Sign in to a server and run a script or typed lines\n");
         printf("                                 (the password is asked for, or read from ENLNGDB_PASSWORD)\n");
         printf("  enlngdb --selftest             Check the encryption against known answers\n");
-        printf("  enlngdb --version              Display version information\n");
+        printf("  enlngdb --version              Show the version\n\n");
+        printf("A first script, saved as shop.enlngdb (its tables are kept in shop.edb beside it):\n");
+        printf("  use database shop\n");
+        printf("  create table pets with id integer primary key, name text\n");
+        printf("  insert into pets values (1, \"Tom\")\n");
+        printf("  find * from pets\n\n");
+        printf("Every statement, with examples: enlngdb_manual.pdf, and https://enlangg.site (Docs).\n");
         return 0;
     }
 
@@ -1405,10 +1435,7 @@ int main(int argc, char* argv[]) {
             fprintf(stderr, "Error: Missing query string for -e.\n");
             return 1;
         }
-        EnlngDatabase* db = enlngdb_create("default");
-        int count = enlngdb_execute_script(db, argv[2], true);
-        enlngdb_free(db);
-        return count >= 0 ? 0 : 1;
+        return enlngdb_run_inline(argv[2]);
     }
 
     const char* filepath = argv[1];

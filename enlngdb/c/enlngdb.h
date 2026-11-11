@@ -356,6 +356,12 @@ extern bool (*enlngdb_value_hash)(const EnlngVal* v, uint64_t* h);
 extern unsigned long long enlngdb_loaded_at;
 /* the text in column col of row b of the file the table was opened from (not ended by a zero byte); NULL if it is not a text */
 const char* enlngdb_base_text(const EnlngTable* t, size_t b, int col, size_t* len);
+/* A script as an editor saved it, made plain UTF-8: the mark at the start of a UTF-8 file (Notepad writes one) is
+   taken off, and a UTF-16 file (Notepad's "Unicode") is turned into UTF-8. buf (n bytes, a zero after them) is
+   from malloc; what is returned is buf or a new buffer (then buf was freed). */
+char* enlngdb_script_utf8(char* buf, size_t n);
+/* runs statements given on the command line (-e); what they change is saved to the database they 'use' */
+int enlngdb_run_inline(const char* text);
 #define ENLNGDB_END_MARK "ENLNG_EDB_END_V4"   /* the last 16 bytes of a version 4 file: a file without them was cut */
 #define ENLNGDB_STORED_RANGE 0x80000000u    /* in the count of kept indexes: each is followed by its column in order */
 

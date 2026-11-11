@@ -3,7 +3,7 @@
 #   Enlangg Sovereign Toolchain - Linux & macOS Universal Installer
 #   Pure C Zero-Python 7-in-1 Sovereign Suite
 #   Usage:
-#     curl -fsSL https://enlangg.vercel.app/install.sh | bash
+#     curl -fsSL https://enlangg.site/install.sh | bash
 # =====================================================================
 
 set -e
@@ -24,8 +24,9 @@ cat << 'EOF'
 EOF
 printf "${NC}\n"
 
-INSTALL_DIR="$HOME/.enlangg/bin"
-mkdir -p "$INSTALL_DIR"
+INSTALL_ROOT="$HOME/.enlangg"
+INSTALL_DIR="$INSTALL_ROOT/bin"
+mkdir -p "$INSTALL_DIR" "$INSTALL_ROOT/lib" "$INSTALL_ROOT/include"
 
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
@@ -55,41 +56,32 @@ elif command -v cc >/dev/null 2>&1; then
     CC="cc"
 fi
 
+# Builds the seven tools from the source tree in $1 (about a minute), and copies the standard library and headers.
 build_from_source() {
     SRC_ROOT="$1"
-    echo "   Compiling pure C sovereign core engines from '$SRC_ROOT' using $CC..."
-
-    echo "   [1/7] Compiling enlangg (Universal Dispatcher)..."
-    $CC -O2 -I"$SRC_ROOT" -I"$SRC_ROOT/enlngdb/c" -I"$SRC_ROOT/enlng/c" \
-        "$SRC_ROOT/enlangg.c" "$SRC_ROOT/enlngdb/c/enlngdb.c" "$SRC_ROOT/enlngdb/c/enlngdb_parser.c" "$SRC_ROOT/enlng/c/enlng_emitter.c" \
-        -lm -o "$INSTALL_DIR/enlangg"
-
-    echo "   [2/7] Compiling enlng (Core Language)..."
-    $CC -O2 -I"$SRC_ROOT" -I"$SRC_ROOT/src" \
-        "$SRC_ROOT/enlng.c" -lm -o "$INSTALL_DIR/enlng"
-
-    echo "   [3/7] Compiling enlngdb (Database Engine)..."
-    $CC -O2 -I"$SRC_ROOT/enlngdb/c" \
-        "$SRC_ROOT/enlngdb/c/main.c" "$SRC_ROOT/enlngdb/c/enlngdb.c" "$SRC_ROOT/enlngdb/c/enlngdb_parser.c" \
-        -lm -o "$INSTALL_DIR/enlngdb"
-
-    echo "   [4/7] Compiling enlngf (Frontend Studio)..."
-    $CC -O2 "$SRC_ROOT/enlngf.c" -o "$INSTALL_DIR/enlngf"
-
-    echo "   [5/7] Compiling enlngs (Reactive Script Engine)..."
-    $CC -O2 "$SRC_ROOT/enlngs.c" -o "$INSTALL_DIR/enlngs"
-
-    echo "   [6/7] Compiling enlngd (Design Tokens Engine)..."
-    $CC -O2 "$SRC_ROOT/enlngd.c" -o "$INSTALL_DIR/enlngd"
-
-    echo "   [7/7] Compiling enlngm (Mobile HAL Packager)..."
-    $CC -O2 "$SRC_ROOT/enlngm.c" -o "$INSTALL_DIR/enlngm"
+    echo "   Compiling the 7 tools from '$SRC_ROOT' using $CC (about a minute)..."
+    (
+        cd "$SRC_ROOT" || exit 1
+        set -e
+        $CC -O2 -I. -Isrc -Ienlngdb/c -Ienlng/c enlangg.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c enlng/c/enlng_emitter.c -lm -o "$INSTALL_DIR/enlangg"
+        $CC -O2 -I. -Isrc enlng.c -lm -pthread -o "$INSTALL_DIR/enlng"
+        $CC -O2 -I. -Isrc -Ienlngdb/c enlngdb/c/main.c enlngdb/c/enlngdb.c enlngdb/c/enlngdb_parser.c -lm -o "$INSTALL_DIR/enlngdb"
+        $CC -O2 -I. -Isrc -Ienlngf/c enlngf.c -lm -o "$INSTALL_DIR/enlngf"
+        $CC -O2 -I. -Isrc -Ienlngs/c enlngs.c -lm -o "$INSTALL_DIR/enlngs"
+        $CC -O2 -I. -Isrc -Ienlngd/c enlngd.c -lm -o "$INSTALL_DIR/enlngd"
+        $CC -O2 -I. -Isrc -Ienlngm/c enlngm.c -lm -o "$INSTALL_DIR/enlngm"
+        cp lib_*.enlng "$INSTALL_ROOT/lib/"
+        cp src/enlng_runtime.h enlng/c/enlng_mem.h "$INSTALL_ROOT/include/"
+    ) || {
+        echo "${RED}Error: the build failed (see the compiler's message above). Nothing was added to your PATH.${NC}" >&2
+        exit 1
+    }
 }
 
 # 1. Install via Local Source, Release Tarball, or Git Clone
 if [ -f "$SCRIPT_DIR/enlangg.c" ] && [ -n "$CC" ]; then
     build_from_source "$SCRIPT_DIR"
-elif curl -f -s -I "$RELEASE_URL" >/dev/null 2>&1; then
+elif curl -fsIL "$RELEASE_URL" >/dev/null 2>&1 && curl -fsIL "$SUMS_URL" >/dev/null 2>&1; then
     echo "   Downloading prebuilt release archive and SHA256SUMS from GitHub..."
     TMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t 'enlangg')"
     if ! curl -fsSL "$SUMS_URL" -o "$TMP_DIR/SHA256SUMS"; then
@@ -128,17 +120,29 @@ elif curl -f -s -I "$RELEASE_URL" >/dev/null 2>&1; then
         exit 1
     fi
     echo "   ✔ Verified SHA-256: $ACTUAL_SHA"
-    tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$INSTALL_DIR"
+    tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$INSTALL_ROOT"
     rm -rf "$TMP_DIR"
-elif [ -n "$CC" ] && command -v git >/dev/null 2>&1; then
-    echo "   Cloning official repository to build from source..."
-    TMP_CLONE="/tmp/enlang-build-$$"
-    git clone --depth 1 "https://github.com/$GITHUB_REPO.git" "$TMP_CLONE"
-    build_from_source "$TMP_CLONE"
-    rm -rf "$TMP_CLONE"
+elif [ -n "$CC" ]; then
+    # no prebuilt archive for this platform yet: the source is fetched and built here
+    echo "   No prebuilt archive for $OS ($ARCH) yet: fetching the source to build it here..."
+    TMP_SRC="$(mktemp -d 2>/dev/null || mktemp -d -t 'enlangg')"
+    if ! curl -fsSL "https://github.com/$GITHUB_REPO/archive/refs/heads/main.tar.gz" -o "$TMP_SRC/src.tar.gz" || ! tar -xzf "$TMP_SRC/src.tar.gz" -C "$TMP_SRC"; then
+        echo "${RED}Error: the source could not be downloaded from github.com/$GITHUB_REPO.${NC}" >&2
+        rm -rf "$TMP_SRC"
+        exit 1
+    fi
+    SRC_DIR="$(find "$TMP_SRC" -maxdepth 2 -name enlangg.c | head -n 1)"
+    if [ -z "$SRC_DIR" ]; then
+        echo "${RED}Error: the downloaded source has no enlangg.c.${NC}" >&2
+        rm -rf "$TMP_SRC"
+        exit 1
+    fi
+    build_from_source "$(dirname "$SRC_DIR")"
+    rm -rf "$TMP_SRC"
 else
-    echo "${RED}[ERROR] Neither a C compiler (gcc/clang) nor a prebuilt release archive could be accessed.${NC}"
-    echo "Please install gcc or clang and run the installer again."
+    echo "${RED}[ERROR] There is no prebuilt archive for $OS ($ARCH) yet, and no C compiler (gcc, clang or cc) to build from source.${NC}"
+    echo "Install one and run the installer again:"
+    echo "  Debian/Ubuntu: sudo apt install build-essential     macOS: xcode-select --install"
     exit 1
 fi
 
@@ -182,8 +186,13 @@ for CMD in enlangg enlng enlngdb enlngf enlngs enlngd enlngm; do
         "$INSTALL_DIR/$CMD" --version
     else
         echo "${RED}   [MISSING] $CMD failed to install.${NC}"
+        MISSING=1
     fi
 done
+if [ -n "$MISSING" ]; then
+    echo "${RED}The install is not complete: the tools marked [MISSING] are not there.${NC}" >&2
+    exit 1
+fi
 
 printf "${GREEN}${BOLD}"
 cat << 'EOF'
@@ -205,4 +214,4 @@ echo "  enlngd <theme.enlngd>       # Pure C design tokens & style resolver"
 echo "  enlngm <app.enlngm>         # Pure C smartphone simulator & HAL"
 echo "  enlangg --help              # Toolchain comprehensive help"
 echo ""
-echo "Website & Live Playground: https://enlangg.vercel.app"
+echo "Website & Live Playground: https://enlangg.site"
