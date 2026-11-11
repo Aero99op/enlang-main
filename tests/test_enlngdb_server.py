@@ -470,11 +470,49 @@ def main():
             a.run("shutdown server")
             server.communicate(timeout=60)
             server = None
+        # ---- an answer to a change is sent when the change is on the disk; a save that fails is said ----
+        port = free_port()
+        server, line = start_server("par", port, "--readers", "0")
+        a = Conn(port)
+        a.login("boss", "boss-pass-1")
+        b = Conn(port)
+        b.login("boss", "boss-pass-1")
+        fpath = os.path.join(TMP, "par.edb")
+        wal = fpath + "-wal"
+
+        def disk():
+            return tuple((os.path.getsize(x), os.path.getmtime(x)) if os.path.exists(x) else None for x in (fpath, wal))
+        before = disk()
+        word, text = a.run("insert into n values (900001, 1)")
+        check("a change is answered when it is on the disk", word == "ok" and disk() != before, (word, text[-200:]))
+        qa, qb = "insert into n values (900002, 2)", "insert into n values (900003, 3)"
+        a.s.sendall(b"run %d\n%s" % (len(qa), qa.encode()))
+        b.s.sendall(b"run %d\n%s" % (len(qb), qb.encode()))
+        wa, ta = a.answer()
+        wb, tb = b.answer()
+        check("two clients change at once: both are answered ok", wa == "ok" and wb == "ok", (wa, wb))
+        for x in (fpath + ".tmp", wal + ".tmp"):
+            os.mkdir(x)                                         # nothing can be written in their place
+            open(os.path.join(x, "keep"), "w").close()         # not empty: it cannot be removed as a file
+        word, text = a.run("insert into n values (900004, 4)")
+        check("a save that fails: the client is told its change is not on the disk", word == "failed" and "could not write this change" in text, (word, text[-300:]))
+        for x in (fpath + ".tmp", wal + ".tmp"):
+            shutil.rmtree(x, ignore_errors=True)
+        word, text = a.run("insert into n values (900005, 5)")
+        check("... and the next change that can be saved writes both", word == "ok", (word, text[-200:]))
+        a.run("shutdown server")
+        server.communicate(timeout=60)
+        server = None
+        out = run_local("find count(*) from n where id >= 900001", "par")
+        check("... all five rows are in the file", "| 5 " in out.replace("  ", " ").replace("  ", " ").replace("  ", " "), out[-300:])
         time.sleep(1.0)
         if os.name == "nt":
             left = subprocess.run(["tasklist", "/fi", "imagename eq enlngdb.exe", "/fo", "csv", "/nh"], capture_output=True, text=True).stdout
             mine = [l for l in left.splitlines() if "enlngdb.exe" in l]
             check("the readers end with the server", len(mine) == 0, mine)
+        else:
+            left = subprocess.run(["pgrep", "-f", os.path.join(TMP, EXE)], capture_output=True, text=True).stdout.split()
+            check("the readers end with the server", len(left) == 0, left)
     finally:
         if server:
             server.kill()

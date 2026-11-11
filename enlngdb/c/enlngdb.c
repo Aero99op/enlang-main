@@ -291,7 +291,8 @@ static EnlngDatabase* copy_database(const EnlngDatabase* db) {
         dst->row_count = 0;
         dst->row_capacity = 0;
         for (size_t r = 0; r < src->row_count; r++) {
-            enlngdb_append_row(dst, (*enlngdb_row(src, r)).cells, (*enlngdb_row(src, r)).cell_count);
+            const EnlngRow* sr = enlngdb_row(src, r);
+            if (enlngdb_append_row(dst, sr->cells, sr->cell_count)) dst->rowv[dst->row_count - 1].origin = sr->origin;   /* a copy keeps where its rows came from */
         }
     }
     return c;
@@ -358,7 +359,10 @@ EnlngTable* enlngdb_copy_tables(const EnlngDatabase* db, int* count) {
         t[i].rowv = NULL;
         t[i].row_count = 0;
         t[i].row_capacity = 0;
-        for (size_t r = 0; r < db->tables[i].row_count; r++) enlngdb_append_row(&t[i], (*enlngdb_row(&db->tables[i], r)).cells, (*enlngdb_row(&db->tables[i], r)).cell_count);
+        for (size_t r = 0; r < db->tables[i].row_count; r++) {
+            const EnlngRow* sr = enlngdb_row(&db->tables[i], r);
+            if (enlngdb_append_row(&t[i], sr->cells, sr->cell_count)) t[i].rowv[t[i].row_count - 1].origin = sr->origin;
+        }
     }
     *count = db->table_count;
     return t;
@@ -429,6 +433,7 @@ EnlngTable* enlngdb_create_table(EnlngDatabase* db, const char* name, const Enln
 
     EnlngTable* tbl = &db->tables[db->table_count++];
     memset(tbl, 0, sizeof(EnlngTable));
+    tbl->base_rows = -1;
     strncpy(tbl->name, name, sizeof(tbl->name) - 1);
     tbl->col_count = col_count < ENLNGDB_MAX_COLS ? col_count : ENLNGDB_MAX_COLS;
     if (cols) {
@@ -502,7 +507,6 @@ bool enlngdb_delete_column(EnlngTable* table, const char* col_name) {
             row->cells[c] = row->cells[c + 1];
         }
         row->cell_count--;
-        row->version++;
     }
     for (int c = idx; c < table->col_count - 1; c++) {
         table->columns[c] = table->columns[c + 1];
@@ -576,7 +580,6 @@ bool enlngdb_add_column(EnlngTable* table, const char* col_name, const EnlngVal*
         for (int c = row->cell_count; c < table->col_count; c++) row->cells[c] = enlng_null();
         row->cells[idx] = default_val ? enlng_copy_val(default_val) : enlng_null();
         row->cell_count = table->col_count;
-        row->version++;
     }
     table->version++;
     return true;
@@ -682,7 +685,7 @@ bool enlngdb_append_row(EnlngTable* table, const EnlngVal* cells, int cell_count
     }
     EnlngRow* target_row = &table->rowv[table->row_count];   /* a new place: nothing to read */
     target_row->cell_count = cell_count;
-    target_row->version = 1;
+    target_row->origin = -1;          /* not in the file it came from */
     target_row->cells = (EnlngVal*)malloc((cell_count ? cell_count : 1) * sizeof(EnlngVal));
     for (int i = 0; i < cell_count; i++) {
         target_row->cells[i] = enlng_copy_val(&cells[i]);
@@ -1154,6 +1157,7 @@ typedef struct {
     size_t len, cap, pos;
     bool bad;                   /* memory ran out while writing */
     bool borrowed;              /* the bytes belong to a source of the database (rows are read from them later) */
+    uint64_t written;           /* bytes written so far */
 } EnlngIO;
 typedef struct { fpos_t at; size_t pos; } EnlngIOMark;
 
@@ -1168,6 +1172,7 @@ static size_t eio_read(void* p, size_t size, size_t n, EnlngIO* io) {
 }
 
 static size_t eio_write(const void* p, size_t size, size_t n, EnlngIO* io) {
+    io->written += (uint64_t)size * n;
     if (io->f) return fwrite(p, size, n, io->f);
     size_t add = size * n;
     if (io->len + add > io->cap) {
@@ -1507,10 +1512,9 @@ void enlngdb_materialize(EnlngDatabase* db) {
     for (int t = 0; t < db->table_count; t++) {
         EnlngTable* tb = &db->tables[t];
         for (size_t r = 0; r < tb->row_count; r++) (void)enlngdb_row(tb, r);
-        tb->lazy = NULL;
         tb->nstored = 0;
     }
-    enlngdb_free_sources(db);
+    /* the files stay mapped: a save compares the rows with them, and writes only what changed */
 }
 
 typedef struct { uint64_t h; uint32_t row; } StoredEntry;
@@ -1571,11 +1575,103 @@ static size_t row_bytes(const EnlngRow* row) {
     return n;
 }
 
+/* what is in column c of row r, without reading the row: 0 null, 1 a number (*d), 2 a text (*s, *len), 3 another kind */
+static int cell_peek(const EnlngTable* t, size_t r, int c, double* d, const char** s, uint32_t* len) {
+    const EnlngRow* row = &t->rowv[r];
+    if (row->cell_count >= 0) {
+        if (c >= row->cell_count) return 0;
+        const EnlngVal* v = &row->cells[c];
+        if (v->type == ENLNG_VAL_INT) { *d = (double)v->int_val; return 1; }
+        if (v->type == ENLNG_VAL_DOUBLE) { *d = v->double_val; return *d == *d ? 1 : 3; }
+        if (v->type == ENLNG_VAL_STRING) { *s = v->str_val ? v->str_val : ""; *len = (uint32_t)strlen(*s); return 2; }
+        return v->type == ENLNG_VAL_NULL ? 0 : 3;
+    }
+    const unsigned char* p = t->lazy + (uintptr_t)row->cells;
+    int n;
+    memcpy(&n, p, 4);
+    p += 4;
+    if (c >= n) return 0;
+    for (int k = 0; k < c; k++) p = mem_skip(p);
+    uint8_t type = *p++;
+    if (type == ENLNG_VAL_INT) { int64_t i; memcpy(&i, p, 8); *d = (double)i; return 1; }
+    if (type == ENLNG_VAL_DOUBLE) { memcpy(d, p, 8); return *d == *d ? 1 : 3; }
+    if (type == ENLNG_VAL_STRING) { memcpy(len, p, 4); *s = (const char*)p + 4; return 2; }
+    return type == ENLNG_VAL_BOOL ? 3 : 0;
+}
+
+const char* enlngdb_base_text(const EnlngTable* t, size_t b, int col, size_t* len) {
+    if (!t->base_data || t->base_rows < 0 || b >= (size_t)t->base_rows) return NULL;
+    uint64_t off;
+    if (t->base_width == 4) { uint32_t o; memcpy(&o, t->base_offs + b * 4, 4); off = o; }
+    else memcpy(&off, t->base_offs + b * 8, 8);
+    const unsigned char* p = t->base_data + off;
+    int n;
+    memcpy(&n, p, 4);
+    p += 4;
+    if (col >= n) return NULL;
+    for (int k = 0; k < col; k++) p = mem_skip(p);
+    if (*p != ENLNG_VAL_STRING) return NULL;
+    uint32_t l;
+    memcpy(&l, p + 1, 4);
+    *len = l;
+    return (const char*)p + 5;
+}
+
+typedef struct { double v; uint32_t row; } StoredNum;
+typedef struct { const char* s; uint32_t len; uint32_t row; } StoredText;
+static int stored_num_cmp(const void* a, const void* b) {
+    const StoredNum* x = (const StoredNum*)a;
+    const StoredNum* y = (const StoredNum*)b;
+    if (x->v != y->v) return x->v < y->v ? -1 : 1;
+    return x->row < y->row ? -1 : x->row > y->row;
+}
+/* texts in the order the queries compare them: letter by letter without their case, a shorter one first */
+static int stored_text_cmp(const void* a, const void* b) {
+    const StoredText* x = (const StoredText*)a;
+    const StoredText* y = (const StoredText*)b;
+    uint32_t n = x->len < y->len ? x->len : y->len;
+    for (uint32_t i = 0; i < n; i++) {
+        int d = tolower((unsigned char)x->s[i]) - tolower((unsigned char)y->s[i]);
+        if (d) return d;
+    }
+    if (x->len != y->len) return x->len < y->len ? -1 : 1;
+    return x->row < y->row ? -1 : x->row > y->row;
+}
+
+/* a kept column in order, after its lookup index: numbers (count 4; value 8 and row 4 each), texts (count 4; rows), others (count 4; rows) */
+static bool save_range(const EnlngTable* t, int col, EnlngIO* f) {
+    size_t rc = t->row_count;
+    StoredNum* nums = (StoredNum*)malloc((rc + 1) * sizeof(StoredNum));
+    StoredText* texts = (StoredText*)malloc((rc + 1) * sizeof(StoredText));
+    uint32_t* others = (uint32_t*)malloc((rc + 1) * sizeof(uint32_t));
+    if (!nums || !texts || !others) { free(nums); free(texts); free(others); return false; }
+    uint32_t nn = 0, ns = 0, no = 0;
+    for (size_t r = 0; r < rc; r++) {
+        double d = 0;
+        const char* s = NULL;
+        uint32_t len = 0;
+        int k = cell_peek(t, r, col, &d, &s, &len);
+        if (k == 1) { nums[nn].v = d; nums[nn].row = (uint32_t)r; nn++; }
+        else if (k == 2) { texts[ns].s = s; texts[ns].len = len; texts[ns].row = (uint32_t)r; ns++; }
+        else if (k == 3) others[no++] = (uint32_t)r;
+    }
+    qsort(nums, nn, sizeof(StoredNum), stored_num_cmp);
+    qsort(texts, ns, sizeof(StoredText), stored_text_cmp);
+    eio_write(&nn, 4, 1, f);
+    for (uint32_t i = 0; i < nn; i++) { eio_write(&nums[i].v, 8, 1, f); eio_write(&nums[i].row, 4, 1, f); }
+    eio_write(&ns, 4, 1, f);
+    for (uint32_t i = 0; i < ns; i++) eio_write(&texts[i].row, 4, 1, f);
+    eio_write(&no, 4, 1, f);
+    eio_write(others, 4, no, f);
+    free(nums); free(texts); free(others);
+    return true;
+}
+
 /* Version 3 rows of a table: the count (8 bytes), the bytes of the rows (8), the width of a place (1, and 7 zero
    bytes), the rows as in version 2, the place of each row from the first, then the lookup indexes: their count (4)
    and for each its column, entries and rows without a hash (4 each), the entries (8 bytes of hash, 4 of row, sorted)
    and those rows (4 each). A row still in the old file is copied as its bytes, without being read. */
-static bool save_rows_v3(const EnlngTable* t, EnlngIO* f) {
+static bool save_rows_v3(const EnlngTable* t, EnlngIO* f, uint64_t* data_at, uint64_t* offs_at, uint8_t* width_out) {
     uint64_t rc = t->row_count;
     uint64_t* offs = (uint64_t*)malloc((size_t)(rc + 1) * sizeof(uint64_t));
     if (!offs) return false;
@@ -1591,6 +1687,8 @@ static bool save_rows_v3(const EnlngTable* t, EnlngIO* f) {
     eio_write(&total, 8, 1, f);
     eio_write(&width, 1, 1, f);
     eio_write(pad, 1, 7, f);
+    *data_at = f->written;
+    *width_out = width;
     for (size_t r = 0; r < t->row_count; r++) {
         const EnlngRow* row = &t->rowv[r];
         if (row->cell_count < 0) {
@@ -1601,6 +1699,7 @@ static bool save_rows_v3(const EnlngTable* t, EnlngIO* f) {
             for (int c = 0; c < row->cell_count; c++) put_val(f, &row->cells[c]);
         }
     }
+    *offs_at = f->written;
     for (size_t r = 0; r < t->row_count; r++) {
         if (width == 4) { uint32_t o = (uint32_t)offs[r]; eio_write(&o, 4, 1, f); }
         else eio_write(&offs[r], 8, 1, f);
@@ -1608,7 +1707,7 @@ static bool save_rows_v3(const EnlngTable* t, EnlngIO* f) {
     free(offs);
     int cols[ENLNGDB_STORED_MAX];
     int ncols = enlngdb_value_hash && rc <= 0xFFFFFFF0u && t->view_sql[0] == '\0' ? stored_columns(t, cols) : 0;
-    uint32_t nidx = (uint32_t)ncols;
+    uint32_t nidx = (uint32_t)ncols | ENLNGDB_STORED_RANGE;
     eio_write(&nidx, 4, 1, f);
     for (int k = 0; k < ncols; k++) {
         StoredEntry* e = (StoredEntry*)malloc((size_t)(rc + 1) * sizeof(StoredEntry));
@@ -1632,65 +1731,41 @@ static bool save_rows_v3(const EnlngTable* t, EnlngIO* f) {
         eio_write(spill, 4, ns, f);
         free(e);
         free(spill);
+        if (!save_range(t, cols[k], f)) return false;
     }
     return true;
 }
 
-bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
-    if (!db || !filepath) return false;
-    /* write beside the file and move it into place, so a crash while saving leaves the old file whole */
-    char tmp_path[1100];
-    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", filepath);
-    /* an encrypted database that was not opened is never written: that would put an empty one in its place */
-    if (db->locked) return false;
-    EnlngIO out;
-    memset(&out, 0, sizeof(out));
-    FILE* file = NULL;
-    if (!db->encrypted) {
-        file = fopen(tmp_path, "wb");
-        if (!file) return false;
-        setvbuf(file, NULL, _IOFBF, 1 << 20);
-        out.f = file;
+/* the header of a table: its name, view, columns (with the next automatic numbers, or zeros) and indexes */
+static void write_table_head(const EnlngTable* tbl, EnlngIO* f, bool with_autos) {
+    eio_write(tbl->name, 1, ENLNGDB_MAX_NAME, f);
+    put_text(f, tbl->view_sql);
+    eio_write(&tbl->col_count, sizeof(int), 1, f);
+    for (int c = 0; c < tbl->col_count; c++) {
+        const EnlngColumn* col = &tbl->columns[c];
+        eio_write(col->name, 1, ENLNGDB_MAX_NAME, f);
+        uint8_t flags[5] = { (uint8_t)((col->kind & 0x0F) | ((col->on_delete & 3) << 4) | ((col->on_update & 3) << 6)), col->is_primary_key, col->is_unique, col->not_null, col->is_auto };
+        eio_write(flags, 1, 5, f);
+        put_text(f, col->default_text);
+        put_text(f, col->check_text);
+        put_text(f, col->ref_table);
+        put_text(f, col->ref_col);
+        int64_t a = with_autos ? tbl->auto_next[c] : 0;
+        eio_write(&a, sizeof(int64_t), 1, f);
     }
-    EnlngIO* f = &out;          /* encrypted: the bytes are gathered in memory, then sealed and written at once */
-
-    int saved_tables = 0;
-    for (int t = 0; t < db->table_count; t++) if (!db->tables[t].is_temp) saved_tables++;
-
-    char magic[16] = {0};
-    memcpy(magic, ENLNGDB_MAGIC_V3, 14);
-    eio_write(magic, 1, 16, f);
-    eio_write(db->name, 1, ENLNGDB_MAX_NAME, f);
-    eio_write(&saved_tables, sizeof(int), 1, f);
-
-    for (int t = 0; t < db->table_count; t++) {
-        const EnlngTable* tbl = &db->tables[t];
-        if (tbl->is_temp) continue;
-        eio_write(tbl->name, 1, ENLNGDB_MAX_NAME, f);
-        put_text(f, tbl->view_sql);
-        eio_write(&tbl->col_count, sizeof(int), 1, f);
-        for (int c = 0; c < tbl->col_count; c++) {
-            const EnlngColumn* col = &tbl->columns[c];
-            eio_write(col->name, 1, ENLNGDB_MAX_NAME, f);
-            uint8_t flags[5] = { (uint8_t)((col->kind & 0x0F) | ((col->on_delete & 3) << 4) | ((col->on_update & 3) << 6)), col->is_primary_key, col->is_unique, col->not_null, col->is_auto };
-            eio_write(flags, 1, 5, f);
-            put_text(f, col->default_text);
-            put_text(f, col->check_text);
-            put_text(f, col->ref_table);
-            put_text(f, col->ref_col);
-            eio_write(&tbl->auto_next[c], sizeof(int64_t), 1, f);
-        }
-        eio_write(&tbl->index_count, sizeof(int), 1, f);
-        for (int i = 0; i < tbl->index_count; i++) {
-            const EnlngIndex* ix = &tbl->indexes[i];
-            put_text(f, ix->name);
-            uint8_t u = ix->is_unique;
-            eio_write(&u, 1, 1, f);
-            eio_write(&ix->col_count, sizeof(int), 1, f);
-            for (int k = 0; k < ix->col_count; k++) put_text(f, ix->cols[k]);
-        }
-        if (!save_rows_v3(tbl, f)) out.bad = true;
+    eio_write(&tbl->index_count, sizeof(int), 1, f);
+    for (int i = 0; i < tbl->index_count; i++) {
+        const EnlngIndex* ix = &tbl->indexes[i];
+        put_text(f, ix->name);
+        uint8_t u = ix->is_unique;
+        eio_write(&u, 1, 1, f);
+        eio_write(&ix->col_count, sizeof(int), 1, f);
+        for (int k = 0; k < ix->col_count; k++) put_text(f, ix->cols[k]);
     }
+}
+
+/* the triggers, procedures, users and rights, after the tables */
+static void write_extras(const EnlngDatabase* db, EnlngIO* f) {
     if (db->trigger_count > 0 || db->proc_count > 0 || db->user_count > 0) {
         /* after triggers here; before triggers in a part of their own at the end, which a program that does not
            know them (and would read them as after triggers) never reaches */
@@ -1769,6 +1844,40 @@ bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
             }
         }
     }
+}
+
+/* one place of save_full: where the rows of each table went in the new file */
+typedef struct { uint64_t data_at, offs_at; uint8_t width; } SavedPlace;
+
+/* the whole database to a new file (version 4, with a new id): written beside it, on the disk, then put in place */
+static bool save_full(EnlngDatabase* db, const char* filepath, const uint8_t id[16], SavedPlace* places) {
+    char tmp_path[1100];
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", filepath);
+    EnlngIO out;
+    memset(&out, 0, sizeof(out));
+    FILE* file = NULL;
+    if (!db->encrypted) {
+        file = fopen(tmp_path, "wb");
+        if (!file) return false;
+        setvbuf(file, NULL, _IOFBF, 1 << 20);
+        out.f = file;
+    }
+    EnlngIO* f = &out;          /* encrypted: the bytes are gathered in memory, then sealed and written at once */
+    int saved_tables = 0;
+    for (int t = 0; t < db->table_count; t++) if (!db->tables[t].is_temp) saved_tables++;
+    char magic[16] = {0};
+    memcpy(magic, ENLNGDB_MAGIC_V4, 14);
+    eio_write(magic, 1, 16, f);
+    eio_write(db->name, 1, ENLNGDB_MAX_NAME, f);
+    eio_write(id, 1, 16, f);
+    eio_write(&saved_tables, sizeof(int), 1, f);
+    for (int t = 0; t < db->table_count; t++) {
+        EnlngTable* tbl = &db->tables[t];
+        if (tbl->is_temp) continue;
+        write_table_head(tbl, f, true);
+        if (!save_rows_v3(tbl, f, &places[t].data_at, &places[t].offs_at, &places[t].width)) out.bad = true;
+    }
+    write_extras(db, f);
     if (db->encrypted) {
         /* "ENLNG_C_EDB_ENC1", the salt, the rounds, a new nonce, then the sealed file and its tag */
         unsigned char head[48];
@@ -1802,6 +1911,355 @@ bool enlngdb_save(const EnlngDatabase* db, const char* filepath) {
     return true;
 }
 
+/* ---- the log of changes ----
+ * While the columns of the tables, the tables themselves and the triggers, procedures and users are as they were in
+ * the full file last opened or saved (the 'base'), a save writes only how the rows differ from it, to <file>-wal:
+ * which rows of the file are gone, which are changed (with their new bytes) and which rows were added. The log is
+ * written whole each time (beside, on the disk, then put in place), so it is either the old log or the new one. When
+ * the log grows past a quarter of the file (at least 4 MB), or anything else changed, the full file is written again,
+ * with a new id, and the log is removed; a log whose id is not the file's is from before, and is left alone. */
+static const char ENLNGDB_WAL_MAGIC[16] = "ENLNG_EDB_WAL_V1";
+
+static void table_sig(const EnlngTable* t, uint8_t out[32]) {
+    EnlngIO m;
+    memset(&m, 0, sizeof(m));
+    write_table_head(t, &m, false);
+    enlngdb_sha256(m.buf, m.len, out);
+    free(m.buf);
+}
+
+static void extras_sig(const EnlngDatabase* db, uint8_t out[32]) {
+    EnlngIO m;
+    memset(&m, 0, sizeof(m));
+    write_extras(db, &m);
+    enlngdb_sha256(m.buf ? m.buf : (unsigned char*)"", m.len, out);
+    free(m.buf);
+}
+
+static uint64_t base_off(const EnlngTable* t, size_t i) {
+    if (t->base_width == 4) { uint32_t o; memcpy(&o, t->base_offs + i * 4, 4); return o; }
+    uint64_t o;
+    memcpy(&o, t->base_offs + i * 8, 8);
+    return o;
+}
+
+static void encode_row(const EnlngRow* row, EnlngIO* m) {
+    eio_write(&row->cell_count, sizeof(int), 1, m);
+    for (int c = 0; c < row->cell_count; c++) put_val(m, &row->cells[c]);
+}
+
+/* a row read from bytes (of the file, or of the log) */
+static void decode_row(const EnlngTable* t, const unsigned char* p, EnlngRow* r) {
+    int n;
+    memcpy(&n, p, 4);
+    p += 4;
+    int cc = n > t->col_count ? n : t->col_count;
+    EnlngVal* cells = (EnlngVal*)malloc((size_t)(cc ? cc : 1) * sizeof(EnlngVal));
+    if (!cells) { fprintf(stderr, "ERROR: out of memory while reading a row\n"); exit(3); }
+    for (int c = 0; c < n; c++) p = mem_val(p, &cells[c]);
+    for (int c = n; c < cc; c++) cells[c] = enlng_null();
+    r->cells = cells;
+    r->cell_count = cc;
+}
+
+/* after a full save: that file is the base now, and each row is at its place in it */
+static void rebase_after_save(EnlngDatabase* db, const char* path, const uint8_t id[16], const SavedPlace* places) {
+    db->has_base = false;
+    if (db->encrypted) return;
+    size_t len = 0;
+    int mapped = 0;
+    unsigned char* base = map_file(path, &len, &mapped);
+    if (!base) return;
+    if (!add_source(db, base, len, mapped)) {
+#if defined(_WIN32)
+        if (mapped) UnmapViewOfFile(base); else free(base);
+#elif !defined(__EMSCRIPTEN__)
+        if (mapped) munmap(base, len); else free(base);
+#else
+        free(base);
+#endif
+        return;
+    }
+    int k = 0;
+    for (int t = 0; t < db->table_count; t++) {
+        EnlngTable* tb = &db->tables[t];
+        if (tb->is_temp) continue;
+        if (tb->row_count > 0x7FFFFFF0u) return;        /* a place must fit in a row's origin */
+        tb->base_rows = (long long)tb->row_count;
+        tb->base_pos = k++;
+        tb->base_data = base + places[t].data_at;
+        tb->base_offs = base + places[t].offs_at;
+        tb->base_width = places[t].width;
+        table_sig(tb, tb->base_sig);
+        for (size_t r = 0; r < tb->row_count; r++) tb->rowv[r].origin = (int)r;
+        tb->wal_applied = false;
+    }
+    db->base_ntables = k;
+    memcpy(db->file_id, id, 16);
+    extras_sig(db, db->extras_sig);
+    db->base_len = len;
+    snprintf(db->base_path, sizeof(db->base_path), "%s", path);
+    db->has_base = true;
+}
+
+typedef struct { uint32_t* v; size_t n, cap; } U32List;
+static bool u32_push(U32List* l, uint32_t x) {
+    if (l->n == l->cap) {
+        size_t cap = l->cap ? l->cap * 2 : 64;
+        uint32_t* g = (uint32_t*)realloc(l->v, cap * sizeof(uint32_t));
+        if (!g) return false;
+        l->v = g;
+        l->cap = cap;
+    }
+    l->v[l->n++] = x;
+    return true;
+}
+
+/* 1: the log was written; 0: it cannot be (the full file is written instead); -1: writing failed */
+static int save_wal(EnlngDatabase* db, const char* walpath) {
+    int k = 0;
+    for (int t = 0; t < db->table_count; t++) {
+        EnlngTable* tb = &db->tables[t];
+        if (tb->is_temp) continue;
+        if (tb->base_rows < 0 || tb->base_pos != k) return 0;
+        uint8_t sig[32];
+        table_sig(tb, sig);
+        if (memcmp(sig, tb->base_sig, 32) != 0) return 0;
+        k++;
+    }
+    if (k != db->base_ntables) return 0;
+    uint8_t es[32];
+    extras_sig(db, es);
+    if (memcmp(es, db->extras_sig, 32) != 0) return 0;
+    size_t limit = db->base_len / 4 > ((size_t)4 << 20) ? db->base_len / 4 : ((size_t)4 << 20);
+    EnlngIO w, m;
+    memset(&w, 0, sizeof(w));
+    memset(&m, 0, sizeof(m));
+    U32List dels = {0}, sets = {0}, apps = {0};
+    int result = 1;
+    uint32_t nt = (uint32_t)k;
+    eio_write(ENLNGDB_WAL_MAGIC, 1, 16, &w);
+    eio_write(db->file_id, 1, 16, &w);
+    eio_write(&nt, 4, 1, &w);
+    for (int t = 0; t < db->table_count && result == 1; t++) {
+        EnlngTable* tb = &db->tables[t];
+        if (tb->is_temp) continue;
+        dels.n = sets.n = apps.n = 0;
+        long long prev = -1;
+        bool seen_new = false;
+        for (size_t r = 0; r < tb->row_count && result == 1; r++) {
+            const EnlngRow* row = &tb->rowv[r];
+            if (row->origin >= 0) {
+                /* the rows of the file keep their order, and come before the rows added */
+                if (seen_new || row->origin <= prev || row->origin >= tb->base_rows) { result = 0; break; }
+                for (long long b = prev + 1; b < row->origin; b++) if (!u32_push(&dels, (uint32_t)b)) result = -1;
+                prev = row->origin;
+                if (row->cell_count >= 0) {
+                    m.len = 0;
+                    encode_row(row, &m);
+                    const unsigned char* bp = tb->base_data + base_off(tb, (size_t)row->origin);
+                    size_t bl = mem_row_len(bp);
+                    if (bl != m.len || memcmp(bp, m.buf, bl) != 0) if (!u32_push(&sets, (uint32_t)r)) result = -1;
+                }
+            } else {
+                seen_new = true;
+                if (!u32_push(&apps, (uint32_t)r)) result = -1;
+            }
+        }
+        for (long long b = prev + 1; b < tb->base_rows && result == 1; b++) if (!u32_push(&dels, (uint32_t)b)) result = -1;
+        if (result != 1) break;
+        uint32_t pos = (uint32_t)tb->base_pos;
+        uint64_t n;
+        eio_write(&pos, 4, 1, &w);
+        eio_write(tb->auto_next, sizeof(int64_t), (size_t)tb->col_count, &w);
+        n = dels.n;
+        eio_write(&n, 8, 1, &w);
+        eio_write(dels.v, 4, dels.n, &w);
+        n = sets.n;
+        eio_write(&n, 8, 1, &w);
+        for (size_t i = 0; i < sets.n; i++) {
+            const EnlngRow* row = &tb->rowv[sets.v[i]];
+            uint32_t o = (uint32_t)row->origin;
+            eio_write(&o, 4, 1, &w);
+            encode_row(row, &w);
+        }
+        n = apps.n;
+        eio_write(&n, 8, 1, &w);
+        for (size_t i = 0; i < apps.n; i++) encode_row(enlngdb_row(tb, apps.v[i]), &w);
+        if (w.len > limit) result = 0;
+        if (w.bad) result = -1;
+    }
+    free(dels.v);
+    free(sets.v);
+    free(apps.v);
+    free(m.buf);
+    if (result == 1) {
+        uint8_t h[32];
+        enlngdb_sha256(w.buf, w.len, h);
+        eio_write(h, 1, 32, &w);
+        if (w.bad || w.len > limit) result = w.bad ? -1 : 0;
+    }
+    if (result == 1) {
+        char tmp[1200];
+        snprintf(tmp, sizeof(tmp), "%s.tmp", walpath);
+        FILE* f = fopen(tmp, "wb");
+        bool good = f && fwrite(w.buf, 1, w.len, f) == w.len && fflush(f) == 0;
+#ifdef _WIN32
+        if (good && _commit(_fileno(f)) != 0) good = false;
+#elif !defined(__EMSCRIPTEN__)
+        if (good && fsync(fileno(f)) != 0) good = false;
+#endif
+        if (f && fclose(f) != 0) good = false;
+        if (good) good = enlngdb_replace_file(tmp, walpath);
+        if (!good) { remove(tmp); result = -1; }
+    }
+    free(w.buf);
+    return result;
+}
+
+/* the log of a file just opened: its changes are put on the rows. False when it is damaged (nothing more is read) */
+static bool apply_wal(EnlngDatabase* db, const char* path) {
+    char walpath[1100];
+    snprintf(walpath, sizeof(walpath), "%s-wal", path);
+    FILE* f = fopen(walpath, "rb");
+    if (!f) return true;
+    unsigned char* buf = NULL;
+    size_t len = 0, cap = 0;
+    for (;;) {
+        if (len + 65536 > cap) {
+            cap = cap ? cap * 2 : 1 << 20;
+            unsigned char* g = (unsigned char*)realloc(buf, cap);
+            if (!g) { free(buf); fclose(f); enlngdb_load_error = 3; return false; }
+            buf = g;
+        }
+        size_t got = fread(buf + len, 1, cap - len, f);
+        len += got;
+        if (got == 0) break;
+    }
+    fclose(f);
+    if (len < 68 || memcmp(buf, ENLNGDB_WAL_MAGIC, 16) != 0) { free(buf); enlngdb_load_error = 3; return false; }
+    if (memcmp(buf + 16, db->file_id, 16) != 0) { free(buf); return true; }       /* a log of a file from before */
+    uint8_t h[32];
+    enlngdb_sha256(buf, len - 32, h);
+    if (memcmp(h, buf + len - 32, 32) != 0) { free(buf); enlngdb_load_error = 3; return false; }
+    if (!add_source(db, buf, len, 0)) { free(buf); enlngdb_load_error = 3; return false; }
+    const unsigned char* p = buf + 32;
+    const unsigned char* end = buf + len - 32;
+#define NEED(n) do { if ((size_t)(end - p) < (size_t)(n)) { enlngdb_load_error = 3; return false; } } while (0)
+    uint32_t nt;
+    NEED(4);
+    memcpy(&nt, p, 4);
+    p += 4;
+    for (uint32_t i = 0; i < nt; i++) {
+        uint32_t pos;
+        NEED(4);
+        memcpy(&pos, p, 4);
+        p += 4;
+        EnlngTable* tb = NULL;
+        for (int t = 0, k = 0; t < db->table_count; t++) {
+            if (db->tables[t].is_temp) continue;
+            if (k++ == (int)pos) { tb = &db->tables[t]; break; }
+        }
+        if (!tb || tb->base_rows < 0) { enlngdb_load_error = 3; return false; }
+        NEED((size_t)tb->col_count * 8);
+        memcpy(tb->auto_next, p, (size_t)tb->col_count * 8);
+        p += (size_t)tb->col_count * 8;
+        uint64_t ndel, nset, napp;
+        NEED(8);
+        memcpy(&ndel, p, 8);
+        p += 8;
+        NEED(ndel * 4);
+        const unsigned char* del = p;
+        p += ndel * 4;
+        NEED(8);
+        memcpy(&nset, p, 8);
+        p += 8;
+        if (nset > tb->row_count) { enlngdb_load_error = 3; return false; }
+        uint32_t* setv = nset ? (uint32_t*)malloc((size_t)nset * sizeof(uint32_t)) : NULL;
+        if (nset && (!setv || !add_source(db, (unsigned char*)setv, 0, 0))) { free(setv); enlngdb_load_error = 3; return false; }
+        for (uint64_t k = 0; k < nset; k++) {
+            uint32_t idx;
+            NEED(8);
+            memcpy(&idx, p, 4);
+            p += 4;
+            if (idx >= tb->row_count || tb->rowv[idx].cell_count >= 0) { enlngdb_load_error = 3; return false; }
+            decode_row(tb, p, &tb->rowv[idx]);
+            tb->rowv[idx].origin = (int)idx;
+            p += mem_row_len(p);
+            if (p > end) { enlngdb_load_error = 3; return false; }
+            setv[k] = idx;
+        }
+        if (ndel) {
+            size_t wr = 0, di = 0;
+            for (size_t r = 0; r < tb->row_count; r++) {
+                uint32_t d = 0;
+                if (di < ndel) memcpy(&d, del + di * 4, 4);
+                if (di < ndel && d == r) {
+                    EnlngRow* row = &tb->rowv[r];
+                    if (row->cell_count >= 0) { for (int c = 0; c < row->cell_count; c++) enlng_free_val(&row->cells[c]); free(row->cells); }
+                    di++;
+                    continue;
+                }
+                tb->rowv[wr++] = tb->rowv[r];
+            }
+            if (di != ndel) { enlngdb_load_error = 3; return false; }
+            tb->row_count = wr;
+        }
+        NEED(8);
+        memcpy(&napp, p, 8);
+        p += 8;
+        tb->wal_app_from = tb->row_count;
+        for (uint64_t k = 0; k < napp; k++) {
+            NEED(4);
+            EnlngRow nr;
+            decode_row(tb, p, &nr);
+            p += mem_row_len(p);
+            if (p > end) { enlngdb_load_error = 3; return false; }
+            if (tb->row_count >= tb->row_capacity) {
+                size_t nc = tb->row_capacity ? tb->row_capacity * 2 : 16;
+                EnlngRow* g = (EnlngRow*)realloc(tb->rowv, nc * sizeof(EnlngRow));
+                if (!g) { enlngdb_load_error = 3; return false; }
+                tb->rowv = g;
+                tb->row_capacity = nc;
+            }
+            nr.origin = -1;
+            tb->rowv[tb->row_count++] = nr;
+        }
+        tb->wal_applied = true;
+        tb->wal_del = del;
+        tb->nwal_del = (uint32_t)ndel;
+        tb->wal_set = setv;
+        tb->nwal_set = (uint32_t)nset;
+    }
+#undef NEED
+    return true;
+}
+
+bool enlngdb_save(const EnlngDatabase* dbc, const char* filepath) {
+    EnlngDatabase* db = (EnlngDatabase*)dbc;     /* what the file is (the base) is kept with the database */
+    if (!db || !filepath) return false;
+    /* an encrypted database that was not opened is never written: that would put an empty one in its place */
+    if (db->locked) return false;
+    char wal[1100];
+    snprintf(wal, sizeof(wal), "%s-wal", filepath);
+    if (!db->encrypted && db->has_base && strcmp(db->base_path, filepath) == 0) {
+        int r = save_wal(db, wal);
+        if (r > 0) return true;
+        if (r < 0) return false;
+    }
+    uint8_t id[16];
+    if (!enlngdb_random_bytes(id, sizeof(id))) return false;
+    SavedPlace* places = (SavedPlace*)calloc((size_t)db->table_count + 1, sizeof(SavedPlace));
+    if (!places) return false;
+    bool ok = save_full(db, filepath, id, places);
+    if (ok) {
+        remove(wal);            /* if this fails, the log's id is not the new file's, and it is left alone */
+        rebase_after_save(db, filepath, id, places);
+    }
+    free(places);
+    return ok;
+}
+
 /* adds a row at the end that owns these cells (they are not copied), as enlngdb_append_row does otherwise */
 static bool take_row(EnlngTable* table, EnlngVal* cells, int cell_count) {
     enlngdb_mutations++;
@@ -1819,7 +2277,7 @@ static bool take_row(EnlngTable* table, EnlngVal* cells, int cell_count) {
     EnlngRow* row = &table->rowv[table->row_count];
     row->cells = own;
     row->cell_count = cell_count;
-    row->version = 1;
+    row->origin = -1;
     table->row_count++;
     table->version++;
     return true;
@@ -1867,9 +2325,13 @@ static bool load_rows_v3(EnlngTable* t, EnlngIO* f) {
             EnlngRow* row = &t->rowv[r];
             row->cells = (EnlngVal*)(uintptr_t)off;
             row->cell_count = -1;
-            row->version = 1;
+            row->origin = (int)r;     /* its place in this file */
         }
         t->row_count = (size_t)rc;
+        t->base_rows = (long long)rc;
+        t->base_data = t->lazy;
+        t->base_offs = o;
+        t->base_width = width;
         f->pos += (size_t)(rc * width);
     } else {
         for (uint64_t r = 0; r < rc; r++) {
@@ -1886,21 +2348,42 @@ static bool load_rows_v3(EnlngTable* t, EnlngIO* f) {
         if (!eio_skip(f, rc * width)) return false;
     }
     uint32_t nidx = 0;
-    if (eio_read(&nidx, 4, 1, f) != 1 || nidx > 1000) return false;
+    if (eio_read(&nidx, 4, 1, f) != 1) return false;
+    bool ranges = (nidx & ENLNGDB_STORED_RANGE) != 0;
+    nidx &= ~ENLNGDB_STORED_RANGE;
+    if (nidx > 1000) return false;
     t->nstored = 0;
     for (uint32_t k = 0; k < nidx; k++) {
         uint32_t col = 0, n = 0, ns = 0;
         if (eio_read(&col, 4, 1, f) != 1 || eio_read(&n, 4, 1, f) != 1 || eio_read(&ns, 4, 1, f) != 1) return false;
         uint64_t bytes = (uint64_t)n * 12 + (uint64_t)ns * 4;
+        bool kept = false;
         if (!f->f && t->lazy && (int)col < t->col_count && t->nstored < ENLNGDB_STORED_MAX && n + (uint64_t)ns == rc && bytes <= f->len - f->pos) {
             t->stored[t->nstored].col = (int)col;
             t->stored[t->nstored].n = n;
             t->stored[t->nstored].nspill = ns;
             t->stored[t->nstored].at = f->buf + f->pos;
             t->stored[t->nstored].spill = f->buf + f->pos + (size_t)n * 12;
+            t->stored[t->nstored].has_range = false;
             t->nstored++;
+            kept = true;
         }
         if (!eio_skip(f, bytes)) return false;
+        if (ranges) {
+            uint32_t cnt[3] = {0, 0, 0};
+            const unsigned char* at[3] = {NULL, NULL, NULL};
+            for (int part = 0; part < 3; part++) {
+                if (eio_read(&cnt[part], 4, 1, f) != 1) return false;
+                if (!f->f) at[part] = f->buf + f->pos;
+                if (!eio_skip(f, (uint64_t)cnt[part] * (part == 0 ? 12 : 4))) return false;
+            }
+            if (kept && (uint64_t)cnt[0] + cnt[1] + cnt[2] <= rc) {
+                t->stored[t->nstored - 1].has_range = true;
+                t->stored[t->nstored - 1].nn = cnt[0]; t->stored[t->nstored - 1].nums = at[0];
+                t->stored[t->nstored - 1].ns = cnt[1]; t->stored[t->nstored - 1].texts = at[1];
+                t->stored[t->nstored - 1].no = cnt[2]; t->stored[t->nstored - 1].others = at[2];
+            }
+        }
     }
     return true;
 }
@@ -1960,8 +2443,8 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
         in.cap = len;
         in.pos = 0;
         if (eio_read(magic, 1, 16, f) != 16) { eio_close(f); return false; }
-        if (memcmp(magic, ENLNGDB_MAGIC_V3, 14) == 0 && add_source(db, buf, len, 0)) in.borrowed = true;   /* rows are read from it later */
-    } else if (memcmp(magic, ENLNGDB_MAGIC_V3, 14) == 0) {
+        if ((memcmp(magic, ENLNGDB_MAGIC_V3, 14) == 0 || memcmp(magic, ENLNGDB_MAGIC_V4, 14) == 0) && add_source(db, buf, len, 0)) in.borrowed = true;   /* rows are read from it later */
+    } else if (memcmp(magic, ENLNGDB_MAGIC_V3, 14) == 0 || memcmp(magic, ENLNGDB_MAGIC_V4, 14) == 0) {
         /* version 3: the file is mapped, and its rows are read when they are needed */
         size_t mlen = 0;
         int mapped = 0;
@@ -1984,7 +2467,9 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
 #endif
         }
     }
-    bool v3 = memcmp(magic, ENLNGDB_MAGIC_V3, 14) == 0;
+    bool v4 = memcmp(magic, ENLNGDB_MAGIC_V4, 14) == 0;
+    bool v3 = v4 || memcmp(magic, ENLNGDB_MAGIC_V3, 14) == 0;
+    db->has_base = false;
     bool v2 = v3 || memcmp(magic, ENLNGDB_MAGIC, 14) == 0;
     if (!v2 && memcmp(magic, ENLNGDB_MAGIC_V1, 14) != 0) {
         eio_close(f);
@@ -1992,6 +2477,8 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
     }
 
     if (eio_read(db->name, 1, ENLNGDB_MAX_NAME, f) != ENLNGDB_MAX_NAME) { eio_close(f); return false; }
+    uint8_t file_id[16] = {0};
+    if (v4 && eio_read(file_id, 1, 16, f) != 16) { eio_close(f); return false; }
     int table_cnt = 0;
     if (eio_read(&table_cnt, sizeof(int), 1, f) != 1) { eio_close(f); return false; }
 
@@ -2066,7 +2553,10 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
         }
 
         if (v3) {
+            table_sig(tbl, tbl->base_sig);
+            tbl->base_pos = t;
             if (!load_rows_v3(tbl, f)) break;
+            if (!v4 || f->f || tbl->row_count > 0x7FFFFFF0u) tbl->base_rows = -1;      /* not a base for a log */
             continue;
         }
         size_t row_cnt = 0;
@@ -2204,7 +2694,22 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
             }
         }
     }
+    bool mem = in.f == NULL;
     eio_close(f);
+    if (v4 && mem && !db->encrypted) {
+        bool all = true;
+        for (int t = 0; t < db->table_count; t++) if (!db->tables[t].is_temp && db->tables[t].base_rows < 0) all = false;
+        if (all) {
+            db->has_base = true;
+            memcpy(db->file_id, file_id, 16);
+            extras_sig(db, db->extras_sig);
+            db->base_ntables = db->table_count;
+            db->base_len = in.len;
+            snprintf(db->base_path, sizeof(db->base_path), "%s", filepath);
+            /* the changes saved since, in the log */
+            if (!apply_wal(db, filepath)) return false;
+        }
+    }
     enlngdb_loaded_at = enlngdb_mutations;      /* the indexes kept in the file are good from here */
     return true;
 }

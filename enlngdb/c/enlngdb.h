@@ -17,6 +17,7 @@
 #define ENLNGDB_MAX_NAME 64
 #define ENLNGDB_MAGIC "ENLNG_C_EDB_V2"
 #define ENLNGDB_MAGIC_V3 "ENLNG_C_EDB_V3"     /* rows with their places, and lookup indexes, so a file opens without reading its rows */
+#define ENLNGDB_MAGIC_V4 "ENLNG_C_EDB_V4"     /* version 3 with a random id, which ties a log of changes (.edb-wal) to the file */
 #define ENLNGDB_STORED_MAX 8                  /* lookup indexes kept in the file for a table */
 #define ENLNGDB_MAGIC_V1 "ENLNG_C_EDB_V1"
 #define ENLNGDB_MAX_INDEXES 32
@@ -90,7 +91,8 @@ typedef struct {
 typedef struct {
     EnlngVal* cells;
     int cell_count;
-    int version;
+    int origin;                 /* the row's place in the full file the database was opened from; -1 for a row added
+                                   since. A save writes only what differs from that file (see the log, .edb-wal) */
 } EnlngRow;
 
 typedef struct {
@@ -111,7 +113,27 @@ typedef struct {
        yet has cell_count -1, and its 'cells' holds its place from 'lazy'; enlngdb_row reads it the first time. */
     const unsigned char* lazy;
     int nstored;                /* lookup indexes kept in the file: for a column, (hash, row) sorted by hash */
-    struct { int col; uint32_t n, nspill; const unsigned char* at; const unsigned char* spill; } stored[ENLNGDB_STORED_MAX];
+    struct {
+        int col; uint32_t n, nspill; const unsigned char* at; const unsigned char* spill;
+        /* the same column in order, for ranges and 'like "abc%"': its numbers (value 8 bytes, row 4) ascending, the rows
+           with a text in the order of the texts, and the rows with another kind of value; nulls are in none */
+        bool has_range; uint32_t nn, ns, no; const unsigned char* nums; const unsigned char* texts; const unsigned char* others;
+    } stored[ENLNGDB_STORED_MAX];
+    /* The table as it is in the full file last opened or saved ('base'): a save writes only what differs from it, to
+       the log (.edb-wal), while the columns and the other tables are the same. base_rows is -1 for a table not there. */
+    long long base_rows;
+    int base_pos;                       /* its place among the saved tables of that file */
+    const unsigned char* base_data;     /* its rows in that file, and the place of each */
+    const unsigned char* base_offs;
+    uint8_t base_width;
+    uint8_t base_sig[32];               /* SHA-256 of its columns and indexes as they were */
+    /* what the log changed when the file was opened: the indexes kept in the file still find the other rows */
+    bool wal_applied;
+    const unsigned char* wal_del;       /* rows of the file deleted (sorted places, 4 bytes each) */
+    uint32_t nwal_del;
+    const uint32_t* wal_set;            /* rows of the file changed (sorted) */
+    uint32_t nwal_set;
+    size_t wal_app_from;                /* the rows from here on were added */
 } EnlngTable;
 
 /* a trigger: statements run after each row that an insert, update or delete changed in a table */
@@ -185,6 +207,12 @@ typedef struct EnlngDatabase {
     unsigned char file_key[32]; /* PBKDF2-SHA-256 of the password with file_salt, file_rounds times */
     uint32_t file_rounds;
     void* sources;              /* the files (mapped) and buffers that rows not read yet come from; freed with the database */
+    bool has_base;              /* opened or saved as a full file of version 4: a save can write only the changes */
+    uint8_t file_id[16];
+    uint8_t extras_sig[32];     /* SHA-256 of the triggers, procedures, users and rights in that file */
+    int base_ntables;
+    size_t base_len;
+    char base_path[300];
 } EnlngDatabase;
 
 typedef struct {
@@ -324,13 +352,16 @@ void enlngdb_materialize(EnlngDatabase* db);
 extern bool (*enlngdb_value_hash)(const EnlngVal* v, uint64_t* h);
 /* enlngdb_mutations just after the last file was opened: the indexes kept in a file are good while it is the same */
 extern unsigned long long enlngdb_loaded_at;
+/* the text in column col of row b of the file the table was opened from (not ended by a zero byte); NULL if it is not a text */
+const char* enlngdb_base_text(const EnlngTable* t, size_t b, int col, size_t* len);
+#define ENLNGDB_STORED_RANGE 0x80000000u    /* in the count of kept indexes: each is followed by its column in order */
 
 /* --- Binary Disk Persistence --- */
 /* The password enlngdb_load uses when the file is encrypted (NULL: none); set it before, and clear it after. When
    the load fails, enlngdb_load_error says why: 1 the file is encrypted and no password was given, 2 the password is
    wrong (or the file was changed), 0 anything else. */
 extern const char* enlngdb_open_password;
-extern int enlngdb_load_error;
+extern int enlngdb_load_error;          /* also 3: the log of changes (.edb-wal) was damaged */
 /* turn the encryption of the file on with this password (a new salt each time), or off (password NULL) */
 bool enlngdb_set_password(EnlngDatabase* db, const char* password);
 bool enlngdb_save(const EnlngDatabase* db, const char* filepath);

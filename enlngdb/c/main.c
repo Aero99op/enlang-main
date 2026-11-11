@@ -518,14 +518,18 @@ typedef struct {
     int fails;
     time_t waiting_since;       /* a request waits for another client's transaction (0: none) */
     int at_reader;              /* the reader running its request (-1: none); its next requests wait for the answer */
+    char* held;                 /* the answer to a request that changed the database: sent when the change is on the disk */
+    bool held_failed;
 } Client;
 
 static void drop_client(Client* c) {
     q_close(c->link.sock);
     free(c->raw.p);
     free(c->in.p);
+    free(c->held);
     memset(c, 0, sizeof(*c));
     c->link.sock = QBAD;
+    c->at_reader = -1;
 }
 
 static bool reply(Client* c, const char* word, const char* text) { return send_msg(&c->link, word, text, strlen(text)); }
@@ -837,6 +841,7 @@ static int serve(const char** names, int nnames, const char* host, const char* p
     for (int i = 0; i < MAX_CLIENTS; i++) { memset(&cl[i], 0, sizeof(cl[i])); cl[i].link.sock = QBAD; cl[i].at_reader = -1; }
     int next_id = 1;
     bool quit = false;
+    bool more = false;
     while (!quit && !stopping()) {
         fd_set rd;
         FD_ZERO(&rd);
@@ -845,7 +850,8 @@ static int serve(const char** names, int nnames, const char* host, const char* p
         for (int i = 0; i < MAX_CLIENTS; i++) if (cl[i].link.sock != QBAD) { set_add(cl[i].link.sock, &rd); if ((int)cl[i].link.sock > top) top = (int)cl[i].link.sock; }
         if (rls != QBAD) { set_add(rls, &rd); if ((int)rls > top) top = (int)rls; }
         for (int i = 0; i < MAX_READERS; i++) if (rd_[i].link.sock != QBAD) { set_add(rd_[i].link.sock, &rd); if ((int)rd_[i].link.sock > top) top = (int)rd_[i].link.sock; }
-        struct timeval tv = {0, 200000};
+        struct timeval tv = {0, more ? 0 : 200000};      /* requests are waiting behind an answer that was held: no wait */
+        more = false;
         int r = p_select(top + 1, &rd, NULL, NULL, &tv);
         if (r < 0) continue;
         if (in_set(ls, &rd)) {
@@ -931,7 +937,7 @@ static int serve(const char** names, int nnames, const char* host, const char* p
         /* the requests that are all there, one client after another */
         for (int i = 0; i < MAX_CLIENTS && !quit; i++) {
             Client* c = &cl[i];
-            while (c->link.sock != QBAD && c->in.len > 0 && !quit && c->at_reader < 0) {
+            while (c->link.sock != QBAD && c->in.len > 0 && !quit && c->at_reader < 0 && !c->held) {
                 char word[32];
                 const char* body = NULL;
                 size_t bn = 0;
@@ -1024,10 +1030,18 @@ static int serve(const char** names, int nnames, const char* host, const char* p
                         unsigned long long before = enlngdb_mutations;
                         int failed = 0;
                         char* out = enlngdb_run_as(s->db, c->user, c->id, text, &failed);
-                        if (enlngdb_mutations != before) s->dirty = true;
+                        bool changed = enlngdb_mutations != before;
+                        if (changed) s->dirty = true;
                         s->txn_owner = s->db->txn ? (s->txn_owner ? s->txn_owner : c->id) : 0;
-                        send_msg(&c->link, failed ? "failed" : "ok", out ? out : "", out ? strlen(out) : 0);
-                        free(out);
+                        if (changed && !s->db->txn && out) {
+                            /* it changed the database: the answer waits until the change is on the disk. The requests
+                               of the other clients that are here now run first, and one save writes them all. */
+                            c->held = out;
+                            c->held_failed = failed != 0;
+                        } else {
+                            send_msg(&c->link, failed ? "failed" : "ok", out ? out : "", out ? strlen(out) : 0);
+                            free(out);
+                        }
                     }
                 } else {
                     reply(c, "denied", "the server knows: login, run, bye");
@@ -1050,6 +1064,26 @@ static int serve(const char** names, int nnames, const char* host, const char* p
                 sv[i].stale = !saved;
                 if (saved) sv[i].gen++;
             }
+        }
+        /* the answers that waited for the save */
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            Client* c = &cl[i];
+            if (!c->held) continue;
+            char* out = c->held;
+            c->held = NULL;
+            if (c->link.sock != QBAD) {
+                if (sv[c->dbi].stale) {
+                    const char* note = "\nERROR: the server could not write this change to its disk. It is in the server's memory, and is written with the next change that can be saved.\n";
+                    size_t a = strlen(out), b = strlen(note);
+                    char* both = (char*)malloc(a + b + 1);
+                    if (both) { memcpy(both, out, a); memcpy(both + a, note, b + 1); send_msg(&c->link, "failed", both, a + b); free(both); }
+                    else send_msg(&c->link, "failed", out, a);
+                } else {
+                    send_msg(&c->link, c->held_failed ? "failed" : "ok", out, strlen(out));
+                }
+                if (c->in.len > 0) more = true;
+            }
+            free(out);
         }
     }
     for (int i = 0; i < MAX_CLIENTS; i++) if (cl[i].link.sock != QBAD) drop_client(&cl[i]);

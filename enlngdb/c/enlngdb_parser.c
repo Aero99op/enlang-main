@@ -3564,6 +3564,38 @@ static int q_size_cmp(const void* a, const void* b) {
     return x < y ? -1 : x > y ? 1 : 0;
 }
 
+/* Rows found in an index of the file are rows of the file. When a log was applied on it, rows were deleted, changed
+   and added since: the deleted ones go, the others move up, and the changed and added rows are looked at too (the
+   'where' is tested on each). out has room for q_stored_extra(t) more rows. */
+static size_t q_stored_extra(const EnlngTable* t) {
+    return t->wal_applied ? t->nwal_set + (t->row_count - t->wal_app_from) : 0;
+}
+static size_t q_stored_fix(const EnlngTable* t, size_t* out, size_t c) {
+    if (!t->wal_applied) return c;
+    size_t w = 0;
+    for (size_t i = 0; i < c; i++) {
+        uint32_t b = (uint32_t)out[i];
+        size_t lo2 = 0, hi2 = t->nwal_del;
+        while (lo2 < hi2) { size_t m = (lo2 + hi2) / 2; uint32_t d; memcpy(&d, t->wal_del + m * 4, 4); if (d < b) lo2 = m + 1; else hi2 = m; }
+        uint32_t d = 0;
+        if (lo2 < t->nwal_del) memcpy(&d, t->wal_del + lo2 * 4, 4);
+        if (lo2 < t->nwal_del && d == b) continue;                      /* deleted */
+        size_t l3 = 0, h3 = t->nwal_set;
+        while (l3 < h3) { size_t m = (l3 + h3) / 2; if (t->wal_set[m] < b) l3 = m + 1; else h3 = m; }
+        if (l3 < t->nwal_set && t->wal_set[l3] == b) continue;          /* changed: added below */
+        out[w++] = b - lo2;
+    }
+    c = w;
+    for (uint32_t i = 0; i < t->nwal_set; i++) {
+        uint32_t b = t->wal_set[i];
+        size_t lo2 = 0, hi2 = t->nwal_del;
+        while (lo2 < hi2) { size_t m = (lo2 + hi2) / 2; uint32_t d; memcpy(&d, t->wal_del + m * 4, 4); if (d < b) lo2 = m + 1; else hi2 = m; }
+        out[c++] = b - lo2;
+    }
+    for (size_t r = t->wal_app_from; r < t->row_count; r++) out[c++] = r;
+    return c;
+}
+
 /* the rows of t that can have this value in column col, in row order; NULL if no index could be used */
 /* the rows of a lookup index kept in the file whose hash is h, and the rows it has no hash for, in row order */
 static size_t* q_stored_lookup(const EnlngTable* t, int col, uint64_t h, size_t* n_out) {
@@ -3581,11 +3613,13 @@ static size_t* q_stored_lookup(const EnlngTable* t, int col, uint64_t h, size_t*
         }
         size_t e = lo;
         while (e < n) { uint64_t mh; memcpy(&mh, at + e * 12, 8); if (mh != h) break; e++; }
-        size_t* out = (size_t*)malloc((e - lo + ns + 1) * sizeof(size_t));
+        size_t extra = t->wal_applied ? t->nwal_set + (t->row_count - t->wal_app_from) : 0;
+        size_t* out = (size_t*)malloc((e - lo + ns + extra + 1) * sizeof(size_t));
         if (!out) return NULL;
         size_t c = 0;
         for (size_t i = lo; i < e; i++) { uint32_t r; memcpy(&r, at + i * 12 + 8, 4); out[c++] = r; }
         for (uint32_t i = 0; i < ns; i++) { uint32_t r; memcpy(&r, t->stored[k].spill + (size_t)i * 4, 4); out[c++] = r; }
+        c = q_stored_fix(t, out, c);
         if (c > 1) qsort(out, c, sizeof(size_t), q_size_cmp);
         *n_out = c;
         return out;
@@ -3732,6 +3766,91 @@ static QRIdx* q_ridx_get(const EnlngTable* t, int col) {
     return x;
 }
 
+/* a text of the file (len letters, no zero byte at its end) against a bound, as str_ci_cmp does */
+static int q_filetext_cmp(const char* s, size_t len, const char* b) {
+    for (size_t i = 0; i < len; i++) {
+        int d = tolower((unsigned char)s[i]) - tolower((unsigned char)b[i]);
+        if (d) return d;
+        if (!b[i]) return 1;
+    }
+    return b[len] ? -1 : 0;
+}
+/* ... and its first plen letters against a start */
+static int q_filetext_prefix(const char* s, size_t len, const char* p, size_t plen) {
+    for (size_t i = 0; i < plen; i++) {
+        if (i >= len) return -1;
+        int d = tolower((unsigned char)s[i]) - tolower((unsigned char)p[i]);
+        if (d) return d;
+    }
+    return 0;
+}
+
+/* The column in order, as the file keeps it (for its key, unique columns and one-column indexes): a range or the
+   start of a text is found by halving, reading only the texts it compares, so a script that opens a file for one
+   range reads the rows of the range and no others. kind 1: numbers from dlo to dhi; kind 2: texts from slo to shi,
+   or that start with prefix. *decided says the file has the column in order: then the answer is the rows, or NULL
+   for 'read every row' (most rows are in the range), and no index is made in memory. */
+static size_t* q_stored_range(const EnlngTable* t, int col, int kind, bool has_lo, double dlo, const char* slo, bool has_hi, double dhi,
+                              const char* shi, const char* prefix, size_t plen, size_t* n_out, bool* decided) {
+    *decided = false;
+    if (!t->lazy || enlngdb_mutations != enlngdb_loaded_at) return NULL;
+    for (int k = 0; k < t->nstored; k++) {
+        if (t->stored[k].col != col || !t->stored[k].has_range) continue;
+        const unsigned char* nums = t->stored[k].nums;
+        const unsigned char* texts = t->stored[k].texts;
+        const unsigned char* others = t->stored[k].others;
+        size_t nn = t->stored[k].nn, ns = t->stored[k].ns, no = t->stored[k].no;
+        size_t from = 0, to = 0;
+        if (kind == 1) {
+            const double eps = 1e-9;
+            size_t a = 0, b = nn;
+            if (has_lo) { size_t l = 0, h = nn; while (l < h) { size_t m = l + (h - l) / 2; double v; memcpy(&v, nums + m * 12, 8); if (v < dlo - eps) l = m + 1; else h = m; } a = l; }
+            if (has_hi) { size_t l = a, h = nn; while (l < h) { size_t m = l + (h - l) / 2; double v; memcpy(&v, nums + m * 12, 8); if (v <= dhi + eps) l = m + 1; else h = m; } b = l; }
+            from = a; to = b < a ? a : b;
+        } else {
+            size_t a = 0, b = ns;
+            for (int side = 0; side < 2; side++) {
+                const char* bound = prefix ? prefix : side == 0 ? slo : shi;
+                if (!bound) continue;
+                size_t l = side == 0 ? 0 : a, h = ns;
+                while (l < h) {
+                    size_t m = l + (h - l) / 2;
+                    uint32_t r;
+                    memcpy(&r, texts + m * 4, 4);
+                    size_t len = 0;
+                    const char* s = enlngdb_base_text(t, r, col, &len);
+                    if (!s) return NULL;                    /* not what the index says: read the rows */
+                    int c = prefix ? q_filetext_prefix(s, len, prefix, plen) : q_filetext_cmp(s, len, bound);
+                    if (side == 0 ? c < 0 : c <= 0) l = m + 1; else h = m;
+                }
+                if (side == 0) a = l; else b = l;
+            }
+            from = a; to = b < a ? a : b;
+        }
+        *decided = true;
+        size_t n = (to - from) + (kind == 1 ? ns : nn) + no;
+        size_t extra = q_stored_extra(t);
+        if ((n + extra) * 2 > t->row_count) return NULL;
+        size_t* out = (size_t*)malloc((n + extra + 1) * sizeof(size_t));
+        if (!out) return NULL;
+        size_t c = 0;
+        uint32_t r;
+        if (kind == 1) {
+            for (size_t i = from; i < to; i++) { memcpy(&r, nums + i * 12 + 8, 4); out[c++] = r; }
+            for (size_t i = 0; i < ns; i++) { memcpy(&r, texts + i * 4, 4); out[c++] = r; }
+        } else {
+            for (size_t i = from; i < to; i++) { memcpy(&r, texts + i * 4, 4); out[c++] = r; }
+            for (size_t i = 0; i < nn; i++) { memcpy(&r, nums + i * 12 + 8, 4); out[c++] = r; }
+        }
+        for (size_t i = 0; i < no; i++) { memcpy(&r, others + i * 4, 4); out[c++] = r; }
+        c = q_stored_fix(t, out, c);
+        if (c > 1) qsort(out, c, sizeof(size_t), q_size_cmp);
+        *n_out = c;
+        return out;
+    }
+    return NULL;
+}
+
 /* a bound of a range: lo/hi may be NULL (open); returns the candidate rows in row order, or NULL to read every row */
 static size_t* q_ridx_lookup(const EnlngTable* t, int col, const EnlngVal* lo, const EnlngVal* hi, size_t* n_out) {
     if (t->row_count < Q_IDX_MIN_ROWS || (!lo && !hi)) return NULL;
@@ -3740,6 +3859,12 @@ static size_t* q_ridx_lookup(const EnlngTable* t, int col, const EnlngVal* lo, c
     if ((lo && (klo == 0 || klo == 3)) || (hi && (khi == 0 || khi == 3))) return NULL;
     if (lo && hi && klo != khi) hi = NULL;          /* a number and a text: one bound is enough */
     int kind = lo ? klo : khi;
+    {
+        bool decided = false;
+        size_t* got = q_stored_range(t, col, kind, lo != NULL, dlo, lo && kind == 2 ? (lo->str_val ? lo->str_val : "") : NULL, hi != NULL, dhi,
+                                     hi && kind == 2 ? (hi->str_val ? hi->str_val : "") : NULL, NULL, 0, n_out, &decided);
+        if (decided) return got;
+    }
     QRIdx* x = q_ridx_get(t, col);
     if (!x) return NULL;
     size_t from = 0, to = 0, nmore = 0;
@@ -4089,6 +4214,11 @@ static int q_prefix_cmp(const char* s, const char* p, size_t plen) {
    index), and every number and other value (they are compared as text too); NULL to read every row */
 static size_t* q_ridx_prefix(const EnlngTable* t, int col, const char* prefix, size_t plen, size_t* n_out) {
     if (t->row_count < Q_IDX_MIN_ROWS || plen == 0) return NULL;
+    {
+        bool decided = false;
+        size_t* got = q_stored_range(t, col, 2, false, 0, NULL, false, 0, NULL, prefix, plen, n_out, &decided);
+        if (decided) return got;
+    }
     QRIdx* x = q_ridx_get(t, col);
     if (!x) return NULL;
     q_rs_t = t;
@@ -4130,6 +4260,12 @@ static bool q_where_prefix(const QExpr* w, const QSet* S, int* col, const char**
     return true;
 }
 
+/* the file keeps a lookup index (or, with ordered, the column in order) for this column */
+static bool q_stored_has(const EnlngTable* t, int col, bool ordered) {
+    for (int k = 0; k < t->nstored; k++) if (t->stored[k].col == col && (!ordered || t->stored[k].has_range)) return true;
+    return false;
+}
+
 /* two lists of rows in row order, joined without repeats */
 static size_t* q_rows_union(size_t* a, size_t na, size_t* b, size_t nb, size_t* n_out) {
     size_t* out = (size_t*)malloc((na + nb + 1) * sizeof(size_t));
@@ -4165,7 +4301,21 @@ static size_t* q_where_cands(const EnlngTable* t, const QExpr* w, const QSet* S,
     int col = -1;
     const EnlngVal* key = NULL;
     size_t* c = NULL;
-    if (q_where_key(w, S, &col, &key)) c = q_idx_lookup(t, col, key, n_out);
+    bool has_key = q_where_key(w, S, &col, &key);
+    if (t->lazy && enlngdb_mutations == enlngdb_loaded_at && !(has_key && q_stored_has(t, col, false))) {
+        /* the file was just opened, and it keeps no lookup index for the 'column is value' here (or there is none):
+           a range or the start of a text that the file keeps in order is used first, because an index made in
+           memory would read every row */
+        const EnlngVal *flo = NULL, *fhi = NULL;
+        int fcol = -1;
+        if (q_where_range(w, S, &fcol, &flo, &fhi) && q_stored_has(t, fcol, true)) c = q_ridx_lookup(t, fcol, flo, fhi, n_out);
+        if (c) return c;
+        const char* fprefix = NULL;
+        size_t fplen = 0;
+        if (q_where_prefix(w, S, &fcol, &fprefix, &fplen) && q_stored_has(t, fcol, true)) c = q_ridx_prefix(t, fcol, fprefix, fplen, n_out);
+        if (c) return c;
+    }
+    if (has_key) c = q_idx_lookup(t, col, key, n_out);
     if (c) return c;
     const EnlngVal *lo = NULL, *hi = NULL;
     if (q_where_range(w, S, &col, &lo, &hi)) c = q_ridx_lookup(t, col, lo, hi, n_out);
@@ -5494,7 +5644,7 @@ static EnlngRow q_row_dup(const EnlngRow* src) {
     if (src->cell_count < 0) return *src;      /* not read from its file: its place is copied */
     EnlngRow d;
     d.cell_count = src->cell_count;
-    d.version = src->version;
+    d.origin = src->origin;
     d.cells = (EnlngVal*)malloc((size_t)(src->cell_count ? src->cell_count : 1) * sizeof(EnlngVal));
     if (!d.cells) { d.cell_count = 0; return d; }
     for (int c = 0; c < src->cell_count; c++) d.cells[c] = enlng_copy_val(&src->cells[c]);
@@ -6460,7 +6610,6 @@ static bool q_insert_rows(QRun* R, EnlngTable* t, QInRow* rows, int nrows, int* 
                 enlng_free_val(&row->cells[c]);
                 row->cells[c] = enlng_copy_val(&cells[c]);
             }
-            row->version++;
             t->version++;
             (*replaced)++;
             q_sidx_note(t, (size_t)target);
@@ -6495,7 +6644,7 @@ static bool q_insert_rows(QRun* R, EnlngTable* t, QInRow* rows, int nrows, int* 
     for (size_t u = 0; u < nundo; u++) {
         /* a replaced row: undo keeps its old cells */
         EnlngRow* old = (EnlngRow*)malloc(sizeof(EnlngRow));
-        if (old) { old->cells = undo[u].cells; old->cell_count = undo[u].cc; old->version = 0; }
+        if (old) { old->cells = undo[u].cells; old->cell_count = undo[u].cc; old->origin = t->rowv[undo[u].r].origin; }
         if (!old || !q_jr_rows(t, &undo[u].r, old, 1)) {
             for (int c = 0; c < undo[u].cc; c++) enlng_free_val(&undo[u].cells[c]);
             free(undo[u].cells);
@@ -8411,6 +8560,7 @@ static bool q_export_csv(EnlngDatabase* db, const char* stmt, bool print_output)
  * only reads; when in doubt it is a change (the cost is only a save). */
 static bool q_changed = true;
 static bool q_just_opened = false;  /* the statement running opened a file (its kept indexes are good after it) */
+static int q_lock_reason = 0;       /* why the open database is locked: 1 or 2 encrypted, 3 its log is damaged */
 
 static bool q_reads_only(const char* st) {
     static const char* words[] = {"find", "select", "fetch", "get", "show", "count", "describe", "explain", "export", "preview"};
@@ -8476,11 +8626,17 @@ static bool q_open_file(EnlngDatabase* db, const char* path, bool there, const c
     if (ok) q_just_opened = true;
     if (!ok && enlngdb_load_error) {
         db->locked = true;
+        q_lock_reason = enlngdb_load_error;
         char e2[300];
-        if (enlngdb_load_error == 1) snprintf(e2, sizeof(e2), "the database '%s' is encrypted, and no password was given", db->name);
-        else snprintf(e2, sizeof(e2), "the password of database '%s' is wrong (or its file was changed)", db->name);
-        char hint[200];
-        snprintf(hint, sizeof(hint), "Open it with: use database %s with password \"...\"  (or set ENLNGDB_DB_PASSWORD). Its file is not touched.", db->name);
+        char hint[300];
+        if (enlngdb_load_error == 3) {
+            snprintf(e2, sizeof(e2), "the log of changes of database '%s' (%s-wal) is damaged, so the database was not opened", db->name, path);
+            snprintf(hint, sizeof(hint), "The file and the log are left as they are. Without the log (move it away) the database is as it was at its last full save, and the changes in the log are lost.");
+        } else {
+            if (enlngdb_load_error == 1) snprintf(e2, sizeof(e2), "the database '%s' is encrypted, and no password was given", db->name);
+            else snprintf(e2, sizeof(e2), "the password of database '%s' is wrong (or its file was changed)", db->name);
+            snprintf(hint, sizeof(hint), "Open it with: use database %s with password \"...\"  (or set ENLNGDB_DB_PASSWORD). Its file is not touched.", db->name);
+        }
         q_print_error(print_output, e2, hint);
         return false;
     }
@@ -10051,9 +10207,14 @@ static bool q_execute_statement(EnlngDatabase* db, const char* statement, bool p
     if (db->locked && q_depth == 0) {
         const char* st = q_ws(statement);
         if (!str_starts_with_ci(st, "use ") && !str_starts_with_ci(st, "type ") && !str_starts_with_ci(st, "show databases")) {
-            char e2[200], hint[200];
-            snprintf(e2, sizeof(e2), "the database '%s' is encrypted and was not opened", db->name);
-            snprintf(hint, sizeof(hint), "Open it with: use database %s with password \"...\"  (or set ENLNGDB_DB_PASSWORD).", db->name);
+            char e2[300], hint[300];
+            if (q_lock_reason == 3) {
+                snprintf(e2, sizeof(e2), "the database '%s' was not opened: the log of its changes (.edb-wal) is damaged", db->name);
+                snprintf(hint, sizeof(hint), "Nothing runs on it, and nothing is written. Without the log (move it away) it opens as it was at its last full save.");
+            } else {
+                snprintf(e2, sizeof(e2), "the database '%s' is encrypted and was not opened", db->name);
+                snprintf(hint, sizeof(hint), "Open it with: use database %s with password \"...\"  (or set ENLNGDB_DB_PASSWORD).", db->name);
+            }
             q_print_error(print_output, e2, hint);
             return false;
         }
@@ -10761,7 +10922,12 @@ static bool q_execute_line(EnlngDatabase* db, char* line, bool print_output) {
             }
             return false;
         }
-        if (has_file) remove(path);
+        if (has_file) {
+            remove(path);
+            char wal[300];
+            snprintf(wal, sizeof(wal), "%s-wal", path);
+            remove(wal);        /* its log of changes goes with it */
+        }
         if (is_open) {
             enlngdb_clear(db);
             db->dropped = true;
@@ -11168,7 +11334,7 @@ int enlngdb_run_file(const char* filepath) {
     {
         const char* env = getenv("ENLNGDB_DB_PASSWORD");
         enlngdb_open_password = env && *env ? env : NULL;
-        if (!enlngdb_load(db, edb_file) && enlngdb_load_error) db->locked = true;     /* said by its first statement */
+        if (!enlngdb_load(db, edb_file) && enlngdb_load_error) { db->locked = true; q_lock_reason = enlngdb_load_error; }   /* said by its first statement */
         enlngdb_open_password = NULL;
     }
     q_changed = false;

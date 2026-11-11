@@ -154,10 +154,13 @@ def as_version2(data, count_bytes):
         n = struct.unpack("<I", take(4))[0]
         take(n)
 
-    assert data[:14] == b"ENLNG_C_EDB_V3"
+    assert data[:14] in (b"ENLNG_C_EDB_V3", b"ENLNG_C_EDB_V4")
+    v4 = data[:14] == b"ENLNG_C_EDB_V4"
     i = 16
     b.extend(b"ENLNG_C_EDB_V2\0\0")
     take(64)
+    if v4:
+        take(16, False)                              # the id of the file (version 4)
     ntab = struct.unpack("<i", take(4))[0]
     for _ in range(ntab):
         take(64)
@@ -184,9 +187,14 @@ def as_version2(data, count_bytes):
         take(total)                                  # the rows are the same in both versions
         take(rows * width, False)                    # the places of the rows
         nstored = struct.unpack("<I", take(4, False))[0]
-        for _ in range(nstored):
+        ordered = nstored & 0x80000000               # each index is followed by its column in order
+        for _ in range(nstored & 0x7FFFFFFF):
             col, n, ns = struct.unpack("<III", take(12, False))
             take(n * 12 + ns * 4, False)
+            if ordered:
+                take(struct.unpack("<I", take(4, False))[0] * 12, False)     # numbers: value and row
+                take(struct.unpack("<I", take(4, False))[0] * 4, False)      # rows with a text
+                take(struct.unpack("<I", take(4, False))[0] * 4, False)      # rows with another kind
     b.extend(data[i:])
     return bytes(b)
 
@@ -227,7 +235,9 @@ def main():
         check("30,000 rows with 4 MB of memory and the rest in the file: the same answers as all in memory",
               code == 0 and no_times(plain) == no_times(spilled) and m and float(m.group(2)) > 10 and float(m.group(1)) <= 4.5,
               (code, err[-300:], [x for x in zip(no_times(plain).splitlines(), no_times(spilled).splitlines()) if x[0] != x[1]][:3]))
-        same_file = open(os.path.join(TMP, "spill.edb"), "rb").read() == open(os.path.join(TMP, "spill_plain.edb"), "rb").read()
+        a_bytes = open(os.path.join(TMP, "spill.edb"), "rb").read()
+        b_bytes = open(os.path.join(TMP, "spill_plain.edb"), "rb").read()
+        same_file = a_bytes[:80] + a_bytes[96:] == b_bytes[:80] + b_bytes[96:]     # all but the random id of each file
         check("... and the same file", same_file)
 
         # ---- 2. a folder for the file that cannot be used: the engine goes on with the memory of the system ----
@@ -306,7 +316,10 @@ def main():
               code == 0 and os.path.getmtime(path) == old_time and open(path, "rb").read() == before, (code, out[-300:]))
         write("rw.enlngdb", "type enlngdb\nuse database c\nfind count(*) from t\nupdate t set v = 3 where id is 5\n")
         run("rw.enlngdb")
-        check("... and one that changes a row writes it", os.path.getmtime(path) != old_time and cells(run("chk.enlngdb")[1])[0] == "200000")
+        wal = path + "-wal"
+        check("... and one that changes a row writes only the change, to the log beside the file",
+              os.path.getmtime(path) == old_time and os.path.exists(wal) and os.path.getsize(wal) < os.path.getsize(path) / 10
+              and cells(run("chk.enlngdb")[1])[0] == "200000", (os.path.exists(wal) and os.path.getsize(wal)))
 
         # ---- 6. a file with the row counts in 8 bytes (written by a 64-bit program before) reads the same ----
         write("fmk.enlngdb", 'type enlngdb\nuse database f\ncreate table a with id integer primary key, name text\n'
@@ -320,7 +333,7 @@ def main():
         _, four, _ = run("frd.enlngdb")
         fpath = os.path.join(TMP, "f.edb")
         data = open(fpath, "rb").read()
-        check("the file is version 3: rows with their places, and the lookup index of the key", data[:14] == b"ENLNG_C_EDB_V3")
+        check("the file is version 4: rows with their places, the lookup index of the key, and its id", data[:14] == b"ENLNG_C_EDB_V4")
         open(fpath, "wb").write(as_version2(data, 4))
         _, older, _ = run("frd.enlngdb")
         check("a version 2 file (the row counts in 4 bytes, as the 32-bit programs wrote it) reads the same",
@@ -332,7 +345,7 @@ def main():
         write("fadd.enlngdb", 'type enlngdb\nuse database f\ninsert into a values (4, "four")\n')
         run("fadd.enlngdb")
         _, again, _ = run("frd.enlngdb")
-        check("... saved again, it is written as version 3", open(fpath, "rb").read()[:14] == b"ENLNG_C_EDB_V3" and "four" in again, again[-300:])
+        check("... saved again, it is written as version 4", open(fpath, "rb").read()[:14] == b"ENLNG_C_EDB_V4" and "four" in again, again[-300:])
 
         # ---- 7. a file opens without reading its rows; a lookup by the key uses the index kept in the file ----
         n = 200000
@@ -364,7 +377,88 @@ def main():
         check("... saved (the rows never read copied as their bytes) and opened again: the change is there, with a new index",
               cells(out) == ["name 5 with some words", "0", "name 200000 with some words"], out[-500:])
         data = open(os.path.join(TMP, "lz.edb"), "rb").read()
-        check("... the file is version 3", data[:14] == b"ENLNG_C_EDB_V3")
+        check("... the file is version 4", data[:14] == b"ENLNG_C_EDB_V4")
+
+        # ---- 8. the log of changes (.edb-wal) ----
+        lz = os.path.join(TMP, "lz.edb")
+        wal = lz + "-wal"
+        size_before = os.path.getsize(lz)
+        mtime_before = os.path.getmtime(lz)
+        write("w1.enlngdb", 'type enlngdb\nuse database lz\nupdate t set v = -3 where id is 10\ninsert into t values (500000, "added", 1)\n'
+              "delete from t where id is 11\n")
+        code, out, err = run("w1.enlngdb")
+        check("a change of three rows is saved in the log (%d bytes), and the file of %d MB is not written"
+              % (os.path.getsize(wal) if os.path.exists(wal) else -1, size_before >> 20),
+              code == 0 and os.path.getmtime(lz) == mtime_before and os.path.getsize(wal) < 5000, out[-300:])
+        write("w2.enlngdb", "type enlngdb\nuse database lz\nfind v from t where id is 10\nfind name from t where id is 500000\n"
+              "find count(*) from t where id is 11\nfind name from t where id is 12\nfind name from t where id is 999999\ncount records in t\n")
+        code, out, err = run("w2.enlngdb", env_with(ENLNGDB_MEMSTAT="1"))
+        m = re.search(r"([0-9.]+) MB in memory at most", err)
+        check("... opened again: the changes are there, found by the index of the file with what the log changed (%s MB)" % (m.group(1) if m else "?"),
+              cells(out) == ["-3", "added", "0", "name 12 with some words", "name 5 with some words", "199999"] and m and float(m.group(1)) < 12, (cells(out), err[-200:]))
+        for k in range(3):
+            write("w3.enlngdb", 'type enlngdb\nuse database lz\nupdate t set v = %d where id is 20\n' % (100 + k))
+            run("w3.enlngdb")
+        code, out, err = run("w2.enlngdb")
+        check("... more saves: the log holds what differs from the file, not each save", os.path.getsize(wal) < 5000 and os.path.getmtime(lz) == mtime_before, os.path.getsize(wal))
+        # a damaged log: nothing is opened, and nothing is written
+        good_wal = open(wal, "rb").read()
+        bad = bytearray(good_wal)
+        bad[40] ^= 1
+        open(wal, "wb").write(bytes(bad))
+        code, out, err = run("w1.enlngdb")
+        check("a damaged log: the database is not opened, and neither the file nor the log is written",
+              "log of changes" in out and "damaged" in out and open(wal, "rb").read() == bytes(bad) and os.path.getmtime(lz) == mtime_before, out[-400:])
+        open(wal, "wb").write(good_wal)
+        # a change of the columns writes the full file again, and the log goes
+        write("w4.enlngdb", "type enlngdb\nuse database lz\nalter table t add column note text\n")
+        run("w4.enlngdb")
+        check("a change of the columns: the full file is written again, and the log is removed",
+              not os.path.exists(wal) and os.path.getmtime(lz) != mtime_before, os.path.exists(wal))
+        code, out, err = run("w2.enlngdb")
+        check("... with every change of the log in it", cells(out)[:5] == ["-3", "added", "0", "name 12 with some words", "name 5 with some words"], cells(out))
+        # an old log (of the file before) is left alone
+        open(wal, "wb").write(good_wal)
+        code, out, err = run("w2.enlngdb")
+        check("a log of the file before it was written again is not used", cells(out)[:2] == ["-3", "added"] and code == 0, out[-300:])
+        os.remove(wal)
+        # many changes: past a quarter of the file (at least 4 MB) the full file is written instead
+        write("w5.enlngdb", 'type enlngdb\nuse database lz\nupdate t set name = "a much longer name than before, for the log" where v < 600\n')
+        mtime2 = os.path.getmtime(lz)
+        run("w5.enlngdb")
+        check("many rows changed: the full file is written instead of a big log",
+              not os.path.exists(wal) and os.path.getmtime(lz) != mtime2, os.path.exists(wal) and os.path.getsize(wal))
+
+        # ---- 9. ranges and 'like "abc%"' use the column in order that the file keeps ----
+        n = 120000
+        with open(os.path.join(TMP, "rg.csv"), "w") as f:
+            f.write("id,name,v\n")
+            for i in range(n):
+                f.write("%d,name%07d x,%d\n" % (i, (i * 7919) % n, i % 1000))
+        write("rg_make.enlngdb", 'type enlngdb\nuse database rg\ncreate table t (id int primary key, name text unique, v int)\nimport "rg.csv" into t\n')
+        run("rg_make.enlngdb")
+        queries = ("find count(*) from t where id > %d\nfind count(*) from t where id between 1000 and 1040\n"
+                   'find count(*) from t where name like "name00001%%"\nfind count(*) from t where name > "name0000500" and name < "name0000520"\n'
+                   "find count(*) from t where id <= 9\nfind count(*) from t where id >= 50 and id < 60 and v is 55\n" % (n - 50))
+        write("rg_q.enlngdb", "type enlngdb\nuse database rg\n" + queries)
+        code, out, err = run("rg_q.enlngdb", env_with(ENLNGDB_MEMSTAT="1"))
+        m = re.search(r"([0-9.]+) MB in memory at most", err)
+        check("ranges and the start of a text are found in the file's index: only their rows are read (%s MB for %d rows)" % (m.group(1) if m else "?", n),
+              cells(out) == ["49", "41", "100", "20", "10", "1"] and m and float(m.group(1)) < 8, (cells(out), err[-200:]))
+        write("rg_all.enlngdb", "type enlngdb\nuse database rg\nfind count(*) from t where v < 1\nfind count(*) from t where id > 5\n")
+        code, out, err = run("rg_all.enlngdb")
+        check("... a column without an index, and a range of most rows, read every row and give the same", cells(out) == ["120", str(n - 6)], cells(out))
+        write("rg_ch.enlngdb", 'type enlngdb\nuse database rg\nupdate t set name = "zzz moved" where id is 1010\ndelete from t where id is 1020\n'
+              'insert into t values (%d, "name0000100 zz", 3)\nupdate t set id = 1020 where id is 7\n' % (n + 5))
+        run("rg_ch.enlngdb")
+        code, out, err = run("rg_q.enlngdb", env_with(ENLNGDB_MEMSTAT="1"))
+        with_index = cells(out)
+        m = re.search(r"([0-9.]+) MB in memory at most", err)
+        check("... after changes saved in the log: the index of the file with what the log changed (%s MB)" % (m.group(1) if m else "?"),
+              os.path.exists(os.path.join(TMP, "rg.edb-wal")) and with_index[0] == "50" and with_index[1] == "41" and with_index[4] == "9" and m and float(m.group(1)) < 9, (cells(out), err[-200:]))
+        write("rg_same.enlngdb", "type enlngdb\nuse database rg\nfind count(*) from t where v < 2000\n" + queries)      # every row is read first
+        code, out, err = run("rg_same.enlngdb")
+        check("... and the same answers when every row was read before", cells(out)[1:] == with_index and len(with_index) == 6, (cells(out), with_index))
     finally:
         shutil.rmtree(TMP, ignore_errors=True)
     print("%d passed, %d failed" % (passed, failed))
