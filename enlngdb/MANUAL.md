@@ -319,7 +319,7 @@ drop column phone_number from users confirmed
 ---
 
 ### 4.4 Destructive Operations & The Mandatory Safety Guard (`confirmed`)
-To protect against accidental data loss, **EnlngDB enforces a strict confirmation protocol**. Any unconstrained destructive command missing the `confirmed` keyword will fail immediately with a compilation error.
+A statement that changes or removes a whole table at once needs the word `confirmed` at its end. Without it nothing is changed, and the engine prints what to write. This covers: `drop table`, `drop database`, `truncate table`, `drop column` (both forms), `delete` and `update` with no `where`, `delete` and `update` whose `where` every row of the table meets (on a table of two rows or more), and `import` when rows of the file have the key of rows already in the table. An `update` or `delete` that leaves some rows alone, or has a `limit`, needs no `confirmed`; neither does `insert`, which replaces one row with the same key and says so. `preview` runs any of them without asking, and changes nothing.
 
 ```enlngdb
 # ❌ THIS WILL FAIL WITH A PARSER ERROR:
@@ -339,6 +339,14 @@ drop database test_db
 
 # ✅ CORRECT:
 drop database test_db confirmed
+
+# ❌ REFUSED: every row would change
+update users set active = 0
+update users set active = 0 where id > 0
+
+# ✅ CORRECT:
+update users set active = 0 confirmed
+update users set active = 0 where city is "Pune"
 ```
 
 ---

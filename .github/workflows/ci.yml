@@ -3,6 +3,7 @@ name: Toolchain CI
 on:
   push:
     branches:
+      - 'main'
       - 'fix/installers'
   pull_request:
     branches:
@@ -11,9 +12,86 @@ on:
   workflow_dispatch:
 
 env:
-  TOOLCHAIN_VERSION: "5.5.1"
+  TOOLCHAIN_VERSION: "5.6.0"     # must be ENLANGG_VERSION of src/enlangg_version.h: the job 'version' checks it
 
 jobs:
+  version:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: The tools say the version this workflow expects
+        run: |
+          set -eu
+          src=$(sed -n 's/^#define ENLANGG_VERSION "\(.*\)"/\1/p' src/enlangg_version.h | tr -d '\r')
+          echo "src/enlangg_version.h: $src   workflow: $TOOLCHAIN_VERSION"
+          if [ "$src" != "$TOOLCHAIN_VERSION" ]; then
+            echo "::error title=Version::src/enlangg_version.h says $src, the workflows say $TOOLCHAIN_VERSION. Change TOOLCHAIN_VERSION in ci.yml and release.yml."
+            exit 1
+          fi
+          inst=$(sed -n 's/^TOOLS_VERSION="\(.*\)"/\1/p' website/install.sh | tr -d '\r')
+          if [ "$inst" != "$TOOLCHAIN_VERSION" ]; then
+            echo "::error title=Version::website/install.sh installs $inst, the workflows say $TOOLCHAIN_VERSION. Change TOOLS_VERSION in install.sh."
+            exit 1
+          fi
+
+  # The database engine's own tests, on Linux and macOS (the Windows builds are tested where they are made)
+  test-enlngdb:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run the EnlngDB test suites
+        run: |
+          set +e
+          cc --version | head -n 1
+          bad=0
+          for t in sql queries confirmed more limits storage types server firstrun; do
+            echo "=== $t"
+            ENLNGDB_TEST_CC=cc python3 tests/test_enlngdb_$t.py > "out_$t.log" 2>&1
+            code=$?
+            grep -E '^FAIL|passed,' "out_$t.log"
+            if [ "$code" -ne 0 ]; then
+              bad=1
+              echo "::error title=enlngdb $t on ${{ matrix.os }}::$(grep -E '^FAIL|Error|rror:' out_$t.log | head -5 | tr '\n' ' ' | cut -c1-600)"
+            fi
+          done
+          exit $bad
+      - name: Upload the logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: enlngdb-tests-${{ matrix.os }}
+          path: out_*.log
+
+  # website/install.sh, as a user runs it when there is no prebuilt archive: it builds the seven tools from source
+  test-install-from-source:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install from this checkout into a new home, then use enlngdb
+        run: |
+          set -eu
+          export HOME="$(mktemp -d)"
+          cp website/install.sh ./install-here.sh
+          sh ./install-here.sh
+          "$HOME/.enlangg/bin/enlngdb" --version | grep -F "$TOOLCHAIN_VERSION"
+          cd "$(mktemp -d)"
+          printf 'use database shop\ncreate table pets with id integer primary key, name text\ninsert into pets values (1, "Tom")\nfind * from pets\n' > shop.enlngdb
+          "$HOME/.enlangg/bin/enlngdb" shop.enlngdb | tee out.txt
+          grep -q "Tom" out.txt
+          test -f shop.edb
+          for t in enlangg enlng enlngdb enlngf enlngd enlngs enlngm; do test -x "$HOME/.enlangg/bin/$t"; done
+
   build-linux-x86_64:
     runs-on: ubuntu-22.04
     steps:

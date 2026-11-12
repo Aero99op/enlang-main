@@ -54,7 +54,7 @@ find id, name, balance, age from users
 - **`NULL`:** `is null` and `is not null`, as in SQL. A comparison with `null` is never true, as in SQL.
 - **Strings:** `+` joins two texts, and so does SQL's `||`.
 - **A key:** a table's key is the column marked `primary key`, or a column called `id`. Inserting a row with a key that exists replaces that row, where SQL would refuse. The engine says that it replaced a row.
-- **Destructive statements:** `drop`, `truncate` and `delete` without `where` need the word `confirmed`.
+- **Statements that change a whole table:** `drop`, `truncate`, `drop column`, an `update` or `delete` with no `where` (or one every row meets), and an `import` that writes over rows need the word `confirmed` at the end. SQL runs `UPDATE users SET active = 0` at once; EnlngDB asks for `update users set active = 0 confirmed`.
 - **Types:** `integer`, `real`, `text`, `boolean`, `date`. A column with no type holds anything.
 - **Users:** `create user`, `grant` and `revoke` work as in SQL, and the server checks them (chapter 14). A database can be larger than memory (chapter 15).
 - **More than SQL:** `preview`, `undo`, CSV files and `confirmed` (chapter 15), and triggers, procedures and "did you mean" suggestions (chapter 16).

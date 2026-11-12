@@ -5,6 +5,9 @@
  * =====================================================================
  */
 
+#ifndef _WIN32
+#include <sys/wait.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -743,6 +746,11 @@ int main(int argc, char* argv[]) {
         free(wrapped);
 #else
         exec_ret = system(full_cmd);
+        /* system() gives the wait status: the program's exit code is in it (as is, 256 for exit 1, which a shell
+           sees as 0, so a program that stopped on an error looked as if it had worked) */
+        if (exec_ret != -1 && WIFEXITED(exec_ret)) exec_ret = WEXITSTATUS(exec_ret);
+        else if (exec_ret != -1 && WIFSIGNALED(exec_ret)) exec_ret = 128 + WTERMSIG(exec_ret);
+        else if (exec_ret == -1) exec_ret = 1;
 #endif
         free(full_cmd);
         remove(temp_exe);

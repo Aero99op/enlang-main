@@ -320,7 +320,7 @@ def main():
         out = run("create table s with id integer primary key, v integer\ncreate table lg with msg text\n"
                   "create trigger t1 after update on s do insert into lg values (\"id \" + old.id + \" to \" + new.id)\n"
                   "insert into s values (1, 1)\nupdate s set id = 7 where id is 1\nfind msg from lg\ncreate table k with a integer, b integer\ncreate table lk with msg text\n"
-                  "create trigger t2 after update on k do insert into lk values (new.a + new.b)\ninsert into k values (1, 2), (3, 4)\nupdate k set b = b + 10\nfind msg from lk\n")
+                  "create trigger t2 after update on k do insert into lk values (new.a + new.b)\ninsert into k values (1, 2), (3, 4)\nupdate k set b = b + 10 confirmed\nfind msg from lk\n")
         t = tables(out)
         check("an update that changes the key, and an update of a table without a key, fire the update trigger",
               [r[0] for r in t[0][1:]] == ["id 1 to 7"] and [r[0] for r in t[1][1:]] == ["13", "17"], out[-600:])

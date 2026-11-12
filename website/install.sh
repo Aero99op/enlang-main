@@ -41,8 +41,21 @@ echo "${YELLOW}>> Target Platform: $OS ($ARCH)${NC}"
 echo "${YELLOW}>> Installing 7 Sovereign Executables to: $INSTALL_DIR ...${NC}"
 
 GITHUB_REPO="Aero99op/enlang-main"
-ARCHIVE_NAME="enlangg-${OS}-${ARCH}.tar.gz"
-RELEASE_BASE="https://github.com/$GITHUB_REPO/releases/latest/download"
+# the archives a toolchain release has (the names its workflow gives them)
+case "$OS-$ARCH" in
+    linux-amd64) ARCHIVE_NAME="enlangg-linux-x86_64.tar.gz" ;;
+    linux-arm64) ARCHIVE_NAME="enlangg-linux-aarch64.tar.gz" ;;
+    darwin-*) ARCHIVE_NAME="enlangg-macos-universal.tar.gz" ;;
+    *) ARCHIVE_NAME="" ;;
+esac
+# the release of exactly this version of the tools (an older release would install older tools): when it is not
+# there yet, the tools are built from source
+TOOLS_VERSION="5.6.0"
+TAG=""
+if curl -fsIL "https://github.com/$GITHUB_REPO/releases/download/toolchain-v$TOOLS_VERSION/SHA256SUMS" >/dev/null 2>&1; then
+    TAG="toolchain-v$TOOLS_VERSION"
+fi
+RELEASE_BASE="https://github.com/$GITHUB_REPO/releases/download/$TAG"
 RELEASE_URL="$RELEASE_BASE/$ARCHIVE_NAME"
 SUMS_URL="$RELEASE_BASE/SHA256SUMS"
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo "")"
@@ -81,8 +94,8 @@ build_from_source() {
 # 1. Install via Local Source, Release Tarball, or Git Clone
 if [ -f "$SCRIPT_DIR/enlangg.c" ] && [ -n "$CC" ]; then
     build_from_source "$SCRIPT_DIR"
-elif curl -fsIL "$RELEASE_URL" >/dev/null 2>&1 && curl -fsIL "$SUMS_URL" >/dev/null 2>&1; then
-    echo "   Downloading prebuilt release archive and SHA256SUMS from GitHub..."
+elif [ -n "$TAG" ] && [ -n "$ARCHIVE_NAME" ] && curl -fsIL "$RELEASE_URL" >/dev/null 2>&1 && curl -fsIL "$SUMS_URL" >/dev/null 2>&1; then
+    echo "   Downloading the prebuilt tools of release $TAG and its SHA256SUMS from GitHub..."
     TMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t 'enlangg')"
     if ! curl -fsSL "$SUMS_URL" -o "$TMP_DIR/SHA256SUMS"; then
         echo "${RED}Error: Failed to download SHA256SUMS from $SUMS_URL${NC}" >&2
@@ -153,6 +166,8 @@ chmod +x "$INSTALL_DIR"/* 2>/dev/null
 echo "${YELLOW}>> Configuring system PATH environment variable...${NC}"
 
 SHELL_PROFILES="$HOME/.bashrc $HOME/.zshrc $HOME/.profile $HOME/.bash_profile"
+# macOS starts zsh, which reads ~/.zshrc and never ~/.profile: a new Mac has no ~/.zshrc yet
+if [ "$OS" = "darwin" ] && [ ! -f "$HOME/.zshrc" ]; then : > "$HOME/.zshrc"; fi
 PATH_LINE="export PATH=\"\$HOME/.enlangg/bin:\$PATH\""
 UPDATED=0
 
@@ -177,6 +192,19 @@ if [ "$UPDATED" -eq 0 ]; then
 fi
 
 export PATH="$INSTALL_DIR:$PATH"
+
+# an uninstaller: the folder goes, and the lines this installer added to the startup files
+cat > "$INSTALL_ROOT/uninstall.sh" <<'UNINSTALL'
+#!/bin/sh
+for f in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile" "$HOME/.bash_profile"; do
+    [ -f "$f" ] || continue
+    grep -v -e '.enlangg/bin' -e '# Enlangg Sovereign Toolchain' "$f" > "$f.enlangg-tmp" && cat "$f.enlangg-tmp" > "$f"
+    rm -f "$f.enlangg-tmp"
+done
+rm -rf "$HOME/.enlangg"
+echo "Enlangg was removed. Open a new terminal."
+UNINSTALL
+chmod +x "$INSTALL_ROOT/uninstall.sh"
 
 # 3. Verification
 echo "${GREEN}>> Verifying installed tools:${NC}"
@@ -213,5 +241,7 @@ echo "  enlngs <logic.enlngs>       # Pure C in-memory script VM"
 echo "  enlngd <theme.enlngd>       # Pure C design tokens & style resolver"
 echo "  enlngm <app.enlngm>         # Pure C smartphone simulator & HAL"
 echo "  enlangg --help              # Toolchain comprehensive help"
+echo ""
+echo "To remove it later: sh ~/.enlangg/uninstall.sh"
 echo ""
 echo "Website & Live Playground: https://enlangg.site"

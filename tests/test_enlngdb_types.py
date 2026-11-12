@@ -120,7 +120,7 @@ def main():
                   'delete from item where id is 4\ndelete from item where id < 3\nfind what, n from log\n', db="trg")
         check("a trigger for each statement runs once, with count.rows; not when no row changed; 'when' on count.rows",
               cells(out) == ["row", "1", "row", "2", "row", "3", "statement", "3", "many", "2"], out[-800:])
-        out = run('update item set price = 5\nfind what, n from log where what is "statement"\nshow triggers\n', db="trg")
+        out = run('update item set price = 5 confirmed\nfind what, n from log where what is "statement"\nshow triggers\n', db="trg")
         check("... kept in the file, and shown as 'each statement'",
               cells(out)[:4] == ["statement", "3", "statement", "1"] and "after update, each statement" in out, out[-800:])
         out = run('create table t with id\ncreate trigger b before insert on t for each statement do raise "no"\n')

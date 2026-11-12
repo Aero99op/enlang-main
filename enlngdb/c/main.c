@@ -100,6 +100,9 @@ static void keep_private(const char* path) { (void)path; }
 #include <unistd.h>
 #include <signal.h>
 #include <termios.h>
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
 typedef int qsock;
 #define QBAD (-1)
 #define p_socket socket
@@ -643,9 +646,14 @@ static bool spawn_reader(int port, const char* token) {
     return true;
 #else
     char exe[1024];
+#if defined(__APPLE__)
+    uint32_t size = (uint32_t)sizeof(exe);
+    if (_NSGetExecutablePath(exe, &size) != 0) return false;      /* macOS has no /proc */
+#else
     ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
     if (n <= 0) return false;
     exe[n] = '\0';
+#endif
     pid_t pid = fork();
     if (pid < 0) return false;
     if (pid == 0) {

@@ -6510,6 +6510,22 @@ static void q_follow_free(QFollow* list, size_t n) {
     free(list);
 }
 
+/* A statement that changes every row (or most of a table at once) needs the word 'confirmed', so a missing 'where'
+   or a 'where' that is always true never changes a whole table by mistake. 'preview' shows it without asking. */
+static bool q_in_preview = false;
+static bool q_mass_refused(bool print_output, const char* what, const char* how) {
+    if (q_in_preview) return false;
+    if (print_output) {
+        printf("REFUSED: %s.\n", what);
+        printf("         Nothing was changed. To go ahead, add the word 'confirmed':\n");
+        printf("         %s\n", how);
+        size_t hl = strlen(how);
+        int shown = (int)(hl > 10 && strcmp(how + hl - 10, " confirmed") == 0 ? hl - 10 : hl);
+        printf("         ('preview' shows first what it would do: preview %.*s)\n\n", shown, how);
+    }
+    return true;
+}
+
 static void q_print_error(bool print_output, const char* msg, const char* after) {
     snprintf(q_last_error, sizeof(q_last_error), "%s", msg ? msg : "");
     if (print_output) {
@@ -7027,7 +7043,14 @@ static bool q_update(EnlngDatabase* db, const char* stmt, bool print_output) {
         limit = atol(n->text);
         L->pos++;
     }
-    if (q_peek(L, 0)->kind != QT_END) { snprintf(err, sizeof(err), "I don't understand '%s' here. After the values can come: where <condition>, limit N", q_peek(L, 0)->text); goto done; }
+    bool confirmed = q_take(L, "confirmed");
+    if (q_peek(L, 0)->kind != QT_END) { snprintf(err, sizeof(err), "I don't understand '%s' here. After the values can come: where <condition>, limit N, confirmed", q_peek(L, 0)->text); goto done; }
+    if (!where && limit < 0 && !confirmed) {
+        char what[200], how[300];
+        snprintf(what, sizeof(what), "an 'update' of '%s' with no 'where' would change every row", t->name);
+        snprintf(how, sizeof(how), "update %s set ... confirmed", t->name);
+        if (q_mass_refused(print_output, what, how)) { R.err_printed = true; goto done; }
+    }
 
     q_normalize_rows(t);
     {
@@ -7040,6 +7063,12 @@ static bool q_update(EnlngDatabase* db, const char* stmt, bool print_output) {
     }
     if (!q_matching_rows(&R, t, where, &rows, &nrows, err, sizeof(err))) goto done;
     if (limit >= 0 && (size_t)limit < nrows) nrows = (size_t)limit;
+    if (where && !confirmed && t->row_count > 1 && nrows == t->row_count) {
+        char what[200], how[200];
+        snprintf(what, sizeof(what), "every one of the %zu rows of '%s' meets this 'where', so it would change them all", nrows, t->name);
+        snprintf(how, sizeof(how), "update %s set ... where ... confirmed", t->name);
+        if (q_mass_refused(print_output, what, how)) { R.err_printed = true; goto done; }
+    }
 
     /* new values first, from the old rows; then all of them are written */
     {
@@ -7260,7 +7289,7 @@ static bool q_delete(EnlngDatabase* db, const char* stmt, bool print_output) {
     }
     if (q_peek(L, 0)->kind != QT_END) { snprintf(err, sizeof(err), "I don't understand '%s' here. After the table can come: where <condition>, confirmed", q_peek(L, 0)->text); goto done; }
 
-    if (!where && !confirmed) {
+    if (!where && !confirmed && !q_in_preview) {
         if (print_output) {
             printf("REFUSED: 'delete from %s' with no 'where' would remove every row.\n", t->name);
             printf("         Nothing was deleted. To go ahead, add the word 'confirmed':\n");
@@ -7271,6 +7300,12 @@ static bool q_delete(EnlngDatabase* db, const char* stmt, bool print_output) {
     }
     q_normalize_rows(t);
     if (!q_matching_rows(&R, t, where, &rows, &nrows, err, sizeof(err))) goto done;
+    if (where && !confirmed && t->row_count > 1 && nrows == t->row_count) {
+        char what[200], how[200];
+        snprintf(what, sizeof(what), "every one of the %zu rows of '%s' meets this 'where', so it would delete them all", nrows, t->name);
+        snprintf(how, sizeof(how), "delete from %s where ... confirmed", t->name);
+        if (q_mass_refused(print_output, what, how)) { R.err_printed = true; goto done; }
+    }
     {
         /* every row of every table gets a place in one array: gone[base of the table + row] */
         int ti = (int)(t - db->tables);
@@ -7813,13 +7848,23 @@ static bool q_alter(EnlngDatabase* db, const char* stmt, bool print_output, bool
         if (!q_parse_attrs(L, L->pos, L->n, &col, err, sizeof(err))) goto done;
         L->pos = L->n;
     }
-    if (action == 2) q_take(L, "confirmed");
+    bool drop_confirmed = action == 2 && q_take(L, "confirmed");
     if (q_peek(L, 0)->kind != QT_END) { snprintf(err, sizeof(err), "I don't understand '%s' here", q_peek(L, 0)->text); goto done; }
 
     EnlngTable* t = enlngdb_get_table(db, tname);
     if (!t) { q_missing(&R, tname); goto done; }
     if (t->view_sql[0]) { snprintf(err, sizeof(err), "'%s' is a view; change it with 'create or replace view'", t->name); goto done; }
 
+    if (action == 2 && !drop_confirmed && t->col_count > 0) {
+        bool has_col = false;
+        for (int c = 0; c < t->col_count; c++) has_col = has_col || str_ci_cmp(t->columns[c].name, cname) == 0;
+        if (has_col) {
+            char what[200], how[300];
+            snprintf(what, sizeof(what), "dropping column '%s' takes its value out of every row of '%s'", cname, t->name);
+            snprintf(how, sizeof(how), "alter table %s drop column %s confirmed", t->name, cname);
+            if (q_mass_refused(print_output, what, how)) { R.err_printed = true; goto done; }
+        }
+    }
     if (action == 2) {
         for (int i = 0; i < db->table_count; i++) {
             for (int c = 0; c < db->tables[i].col_count; c++) {
@@ -8304,6 +8349,8 @@ static bool q_import_csv(EnlngDatabase* db, const char* stmt, bool print_output)
     tname[tl] = '\0';
     const char* tail = rest + tl;
     while (isspace((unsigned char)*tail)) tail++;
+    bool confirmed = false;
+    if (str_ci_cmp(tail, "confirmed") == 0) { confirmed = true; tail += 9; }
     if (*tail) { snprintf(err, sizeof(err), "I don't understand '%s' after the table name", tail); q_print_error(print_output, err, ""); return false; }
 
     size_t flen = 0;
@@ -8425,6 +8472,12 @@ static bool q_import_csv(EnlngDatabase* db, const char* stmt, bool print_output)
         }
         if (!more) break;
     }
+    bool mass_refused = false;
+    if (ok && replaced_total > 0 && !confirmed && !q_in_preview) {
+        /* rows of the file would write over rows already in the table: taken back, and asked */
+        ok = false;
+        mass_refused = true;
+    }
     if (own_sidx) q_sidx_end();
     q_rows_whole = was_whole;
     if (!ok) for (int i = 0; i < nb; i++) q_inrow_free(&batch[i]);
@@ -8439,6 +8492,14 @@ static bool q_import_csv(EnlngDatabase* db, const char* stmt, bool print_output)
     } else if (!ok && made) {
         /* inside the user's own transaction: only this import's new table is taken away; 'rollback' undoes the rest */
         enlngdb_drop_table(db, tname, true);
+    }
+    if (mass_refused) {
+        char what[300], how[600];
+        snprintf(what, sizeof(what), "%d row(s) of '%s' have the key of a row already in '%s', and would write over it", replaced_total, path, tname);
+        snprintf(how, sizeof(how), "import \"%s\" into %s confirmed", path, tname);
+        q_mass_refused(print_output, what, how);
+        snprintf(q_last_error, sizeof(q_last_error), "%s", what);
+        return false;
     }
     if (!ok) {
         q_print_error(print_output, err, db->txn && !own_txn ? "Rows imported before this one are still there; 'rollback' undoes them." : "Nothing was imported.");
@@ -10527,7 +10588,10 @@ static bool q_preview(EnlngDatabase* db, const char* stmt, bool print_output) {
     snprintf(kept_what, sizeof(kept_what), "%s", db->undo_what);
     db->journal = NULL;
     if (print_output) printf("PREVIEW of: %s\n\n", inner);
+    bool was_preview = q_in_preview;
+    q_in_preview = true;
     bool ok = enlngdb_execute_statement(db, inner, print_output);
+    q_in_preview = was_preview;
     if (ok && print_output) q_preview_diff(before, db);
     enlngdb_restore(db, before);
     if (db->journal) q_jr_free(db->journal);
@@ -11031,7 +11095,7 @@ static bool q_execute_line(EnlngDatabase* db, char* line, bool print_output) {
         sscanf(stmt, "%*s %*s %63s %15s %15s %63s", tname, word, word2, cname);
         if (str_ci_cmp(word2, "column") != 0) snprintf(cname, sizeof(cname), "%s", word2);
         char del_stmt[256];
-        snprintf(del_stmt, sizeof(del_stmt), "delete column %s from %s", cname, tname);
+        snprintf(del_stmt, sizeof(del_stmt), "delete column %s from %s confirmed", cname, tname);   /* alter asked already */
         return enlngdb_execute_statement(db, del_stmt, print_output);
     }
     if (str_starts_with_ci(stmt, "rename table ") || str_starts_with_ci(stmt, "rename ")) {
@@ -11103,6 +11167,14 @@ static bool q_execute_line(EnlngDatabase* db, char* line, bool print_output) {
             if (!tbl) {
                 if (print_output) print_missing_table(db, tbl_name);
                 return false;
+            }
+            bool has_col = false;
+            for (int c = 0; c < tbl->col_count; c++) has_col = has_col || str_ci_cmp(tbl->columns[c].name, col_name) == 0;
+            if (has_col && n == 3) {
+                char what[200], how[300];
+                snprintf(what, sizeof(what), "deleting column '%s' takes its value out of every row of '%s'", col_name, tbl->name);
+                snprintf(how, sizeof(how), "alter table %s drop column %s confirmed", tbl->name, col_name);
+                if (q_mass_refused(print_output, what, how)) return false;
             }
             if (!enlngdb_delete_column(tbl, col_name)) {
                 if (print_output) {

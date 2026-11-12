@@ -607,20 +607,18 @@
         <span class="install-card-tag">Installer</span>
         <h3 class="install-card-title">macOS (Apple Silicon &amp; Intel)</h3>
         <p class="install-card-desc">
-          Universal binaries for macOS 12+ (Monterey, Ventura, Sonoma, Sequoia) on Apple Silicon (<code>arm64</code>) and Intel (<code>x86_64</code>). The installer picks the right build, puts the tools in <code>~/.enlangg/bin</code> and adds that folder to your PATH in <code>~/.zshrc</code>.
+          For macOS on Apple Silicon (<code>arm64</code>) and Intel (<code>x86_64</code>). The installer puts the seven tools in <code>~/.enlangg/bin</code> and adds that folder to your PATH in <code>~/.zshrc</code>. When a release of the tools has a prebuilt build for macOS it downloads it and checks its SHA-256; until then it builds the tools from source on your Mac, in about a minute.
         </p>
         <div class="install-specs-box">
-          Package: enlangg-install.sh (one file for macOS, Linux x86_64 and Linux aarch64)<br>
+          Package: install.sh (one script for macOS and Linux)<br>
           Installs: enlangg, enlng, enlngdb, enlngf, enlngd, enlngs, enlngm + standard library<br>
-          Features: per-user install to <code>~/.enlangg</code> (no root), PATH, checksum check, uninstall script
+          Needs: a C compiler (gcc or clang) and curl, while there is no prebuilt release<br>
+          Features: per-user install to <code>~/.enlangg</code> (no root), PATH, uninstall script
         </div>
         <div class="install-btn-group" style="margin-bottom: 16px;">
-          <a href="enlangg-install.sh" download="enlangg-install.sh" class="btn btn-primary" style="flex:1; justify-content:center;">
+          <a href="install.sh" download="install.sh" class="btn btn-primary" style="flex:1; justify-content:center;">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             <span>Download installer (.sh)</span>
-          </a>
-          <a href="install.sh" target="_blank" rel="noopener" class="btn btn-secondary" title="Mirror on enlangg.vercel.app">
-            <span>Mirror ↗</span>
           </a>
         </div>
         <div class="code-block-card" style="margin-bottom: 12px;">
@@ -628,10 +626,10 @@
             <span>Then, in Terminal (run from the folder you saved it in)</span>
             <button type="button" class="copy-code-btn terminal-btn" data-target="macScript">Copy</button>
           </div>
-          <div class="code-block-body" id="macScript">sh enlangg-install.sh</div>
+          <div class="code-block-body" id="macScript">sh install.sh</div>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px;">
-          Programs run with the built-in interpreter, so no C compiler is needed. For <code>enlng build</code> (standalone executables) install one with <code>xcode-select --install</code>. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The installer is unsigned. It runs through <code>sh</code>, so Gatekeeper does not block it. The macOS build is checked in CI but has not been tested on every macOS version. Prefer to compile it yourself? See <em>Compile from Source</em>.
+          A Mac gets its C compiler with <code>xcode-select --install</code> (also what <code>enlng build</code> needs for standalone programs). To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The installer is unsigned; it runs through <code>sh</code>, so Gatekeeper does not block it. The tools are built and their tests run on macOS in CI (macos-latest), not on every macOS version.
         </p>
       </div>
     </section>
@@ -642,20 +640,18 @@
         <span class="install-card-tag">Installer</span>
         <h3 class="install-card-title">Linux (x86_64 &amp; aarch64)</h3>
         <p class="install-card-desc">
-          A single self-extracting script for Linux on x86_64 and aarch64 (static binaries, no libraries needed). It puts the tools in <code>~/.enlangg/bin</code> and adds that folder to your PATH in your shell startup files (bash, zsh, or fish). No root needed.
+          For Linux on x86_64 and aarch64. The installer puts the seven tools in <code>~/.enlangg/bin</code> and adds that folder to your PATH in your shell startup files (bash or zsh). No root needed. When a release of the tools has a prebuilt build for your machine it downloads it and checks its SHA-256; until then it builds the tools from source, in about a minute.
         </p>
         <div class="install-specs-box">
-          Package: enlangg-install.sh (one file for macOS, Linux x86_64 and Linux aarch64)<br>
+          Package: install.sh (one script for macOS and Linux)<br>
           Installs: enlangg, enlng, enlngdb, enlngf, enlngd, enlngs, enlngm + standard library<br>
-          Features: per-user install to <code>~/.enlangg</code> (no root), PATH, checksum check, uninstall script
+          Needs: a C compiler (gcc or clang) and curl, while there is no prebuilt release<br>
+          Features: per-user install to <code>~/.enlangg</code> (no root), PATH, uninstall script
         </div>
         <div class="install-btn-group" style="margin-bottom: 16px;">
-          <a href="enlangg-install.sh" download="enlangg-install.sh" class="btn btn-primary" style="flex:1; justify-content:center;">
+          <a href="install.sh" download="install.sh" class="btn btn-primary" style="flex:1; justify-content:center;">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             <span>Download installer (.sh)</span>
-          </a>
-          <a href="install.sh" target="_blank" rel="noopener" class="btn btn-secondary" title="Mirror on enlangg.vercel.app">
-            <span>Mirror ↗</span>
           </a>
         </div>
         <div class="code-block-card" style="margin-bottom: 12px;">
@@ -663,10 +659,10 @@
             <span>Then, in Terminal (run from the folder you saved it in)</span>
             <button type="button" class="copy-code-btn terminal-btn" data-target="linuxScript">Copy</button>
           </div>
-          <div class="code-block-body" id="linuxScript">sh enlangg-install.sh</div>
+          <div class="code-block-body" id="linuxScript">sh install.sh</div>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px;">
-          Programs run with the built-in interpreter, so no C compiler is needed. For <code>enlng build</code> (standalone executables) install one with the prerequisites below. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The installer checks its own SHA-256 before writing anything. The aarch64 build is cross-compiled in CI and has not been run on real ARM hardware. Prefer to compile it yourself? See <em>Compile from Source</em>.
+          The compiler comes from the commands below. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The tools are built and their tests run on Ubuntu in CI and on the maintainer's Ubuntu (WSL); the aarch64 build is cross-compiled in CI and has not been run on real ARM hardware.
         </p>
         <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">Package Manager Prerequisites:</h4>
         <div class="table-responsive">
@@ -847,8 +843,8 @@ enlangg --version</div>
       <div class="checksum-item">
         <span class="checksum-label">Enlangg Studio Setup Wizard (Enlangg-Studio-Setup-5.1.0.exe · 79.0 MB)</span>
         <div class="checksum-hash">
-          <span>06723195342e222c4bfc2a239346c7542763b256a1c7d9bd293f5f918ebd2e65</span>
-          <button type="button" class="copy-code-btn terminal-btn" data-copy="06723195342e222c4bfc2a239346c7542763b256a1c7d9bd293f5f918ebd2e65">Copy</button>
+          <span>020492909c2527dc7c085f13734ae83d70dcf5e164d2c4537a4c79adad79c378</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-copy="020492909c2527dc7c085f13734ae83d70dcf5e164d2c4537a4c79adad79c378">Copy</button>
         </div>
       </div>
       <div class="checksum-item">
@@ -859,10 +855,10 @@ enlangg --version</div>
         </div>
       </div>
       <div class="checksum-item">
-        <span class="checksum-label">Linux and macOS installer (enlangg-install.sh) — check with <code>sha256sum</code> or <code>shasum -a 256</code></span>
+        <span class="checksum-label">Linux and macOS installer (install.sh) — check with <code>sha256sum</code> or <code>shasum -a 256</code></span>
         <div class="checksum-hash">
-          <span>066a9eab8b6060e5ab984fa73120f32931a4492f4a109045ade0a2419fe93953</span>
-          <button type="button" class="copy-code-btn terminal-btn" data-copy="066a9eab8b6060e5ab984fa73120f32931a4492f4a109045ade0a2419fe93953">Copy</button>
+          <span>b91ee8a14613b013ad27a5aee0f823deb9ca6a369db98175181688e59ada7e9b</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-copy="b91ee8a14613b013ad27a5aee0f823deb9ca6a369db98175181688e59ada7e9b">Copy</button>
         </div>
       </div>
     </div>

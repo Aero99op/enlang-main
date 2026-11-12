@@ -34,7 +34,7 @@ find * from student
 :::
 `delete records from student where ...` is the same.
 ## The safety word `confirmed`
-A statement that would remove everything needs the word `confirmed`. Without it the engine refuses and shows what to write.
+A statement that changes or removes a whole table at once needs the word `confirmed` at its end. Without it the engine refuses, changes nothing, and shows what to write. `preview` (chapter 15) shows first what such a statement would do, without asking.
 ::: err
 delete all from student
 :::
@@ -45,10 +45,14 @@ count records in student
 | Statement | Needs `confirmed` |
 | :--- | :---: |
 | `delete from t` with no `where` (also `delete all from t`) | yes |
+| `update t set ...` with no `where` | yes |
+| `update` or `delete` whose `where` every row meets (`where id > 0`), on a table of two rows or more | yes |
+| `import "f.csv" into t` when rows of the file have the key of rows already there (they would be written over) | yes |
 | `truncate table t` | yes |
 | `drop table t` | yes |
 | `drop column c from t`, `alter table t drop column c` | yes |
 | `drop database d` | yes |
-| `delete from t where ...` | no |
+| `update` or `delete` with a `where` that leaves some rows alone, or with `limit` | no |
+| `insert` (a row with a key already there replaces that one row, and says so) | no |
 | `drop view v`, `drop index i` | no |
 `truncate table t confirmed` removes every row and keeps the table. For a table with an automatic number, it also starts counting from 1 again.
