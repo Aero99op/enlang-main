@@ -502,6 +502,81 @@ def main():
         code, out, err = run("sf_empty.enlngdb")
         check("an empty file is an empty database", cells(out) == ["1"] and open(empty, "rb").read()[:14] == b"ENLNG_C_EDB_V4", out[-200:])
         check("a version 4 file ends with its end mark", good[-16:] == b"ENLNG_EDB_END_V4", good[-16:])
+
+        # ---- 11. backup and restore ----
+        write("bk_make.enlngdb", 'type enlngdb\nuse database bk\ncreate table pets with id integer primary key, name text unique\n'
+              'insert into pets values (1, "Tom"), (2, "Kit")\ncreate trigger stamp after insert on pets do insert into log values (new.id)\n'
+              'create table log with id integer\ncreate user boss password "boss-pass-1" admin\n')
+        run("bk_make.enlngdb")
+        bk = os.path.join(TMP, "bk.edb")
+        write("bk_save.enlngdb", 'type enlngdb\nuse database bk\nbackup database to "bk_copy.edb"\n')
+        before = open(bk, "rb").read()
+        code, out, err = run("bk_save.enlngdb")
+        copy = os.path.join(TMP, "bk_copy.edb")
+        check("backup writes a whole database file of its own, and leaves the database's file alone",
+              code == 0 and os.path.exists(copy) and open(copy, "rb").read()[:14] == b"ENLNG_C_EDB_V4" and open(bk, "rb").read() == before and "2 row(s)" in out, out[-300:])
+        write("bk_open.enlngdb", "type enlngdb\nuse database bk_copy\nfind name from pets where id is 2\nshow triggers\n")
+        code, out, err = run("bk_open.enlngdb")
+        check("... it opens as a database, with its triggers", "Kit" in out and "stamp" in out, out[-300:])
+        code, out, err = run("bk_save.enlngdb")
+        check("a backup over a file that is there needs 'confirmed'", code == 1 and "REFUSED" in out and "confirmed" in out, out[-300:])
+        write("bk_break.enlngdb", 'type enlngdb\nuse database bk\nupdate pets set name = "gone" confirmed\ndrop table log confirmed\ndrop user boss\n'
+              'insert into pets values (3, "New")\n')
+        run("bk_break.enlngdb")
+        write("bk_rest.enlngdb", 'type enlngdb\nuse database bk\nrestore database from "bk_copy.edb"\n')
+        code, out, err = run("bk_rest.enlngdb")
+        check("restore without 'confirmed' is refused, and changes nothing", code == 1 and "REFUSED" in out and "backup database to" in out, out[-300:])
+        write("bk_rest2.enlngdb", 'type enlngdb\nuse database bk\nrestore database from "bk_copy.edb" confirmed\n')
+        code, out, err = run("bk_rest2.enlngdb")
+        write("bk_look.enlngdb", "type enlngdb\nuse database bk\nfind name from pets\ncount records in log\nshow users\nshow triggers\n")
+        code2, out2, err2 = run("bk_look.enlngdb")
+        check("restore brings back the rows, a dropped table, a dropped user and the triggers, and it is kept",
+              code == 0 and cells(out2)[:2] == ["Tom", "Kit"] and "New" not in out2 and "boss" in out2 and "stamp" in out2 and "| 0 " in out2, out2[-500:])
+        write("bk_after.enlngdb", 'type enlngdb\nuse database bk\ninsert into pets values (4, "Mo")\nfind count(*) from log\n')
+        code, out, err = run("bk_after.enlngdb")
+        check("... the restored database works on: its trigger runs",
+              code == 0 and "| 1 " in out, out[-400:])
+        # a big file read lazily, with a log of changes: the restored database is written as a full file
+        n = 30000
+        with open(os.path.join(TMP, "bkbig.csv"), "w") as f:
+            f.write("id,name\n")
+            for i in range(n):
+                f.write("%d,n%d\n" % (i, i))
+        write("bkbig.enlngdb", 'type enlngdb\nuse database bkbig\ncreate table t (id int primary key, name text)\nimport "bkbig.csv" into t\n')
+        run("bkbig.enlngdb")
+        write("bkbig2.enlngdb", 'type enlngdb\nuse database bkbig\nupdate t set name = "changed" where id is 5\nbackup database to "bkbig_copy.edb"\n'
+              'update t set name = "later" where id is 6\n')
+        run("bkbig2.enlngdb")
+        has_log = os.path.exists(os.path.join(TMP, "bkbig.edb-wal"))
+        write("bkbig3.enlngdb", 'type enlngdb\nuse database bkbig\nrestore database from "bkbig_copy.edb" confirmed\n')
+        run("bkbig3.enlngdb")
+        write("bkbig4.enlngdb", "type enlngdb\nuse database bkbig\nfind name from t where id is 5\nfind name from t where id is 6\ncount records in t\n")
+        code, out, err = run("bkbig4.enlngdb")
+        check("a backup taken with unsaved changes holds them; restored over a file with a log, it is written whole and the log goes",
+              has_log and cells(out) == ["changed", "n6", str(n)] and not os.path.exists(os.path.join(TMP, "bkbig.edb-wal")), (has_log, cells(out)))
+        # encrypted
+        write("bkenc.enlngdb", 'type enlngdb\nuse database bkenc\ncreate table s with id integer primary key, v text\ninsert into s values (1, "secret")\n'
+              'encrypt database with password "correct horse"\n')
+        run("bkenc.enlngdb")
+        write("bkenc2.enlngdb", 'type enlngdb\nuse database bkenc with password "correct horse"\nbackup database to "bkenc_copy.edb"\n')
+        code, out, err = run("bkenc2.enlngdb")
+        data = open(os.path.join(TMP, "bkenc_copy.edb"), "rb").read()
+        check("the backup of an encrypted database is encrypted with the same password", data[:16] == b"ENLNG_C_EDB_ENC1" and b"secret" not in data, out[-300:])
+        write("bkenc3.enlngdb", 'type enlngdb\nuse database bkplain\ncreate table x with a\nrestore database from "bkenc_copy.edb" confirmed\n')
+        code, out, err = run("bkenc3.enlngdb")
+        check("... restoring it without the password says so, and changes nothing", code == 1 and "no password was given" in out, out[-300:])
+        write("bkenc4.enlngdb", 'type enlngdb\nuse database bkplain\ncreate table x with a\nrestore database from "bkenc_copy.edb" with password "correct horse" confirmed\nfind v from s\n')
+        code, out, err = run("bkenc4.enlngdb")
+        check("... and with it, the rows are there", code == 0 and "secret" in out, out[-300:])
+        junk = os.path.join(TMP, "bkjunk.edb")
+        open(junk, "wb").write(b"not a database")
+        write("bkjunk.enlngdb", 'type enlngdb\nuse database bk\nrestore database from "bkjunk.edb" confirmed\n')
+        code, out, err = run("bkjunk.enlngdb")
+        code2, out2, err2 = run("bk_look.enlngdb")
+        check("restore from a file that is not a database changes nothing", code == 1 and "not a database" in out and "Tom" in out2, out[-300:])
+        write("bkown.enlngdb", 'type enlngdb\nuse database bk\nbackup database to "bk.edb" confirmed\nbackup database to "./BK.edb-wal" confirmed\n')
+        code, out, err = run("bkown.enlngdb")
+        check("a backup never goes to the database's own file or its log", out.count("own file") == 2 and open(bk, "rb").read()[:14] == b"ENLNG_C_EDB_V4", out[-400:])
     finally:
         shutil.rmtree(TMP, ignore_errors=True)
     print("%d passed, %d failed" % (passed, failed))

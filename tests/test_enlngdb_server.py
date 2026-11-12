@@ -254,7 +254,9 @@ def main():
               w == "failed" and "only an admin may add a table" in t and "only an admin may add one" in t, t)
         w, t = a.run("use database shop\nuse database other\nimport \"x.csv\" into item\nexport item to \"x.csv\"")
         check("the served database only; files on the server only for an admin",
-              "Database changed to 'shop'" in t and "serves the database 'shop' only" in t and t.count("only an admin may import or export") == 2, t)
+              "Database changed to 'shop'" in t and "serves the database 'shop' only" in t and t.count("only an admin may import, export, back up or restore") == 2, t)
+        w, t = a.run('backup database to "x.edb"\nrestore database from "x.edb" confirmed')
+        check("backup and restore through the server are for an admin", w == "failed" and t.count("only an admin may import, export, back up or restore") == 2, t)
         w, t = a.run("call cheap(1)\nshow users\nshow grants")
         check("call needs execute; show users is for an admin; show grants shows one's own",
               "may not call the procedure 'cheap'" in t and "only an admin may list the users" in t and "| asha | item | select, insert |" in t, t)

@@ -362,6 +362,15 @@ const char* enlngdb_base_text(const EnlngTable* t, size_t b, int col, size_t* le
 char* enlngdb_script_utf8(char* buf, size_t n);
 /* runs statements given on the command line (-e); what they change is saved to the database they 'use' */
 int enlngdb_run_inline(const char* text);
+/* A whole copy of the database as it is now (unsaved changes too) written to path, as a full file of its own: it
+   opens as a database, and an encrypted database gives an encrypted copy with the same password. Written to path.tmp
+   first and put in place in one step. The database and its own file are not touched. */
+bool enlngdb_backup_file(EnlngDatabase* db, const char* path);
+/* The database becomes what the file at path holds: its tables, triggers, procedures, users and rights. The file
+   is read whole and checked first; when it cannot be read nothing changes. password: for an encrypted file (NULL:
+   none). Returns 0, or enlngdb_load_error's reason (1 no password, 2 wrong password, 4 not a database), or -1
+   when there is no such file. The next save writes the full file. */
+int enlngdb_restore_file(EnlngDatabase* db, const char* path, const char* password);
 #define ENLNGDB_END_MARK "ENLNG_EDB_END_V4"   /* the last 16 bytes of a version 4 file: a file without them was cut */
 #define ENLNGDB_STORED_RANGE 0x80000000u    /* in the count of kept indexes: each is followed by its column in order */
 

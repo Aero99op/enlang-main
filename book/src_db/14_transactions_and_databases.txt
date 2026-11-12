@@ -88,6 +88,17 @@ drop database shop
 ::: db
 drop database shop confirmed
 :::
+## Backup and restore
+`backup database to "file.edb"` writes a whole copy of the open database to a file of its own: every table and row (with the changes of the script so far), the views, indexes, triggers, procedures and users. The database and its own file are not touched. The copy is a database file like any other, so it can be opened (`use database shop_monday` for `shop_monday.edb`), and a copy of an encrypted database is encrypted with the same password.
+::: db
+backup database to "shop_monday.edb"
+:::
+When the file is there already, the backup asks for `confirmed`, because it would write over it. A backup never goes to the database's own file or its log.
+`restore database from "file.edb" confirmed` makes the open database what the file holds, and needs `confirmed` because everything in the database is replaced. The file is read and checked first: a file that is not there, is not a database, or is encrypted without the password (`with password "..."` before `confirmed`) changes nothing. The restored database is written to its file at the end of the script, as after any change. A restore cannot be taken back with `undo`; make a backup before it if what is there now matters.
+::: sh
+restore database from "shop_monday.edb" confirmed
+:::
+Inside a transaction neither runs: `commit` or `rollback` first. On a server only an admin may back up or restore, because they write and read files on the server's computer.
 ## An encrypted database
 `encrypt database with password "..."` makes the engine write the file encrypted from then on (ChaCha20-Poly1305, with a key made from the password by PBKDF2). Without the password the file cannot be read.
 ::: sh

@@ -8632,7 +8632,7 @@ static bool q_just_opened = false;  /* the statement running opened a file (its 
 static int q_lock_reason = 0;       /* why the open database is locked: 1 or 2 encrypted, 3 its log is damaged */
 
 static bool q_reads_only(const char* st) {
-    static const char* words[] = {"find", "select", "fetch", "get", "show", "count", "describe", "explain", "export", "preview"};
+    static const char* words[] = {"find", "select", "fetch", "get", "show", "count", "describe", "explain", "export", "preview", "backup"};
     while (isspace((unsigned char)*st)) st++;
     if (str_starts_with_ci(st, "set time zone ") || str_starts_with_ci(st, "set timezone ")) return true;
     for (size_t i = 0; i < sizeof(words) / sizeof(words[0]); i++) {
@@ -10129,9 +10129,9 @@ static bool q_allowed(EnlngDatabase* db, const char* stmt, char* err, size_t en)
         snprintf(err, en, "the server serves the database '%s' only", db->name);
         return false;
     }
-    if (str_starts_with_ci(st, "import ") || str_starts_with_ci(st, "export ")) {
+    if (str_starts_with_ci(st, "import ") || str_starts_with_ci(st, "export ") || str_starts_with_ci(st, "backup ") || str_starts_with_ci(st, "restore ")) {
         if (u->admin) return true;
-        snprintf(err, en, "only an admin may import or export: it reads and writes files on the server's computer");
+        snprintf(err, en, "only an admin may import, export, back up or restore: it reads and writes files on the server's computer");
         return false;
     }
     if (u->admin) return true;
@@ -10568,7 +10568,7 @@ static void q_preview_diff(const EnlngDatabase* before, const EnlngDatabase* aft
 static bool q_preview(EnlngDatabase* db, const char* stmt, bool print_output) {
     const char* inner = stmt + 8;
     while (isspace((unsigned char)*inner)) inner++;
-    static const char* not_these[] = {"use ", "create database ", "drop database ", "begin", "start transaction", "commit", "end transaction",
+    static const char* not_these[] = {"use ", "create database ", "drop database ", "backup ", "restore ", "begin", "start transaction", "commit", "end transaction",
                                       "rollback", "savepoint ", "release ", "undo", "preview ", "export ", "create trigger ", "create procedure ", "create user ", "alter user ", "drop user ", "grant ", "revoke ",
                                       "drop trigger ", "drop procedure ", NULL};
     for (int i = 0; not_these[i]; i++) {
@@ -10654,6 +10654,129 @@ static bool q_undo(EnlngDatabase* db, bool print_output) {
     return true;
 }
 
+
+/* ---- backup and restore ----
+ *   backup database to "shop-2026-11-12.edb" [confirmed]       (confirmed: when that file is there already)
+ *   restore database from "shop-2026-11-12.edb" [with password "..."] confirmed
+ * A backup is a whole database file of its own, made from the database as it is now. A restore makes the open
+ * database what the file holds; the database's file is written at the end of the script, as after any change. */
+static bool q_same_file_name(const char* a, const char* b) {
+    while (a[0] == '.' && (a[1] == '/' || a[1] == '\\')) a += 2;
+    while (b[0] == '.' && (b[1] == '/' || b[1] == '\\')) b += 2;
+    return str_ci_cmp(a, b) == 0;
+}
+
+/* the path in quotes after 'to' or 'from'; *rest is what comes after it */
+static bool q_backup_path(const char* stmt, const char* word, char* path, size_t n, const char** rest) {
+    const char* w = q_find_word(stmt, word);
+    return w && q_quoted_path(w + strlen(word), path, n, rest);
+}
+
+static bool q_backup(EnlngDatabase* db, const char* stmt, bool print_output) {
+    char path[512], err[700];
+    const char* rest = NULL;
+    if (!q_backup_path(stmt, "to", path, sizeof(path), &rest)) {
+        q_print_error(print_output, "write the file in quotes after 'to': backup database to \"shop-backup.edb\"", "");
+        return false;
+    }
+    while (isspace((unsigned char)*rest)) rest++;
+    bool confirmed = false;
+    if (str_starts_with_ci(rest, "confirmed")) { confirmed = true; rest += 9; while (isspace((unsigned char)*rest)) rest++; }
+    if (*rest) { snprintf(err, sizeof(err), "I don't understand '%s' after the file name", rest); q_print_error(print_output, err, ""); return false; }
+    if (db->locked) { q_print_error(print_output, "this database was not opened, so there is nothing to back up", ""); return false; }
+    if (db->txn) { q_print_error(print_output, "a transaction is open; 'commit' or 'rollback' it first, so the backup is of a finished state", ""); return false; }
+    char own[300], own_wal[310];
+    snprintf(own, sizeof(own), "%s.edb", db->name);
+    snprintf(own_wal, sizeof(own_wal), "%s.edb-wal", db->name);
+    size_t pl = strlen(path);
+    if (q_same_file_name(path, own) || q_same_file_name(path, own_wal) || (pl > 4 && str_ci_cmp(path + pl - 4, ".tmp") == 0) ||
+        (pl > 5 && str_ci_cmp(path + pl - 5, ".lock") == 0) || (pl > 4 && str_ci_cmp(path + pl - 4, "-wal") == 0)) {
+        snprintf(err, sizeof(err), "'%s' is the database's own file (or one it uses); a backup goes to a file of its own", path);
+        q_print_error(print_output, err, "For example: backup database to \"shop-backup.edb\"");
+        return false;
+    }
+    if (q_file_there(path) && !confirmed && !q_in_preview) {
+        if (print_output) {
+            printf("REFUSED: the file '%s' is there already, and the backup would write over it.\n", path);
+            printf("         Nothing was changed. To go ahead, add the word 'confirmed':\n");
+            printf("         backup database to \"%s\" confirmed\n\n", path);
+        }
+        snprintf(q_last_error, sizeof(q_last_error), "the file '%s' is there already", path);
+        return false;
+    }
+    if (!enlngdb_backup_file(db, path)) {
+        snprintf(err, sizeof(err), "the backup could not be written to '%s'", path);
+        q_print_error(print_output, err, "Nothing was written there; the database is as it was.");
+        return false;
+    }
+    if (print_output) {
+        size_t rows = 0;
+        int tables = 0;
+        for (int t = 0; t < db->table_count; t++) if (!db->tables[t].is_temp) { tables++; rows += db->tables[t].row_count; }
+        printf("Query OK, database '%s' backed up to '%s': %d table(s), %zu row(s)%s. (0.02 ms)\n", db->name, path, tables, rows,
+               db->encrypted ? ", encrypted with the database's password" : "");
+        printf("       To bring it back: restore database from \"%s\" confirmed\n\n", path);
+    }
+    return true;
+}
+
+static bool q_restore(EnlngDatabase* db, const char* stmt, bool print_output) {
+    char path[512], err[700];
+    const char* rest = NULL;
+    if (!q_backup_path(stmt, "from", path, sizeof(path), &rest)) {
+        q_print_error(print_output, "write the file in quotes after 'from': restore database from \"shop-backup.edb\" confirmed", "");
+        return false;
+    }
+    bool bad = false;
+    char* pw = q_password_part(stmt, &bad);
+    if (bad) { q_print_error(print_output, "write the password in quotes: restore database from \"f.edb\" with password \"...\" confirmed", ""); return false; }
+    const char* ends = stmt + strlen(stmt);
+    while (ends > stmt && isspace((unsigned char)ends[-1])) ends--;
+    bool confirmed = ends - stmt >= 9 && str_ci_cmp(ends - 9, "confirmed") == 0;
+    if (db->txn) { q_wipe(pw); q_print_error(print_output, "a transaction is open; 'commit' or 'rollback' it before a restore", ""); return false; }
+    char own[300];
+    snprintf(own, sizeof(own), "%s.edb", db->name);
+    if (q_same_file_name(path, own)) { q_wipe(pw); q_print_error(print_output, "that is the database's own file; restore from a backup", ""); return false; }
+    if (!q_file_there(path)) {
+        q_wipe(pw);
+        snprintf(err, sizeof(err), "there is no file '%s'", path);
+        q_print_error(print_output, err, "Nothing was changed.");
+        return false;
+    }
+    if (!confirmed) {
+        q_wipe(pw);
+        if (print_output) {
+            printf("REFUSED: a restore replaces everything in database '%s' (its tables, triggers, procedures and users) with what '%s' holds.\n", db->name, path);
+            printf("         Nothing was changed. To go ahead, add the word 'confirmed':\n");
+            printf("         restore database from \"%s\" confirmed\n", path);
+            printf("         (to keep what is there now, make a backup first: backup database to \"%s-before-restore.edb\")\n\n", db->name);
+        }
+        snprintf(q_last_error, sizeof(q_last_error), "a restore needs the word 'confirmed'");
+        return false;
+    }
+    const char* env = getenv("ENLNGDB_DB_PASSWORD");
+    int why = enlngdb_restore_file(db, path, pw ? pw : (env && *env ? env : NULL));
+    q_wipe(pw);
+    if (why != 0) {
+        if (why == 1) snprintf(err, sizeof(err), "'%s' is encrypted, and no password was given", path);
+        else if (why == 2) snprintf(err, sizeof(err), "the password of '%s' is wrong (or the file was changed)", path);
+        else if (why == -1) snprintf(err, sizeof(err), "there is no file '%s'", path);
+        else snprintf(err, sizeof(err), "'%s' is not a database this program can read (it is cut, damaged, or something else)", path);
+        q_print_error(print_output, err, why == 1 ? "Add: with password \"...\"  (before 'confirmed'). Nothing was changed." : "Nothing was changed.");
+        return false;
+    }
+    if (db->journal) { q_jr_free(db->journal); db->journal = NULL; }      /* 'undo' cannot reach back past a restore */
+    db->undo_what[0] = '\0';
+    q_changed = true;
+    if (print_output) {
+        size_t rows = 0;
+        for (int t = 0; t < db->table_count; t++) rows += db->tables[t].row_count;
+        printf("Query OK, database '%s' restored from '%s': %d table(s), %zu row(s). It is written to its file at the end of this script. (0.02 ms)\n\n",
+               db->name, path, db->table_count, rows);
+    }
+    return true;
+}
+
 static bool q_execute_line(EnlngDatabase* db, char* line, bool print_output) {
     char* stmt = trim(line);
     // Remove trailing semicolon
@@ -10685,6 +10808,8 @@ static bool q_execute_line(EnlngDatabase* db, char* line, bool print_output) {
     if (str_starts_with_ci(stmt, "preview ")) return q_preview(db, stmt, print_output);
     if (str_starts_with_ci(stmt, "import ")) return q_import_csv(db, stmt, print_output);
     if (str_starts_with_ci(stmt, "export ")) return q_export_csv(db, stmt, print_output);
+    if (str_starts_with_ci(stmt, "backup database ") || str_starts_with_ci(stmt, "backup to ")) return q_backup(db, stmt, print_output);
+    if (str_starts_with_ci(stmt, "restore database ") || str_starts_with_ci(stmt, "restore from ")) return q_restore(db, stmt, print_output);
 
     // transactions
     if (str_ci_cmp(stmt, "begin") == 0 || str_ci_cmp(stmt, "begin transaction") == 0 || str_ci_cmp(stmt, "start transaction") == 0) {

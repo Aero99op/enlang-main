@@ -607,12 +607,12 @@
         <span class="install-card-tag">Installer</span>
         <h3 class="install-card-title">macOS (Apple Silicon &amp; Intel)</h3>
         <p class="install-card-desc">
-          For macOS on Apple Silicon (<code>arm64</code>) and Intel (<code>x86_64</code>). The installer puts the seven tools in <code>~/.enlangg/bin</code> and adds that folder to your PATH in <code>~/.zshrc</code>. When a release of the tools has a prebuilt build for macOS it downloads it and checks its SHA-256; until then it builds the tools from source on your Mac, in about a minute.
+          For macOS on Apple Silicon (<code>arm64</code>) and Intel (<code>x86_64</code>). The installer downloads the prebuilt tools of release 5.6.0 (one universal build for both), checks their SHA-256, puts them in <code>~/.enlangg/bin</code> and adds that folder to your PATH in <code>~/.zshrc</code>. No C compiler is needed.
         </p>
         <div class="install-specs-box">
           Package: install.sh (one script for macOS and Linux)<br>
           Installs: enlangg, enlng, enlngdb, enlngf, enlngd, enlngs, enlngm + standard library<br>
-          Needs: a C compiler (gcc or clang) and curl, while there is no prebuilt release<br>
+          Needs: curl and tar (already there on macOS and on most Linux systems). With no internet access to GitHub it builds from source, which needs gcc or clang<br>
           Features: per-user install to <code>~/.enlangg</code> (no root), PATH, uninstall script
         </div>
         <div class="install-btn-group" style="margin-bottom: 16px;">
@@ -629,7 +629,7 @@
           <div class="code-block-body" id="macScript">sh install.sh</div>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px;">
-          A Mac gets its C compiler with <code>xcode-select --install</code> (also what <code>enlng build</code> needs for standalone programs). To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The installer is unsigned; it runs through <code>sh</code>, so Gatekeeper does not block it. The tools are built and their tests run on macOS in CI (macos-latest), not on every macOS version.
+          A C compiler is needed only for <code>enlng build</code> (standalone programs); a Mac gets one with <code>xcode-select --install</code>. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The installer is unsigned; it runs through <code>sh</code>, so Gatekeeper does not block it. The tools are built and their tests run on macOS in CI (macos-latest), not on every macOS version.
         </p>
       </div>
     </section>
@@ -640,12 +640,12 @@
         <span class="install-card-tag">Installer</span>
         <h3 class="install-card-title">Linux (x86_64 &amp; aarch64)</h3>
         <p class="install-card-desc">
-          For Linux on x86_64 and aarch64. The installer puts the seven tools in <code>~/.enlangg/bin</code> and adds that folder to your PATH in your shell startup files (bash or zsh). No root needed. When a release of the tools has a prebuilt build for your machine it downloads it and checks its SHA-256; until then it builds the tools from source, in about a minute.
+          For Linux on x86_64 and aarch64. The installer downloads the prebuilt tools of release 5.6.0 for your machine (static binaries, no libraries needed), checks their SHA-256, puts them in <code>~/.enlangg/bin</code> and adds that folder to your PATH in your shell startup files (bash or zsh). No root and no C compiler needed.
         </p>
         <div class="install-specs-box">
           Package: install.sh (one script for macOS and Linux)<br>
           Installs: enlangg, enlng, enlngdb, enlngf, enlngd, enlngs, enlngm + standard library<br>
-          Needs: a C compiler (gcc or clang) and curl, while there is no prebuilt release<br>
+          Needs: curl and tar (already there on macOS and on most Linux systems). With no internet access to GitHub it builds from source, which needs gcc or clang<br>
           Features: per-user install to <code>~/.enlangg</code> (no root), PATH, uninstall script
         </div>
         <div class="install-btn-group" style="margin-bottom: 16px;">
@@ -662,9 +662,9 @@
           <div class="code-block-body" id="linuxScript">sh install.sh</div>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px;">
-          The compiler comes from the commands below. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The tools are built and their tests run on Ubuntu in CI and on the maintainer's Ubuntu (WSL); the aarch64 build is cross-compiled in CI and has not been run on real ARM hardware.
+          A C compiler is needed only for <code>enlng build</code> (standalone programs); the commands below install one. To remove Enlangg later run <code>sh ~/.enlangg/uninstall.sh</code>. The tools are built and their tests run on Ubuntu in CI and on the maintainer's Ubuntu (WSL); the aarch64 build is cross-compiled in CI and has not been run on real ARM hardware.
         </p>
-        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">Package Manager Prerequisites:</h4>
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">A C compiler, for <code>enlng build</code> only:</h4>
         <div class="table-responsive">
           <table>
             <thead>
@@ -843,8 +843,8 @@ enlangg --version</div>
       <div class="checksum-item">
         <span class="checksum-label">Enlangg Studio Setup Wizard (Enlangg-Studio-Setup-5.1.0.exe · 79.0 MB)</span>
         <div class="checksum-hash">
-          <span>020492909c2527dc7c085f13734ae83d70dcf5e164d2c4537a4c79adad79c378</span>
-          <button type="button" class="copy-code-btn terminal-btn" data-copy="020492909c2527dc7c085f13734ae83d70dcf5e164d2c4537a4c79adad79c378">Copy</button>
+          <span>9abd21bc6ee04cda7f04d674a0271eecf56c7cf3bfc8a3cd32d9606f421f9702</span>
+          <button type="button" class="copy-code-btn terminal-btn" data-copy="9abd21bc6ee04cda7f04d674a0271eecf56c7cf3bfc8a3cd32d9606f421f9702">Copy</button>
         </div>
       </div>
       <div class="checksum-item">

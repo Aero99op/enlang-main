@@ -65,7 +65,7 @@
 12. [Beyond SQL: files, safety, speed (C engine)](#12-beyond-sql-files-safety-speed-c-engine)
     - 12.1 CSV files, 12.2 `preview` and `undo`, 12.3 Savepoints, 12.4 `natural join`, 12.5 `on delete` / `on update`
     - 12.6 Recursive `with`, 12.7 One program at a time, 12.8 Speed, 12.9 Limits, 12.10 Triggers and procedures, 12.11 Did you mean, 12.12 Users and the server
-    - 12.13 Timestamps, JSON and bytes, 12.14 Names with spaces, 12.15 Encrypted files
+    - 12.13 Timestamps, JSON and bytes, 12.14 Names with spaces, 12.15 Encrypted files, 12.16 Backup and restore
 
 ---
 
@@ -1228,3 +1228,13 @@ encrypt database with password "a long passphrase"
 From then on the file of the database is written encrypted: the key is made from the password with PBKDF2-SHA-256 (200,000 rounds, a new salt for each `encrypt`), and the whole file is sealed with ChaCha20-Poly1305 and a new nonce at each save. It begins with `ENLNG_C_EDB_ENC1`, then the salt (16 bytes), the rounds (4), the nonce (12), the sealed file and its tag (16). The password is never kept, in the file or anywhere else.
 
 To open it: `use database shop with password "a long passphrase"`, or set `ENLNGDB_DB_PASSWORD`; `enlngdb --serve` takes it from `ENLNGDB_DB_PASSWORD` or asks for it. Without the password, or with a wrong one, nothing can be run on the database and its file is not written, so an encrypted file is never replaced by an empty database. A file in which one byte was changed is refused, not read wrong. `decrypt database` writes it plain again; `encrypt database with password "..."` again changes the password. A lost password cannot be found again. A password needs at least 8 characters. Only an admin may run these through the server.
+
+### 12.16 Backup and restore
+```enlngdb
+backup database to "shop_monday.edb"
+restore database from "shop_monday.edb" with password "a long passphrase" confirmed
+```
+A backup over a file that is there already needs `confirmed` at its end. `with password "..."` is for a backup of an encrypted database (here the one of 12.15); a plain backup needs only `restore database from "shop_monday.edb" confirmed`.
+A backup is a full file of version 4 written from the database as it is at that statement (changes of the script so far included): tables, rows, views, indexes, triggers, procedures, users and rights. It is written to `<file>.tmp` and put in place in one step; the database, its file and its log of changes are not touched, and a log beside the target that belonged to an older file there is removed. An encrypted database gives a backup sealed with the same key (the same password opens it). A backup is refused to the database's own file, its `-wal`, `.tmp` or `.lock`, and inside a transaction.
+
+A restore reads the whole file first (every row is decoded and checked, and an encrypted file needs `with password "..."` or `ENLNGDB_DB_PASSWORD`); if anything is wrong nothing changes. Then the tables, triggers, procedures, users and rights of the database are replaced by those of the file, and `undo` cannot reach past it. The database keeps its name and, if it is encrypted, its own password; at the end of the script it is written as a full file and its log of changes goes. On a server both are for an admin only. Neither can be previewed.

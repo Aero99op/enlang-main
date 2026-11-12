@@ -2343,6 +2343,79 @@ bool enlngdb_save(const EnlngDatabase* dbc, const char* filepath) {
     return ok;
 }
 
+bool enlngdb_backup_file(EnlngDatabase* db, const char* path) {
+    if (!db || !path || db->locked) return false;
+    uint8_t id[16];
+    if (!enlngdb_random_bytes(id, sizeof(id))) return false;
+    SavedPlace* places = (SavedPlace*)calloc((size_t)db->table_count + 1, sizeof(SavedPlace));
+    if (!places) return false;
+    bool ok = save_full(db, path, id, places);      /* no rebase: the database stays on its own file */
+    free(places);
+    if (ok) {
+        char wal[1100];
+        snprintf(wal, sizeof(wal), "%s-wal", path);
+        remove(wal);        /* a log of a file that was there before belongs to that file, not to this copy */
+    }
+    return ok;
+}
+
+int enlngdb_restore_file(EnlngDatabase* db, const char* path, const char* password) {
+    if (!db || !path) return -1;
+    FILE* there = fopen(path, "rb");
+    if (!there) return -1;
+    fclose(there);
+    EnlngDatabase* from = enlngdb_create(db->name);
+    if (!from) return -1;
+    enlngdb_open_password = password;
+    bool ok = enlngdb_load(from, path);
+    enlngdb_open_password = NULL;
+    if (!ok) {
+        int why = enlngdb_load_error ? enlngdb_load_error : 4;
+        enlngdb_free(from);
+        return why;
+    }
+    enlngdb_materialize(from);      /* every row read (and checked) while the database is still as it was */
+    /* the tables of the file become the database's; nothing of them points into the file any more */
+    enlngdb_clear(db);
+    free(db->tables);
+    db->tables = from->tables;
+    db->table_count = from->table_count;
+    db->table_cap = from->table_cap;
+    from->tables = NULL;
+    from->table_count = 0;
+    from->table_cap = 0;
+    for (int t = 0; t < db->table_count; t++) {
+        EnlngTable* tb = &db->tables[t];
+        tb->lazy = NULL;
+        tb->lazy_bytes = 0;
+        tb->nstored = 0;
+        tb->base_rows = -1;
+        tb->base_data = NULL;
+        tb->base_offs = NULL;
+        tb->base_bytes = 0;
+        tb->wal_applied = false;
+        tb->wal_del = NULL;
+        tb->nwal_del = 0;
+        tb->wal_set = NULL;
+        tb->nwal_set = 0;
+        for (size_t r = 0; r < tb->row_count; r++) tb->rowv[r].origin = -1;
+    }
+    enlngdb_free_extras(db);
+    db->triggers = from->triggers; db->trigger_count = from->trigger_count;
+    db->procs = from->procs; db->proc_count = from->proc_count;
+    db->users = from->users; db->user_count = from->user_count;
+    db->grants = from->grants; db->grant_count = from->grant_count;
+    from->triggers = NULL; from->trigger_count = 0;
+    from->procs = NULL; from->proc_count = 0;
+    from->users = NULL; from->user_count = 0;
+    from->grants = NULL; from->grant_count = 0;
+    db->has_base = false;           /* the next save writes the full file, sealed again if the database is encrypted */
+    db->dropped = false;
+    enlngdb_free(from);
+    enlngdb_mutations++;
+    return 0;
+}
+
 /* adds a row at the end that owns these cells (they are not copied), as enlngdb_append_row does otherwise */
 static bool take_row(EnlngTable* table, EnlngVal* cells, int cell_count) {
     enlngdb_mutations++;
