@@ -507,6 +507,42 @@ def main():
         server = None
         out = run_local("find count(*) from n where id >= 900001", "par")
         check("... all five rows are in the file", "| 5 " in out.replace("  ", " ").replace("  ", " ").replace("  ", " "), out[-300:])
+        # a server open to a network: waiting connections cannot shut others out, passwords cannot be guessed at speed
+        run_local('create table t with id integer\ncreate user boss password "boss-pass-1" admin\n', "guard")
+        port = free_port()
+        server, line = start_server("guard", port, "--readers", "0")
+        idle = [socket.create_connection(("127.0.0.1", port), timeout=10) for k in range(70)]
+        time.sleep(0.3)
+        g = Conn(port)
+        w, t = g.login("boss", "boss-pass-1")
+        check("70 connections that only wait do not keep a client out", w == "ok", (w, t))
+        for x in idle:
+            x.close()
+        big = Conn(port)
+        try:
+            big.s.sendall(("login %d\n" % 200000).encode() + b"x" * 200000)
+            w, t = big.answer()
+        except OSError:
+            w, t = None, "closed"
+        check("a connection that sends a lot before it signs in is closed", w is None, (w, t))
+        answers = []
+        for k in range(3):
+            z = Conn(port)
+            for j in range(2):
+                try:
+                    answers.append(z.login("boss", "guess-%d-%d" % (k, j)))
+                except OSError:
+                    answers.append((None, "closed"))
+            z.s.close()
+        z = Conn(port)
+        w, t = z.login("boss", "boss-pass-1")
+        check("after 5 wrong passwords from one address it must wait, even with the right one, and connecting again does not help",
+              answers[3][1] == "the name or the password is wrong" and "too many wrong passwords" in answers[5][1] and w == "denied" and "try again in" in t, (answers, w, t))
+        w, t = g.run("find count(*) from t")
+        check("... a client that had signed in goes on", w == "ok", (w, t))
+        g.run("shutdown server")
+        server.communicate(timeout=60)
+        server = None
         time.sleep(1.0)
         if os.name == "nt":
             left = subprocess.run(["tasklist", "/fi", "imagename eq enlngdb.exe", "/fo", "csv", "/nh"], capture_output=True, text=True).stdout

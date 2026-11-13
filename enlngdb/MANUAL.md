@@ -48,7 +48,7 @@
    - 8.3 Column Removal
 9. [Persistence, Storage Internals & Concurrency](#9-persistence-storage-internals--concurrency)
    - 9.1 Disk Persistence Commands (`save database to`, `open database to`)
-   - 9.2 Binary File Specification (`ENLNG_C_EDB_V4`)
+   - 9.2 Binary File Specification (`ENLNG_C_EDB_V5`)
    - 9.3 In-Memory Indexing & Automatic Re-indexing
    - 9.4 Concurrency Control: Multi-Reader Single-Writer Locking (`DatabaseLock`)
    - 9.5 MVCC & Row Versioning (`_version`)
@@ -89,14 +89,14 @@ EnlngDB exists in two parallel, fully compatible execution environments:
 | **Primary Goal** | High-performance, embedded, microsecond latency | Toolchain integration, scripting, rapid pipeline evaluation |
 | **Source Location** | `enlngdb/c/` (`enlngdb.c`, `enlngdb_parser.c`, `enlngdb.h`) | `enlngdb/` (`lexer.py`, `parser.py`, `storage.py`, `engine.py`) |
 | **Memory Model** | Fixed contiguous cell arrays with dynamic realloc | Dynamic dictionary rows with automatic hash indexing |
-| **Storage Format** | Native binary `.edb` (`ENLNG_C_EDB_V4`) | Native `.edb` / atomic JSON format (`ENLNGDB_SOVEREIGN_V1`) |
+| **Storage Format** | Native binary `.edb` (`ENLNG_C_EDB_V5`) | Native `.edb` / atomic JSON format (`ENLNGDB_SOVEREIGN_V1`) |
 | **Concurrency** | Single-threaded atomic script executor | Readers-Writer lock (`DatabaseLock` via `threading.RLock`) |
 | **Binary Footprint**| ~100 KB stand-alone executable | Pure Python modules (wheel package) |
 
 ---
 
 ### 1.3 Storage Formats: `.edb` Binary vs Native Memory Snapshots
-* **`.edb` (Enlng Database Binary):** A high-performance, compact file format beginning with the 14-byte magic signature `ENLNG_C_EDB_V4` (files written by older versions, `ENLNG_C_EDB_V3`, `ENLNG_C_EDB_V2` and `ENLNG_C_EDB_V1`, are still read). It contains table definitions, column types and constraints, views, indexes, and packed row values.
+* **`.edb` (Enlng Database Binary):** A high-performance, compact file format beginning with the 14-byte magic signature `ENLNG_C_EDB_V5` (files written by older versions, `ENLNG_C_EDB_V4`, `ENLNG_C_EDB_V3`, `ENLNG_C_EDB_V2` and `ENLNG_C_EDB_V1`, are still read). It contains table definitions, column types and constraints, views, indexes, packed row values, and checksums of all of them.
 * **Atomic Memory Snapshots:** Both engines maintain active state entirely in memory. When saving, data is written atomically to temporary files before being swapped in place to prevent file corruption during power failures or crashes.
 
 ---
@@ -646,14 +646,14 @@ open database to "production_vault.edb"
 
 ---
 
-### 9.2 Binary File Specification (`ENLNG_C_EDB_V4`)
+### 9.2 Binary File Specification (`ENLNG_C_EDB_V5`)
 The pure C native engine persists tables directly using a compact binary layout. Every field is written by itself, so the file does not depend on the compiler or the machine:
 
 ```text
 +-------------------------------------------------------------------------+
-| 16 bytes   : MAGIC "ENLNG_C_EDB_V4" (14 characters, padded)             |
+| 16 bytes   : MAGIC "ENLNG_C_EDB_V5" (14 characters, padded)             |
 | 64 bytes   : database name                                              |
-| 16 bytes   : id of the file (random, new at each full write; v4 only)   |
+| 16 bytes   : id of the file (random, new at each full write; v4 and on) |
 | int32      : number of tables saved (temporary tables are not saved)    |
 +-------------------------------------------------------------------------+
 | FOR EACH TABLE:                                                         |
@@ -682,13 +682,20 @@ The pure C native engine persists tables directly using a compact binary layout.
 |     followed by its column in order: numbers (count uint32, then value  |
 |     double + row uint32 each, ascending), rows with a text (count, then |
 |     rows in the order of the texts), rows of another kind (count, rows) |
+|   - (v5) checksums: block count uint32 (B = R / 256, rounded up), B x   |
+|     CRC-32 uint32 (the bytes of 256 rows, then their 256 places), and   |
+|     a CRC-32 uint32 of the lookup indexes (from their count on)         |
 +-------------------------------------------------------------------------+
 | after the tables: triggers, procedures, users (their own parts)         |
-| 16 bytes   : END MARK "ENLNG_EDB_END_V4" (version 4)                    |
+| (v5) uint32 : CRC-32 of every byte after the magic that is not in the   |
+|               rows, places, indexes or checksums of a table             |
+| 16 bytes   : END MARK "ENLNG_EDB_END_V4" (version 4 and 5)              |
 +-------------------------------------------------------------------------+
 ```
 
-With the places of the rows, a file opens without reading its rows: it is mapped into memory, and a row is read the first time a statement needs it. The lookup indexes are kept for the key of a table (or its `id` column), its `unique` columns and the columns of a one-column `create index`; a lookup `column is value` (also inside `or`) uses them while nothing has changed since the file was opened. A version 2 file has the same tables with only the row count (4 bytes; 8 in a file from a 64-bit program before) before the rows, and nothing after them; it is read whole. A version 3 file is the same without the id; it is read, and written as version 4 at the next full write. Programs before this version cannot read a version 4 file. Beside a version 4 file there may be a log of changes, `<file>-wal` (§12.8).
+With the places of the rows, a file opens without reading its rows: it is mapped into memory, and a row is read the first time a statement needs it. The lookup indexes are kept for the key of a table (or its `id` column), its `unique` columns and the columns of a one-column `create index`; a lookup `column is value` (also inside `or`) uses them while nothing has changed since the file was opened. A version 2 file has the same tables with only the row count (4 bytes; 8 in a file from a 64-bit program before) before the rows, and nothing after them; it is read whole. A version 3 file is the same without the id, and a version 4 file the same without the checksums; both are read, and written as version 5 at the next full write. Programs before this version cannot read a version 5 file (they say it is not a database they can read, and leave it as it is); this program says so of a file of a later version, and asks to update. Beside a version 4 or 5 file there may be a log of changes, `<file>-wal` (§12.8), which has a SHA-256 of its own.
+
+**Checksums.** Each row of a version 5 file is checked the first time a row of its 256 is read: a byte changed by a failing disk, a bad copy or by hand stops the program with "the file of this database is damaged" (exit code 3), instead of being read as a different value, and nothing is written. The rest (names, columns, triggers, procedures, users and rights) is checked when the file is opened: a file in which it changed is not opened. A changed lookup index is not used (a note says so) and the rows are read instead, so the answers stay right. The rows of a big file are still not read when it opens: a block of 256 rows is checked when it is first needed. Measured on one machine: reading all 500,000 rows of a 39 MB file took 0.52 s, against 0.48 s without the checksums; a lookup took the same time. Checksums find damage; they do not repair it: keep backups (§12.16).
 
 Version 1 files (before column types) have the same header but write the columns as raw structs and have no view, index or constraint data. They are read, and written back as version 2 the next time the database is saved.
 
@@ -1188,7 +1195,7 @@ enlngdb --connect 10.0.0.5:7171/bank --user asha               (each line typed 
 
 **Encryption.** The connection is encrypted. The server has a key of its own (made the first time in `enlngdb_server.key`, which must be kept private) and prints its fingerprint when it starts. The first time a client connects to a server, it shows that fingerprint and asks whether it is the one the server printed, or takes it from `--trust FINGERPRINT`; it then remembers the key (in `~/.enlngdb_known_servers`, or the file `ENLNGDB_KNOWN_SERVERS` names) and refuses, from then on, a server at that address whose key is different, because someone may be in between. Each connection agrees on fresh keys (X25519 on both sides, with the server's own key, then HKDF with SHA-256), and every message is sealed with ChaCha20-Poly1305 (RFC 8439): it cannot be read, and a message changed, sent again or put out of order ends the connection. The code is the engine's own (no libraries); `enlngdb --selftest` checks it against known answers, and the tests compare it with Python's `cryptography` on random keys and messages. `--plain` (on both sides) turns encryption off, and only for `127.0.0.1`.
 
-**Users.** `create user NAME password "..." [admin]` (8 characters or more), `alter user NAME password "..."` (a user may change their own), `drop user NAME`, `show users`. Only a salted hash of a password is kept in the file (PBKDF2 with SHA-256, 60,000 rounds, a random salt per user); a wrong password and an unknown name take the same time, and three wrong passwords end the connection.
+**Users.** `create user NAME password "..." [admin]` (8 characters or more), `alter user NAME password "..."` (a user may change their own), `drop user NAME`, `show users`. Only a salted hash of a password is kept in the file (PBKDF2 with SHA-256, 60,000 rounds, a random salt per user); a wrong password and an unknown name take the same time, and three wrong passwords end the connection. After five wrong passwords from one address, that address must wait 30 seconds before it may sign in again (even with the right password), then 60, 120 and so on up to an hour; the server prints when this happens. A connection that has not signed in within 30 seconds is closed, and may send at most 64 KB before it signs in; when all 64 places are taken, the oldest connection that has not signed in makes room for a new one, so connections that only wait cannot keep others out.
 
 **Rights.** `grant select, insert, update, delete (or all) on TABLE (or *) to USER`, `grant execute on procedure NAME to USER`, and `revoke ... from USER`; `show grants [for USER]`. An admin may do everything. A user who is not one may read the tables they may `select` (every table named in a statement counts, also in a join, a subquery, `with`, `union`, `describe` and `explain`, and also a name in quotes), change rows of the table a statement changes when they have that right, `call` a procedure they may `execute`, use `begin`, `commit`, `rollback`, savepoints and `undo`, and change their own password. Making, changing or dropping tables, views, indexes, triggers, procedures, users and rights is for an admin, and so are `import` and `export` (they read and write files on the server's computer) and `show users`, `show triggers`, `show procedures`. `insert ... with` cannot make a table or a column for a user who is not an admin. A view, a trigger and a procedure run with the rights of the admin who made them: granting `select` on a view lets a user read what the view shows. Rights on a table go when it is dropped and follow it when it is renamed.
 
@@ -1227,7 +1234,7 @@ encrypt database with password "a long passphrase"
 ```
 From then on the file of the database is written encrypted: the key is made from the password with PBKDF2-SHA-256 (200,000 rounds, a new salt for each `encrypt`), and the whole file is sealed with ChaCha20-Poly1305 and a new nonce at each save. It begins with `ENLNG_C_EDB_ENC1`, then the salt (16 bytes), the rounds (4), the nonce (12), the sealed file and its tag (16). The password is never kept, in the file or anywhere else.
 
-To open it: `use database shop with password "a long passphrase"`, or set `ENLNGDB_DB_PASSWORD`; `enlngdb --serve` takes it from `ENLNGDB_DB_PASSWORD` or asks for it. Without the password, or with a wrong one, nothing can be run on the database and its file is not written, so an encrypted file is never replaced by an empty database. A file in which one byte was changed is refused, not read wrong. `decrypt database` writes it plain again; `encrypt database with password "..."` again changes the password. A lost password cannot be found again. A password needs at least 8 characters. Only an admin may run these through the server.
+To open it: `use database shop with password "a long passphrase"`, or set `ENLNGDB_DB_PASSWORD`; `enlngdb --serve` takes it from `ENLNGDB_DB_PASSWORD` or asks for it. Without the password, or with a wrong one, nothing can be run on the database and its file is not written, so an encrypted file is never replaced by an empty database. A file in which one byte was changed is refused, not read wrong. `decrypt database` writes it plain again; `encrypt database with password "..."` again changes the password. A lost password cannot be found again. A password needs at least 8 characters. Only an admin may run these through the server. What it does not cover: while the database is open its rows are in the program's memory unencrypted, and past the memory budget (see "Larger than memory") they go to the temporary file for memory unencrypted too; that file can be read only by your user and goes away when the program ends, and `ENLNGDB_MEMORY=off` keeps everything in memory instead. A CSV from `export` and the output of a query are plain.
 
 ### 12.16 Backup and restore
 ```enlngdb

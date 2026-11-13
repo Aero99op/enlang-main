@@ -3605,7 +3605,7 @@ static size_t q_stored_fix(const EnlngTable* t, size_t* out, size_t c) {
 /* the rows of t that can have this value in column col, in row order; NULL if no index could be used */
 /* the rows of a lookup index kept in the file whose hash is h, and the rows it has no hash for, in row order */
 static size_t* q_stored_lookup(const EnlngTable* t, int col, uint64_t h, size_t* n_out) {
-    if (!t->lazy || enlngdb_mutations != enlngdb_loaded_at) return NULL;
+    if (!t->lazy || enlngdb_mutations != enlngdb_loaded_at || !enlngdb_stored_check(t)) return NULL;
     for (int k = 0; k < t->nstored; k++) {
         if (t->stored[k].col != col) continue;
         const unsigned char* at = t->stored[k].at;
@@ -3800,7 +3800,7 @@ static int q_filetext_prefix(const char* s, size_t len, const char* p, size_t pl
 static size_t* q_stored_range(const EnlngTable* t, int col, int kind, bool has_lo, double dlo, const char* slo, bool has_hi, double dhi,
                               const char* shi, const char* prefix, size_t plen, size_t* n_out, bool* decided) {
     *decided = false;
-    if (!t->lazy || enlngdb_mutations != enlngdb_loaded_at) return NULL;
+    if (!t->lazy || enlngdb_mutations != enlngdb_loaded_at || !enlngdb_stored_check(t)) return NULL;
     for (int k = 0; k < t->nstored; k++) {
         if (t->stored[k].col != col || !t->stored[k].has_range) continue;
         const unsigned char* nums = t->stored[k].nums;
@@ -4270,6 +4270,7 @@ static bool q_where_prefix(const QExpr* w, const QSet* S, int* col, const char**
 
 /* the file keeps a lookup index (or, with ordered, the column in order) for this column */
 static bool q_stored_has(const EnlngTable* t, int col, bool ordered) {
+    if (t->nstored && !enlngdb_stored_check(t)) return false;
     for (int k = 0; k < t->nstored; k++) if (t->stored[k].col == col && (!ordered || t->stored[k].has_range)) return true;
     return false;
 }
@@ -8698,7 +8699,10 @@ static bool q_open_file(EnlngDatabase* db, const char* path, bool there, const c
         q_lock_reason = enlngdb_load_error;
         char e2[300];
         char hint[300];
-        if (enlngdb_load_error == 4) {
+        if (enlngdb_load_error == 4 && enlngdb_load_newer[0]) {
+            snprintf(e2, sizeof(e2), "the file %s was written by a newer version of enlngdb (%s), so database '%s' was not opened", path, enlngdb_load_newer, db->name);
+            snprintf(hint, sizeof(hint), "Update enlngdb to open it (see enlangg.site/install.html). The file is left as it is, and nothing is written.");
+        } else if (enlngdb_load_error == 4) {
             snprintf(e2, sizeof(e2), "the file %s is not a database this program can read (it is cut, damaged, or something else), so database '%s' was not opened", path, db->name);
             snprintf(hint, sizeof(hint), "The file is left as it is: nothing runs on this database, and nothing is written. Put back a copy from before, or move the file away to start an empty database of this name.");
         } else if (enlngdb_load_error == 3) {
@@ -10761,6 +10765,7 @@ static bool q_restore(EnlngDatabase* db, const char* stmt, bool print_output) {
         if (why == 1) snprintf(err, sizeof(err), "'%s' is encrypted, and no password was given", path);
         else if (why == 2) snprintf(err, sizeof(err), "the password of '%s' is wrong (or the file was changed)", path);
         else if (why == -1) snprintf(err, sizeof(err), "there is no file '%s'", path);
+        else if (enlngdb_load_newer[0]) snprintf(err, sizeof(err), "'%s' was written by a newer version of enlngdb (%s); update enlngdb to restore it", path, enlngdb_load_newer);
         else snprintf(err, sizeof(err), "'%s' is not a database this program can read (it is cut, damaged, or something else)", path);
         q_print_error(print_output, err, why == 1 ? "Add: with password \"...\"  (before 'confirmed'). Nothing was changed." : "Nothing was changed.");
         return false;

@@ -17,6 +17,7 @@
 #define ENLNGDB_MAX_NAME 64
 #define ENLNGDB_MAGIC "ENLNG_C_EDB_V2"
 #define ENLNGDB_MAGIC_V3 "ENLNG_C_EDB_V3"     /* rows with their places, and lookup indexes, so a file opens without reading its rows */
+#define ENLNGDB_MAGIC_V5 "ENLNG_C_EDB_V5"     /* version 4 with checksums: of each 256 rows, of the indexes kept, and of the rest */
 #define ENLNGDB_MAGIC_V4 "ENLNG_C_EDB_V4"     /* version 3 with a random id, which ties a log of changes (.edb-wal) to the file */
 #define ENLNGDB_STORED_MAX 8                  /* lookup indexes kept in the file for a table */
 #define ENLNGDB_MAGIC_V1 "ENLNG_C_EDB_V1"
@@ -129,6 +130,10 @@ typedef struct {
     const unsigned char* base_offs;
     uint8_t base_width;
     uint8_t base_sig[32];               /* SHA-256 of its columns and indexes as they were */
+    /* version 5: the checksums of the rows at 'lazy' and at base_data (the file's own, checked the first time a
+       row of each 256 is read); NULL for an older file */
+    void* lazy_sums;
+    void* base_sums;
     /* what the log changed when the file was opened: the indexes kept in the file still find the other rows */
     bool wal_applied;
     const unsigned char* wal_del;       /* rows of the file deleted (sorted places, 4 bytes each) */
@@ -356,6 +361,8 @@ extern bool (*enlngdb_value_hash)(const EnlngVal* v, uint64_t* h);
 extern unsigned long long enlngdb_loaded_at;
 /* the text in column col of row b of the file the table was opened from (not ended by a zero byte); NULL if it is not a text */
 const char* enlngdb_base_text(const EnlngTable* t, size_t b, int col, size_t* len);
+/* the indexes kept in the file of t are as they were written (checked once); false: they are not used */
+bool enlngdb_stored_check(const EnlngTable* t);
 /* A script as an editor saved it, made plain UTF-8: the mark at the start of a UTF-8 file (Notepad writes one) is
    taken off, and a UTF-16 file (Notepad's "Unicode") is turned into UTF-8. buf (n bytes, a zero after them) is
    from malloc; what is returned is buf or a new buffer (then buf was freed). */
@@ -379,6 +386,8 @@ int enlngdb_restore_file(EnlngDatabase* db, const char* path, const char* passwo
    the load fails, enlngdb_load_error says why: 1 the file is encrypted and no password was given, 2 the password is
    wrong (or the file was changed), 0 anything else. */
 extern const char* enlngdb_open_password;
+/* when the file is of a version newer than this program reads: its magic ("ENLNG_C_EDB_V6" ...); else empty */
+extern char enlngdb_load_newer[16];
 extern int enlngdb_load_error;          /* also 3: the log of changes (.edb-wal) was damaged; 4: the file is not a database this program can read */
 /* turn the encryption of the file on with this password (a new salt each time), or off (password NULL) */
 bool enlngdb_set_password(EnlngDatabase* db, const char* password);

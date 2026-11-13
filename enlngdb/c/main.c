@@ -361,6 +361,10 @@ static int crypto_tool(int argc, char** argv) {
 #define MAX_DATABASES 16
 #define MAX_MESSAGE (64u * 1024u * 1024u)
 #define WAIT_FOR_TXN_SECONDS 10
+#define SIGN_IN_SECONDS 30          /* a connection that has not signed in by then is closed: idle ones cannot fill the places */
+#define BEFORE_SIGN_IN_BYTES 65536  /* what a connection may send before it has signed in */
+#define WRONG_TRIES 5               /* wrong passwords from one address before it has to wait */
+#define WRONG_WAIT_SECONDS 30       /* the first wait; it doubles each time, up to an hour */
 
 static bool send_all(qsock s, const char* p, size_t n) {
     while (n > 0) {
@@ -519,6 +523,8 @@ typedef struct {
     char user[ENLNGDB_MAX_NAME];
     int dbi;                    /* the database it signed in to */
     int fails;
+    uint32_t addr;              /* the IPv4 address it came from */
+    time_t since;               /* when it connected */
     time_t waiting_since;       /* a request waits for another client's transaction (0: none) */
     int at_reader;              /* the reader running its request (-1: none); its next requests wait for the answer */
     char* held;                 /* the answer to a request that changed the database: sent when the change is on the disk */
@@ -536,6 +542,54 @@ static void drop_client(Client* c) {
 }
 
 static bool reply(Client* c, const char* word, const char* text) { return send_msg(&c->link, word, text, strlen(text)); }
+
+/* wrong passwords by address: after WRONG_TRIES an address waits before it may try again, longer each time, so
+   passwords cannot be guessed at speed by connecting again and again */
+typedef struct { uint32_t addr; int wrong; int waits; time_t until; time_t last; } Tries;
+#define MAX_TRIES 256
+static Tries tries_[MAX_TRIES];
+
+static Tries* tries_of(uint32_t addr, bool make) {
+    int oldest = 0;
+    for (int i = 0; i < MAX_TRIES; i++) {
+        if (tries_[i].last && tries_[i].addr == addr) return &tries_[i];
+        if (tries_[i].last < tries_[oldest].last) oldest = i;
+    }
+    if (!make) return NULL;
+    memset(&tries_[oldest], 0, sizeof(Tries));
+    tries_[oldest].addr = addr;
+    return &tries_[oldest];
+}
+
+/* seconds this address must still wait (0: it may try) */
+static long tries_wait(uint32_t addr) {
+    Tries* t = tries_of(addr, false);
+    time_t now = time(NULL);
+    return t && t->until > now ? (long)(t->until - now) : 0;
+}
+
+static void tries_wrong(uint32_t addr) {
+    Tries* t = tries_of(addr, true);
+    time_t now = time(NULL);
+    if (t->last && now - t->last > 3600) { t->wrong = 0; t->waits = 0; }      /* an hour without a wrong try: forgotten */
+    t->last = now;
+    if (++t->wrong >= WRONG_TRIES) {
+        long w = WRONG_WAIT_SECONDS;
+        for (int i = 0; i < t->waits && w < 3600; i++) w *= 2;
+        if (w > 3600) w = 3600;
+        t->until = now + w;
+        t->wrong = 0;
+        t->waits++;
+        printf("too many wrong passwords from %u.%u.%u.%u: it waits %ld seconds before it may try again\n",
+               (unsigned)(addr >> 24), (unsigned)((addr >> 16) & 255), (unsigned)((addr >> 8) & 255), (unsigned)(addr & 255), w);
+        fflush(stdout);
+    }
+}
+
+static void tries_right(uint32_t addr) {
+    Tries* t = tries_of(addr, false);
+    if (t) memset(t, 0, sizeof(*t));
+}
 
 /* 'shutdown server' as a client sends it: alone, or after a 'type enlngdb' line, with spaces, a ';' or an end of
    line around it (a script file ends with one) */
@@ -630,17 +684,20 @@ static int socket_port(qsock s) {
 
 static bool spawn_reader(int port, const char* token) {
 #ifdef _WIN32
+    SetEnvironmentVariableA("ENLNGDB_READER_TOKEN", token);       /* the child gets it; the command line does not show it */
     char exe[1024];
     DWORD n = GetModuleFileNameA(NULL, exe, sizeof(exe));
     if (n == 0 || n >= sizeof(exe)) return false;
     char cmd[1200];
-    snprintf(cmd, sizeof(cmd), "\"%s\" --reader %d %s", exe, port, token);
+    snprintf(cmd, sizeof(cmd), "\"%s\" --reader %d", exe, port);
     STARTUPINFOA si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
     memset(&pi, 0, sizeof(pi));
-    if (!CreateProcessA(exe, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) return false;
+    BOOL made = CreateProcessA(exe, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+    SetEnvironmentVariableA("ENLNGDB_READER_TOKEN", NULL);
+    if (!made) return false;
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
     return true;
@@ -659,7 +716,8 @@ static bool spawn_reader(int port, const char* token) {
     if (pid == 0) {
         char ps[16];
         snprintf(ps, sizeof(ps), "%d", port);
-        execl(exe, exe, "--reader", ps, token, (char*)NULL);
+        setenv("ENLNGDB_READER_TOKEN", token, 1);
+        execl(exe, exe, "--reader", ps, (char*)NULL);
         _exit(1);
     }
     signal(SIGCHLD, SIG_IGN);       /* nobody waits for it */
@@ -795,7 +853,9 @@ static int serve(const char** names, int nnames, const char* host, const char* p
             enlngdb_open_password = NULL;
             if (!opened && enlngdb_load_error >= 3) {
                 fprintf(stderr, "ERROR: the database '%s' was not opened: %s. Nothing was written.\n", names[i],
-                        enlngdb_load_error == 3 ? "the log of its changes (.edb-wal) is damaged" : "its file is not a database this program can read (cut, damaged, or something else)");
+                        enlngdb_load_error == 3 ? "the log of its changes (.edb-wal) is damaged" :
+                        enlngdb_load_newer[0] ? "its file was written by a newer version of enlngdb; update enlngdb to serve it" :
+                        "its file is not a database this program can read (cut, damaged, or something else)");
                 enlngdb_free(s->db);
                 status = 1;
                 break;
@@ -891,12 +951,31 @@ static int serve(const char** names, int nnames, const char* host, const char* p
         int r = p_select(top + 1, &rd, NULL, NULL, &tv);
         if (r < 0) continue;
         if (in_set(ls, &rd)) {
-            qsock s = p_accept(ls, NULL, NULL);
+            struct sockaddr_in from;
+#ifdef _WIN32
+            int fl = (int)sizeof(from);
+#else
+            socklen_t fl = sizeof(from);
+#endif
+            memset(&from, 0, sizeof(from));
+            qsock s = p_accept(ls, (struct sockaddr*)&from, &fl);
             if (s != QBAD) {
                 int k = -1;
                 for (int i = 0; i < MAX_CLIENTS && k < 0; i++) if (cl[i].link.sock == QBAD) k = i;
+                if (k < 0) {
+                    /* every place is taken: the oldest connection that has not signed in makes room (one that
+                       signs in does so at once), so connections that only wait cannot shut the others out */
+                    for (int i = 0; i < MAX_CLIENTS; i++)
+                        if (!cl[i].signed_in && (k < 0 || cl[i].since < cl[k].since)) k = i;
+                    if (k >= 0) drop_client(&cl[k]);
+                }
                 if (k < 0) q_close(s);
-                else { cl[k].link.sock = s; cl[k].id = next_id++; cl[k].hello_done = plain; cl[k].at_reader = -1; }
+                else {
+                    const unsigned char* a = (const unsigned char*)&from.sin_addr;      /* network order */
+                    cl[k].link.sock = s; cl[k].id = next_id++; cl[k].hello_done = plain; cl[k].at_reader = -1;
+                    cl[k].addr = ((uint32_t)a[0] << 24) | ((uint32_t)a[1] << 16) | ((uint32_t)a[2] << 8) | a[3];
+                    cl[k].since = time(NULL);
+                }
             }
         }
         if (rls != QBAD && in_set(rls, &rd)) {
@@ -946,12 +1025,13 @@ static int serve(const char** names, int nnames, const char* host, const char* p
                     Client* c = &cl[R->client];
                     if (c->link.sock != QBAD && c->id == R->client_id) { reply(c, "failed", "ERROR: the process that read the database stopped; nothing was changed, try again.\n"); c->at_reader = -1; }
                 }
+                bool was_reader = R->ready;     /* a connection that never said the token was not one of ours */
                 q_close(R->link.sock);
                 free(R->in.p);
                 memset(R, 0, sizeof(*R));
                 R->link.sock = QBAD;
                 R->client = -1;
-                spawn_reader(rport, token);
+                if (was_reader) spawn_reader(rport, token);
             }
         }
         for (int i = 0; i < MAX_CLIENTS; i++) {
@@ -964,11 +1044,17 @@ static int serve(const char** names, int nnames, const char* host, const char* p
             if (good && !c->hello_done) good = server_hello(c, priv, pub);
             if (good && c->link.sealed) good = open_frames(&c->link, &c->raw, &c->in);
             if (good && (c->in.len > MAX_MESSAGE + 128 || c->raw.len > MAX_MESSAGE + 512)) good = false;
+            if (good && !c->signed_in && (c->in.len > BEFORE_SIGN_IN_BYTES || c->raw.len > BEFORE_SIGN_IN_BYTES + 512)) good = false;
             if (!good) {
                 /* gone, or sent something wrong or changed: a transaction it left open is rolled back */
                 end_txn_of(sv, c);
                 drop_client(c);
             }
+        }
+        {
+            time_t now = time(NULL);
+            for (int i = 0; i < MAX_CLIENTS; i++)
+                if (cl[i].link.sock != QBAD && !cl[i].signed_in && now - cl[i].since > SIGN_IN_SECONDS) drop_client(&cl[i]);
         }
         /* the requests that are all there, one client after another */
         for (int i = 0; i < MAX_CLIENTS && !quit; i++) {
@@ -996,13 +1082,20 @@ static int serve(const char** names, int nnames, const char* host, const char* p
                     else if (l2) pw = l2 + 1;
                     int dbi = dbname && dbname[0] ? find_served(sv, nsv, dbname) : (nsv == 1 ? 0 : -1);
                     bool admin = false;
+                    long wait = tries_wait(c->addr);
                     if (c->signed_in) {
                         reply(c, "denied", "this connection has signed in already; to use another database, connect again");
+                    } else if (wait > 0) {
+                        char m[200];
+                        snprintf(m, sizeof(m), "too many wrong passwords from your address; try again in %ld seconds", wait);
+                        reply(c, "denied", m);
+                        gone = true;
                     } else if (dbi < 0) {
                         char m[300];
                         snprintf(m, sizeof(m), "%s: say which one, as in --connect HOST:PORT/%s", dbname && dbname[0] ? "this server does not serve that database" : "this server serves several databases", sv[0].name);
                         reply(c, "denied", m);
                     } else if (enlngdb_login(sv[dbi].db, user, pw, &admin)) {
+                        tries_right(c->addr);
                         c->signed_in = true;
                         c->admin = admin;
                         c->dbi = dbi;
@@ -1020,6 +1113,7 @@ static int serve(const char** names, int nnames, const char* host, const char* p
                         fflush(stdout);
                     } else {
                         c->fails++;
+                        tries_wrong(c->addr);
                         reply(c, "denied", "the name or the password is wrong");
                         if (c->fails >= 3) gone = true;
                     }
@@ -1399,7 +1493,18 @@ int main(int argc, char* argv[]) {
 #ifndef __EMSCRIPTEN__
     if (strcmp(argv[1], "--selftest") == 0) return self_test();
     if (strcmp(argv[1], "--x25519") == 0 || strcmp(argv[1], "--seal") == 0) return crypto_tool(argc, argv);
-    if (strcmp(argv[1], "--reader") == 0 && argc >= 4) return reader_main(argv[2], argv[3]);
+    if (strcmp(argv[1], "--reader") == 0 && argc >= 3) {
+        char token[64];
+        const char* t = getenv("ENLNGDB_READER_TOKEN");
+        snprintf(token, sizeof(token), "%s", t ? t : "");
+#ifdef _WIN32
+        SetEnvironmentVariableA("ENLNGDB_READER_TOKEN", NULL);
+#else
+        unsetenv("ENLNGDB_READER_TOKEN");
+#endif
+        if (!token[0]) return 1;
+        return reader_main(argv[2], token);
+    }
     if (strcmp(argv[1], "--serve") == 0) {
         const char* names[MAX_DATABASES];
         int nnames = 0;

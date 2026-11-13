@@ -1180,6 +1180,34 @@ bool enlngdb_random_bytes(unsigned char* out, size_t n) {
 #endif
 }
 
+/* CRC-32 (the one of zip and PNG): the checksums of a file of version 5. crc32_up(crc32_up(0, a), b) is the
+   checksum of a followed by b. */
+static uint32_t crc_tab[4][256];
+static bool crc_ready = false;
+static void crc_init(void) {
+    for (uint32_t i = 0; i < 256; i++) {
+        uint32_t c = i;
+        for (int k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320u ^ (c >> 1) : c >> 1;
+        crc_tab[0][i] = c;
+    }
+    for (uint32_t i = 0; i < 256; i++)
+        for (int t = 1; t < 4; t++) crc_tab[t][i] = (crc_tab[t - 1][i] >> 8) ^ crc_tab[0][crc_tab[t - 1][i] & 255];
+    crc_ready = true;
+}
+static uint32_t crc32_up(uint32_t crc, const void* data, size_t n) {
+    if (!crc_ready) crc_init();
+    const unsigned char* p = (const unsigned char*)data;
+    uint32_t c = ~crc;
+    while (n >= 4) {
+        c ^= (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+        c = crc_tab[3][c & 255] ^ crc_tab[2][(c >> 8) & 255] ^ crc_tab[1][(c >> 16) & 255] ^ crc_tab[0][c >> 24];
+        p += 4;
+        n -= 4;
+    }
+    while (n--) c = crc_tab[0][(c ^ *p++) & 255] ^ (c >> 8);
+    return ~c;
+}
+
 /* What the file is read from or written to: the file itself, or bytes in memory (an encrypted file is opened, or
    gathered for sealing, in memory). */
 typedef struct {
@@ -1189,6 +1217,8 @@ typedef struct {
     bool bad;                   /* memory ran out while writing */
     bool borrowed;              /* the bytes belong to a source of the database (rows are read from them later) */
     uint64_t written;           /* bytes written so far */
+    bool sum_on, sum2_on;       /* while on, what is written goes into sum (the parts that are not rows) or sum2 */
+    uint32_t sum, sum2;
 } EnlngIO;
 typedef struct { fpos_t at; size_t pos; } EnlngIOMark;
 
@@ -1204,6 +1234,8 @@ static size_t eio_read(void* p, size_t size, size_t n, EnlngIO* io) {
 
 static size_t eio_write(const void* p, size_t size, size_t n, EnlngIO* io) {
     io->written += (uint64_t)size * n;
+    if (io->sum_on) io->sum = crc32_up(io->sum, p, size * n);
+    if (io->sum2_on) io->sum2 = crc32_up(io->sum2, p, size * n);
     if (io->f) return fwrite(p, size, n, io->f);
     size_t add = size * n;
     if (io->len + add > io->cap) {
@@ -1239,6 +1271,7 @@ static void eio_close(EnlngIO* io) {
 static const char ENLNGDB_MAGIC_ENC[16] = "ENLNG_C_EDB_ENC1";
 const char* enlngdb_open_password = NULL;
 int enlngdb_load_error = 0;
+char enlngdb_load_newer[16] = "";
 static uint32_t le32(const uint8_t* p);
 static void put32(uint8_t* p, uint32_t v);
 
@@ -1400,8 +1433,26 @@ bool enlngdb_replace_file(const char* tmp_path, const char* filepath) {
  * A file of version 3 keeps, for each table, the rows as before, then the place of each row, then lookup indexes.
  * It is mapped into memory and nothing of its rows is read when it is opened: each row is read the first time a
  * statement needs it, and a lookup by the key uses the index kept in the file while nothing has changed. */
+#define SUM_ROWS 256            /* rows under one checksum */
+typedef struct RowSums {
+    struct RowSums* next;
+    const unsigned char* data;  /* the rows, their places (width bytes each) and their count */
+    size_t bytes;
+    const unsigned char* offs;
+    uint8_t width;
+    size_t rc;
+    const unsigned char* sums;  /* a checksum (4 bytes) for each SUM_ROWS rows: their bytes, then their places */
+    size_t nblocks;
+    uint8_t* ok;                /* a bit for each: checked */
+    const unsigned char* idx;   /* the indexes kept, and their checksum */
+    size_t idx_len;
+    uint32_t idx_crc;
+    int idx_state;              /* 0 not checked, 1 good, 2 damaged */
+} RowSums;
+
 typedef struct EnlngSource {
     struct EnlngSource* next;
+    RowSums* sums;
     unsigned char* base;
     size_t len;
     int mapped;                 /* 1: a view of a file; 0: a buffer of memory (an encrypted file, opened) */
@@ -1423,6 +1474,7 @@ static void enlngdb_free_sources(EnlngDatabase* db) {
 #else
         free(s->base);
 #endif
+        while (s->sums) { RowSums* x = s->sums->next; free(s->sums->ok); free(s->sums); s->sums = x; }
         free(s);
         s = n;
     }
@@ -1559,11 +1611,61 @@ static void file_damaged(const EnlngTable* t) {
     exit(3);
 }
 
+static uint64_t sums_off(const RowSums* s, size_t i) {
+    if (s->width == 4) { uint32_t o; memcpy(&o, s->offs + i * 4, 4); return o; }
+    uint64_t o;
+    memcpy(&o, s->offs + i * 8, 8);
+    return o;
+}
+
+/* the checksum of the rows of block b (their bytes, then their places), checked the first time; a block that is not
+   as it was written stops the program as a damaged row does */
+static void sums_block(const EnlngTable* t, const RowSums* sc, size_t b) {
+    RowSums* s = (RowSums*)sc;
+    if (b >= s->nblocks) file_damaged(t);
+    if (s->ok[b >> 3] & (1u << (b & 7))) return;
+    size_t first = b * SUM_ROWS, last = first + SUM_ROWS < s->rc ? first + SUM_ROWS : s->rc;
+    uint64_t from = sums_off(s, first), to = last < s->rc ? sums_off(s, last) : s->bytes;
+    if (from > to || to > s->bytes) file_damaged(t);
+    uint32_t c = crc32_up(0, s->data + from, (size_t)(to - from));
+    c = crc32_up(c, s->offs + first * s->width, (last - first) * s->width);
+    uint32_t want;
+    memcpy(&want, s->sums + b * 4, 4);
+    if (c != want) file_damaged(t);
+    s->ok[b >> 3] |= (uint8_t)(1u << (b & 7));
+}
+
+/* the row at this place of the rows (found by halving: the places go up) */
+static void sums_at_offset(const EnlngTable* t, const RowSums* s, size_t off) {
+    size_t lo = 0, hi = s->rc;
+    while (lo < hi) {
+        size_t m = lo + (hi - lo) / 2;
+        if (sums_off(s, m) < off) lo = m + 1; else hi = m;
+    }
+    if (lo >= s->rc || sums_off(s, lo) != off) file_damaged(t);
+    sums_block(t, s, lo / SUM_ROWS);
+}
+
+bool enlngdb_stored_check(const EnlngTable* t) {
+    RowSums* s = (RowSums*)t->lazy_sums;
+    if (!s || !s->idx) return true;
+    if (s->idx_state == 0) {
+        s->idx_state = crc32_up(0, s->idx, s->idx_len) == s->idx_crc ? 1 : 2;
+        if (s->idx_state == 2) {
+            fflush(stdout);
+            fprintf(stderr, "NOTE: the indexes kept in the file for table '%s' are damaged; its rows are read instead (they are checked), "
+                            "and the next full save writes the indexes new.\n", t->name);
+        }
+    }
+    return s->idx_state == 1;
+}
+
 /* where a row not read yet is in the file, checked; *len its bytes */
 static const unsigned char* lazy_row(const EnlngTable* t, const EnlngRow* row, size_t* len) {
     size_t off = (size_t)(uintptr_t)row->cells;
     size_t n = off < t->lazy_bytes ? row_check(t->lazy + off, t->lazy + t->lazy_bytes) : 0;
     if (!n) file_damaged(t);
+    if (t->lazy_sums) sums_at_offset(t, (const RowSums*)t->lazy_sums, off);
     if (len) *len = n;
     return t->lazy + off;
 }
@@ -1681,6 +1783,7 @@ const char* enlngdb_base_text(const EnlngTable* t, size_t b, int col, size_t* le
     if (t->base_width == 4) { uint32_t o; memcpy(&o, t->base_offs + b * 4, 4); off = o; }
     else memcpy(&off, t->base_offs + b * 8, 8);
     if (off >= t->base_bytes || !row_check(t->base_data + off, t->base_data + t->base_bytes)) return NULL;
+    if (t->base_sums) sums_block(t, (const RowSums*)t->base_sums, b / SUM_ROWS);
     const unsigned char* p = t->base_data + off;
     int n;
     memcpy(&n, p, 4);
@@ -1744,11 +1847,19 @@ static bool save_range(const EnlngTable* t, int col, EnlngIO* f) {
     return true;
 }
 
+/* where the parts of a table went in the file written: its rows, their places, the indexes kept, the checksums */
+typedef struct { uint64_t data_at, offs_at, idx_at, sums_at; uint8_t width; } SavedPlace;
+
 /* Version 3 rows of a table: the count (8 bytes), the bytes of the rows (8), the width of a place (1, and 7 zero
    bytes), the rows as in version 2, the place of each row from the first, then the lookup indexes: their count (4)
    and for each its column, entries and rows without a hash (4 each), the entries (8 bytes of hash, 4 of row, sorted)
-   and those rows (4 each). A row still in the old file is copied as its bytes, without being read. */
-static bool save_rows_v3(const EnlngTable* t, EnlngIO* f, uint64_t* data_at, uint64_t* offs_at, uint8_t* width_out) {
+   and those rows (4 each). A row still in the old file is copied as its bytes, without being read. Version 5 adds,
+   after the indexes, the count of blocks (4), a CRC-32 for each SUM_ROWS rows (their bytes, then their places) and
+   one of the indexes (from their count on). */
+static bool save_rows_v3(const EnlngTable* t, EnlngIO* f, SavedPlace* place) {
+    uint64_t* data_at = &place->data_at;
+    uint64_t* offs_at = &place->offs_at;
+    uint8_t* width_out = &place->width;
     uint64_t rc = t->row_count;
     uint64_t* offs = (uint64_t*)malloc((size_t)(rc + 1) * sizeof(uint64_t));
     if (!offs) return false;
@@ -1768,8 +1879,14 @@ static bool save_rows_v3(const EnlngTable* t, EnlngIO* f, uint64_t* data_at, uin
     eio_write(pad, 1, 7, f);
     *data_at = f->written;
     *width_out = width;
+    bool meta = f->sum_on;      /* the rows, places, indexes and their checksums have checksums of their own */
+    f->sum_on = false;
+    size_t nblocks = (size_t)((rc + SUM_ROWS - 1) / SUM_ROWS);
+    uint32_t* blk = (uint32_t*)calloc(nblocks + 1, sizeof(uint32_t));
+    if (!blk) { free(offs); f->sum_on = meta; return false; }
     for (size_t r = 0; r < t->row_count; r++) {
         const EnlngRow* row = &t->rowv[r];
+        if (r % SUM_ROWS == 0) { f->sum2 = 0; f->sum2_on = true; }
         if (row->cell_count < 0) {
             size_t in_file = 0;
             const unsigned char* p = lazy_row(t, row, &in_file);
@@ -1778,13 +1895,18 @@ static bool save_rows_v3(const EnlngTable* t, EnlngIO* f, uint64_t* data_at, uin
             eio_write(&row->cell_count, sizeof(int), 1, f);
             for (int c = 0; c < row->cell_count; c++) put_val(f, &row->cells[c]);
         }
+        if (r % SUM_ROWS == SUM_ROWS - 1 || r + 1 == t->row_count) blk[r / SUM_ROWS] = f->sum2;
     }
+    f->sum2_on = false;
     *offs_at = f->written;
     for (size_t r = 0; r < t->row_count; r++) {
-        if (width == 4) { uint32_t o = (uint32_t)offs[r]; eio_write(&o, 4, 1, f); }
-        else eio_write(&offs[r], 8, 1, f);
+        if (width == 4) { uint32_t o = (uint32_t)offs[r]; eio_write(&o, 4, 1, f); blk[r / SUM_ROWS] = crc32_up(blk[r / SUM_ROWS], &o, 4); }
+        else { eio_write(&offs[r], 8, 1, f); blk[r / SUM_ROWS] = crc32_up(blk[r / SUM_ROWS], &offs[r], 8); }
     }
     free(offs);
+    place->idx_at = f->written;
+    f->sum2 = 0;
+    f->sum2_on = true;
     int cols[ENLNGDB_STORED_MAX];
     int ncols = enlngdb_value_hash && rc <= 0xFFFFFFF0u && t->view_sql[0] == '\0' ? stored_columns(t, cols) : 0;
     uint32_t nidx = (uint32_t)ncols | ENLNGDB_STORED_RANGE;
@@ -1793,7 +1915,7 @@ static bool save_rows_v3(const EnlngTable* t, EnlngIO* f, uint64_t* data_at, uin
         StoredEntry* e = (StoredEntry*)malloc((size_t)(rc + 1) * sizeof(StoredEntry));
         uint32_t* spill = (uint32_t*)malloc((size_t)(rc + 1) * sizeof(uint32_t));
         uint32_t n = 0, ns = 0;
-        if (!e || !spill) { free(e); free(spill); return false; }
+        if (!e || !spill) { free(e); free(spill); free(blk); f->sum2_on = false; f->sum_on = meta; return false; }
         for (size_t r = 0; r < t->row_count; r++) {
             EnlngVal v;
             bool own = cell_of(t, r, cols[k], &v);
@@ -1811,8 +1933,17 @@ static bool save_rows_v3(const EnlngTable* t, EnlngIO* f, uint64_t* data_at, uin
         eio_write(spill, 4, ns, f);
         free(e);
         free(spill);
-        if (!save_range(t, cols[k], f)) return false;
+        if (!save_range(t, cols[k], f)) { free(blk); f->sum2_on = false; f->sum_on = meta; return false; }
     }
+    f->sum2_on = false;
+    uint32_t idx_crc = f->sum2;
+    uint32_t nb = (uint32_t)nblocks;
+    eio_write(&nb, 4, 1, f);
+    place->sums_at = f->written;
+    eio_write(blk, 4, nblocks, f);
+    eio_write(&idx_crc, 4, 1, f);
+    free(blk);
+    f->sum_on = meta;
     return true;
 }
 
@@ -1927,7 +2058,6 @@ static void write_extras(const EnlngDatabase* db, EnlngIO* f) {
 }
 
 /* one place of save_full: where the rows of each table went in the new file */
-typedef struct { uint64_t data_at, offs_at; uint8_t width; } SavedPlace;
 
 /* the whole database to a new file (version 4, with a new id): written beside it, on the disk, then put in place */
 static bool save_full(EnlngDatabase* db, const char* filepath, const uint8_t id[16], SavedPlace* places) {
@@ -1946,8 +2076,10 @@ static bool save_full(EnlngDatabase* db, const char* filepath, const uint8_t id[
     int saved_tables = 0;
     for (int t = 0; t < db->table_count; t++) if (!db->tables[t].is_temp) saved_tables++;
     char magic[16] = {0};
-    memcpy(magic, ENLNGDB_MAGIC_V4, 14);
+    memcpy(magic, ENLNGDB_MAGIC_V5, 14);
     eio_write(magic, 1, 16, f);
+    f->sum_on = true;           /* everything after the magic that is not rows: its checksum is just before the end mark */
+    f->sum = 0;
     eio_write(db->name, 1, ENLNGDB_MAX_NAME, f);
     eio_write(id, 1, 16, f);
     eio_write(&saved_tables, sizeof(int), 1, f);
@@ -1955,9 +2087,12 @@ static bool save_full(EnlngDatabase* db, const char* filepath, const uint8_t id[
         EnlngTable* tbl = &db->tables[t];
         if (tbl->is_temp) continue;
         write_table_head(tbl, f, true);
-        if (!save_rows_v3(tbl, f, &places[t].data_at, &places[t].offs_at, &places[t].width)) out.bad = true;
+        if (!save_rows_v3(tbl, f, &places[t])) out.bad = true;
     }
     write_extras(db, f);
+    f->sum_on = false;
+    uint32_t meta_crc = f->sum;
+    eio_write(&meta_crc, 4, 1, f);
     eio_write(ENLNGDB_END_MARK, 1, 16, f);
     if (db->encrypted) {
         /* "ENLNG_C_EDB_ENC1", the salt, the rounds, a new nonce, then the sealed file and its tag */
@@ -2051,7 +2186,8 @@ static void rebase_after_save(EnlngDatabase* db, const char* path, const uint8_t
     int mapped = 0;
     unsigned char* base = map_file(path, &len, &mapped);
     if (!base) return;
-    if (!add_source(db, base, len, mapped)) {
+    EnlngSource* src = add_source(db, base, len, mapped);
+    if (!src) {
 #if defined(_WIN32)
         if (mapped) UnmapViewOfFile(base); else free(base);
 #elif !defined(__EMSCRIPTEN__)
@@ -2072,6 +2208,31 @@ static void rebase_after_save(EnlngDatabase* db, const char* path, const uint8_t
         tb->base_bytes = (size_t)(places[t].offs_at - places[t].data_at);
         tb->base_offs = base + places[t].offs_at;
         tb->base_width = places[t].width;
+        tb->base_sums = NULL;
+        {
+            size_t nblocks = (tb->row_count + SUM_ROWS - 1) / SUM_ROWS;
+            RowSums* rs = (RowSums*)calloc(1, sizeof(RowSums));
+            uint8_t* ok = (uint8_t*)calloc(nblocks / 8 + 1, 1);
+            if (rs && ok && places[t].sums_at + (uint64_t)nblocks * 4 + 4 <= len) {
+                rs->data = tb->base_data;
+                rs->bytes = tb->base_bytes;
+                rs->offs = tb->base_offs;
+                rs->width = tb->base_width;
+                rs->rc = tb->row_count;
+                rs->sums = base + places[t].sums_at;
+                rs->nblocks = nblocks;
+                rs->ok = ok;
+                rs->idx = base + places[t].idx_at;
+                rs->idx_len = (size_t)(places[t].sums_at - 4 - places[t].idx_at);
+                memcpy(&rs->idx_crc, base + places[t].sums_at + nblocks * 4, 4);
+                rs->next = src->sums;
+                src->sums = rs;
+                tb->base_sums = rs;
+            } else {
+                free(rs);
+                free(ok);
+            }
+        }
         table_sig(tb, tb->base_sig);
         for (size_t r = 0; r < tb->row_count; r++) tb->rowv[r].origin = (int)r;
         tb->wal_applied = false;
@@ -2142,6 +2303,7 @@ static int save_wal(EnlngDatabase* db, const char* walpath) {
                     const unsigned char* bp = tb->base_data + base_off(tb, (size_t)row->origin);
                     size_t bl = row_check(bp, tb->base_data + tb->base_bytes);
                     if (!bl) file_damaged(tb);
+                    if (tb->base_sums) sums_block(tb, (const RowSums*)tb->base_sums, (size_t)row->origin / SUM_ROWS);
                     if (bl != m.len || memcmp(bp, m.buf, bl) != 0) if (!u32_push(&sets, (uint32_t)r)) result = -1;
                 }
             } else {
@@ -2221,10 +2383,12 @@ static bool apply_wal(EnlngDatabase* db, const char* path) {
     }
     fclose(f);
     if (len < 68 || memcmp(buf, ENLNGDB_WAL_MAGIC, 16) != 0) { free(buf); enlngdb_load_error = 3; return false; }
-    if (memcmp(buf + 16, db->file_id, 16) != 0) { free(buf); return true; }       /* a log of a file from before */
+    /* the checksum first: a log is written whole beside and put in place, so one that does not match it is damaged
+       (also in its id), and a whole log with another id belongs to a file from before */
     uint8_t h[32];
     enlngdb_sha256(buf, len - 32, h);
     if (memcmp(h, buf + len - 32, 32) != 0) { free(buf); enlngdb_load_error = 3; return false; }
+    if (memcmp(buf + 16, db->file_id, 16) != 0) { free(buf); return true; }       /* a log of a file from before */
     if (!add_source(db, buf, len, 0)) { free(buf); enlngdb_load_error = 3; return false; }
     const unsigned char* p = buf + 32;
     const unsigned char* end = buf + len - 32;
@@ -2393,6 +2557,8 @@ int enlngdb_restore_file(EnlngDatabase* db, const char* path, const char* passwo
         tb->base_data = NULL;
         tb->base_offs = NULL;
         tb->base_bytes = 0;
+        tb->lazy_sums = NULL;
+        tb->base_sums = NULL;
         tb->wal_applied = false;
         tb->wal_del = NULL;
         tb->nwal_del = 0;
@@ -2457,11 +2623,14 @@ static bool eio_skip(EnlngIO* io, uint64_t n) {
 
 /* the rows of a version 3 table: in memory (a mapped file), only their places are taken; from a file read as a
    stream, the rows are read whole */
-static bool load_rows_v3(EnlngTable* t, EnlngIO* f) {
+static bool load_rows_v3(EnlngTable* t, EnlngIO* f, bool v5, EnlngSource* src, uint64_t skip[2]) {
     uint64_t rc = 0, total = 0;
     uint8_t width = 0, pad[7];
     if (eio_read(&rc, 8, 1, f) != 1 || eio_read(&total, 8, 1, f) != 1 || eio_read(&width, 1, 1, f) != 1 || eio_read(pad, 1, 7, f) != 7) return false;
+    skip[0] = f->pos;           /* from here to the end of the checksums: not in the checksum of the rest */
+    t->lazy_sums = t->base_sums = NULL;
     if ((width != 4 && width != 8) || rc > (uint64_t)SIZE_MAX / sizeof(EnlngRow)) return false;
+    if (!f->f && (total > f->len - f->pos || rc > (f->len - f->pos - total) / width)) return false;    /* more than the file holds */
     if (rc > t->row_capacity) {
         EnlngRow* nr = (EnlngRow*)realloc(t->rowv, (size_t)rc * sizeof(EnlngRow));
         if (!nr) return false;
@@ -2505,6 +2674,7 @@ static bool load_rows_v3(EnlngTable* t, EnlngIO* f) {
         }
         if (!eio_skip(f, rc * width)) return false;
     }
+    size_t idx_at = f->pos;
     uint32_t nidx = 0;
     if (eio_read(&nidx, 4, 1, f) != 1) return false;
     bool ranges = (nidx & ENLNGDB_STORED_RANGE) != 0;
@@ -2543,6 +2713,33 @@ static bool load_rows_v3(EnlngTable* t, EnlngIO* f) {
             }
         }
     }
+    if (v5) {
+        size_t idx_end = f->pos;
+        uint32_t nb = 0, idx_crc = 0;
+        if (eio_read(&nb, 4, 1, f) != 1 || (uint64_t)nb != (rc + SUM_ROWS - 1) / SUM_ROWS) return false;
+        const unsigned char* sums = f->f ? NULL : f->buf + f->pos;
+        if (!eio_skip(f, (uint64_t)nb * 4) || eio_read(&idx_crc, 4, 1, f) != 1) return false;
+        if (src && !f->f && t->lazy) {
+            RowSums* rs = (RowSums*)calloc(1, sizeof(RowSums));
+            uint8_t* ok = (uint8_t*)calloc((size_t)nb / 8 + 1, 1);
+            if (!rs || !ok) { free(rs); free(ok); return false; }
+            rs->data = t->lazy;
+            rs->bytes = t->lazy_bytes;
+            rs->offs = t->base_offs;
+            rs->width = width;
+            rs->rc = (size_t)rc;
+            rs->sums = sums;
+            rs->nblocks = nb;
+            rs->ok = ok;
+            rs->idx = f->buf + idx_at;
+            rs->idx_len = idx_end - idx_at;
+            rs->idx_crc = idx_crc;
+            rs->next = src->sums;
+            src->sums = rs;
+            t->lazy_sums = t->base_sums = rs;
+        }
+    }
+    skip[1] = f->pos;
     return true;
 }
 
@@ -2570,6 +2767,7 @@ bool enlngdb_load(EnlngDatabase* db, const char* filepath) {
 static bool load_file(EnlngDatabase* db, const char* filepath) {
     enlngdb_mutations++;
     enlngdb_load_error = 0;
+    enlngdb_load_newer[0] = '\0';
     if (!db || !filepath) return false;
     FILE* file = fopen(filepath, "rb");
     if (!file) return false;
@@ -2622,8 +2820,8 @@ static bool load_file(EnlngDatabase* db, const char* filepath) {
         in.cap = len;
         in.pos = 0;
         if (eio_read(magic, 1, 16, f) != 16) { eio_close(f); return false; }
-        if ((memcmp(magic, ENLNGDB_MAGIC_V3, 14) == 0 || memcmp(magic, ENLNGDB_MAGIC_V4, 14) == 0) && add_source(db, buf, len, 0)) in.borrowed = true;   /* rows are read from it later */
-    } else if (memcmp(magic, ENLNGDB_MAGIC_V3, 14) == 0 || memcmp(magic, ENLNGDB_MAGIC_V4, 14) == 0) {
+        if ((memcmp(magic, ENLNGDB_MAGIC_V3, 14) == 0 || memcmp(magic, ENLNGDB_MAGIC_V4, 14) == 0 || memcmp(magic, ENLNGDB_MAGIC_V5, 14) == 0) && add_source(db, buf, len, 0)) in.borrowed = true;   /* rows are read from it later */
+    } else if (memcmp(magic, ENLNGDB_MAGIC_V3, 14) == 0 || memcmp(magic, ENLNGDB_MAGIC_V4, 14) == 0 || memcmp(magic, ENLNGDB_MAGIC_V5, 14) == 0) {
         /* version 3: the file is mapped, and its rows are read when they are needed */
         size_t mlen = 0;
         int mapped = 0;
@@ -2646,11 +2844,19 @@ static bool load_file(EnlngDatabase* db, const char* filepath) {
 #endif
         }
     }
-    bool v4 = memcmp(magic, ENLNGDB_MAGIC_V4, 14) == 0;
+    bool v5 = memcmp(magic, ENLNGDB_MAGIC_V5, 14) == 0;
+    bool v4 = v5 || memcmp(magic, ENLNGDB_MAGIC_V4, 14) == 0;
+    uint64_t (*skips)[2] = NULL;        /* version 5: the parts of the tables that have checksums of their own */
+    int nskips = 0;
     bool v3 = v4 || memcmp(magic, ENLNGDB_MAGIC_V3, 14) == 0;
     db->has_base = false;
     bool v2 = v3 || memcmp(magic, ENLNGDB_MAGIC, 14) == 0;
     if (!v2 && memcmp(magic, ENLNGDB_MAGIC_V1, 14) != 0) {
+        /* "ENLNG_C_EDB_V6" and on: written by a newer version of this program */
+        if (memcmp(magic, "ENLNG_C_EDB_V", 13) == 0 && isdigit((unsigned char)magic[13]) && magic[13] > '5') {
+            memcpy(enlngdb_load_newer, magic, 14);
+            enlngdb_load_newer[14] = '\0';
+        }
         eio_close(f);
         return false;
     }
@@ -2737,7 +2943,14 @@ static bool load_file(EnlngDatabase* db, const char* filepath) {
         if (v3) {
             table_sig(tbl, tbl->base_sig);
             tbl->base_pos = t;
-            if (!load_rows_v3(tbl, f)) break;
+            uint64_t skip[2] = {0, 0};
+            if (!load_rows_v3(tbl, f, v5, f->f ? NULL : (EnlngSource*)db->sources, skip)) break;
+            uint64_t (*grown)[2] = (uint64_t(*)[2])realloc(skips, (size_t)(nskips + 1) * sizeof(*skips));
+            if (!grown) break;
+            skips = grown;
+            skips[nskips][0] = skip[0];
+            skips[nskips][1] = skip[1];
+            nskips++;
             if (!v4 || f->f || tbl->row_count > 0x7FFFFFF0u) tbl->base_rows = -1;      /* not a base for a log */
             continue;
         }
@@ -2785,9 +2998,30 @@ static bool load_file(EnlngDatabase* db, const char* filepath) {
     if (tables_read < table_cnt) {
         /* the file ends, or stops making sense, inside a table: it is cut or damaged. Opening it as the tables that
            could be read would let the next save write over the rest. */
+        free(skips);
         eio_close(f);
         return false;
     }
+    if (v5 && !f->f) {
+        /* the checksum of everything after the magic that is not rows: names, columns, indexes, triggers, users;
+           checked before the triggers and users are read, so a changed length there is not taken as one */
+        bool good = f->len >= 36;
+        uint32_t c = 0;
+        uint64_t at = 16, end = good ? f->len - 20 : 0;
+        for (int i = 0; i < nskips && good; i++) {
+            if (skips[i][0] < at || skips[i][1] < skips[i][0] || skips[i][1] > end) { good = false; break; }
+            c = crc32_up(c, f->buf + at, (size_t)(skips[i][0] - at));
+            at = skips[i][1];
+        }
+        if (good) {
+            c = crc32_up(c, f->buf + at, (size_t)(end - at));
+            uint32_t want;
+            memcpy(&want, f->buf + end, 4);
+            good = c == want;
+        }
+        if (!good) { free(skips); eio_close(f); return false; }
+    }
+    free(skips);
     /* triggers and procedures, when the file has them (older programs stop before this and ignore it) */
     {
         char ext[16];

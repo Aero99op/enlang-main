@@ -154,8 +154,9 @@ def as_version2(data, count_bytes):
         n = struct.unpack("<I", take(4))[0]
         take(n)
 
-    assert data[:14] in (b"ENLNG_C_EDB_V3", b"ENLNG_C_EDB_V4")
-    v4 = data[:14] == b"ENLNG_C_EDB_V4"
+    assert data[:14] in (b"ENLNG_C_EDB_V3", b"ENLNG_C_EDB_V4", b"ENLNG_C_EDB_V5")
+    v5 = data[:14] == b"ENLNG_C_EDB_V5"
+    v4 = v5 or data[:14] == b"ENLNG_C_EDB_V4"
     i = 16
     b.extend(b"ENLNG_C_EDB_V2\0\0")
     take(64)
@@ -195,7 +196,9 @@ def as_version2(data, count_bytes):
                 take(struct.unpack("<I", take(4, False))[0] * 12, False)     # numbers: value and row
                 take(struct.unpack("<I", take(4, False))[0] * 4, False)      # rows with a text
                 take(struct.unpack("<I", take(4, False))[0] * 4, False)      # rows with another kind
-    b.extend(data[i:])
+        if v5:
+            take(struct.unpack("<I", take(4, False))[0] * 4 + 4, False)      # the checksums (version 5)
+    b.extend(data[i:len(data) - 20] + data[len(data) - 16:] if v5 else data[i:])
     return bytes(b)
 
 
@@ -237,7 +240,8 @@ def main():
               (code, err[-300:], [x for x in zip(no_times(plain).splitlines(), no_times(spilled).splitlines()) if x[0] != x[1]][:3]))
         a_bytes = open(os.path.join(TMP, "spill.edb"), "rb").read()
         b_bytes = open(os.path.join(TMP, "spill_plain.edb"), "rb").read()
-        same_file = a_bytes[:80] + a_bytes[96:] == b_bytes[:80] + b_bytes[96:]     # all but the random id of each file
+        # all but the random id of each file, and the checksum (of version 5) that counts it
+        same_file = a_bytes[:80] + a_bytes[96:-20] + a_bytes[-16:] == b_bytes[:80] + b_bytes[96:-20] + b_bytes[-16:]
         check("... and the same file", same_file)
 
         # ---- 2. a folder for the file that cannot be used: the engine goes on with the memory of the system ----
@@ -333,7 +337,7 @@ def main():
         _, four, _ = run("frd.enlngdb")
         fpath = os.path.join(TMP, "f.edb")
         data = open(fpath, "rb").read()
-        check("the file is version 4: rows with their places, the lookup index of the key, and its id", data[:14] == b"ENLNG_C_EDB_V4")
+        check("the file is version 5: rows with their places, the lookup index of the key, its id and checksums", data[:14] == b"ENLNG_C_EDB_V5")
         open(fpath, "wb").write(as_version2(data, 4))
         _, older, _ = run("frd.enlngdb")
         check("a version 2 file (the row counts in 4 bytes, as the 32-bit programs wrote it) reads the same",
@@ -345,7 +349,7 @@ def main():
         write("fadd.enlngdb", 'type enlngdb\nuse database f\ninsert into a values (4, "four")\n')
         run("fadd.enlngdb")
         _, again, _ = run("frd.enlngdb")
-        check("... saved again, it is written as version 4", open(fpath, "rb").read()[:14] == b"ENLNG_C_EDB_V4" and "four" in again, again[-300:])
+        check("... saved again, it is written as version 5", open(fpath, "rb").read()[:14] == b"ENLNG_C_EDB_V5" and "four" in again, again[-300:])
 
         # ---- 7. a file opens without reading its rows; a lookup by the key uses the index kept in the file ----
         n = 200000
@@ -377,7 +381,7 @@ def main():
         check("... saved (the rows never read copied as their bytes) and opened again: the change is there, with a new index",
               cells(out) == ["name 5 with some words", "0", "name 200000 with some words"], out[-500:])
         data = open(os.path.join(TMP, "lz.edb"), "rb").read()
-        check("... the file is version 4", data[:14] == b"ENLNG_C_EDB_V4")
+        check("... the file is version 5", data[:14] == b"ENLNG_C_EDB_V5")
 
         # ---- 8. the log of changes (.edb-wal) ----
         lz = os.path.join(TMP, "lz.edb")
@@ -500,7 +504,7 @@ def main():
         open(empty, "wb").close()
         write("sf_empty.enlngdb", "type enlngdb\nuse database sfempty\ncreate table a with id\ninsert into a values (1)\nfind count(*) from a\n")
         code, out, err = run("sf_empty.enlngdb")
-        check("an empty file is an empty database", cells(out) == ["1"] and open(empty, "rb").read()[:14] == b"ENLNG_C_EDB_V4", out[-200:])
+        check("an empty file is an empty database", cells(out) == ["1"] and open(empty, "rb").read()[:14] == b"ENLNG_C_EDB_V5", out[-200:])
         check("a version 4 file ends with its end mark", good[-16:] == b"ENLNG_EDB_END_V4", good[-16:])
 
         # ---- 11. backup and restore ----
@@ -514,7 +518,7 @@ def main():
         code, out, err = run("bk_save.enlngdb")
         copy = os.path.join(TMP, "bk_copy.edb")
         check("backup writes a whole database file of its own, and leaves the database's file alone",
-              code == 0 and os.path.exists(copy) and open(copy, "rb").read()[:14] == b"ENLNG_C_EDB_V4" and open(bk, "rb").read() == before and "2 row(s)" in out, out[-300:])
+              code == 0 and os.path.exists(copy) and open(copy, "rb").read()[:14] == b"ENLNG_C_EDB_V5" and open(bk, "rb").read() == before and "2 row(s)" in out, out[-300:])
         write("bk_open.enlngdb", "type enlngdb\nuse database bk_copy\nfind name from pets where id is 2\nshow triggers\n")
         code, out, err = run("bk_open.enlngdb")
         check("... it opens as a database, with its triggers", "Kit" in out and "stamp" in out, out[-300:])
@@ -576,7 +580,99 @@ def main():
         check("restore from a file that is not a database changes nothing", code == 1 and "not a database" in out and "Tom" in out2, out[-300:])
         write("bkown.enlngdb", 'type enlngdb\nuse database bk\nbackup database to "bk.edb" confirmed\nbackup database to "./BK.edb-wal" confirmed\n')
         code, out, err = run("bkown.enlngdb")
-        check("a backup never goes to the database's own file or its log", out.count("own file") == 2 and open(bk, "rb").read()[:14] == b"ENLNG_C_EDB_V4", out[-400:])
+        check("a backup never goes to the database's own file or its log", out.count("own file") == 2 and open(bk, "rb").read()[:14] == b"ENLNG_C_EDB_V5", out[-400:])
+
+        # ---- 12. checksums (version 5): a changed byte anywhere is found, not read as a different value ----
+        def v5_parts(data):
+            """the parts of the first table of a version 5 file"""
+            i = 16 + 64 + 16 + 4
+
+            def u32():
+                nonlocal i
+                v = struct.unpack_from("<I", data, i)[0]
+                i += 4
+                return v
+            i += 64
+            n = u32()
+            i += n
+            for _ in range(u32()):
+                i += 64 + 5
+                for _ in range(4):
+                    n = u32()
+                    i += n
+                i += 8
+            for _ in range(u32()):
+                n = u32()
+                i += n
+                i += 1
+                for _ in range(u32()):
+                    n = u32()
+                    i += n
+            rc, total = struct.unpack_from("<QQ", data, i)
+            width = data[i + 16]
+            i += 24
+            rows_at = i
+            i += total + rc * width
+            idx_at = i
+            ns = u32()
+            for _ in range(ns & 0x3FFFFFFF):
+                col, n, nsp = struct.unpack_from("<III", data, i)
+                i += 12 + n * 12 + nsp * 4
+                if ns & 0x80000000:
+                    for mul in (12, 4, 4):
+                        c = u32()
+                        i += c * mul
+            idx_end = i
+            return rows_at, idx_at, idx_end
+
+        lines = "\n".join('insert into t values (%d, "name-%05d")' % (i, i) for i in range(1, 2001))
+        write("ck_make.enlngdb", "type enlngdb\nuse database ck\ncreate table t with id integer primary key, name text\n" + lines + "\n")
+        ck = os.path.join(TMP, "ck.edb")
+        run("ck_make.enlngdb")
+        good = open(ck, "rb").read()
+        write("ck_far.enlngdb", "type enlngdb\nuse database ck\nfind name from t where id is 5\n")
+        write("ck_near.enlngdb", "type enlngdb\nuse database ck\nfind name from t where id is 1150\n")
+        write("ck_range.enlngdb", "type enlngdb\nuse database ck\nfind count(*) from t where id between 100 and 300\n")
+        bad = bytearray(good)
+        at = bad.find(b"name-01200")
+        bad[at + 9] ^= 1                                # "name-01200" would read as "name-01201"
+        open(ck, "wb").write(bad)
+        code, out, err = run("ck_near.enlngdb")
+        code2, out2, err2 = run("ck_far.enlngdb")
+        check("a byte changed inside a row is found when a row of its 256 is read: the program stops, nothing written",
+              code == 3 and "damaged" in err and "name-0120" not in out and open(ck, "rb").read() == bytes(bad), (code, out[-200:], err[-300:]))
+        check("... the rows of the other 256s are read as before", code2 == 0 and cells(out2) == ["name-00005"], (code2, out2[-300:], err2[-200:]))
+        bad = bytearray(good)
+        at = bad.find(b"name\0")
+        bad[at] ^= 0x20                                 # the name of a column
+        open(ck, "wb").write(bad)
+        code, out, err = run("ck_far.enlngdb")
+        check("a changed byte in the names, columns, users or triggers: the file is not opened, and left as it is",
+              code != 0 and "not a database this program can read" in out + err and open(ck, "rb").read() == bytes(bad), (code, out[-300:]))
+        rows_at, idx_at, idx_end = v5_parts(good)
+        bad = bytearray(good)
+        bad[idx_at + 20] ^= 0xFF                        # an entry of the lookup index kept in the file
+        open(ck, "wb").write(bad)
+        code, out, err = run("ck_far.enlngdb")
+        code2, out2, err2 = run("ck_range.enlngdb")
+        check("a changed index kept in the file is not used: a note, and the rows are read, so the answers are right",
+              code == 0 and cells(out) == ["name-00005"] and "indexes kept in the file for table 't' are damaged" in err
+              and code2 == 0 and cells(out2) == ["201"], (out[-200:], err[-200:], out2[-200:]))
+        # the same file as version 4 (no checksums) still opens, and is written as version 5 by a full save
+        v4 = bytearray(good[:idx_end] + good[idx_end + 4 + ((2000 + 255) // 256) * 4 + 4:len(good) - 20] + good[len(good) - 16:])
+        v4[:14] = b"ENLNG_C_EDB_V4"
+        open(ck, "wb").write(bytes(v4))
+        code, out, err = run("ck_far.enlngdb")
+        write("ck_drop.enlngdb", "type enlngdb\nuse database ck\nalter table t add column extra text\nfind name from t where id is 1999\n")
+        code2, out2, err2 = run("ck_drop.enlngdb")
+        check("a file of version 4 opens as before; a full save writes it as version 5",
+              code == 0 and cells(out) == ["name-00005"] and code2 == 0 and "name-01999" in out2 and open(ck, "rb").read()[:14] == b"ENLNG_C_EDB_V5", (out[-200:], err[-200:], out2[-200:]))
+        newer = bytearray(good)
+        newer[13] = ord("7")
+        open(ck, "wb").write(bytes(newer))
+        code, out, err = run("ck_far.enlngdb")
+        check("a file of a newer version says so (update enlngdb), and is left as it is",
+              code != 0 and "newer version of enlngdb (ENLNG_C_EDB_V7)" in out + err and open(ck, "rb").read() == bytes(newer), (out[-300:]))
     finally:
         shutil.rmtree(TMP, ignore_errors=True)
     print("%d passed, %d failed" % (passed, failed))
