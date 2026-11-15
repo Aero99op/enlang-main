@@ -51,7 +51,7 @@ ENLNG = os.environ.get('ENLNGDB_BIN', r'D:/enlangg/website/enlngdb.exe')
 CACHE = os.path.join(HERE, '.runcache_db.json')
 OUT = os.path.join(HERE, 'out', 'enlngdb_manual.pdf')
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
-VERSION = '5.6.0'
+VERSION = '5.7.0'
 import shutil
 
 F = 'C:/Windows/Fonts/'

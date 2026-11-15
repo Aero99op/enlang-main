@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  TOOLCHAIN_VERSION: "5.6.0"     # must be ENLANGG_VERSION of src/enlangg_version.h (ci.yml checks it)
+  TOOLCHAIN_VERSION: "5.7.0"     # must be ENLANGG_VERSION of src/enlangg_version.h (ci.yml checks it)
 
 jobs:
   build-windows:

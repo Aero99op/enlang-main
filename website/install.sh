@@ -50,7 +50,7 @@ case "$OS-$ARCH" in
 esac
 # the release of exactly this version of the tools (an older release would install older tools): when it is not
 # there yet, the tools are built from source
-TOOLS_VERSION="5.6.0"
+TOOLS_VERSION="5.7.0"
 TAG=""
 if curl -fsIL "https://github.com/$GITHUB_REPO/releases/download/toolchain-v$TOOLS_VERSION/SHA256SUMS" >/dev/null 2>&1; then
     TAG="toolchain-v$TOOLS_VERSION"
