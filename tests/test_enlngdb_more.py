@@ -128,22 +128,30 @@ def main():
         check("4,096 tables, and the 4,097th is refused", "most tables it can hold (4096)" in out and len(rows(out)) == 4097, out[-200:])
 
         # ---- one program at a time
-        lockdir = tempfile.mkdtemp(dir=TMP)
-        # the first program holds the database while it works out a slow join (row by row: the 'on' is a calculation)
-        slow = ("type enlngdb\nuse database shared\ncreate table n with id\ninsert into n values %s\nfind count(*) from n a join n b on a.id + 0 = b.id + 0\n"
-                % ", ".join("(%d)" % i for i in range(1, 10001)))     # about 10 s on a fast 64-bit build: longer than the 5 s the second waits
-        open(os.path.join(lockdir, "a.enlngdb"), "w").write(slow)
-        open(os.path.join(lockdir, "b.enlngdb"), "w").write("type enlngdb\nuse database shared\ncount records in n\n")
-        first = subprocess.Popen([EXE_PATH, "a.enlngdb"], cwd=lockdir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        for _ in range(100):
-            if os.path.exists(os.path.join(lockdir, "shared.edb.lock")):
+        # the first program holds the database while it works out a slow join (row by row: the 'on' is a calculation).
+        # It must still be working when the second has waited its 5 s; on a fast machine it may not be, and then the
+        # join is made bigger and both run again (the check is of the waiting, not of the speed of the machine).
+        n = 10000
+        for attempt in range(3):
+            lockdir = tempfile.mkdtemp(dir=TMP)
+            slow = ("type enlngdb\nuse database shared\ncreate table n with id\ninsert into n values %s\nfind count(*) from n a join n b on a.id + 0 = b.id + 0\n"
+                    % ", ".join("(%d)" % i for i in range(1, n + 1)))
+            open(os.path.join(lockdir, "a.enlngdb"), "w").write(slow)
+            open(os.path.join(lockdir, "b.enlngdb"), "w").write("type enlngdb\nuse database shared\ncount records in n\n")
+            first = subprocess.Popen([EXE_PATH, "a.enlngdb"], cwd=lockdir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            for _ in range(100):
+                if os.path.exists(os.path.join(lockdir, "shared.edb.lock")):
+                    break
+                time.sleep(0.05)
+            second = subprocess.run([EXE_PATH, "b.enlngdb"], cwd=lockdir, capture_output=True, text=True)
+            still_working = first.poll() is None
+            first.wait()
+            if "is in use by another program" in second.stdout or still_working:
                 break
-            time.sleep(0.05)
-        second = subprocess.run([EXE_PATH, "b.enlngdb"], cwd=lockdir, capture_output=True, text=True)
-        first.wait()
-        check("a second program waits, then says the database is in use", "is in use by another program" in second.stdout, second.stdout[-300:])
+            n *= 2
+        check("a second program waits, then says the database is in use", "is in use by another program" in second.stdout, (n, second.stdout[-300:]))
         third = subprocess.run([EXE_PATH, "b.enlngdb"], cwd=lockdir, capture_output=True, text=True)
-        check("after the first one ends, the database opens with all its rows", "10000" in third.stdout, third.stdout[-300:])
+        check("after the first one ends, the database opens with all its rows", str(n) in third.stdout, third.stdout[-300:])
         check("no lock file is left behind", not os.path.exists(os.path.join(lockdir, "shared.edb.lock")) or os.name != "nt", os.listdir(lockdir))
 
         # ---- CSV
