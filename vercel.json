@@ -9,7 +9,7 @@
   "redirects": [
     {
       "source": "/enlangg-install.sh",
-      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.5.1/enlangg-install.sh",
+      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.7.0/enlangg-install.sh",
       "permanent": false
     },
     {
@@ -45,7 +45,7 @@
         },
         {
           "key": "Content-Disposition",
-          "value": "attachment; filename=\"Enlangg-Studio-Setup-5.1.0.exe\""
+          "value": "attachment; filename=\"Enlangg-Studio-Setup-5.2.0.exe\""
         },
         {
           "key": "Cache-Control",
@@ -244,7 +244,7 @@
   ],
   "rewrites": [
     {
-      "source": "/Enlangg-Studio-Setup-5.1.0.exe",
+      "source": "/Enlangg-Studio-Setup-5.2.0.exe",
       "destination": "/enlangg-studio-setup.exe"
     }
   ]

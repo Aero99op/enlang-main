@@ -1,13 +1,13 @@
 {
   "name": "Enlangg Studio",
-  "version": "5.1.0",
-  "build": "5.1.0.0",
-  "publishedAt": "2026-11-02T00:00:00Z",
-  "releaseNotes": "Enlangg Studio 5.1.0: runs the Enlng 5.6.0 tools. Programs of an open folder run next to their own file, so use \"file\" and installed packages work. The debug console drives the real enlng debugger (step, next, out, break, print, vars). The command palette has Enlng commands for packages and tests. The browser version runs the same interpreter as enlng.exe, built to WebAssembly.",
+  "version": "5.2.0",
+  "build": "5.2.0.0",
+  "publishedAt": "2026-11-18T00:00:00Z",
+  "releaseNotes": "Enlangg Studio 5.2.0: runs the Enlng 5.7.0 tools, so it opens the database files of version 5 (with checksums) that EnlngDB 5.7.0 writes, and has backup database and restore database. Studio 5.1.0 and before cannot open those files.",
   "downloadUrl": "https://enlangg.site/enlangg-studio-setup.exe",
   "mirrors": [
     "https://enlangg.vercel.app/enlangg-studio-setup.exe"
   ],
-  "assetName": "Enlangg-Studio-Setup-5.1.0.exe",
-  "sha256": "753bc26b9b5c038c4f349b2c9fb073d452388647360426edc8b41655d10eb91e"
+  "assetName": "Enlangg-Studio-Setup-5.2.0.exe",
+  "sha256": "93c9bfc3bf38c36077c91089014b7d65f3a59cdcd0f99fe7b9b74547a3efae19"
 }

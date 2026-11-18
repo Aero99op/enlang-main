@@ -757,7 +757,7 @@ let latestReleaseSha256 = null;
 let verifiedUpdateState = null;
 
 async function checkLatestRelease() {
-  const currentVersion = app.getVersion() || '5.0.3';
+  const currentVersion = app.getVersion() || '5.2.0';
 
   // 1. Primary Source of Truth: Check version.json manifest directly from enlangg.site
   const manifestUrls = [

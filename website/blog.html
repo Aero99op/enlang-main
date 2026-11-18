@@ -98,7 +98,7 @@
       <article style="padding: 32px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap;">
           <span style="color: var(--accent-emerald); font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 4px;">Release</span>
-          <span>Toolchain 5.7.0 &middot; EnlngDB</span>
+          <span>Toolchain 5.7.0 &middot; Enlangg Studio 5.2.0</span>
         </div>
         <h2 style="font-size: 1.55rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); line-height: 1.3;">
           Checksums in every database file, backup and restore, and a safer server
@@ -109,6 +109,7 @@
         <ul style="font-size: 0.94rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; padding-left: 20px;">
           <li><code>backup database to "shop-monday.edb"</code> writes a whole copy of the open database; <code>restore database from "shop-monday.edb" confirmed</code> brings it back, after checking the file.</li>
           <li><code>enlngdb --serve</code>: after five wrong passwords an address must wait before it may try again, and connections that never sign in are closed after 30 seconds, so they cannot fill the server.</li>
+          <li>Enlangg Studio 5.2.0 comes with the 5.7.0 tools, so it opens these files too. Studio 5.1.0 and before cannot open a version 5 file: update Studio from its green button or from the download page.</li>
           <li>Files of version 3 and 4 still open, and are written as version 5 at the next full save. Programs of 5.6.0 and before cannot open a version 5 file; update them on every computer that shares your databases.</li>
         </ul>
         <div class="code-block-card">
