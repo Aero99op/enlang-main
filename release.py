@@ -6,6 +6,9 @@ installs it locally, builds distribution packages, and uploads to PyPI.
 Usage:
     python release.py <new_version> [pypi_token]
 
+The PyPI token comes from the second argument or the PYPI_TOKEN environment
+variable. It is never written in this file.
+
 Example:
     python release.py 1.0.2
 """
@@ -15,8 +18,6 @@ import os
 import re
 import subprocess
 import shutil
-
-PYPI_TOKEN_DEFAULT = "pypi-AgEIcHlwaS5vcmcCJDRkZmMzMGYwLTQzNTYtNDc0ZS04Y2FhLTAzZmFmMzVhNmViYwACKlszLCJkYjFlZTE4ZC02MmQzLTQxNWUtYjg2MC05YjIwZDlmNDA4MDEiXQAABiBJtst_tH5XQmJm7uVFhUXoAaWY09rWjyiHng_O5aMvZQ"
 
 def update_file_version(filepath: str, pattern: str, replacement: str):
     if not os.path.exists(filepath):
@@ -36,7 +37,10 @@ def main():
         sys.exit(1)
 
     new_ver = sys.argv[1].strip()
-    token = sys.argv[2].strip() if len(sys.argv) > 2 else PYPI_TOKEN_DEFAULT
+    token = sys.argv[2].strip() if len(sys.argv) > 2 else os.environ.get("PYPI_TOKEN", "").strip()
+    if not token:
+        print("No PyPI token: give it as the second argument or set PYPI_TOKEN.")
+        sys.exit(1)
 
     print("================================================================")
     print(f"  ENLANG MASTER RELEASE AUTOMATION -> v{new_ver}")

@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 env:
-  TOOLCHAIN_VERSION: "5.7.0"     # must be ENLANGG_VERSION of src/enlangg_version.h: the job 'version' checks it
+  TOOLCHAIN_VERSION: "5.7.1"     # must be ENLANGG_VERSION of src/enlangg_version.h: the job 'version' checks it
 
 jobs:
   version:
