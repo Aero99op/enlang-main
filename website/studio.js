@@ -12957,7 +12957,7 @@ Provide code in fenced code blocks.`;
     if (!modal) return;
 
     const oldBadge = document.getElementById('updateCurrentVersionBadge');
-    if (oldBadge) oldBadge.textContent = `Current: v${info.currentVersion || '5.2.0'}`;
+    if (oldBadge) oldBadge.textContent = `Current: v${info.currentVersion || '5.2.1'}`;
 
     const newBadge = document.getElementById('updateLatestVersionBadge');
     if (newBadge) newBadge.textContent = `Latest: v${info.latestVersion || info.tag}`;
@@ -13103,7 +13103,7 @@ Provide code in fenced code blocks.`;
         info = await window.EnlangElectron.checkForUpdates();
       } else {
         // Primary: Query official enlangg.site version.json manifest
-        const curVer = '5.2.0';
+        const curVer = '5.2.1';
         const manifestUrls = [
           'version.json',
           'https://enlangg.site/version.json',
@@ -13179,7 +13179,7 @@ Provide code in fenced code blocks.`;
           showStudioToast(`🚀 New Version Available: Enlangg Studio v${info.latestVersion}!`, null);
         }
       } else if (isManual) {
-        const cur = (info && info.currentVersion) || '5.2.0';
+        const cur = (info && info.currentVersion) || '5.2.1';
         showStudioToast(`✔ Enlangg Studio is up to date (v${cur}).`, null);
       }
     } catch (err) {

@@ -1,13 +1,13 @@
 {
   "name": "Enlangg Studio",
-  "version": "5.2.0",
-  "build": "5.2.0.0",
-  "publishedAt": "2026-11-18T00:00:00Z",
-  "releaseNotes": "Enlangg Studio 5.2.0: runs the Enlng 5.7.0 tools, so it opens the database files of version 5 (with checksums) that EnlngDB 5.7.0 writes, and has backup database and restore database. Studio 5.1.0 and before cannot open those files.",
+  "version": "5.2.1",
+  "build": "5.2.1.0",
+  "publishedAt": "2026-11-25T00:00:00Z",
+  "releaseNotes": "Enlangg Studio 5.2.1: runs the Enlng 5.7.1 tools. A program that builds up a long text in a loop no longer runs out of memory and stops without a message; if memory really runs out, it says so.",
   "downloadUrl": "https://enlangg.site/enlangg-studio-setup.exe",
   "mirrors": [
     "https://enlangg.vercel.app/enlangg-studio-setup.exe"
   ],
-  "assetName": "Enlangg-Studio-Setup-5.2.0.exe",
-  "sha256": "93c9bfc3bf38c36077c91089014b7d65f3a59cdcd0f99fe7b9b74547a3efae19"
+  "assetName": "Enlangg-Studio-Setup-5.2.1.exe",
+  "sha256": "b087d1ad032a9c9e0efcc622a321f10244ed8d328edba7bc6394f4ede1ec7eae"
 }

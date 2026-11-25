@@ -98,7 +98,7 @@
       <article style="padding: 32px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap;">
           <span style="color: var(--accent-emerald); font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 4px;">Release</span>
-          <span>Toolchain 5.7.1</span>
+          <span>Toolchain 5.7.1 &middot; Enlangg Studio 5.2.1</span>
         </div>
         <h2 style="font-size: 1.55rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); line-height: 1.3;">
           A text built up in a loop no longer runs out of memory
@@ -112,6 +112,7 @@
           <li>A program built with <code>--native</code> or <code>enlng build</code> still never frees memory, so it can run out sooner; it now says so instead of crashing.</li>
           <li>Each add still copies the whole text. For a long text, collect the pieces in a list and <code>join</code> them at the end: it is much faster.</li>
           <li>The other tools and the database file format are unchanged; only their version number moves to 5.7.1.</li>
+          <li>Enlangg Studio 5.2.1 comes with the 5.7.1 tools. Studio 5.2.0 offers the update with its green button.</li>
         </ul>
         <div class="code-block-card">
           <div class="code-block-header">

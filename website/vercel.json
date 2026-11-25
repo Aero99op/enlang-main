@@ -40,7 +40,7 @@
         },
         {
           "key": "Content-Disposition",
-          "value": "attachment; filename=\"Enlangg-Studio-Setup-5.2.0.exe\""
+          "value": "attachment; filename=\"Enlangg-Studio-Setup-5.2.1.exe\""
         },
         {
           "key": "Cache-Control",
@@ -239,7 +239,7 @@
   ],
   "rewrites": [
     {
-      "source": "/Enlangg-Studio-Setup-5.2.0.exe",
+      "source": "/Enlangg-Studio-Setup-5.2.1.exe",
       "destination": "/enlangg-studio-setup.exe"
     }
   ]
