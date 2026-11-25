@@ -9,7 +9,7 @@
   "redirects": [
     {
       "source": "/enlangg-install.sh",
-      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.7.0/enlangg-install.sh",
+      "destination": "https://github.com/Aero99op/enlang-main/releases/download/toolchain-v5.7.1/enlangg-install.sh",
       "permanent": false
     },
     {
