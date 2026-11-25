@@ -29,6 +29,28 @@ jobs:
           if ($tag -ne $pkg) { throw "Tag version $tag does not match desktop/package.json version $pkg" }
           "STUDIO_VERSION=$pkg" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
+      # Studio carries the seven tools in resources\bin. desktop/prep-ui.js copies them from the
+      # repository folder, where they are not committed, so they are built here first, with the
+      # same commands as the Windows build of release.yml.
+      - name: Build the seven tools for Studio
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          function Build([string[]]$a) { & gcc @a; if ($LASTEXITCODE -ne 0) { throw "gcc failed: $($a -join ' ')" } }
+          Build @('-O2','-s','-I.','-Isrc','-Ienlngdb/c','-Ienlng/c','enlangg.c','enlngdb/c/enlngdb.c','enlngdb/c/enlngdb_parser.c','enlng/c/enlng_emitter.c','-lm','-o','enlangg.exe')
+          Build @('-O2','-s','-I.','-Isrc','enlng.c','-lm','-o','enlng.exe')
+          Build @('-O2','-s','-I.','-Isrc','-Ienlngdb/c','enlngdb/c/main.c','enlngdb/c/enlngdb.c','enlngdb/c/enlngdb_parser.c','-lm','-o','enlngdb.exe')
+          Build @('-O2','-s','-I.','-Isrc','-Ienlngf/c','enlngf.c','-lws2_32','-lgdi32','-luser32','-lm','-o','enlngf.exe')
+          Build @('-O2','-s','-I.','-Isrc','-Ienlngs/c','enlngs.c','-lm','-o','enlngs.exe')
+          Build @('-O2','-s','-I.','-Isrc','-Ienlngd/c','enlngd.c','-lm','-o','enlngd.exe')
+          Build @('-O2','-s','-I.','-Isrc','-Ienlngm/c','enlngm.c','-lgdi32','-luser32','-lm','-o','enlngm.exe')
+          $want = ((Select-String -Path src\enlangg_version.h -Pattern '^#define ENLANGG_VERSION "(.*)"').Matches[0].Groups[1].Value)
+          foreach ($t in 'enlangg','enlng','enlngdb','enlngf','enlngd','enlngs','enlngm') {
+            $v = (& ".\$t.exe" --version | Select-Object -First 1)
+            Write-Host "$t : $v"
+            if ($v -notmatch [regex]::Escape("version $want")) { throw "$t.exe says '$v', expected version $want" }
+          }
+
       - name: Install dependencies
         shell: powershell
         working-directory: desktop
@@ -63,6 +85,9 @@ jobs:
           $ErrorActionPreference = "Stop"
           $src = "dist-desktop\Enlangg Studio-Setup-$env:STUDIO_VERSION.exe"
           if (-not (Test-Path $src)) { Get-ChildItem dist-desktop | Out-Host; throw "Installer not found: $src" }
+          foreach ($t in 'enlangg','enlng','enlngdb','enlngf','enlngd','enlngs','enlngm') {
+            if (-not (Test-Path "dist-desktop\win-unpacked\resources\bin\$t.exe")) { throw "Studio was built without $t.exe" }
+          }
           New-Item -ItemType Directory -Force release | Out-Null
           $dest = "release\Enlangg-Studio-Setup-$env:STUDIO_VERSION.exe"
           Copy-Item $src $dest
