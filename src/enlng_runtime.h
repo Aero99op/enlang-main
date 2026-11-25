@@ -91,6 +91,21 @@ static EnlngObj *enlng_gc_all = NULL;  /* every live object */
 static size_t enlng_gc_count = 0;      /* how many there are */
 static size_t enlng_gc_new = 0;        /* made since the last collection */
 static size_t enlng_gc_live = 0;       /* still in use after the last collection */
+/* Bytes of text made since the last collection, and still in use after it.
+   Counting objects alone is not enough: a loop that adds to a long text makes
+   few objects but many bytes, and would run out of memory before a
+   collection by count. */
+static size_t enlng_gc_bytes_new = 0;
+static size_t enlng_gc_bytes_live = 0;
+
+static void enlng_out_of_memory(size_t want) {
+  fprintf(stderr,
+          "\n-- Enlang RuntimeError --------------------------------------------------\n"
+          "What: Out of memory: could not get %lu more bytes.\n"
+          "------------------------------------------------------------------------\n",
+          (unsigned long)want);
+  exit(1);
+}
 
 static inline void enlng_gc_link(EnlngObj *o, int kind) {
   o->magic = ENLNG_GC_MAGIC;
@@ -191,17 +206,25 @@ static inline EnlngVal enlng_make_null(void) {
   return val;
 }
 
-static inline EnlngVal enlng_make_string(const char *s) {
+/* A new text of len bytes; the caller fills it (it is ended with '\0' here) */
+static inline EnlngVal enlng_alloc_string(size_t len) {
   EnlngVal val;
   val.type = ENLNG_VAL_STRING;
-  size_t len = s ? strlen(s) : 0;
   EnlngObj *o = (EnlngObj *)malloc(sizeof(EnlngObj) + len + 1);
+  if (!o)
+    enlng_out_of_memory(sizeof(EnlngObj) + len + 1);
   enlng_gc_link(o, ENLNG_OBJ_STRING);
+  enlng_gc_bytes_new += len + 1;
   val.as.s = (char *)(o + 1);
+  val.as.s[len] = '\0';
+  return val;
+}
+
+static inline EnlngVal enlng_make_string(const char *s) {
+  size_t len = s ? strlen(s) : 0;
+  EnlngVal val = enlng_alloc_string(len);
   if (s)
-    memcpy(val.as.s, s, len + 1);
-  else
-    val.as.s[0] = '\0';
+    memcpy(val.as.s, s, len);
   return val;
 }
 
@@ -944,11 +967,14 @@ static inline void enlng_gc_free_obj(EnlngObj *o) {
 static inline void enlng_gc_sweep(void) {
   EnlngObj **link = &enlng_gc_all;
   size_t alive = 0;
+  size_t alive_bytes = 0;
   while (*link) {
     EnlngObj *o = *link;
     if (o->mark) {
       o->mark = 0;
       alive++;
+      if (o->kind == ENLNG_OBJ_STRING)
+        alive_bytes += strlen((char *)(o + 1)) + 1;
       link = &o->next;
     } else {
       *link = o->next;
@@ -958,10 +984,12 @@ static inline void enlng_gc_sweep(void) {
   enlng_gc_count = alive;
   enlng_gc_live = alive;
   enlng_gc_new = 0;
+  enlng_gc_bytes_live = alive_bytes;
+  enlng_gc_bytes_new = 0;
 }
 
-/* Time to collect: many objects were made since the last time, relative to
-   how many were still in use then. */
+/* Time to collect: many objects, or many bytes of text, were made since the
+   last time, relative to how much was still in use then. */
 static int enlng_gc_hold = 0; /* threads waiting outside the lock (run together) */
 static inline bool enlng_gc_due(void) {
   if (enlng_gc_hold > 0)
@@ -972,7 +1000,9 @@ static inline bool enlng_gc_due(void) {
   }
   if (enlng_gc_stress)
     return true;
-  return enlng_gc_new > 100000 && enlng_gc_new > enlng_gc_live;
+  if (enlng_gc_new > 100000 && enlng_gc_new > enlng_gc_live)
+    return true;
+  return enlng_gc_bytes_new > ((size_t)64 << 20) && enlng_gc_bytes_new > enlng_gc_bytes_live;
 }
 
 /* --- Container Length --- */
@@ -1481,12 +1511,9 @@ static inline EnlngVal enlng_val_add(EnlngVal a, EnlngVal b) {
     const char *sb = enlng_val_to_str_buf(b, buf_b, sizeof(buf_b));
     size_t la = strlen(sa);
     size_t lb = strlen(sb);
-    char *comb = (char *)malloc(la + lb + 1);
-    memcpy(comb, sa, la);
-    memcpy(comb + la, sb, lb);
-    comb[la + lb] = '\0';
-    EnlngVal res = enlng_make_string(comb);
-    free(comb);
+    EnlngVal res = enlng_alloc_string(la + lb); /* built in place: no copy in between */
+    memcpy(res.as.s, sa, la);
+    memcpy(res.as.s + la, sb, lb);
     return res;
   }
   enlng_bad_operands("plus", a, b);

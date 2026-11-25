@@ -1,4 +1,4 @@
-"""Checks the tools around the language: the debugger and packages.
+"""Checks the tools around the language: the debugger, packages and memory.
 
     python tests/test_tools.py <path-to-enlng>
 
@@ -143,9 +143,19 @@ def test_packages(exe, work):
         print("skip  git is not installed")
 
 
+def test_memory(exe, work):
+    # Adding to a text in a loop makes few objects but many bytes. The
+    # interpreter used to collect only by object count; a 32-bit build ran out
+    # of memory near 75,000 adds and stopped with a crash and no message.
+    write(os.path.join(work, "grow.enlng"),
+          'type enlng\nremember s as ""\nfor i from 1 to 150000:\n    s = s + "x"\nshow len(s)\n')
+    rc, out, err = run(exe, ["run", "grow.enlng"], work)
+    check("a text built by 150,000 adds in a loop", rc == 0 and out == "150000\n", (rc, out, err))
+
+
 def main():
     exe = os.path.abspath(sys.argv[1])
-    for fn in (test_debugger, test_standard_library, test_packages):
+    for fn in (test_debugger, test_standard_library, test_packages, test_memory):
         work = tempfile.mkdtemp(prefix="enlng-tools-")
         try:
             fn(exe, work)
